@@ -145,6 +145,7 @@ class ScriptedFakeTtsRequest implements FakeTtsRequest {
   public constructor(
     private readonly segment: NarrationSegmentV1,
     private readonly step: FakeTtsSourceStep,
+    private readonly onSettled: () => void,
   ) {}
 
   public cancel(): boolean {
@@ -163,6 +164,7 @@ class ScriptedFakeTtsRequest implements FakeTtsRequest {
       error: createOperationalErrorV1("operation-cancelled"),
     });
     this.#status = "cancelled";
+    this.onSettled();
     return true;
   }
 
@@ -188,12 +190,13 @@ class ScriptedFakeTtsRequest implements FakeTtsRequest {
             error: this.step.error,
           });
     this.#status = "completed";
+    this.onSettled();
   }
 }
 
 class ScriptedFakeTtsSource implements FakeTtsSource {
+  #pendingRequestCount = 0;
   #requestCount = 0;
-  #requests: ScriptedFakeTtsRequest[] = [];
   #steps: readonly FakeTtsSourceStep[];
 
   public constructor(
@@ -211,9 +214,11 @@ class ScriptedFakeTtsSource implements FakeTtsSource {
       throw new FakeTtsSourceError("script-exhausted");
     }
 
-    const request = new ScriptedFakeTtsRequest(segment, step);
-    this.#requests.push(request);
+    const request = new ScriptedFakeTtsRequest(segment, step, () => {
+      this.#pendingRequestCount -= 1;
+    });
     this.clock.schedule(step.responseDelayMs, () => request.complete());
+    this.#pendingRequestCount += 1;
     return request;
   }
 
@@ -226,12 +231,7 @@ class ScriptedFakeTtsSource implements FakeTtsSource {
   }
 
   public getPendingRequestCount(): Count {
-    return createCount(
-      this.#requests.filter((request) => {
-        const status = request.getStatus();
-        return status === "pending" || status === "cancellation-requested";
-      }).length,
-    );
+    return createCount(this.#pendingRequestCount);
   }
 }
 

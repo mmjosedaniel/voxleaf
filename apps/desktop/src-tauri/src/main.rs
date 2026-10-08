@@ -128,7 +128,7 @@ fn main() {
             tts_optional_chatterbox::OptionalChatterboxManager::default(),
         ))
         .setup(|app| {
-            tts_optional_chatterbox::configure_application_data_root(&app.handle())
+            tts_optional_chatterbox::configure_application_data_root(app.handle())
                 .map_err(|_| "failed to configure optional-profile data root")?;
             Ok(())
         })
@@ -136,6 +136,7 @@ fn main() {
             host_profile_detection::detect_host_profile_compatibility,
             tts_protocol_probe::run_tts_protocol_probe,
             tts_service_supervisor::exact_tts_demo_available,
+            tts_service_supervisor::release_locked_runtime_enabled,
             tts_service_supervisor::tts_profile_configuration_available,
             tts_optional_chatterbox::optional_chatterbox_snapshot,
             tts_optional_chatterbox::select_optional_chatterbox,

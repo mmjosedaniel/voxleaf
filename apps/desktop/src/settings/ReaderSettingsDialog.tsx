@@ -1,7 +1,9 @@
+import { getVersion } from "@tauri-apps/api/app";
 import {
   useEffect,
   useId,
   useRef,
+  useState,
   useSyncExternalStore,
   type KeyboardEvent,
   type ReactElement,
@@ -18,10 +20,16 @@ import type {
 import type { AdaptiveBufferStartMode } from "../tts/adaptive-buffer-scheduler";
 import { HardwareCompatibilityControls } from "../tts/HardwareCompatibilityControls";
 import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
-import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
+import {
+  chatterboxAcquisitionPresentation,
+  type HardwareProfileCompatibilityCoordinator,
+} from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
 import { NarrationStartPreferenceControls } from "../tts/NarrationStartPreferenceControls";
-import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
 
 const FOCUSABLE_SELECTOR = [
@@ -71,11 +79,16 @@ export interface ReaderSettingsDialogProps {
   readonly optionalChatterbox: OptionalChatterboxClient;
   readonly onActivateChatterbox: () => Promise<boolean>;
   readonly onRemoveChatterbox: () => Promise<void>;
+  readonly loadApplicationVersion?: () => Promise<string>;
 }
 
 function CoordinatorNarrationStartSettings({
   coordinator,
-}: Readonly<{ coordinator: ProductNarrationCoordinator }>): ReactElement {
+  disabled = false,
+}: Readonly<{
+  coordinator: ProductNarrationCoordinator;
+  disabled?: boolean;
+}>): ReactElement {
   const snapshot = useSyncExternalStore(
     (listener) => coordinator.subscribe(listener),
     () => coordinator.observe(),
@@ -88,6 +101,7 @@ function CoordinatorNarrationStartSettings({
       selection={snapshot.selection}
       active={active}
       disabled={
+        disabled ||
         snapshot.startPreferenceStatus === "loading" ||
         !snapshot.canPersistStartPreference
       }
@@ -101,17 +115,26 @@ function CoordinatorNarrationStartSettings({
 function NarrationStartSettings({
   coordinator,
   fallback,
+  disabled = false,
 }: Readonly<{
   coordinator?: ProductNarrationCoordinator;
   fallback: FallbackNarrationStartState;
+  disabled?: boolean;
 }>): ReactElement {
   if (coordinator !== undefined) {
-    return <CoordinatorNarrationStartSettings coordinator={coordinator} />;
+    return (
+      <CoordinatorNarrationStartSettings
+        coordinator={coordinator}
+        disabled={disabled}
+      />
+    );
   }
   return (
     <NarrationStartPreferenceControls
       selection={fallback.selection}
-      disabled={fallback.status === "loading" || !fallback.canPersist}
+      disabled={
+        disabled || fallback.status === "loading" || !fallback.canPersist
+      }
       onSelectionChange={fallback.onSelectionChange}
     />
   );
@@ -123,6 +146,44 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
   ).filter(
     (element) =>
       !element.hidden && element.getAttribute("aria-hidden") !== "true",
+  );
+}
+
+function OptionalChatterboxSettings({
+  client,
+  hardwareCompatibility,
+  onActivate,
+  onRemove,
+  disabled = false,
+}: Readonly<{
+  client: OptionalChatterboxClient;
+  hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
+  onActivate: () => Promise<boolean>;
+  onRemove: () => Promise<void>;
+  disabled?: boolean;
+}>): ReactElement {
+  const compatibility = useSyncExternalStore(
+    (listener) => hardwareCompatibility.subscribe(listener),
+    () => hardwareCompatibility.observe(),
+    () => hardwareCompatibility.observe(),
+  );
+  const acquisition = chatterboxAcquisitionPresentation(compatibility);
+  return (
+    <OptionalChatterboxControls
+      client={client}
+      active={compatibility.activeProfileId === CHATTERBOX_OPTIONAL_PROFILE_ID}
+      onActivate={onActivate}
+      onRecheck={async () => {
+        await hardwareCompatibility.check("explicit-recheck");
+        return chatterboxAcquisitionPresentation(
+          hardwareCompatibility.observe(),
+        ).allowed;
+      }}
+      onRemove={onRemove}
+      disabled={disabled}
+      acquisitionAllowed={acquisition.allowed}
+      acquisitionBlockMessage={acquisition.message}
+    />
   );
 }
 
@@ -143,17 +204,45 @@ export function ReaderSettingsDialog({
   optionalChatterbox,
   onActivateChatterbox,
   onRemoveChatterbox,
+  loadApplicationVersion = getVersion,
 }: ReaderSettingsDialogProps): ReactElement | null {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [applicationVersion, setApplicationVersion] = useState<
+    string | undefined
+  >();
+  const [narrationSelectionPending, setNarrationSelectionPending] =
+    useState(false);
 
   useEffect(() => {
     if (open) {
       closeButtonRef.current?.focus({ preventScroll: true });
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let current = true;
+    void loadApplicationVersion()
+      .then((version) => {
+        const normalized = version.trim();
+        if (current && normalized.length > 0 && normalized.length <= 64) {
+          setApplicationVersion(normalized);
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setApplicationVersion(undefined);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [loadApplicationVersion, open]);
 
   if (!open) {
     return null;
@@ -183,6 +272,14 @@ export function ReaderSettingsDialog({
       event.preventDefault();
       first.focus();
     }
+  };
+
+  const handleChatterboxActivation = async (): Promise<boolean> => {
+    const activated = await onActivateChatterbox();
+    if (activated) {
+      onRecoveryEpisodeReset();
+    }
+    return activated;
   };
 
   return (
@@ -256,17 +353,21 @@ export function ReaderSettingsDialog({
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+              onSelectionPendingChange={setNarrationSelectionPending}
             />
-            <OptionalChatterboxControls
+            <OptionalChatterboxSettings
               client={optionalChatterbox}
-              onActivate={onActivateChatterbox}
+              hardwareCompatibility={hardwareCompatibility}
+              onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
+              disabled={narrationSelectionPending}
             />
             <NarrationStartSettings
               {...(narrationCoordinator === undefined
                 ? {}
                 : { coordinator: narrationCoordinator })}
               fallback={fallbackNarrationStart}
+              disabled={narrationSelectionPending}
             />
           </section>
 
@@ -284,10 +385,20 @@ export function ReaderSettingsDialog({
             aria-labelledby={`${titleId}-about`}
           >
             <h3 id={`${titleId}-about`}>About</h3>
-            <p>VoxLeaf 0.0.0 development build.</p>
+            <p>
+              {applicationVersion === undefined
+                ? "VoxLeaf version unavailable."
+                : `VoxLeaf ${applicationVersion}.`}
+            </p>
             <p>
               EPUB processing and speech generation run locally. Generated
               narration is kept in bounded memory and is not saved by default.
+            </p>
+            <p>
+              To uninstall VoxLeaf and choose whether to remove Chatterbox or
+              reader state, open VoxLeaf in Windows Installed apps. If you keep
+              Chatterbox, reinstall this same VoxLeaf product to manage or
+              remove it later.
             </p>
           </section>
         </div>

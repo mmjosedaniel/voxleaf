@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "application": {
+    "identifier": "com.voxleaf.desktop",
+    "platform": "windows-x86_64",
+    "version": "0.1.0"
+  },
+  "authority": {
+    "releaseConfigSha256": "43da61e7853a911babb33847217f314f2119c432f5a9adcee06c6617fa3aeedd",
+    "piperRuntimeManifestSha256": "45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8",
+    "optionalChatterboxManifestSha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12",
+    "optionalChatterboxRuntimeEvidenceSha256": "bbcde47df59d6d9c190238653ab9eae725b9bdfda4fbb33bc59813a2595d4cff"
+  },
+  "package": {
+    "target": "nsis",
+    "installMode": "current-user",
+    "webview2Bootstrapper": "embedded",
+    "updaterIncluded": false,
+    "installer": {
+      "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
+      "sizeBytes": 181602965,
+      "sha256": "8bc8d5a54e82a113b9ed2bb727c64742a2d7bd5ba9558d7aab1fd417bc77711d"
+    },
+    "applicationBinary": {
+      "fileName": "voxleaf-desktop.exe",
+      "sizeBytes": 11837440,
+      "sha256": "fb81330b856cae0d15b28da861409ffbe0e1cba6f8b376360c5cda5d137cdb06"
+    },
+    "installedApplicationBinary": {
+      "fileName": "voxleaf-desktop.exe",
+      "sizeBytes": 11837440,
+      "sha256": "b2c7b1e1729b2b7bf05ed6b4b9014a931c42aa5d2c3aad36cf5d1ad91b6e9b67"
+    }
+  },
+  "payload": {
+    "piperCoreBundled": true,
+    "spanishVoiceBundled": true,
+    "englishVoiceBundled": true,
+    "optionalAcquisitionAuthorityBundled": true,
+    "chatterboxRuntimeOrWeightsBundled": false,
+    "qwenBundled": false,
+    "benchmarkToolsBundled": false,
+    "generatedAudioOrBooksBundled": false
+  },
+  "optionalChatterbox": {
+    "availability": "downloadable-after-live-compatible-host-gate",
+    "packageBundled": false,
+    "releaseLockedRuntime": true,
+    "rendererCompatibilityGateRequired": true,
+    "nativePreNetworkCompatibilityGateRequired": true,
+    "downloadBytes": 8239933601,
+    "installedBytes": 8236377725,
+    "temporaryBytes": 13270915278,
+    "minimumFreeBytes": 20000000000,
+    "representativeCompatibleHostJourney": "representative-compatible-host-passed"
+  },
+  "signature": {
+    "status": "unsigned-local",
+    "executableAndInstallerVerified": false,
+    "publicPublicationAllowed": false,
+    "checksumFileName": "VoxLeaf_0.1.0_x64-setup.exe.sha256",
+    "credentialStoredInRepository": false
+  },
+  "lifecycle": {
+    "status": "local-install-first-start-repair-uninstall-passed",
+    "representativeNormalUserHostRequired": true,
+    "localReleaseGatesPassed": true,
+    "explicitApplicationDataRemovalStructurallyVerified": true,
+    "silentUninstallPreservesApplicationData": true
+  },
+  "observations": {
+    "antivirus": "not-run",
+    "smartScreen": "not-observed",
+    "universalReputationClaimed": false
+  },
+  "limitations": [
+    "Ordinary Chatterbox acquisition is accepted only when the exact hash-bound representative compatible-host receipt is present.",
+    "This unsigned artifact is restricted to local or maintainer-operated portfolio validation.",
+    "WebView2 installation can require Microsoft network access when the Windows prerequisite is absent."
+  ]
+}

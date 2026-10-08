@@ -182,7 +182,7 @@ fn validate_manifest_authority(manifest: &RuntimeManifest) -> Result<(), Package
         || manifest.package_version != "1"
         || manifest.platform != "windows-x86_64"
         || manifest.core_lock_sha256
-            != "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e"
+            != "465e6066d7e8a57cc33ec77abac2b2601f59923c40f60b39327e5d9c4aed4fa6"
         || manifest.runtime.python_path != "runtime/python.exe"
         || manifest.runtime.site_packages_path != "runtime/Lib/site-packages"
         || manifest.runtime.service_module != "voxleaf_tts.piper_service"
@@ -291,7 +291,7 @@ fn resolve_required_directory(
 fn sha256_file(path: &Path) -> Result<String, PackagedCoreError> {
     let mut file = File::open(path).map_err(|_| PackagedCoreError::Invalid)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; 1024 * 1024];
+    let mut buffer = vec![0_u8; 1024 * 1024];
     loop {
         let read = file
             .read(&mut buffer)
@@ -366,7 +366,7 @@ mod tests {
             "packageId": PACKAGE_ID,
             "packageVersion": "1",
             "platform": "windows-x86_64",
-            "coreLockSha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e",
+            "coreLockSha256": "465e6066d7e8a57cc33ec77abac2b2601f59923c40f60b39327e5d9c4aed4fa6",
             "payloadBytes": payload_bytes,
             "runtime": {
                 "pythonPath": "runtime/python.exe",
@@ -382,6 +382,24 @@ mod tests {
         .expect("manifest should render");
         fs::write(root.join(RUNTIME_MANIFEST_NAME), &manifest).expect("manifest should be written");
         manifest
+    }
+
+    #[test]
+    fn tracked_manifest_matches_core_lock_and_native_authority() {
+        let mut manifest: RuntimeManifest =
+            serde_json::from_slice(TRUSTED_MANIFEST).expect("tracked manifest should deserialize");
+        let core_lock = include_bytes!("../../../../services/tts/release/core/uv.lock");
+        assert_eq!(
+            manifest.core_lock_sha256,
+            format!("{:x}", Sha256::digest(core_lock))
+        );
+        assert_eq!(validate_manifest_authority(&manifest), Ok(()));
+
+        manifest.core_lock_sha256 = "0".repeat(64);
+        assert_eq!(
+            validate_manifest_authority(&manifest),
+            Err(PackagedCoreError::Invalid)
+        );
     }
 
     #[test]
@@ -439,5 +457,21 @@ mod tests {
     #[test]
     fn io_errors_remain_content_free() {
         assert_eq!(format!("{:?}", PackagedCoreError::Invalid), "Invalid");
+    }
+
+    #[test]
+    fn hashes_the_packaged_payload_without_a_large_stack_allocation() {
+        let root = TestRoot::new();
+        let path = root.0.join("payload.bin");
+        fs::write(&path, vec![7_u8; 2 * 1024 * 1024]).expect("fixture should be written");
+        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * 1024 * 1024]));
+        let actual = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || sha256_file(&path))
+            .expect("bounded-stack worker should start")
+            .join()
+            .expect("bounded-stack hashing should not overflow")
+            .expect("fixture should hash");
+        assert_eq!(actual, expected);
     }
 }

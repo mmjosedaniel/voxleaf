@@ -252,6 +252,10 @@ def _excluded_site_file(path: Path) -> bool:
         "voxleaf_tts/chatterbox_service.py",
         "voxleaf_tts/qwen_adapter.py",
         "voxleaf_tts/qwen_service.py",
+        "voxleaf_tts/release_chatterbox.py",
+        "voxleaf_tts/release_core.py",
+        "voxleaf_tts-0.0.0.dist-info/RECORD",
+        "voxleaf_tts-0.0.0.dist-info/uv_cache.json",
     }
     return (
         "__pycache__" in path.parts
@@ -617,6 +621,8 @@ def _sync_core_environment(root: Path) -> None:
                 str(root / "services/tts/release/core"),
                 "--locked",
                 "--no-dev",
+                "--reinstall-package",
+                "voxleaf-tts",
             ],
             cwd=root,
             check=True,

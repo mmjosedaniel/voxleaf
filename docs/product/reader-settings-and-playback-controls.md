@@ -83,6 +83,115 @@ product scope. It does not change the completed M005 narration-preparation
 boundary, protocol v1, TTS model input, generated audio, support decisions, or
 release-distribution status.
 
+## Implemented M011 lifecycle-feedback addendum
+
+M011 Milestone 6A additively closes release-facing gaps discovered after the
+completed M010.2 Settings shell reached the installed Chatterbox validation
+journey. Focused desktop regressions and the packaged development-host lifecycle
+matrix now cover this behavior. That implementation is not evidence that the
+optional package is ready for end users: 6A itself did not reopen the M010.2
+reader layout, playback-rate authority, TTS protocol v1, one-child ownership,
+hardware gates, or the then-withheld Chatterbox release state. M011 Milestone
+6B later enables ordinary acquisition behind those unchanged live gates.
+
+### Stable Settings transitions
+
+A language/profile change may temporarily disable affected controls, but it
+must keep the Settings structure, current values, and relevant optional-package
+management visible. An accessible polite status names only a phase the desktop
+can prove, such as stopping narration, checking installed package state, or
+applying the profile. Non-byte work uses an indeterminate treatment; a
+percentage or fixed completion estimate must not be invented.
+
+The first M011 closeout does not add a profile-selection Cancel action. By the
+time a selection is pending, narration identity may already be invalidated and
+the persisted preference or recovery state may be changing. Cancellation is
+eligible only after a separate rollback contract proves restoration of the
+prior profile, preference, identities, service ownership, and recovery episode.
+A failed selection instead leaves a stable actionable error and the safest
+valid profile state.
+
+### First-Play startup feedback
+
+The compact narration bar remains mounted from Play intent through audible
+output and exposes the most specific content-free phase available at the
+existing boundaries: installed-package verification, starting and loading the
+local service/model, narration preparation, first-audio generation, buffering,
+then playing. If service start and model load cannot be distinguished without a
+protocol change, the UI combines them truthfully rather than inferring a false
+subphase. Cold-load variability is not presented as a fixed timer or progress
+percentage.
+
+While no audio owns playback and the existing identity-first Stop path can
+safely contain the pending start, its user-facing action is **Cancel start** (or
+equivalent). Cancellation makes the pending work stale before teardown,
+terminates or contains the supervised child as applicable, releases retained
+audio/work, and cannot emit stale audio. Once playback begins, the action
+returns to **Stop**.
+
+### Optional-package management and uninstall
+
+Chatterbox package state is distinct from profile selection. When application-
+owned optional-package data exists, Settings exposes installed state, measured
+storage, active/inactive status, and a discoverable **Remove Chatterbox** action.
+Removal affects only the exact optional runtime, model, removable cache, and
+staging roots after contained service cleanup; it does not delete preferences,
+reading progress, Piper, the desktop application, or EPUBs.
+
+Download cancellation states before confirmation that it deletes the current
+operation's incomplete staging and partial files, retains no resumable partial
+state, and never removes a verified installed package. Determinate progress is
+reserved for bounded byte transfer; verification and removal use truthful
+indeterminate phase text.
+
+The Windows uninstall journey presents optional-package data separately from
+ordinary preferences/recovery state.
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+selects optional Chatterbox removal by default and preference/recovery retention
+by default; the UI explains the consequence of each independent choice. Silent
+uninstall preserves both classes unless an explicit bounded option is supplied.
+Destructive choices remain limited to exact VoxLeaf-owned roots. Retaining
+optional data intentionally means its in-product management becomes available
+only after reinstalling the same product identity; VoxLeaf does not leave a
+second model-manager executable after uninstall.
+
+## M011 ordinary acquisition disclosure
+
+Milestone 6B changes only Chatterbox's ordinary acquisition presentation.
+Chatterbox
+stays visible as an optional quality profile, but **Review Chatterbox download**
+and **Download Chatterbox** become actionable only after the bounded compatibility
+presentation passes and native code repeats the same gate before network access.
+An unsupported or unknown requirement remains visible with a concise reason and
+recheck route while Piper stays available.
+
+The Settings card and confirmation must let a user make the performance/quality
+trade-off before acquiring several gigabytes:
+
+- Chatterbox is the generally more natural and expressive option compared with
+  Piper; that is qualitative positioning, not a promise that every listener will
+  prefer it.
+- Show exact authority-backed transfer, installed, peak temporary, and minimum
+  free-space values: `8,231,893,387` download bytes, `8,228,503,309` installed
+  bytes, `13,254,834,850` temporary bytes, and a 20-GB preflight, with readable
+  decimal/GiB equivalents. Keep storage separate
+  from runtime RAM/VRAM: installation does not permanently reserve memory, but
+  model load and inference consume GPU, VRAM, RAM, and CPU.
+- State that initial startup can exceed one minute and may temporarily make the
+  computer less responsive. Do not say the application is disabled: the visual
+  reader remains usable while narration/model controls show a truthful loading
+  phase.
+- Use indeterminate feedback for verification and service/model load, with no
+  fabricated percentage, countdown, or universal timing promise. Retain
+  Milestone 6A's **Cancel start**, **Stop**, download-cancellation cleanup, and
+  independent **Remove Chatterbox** behavior.
+
+The first-Play presentation includes representative-host observations only when
+labelled as observations rather than compatibility guarantees: Spanish/English
+command-to-audible were `43.815`/`33.375` seconds, RAM peaks
+`4,928,229,376`/`4,414,746,624` bytes, and VRAM peaks `3,707`/`3,671` MiB,
+with zero underruns. These values do not replace the live hardware gate.
+
 ## Goal
 
 Make VoxLeaf's portfolio-facing reader feel like a reading application rather

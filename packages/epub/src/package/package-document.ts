@@ -1,7 +1,10 @@
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
-import type { ResolvedPackageDocument } from "../container/container-resolver.js";
+import type {
+  PackageDocumentVersion,
+  ResolvedPackageDocument,
+} from "../container/container-resolver.js";
 import type { ArchiveFilePath } from "../paths/archive-path.js";
 import {
   parseOcfReference,
@@ -18,8 +21,8 @@ import type {
 
 const OPF_NAMESPACE = "http://www.idpf.org/2007/opf";
 const DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/";
-const SUPPORTED_VERSION = "3.0";
 const XHTML_MEDIA_TYPE = "application/xhtml+xml";
+const NCX_MEDIA_TYPE = "application/x-dtbncx+xml";
 const SMIL_MEDIA_TYPE = "application/smil+xml";
 const RASTER_IMAGE_MEDIA_TYPES = new Set([
   "image/gif",
@@ -57,7 +60,7 @@ export interface PackageMetadata {
   readonly titles: readonly string[];
   readonly languages: readonly string[];
   readonly creators: readonly string[];
-  readonly modified: string;
+  readonly modified?: string;
 }
 
 export interface PackageManifestItem {
@@ -81,13 +84,14 @@ export interface PackageSpineItem {
 }
 
 export interface PackageNavigationItem {
+  readonly kind: "ncx" | "xhtml";
   readonly resourceId: string;
   readonly path: ArchiveFilePath;
 }
 
 export interface ParsedPackageDocument {
   readonly path: ArchiveFilePath;
-  readonly version: "3.0";
+  readonly version: PackageDocumentVersion;
   readonly renditionLayout: "reflowable";
   readonly pageProgressionDirection: "default" | "ltr" | "rtl";
   readonly metadata: PackageMetadata;
@@ -116,6 +120,10 @@ interface RawSpineItem {
   readonly properties: readonly string[];
 }
 
+interface RawGuideReference {
+  readonly path: ArchiveFilePath;
+}
+
 type CapturedTextKind =
   | "creator"
   | "identifier"
@@ -134,15 +142,18 @@ interface CapturedText {
 }
 
 interface RawPackageDocument {
+  readonly version: PackageDocumentVersion;
   readonly uniqueIdentifierId: string;
   readonly identifiers: readonly IdentifierValue[];
   readonly titles: readonly string[];
   readonly languages: readonly string[];
   readonly creators: readonly string[];
-  readonly modified: string;
+  readonly modified?: string;
   readonly renditionLayout: string | undefined;
   readonly manifest: readonly RawManifestItem[];
   readonly spine: readonly RawSpineItem[];
+  readonly spineTocId?: string;
+  readonly guide: readonly RawGuideReference[];
   readonly pageProgressionDirection: "default" | "ltr" | "rtl";
 }
 
@@ -401,7 +412,47 @@ function resolveManifestLocation(
   }
 }
 
+function resolveGuideLocation(
+  packagePath: ArchiveFilePath,
+  href: string,
+  policy: EpubIngestionPolicy,
+  inventoryFiles: ReadonlySet<string>,
+): ArchiveFilePath {
+  if (href.length === 0 || href !== href.trim()) {
+    return fail("broken-reference");
+  }
+
+  try {
+    const reference = parseOcfReference(href, policy);
+    if (reference.relativePath.length === 0) {
+      return fail("broken-reference");
+    }
+
+    const path = resolveOcfReference(packagePath, reference, policy).path;
+    const pathText = String(path);
+    if (
+      path === packagePath ||
+      pathText === "mimetype" ||
+      pathText.startsWith("META-INF/")
+    ) {
+      return fail("broken-reference");
+    }
+    if (!inventoryFiles.has(pathText)) {
+      return fail("broken-reference");
+    }
+
+    return path;
+  } catch (error: unknown) {
+    if (error instanceof EpubArchiveError) {
+      throw error;
+    }
+
+    return mapReferenceError(error);
+  }
+}
+
 class PackageDocumentParser {
+  readonly #version: PackageDocumentVersion;
   readonly #packagePath: ArchiveFilePath;
   readonly #policy: EpubIngestionPolicy;
   readonly #inventoryFiles: ReadonlySet<string>;
@@ -414,20 +465,28 @@ class PackageDocumentParser {
   readonly #creators: string[] = [];
   readonly #manifest: RawManifestItem[] = [];
   readonly #spine: RawSpineItem[] = [];
+  readonly #guide: RawGuideReference[] = [];
   #capturedText: CapturedText | undefined;
   #ignoredDepth: number | undefined;
   #nextRequiredSection = 0;
   #sawPackage = false;
+  #sawGuide = false;
+  #metadataMode: "direct" | "wrapped" | undefined;
+  #sawDcMetadata = false;
+  #sawXMetadata = false;
   #uniqueIdentifierId: string | undefined;
   #modified: string | undefined;
   #renditionLayout: string | undefined;
+  #spineTocId: string | undefined;
   #pageProgressionDirection: "default" | "ltr" | "rtl" = "default";
 
   public constructor(
+    version: PackageDocumentVersion,
     packagePath: ArchiveFilePath,
     policy: EpubIngestionPolicy,
     inventoryFiles: ReadonlySet<string>,
   ) {
+    this.#version = version;
     this.#packagePath = packagePath;
     this.#policy = policy;
     this.#inventoryFiles = inventoryFiles;
@@ -460,7 +519,7 @@ class PackageDocumentParser {
       !this.#sawPackage ||
       this.#nextRequiredSection !== 3 ||
       this.#uniqueIdentifierId === undefined ||
-      this.#modified === undefined ||
+      (this.#version === "3.0" && this.#modified === undefined) ||
       this.#identifiers.length === 0 ||
       this.#titles.length === 0 ||
       this.#languages.length === 0 ||
@@ -471,15 +530,20 @@ class PackageDocumentParser {
     }
 
     return Object.freeze({
+      version: this.#version,
       uniqueIdentifierId: this.#uniqueIdentifierId,
       identifiers: Object.freeze([...this.#identifiers]),
       titles: Object.freeze([...this.#titles]),
       languages: Object.freeze([...this.#languages]),
       creators: Object.freeze([...this.#creators]),
-      modified: this.#modified,
+      ...(this.#modified === undefined ? {} : { modified: this.#modified }),
       renditionLayout: this.#renditionLayout,
       manifest: Object.freeze([...this.#manifest]),
       spine: Object.freeze([...this.#spine]),
+      ...(this.#spineTocId === undefined
+        ? {}
+        : { spineTocId: this.#spineTocId }),
+      guide: Object.freeze([...this.#guide]),
       pageProgressionDirection: this.#pageProgressionDirection,
     });
   }
@@ -487,6 +551,12 @@ class PackageDocumentParser {
   private consumeStartElement(event: XmlStartElementEvent): void {
     const depth = this.#stack.length + 1;
     if (this.#ignoredDepth !== undefined) {
+      if (
+        this.#version === "2.0" &&
+        namesEqual(this.#stack[1], OPF_NAMESPACE, "metadata")
+      ) {
+        this.registerId(unqualifiedAttribute(event, "id"));
+      }
       this.#stack.push(event.name);
       return;
     }
@@ -501,7 +571,10 @@ class PackageDocumentParser {
       this.beginPackageSection(event, depth);
     } else {
       const section = this.#stack[1];
-      if (namesEqual(section, OPF_NAMESPACE, "metadata") && depth === 3) {
+      if (
+        namesEqual(section, OPF_NAMESPACE, "metadata") &&
+        (depth === 3 || this.#version === "2.0")
+      ) {
         this.beginMetadataChild(event, depth);
       } else if (
         namesEqual(section, OPF_NAMESPACE, "manifest") &&
@@ -510,6 +583,12 @@ class PackageDocumentParser {
         this.beginManifestItem(event, depth);
       } else if (namesEqual(section, OPF_NAMESPACE, "spine") && depth === 3) {
         this.beginSpineItem(event, depth);
+      } else if (
+        this.#version === "2.0" &&
+        namesEqual(section, OPF_NAMESPACE, "guide") &&
+        depth === 3
+      ) {
+        this.beginGuideReference(event, depth);
       } else {
         return fail("malformed-package");
       }
@@ -522,7 +601,7 @@ class PackageDocumentParser {
     if (
       this.#sawPackage ||
       !namesEqual(event.name, OPF_NAMESPACE, "package") ||
-      requiredAttribute(event, "version") !== SUPPORTED_VERSION
+      requiredAttribute(event, "version") !== this.#version
     ) {
       return fail("malformed-package");
     }
@@ -559,13 +638,38 @@ class PackageDocumentParser {
         this.#pageProgressionDirection = parsePageProgressionDirection(
           unqualifiedAttribute(event, "page-progression-direction"),
         );
+        if (this.#version === "2.0") {
+          this.#spineTocId = validateIdReference(
+            requiredAttribute(event, "toc"),
+          );
+        }
       }
       return;
     }
 
     if (
+      this.#version === "2.0" &&
+      this.#nextRequiredSection === 3 &&
+      namesEqual(event.name, OPF_NAMESPACE, "guide")
+    ) {
+      if (this.#sawGuide) {
+        return fail("malformed-package");
+      }
+      this.#sawGuide = true;
+      this.registerId(unqualifiedAttribute(event, "id"));
+      return;
+    }
+
+    if (
+      this.#version === "2.0" &&
+      namesEqual(event.name, OPF_NAMESPACE, "tours")
+    ) {
+      return fail("unsupported-resource");
+    }
+
+    if (
       event.name.namespaceUri !== OPF_NAMESPACE ||
-      this.#nextRequiredSection === 3
+      (this.#version === "3.0" && this.#nextRequiredSection === 3)
     ) {
       this.#ignoredDepth = depth;
       return;
@@ -575,26 +679,99 @@ class PackageDocumentParser {
   }
 
   private beginMetadataChild(event: XmlStartElementEvent, depth: number): void {
-    const id = unqualifiedAttribute(event, "id");
-    this.registerId(id);
-
-    if (event.name.namespaceUri === DUBLIN_CORE_NAMESPACE) {
-      const knownKind: Record<string, CapturedTextKind> = {
-        creator: "creator",
-        identifier: "identifier",
-        language: "language",
-        title: "title",
-      };
-      this.#capturedText = {
-        depth,
-        kind: knownKind[event.name.localName] ?? "ignored",
-        ...(id === undefined ? {} : { id }),
-        text: "",
-      };
+    if (this.#version === "2.0") {
+      this.beginEpub2MetadataChild(event, depth);
       return;
     }
 
+    this.beginDirectMetadataChild(event, depth, "3.0");
+  }
+
+  private beginEpub2MetadataChild(
+    event: XmlStartElementEvent,
+    depth: number,
+  ): void {
+    const parent = this.#stack.at(-1);
+
+    if (depth === 3) {
+      if (namesEqual(event.name, OPF_NAMESPACE, "dc-metadata")) {
+        if (this.#metadataMode === "direct" || this.#sawDcMetadata) {
+          return fail("malformed-package");
+        }
+        this.#metadataMode = "wrapped";
+        this.#sawDcMetadata = true;
+        this.registerId(unqualifiedAttribute(event, "id"));
+        return;
+      }
+
+      if (namesEqual(event.name, OPF_NAMESPACE, "x-metadata")) {
+        if (
+          this.#metadataMode !== "wrapped" ||
+          !this.#sawDcMetadata ||
+          this.#sawXMetadata
+        ) {
+          return fail("malformed-package");
+        }
+        this.#sawXMetadata = true;
+        this.registerId(unqualifiedAttribute(event, "id"));
+        return;
+      }
+
+      if (this.#metadataMode === "wrapped") {
+        return fail("malformed-package");
+      }
+      this.#metadataMode = "direct";
+      this.beginDirectMetadataChild(event, depth, "2.0");
+      return;
+    }
+
+    if (depth !== 4) {
+      return fail("malformed-package");
+    }
+
+    if (namesEqual(parent, OPF_NAMESPACE, "dc-metadata")) {
+      if (event.name.namespaceUri !== DUBLIN_CORE_NAMESPACE) {
+        return fail("malformed-package");
+      }
+      this.beginDublinCoreMetadataChild(event, depth);
+      return;
+    }
+
+    if (namesEqual(parent, OPF_NAMESPACE, "x-metadata")) {
+      if (
+        event.name.namespaceUri === DUBLIN_CORE_NAMESPACE ||
+        namesEqual(event.name, OPF_NAMESPACE, "dc-metadata") ||
+        namesEqual(event.name, OPF_NAMESPACE, "x-metadata")
+      ) {
+        return fail("malformed-package");
+      }
+      this.beginSupplementalEpub2MetadataChild(event, depth);
+      return;
+    }
+
+    return fail("malformed-package");
+  }
+
+  private beginDirectMetadataChild(
+    event: XmlStartElementEvent,
+    depth: number,
+    version: PackageDocumentVersion,
+  ): void {
+    const id = unqualifiedAttribute(event, "id");
+
+    if (event.name.namespaceUri === DUBLIN_CORE_NAMESPACE) {
+      this.beginDublinCoreMetadataChild(event, depth);
+      return;
+    }
+
+    this.registerId(id);
+
     if (namesEqual(event.name, OPF_NAMESPACE, "meta")) {
+      if (version === "2.0") {
+        this.beginLegacyMetadata(event, depth, id);
+        return;
+      }
+
       const property = unqualifiedAttribute(event, "property");
       const refines = unqualifiedAttribute(event, "refines");
       const legacyName = unqualifiedAttribute(event, "name");
@@ -645,8 +822,78 @@ class PackageDocumentParser {
     }
 
     if (namesEqual(event.name, OPF_NAMESPACE, "link")) {
+      if (version === "2.0") {
+        return fail("malformed-package");
+      }
       requiredAttribute(event, "href");
       requiredAttribute(event, "rel");
+      return;
+    }
+
+    if (event.name.namespaceUri !== OPF_NAMESPACE) {
+      this.#ignoredDepth = depth;
+      return;
+    }
+
+    return fail("malformed-package");
+  }
+
+  private beginDublinCoreMetadataChild(
+    event: XmlStartElementEvent,
+    depth: number,
+  ): void {
+    const id = unqualifiedAttribute(event, "id");
+    this.registerId(id);
+    const knownKind: Record<string, CapturedTextKind> = {
+      creator: "creator",
+      identifier: "identifier",
+      language: "language",
+      title: "title",
+    };
+    this.#capturedText = {
+      depth,
+      kind: knownKind[event.name.localName] ?? "ignored",
+      ...(id === undefined ? {} : { id }),
+      text: "",
+    };
+  }
+
+  private beginLegacyMetadata(
+    event: XmlStartElementEvent,
+    depth: number,
+    id: string | undefined,
+  ): void {
+    const property = unqualifiedAttribute(event, "property");
+    const refines = unqualifiedAttribute(event, "refines");
+    const legacyName = unqualifiedAttribute(event, "name");
+    const legacyContent = unqualifiedAttribute(event, "content");
+    if (
+      property !== undefined ||
+      refines !== undefined ||
+      legacyName === undefined ||
+      legacyContent === undefined
+    ) {
+      return fail("malformed-package");
+    }
+    normalizeMetadataText(legacyName);
+    normalizeMetadataText(legacyContent);
+
+    this.#capturedText = {
+      depth,
+      kind: "legacy",
+      ...(id === undefined ? {} : { id }),
+      text: "",
+    };
+  }
+
+  private beginSupplementalEpub2MetadataChild(
+    event: XmlStartElementEvent,
+    depth: number,
+  ): void {
+    const id = unqualifiedAttribute(event, "id");
+    this.registerId(id);
+    if (namesEqual(event.name, OPF_NAMESPACE, "meta")) {
+      this.beginLegacyMetadata(event, depth, id);
       return;
     }
 
@@ -728,6 +975,38 @@ class PackageDocumentParser {
         idref: validateIdReference(requiredAttribute(event, "idref")),
         linear: parseLinearity(unqualifiedAttribute(event, "linear")),
         properties: parseProperties(unqualifiedAttribute(event, "properties")),
+      }),
+    );
+  }
+
+  private beginGuideReference(
+    event: XmlStartElementEvent,
+    depth: number,
+  ): void {
+    if (!namesEqual(event.name, OPF_NAMESPACE, "reference")) {
+      if (event.name.namespaceUri !== OPF_NAMESPACE) {
+        this.registerId(unqualifiedAttribute(event, "id"));
+        this.#ignoredDepth = depth;
+        return;
+      }
+
+      return fail("malformed-package");
+    }
+
+    this.registerId(unqualifiedAttribute(event, "id"));
+    normalizeMetadataText(requiredAttribute(event, "type"));
+    const title = unqualifiedAttribute(event, "title");
+    if (title !== undefined) {
+      normalizeMetadataText(title);
+    }
+    this.#guide.push(
+      Object.freeze({
+        path: resolveGuideLocation(
+          this.#packagePath,
+          requiredAttribute(event, "href"),
+          this.#policy,
+          this.#inventoryFiles,
+        ),
       }),
     );
   }
@@ -948,30 +1227,66 @@ function buildParsedPackage(
   }
 
   const manifestById = new Map<string, RawManifestItem>();
+  const manifestByLocalPath = new Map<string, RawManifestItem>();
   for (const item of raw.manifest) {
     archive.budget.checkpoint();
     if (manifestById.has(item.id)) {
       return fail("malformed-package");
     }
     manifestById.set(item.id, item);
+    if (item.location.kind === "local") {
+      manifestByLocalPath.set(String(item.location.path), item);
+    }
   }
 
   validateFallbackGraph(raw.manifest, manifestById, archive);
   validateMediaOverlays(raw.manifest, manifestById);
 
-  const navigationItems = raw.manifest.filter((item) =>
-    item.properties.includes("nav"),
-  );
-  if (navigationItems.length !== 1) {
-    return fail("malformed-package");
+  let navigationItem: RawManifestItem | undefined;
+  let navigationKind: PackageNavigationItem["kind"];
+  if (raw.version === "3.0") {
+    const navigationItems = raw.manifest.filter((item) =>
+      item.properties.includes("nav"),
+    );
+    if (navigationItems.length !== 1) {
+      return fail("malformed-package");
+    }
+    navigationItem = navigationItems[0];
+    navigationKind = "xhtml";
+    if (
+      navigationItem === undefined ||
+      !isSupportedContentDocument(navigationItem) ||
+      navigationItem.location.kind !== "local"
+    ) {
+      return fail("unsupported-resource");
+    }
+  } else {
+    if (raw.spineTocId === undefined) {
+      return fail("malformed-package");
+    }
+    navigationItem = manifestById.get(raw.spineTocId);
+    navigationKind = "ncx";
+    if (navigationItem === undefined) {
+      return fail("broken-reference");
+    }
+    if (
+      navigationItem.location.kind !== "local" ||
+      navigationItem.mediaType !== NCX_MEDIA_TYPE ||
+      navigationItem.fallbackId !== undefined
+    ) {
+      return fail("unsupported-resource");
+    }
   }
-  const navigationItem = navigationItems[0];
-  if (
-    navigationItem === undefined ||
-    !isSupportedContentDocument(navigationItem) ||
-    navigationItem.location.kind !== "local"
-  ) {
-    return fail("unsupported-resource");
+
+  for (const reference of raw.guide) {
+    archive.budget.checkpoint();
+    const target = manifestByLocalPath.get(String(reference.path));
+    if (target === undefined) {
+      return fail("broken-reference");
+    }
+    if (!isSupportedContentDocument(target)) {
+      return fail("unsupported-resource");
+    }
   }
 
   const seenSpineIds = new Set<string>();
@@ -1028,7 +1343,7 @@ function buildParsedPackage(
 
   return Object.freeze({
     path: resolved.path,
-    version: SUPPORTED_VERSION,
+    version: raw.version,
     renditionLayout: REFLOWED_LAYOUT,
     pageProgressionDirection: raw.pageProgressionDirection,
     metadata: Object.freeze({
@@ -1039,11 +1354,12 @@ function buildParsedPackage(
       titles: raw.titles,
       languages: raw.languages,
       creators: raw.creators,
-      modified: raw.modified,
+      ...(raw.modified === undefined ? {} : { modified: raw.modified }),
     }),
     manifest: raw.manifest,
     spine: Object.freeze(spine),
     navigation: Object.freeze({
+      kind: navigationKind,
       resourceId: navigationItem.id,
       path: navigationItem.location.path,
     }),
@@ -1056,14 +1372,12 @@ export function parsePackageDocument(
 ): ParsedPackageDocument {
   archive.budget.checkpoint();
   rejectProtectedPublication(archive);
-  if (
-    resolved.version !== SUPPORTED_VERSION ||
-    resolved.renditionLayout !== REFLOWED_LAYOUT
-  ) {
+  if (resolved.renditionLayout !== REFLOWED_LAYOUT) {
     return fail("internal-failure");
   }
 
   const parser = new PackageDocumentParser(
+    resolved.version,
     resolved.path,
     archive.budget.policy,
     inventoryFilePaths(archive),

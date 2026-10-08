@@ -21,7 +21,6 @@ export interface FakeAudioSourceStepV1 {
 
 export interface FakeAudioSource {
   takeAvailableFrames(): readonly AudioFrameV1[];
-  getAvailableFrameCount(): Count;
   getPendingFrameCount(): Count;
 }
 
@@ -108,10 +107,6 @@ class ManuallyTimedFakeAudioSource implements FakeAudioSource {
     const frames = Object.freeze([...this.#availableFrames]);
     this.#availableFrames = [];
     return frames;
-  }
-
-  public getAvailableFrameCount(): Count {
-    return createCount(this.#availableFrames.length);
   }
 
   public getPendingFrameCount(): Count {

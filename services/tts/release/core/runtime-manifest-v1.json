@@ -1,5 +1,5 @@
 {
-  "coreLockSha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e",
+  "coreLockSha256": "465e6066d7e8a57cc33ec77abac2b2601f59923c40f60b39327e5d9c4aed4fa6",
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
@@ -9772,11 +9772,6 @@
       "sizeBytes": 210
     },
     {
-      "path": "runtime/Lib/site-packages/voxleaf_tts-0.0.0.dist-info/RECORD",
-      "sha256": "69d29d3314ec7217da4dc3228243abebc8fa73b0816c1c0b7e7a2fdeb8d8baa8",
-      "sizeBytes": 1797
-    },
-    {
       "path": "runtime/Lib/site-packages/voxleaf_tts-0.0.0.dist-info/WHEEL",
       "sha256": "611e105311826ecca83a7581553bfea75238c9cdec78a18f7afe3a9af99cf028",
       "sizeBytes": 81
@@ -9785,11 +9780,6 @@
       "path": "runtime/Lib/site-packages/voxleaf_tts-0.0.0.dist-info/uv_build.json",
       "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
       "sizeBytes": 2
-    },
-    {
-      "path": "runtime/Lib/site-packages/voxleaf_tts-0.0.0.dist-info/uv_cache.json",
-      "sha256": "b6a65e6e1610bec6d0ad21820aafb54878977a39119281e508c74315233ff553",
-      "sizeBytes": 193
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/__init__.py",
@@ -9818,8 +9808,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/piper_adapter.py",
-      "sha256": "61e7edebd5eb21455186f9cbcd8ba90543567c88e2203887f109ce95fc4905be",
-      "sizeBytes": 17385
+      "sha256": "b762a6648ccfb52bc68dce8b45c1aa6d72aa4b70ad201837d97719d2173026f2",
+      "sizeBytes": 18017
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/piper_service.py",
@@ -10008,7 +9998,7 @@
     },
     {
       "path": "source-manifest-v1.json",
-      "sha256": "06b70e728fb2c46040f61f727422eadbc6ebe9001c4e885d5a2db6c0869c3949",
+      "sha256": "5318407d11131f04c906e760690109214b8b80f3a3c75dd1397d1ddb9c2ec024",
       "sizeBytes": 3654
     },
     {
@@ -10054,7 +10044,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 280810262,
+  "payloadBytes": 280808904,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

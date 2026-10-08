@@ -326,6 +326,7 @@ function createPackageDocument(): ParsedPackageDocument {
       }),
     ]),
     navigation: Object.freeze({
+      kind: "xhtml",
       resourceId: "nav",
       path: filePath("EPUB/nav.xhtml"),
     }),

@@ -10,6 +10,8 @@ from voxleaf_tts.release_core import (
     PACKAGE_DIRECTORY_NAME,
     PackageMeasurement,
     ReleaseCoreError,
+    _excluded_site_file,
+    _sync_core_environment,
     atomic_stage,
     build_runtime_manifest,
     load_source_manifest,
@@ -18,6 +20,22 @@ from voxleaf_tts.release_core import (
     safe_relative_path,
     verify_package_tree,
 )
+
+
+def test_core_sync_reinstalls_the_current_local_voxleaf_package(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[str] = []
+
+    def capture(arguments: list[str], **_kwargs: object) -> None:
+        observed.extend(arguments)
+
+    monkeypatch.setattr("voxleaf_tts.release_core.subprocess.run", capture)
+
+    _sync_core_environment(tmp_path)
+
+    assert observed[-2:] == ["--reinstall-package", "voxleaf-tts"]
 
 
 def _sha256(value: bytes) -> str:
@@ -63,6 +81,17 @@ def test_source_manifest_closes_runtime_sources_and_both_voices() -> None:
     assert {voice["language"] for voice in voices} == {"en", "es"}
     assert {voice["runtimeVoice"] for voice in voices} == {"davefx-es", "joe-en"}
     assert all(len(voice["artifacts"]) == 3 for voice in voices)
+
+
+def test_core_excludes_release_builders_and_their_stale_install_metadata() -> None:
+    for relative in (
+        "voxleaf_tts/release_core.py",
+        "voxleaf_tts/release_chatterbox.py",
+        "voxleaf_tts-0.0.0.dist-info/RECORD",
+        "voxleaf_tts-0.0.0.dist-info/uv_cache.json",
+    ):
+        assert _excluded_site_file(Path(relative))
+    assert not _excluded_site_file(Path("voxleaf_tts/piper_service.py"))
 
 
 @pytest.mark.parametrize(

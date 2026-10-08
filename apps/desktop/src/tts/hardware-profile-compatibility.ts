@@ -71,6 +71,59 @@ export interface HardwareCompatibilitySnapshotV1 {
   readonly languageReason: NarrationLanguageCompatibilityReasonV1;
 }
 
+/**
+ * Acquisition has a deliberately narrower presentation gate than narration
+ * selection. It is based on the exact Chatterbox profile result, rather than
+ * the currently selected profile, so a compatible Piper selection does not
+ * hide an eligible optional download.
+ */
+export const CHATTERBOX_ACQUISITION_PROFILE_ID =
+  "chatterbox-multilingual-v3-cuda-bf16-default-v4" as const;
+
+export interface ChatterboxAcquisitionPresentationV1 {
+  readonly allowed: boolean;
+  readonly message: string;
+}
+
+export function chatterboxAcquisitionPresentation(
+  snapshot: HardwareCompatibilitySnapshotV1,
+): ChatterboxAcquisitionPresentationV1 {
+  if (snapshot.status === "checking") {
+    return Object.freeze({
+      allowed: false,
+      message: "Checking whether this device can run Chatterbox.",
+    });
+  }
+  if (snapshot.status === "failed") {
+    return Object.freeze({
+      allowed: false,
+      message:
+        "Chatterbox compatibility could not be checked. Recheck device compatibility.",
+    });
+  }
+  const chatterbox = snapshot.profiles.find(
+    (profile) => profile.profileId === CHATTERBOX_ACQUISITION_PROFILE_ID,
+  );
+  if (
+    chatterbox?.state === "compatible" &&
+    chatterbox.supportState === "supported"
+  ) {
+    return Object.freeze({ allowed: true, message: "" });
+  }
+  if (chatterbox?.state === "incompatible") {
+    return Object.freeze({
+      allowed: false,
+      message:
+        "This device does not currently meet the Chatterbox requirements. Recheck device compatibility after its available resources change.",
+    });
+  }
+  return Object.freeze({
+    allowed: false,
+    message:
+      "Chatterbox compatibility is not established. Recheck device compatibility.",
+  });
+}
+
 export interface HardwareProfileDetectionPort {
   detect(): Promise<HostProfileCompatibilityReportV1>;
 }

@@ -12,6 +12,15 @@ const EXTERNAL_RESOURCE_PROCESSING_INSTRUCTIONS = new Set([
   "xml-model",
   "xml-stylesheet",
 ]);
+const XML_WHITESPACE = "[\\u0009\\u000a\\u000d\\u0020]";
+const EPUB2_NCX_DOCTYPE_PATTERN = new RegExp(
+  `^${XML_WHITESPACE}*ncx${XML_WHITESPACE}+PUBLIC${XML_WHITESPACE}+(?:"-//NISO//DTD ncx 2005-1//EN"|'-//NISO//DTD ncx 2005-1//EN')${XML_WHITESPACE}+(?:"http://www\\.daisy\\.org/z3986/2005/ncx-2005-1\\.dtd"|'http://www\\.daisy\\.org/z3986/2005/ncx-2005-1\\.dtd')${XML_WHITESPACE}*$`,
+  "u",
+);
+const EPUB2_XHTML11_DOCTYPE_PATTERN = new RegExp(
+  `^${XML_WHITESPACE}*html${XML_WHITESPACE}+PUBLIC${XML_WHITESPACE}+(?:"-//W3C//DTD XHTML 1.1//EN"|'-//W3C//DTD XHTML 1.1//EN')${XML_WHITESPACE}+(?:"http://www\\.w3\\.org/TR/xhtml11/DTD/xhtml11\\.dtd"|'http://www\\.w3\\.org/TR/xhtml11/DTD/xhtml11\\.dtd')${XML_WHITESPACE}*$`,
+  "u",
+);
 
 const SAXES_OPTIONS = Object.freeze({
   defaultXMLVersion: "1.0" as const,
@@ -22,7 +31,8 @@ const SAXES_OPTIONS = Object.freeze({
 
 type XmlByteEncoding = "utf-16be" | "utf-16le" | "utf-8";
 
-export type XmlDocumentKind = "container-or-package" | "content";
+export type XmlDocumentKind =
+  "container-or-package" | "content" | "epub2-content" | "ncx";
 
 export interface XmlExpandedName {
   readonly namespaceUri: string;
@@ -97,9 +107,26 @@ function maximumDocumentBytes(
     case "container-or-package":
       return budget.policy.maxContainerOrPackageDocumentBytes;
     case "content":
+    case "epub2-content":
+    case "ncx":
       return budget.policy.maxContentDocumentBytes;
     default:
       return fail("internal-failure");
+  }
+}
+
+function isAcceptedDoctype(kind: XmlDocumentKind, doctype: string): boolean {
+  switch (kind) {
+    case "content":
+      return doctype.trim() === "html";
+    case "epub2-content":
+      return EPUB2_XHTML11_DOCTYPE_PATTERN.test(doctype);
+    case "ncx":
+      return EPUB2_NCX_DOCTYPE_PATTERN.test(doctype);
+    case "container-or-package":
+      return false;
+    default:
+      return false;
   }
 }
 
@@ -380,7 +407,7 @@ function readXmlDocument(
     });
     parser.on("doctype", (doctype) => {
       budget.checkpoint();
-      if (kind !== "content" || doctype.trim() !== "html") {
+      if (!isAcceptedDoctype(kind, doctype)) {
         return fail("malformed-xml");
       }
 
