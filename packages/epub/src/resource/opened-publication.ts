@@ -30,10 +30,6 @@ import {
 } from "../narration/narration-preparation.js";
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
-  prepareNarrationSourceWindow,
-  type NarrationSourceWindowFailure,
-  type NarrationSourceWindowRequest,
-  type NarrationSourceWindowResult,
   type NarrationYieldScheduler,
 } from "../narration/narration-source-window.js";
 import {
@@ -132,13 +128,6 @@ class OpenedPublicationHandle implements OpenedPublication {
   #activeRead: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
   #closed = false;
-
-  public static prepareNarrationSource(
-    publication: OpenedPublicationHandle,
-    request: NarrationSourceWindowRequest,
-  ): Promise<NarrationSourceWindowResult> {
-    return publication.#prepareNarrationSource(request);
-  }
 
   public constructor(
     archive: OpenedEpubArchive,
@@ -298,56 +287,6 @@ class OpenedPublicationHandle implements OpenedPublication {
     }
   }
 
-  async #prepareNarrationSource(
-    request: NarrationSourceWindowRequest,
-  ): Promise<NarrationSourceWindowResult> {
-    if (this.#closed) {
-      return narrationFailure("internal-failure");
-    }
-    if (this.#activeNarrationPreparation !== undefined) {
-      return narrationFailure("operation-active");
-    }
-
-    const linkedSignal = linkAbortSignals(
-      this.#closeController.signal,
-      request.signal,
-    );
-    if (linkedSignal.signal.aborted) {
-      linkedSignal.dispose();
-      return narrationFailure("cancelled");
-    }
-
-    let settleActive: (() => void) | undefined;
-    const active = new Promise<void>((resolve) => {
-      settleActive = resolve;
-    });
-    this.#activeNarrationPreparation = active;
-
-    try {
-      const result = await prepareNarrationSourceWindow(
-        this.#locatorIndex,
-        Object.freeze({
-          startLocator: request.startLocator,
-          signal: linkedSignal.signal,
-        }),
-        this.#narrationYieldScheduler,
-      );
-      if (
-        (this.#closed || linkedSignal.signal.aborted) &&
-        result.status !== "cancelled"
-      ) {
-        return narrationFailure("cancelled");
-      }
-      return result;
-    } finally {
-      linkedSignal.dispose();
-      if (this.#activeNarrationPreparation === active) {
-        this.#activeNarrationPreparation = undefined;
-      }
-      settleActive?.();
-    }
-  }
-
   public close(): Promise<void> {
     if (this.#closePromise !== undefined) {
       return this.#closePromise;
@@ -385,12 +324,6 @@ class OpenedPublicationHandle implements OpenedPublication {
   }
 }
 
-function narrationFailure(
-  status: NarrationSourceWindowFailure["status"],
-): NarrationSourceWindowFailure {
-  return Object.freeze({ status });
-}
-
 export function createOpenedPublication(
   archive: OpenedEpubArchive,
   packageDocument: ParsedPackageDocument,
@@ -398,18 +331,4 @@ export function createOpenedPublication(
 ): OpenedPublication {
   const bindings = createRasterImageResourceCatalog(archive, packageDocument);
   return new OpenedPublicationHandle(archive, values, bindings);
-}
-
-/**
- * Package-internal bridge used until Task 5.1 exposes the closed public
- * narration-preparation contract on `OpenedPublication`.
- */
-export function prepareOpenedPublicationNarrationSource(
-  publication: OpenedPublication,
-  request: NarrationSourceWindowRequest,
-): Promise<NarrationSourceWindowResult> {
-  if (!(publication instanceof OpenedPublicationHandle)) {
-    return Promise.resolve(narrationFailure("internal-failure"));
-  }
-  return OpenedPublicationHandle.prepareNarrationSource(publication, request);
 }

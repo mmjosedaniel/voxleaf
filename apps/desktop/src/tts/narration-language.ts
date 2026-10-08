@@ -7,11 +7,6 @@ export const DEFAULT_NARRATION_LANGUAGE_V1: NarrationLanguageV1 = "es";
 // Spanish and English choices.
 export const DEFAULT_NARRATION_LANGUAGE_V2: NarrationLanguageV1 = "en";
 
-export const NARRATION_LANGUAGES_V1 = Object.freeze([
-  Object.freeze({ value: "es" as const, label: "Spanish" }),
-  Object.freeze({ value: "en" as const, label: "English" }),
-]);
-
 export const NARRATION_LANGUAGES_V2 = Object.freeze([
   Object.freeze({ value: "en" as const, label: "English" }),
   Object.freeze({ value: "es" as const, label: "Spanish" }),

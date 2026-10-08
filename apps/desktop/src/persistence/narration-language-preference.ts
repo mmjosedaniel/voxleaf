@@ -42,7 +42,6 @@ interface LanguagePreferenceStorage {
 export const NARRATION_LANGUAGE_PREFERENCE_V1 = Object.freeze({
   storageKey: "voxleaf.narration.language-preference",
   schemaVersion: 1,
-  maximumEnvelopeUtf16CodeUnits: 96,
 });
 
 export const NARRATION_LANGUAGE_PREFERENCE_V2 = Object.freeze({
