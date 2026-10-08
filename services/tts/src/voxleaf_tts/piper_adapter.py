@@ -11,7 +11,7 @@ import os
 import sys
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from types import ModuleType
 from typing import Final, Protocol, cast
 
@@ -204,9 +204,23 @@ def _default_version_reader(name: str) -> str:
         raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
 
 
-def _is_within(path: Path, root: Path) -> bool:
+def _without_windows_verbatim_prefix(path: PureWindowsPath) -> PureWindowsPath:
+    value = str(path)
+    if value.startswith("\\\\?\\UNC\\"):
+        value = "\\\\" + value[8:]
+    elif value.startswith("\\\\?\\"):
+        value = value[4:]
+    return PureWindowsPath(value)
+
+
+def _is_within(path: PurePath, root: PurePath) -> bool:
+    comparison_path = path
+    comparison_root = root
+    if isinstance(path, PureWindowsPath) or isinstance(root, PureWindowsPath):
+        comparison_path = _without_windows_verbatim_prefix(PureWindowsPath(path))
+        comparison_root = _without_windows_verbatim_prefix(PureWindowsPath(root))
     try:
-        path.relative_to(root)
+        comparison_path.relative_to(comparison_root)
     except ValueError:
         return False
     return True

@@ -21,6 +21,99 @@ async function buildNavigationFixture(): Promise<Uint8Array> {
   return fixtureModule.buildReaderNavigationEpubFixture();
 }
 
+async function buildEpub2EquivalenceFixture(): Promise<Uint8Array> {
+  const fixtureModuleUrl = new URL(
+    "../../../../packages/epub/test-support/epub-fixture.ts",
+    import.meta.url,
+  );
+  const fixtureModule = (await import(fixtureModuleUrl.href)) as {
+    buildEpubVersionEquivalenceFixture(
+      version: "2.0" | "3.0",
+    ): Promise<Uint8Array>;
+  };
+  return fixtureModule.buildEpubVersionEquivalenceFixture("2.0");
+}
+
+test("opens an EPUB 2 book and follows its nested NCX target without external requests", async ({
+  context,
+  page,
+}) => {
+  let unexpectedRequestCount = 0;
+  await context.route("**/*", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.origin === LOCAL_ORIGIN) {
+      await route.continue();
+      return;
+    }
+    unexpectedRequestCount += 1;
+    await route.abort("blockedbyclient");
+  });
+  await page.addInitScript(
+    (keys) => {
+      for (const key of keys) {
+        localStorage.removeItem(key);
+      }
+    },
+    [READER_POSITIONS_STORAGE_KEY, READER_PREFERENCES_STORAGE_KEY],
+  );
+
+  await page.goto("/");
+  const fileInput = page.getByLabel("Open a book");
+  await fileInput.setInputFiles({
+    name: "private-epub2-smoke.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(await buildEpub2EquivalenceFixture()),
+  });
+  await expect(page.getByRole("status")).toHaveText(
+    "The EPUB opened successfully.",
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Opening" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Show table of contents" }).click();
+  const toc = page.getByRole("navigation", { name: "Table of contents" });
+  await expect(toc.locator("button.reader-toc-link")).toHaveText([
+    "Part One",
+    "Continuation",
+    "Appendix",
+  ]);
+  await toc.getByRole("button", { name: "Continuation" }).click();
+  const continuation = page.getByRole("heading", {
+    level: 1,
+    name: "Continuation",
+  });
+  await expect(continuation).toBeVisible();
+  await expect(continuation).toBeFocused();
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (key) => localStorage.getItem(key),
+        READER_POSITIONS_STORAGE_KEY,
+      ),
+    )
+    .not.toBeNull();
+  const persisted = await page.evaluate(
+    (key) => localStorage.getItem(key) ?? "",
+    READER_POSITIONS_STORAGE_KEY,
+  );
+  for (const forbidden of [
+    "private-epub2-smoke.epub",
+    "Synthetic EPUB version equivalence",
+    "First Synthetic Author",
+    "toc.ncx",
+    ".xhtml",
+    "2.0",
+    "prose",
+    "path",
+    "title",
+  ]) {
+    expect(persisted).not.toContain(forbidden);
+  }
+  expect(unexpectedRequestCount).toBe(0);
+});
+
 test("controls the browser boundary and exposes the local EPUB open shell", async ({
   context,
   page,

@@ -62,6 +62,28 @@ describe("container.xml package resolution", () => {
     );
   });
 
+  it("selects one local exact EPUB 2 package as reflowable", async () => {
+    const packageDocument = createPackageDocument({ version: "2.0" });
+
+    await withArchive(
+      [
+        [
+          "META-INF/container.xml",
+          createContainerDocument(rootfile("EPUB/package.opf")),
+        ],
+        ["EPUB/package.opf", packageDocument],
+      ],
+      {},
+      async (archive) => {
+        await expect(resolveContainerPackage(archive)).resolves.toMatchObject({
+          path: "EPUB/package.opf",
+          version: "2.0",
+          renditionLayout: "reflowable",
+        });
+      },
+    );
+  });
+
   it("uses namespace URIs, decodes a local IRI, and ignores bounded container extensions", async () => {
     const container = `<?xml version="1.0"?>
       <ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container"
@@ -106,7 +128,7 @@ describe("container.xml package resolution", () => {
     await withArchive(
       [
         ["META-INF/container.xml", container],
-        ["EPUB/legacy.opf", createPackageDocument({ version: "2.0" })],
+        ["EPUB/legacy.opf", createPackageDocument({ version: "1.0" })],
         ["EPUB/fixed.opf", createPackageDocument({ layout: "pre-paginated" })],
         [
           "EPUB/reflowable.opf",
@@ -266,7 +288,7 @@ describe("container.xml package resolution", () => {
   });
 
   it.each([
-    ["2.0", undefined, "unsupported-version"],
+    ["1.0", undefined, "unsupported-version"],
     ["3.0", "pre-paginated", "unsupported-layout"],
   ] as const)(
     "reports an unsupported package profile: version %s, layout %s",

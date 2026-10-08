@@ -15,6 +15,38 @@
 
 ## Deterministic foundation checks
 
+The Chatterbox security refresh adds explicit successor authority checks:
+`pnpm.cmd package:chatterbox-optional:v3:check-source` and
+`pnpm.cmd package:chatterbox-optional:v3:check-acquisition`. Default v2 commands
+remain historical regression gates. Generate successor authority only with
+`pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication
+../../tmp/chatterbox-security-refresh/published-v3.json`; the path is relative
+to the service directory selected by that pnpm script and contains a real
+GitHub publication readback, not invented acceptance evidence.
+
+Current security integration acceptance runs the full foundation check,
+`pnpm.cmd audit:release`, inventory check and the existing Windows package,
+check, lifecycle, ordinary preflight/journey/evidence commands outside sandbox.
+The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
+Qwen inference. New generated outputs are
+`ordinary-chatterbox-journey-evidence-v2.json` and
+`windows-package-evidence-v3.json`; historical receipts remain unchanged.
+Native regressions cover each retained v2 root independently, both together,
+available/withheld states, non-migration, cancellation, exact removal, unrelated
+root preservation and busy guards. Unix-only symlink branches do not run on
+Windows, and the existing Ubuntu portable job does not run Rust. This local
+record therefore does not claim execution of those branches.
+
+The same follow-up reproduced a native-completion/cancellation interleaving in
+the real process client with a simulated invoke boundary. Focused client tests
+now verify validated shutdown on that exact invalid-state rejection, original
+error propagation, late-audio zeroing, and restart refusal while shutdown is
+pending, fails or returns malformed/wrong-service controls. Normal cancellation,
+other errors and invalid scopes retain their behavior. The coordinator and
+harness assertions/deadlines are unchanged. Independent initial/post-change
+evidence and the rebuilt plain/installed routes are recorded in the
+[security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md).
+
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
 GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
@@ -184,7 +216,26 @@ roles fail; default tests and CI still load no model or generated audio.
   bounded linear 22,050-to-24,000-Hz mono conversion, content-free failures,
   cleanup, and protocol service routing. Importing the adapter does not import
   Piper or ONNX Runtime.
-- `packages/epub/src/index.test.ts` proves that the isolated EPUB package consumes synthetic book and locator contracts through the public `@voxleaf/shared` workspace boundary and exports only the validated `openEpubPublication` runtime entry point. `packages/epub/src/document/document-model.test.ts` exercises the public closed block/inline/navigation/resource/locator shapes, readonly recursive collections, opaque identifier separation, spine/non-spine documents, and explicit resource-read/locator-resolution/close lifecycle. Package-internal path, archive, processing-budget, XML-event, package, identity, navigation, XHTML projection, resource, and locator suites exercise untrusted ingestion with synthetic in-memory inputs, strict byte/count/depth/ratio/text/semantic-block limits, injected cancellation/deadlines, namespace-aware XML, fixed content-free failures, and no filesystem, network, worker, or DOM use. The XML/package regressions accept and omit valid legacy `meta name/content` compatibility values plus the inert HTML doctype in content documents while continuing to reject mixed/malformed metadata, package/container or non-HTML doctypes, public/system identifiers, internal subsets, custom entities, XInclude, and external-resource processing instructions. `packages/epub/test-support/epub-fixture.ts` supplies test-only deterministic arbitrary-ZIP, minimal-EPUB, comprehensive-EPUB, and documented byte-mutation builders with fixed order, timestamps, attributes, compression, and writer capabilities; `packages/epub/src/testing/epub-fixture.test.ts` proves repeated byte identity, fixed metadata, rich public opening, malformed construction, stale-checked mutations, caller-owned inputs, and no network or worker behavior. `packages/epub/src/public/open-epub-publication.test.ts` reuses the minimal builder to drive repository-authored in-memory EPUB bytes through the public opener and proves immutable semantic/navigation/resource/locator assembly, compatibility opening, exact resolution, close, every closed detail-to-`OperationalErrorV1` mapping, unknown-exception redaction, value-based invalid/cancelled results, and no network or worker capability. `packages/epub/src/integration/ingestion-matrix.test.ts` drives minimal, comprehensive, and adversarial deterministic EPUB bytes through the public boundary and proves representative failure at every ingestion stage, every untrusted-input detail family, rich deterministic success, shared-contract acceptance, lazy resource behavior, locator exact/recovery behavior, lifecycle closure, failure cleanup, privacy redaction, and absence of external capabilities. `packages/epub/src/document/xhtml-projector.test.ts` additionally proves allowlisted block/inline order, inherited language and direction, ordinary/code whitespace policy, opaque local links and images, inert external-link labels, omission of active/style/hidden/foreign/remote content, transactional failures, exact/max+1 content-document-byte and semantic-block accounting, and internal globally unique source-ID capture without changing semantic output. `packages/epub/src/resource/opened-publication.test.ts` proves lazy local GIF/JPEG/PNG/WebP reads, declared-size and signature gates, opaque immutable descriptors, independent caller-owned allocations, read-scoped and close-triggered cancellation, single-read concurrency, idempotent release, and closed-handle behavior without caching or external capabilities. `packages/epub/src/locator/locator-index.test.ts` proves final preorder assignment, exact/max+1 source-ID acceptance, deterministic duplicate/invalid/collision replacement, exact-byte and spine binding, shared-decoder round trips, Unicode code-point offsets, cancellation, immutability, and content-free failures. `packages/epub/src/locator/locator-resolver.test.ts` proves exact full-tuple resolution, wrong-book and malformed rejection, nearest offset/anchor/spine/book-start recovery, deterministic earlier-spine tie breaking, canonical immutable output, cancellation, and content-free failures without prose, page, or layout search. CFI parsing remains unsupported and deferred; public narration preparation is implemented and covered by the focused suites below, while application rendering, position restoration, and persistence remain desktop-owned.
+- `packages/epub/src/index.test.ts` proves the sole validated `openEpubPublication` runtime export and the typed narration-preparation operation on an opened handle. Synthetic book and locator contract checks remain owned by the shared contract suites; the obsolete EPUB-only duplicate and bootstrap dependency probes have been retired. `packages/epub/src/document/document-model.test.ts` exercises the public closed block/inline/navigation/resource/locator shapes, readonly recursive collections, opaque identifier separation, spine/non-spine documents, and explicit resource-read/locator-resolution/close lifecycle. Package-internal path, archive, processing-budget, XML-event, package, identity, navigation, XHTML projection, resource, and locator suites exercise untrusted ingestion with synthetic in-memory inputs, strict byte/count/depth/ratio/text/semantic-block limits, injected cancellation/deadlines, namespace-aware XML including a built-in entity split across the 64-KiB input boundary, fixed content-free failures, and no filesystem, network, worker, or DOM use. The XML/package regressions accept and omit valid legacy `meta name/content` compatibility values plus the inert HTML doctype in content documents while continuing to reject mixed/malformed metadata, package/container or non-HTML doctypes, public/system identifiers, internal subsets, custom entities, XInclude, and external-resource processing instructions. `packages/epub/test-support/epub-fixture.ts` supplies test-only deterministic arbitrary-ZIP, minimal-EPUB, comprehensive-EPUB, and documented byte-mutation builders with fixed order, timestamps, attributes, compression, and writer capabilities; `packages/epub/src/testing/epub-fixture.test.ts` proves repeated byte identity, fixed metadata, rich public opening, malformed construction, stale-checked mutations, caller-owned inputs, and no network or worker behavior. `packages/epub/src/public/open-epub-publication.test.ts` reuses the minimal builder to drive repository-authored in-memory EPUB bytes through the public opener and proves immutable semantic/navigation/resource/locator assembly, compatibility opening, exact resolution, close, every closed detail-to-`OperationalErrorV1` mapping, unknown-exception redaction, value-based invalid/cancelled results, and no network or worker capability. `packages/epub/src/integration/ingestion-matrix.test.ts` drives minimal, comprehensive, and adversarial deterministic EPUB bytes through the public boundary and proves representative failure at every ingestion stage, every untrusted-input detail family, rich deterministic success, shared-contract acceptance, lazy resource behavior, locator exact/recovery behavior, lifecycle closure, failure cleanup, privacy redaction, and absence of external capabilities. `packages/epub/src/document/xhtml-projector.test.ts` additionally proves allowlisted block/inline order, inherited language and direction, ordinary/code whitespace policy, opaque local links and images, inert external-link labels, omission of active/style/hidden/foreign/remote content, transactional failures, exact/max+1 content-document-byte and semantic-block accounting, and internal globally unique source-ID capture without changing semantic output. `packages/epub/src/resource/opened-publication.test.ts` proves lazy local GIF/JPEG/PNG/WebP reads, declared-size and signature gates, opaque immutable descriptors, independent caller-owned allocations, read-scoped and close-triggered cancellation, single-read concurrency, idempotent release, and closed-handle behavior without caching or external capabilities. `packages/epub/src/locator/locator-index.test.ts` proves final preorder assignment, exact/max+1 source-ID acceptance, deterministic duplicate/invalid/collision replacement, exact-byte and spine binding, shared-decoder round trips, Unicode code-point offsets, cancellation, immutability, and content-free failures. `packages/epub/src/locator/locator-resolver.test.ts` proves exact full-tuple resolution, wrong-book and malformed rejection, nearest offset/anchor/spine/book-start recovery, deterministic earlier-spine tie breaking, canonical immutable output, cancellation, and content-free failures without prose, page, or layout search. CFI parsing remains unsupported and deferred; public narration preparation is implemented and covered by the focused suites below, while application rendering, position restoration, and persistence remain desktop-owned.
+- The completed
+  [M003.1 ExecPlan](../plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
+  admits ADR-0048's bounded OPF `version="2.0"`/NCX profile alongside the
+  unchanged EPUB 3 profile. `buildMinimalEpub2Fixture` covers direct and
+  deprecated-wrapper metadata, exact OPF/NCX relationships, optional validated
+  guide data, and inert NCX/XHTML 1.1 doctypes. Focused package tests cover
+  bounded NCX depth/nodes/labels/targets, malformed and hostile relationships,
+  limits, cancellation, privacy, caller-input ownership, and absence of
+  network/Worker capability. A post-close grammar regression additionally
+  proves that `pageList` labels cannot appear after its first `pageTarget`.
+  The paired EPUB 2/3 fixture proves equivalent
+  semantic, resource, locator, reader/restoration, and narration behavior with
+  deliberately distinct exact-byte identities. Current evidence passes EPUB
+  35 files/653 tests; the completed downstream evidence passes desktop 53
+  files/536 Vitest tests plus 18 Node tests,
+  Playwright 7 tests, and the packaged native-startup matrix. DTBook, OEB
+  content, SVG spine content, guide-as-navigation recovery, arbitrary DTDs or
+  entities, CFI, fixed/active/protected/remote/media-dependent publications,
+  and full EPUBCheck conformance remain outside the profile.
 - `packages/epub/test-support/epub-fixture.ts` is also the sole test-only source for reader navigation, reflow/restoration, valid/malformed raster, and exact/max-plus-one long-chapter EPUB bytes. Browser, benchmark, and native smoke helpers import those named builders directly; their expected structural locator fields are repository-authored constants rather than parser-derived fixture output.
 - `packages/epub/test-support/narration-normalization-corpus.ts` is the accepted Task 1.2 test-only neutral/Spanish policy table. Its 62 frozen synthetic-sensitive cases record source semantics, per-unit effective language, exact expected narration text, ambiguous/unsupported preservation, and protected boundaries across whitespace, line breaks, hyphenation, punctuation, abbreviations, numbers, dates, times, currency, percentages, symbols, code, Unicode, mixed language, malformed input, and foreign names. `packages/epub/src/testing/narration-normalization-corpus.test.ts` proves category/edge coverage, unique identity/source signatures, deep immutability, and content-free closed validation failures. Tasks 3.1-3.4's `packages/epub/src/narration/narration-normalizer.test.ts` drives the complete accepted table through production source projection/token mapping and normalization, proving exact neutral/Spanish output, composed invariants, second-pass idempotence, legal retained origin spans, source immutability, deep freezing, exact limits, and content-free failures. Task 4.1's `packages/epub/src/narration/narration-boundary-scanner.test.ts` drives the same corpus through deterministic source-offset sentence/dialogue/clause/protected-token scanning and adds focused terminal-cluster, quotation, malformed fallback, structural metadata, two-pass work, exact/max-plus-one protected-token, and privacy evidence. Tasks 4.2-4.3's `packages/epub/src/narration/narration-segment-packer.test.ts` drives those scans through cancellable block-local target/hard packing and adds heading/scene-break, boundary-priority, exact source/code-point/UTF-8-byte, combining/protected-token, oversized unprotected-token splitting, indivisible-sequence limit failure, retained unit/text/byte ceilings, deterministic work/yield cancellation and retry, range-order, batch-slicing independence, immutability, and privacy evidence. Task 4.4's `packages/epub/src/narration/narration-prepared-segment.test.ts` validates complete packed output before publication, resolves every canonical half-open endpoint and continuation exactly, proves monotonic block-local repeat stability and deep freezing, wraps prepared values through `decodeNarrationSegmentV1` with test-only identities, and rejects inconsistent source identity without exposing sensitive text.
 - `apps/desktop/src/integration/package-reader-matrix.test.tsx` loads those sanctioned test-support builders through Vitest while exercising runtime behavior only through the public `@voxleaf/epub` root and desktop application boundaries. Its deterministic matrix proves real-byte open, semantic render, exact/recovered/unavailable target navigation, canonical save, close, same-byte reopen/exact restore, nearest-offset recovery, different-byte isolation, malformed/future-state fallback and preservation, over-limit chapter rejection, valid/signature-mismatched/missing-reference raster outcomes, stale successful-open cleanup, and content-free storage/results with no console logging.
@@ -201,7 +252,7 @@ roles fail; default tests and CI still load no model or generated audio.
 - `apps/desktop/scripts/native-webdriver-client.node-test.mjs` uses a loopback fake server to prove Tauri capability construction, W3C element/script/window-rect/CDP command routing, session cleanup, and containment of transport/protocol details behind fixed codes without launching a browser or native process.
 - `apps/desktop/tests/browser/foundation.smoke.spec.ts` runs the production Vite build in Playwright's pinned Chromium and proves the local open/render/image/navigation/layout/focus path, application-owned skip/return links, validated global preference persistence, and zero non-loopback requests. `active-visual-locator.smoke.spec.ts` drives the production tracker through top, partial-crossing, between-block, and terminal-block geometry with native caret invocation, then proves the debounced content-free position envelope without focus, URL, page-error, or network side effects. `reader-reflow-restoration.smoke.spec.ts` opens a repository-authored long reflow fixture, captures one nonzero semantic code-point through test-side Range instrumentation, and proves the same canonical range returns to the reading line across every closed text-scale, line-spacing, content-width, and theme token, superseding changes, 1,280/768/360/320-pixel viewports, and Chromium CSS zoom while focus and URL remain unchanged. Its keyboard scenario uses native Tab, End, Enter, Space, and PageDown behavior to prove skip/return focus, preference operation, TOC/chapter navigation, status semantics, focus preservation, narrow layout, forced colors, dark system media, reduced motion, and zero remote requests. The restoration scenario reloads and reselects the exact bytes to prove preference plus exact code-point restoration without focus movement, mutates only the synthetic saved offset, reloads/reselects again, and proves nearest-valid recovery plus post-settlement canonical rewrite and a content-free notice. The tests validate both bounded envelopes and absence of passage/filename data. `large-chapter.smoke.spec.ts` proves the 10,001-block fallback appears before publisher content and remains closable. Chromium evidence remains complementary to the packaged WebView2 matrix and is not a screen-reader-product certification.
 - `apps/desktop/tests/browser/reader-performance.benchmark.spec.ts` is a separate native-Windows Playwright benchmark. It retains Task 1.6's complete/incremental synthetic DOM profiles at 250, 2,000, 10,000, 20,000, and 50,000 blocks; generated one/eight-image and combined envelopes; and accepted prototype gates. Task 3.6 adds the production Vite/React exact-limit EPUB case, holds after the first 250-block commit, observes all 39 remaining callback-to-DOM commits, navigates to a deep target, reflows preferences, and measures incremental plus full-application DOM/heap/Chromium working-set growth. The command builds required workspace packages, records only content-free metrics, remains excluded from ordinary browser tests and CI, and does not replace Task 5.4's native WebView2 performance/resource evidence.
-- `services/tts/tests/test_health.py` imports the Python package and verifies its version function without loading a model, opening a network server, using an audio device, or requiring hardware.
+- `services/tts/tests/test_health.py` imports the repository source package in a fresh isolated interpreter with closed stdin and a five-second timeout. It verifies the exact version, no loaded `voxleaf_tts.*` runtime submodules, no child-process startup audit events, successful exit, and empty stdout/stderr without requiring a model or hardware.
 - `apps/desktop/src-tauri/src/tts_protocol_probe.rs` has model-free Rust tests for exact and max-plus-one frame/control/audio/identity/narration bounds, malformed/truncated/version failures before payload acceptance, deterministic parent/child validation, and the one-active/no-queue guard. `tts_service_protocol.rs`, `tts_service_fake_child.rs`, and `tts_service_supervisor.rs` add strict control/audio parsing, pre-allocation rejection, canonical child ordering, native identity creation, fixed failures, persistent lifecycle, one-active backpressure, cancellation termination, explicit restart, shutdown, and Windows descendant containment. The release supervisor host exercises the real child-process matrix.
 - `apps/desktop/src/tts/transport-probe.test.ts` proves the low-level binary response. `process-client.test.ts` proves canonical control decoding, exact order, active/stale identity classification, one-unit ownership, finite/size gates, concurrent rejection, cancellation, late-byte zeroing, close/release, and fixed failures. The packaged lifecycle probe then exercises the same production client through real Tauri commands. None of these suites loads a model, persists audio, or logs narration text.
 
@@ -920,13 +971,125 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 is approved planned; none of the following is current pass evidence. Its
-active
-[`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
-requires a clean normal-user Windows package matrix in addition to the
-existing deterministic, Chromium, packaged WebView2, and exact-host suites.
+M011 Milestones 1 through 6B and the renewed Milestone 7 local decision are
+implemented at their documented boundaries. Under ADR-0049 and release authority
+v2, Piper is local/portfolio GO, Chatterbox runtime and the optional package are
+GO on a compatible host within their separate scopes, and ordinary Download is
+GO only after both live gates pass. Signed public publication remains pending
+external authorization.
+The dependency/audit, standalone Piper-core, optional runtime-package,
+acquisition-controller, public runtime identity, and local Windows package
+evidence below is current. Representative compatible-host evidence supports
+the requirements-defined classes; signed public publication remains separate.
+Its completed
+[`ExecPlan`](../plans/completed/M011-package-validate-and-release-mvp.md)
+retains the originally planned clean normal-user Windows package matrix as
+useful regression coverage, not as an exhaustive per-device support gate.
 
-The release matrix must distinguish:
+Milestone 3 adds these repository-owned commands:
+
+```powershell
+pnpm.cmd package:piper-core
+pnpm.cmd package:piper-core:check
+```
+
+The build uses only fixed HTTPS build inputs plus the two exact ignored local
+voice roots, constructs an atomic deterministic payload under ignored
+`services/tts/release/core/dist`, verifies every manifest path/size/SHA-256,
+creates the fixed ZIP, and runs Spanish/English smoke with Python socket APIs
+denied. It persists no audio or narration text. `package:piper-core:check`
+revalidates the complete installed file set, archive, authority hashes, and
+tracked content-safe evidence. Maintainers use
+`pnpm.cmd package:piper-core:write-manifest` only when intentionally updating
+the frozen payload authority; ordinary validation must not rewrite it.
+
+Focused deterministic coverage is in `test_release_core.py` and the native
+`tts_release_core` tests. They prove traversal rejection, exact-manifest
+acceptance, substituted/truncated/stale rejection, atomic failure cleanup,
+prior-package preservation, fixed profile mapping, and content-free errors.
+The native verifier embeds the trusted manifest and accepts only the fixed
+install-relative `resources/tts/voxleaf-piper-core-v1` root.
+
+Milestones 4A-4B add these safe authority/build commands:
+
+```powershell
+pnpm.cmd package:chatterbox-optional:check-source
+pnpm.cmd package:chatterbox-optional:check-acquisition
+pnpm.cmd package:chatterbox-optional
+```
+
+The two checks validate the versioned source and v2 acquisition manifests
+without networking, reading model bytes, creating a runtime, or enabling an
+end-user download. The build command is maintainer-only and writes ignored
+runtime/ZIP/part outputs; `--no-sync` is used only after the exact environment
+has already been synchronized. `test_release_chatterbox.py` and
+`tts_optional_chatterbox` native tests cover historical and current authority, mutable source
+rejection, safe model-load sites, deterministic splitting, closed redirects,
+wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
+extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
+absence of profile mutation before explicit activation. Two outside-sandbox
+builds produced identical v2 hashes/sizes. An authorized maintainer published
+the exact resulting parts under `chatterbox-runtime-v2`; the ordinary manifest
+is available only behind its current live compatibility gate.
+
+Milestone 5 adds these Windows-only commands:
+
+```powershell
+pnpm.cmd package:windows:check
+pnpm.cmd package:windows
+pnpm.cmd package:windows:lifecycle
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-package-lifecycle.ps1 -Product chatterbox-validation
+pnpm.cmd package:windows:signed
+```
+
+The check validates the frozen version, NSIS/current-user target, exact resource
+allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
+The rebuilt unsigned build's installer identity is emitted into generated
+package evidence rather than fixed in this packaged documentation.
+Milestone 6A extends the outside-sandbox lifecycle harness across the ordinary
+and isolated validation identities. It backs up and restores pre-existing
+application data, hash-checks exact optional/preference fixtures through repair,
+and executes six silent outcomes: default preserve, Chatterbox only,
+preferences/recovery only, both explicit options, legacy combined removal, and
+invalid values preserve. Every arm verifies unrelated siblings plus an external
+synthetic EPUB sentinel and leaves the interactive NSIS journey for the clean-
+host manual arm. The exact validation artifact is `181,685,311` bytes with
+SHA-256
+`262391035327925b3bf5a9ea422ba381e89c59a20fc1cec1966ee37ae34f775f` and
+passed Windows Defender; Defender was not run against the current ordinary
+hash, and SmartScreen was not observed.
+The signed command is fail-closed and remains unexecuted without an authorized
+external certificate. The local results are representative product evidence;
+they do not claim identical behavior on every Windows computer.
+
+Milestone 6 adds an installed-artifact form of the native harness. It accepts
+exactly one absolute executable and does not build or select a repository
+binary implicitly:
+
+```powershell
+$app = (Resolve-Path "$env:LOCALAPPDATA\VoxLeaf\voxleaf-desktop.exe").Path
+node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
+```
+
+An earlier current-host release rehearsal used that boundary for complete installed
+Spanish and English Piper matrices, including all six playback rates, and
+recorded zero external requests and zero generated-audio files. Two consecutive
+installer/first-start/repair/uninstall cycles and a predecessor-installer
+Defender scan also passed. The rehearsal exposed package-only stack-allocation,
+bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
+focused regressions now protect each fix. Under authority v2, this is valid
+representative-host evidence for systems that meet the published requirements.
+
+The first independent Windows-host attempt exposed a blank console when the
+private packaged Python/Piper child started. Standard-stream redirection alone
+does not suppress a console-subsystem child window under a GUI parent. The
+supervisor now applies Windows `CREATE_NO_WINDOW` to its child command before
+spawn; the focused Windows regression freezes that flag, and the rebuilt
+installed Piper matrix proves that protocol, narration, cancellation, and
+cleanup remain intact. Any additional visual regression run must use the current
+hash above rather than an earlier installer.
+
+Evidence supporting or extending the Milestone 7 decisions must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
   audits, including packages the advisory source cannot identify;
@@ -944,18 +1107,141 @@ The release matrix must distinguish:
   manifest identity, size/disk limits, wrong digest/version, traversal,
   interruption, cancellation, atomic install, restart recovery, explicit
   activation, removal, and unchanged Piper availability;
-- a compatible clean-GPU-host Chatterbox arm covering absent/declined,
+- additional representative compatible-GPU Chatterbox arms covering absent/declined,
   verified download, Spanish/English offline narration, cold load, RTF,
   RAM/VRAM, application restart, removal, and Piper use afterward; and
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
   evidence as separate decisions.
 
-M011 audit, acquisition, and installer-lifecycle commands do not exist yet.
-The milestones that implement them must first add and document repository-owned
-commands; until then, do not invent a command or describe the release gate as
-passing.
+M011 audit, Piper-core assembly, optional runtime assembly, v2 acquisition-
+authority, and local installer commands now exist. The current optional
+manifest records the published runtime and is downloadable only after renderer
+and native live compatibility gates pass.
+Bounded application-data
+removal and the representative package journeys pass. Cross-version replacement
+and interactive uninstall remain useful future regression coverage, not an
+engine-functionality veto. The exact final Piper hash is an unsigned local/
+portfolio candidate rather than a trusted public distributable.
+
+ADR-0045 historically added a separate local validation build for the
+representative compatible GPU computer. Its static and native results proved
+the isolated product identity, gated acquisition, and absence of bundled
+Chatterbox bytes while the ordinary manifest was withheld. ADR-0050 and
+Milestone 6B retire that overlay, its package commands, and the
+`chatterbox-acquisition-validation` Cargo feature after promoting the closed
+path into ordinary VoxLeaf. Keep its exact hashes/results as historical M011
+evidence; do not use the removed commands as current validation authority.
+
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
+
+### Completed Milestone 6B ordinary-release proof
+
+Milestone 6B adds a compile-time release boundary that excludes the exact
+repository/environment fallback branches retained for development. Focused Rust
+tests run with that feature and prove that valid or hostile `VOXLEAF_TTS_DEV_*`,
+`VOXLEAF_TTS_PIPER_*`, and `VOXLEAF_TTS_CHATTERBOX_*` inputs cannot select a
+development interpreter/model root. The validation-only
+`VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT` hook must also be unavailable in
+the ordinary release. With installed data absent or invalid, the
+release-locked profile must be `ChildUnavailable`; with valid data, the command
+program is the absolute private `runtime/python.exe`, `PYTHONPATH` contains only
+package roots, `PYTHONNOUSERSITE=1`, and `PYTHONHOME`, `PYTHONUSERBASE`,
+`VIRTUAL_ENV`, `CONDA_PREFIX`, and `CONDA_DEFAULT_ENV` are removed.
+
+Static ordinary-package validation requires that release-only boundary and
+excludes the validation overlay and development candidates. It also proves that
+the native host gate blocks exact one-below/unknown fixtures before any network
+action and that exact-threshold compatible fixtures can reach consent.
+The existing `package:windows:lifecycle` script continues to prove install,
+first-start, repair, uninstall, and data-class cleanup; it does not by itself
+prove real Chatterbox acquisition or synthesis. The existing bilingual portfolio
+harness depends on explicit development variables, so 6B adds a focused
+ordinary-installed sibling harness rather than relabeling either result.
+
+The ordinary installed harness runs under a process-scoped hostile environment:
+development keys and Python/virtual-environment keys are removed or poisoned,
+and a misleading `PATH` puts sentinel Python/Rust/Cargo/Node/uv/pip names first.
+It records content-safe executable/root ownership and Boolean/status/measurement
+results only. Python, Rust, and other tools may remain installed because the
+compile-time boundary and hostile-environment assertions—not destructive host
+preparation—prove independence. One representative compatible host then covers
+ordinary gate, disclosure/consent, cancellation/cleanup, complete verified
+download, activation, Spanish/English offline narration, restart, removal,
+reinstall, and Piper after removal.
+
+The checked-in ordinary-release harness proves this journey under the hostile
+environment. All 6B acceptance commands run from normal local PowerShell outside
+the sandbox.
+
+The historical Milestone 6B unsigned ordinary installer is `181,589,616` bytes
+with SHA-256
+`ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`.
+Its receipt separately records the installed NSIS payload identity because it
+need not equal the pre-bundle build executable. The lifecycle matrix passes
+install, first start, repair, default preserve, Chatterbox-only removal,
+preferences-only removal, both explicit removal choices, the legacy combined
+choice, invalid-value preservation, unrelated-file preservation, and restoration
+of pre-existing application data. The ordinary journey then passes clean and
+hostile release boundaries, live gate, consent, real cancellation/staging
+cleanup, verified acquisition, offline Chatterbox Spanish/English, restart,
+removal, offline Piper Spanish/English, Chatterbox reacquisition, and uninstall.
+The receipt records no private book text. Renewed Milestone 7 supersedes this
+identity with the exact `aca8ff0d...` candidate documented below.
+
+### Superseded preliminary Milestone 7 decision and closeout result
+
+The 2026-08-03 preliminary Milestone 7 run consumes completed M003.1. ADR-0049 then corrects
+the decision boundary to record Piper portfolio GO, conditional compatible-host
+Chatterbox GO, compatibility-gated ordinary Download, and signed public
+publication pending external authorization. The following commands ran from normal local PowerShell outside
+the sandbox:
+
+| Command or gate                      | Result                                                                                                                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm.cmd check:portable`            | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/536 plus 18 Node, Python 384, type/lint/format/build stages.                                                                                 |
+| `pnpm.cmd check`                     | Pass: the preceding suites plus Rust formatting/lint, 72 Rust tests, and native release build.                                                                                                        |
+| `pnpm.cmd audit:release`             | Pass with 17 Rust informational notices and explicit blind spots for `chatterbox-tts`, `resemble-perth`, Torch, and Torchaudio.                                                                       |
+| `pnpm.cmd inventory:release:check`   | Pass/current.                                                                                                                                                                                         |
+| `pnpm.cmd package:piper-core:check`  | Pass/current.                                                                                                                                                                                         |
+| `pnpm.cmd package:windows:check`     | Pass/current.                                                                                                                                                                                         |
+| Historical validation-package check  | Preserved historical evidence; it is not ordinary-release authority.                                                                                                                                  |
+| `pnpm.cmd test:browser`              | Pass, 7/7, including the bounded EPUB 2/NCX browser journey.                                                                                                                                          |
+| `pnpm.cmd test:native-startup`       | Pass with packaged WebView2, lifecycle/restoration/synchronization, zero external requests, and no page/console error.                                                                                |
+| `pnpm.cmd benchmark:reader:native`   | Pass: 10,000 blocks, 158-ms selection to first content, 9.5-ms maximum scheduler callback, bounded cleanup, and no retained resource owner.                                                           |
+| Exact-host portfolio preflight       | Test-only suites pass; real preflight reports `Exact bilingual portfolio configuration is unavailable.` before model work.                                                                            |
+| `pnpm.cmd package:windows:lifecycle` | Stops before mutation with `windows-release-lifecycle-preexisting-install`; both local product identities already exist, so a fresh run needs an explicitly prepared host or user-authorized removal. |
+
+The lifecycle stop is a safe historical host-state observation, not a product
+assertion. It does not replace the subsequently renewed evidence below. Required
+pull-request checks from that snapshot remain historical.
+
+### Renewed Milestone 7 exact-artifact validation
+
+Renewed Milestone 7 validates installer SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+from normal local PowerShell outside the sandbox:
+
+| Command or gate                                          | Result                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm.cmd package:windows:ordinary-chatterbox:preflight` | Pass for the ordinary and hostile release-runtime boundaries plus both live host gates.                                                                                                                                                                                                                          |
+| `pnpm.cmd package:windows:lifecycle`                     | Pass for install, first start, repair, all six uninstall data choices, unrelated-file preservation, and restoration of pre-existing application data.                                                                                                                                                            |
+| `pnpm.cmd package:windows:ordinary-chatterbox`           | Pass for cancellation cleanup, verified acquisition, offline Chatterbox Spanish/English, restart, removal, offline Piper Spanish/English, reacquisition, and uninstall; all four TTS arms record zero underruns, external narration requests, generated-audio files, stale playback, and retained cleanup units. |
+| `pnpm.cmd package:windows:ordinary-chatterbox:evidence`  | Pass; generated evidence v2 records both exact-artifact receipts, installed binary SHA-256 `3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45`, `unsigned-local`, and `publicPublicationAllowed: false`.                                                                                          |
+| `pnpm.cmd check:portable` and `pnpm.cmd check`           | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/542 plus 32 Node, Python 386, Rust 79 default plus 80 release-locked, and all format/lint/type/build stages.                                                                                                                                            |
+| `pnpm.cmd test:browser`                                  | Pass, 7/7, including the bounded EPUB 2/NCX browser journey.                                                                                                                                                                                                                                                     |
+| `pnpm.cmd test:native-startup`                           | Pass with packaged WebView2 after one bounded internal PageDown wait retry; startup/restart, local EPUB, reader, synchronization, cancellation, cleanup, persistence, zero errors, and zero external requests pass.                                                                                              |
+| `pnpm.cmd benchmark:reader:native`                       | Pass at 10,000 blocks: `180.6` ms selection-to-first-content, `10.1` ms maximum scheduler callback, and zero final observers/object URLs.                                                                                                                                                                        |
+| Release audit and current authorities                    | `audit:release`, the 400-component inventory, Piper core, Chatterbox source/acquisition, and ordinary Windows static authority pass; the four optional-graph advisory blind spots remain disclosed.                                                                                                              |
+| Documentation, diff, tracked artifacts, and privacy      | Prettier and relative links pass for all 16 modified Markdown files, `git diff --check` passes, and all 825 tracked paths report zero prohibited private/release artifacts, high-confidence secrets, local scan context, or sensitive diff matches.                                                              |
+
+The ExecPlan records the current Chatterbox/Piper startup, RTF, RAM, VRAM, and
+cancellation measurements. PR #207's Windows native, Ubuntu portable, and
+production-dependency checks pass on the exact implementation-and-evidence head,
+so M011 is archived. Trusted public signing remains separately externally
+authorized. Do not rerun `pnpm.cmd package:windows` after these hash-bound
+receipts unless a new installer identity and both host journeys will be renewed
+again.
 
 ## Deferred coverage
 
@@ -966,11 +1252,11 @@ packaged, and exact-host evidence. Default tests and CI still load no candidate
 or model; model-backed timing, profile, navigation, persistence, and cleanup
 matrices remain separate exact-host commands. Non-Windows hardware support,
 automatic updates, enterprise sandboxing, and cross-platform packaging remain
-deferred. Windows installer behavior, licence-complete distribution, and the
-minimum packaged bilingual Piper core plus separately gated optional
-Chatterbox acquisition/removal lifecycle are now approved M011 work but remain
-unimplemented. The examples below are requirements, not claims about current
-coverage.
+deferred. The minimum bilingual Piper payload and local Windows installer path
+are implemented. Additional Windows and GPU combinations, cross-version
+replacement, and interactive optional acquisition/removal remain useful future
+coverage. The examples below are test directions, not a requirement to test
+every possible PC before declaring requirements-based support.
 
 ## Test levels
 

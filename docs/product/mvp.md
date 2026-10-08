@@ -4,6 +4,15 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the historical no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. M010.2 later supersedes only M008's fixed playback-rate policy with six validated boundary-deferred values from `1.00x` through `0.75x`. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's historical Qwen policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute; that constrained profile exceeded the MVP target and is not the M011 baseline Piper release family.
 
+The completed ingestion support profile in that reader includes reflowable
+EPUB 3 with XHTML navigation and the bounded reflowable OPF 2.0/NCX profile
+defined by
+[ADR-0048](../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md).
+Completed Milestone 3.1 proves package admission, exact inert doctypes, NCX
+navigation, common semantic/resource/locator behavior, reader restoration,
+narration preparation, browser use, and packaged startup. This is deliberately
+not a claim of full EPUB 2, EPUBCheck, or general reading-system conformance.
+
 Completed M009 connects audible segments to highlighting, focus-safe following,
 identity-first navigation, and bounded non-skipping heard-position persistence.
 M009.1 stabilizes the dedicated reader viewport, compact narration surface,
@@ -80,22 +89,60 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011 is approved and has a detailed active ExecPlan, but implementation has
-not started. Its core release candidate is Windows x64 with the measured Piper
-davefx/Spanish and Piper joe/English CPU profiles. Chatterbox Spanish/English
-is planned as a separately gated optional GPU quality download, not part of
-the core installer; Qwen remains development-only. This keeps the portfolio
-MVP small while permitting a higher-quality demonstration after Chatterbox's
-exact dependency, advisory, licence, artifact, integrity, size, hardware,
-installation/removal, and clean-host gates pass. A portfolio-ready local build
-may close without a signing certificate; a general public installer may not.
+M011's renewed Milestone 7 record accepts its requirements-based support
+decision against the exact post-audit artifact. Milestone 6B closes ordinary
+compatibility-gated Chatterbox availability; trusted public signing remains a
+separate externally authorized future channel.
+Milestones 1 through 5 and 6A are complete at their documented boundaries. The
+implemented standalone core
+payload targets Windows x64 with the measured Piper davefx/Spanish and Piper
+joe/English CPU profiles. Chatterbox Spanish/English is a separately gated
+optional GPU quality download, not part of the core installer; Qwen remains
+development-only. The deterministic core contains a private CPython/Piper
+runtime, both voices, notices/model cards, and exact GPL source, and is verified
+natively before use. Milestone 5 packages that core in the versioned `0.1.0`
+per-user Windows x64 NSIS path. Its exact rebuilt installer identity is recorded
+only in generated package evidence. Its deterministic/static and local lifecycle
+evidence passes. No Defender or SmartScreen claim is made for the current exact
+artifact. Piper is a CPU profile with
+no GPU requirement, and the maintainer additionally confirmed VoxLeaf working
+on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU.
+Under ADR-0049 and release authority v2, Milestone 7 therefore records **GO**
+for Piper local/portfolio readiness.
+
+Milestone 4B obtains only the six approved model-data files from the official
+`ResembleAI/chatterbox` Hugging Face repository at a full frozen revision and
+verifies every file's expected name, byte size, and SHA-256. It does not execute
+model-repository code. The exact reviewed Chatterbox runtime has reproducible
+three-part identity and is published under `chatterbox-runtime-v2`. Installed
+Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
+passes on the representative compatible computer. Renewed Milestone 7 accepts
+**GO when the published host gate passes** for Chatterbox runtime support and
+**GO on a compatible host** for the optional package. The ordinary product
+manifest exposes Download only after Settings presents a pass and native code
+repeats the live host gate. Signed public publication is **pending external authorization**
+because no trusted signing identity is available. The package is an unsigned
+local/portfolio MVP, not a trusted general-public installer.
+Chatterbox's measured `3,644`-MiB VRAM peak no longer inherits the evaluated
+host's 8-GB capacity as an absolute minimum. ADR-0044 admits at `5,632` MiB
+total and `4,668` MiB currently available, keeps nominal 8-GB hardware as the
+evaluated recommendation, and requires all three quantities to be disclosed
+before download consent.
+Milestone 6B pairs Chatterbox's generally more natural and expressive, but subjective, voice
+with exact transfer/install/temporary-space disclosure, representative startup/
+RAM/VRAM observations, and a warning that first load can exceed one minute and
+temporarily reduce computer responsiveness while visual reading remains usable.
+It also makes the ordinary release independent of repository-development
+fallbacks and proves private-runtime use under hostile environment inputs
+without requiring Python or Rust to be removed from the test computer.
 
 ## Current implemented flow
 
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
    check and shows only closed content-free status and rejection reasons.
 2. The user selects a local EPUB.
-3. VoxLeaf validates and loads the book.
+3. VoxLeaf validates and loads a book in the bounded reflowable EPUB 3/XHTML
+   navigation profile or the bounded reflowable OPF 2.0/NCX profile.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
 6. On an exact configured admitted host, the user can select a
@@ -143,10 +190,12 @@ may close without a signing certificate; a general public installer may not.
 The narration path is deliberately hidden when no exact local admitted
 configuration is available. Piper is the supported CPU fallback, Chatterbox
 is the supported bilingual GPU profile, and Qwen remains constrained and
-development-only. M011 will keep Piper in the core distribution and expose
-Chatterbox only as an explicit verified optional download. Installer delivery,
-optional acquisition, and licence fulfillment remain M011 work, so neither
-local artifact setup is yet a general end-user distribution.
+development-only. M011 intends Piper for the core distribution and may expose
+Chatterbox only as an explicit verified optional download. Piper payload and
+licence/source fulfillment plus the local installer path are implemented and
+accepted for the local/portfolio MVP. Chatterbox is supported behind its live
+host gate, while its ordinary Download channel is enabled only after that gate
+passes in Settings and native code repeats it before network access.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -156,22 +205,55 @@ range without a DOM target, then corrected passive-scroll retargeting without
 committing the user's EPUB or weakening the completed M009 synchronization
 authority.
 
-## Remaining target user flow
+## Release-gate disposition
 
-1. M011 freezes the exact Piper core, optional Chatterbox package, threat
+Completed M003.1 adds the bounded reflowable EPUB 2/NCX profile and proves that
+it produces the same public schema and format-neutral semantic, navigation,
+locator-resolution, restoration, and narration behavior as EPUB 3 while each
+exact archive retains its own identity. M011 Milestone 7 consumes this separate
+parser/security result without claiming general EPUB 2 conformance.
+
+1. M011 has frozen the exact Piper core, optional Chatterbox package, threat
    model, acquisition, dependency, and licence authority before packaging
    results.
-2. M011 creates an integrity-checked Piper Spanish/English runtime and voice
-   distribution that requires no developer shell or manual firewall rule.
-3. M011 derives a minimal Chatterbox production graph and implements explicit
-   consent, bounded native download, digest verification, atomic installation,
-   separate activation, offline use, and application-owned removal. If this
-   independent gate fails, the download action and end-user claim remain absent
-   while the Piper core can continue.
-4. M011 packages and validates a versioned Windows x64 installation, repair,
-   manual update, and uninstall lifecycle on a clean normal-user host.
-5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
-   and signed public-installer publication independently.
+2. M011 has created the integrity-checked standalone Piper Spanish/English
+   runtime and voice payload and integrated it into the versioned per-user NSIS
+   package. Local lifecycle validation passes without a developer shell or
+   manual firewall rule; representative independent-computer use also passes.
+3. M011 Milestone 4B freezes and implements the split Chatterbox acquisition:
+   exact reviewed runtime delivery plus exactly six model-data
+   files from the official full-revision Hugging Face source. It adds explicit
+   consent, bounded native download/cache, per-file digest verification, safe
+   model loading, atomic installation, separate activation, offline use, and
+   application-owned removal. Runtime publication and representative compatible-
+   host bilingual evidence are complete. The ordinary download action remains
+   absent as an independent manifest/channel decision.
+4. M011 Milestone 5 packages version `0.1.0` and validates its local Windows x64
+   installation, first start, repair, and uninstall path. Milestone 6 repeats
+   the complete lifecycle, manual replacement, and product matrix on a clean
+   normal-user host.
+5. Implemented M011 Milestone 6A closes the user-visible optional-package
+   lifecycle before affected Milestone 6 evidence is repeated. Settings remains
+   populated during a profile transition, long first-Play work exposes truthful
+   content-free phases, download cancellation explains its incomplete-staging
+   cleanup, installed Chatterbox has a discoverable independent removal action,
+   and the Windows uninstall journey distinguishes optional-package data from
+   ordinary preferences. Focused and packaged representative-host validation
+   passes; ordinary Download availability and trusted public signing remain
+   separate channel states.
+6. M011 Milestone 6B now promotes the ordinary manifest only behind renderer
+   presentation plus the native live gate, reconciles exact package
+   measurements, supplies truthful quality/resource/startup disclosure,
+   compiles development-runtime fallbacks out of the release, and passes the
+   ordinary installed acquisition, bilingual narration, restart,
+   removal/reinstall, and Piper-after-removal journey. The ordinary Download
+   action is compatibility-gated by those passing checks.
+7. M011 Milestone 7 decides Piper-core portfolio readiness, compatible-host
+   Chatterbox support, ordinary Download availability, and signed public-
+   installer publication independently again. The renewed record has Piper GO,
+   Chatterbox runtime support GO when its published gate passes, optional-package
+   GO on a compatible host, ordinary Download GO only after both live gates, and
+   signed publication pending external authorization.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
@@ -239,14 +321,12 @@ Implemented and validated:
   from the latest heard checkpoint.
 - Provide documented local setup plus deterministic reader/package validation.
 
-Remaining:
+Remaining channel and regression work:
 
-- Provide compliant minimal Piper runtime/voice distribution, exact shipped
-  dependency and licence closure, installer packaging, and a validated
-  normal-user Windows path in M011.
-- Provide the separately gated optional Chatterbox download only after its
-  minimal graph, advisory/licence/provenance, integrity, size, GPU,
-  install/remove, offline, and clean-host evidence passes.
+- Continue representative Windows/package lifecycle coverage without treating
+  every untested hardware combination as a failed support result.
+- Obtain protected trusted signing authority and repeat signature/checksum/
+  reputation evidence before any general-public Windows publication.
 
 ## Target acceptance criteria
 
@@ -318,6 +398,11 @@ Remaining:
 ### Reliability
 
 - Unsupported or malformed EPUBs produce a recoverable error.
+- Supported reflowable EPUB 2/NCX and EPUB 3 sources produce the same public
+  safe semantic, navigation, locator-resolution,
+  restoration, and narration schema and behavior while retaining distinct
+  exact-byte identities; EPUB 2 variants outside ADR-0048 remain explicit
+  recoverable unsupported inputs.
 - A saved reading locator that no longer resolves falls back to the nearest valid location and reports the recovery without exposing book text.
 - Reflowing after viewport or typography changes preserves the logical reading location even when the visible layout changes.
 - Closing a book releases its reading and generation resources.
@@ -334,6 +419,26 @@ Remaining:
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+- Cancelling an acquisition already in progress removes the current operation's
+  incomplete application-owned staging and partial files, returns the optional
+  package to absent, and retains no unsupported resumable state. It never
+  removes a verified installed package or changes the active narration profile.
+- Chatterbox requires `5,632` MiB total and `4,668` MiB available dedicated
+  VRAM under the current measured-capacity policy. A nominal 8-GB GPU remains
+  recommended and is the evaluated class. Admission of an otherwise compatible
+  6-GB-class host is conditional on the live available-memory check and does not
+  guarantee identical behavior across every GPU or driver combination.
+- Optional model acquisition is fixed to the official
+  `ResembleAI/chatterbox` repository, one full commit, and six approved data
+  files with frozen expected byte sizes and SHA-256 values. VoxLeaf never
+  resolves `main`, downloads arbitrary snapshot contents, executes Hub code, or
+  accepts repository/revision/file/URL input from the renderer. Hub security
+  scanning is defense-in-depth and does not replace local integrity checks.
+- The Chatterbox runtime is not supplied by the model repository. It retains a
+  separate exact dependency/source manifest and reproducible three-part
+  delivery identity. Those exact parts are published; the ordinary manifest
+  must be intentionally changed before the profile becomes downloadable. A completed model
+  download without the verified runtime is never treated as installed.
 - Every bundled or deliberately acquired runtime/model/voice artifact is
   pinned and integrity-checked before use; normal reading and narration make
   no external request and no silent download occurs.
@@ -344,13 +449,38 @@ Remaining:
 - Piper/phonemizer GPL obligations, applicable corresponding-source mechanics,
   davefx/joe voice provenance/model cards, CC0 terms, and the root MIT notice
   are fulfilled before distribution.
-- A clean normal-user Windows host can install, run, repair/reinstall, replace
+- Representative normal-user Windows evidence covers install, run, repair/reinstall, replace
   a version manually, and uninstall VoxLeaf without a repository, build tools,
   administrator-created firewall rule, or deletion of user books.
-- A compatible clean GPU host can decline, cancel, retry, install, use offline,
+- A representative compatible GPU host can decline, cancel, retry, install, use offline,
   restart, and remove the optional Chatterbox package. Corrupt, truncated,
   oversized, stale, insufficient-space, or incompatible packages fail closed
   and leave Piper usable.
+- Settings remains structurally populated while a language/profile transition
+  is pending and announces the real bounded phase without fabricating a
+  percentage. M011 does not expose a profile-selection Cancel action until an
+  explicit rollback contract can restore the prior profile preference,
+  narration identity, and recovery state safely.
+- First Chatterbox Play distinguishes the most specific content-free phases the
+  desktop can prove, including installed-package verification, local service
+  and model startup, first-audio generation, and buffering. Before audio owns
+  playback, the existing safe Stop path is presented as cancellation of startup
+  and must leave no stale audio or orphan service.
+- Installed optional-package state, measured storage, and **Remove Chatterbox**
+  remain discoverable independently of the profile selector. Removal stops any
+  owned Chatterbox service and deletes only the exact runtime, model, removable
+  cache, and staging roots; it does not delete preferences, reading progress,
+  Piper, or EPUBs.
+- Interactive uninstall distinguishes optional Chatterbox data from preferences
+  and recovery state. Under
+  [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md),
+  optional Chatterbox removal is selected by default while preference/recovery
+  removal is not; the UI explains each storage consequence and limits deletion
+  to exact VoxLeaf-owned roots. Silent removal remains non-destructive unless an
+  explicit documented option requests a bounded data class. If optional data is
+  intentionally retained, the user is told that management requires
+  reinstalling the same VoxLeaf product identity; no residual model-manager
+  executable is left behind.
 - Portfolio-ready local evidence may use an unsigned maintainer build with an
   explicit label. A general public installer additionally requires protected
   external signing credentials, signature verification, and a published

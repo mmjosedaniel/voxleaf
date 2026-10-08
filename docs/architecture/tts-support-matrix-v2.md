@@ -9,23 +9,26 @@ evidence-backed profiles over the historical M010
 runtime matrix without claiming that locally configured development
 environments are packaged or distributed.
 
-`supported` means currently implemented and validated in the application.
+`supported` means currently implemented and validated in the application on
+representative hardware, with compatibility determined by the profile's
+published host and runtime requirements rather than by an exhaustive test of
+every computer.
 `development-only` means implemented and exact-host validated behind an
 explicit developer gate, but neither automatically recommended nor presented
 as production support. `deferred` and `unsupported` remain non-selectable.
 
 ## Current matrix
 
-| Exact profile                                                                | Language            | Current state              | Next boundary                                                                                                                                           |
-| ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                                                                  |
-| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.                                               |
-| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | M011 separately gates an optional explicit download; retain the 8-GB GPU/6,144-MiB-free host floors and disclose final package/cold-load/RAM/VRAM cost. |
-| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
-| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
-| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                                                           |
-| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**            | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.                                                            |
-| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**            | Preserve historical rejection.                                                                                                                          |
+| Exact profile                                                                | Language            | Current state                                | Next boundary                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------- | ------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**                                | Packaged Windows x64 CPU profile; no discrete GPU requirement. M011's renewed Milestone 7 record accepts local/portfolio GO from exact-artifact lifecycle/package evidence and representative use on the independent older 16-GB-RAM computer.                                                                                                                                                                                                     |
+| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**                                | Packaged language-matched Windows x64 CPU profile; no discrete GPU requirement. The same requirements-based M011 GO applies.                                                                                                                                                                                                                                                                                                                       |
+| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported when the published gate passes** | ADR-0044 requires Windows x64/CUDA bfloat16, 5,632 MiB total and 4,668 MiB free VRAM, 24,576 MiB total and 4,096 MiB currently available RAM, and eight logical processors; the evaluated 8-GB GPU class remains recommended. Installed representative-host Spanish/English arms pass. The ordinary manifest is `downloadable` only after renderer presentation plus native pre-network recheck of that gate; the optional payload is not bundled. |
+| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**                         | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                                                                                                                                                                                                                                                                                                            |
+| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**                         | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                                                                                                                                                                                                                                                                                                            |
+| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected**                   | Future separately frozen dialogue/punctuation and voice/accent investigation.                                                                                                                                                                                                                                                                                                                                                                      |
+| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**                              | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.                                                                                                                                                                                                                                                                                                                                                       |
+| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**                              | Preserve historical rejection.                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Invariants
 
@@ -41,10 +44,26 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 The historical
 [`tts-support-matrix-v1.md`](tts-support-matrix-v1.md) remains the record of
 M010's original runtime closeout. This v2 matrix is the current executable
-M010.1 overlay. Milestone 7's six packaged bilingual portfolio journeys pass
+M010.1 overlay. M010.1 Milestone 7's six packaged bilingual portfolio journeys pass
 locally; pull request #159 passed required Ubuntu/Windows checks and merged the
 plan closeout. M010.2 may reorganize presentation and playback controls but
 must not change this matrix. M011 keeps Piper in the core and treats Chatterbox
-as a separate optional-download release gate; it remains responsible for
+as a separately gated optional package; it remains responsible for
 distribution, licensing fulfillment, acquisition/removal, installers, and
-production support claims.
+production support claims. A process-lifetime verification receipt may avoid
+repeating complete Chatterbox tree hashing within one application run, but it
+is not persisted and does not change this support decision: every application
+process must verify the exact installed authority before first use. M011's
+installed representative-host Spanish/English, offline, privacy, cancellation,
+and lifecycle evidence supports compatible-host Chatterbox under
+[`mvp-release-authority-v2`](mvp-release-authority-v2.md). Under
+[ADR-0050](decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md),
+the ordinary manifest exposes Download only after renderer presentation and a
+native pre-network recheck of the same live gate. The release-locked runtime
+accepts only the packaged Piper core or a verified installed Chatterbox
+profile; repository and environment fallbacks are compiled out. This does not
+change the support state or gate, and Chatterbox still has materially higher
+storage, startup, RAM/VRAM, GPU, and CPU costs. Trusted public signing remains
+a separate externally authorized release channel.
+The receipt is a performance optimization, not same-user tamper protection;
+full hash verification occurs when each application process first creates it.

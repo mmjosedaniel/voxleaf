@@ -62,6 +62,9 @@ interface ReaderFixtureModule {
   buildReaderLongChapterEpubFixture(options: {
     readonly semanticBlockCount: number;
   }): Promise<Uint8Array>;
+  buildEpubVersionEquivalenceFixture(
+    version: "2.0" | "3.0",
+  ): Promise<Uint8Array>;
   buildReaderNavigationEpubFixture(): Promise<Uint8Array>;
   buildReaderRasterEpubFixture(options?: {
     readonly imageCase?:
@@ -192,7 +195,12 @@ function persistedState(locator: ReadingLocatorV1) {
 function expectContentFreeReaderState(serialized: string): void {
   for (const forbidden of [
     "Synthetic comprehensive publication",
+    "Synthetic EPUB version equivalence",
     "First Synthetic Author",
+    "Second Synthetic Author",
+    "urn:synthetic:epub-version-equivalence",
+    "toc.ncx",
+    "2.0",
     "Synthetic dialogue",
     "private-reader.epub",
     ".xhtml",
@@ -312,6 +320,130 @@ describe("package-to-reader integration matrix", () => {
     restoredView.unmount();
     restoreCoordinator.close();
     await expect(second.flow.close()).resolves.toEqual({ status: "closed" });
+  });
+
+  it("routes a nested NCX target and restores exact and nearest EPUB 2 state without persisting package details", async () => {
+    const fixtures = await readerFixtures();
+    const bytes = await fixtures.buildEpubVersionEquivalenceFixture("2.0");
+    const repository = createWebStorageReaderPositionRepository();
+    const first = await openThroughDesktop(bytes, "private-legacy-reader.epub");
+    const settledLocators: ReadingLocatorV1[] = [];
+    const firstView = render(
+      <ReaderPublicationContent
+        publication={first.publication}
+        onSettledLocatorChange={(locator) => settledLocators.push(locator)}
+      />,
+    );
+
+    expect(first.publication.navigation).toMatchObject([
+      {
+        kind: "link",
+        label: "Part One",
+        children: [{ kind: "link", label: "Continuation" }],
+      },
+      { kind: "link", label: "Appendix" },
+    ]);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Opening" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show table of contents" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Continuation" }),
+    ).toHaveFocus();
+    await waitFor(() => expect(settledLocators).toHaveLength(1));
+
+    const continuation = settledLocators[0]!;
+    expect(continuation).toMatchObject({
+      spineItemId: "spine:1",
+      spineItemIndex: 1,
+      anchor: { value: "continuation" },
+    });
+    const saveCoordinator = new ReaderPositionSaveCoordinator(
+      first.publication,
+      repository,
+    );
+    saveCoordinator.start();
+    expect(saveCoordinator.scheduleImmediate(continuation)).toBe(true);
+    await saveCoordinator.flush();
+    const serialized = window.localStorage.getItem(
+      READER_POSITIONS_STORAGE_KEY,
+    );
+    expect(serialized).not.toBeNull();
+    expectContentFreeReaderState(serialized!);
+
+    firstView.unmount();
+    await saveCoordinator.close();
+    await expect(first.flow.close()).resolves.toEqual({ status: "closed" });
+
+    const second = await openThroughDesktop(bytes.slice());
+    const exactCoordinator = new ReaderPositionRestoreCoordinator(repository);
+    const exact = await exactCoordinator.restore(second.publication);
+    expect(exact).toMatchObject({
+      status: "ready",
+      position: { mode: "exact", reason: "exact", locator: continuation },
+    });
+    if (exact.status !== "ready") {
+      throw new Error("reader-matrix-epub2-exact-restore-cancelled");
+    }
+    const exactView = render(
+      <ReaderPublicationContent
+        publication={second.publication}
+        initialLocator={exact.position.locator}
+      />,
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Continuation" }),
+    ).toBeInTheDocument();
+
+    const continuationBlock = second.publication.locators.find(
+      ({ startLocator }) => startLocator.anchor.value === "continuation",
+    );
+    expect(continuationBlock).toBeDefined();
+    const beyondContinuation = decodeReadingLocatorV1({
+      ...continuationBlock!.startLocator,
+      textOffsetCodePoints: continuationBlock!.textLengthCodePoints + 17,
+    });
+    await expect(
+      repository.writePosition(persistedState(beyondContinuation)),
+    ).resolves.toEqual({ status: "saved" });
+
+    exactView.unmount();
+    exactCoordinator.close();
+    await expect(second.flow.close()).resolves.toEqual({ status: "closed" });
+
+    const third = await openThroughDesktop(bytes.slice());
+    const nearestCoordinator = new ReaderPositionRestoreCoordinator(repository);
+    const nearest = await nearestCoordinator.restore(third.publication);
+    expect(nearest).toMatchObject({
+      status: "ready",
+      position: {
+        mode: "recovered",
+        reason: "nearest-offset",
+        locator: {
+          ...continuationBlock!.startLocator,
+          textOffsetCodePoints: continuationBlock!.textLengthCodePoints,
+        },
+      },
+    });
+    if (nearest.status !== "ready") {
+      throw new Error("reader-matrix-epub2-nearest-restore-cancelled");
+    }
+    const nearestView = render(
+      <ReaderPublicationContent
+        publication={third.publication}
+        initialLocator={nearest.position.locator}
+      />,
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Continuation" }),
+    ).toBeInTheDocument();
+
+    nearestView.unmount();
+    nearestCoordinator.close();
+    await expect(third.flow.close()).resolves.toEqual({ status: "closed" });
   });
 
   it("recovers a nearest valid locator and isolates malformed, future, and different-byte state", async () => {

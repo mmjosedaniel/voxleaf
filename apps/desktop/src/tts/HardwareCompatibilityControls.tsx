@@ -1,4 +1,9 @@
-import { useState, useSyncExternalStore, type ReactElement } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactElement,
+} from "react";
 
 import type {
   HardwareCompatibilitySnapshotV1,
@@ -23,6 +28,7 @@ export interface HardwareCompatibilityControlsProps {
     language: NarrationLanguageV1,
   ) => Promise<boolean>;
   readonly onResetNarrationSettings?: () => Promise<boolean>;
+  readonly onSelectionPendingChange?: (pending: boolean) => void;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -106,6 +112,7 @@ export function HardwareCompatibilityControls({
   onSelectProfile,
   onSelectLanguage,
   onResetNarrationSettings,
+  onSelectionPendingChange,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -113,6 +120,16 @@ export function HardwareCompatibilityControls({
     () => coordinator.observe(),
     () => coordinator.observe(),
   );
+
+  useEffect(
+    () => () => onSelectionPendingChange?.(false),
+    [onSelectionPendingChange],
+  );
+
+  const setNarrationSelectionPending = (pending: boolean): void => {
+    setSelectionPending(pending);
+    onSelectionPendingChange?.(pending);
+  };
 
   const selectable = snapshot.profiles.filter(
     (profile) =>
@@ -123,7 +140,7 @@ export function HardwareCompatibilityControls({
   );
 
   const handleSelection = async (profileId: string): Promise<void> => {
-    setSelectionPending(true);
+    setNarrationSelectionPending(true);
     try {
       const selected =
         onSelectProfile === undefined
@@ -133,14 +150,14 @@ export function HardwareCompatibilityControls({
         onRecoveryEpisodeReset?.();
       }
     } finally {
-      setSelectionPending(false);
+      setNarrationSelectionPending(false);
     }
   };
 
   const handleLanguageSelection = async (
     language: NarrationLanguageV1,
   ): Promise<void> => {
-    setSelectionPending(true);
+    setNarrationSelectionPending(true);
     try {
       const selected =
         onSelectLanguage === undefined
@@ -150,7 +167,7 @@ export function HardwareCompatibilityControls({
         onRecoveryEpisodeReset?.();
       }
     } finally {
-      setSelectionPending(false);
+      setNarrationSelectionPending(false);
     }
   };
 
@@ -160,7 +177,7 @@ export function HardwareCompatibilityControls({
   };
 
   const handleReset = async (): Promise<void> => {
-    setSelectionPending(true);
+    setNarrationSelectionPending(true);
     try {
       const reset =
         onResetNarrationSettings === undefined
@@ -170,7 +187,7 @@ export function HardwareCompatibilityControls({
         onRecoveryEpisodeReset?.();
       }
     } finally {
-      setSelectionPending(false);
+      setNarrationSelectionPending(false);
     }
   };
 
@@ -182,6 +199,11 @@ export function HardwareCompatibilityControls({
 
   const narrationSettings = (
     <div className="hardware-compatibility-narration">
+      {selectionPending ? (
+        <p role="status" aria-live="polite" aria-atomic="true">
+          Applying narration settings. Existing settings remain available.
+        </p>
+      ) : null}
       <fieldset
         disabled={
           selectionPending ||

@@ -7,6 +7,12 @@ M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoratio
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
 stabilization are implemented and validated within their documented scopes.
+The implemented support claim includes reflowable EPUB 3 with XHTML
+navigation and ADR-0048's bounded reflowable OPF 2.0/NCX extension. Completed
+Milestone 3.1 validates fixture authority, exact package and doctype
+admission, bounded NCX parsing, common semantic/resource/locator projection,
+reader restoration, narration preparation, browser use, and packaged startup.
+VoxLeaf does not claim general EPUB 2 or full reading-system conformance.
 M009.1 implements the
 [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger
 paint-aware evidence, the same-spine materialization repair, one dedicated
@@ -42,8 +48,10 @@ detection remains unavailable, and
 [`tts-support-matrix-v1`](tts-support-matrix-v1.md) now makes Piper the sole
 supported and automatically recommendable profile when compatible and
 configured while retaining explicit selection and zero automatic failover.
-Replacement Ubuntu/Windows checks pass. M011 still owns production
-distribution and Piper's GPL/CC0 packaging obligations.
+Replacement Ubuntu/Windows checks pass. M011 fulfills Piper's GPL/CC0 package
+obligations and accepts its unsigned local/portfolio distribution under release
+authority v2. Trusted general-public distribution remains pending external
+signing authorization.
 
 M010.1 Milestones 1 through 5 freeze and execute explicit Spanish/English
 product, locator-safe normalization, exact candidate, corpus, schema, machine,
@@ -139,30 +147,86 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011 is in progress. Milestone 1 freezes
+M011's renewed Milestone 7 record accepts the local/portfolio MVP support
+decision for the exact post-audit artifact. Milestone 6B is complete: it
+promotes ordinary Chatterbox acquisition
+only behind the renderer presentation gate and the native pre-network recheck,
+and proves release-runtime isolation. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results. Milestone 2 closes the exact production component identity:
+or package results. The renewed Milestone 7 record applies
+[ADR-0049](decisions/ADR-0049-use-representative-compatible-host-evidence.md)
+and
+[`mvp-release-authority-v2`](mvp-release-authority-v2.md), superseding only v1's
+independent-claim gates and exhaustive per-computer interpretation. Milestone 2
+closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
-intake, and a deterministic 363-component inventory. It does not yet implement
-an installer or optional-profile acquisition. The core topology is deliberately smaller than
+intake, and a deterministic 400-component inventory. Milestone 3 packages the
+core as a deterministic private CPython/Piper runtime with both voices,
+complete notices, and exact corresponding-source archives. Native discovery
+accepts only the fixed install-relative root after exact manifest/file/hash
+verification. Milestone 4A implements the native-owned optional-profile
+lifecycle and its source-package checker. Milestone 4B implements exact
+multi-artifact acquisition. The ordinary v2 manifest is `downloadable` only
+after the two live compatibility gates pass; the retired validation-only overlay
+remains historical evidence. The core
+topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
-Chatterbox Spanish/English is planned as a
-separate optional GPU quality package, never silently downloaded or embedded
-in the core installer; Qwen remains outside the first distributable product.
+Chatterbox Spanish/English has an implemented separate optional GPU quality
+package, never silently downloaded or embedded in the core
+installer; Qwen remains outside the first distributable product.
 The prior Chatterbox developer state occupied about 5.03 GiB of environment
 plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
 with the explicit 79-package runtime lock and proves the adapter offline in a
 4.83-GiB isolated smoke environment; neither number is a final compressed or
-installed package measurement. M011 must still fulfill Piper/phonemizer and
-Chatterbox model/runtime provenance obligations and implement native-owned
-fixed-manifest acquisition with explicit consent, bounded staging, digest
-verification, atomic versioned installation, separate activation, offline
-use, and application-owned removal. Piper-core portfolio readiness, optional-
-Chatterbox readiness, and signed public publication are separate decisions;
-signing is an external authorization for the last only. Automatic updates,
+installed package measurement. M011 has fulfilled the Piper/phonemizer/voice
+payload obligations. The optional source manifest already freezes the intended
+Chatterbox runtime/model identity and per-model-file sizes and SHA-256 values.
+Milestone 4B acquires those six model-data files only from full revision
+`5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18` of the official
+`ResembleAI/chatterbox` Hugging Face repository. It may not resolve mutable
+revisions, download arbitrary repository contents, execute Hub code, or rely on
+Hub scanning instead of local verification. The 79-package reviewed runtime is
+a separate deterministic 5,022,941,463-byte archive split into three bounded
+assets with reproducible SHA-256 evidence. Together with the model files, the
+implementation measures 8,231,893,387 download bytes, 8,228,503,309 installed
+bytes, and a 13,254,834,850-byte peak staging calculation, with
+20,000,000,000 minimum free bytes. Runtime evidence v3 is current; v2 remains
+historical with its prior installed total corrected by 37,504 bytes.
+Native acquisition
+uses explicit consent, sequential application-owned transfers, closed
+redirects, per-artifact digest verification, safe extraction/loading, atomic
+versioned installation, separate activation, offline use, and application-
+owned removal. The exact runtime assets are published under
+`chatterbox-runtime-v2`. Its representative installed Spanish/English,
+offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
+manifest is `downloadable` only after renderer presentation and a native
+pre-network recheck of the live gate. The release-locked runtime compiles
+repository-development and environment fallback branches out of release and
+accepts only the packaged Piper core or a verified installed Chatterbox profile.
+The ordinary representative journey is hash-bound and passes install, cancel,
+Spanish/English download, offline restart, removal, Piper Spanish/English,
+reacquisition, and uninstall. Renewed Milestone 7 repeats that journey and the
+normal-user lifecycle against the exact post-audit installer. Milestone
+5 sets release version `0.1.0` and
+packages the exact bilingual Piper core in a current-user Windows x64 NSIS
+installer through a release-only configuration. The unsigned-local artifact
+identity is recorded in the current package evidence and must be regenerated
+after a rebuilt installer; no public-publication claim follows from it.
+Outside-sandbox static and local lifecycle evidence passes. Signing automation
+uses only protected external credentials and verifies Authenticode, but no
+certificate is currently authorized. Renewed Milestone 7 consumes completed
+M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper
+local/portfolio core, **GO when the published host gate passes** for Chatterbox
+runtime support, and **GO on a compatible host** for the optional package.
+Piper's representative evidence includes successful use on an independent
+older Windows computer; Chatterbox's includes installed Spanish and English
+journeys on the current compatible Windows/RTX 5060 Laptop computer. These
+results support the requirements-defined compatible classes without promising
+identical operation on every PC. Signed public publication remains **pending
+external authorization**. Automatic updates,
 enterprise process sandboxing, external certification, cross-platform
 packages, Qwen distribution, and bundling every engine remain post-MVP unless
 new evidence makes one release-critical.
@@ -284,7 +348,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M2; dependency/audit/inventory identity closed; packaging planned]
+|   [M011 Piper local/portfolio GO; Chatterbox ordinary acquisition after its
+|    renderer + native live gate; 6B complete; public signing pending]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]
@@ -572,7 +637,29 @@ The application now reads validated global preferences before mounting the ready
 
 [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) establishes the accepted Milestone 3 support profile and the single authority for archive, XML, graph, content, resource, and processing limits. Ingestion accepts bounded in-memory EPUB bytes, validates the ZIP/OCF structure before interpreting publication data, resolves only case-sensitive virtual in-container paths, and never extracts to disk or performs network access.
 
-The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and supported local raster resources. Its bounded compatibility policy validates and ignores legacy EPUB 2 `meta name/content` values inside an otherwise supported EPUB 3 package and permits only the inert HTML doctype in XHTML content/navigation; it still performs no DTD/entity processing and rejects all package/container, external, internal-subset, and non-HTML doctypes. EPUB 2/NCX-only, fixed-layout-only, protected, remotely dependent, active, SVG-dependent, and media-dependent publications remain explicit unsupported inputs unless safe supported fallbacks preserve the required reading path. XHTML is projected into immutable allowlisted semantic values; publisher HTML, live DOM nodes, CSS, executable SVG, and scripts never cross the ingestion boundary.
+The completed support profile accepts EPUB 3 reflowable XHTML with EPUB
+navigation and supported local raster resources. Its bounded compatibility
+policy validates and ignores legacy EPUB 2 `meta name/content` values and
+permits only the inert HTML doctype for EPUB 3 XHTML content/navigation.
+Completed Milestone 3.1 additionally implements exact OPF `version="2.0"` admission,
+the required local `spine@toc` NCX relationship, exact inert NCX/XHTML 1.1
+doctype profiles, and a streaming NCX parser that projects into the same
+internal navigation tree. It still performs no DTD/entity processing and
+rejects all package/container doctypes, internal subsets, identifier near
+misses, external processing attempts, and unsafe targets. Fixed-layout,
+protected, remotely dependent, active, SVG-dependent, media-dependent, and
+EPUB 2 inputs outside ADR-0048 remain explicit unsupported inputs. XHTML is
+projected into immutable allowlisted semantic values; publisher HTML, live DOM
+nodes, CSS, executable SVG, and scripts never cross the ingestion boundary.
+
+[ADR-0048](decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+accepts the additive profile for exact OPF `version="2.0"`, local safe XHTML,
+NCX selected by `spine@toc`, exact inert NCX/XHTML 1.1 declarations, and
+validated/ignored guide data. The completed ExecPlan proves that package and
+navigation boundary through the same internal tree plus unchanged locator
+policy, reader/restoration behavior, narration preparation, browser/package
+integration, privacy, cancellation, limits, and public contracts. Equivalent
+EPUB 2 and EPUB 3 fixtures deliberately retain distinct exact-byte identities.
 
 `@voxleaf/shared` continues to own serialized book, locator, and operational-error contracts. `@voxleaf/epub` owns package relationships, immutable semantic nodes, detailed navigation, bounded resource handles, locator and semantic-target indexes, and fixed EPUB detail codes. The desktop now consumes those detailed navigation and target-resolution values without moving package matching into React or changing a serialized contract. Exact EPUB bytes define the book's `sha256` identity; source-derived or generated structural anchors contain no prose or host path. Expected failures and diagnostics remain content-free, and the EPUB package performs no logging.
 
@@ -745,7 +832,16 @@ failover. Recovery stays identity-first, cleanup-verified, limited to one
 explicit action, and constrained to one service tree. M011 owns distribution,
 including Piper GPL/phonemizer notices, corresponding-source or written-offer
 mechanics, CC0 voice provenance, the separate optional Chatterbox dependency/
-licence/artifact/acquisition lifecycle, installer size, signing, and updates.
+licence/artifact/acquisition lifecycle, including exact official Hugging Face
+model data plus separately verified runtime delivery, installer size, signing,
+and updates.
+
+ADR-0044 separates Chatterbox's measured VRAM capacity from the size of the
+evaluated host. The supported registry and native acquisition preflight require
+`5,632` MiB total and `4,668` MiB currently available dedicated VRAM, derived
+from the `3,644`-MiB measured peak plus a `1,024`-MiB reserve. The nominal
+8-GB class remains recommended, disclosed, and the only currently evaluated
+class; historical benchmark authority stays unchanged.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

@@ -1,0 +1,78 @@
+{
+  "chatterboxLock": {
+    "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+    "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a"
+  },
+  "modelFiles": [
+    {
+      "filename": "t3_mtl23ls_v3.safetensors",
+      "sha256": "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
+      "sizeBytes": 2143989928,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/t3_mtl23ls_v3.safetensors"
+    },
+    {
+      "filename": "s3gen.pt",
+      "sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
+      "sizeBytes": 1057165844,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/s3gen.pt"
+    },
+    {
+      "filename": "ve.pt",
+      "sha256": "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1",
+      "sizeBytes": 5698626,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/ve.pt"
+    },
+    {
+      "filename": "conds.pt",
+      "sha256": "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e",
+      "sizeBytes": 107374,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/conds.pt"
+    },
+    {
+      "filename": "grapheme_mtl_merged_expanded_v1.json",
+      "sha256": "69632f47220a788a52ce2661d096453c5655e9bf25289d89a8d832c46ee07dbf",
+      "sizeBytes": 69989,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/grapheme_mtl_merged_expanded_v1.json"
+    },
+    {
+      "filename": "Cangjie5_TC.json",
+      "sha256": "7073fd9de919443ae88e0bd2449917a65fe54898a4413ed1edcc4b67f28bce8c",
+      "sizeBytes": 1920163,
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/Cangjie5_TC.json"
+    }
+  ],
+  "packageId": "voxleaf-chatterbox-v2",
+  "packageVersion": "2",
+  "platform": "windows-x86_64",
+  "profileId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  "provenance": {
+    "chatterboxSource": "https://github.com/resemble-ai/chatterbox/tree/5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+    "modelCard": "https://huggingface.co/ResembleAI/chatterbox/tree/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "perthSource": "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e"
+  },
+  "python": {
+    "artifact": {
+      "filename": "python-3.12.10-embed-amd64.zip",
+      "sha256": "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3",
+      "sizeBytes": 11133606,
+      "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip"
+    },
+    "version": "3.12.10"
+  },
+  "runtimeModules": [
+    "__init__.py",
+    "chatterbox_adapter.py",
+    "chatterbox_service.py",
+    "engine.py",
+    "fake_engine.py",
+    "protocol.py",
+    "service.py"
+  ],
+  "runtimeRelease": {
+    "maximumPartBytes": 1900000000,
+    "maximumParts": 4,
+    "repository": "mmjosedaniel/voxleaf",
+    "tag": "chatterbox-runtime-v2"
+  },
+  "schemaVersion": 2
+}
