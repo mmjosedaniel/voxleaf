@@ -18,6 +18,14 @@ update snapshots, or change Git history while validating.
 4. Use the Validation Report schema in
    `$orchestrate-safe-refactor`'s `references/refactor-contracts.md`.
 
+## Evidence identity
+
+For every mode, follow the Validation Report identity and freshness contract:
+assign a unique Report ID, record HEAD and the closed path identity manifest
+before commands, and recheck them afterwards. PASS requires unchanged identities
+and complete evidence. Return BLOCKED on drift; a later edit requires a new
+report and rerunning the required acceptance commands, not a hash-only refresh.
+
 ## Baseline mode
 
 Confirm that the Git index contains no staged changes and that every proposed
@@ -42,10 +50,12 @@ it opportunistically.
 7. Return `PASS` only when scope, invariants, test integrity, privacy, artifacts,
    and all required commands pass.
 
-Post-change `PASS` authorizes staging; it does not authorize a broad `git add`.
-The director must stage only allowlisted paths and inspect the staged path list
-and staged diff before committing. If validation fails, later work stays
-blocked until the unaccepted patch is corrected or its verified worker-authored
+Post-change `PASS` authorizes staging only for its recorded HEAD and exact
+validated path identities. The Git executor must compare the report, order,
+and live state before staging and verify validated content again before commit,
+as defined in the Git Action Order contract. It must stage only allowlisted
+paths and inspect the staged path list and staged diff before committing.
+If validation fails, later work stays blocked until the unaccepted patch is corrected or its verified worker-authored
 hunks are removed.
 
 ## Package and final modes

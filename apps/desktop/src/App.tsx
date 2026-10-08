@@ -57,15 +57,17 @@ import {
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
 import { ReaderSettingsDialog } from "./settings/ReaderSettingsDialog";
+import { createNarrationSettingsActions } from "./settings/narration-settings-actions";
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
 import type { AdaptiveBufferStartMode } from "./tts/adaptive-buffer-scheduler";
-import {
-  CHATTERBOX_OPTIONAL_PROFILE_ID,
-  OptionalChatterboxClient,
-} from "./tts/optional-chatterbox-client";
+import { OptionalChatterboxClient } from "./tts/optional-chatterbox-client";
+
+const narrationSettingsActions = createNarrationSettingsActions(
+  import.meta.env.DEV,
+);
 
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
@@ -765,89 +767,65 @@ export function App({
     readerPositionRestoreCoordinator,
   ]);
   const handleHardwareProfileSelection = useCallback(
-    async (profileId: string): Promise<boolean> => {
-      if (profileId === CHATTERBOX_OPTIONAL_PROFILE_ID) {
-        // The exact developer environment remains a separately explicit
-        // development-only path. Packaged-reader selection must instead use
-        // the native-owned optional package lifecycle.
-        if (!import.meta.env.DEV) {
-          const optional = await optionalChatterbox.select();
-          if (optional.state !== "installed") {
-            return false;
-          }
-        }
-      }
-      await (narrationCoordinator?.stopForConfigurationChange?.() ??
-        narrationCoordinator?.stop());
-      const selected =
-        await hardwareCompatibilityCoordinator.selectProfile(profileId);
-      if (selected) {
-        await narrationCoordinator?.refreshSelectedProfile();
-      }
-      return selected;
-    },
+    (profileId: string): Promise<boolean> =>
+      narrationSettingsActions.selectProfile(
+        profileId,
+        hardwareCompatibilityCoordinator,
+        narrationCoordinator,
+        optionalChatterbox,
+      ),
     [
       hardwareCompatibilityCoordinator,
       narrationCoordinator,
       optionalChatterbox,
     ],
   );
-  const handleChatterboxRemoval = useCallback(async (): Promise<void> => {
-    await (narrationCoordinator?.stopForConfigurationChange?.() ??
-      narrationCoordinator?.stop());
-    await optionalChatterbox.remove();
-    await narrationCoordinator?.refreshSelectedProfile();
-  }, [narrationCoordinator, optionalChatterbox]);
+  const handleChatterboxRemoval = useCallback(
+    (): Promise<void> =>
+      narrationSettingsActions.removeChatterbox(
+        narrationCoordinator,
+        optionalChatterbox,
+      ),
+    [narrationCoordinator, optionalChatterbox],
+  );
   const handleChatterboxActivation = useCallback(
-    () => handleHardwareProfileSelection(CHATTERBOX_OPTIONAL_PROFILE_ID),
+    () =>
+      narrationSettingsActions.activateChatterbox(
+        handleHardwareProfileSelection,
+      ),
     [handleHardwareProfileSelection],
   );
   const handleNarrationLanguageSelection = useCallback(
-    async (language: NarrationLanguageV1): Promise<boolean> => {
-      await (narrationCoordinator?.stopForConfigurationChange?.() ??
-        narrationCoordinator?.stop());
-      const selected =
-        await hardwareCompatibilityCoordinator.selectLanguage(language);
-      if (selected) {
-        await narrationCoordinator?.refreshSelectedProfile();
-      }
-      return selected;
-    },
+    (language: NarrationLanguageV1): Promise<boolean> =>
+      narrationSettingsActions.selectLanguage(
+        language,
+        hardwareCompatibilityCoordinator,
+        narrationCoordinator,
+      ),
     [hardwareCompatibilityCoordinator, narrationCoordinator],
   );
-  const handleNarrationSettingsReset =
-    useCallback(async (): Promise<boolean> => {
-      await (narrationCoordinator?.stopForConfigurationChange?.() ??
-        narrationCoordinator?.stop());
-      const languageReset =
-        await hardwareCompatibilityCoordinator.resetLanguage();
-      const startReset =
-        narrationCoordinator === undefined
-          ? (await narrationStartPreferenceRepository.reset()).status ===
-            "saved"
-          : await narrationCoordinator.resetStartPreference();
-      const playbackReset =
-        narrationCoordinator === undefined
-          ? (await narrationPlaybackPreferenceRepository.reset()).status ===
-            "saved"
-          : await narrationCoordinator.resetPlaybackPreference();
-      if (startReset) {
-        setFallbackNarrationStart({
-          selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
-          status: "ready",
-          canPersist: true,
-        });
-      }
-      if (languageReset) {
-        await narrationCoordinator?.refreshSelectedProfile();
-      }
-      return languageReset && startReset && playbackReset;
-    }, [
+  const handleNarrationSettingsReset = useCallback(
+    (): Promise<boolean> =>
+      narrationSettingsActions.reset({
+        hardware: hardwareCompatibilityCoordinator,
+        coordinator: narrationCoordinator,
+        startPreference: narrationStartPreferenceRepository,
+        playbackPreference: narrationPlaybackPreferenceRepository,
+        onStartPreferenceReset: () => {
+          setFallbackNarrationStart({
+            selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+            status: "ready",
+            canPersist: true,
+          });
+        },
+      }),
+    [
       hardwareCompatibilityCoordinator,
       narrationCoordinator,
       narrationStartPreferenceRepository,
       narrationPlaybackPreferenceRepository,
-    ]);
+    ],
+  );
 
   const isBusy =
     viewState.status === "closing" ||

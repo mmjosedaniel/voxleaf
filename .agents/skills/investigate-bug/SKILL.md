@@ -7,7 +7,9 @@ description: Investigate and fix a reproducible VoxLeaf defect with a minimal re
 
 ## Procedure
 
-1. Read `AGENTS.md` and relevant documentation.
+1. Read `AGENTS.md`, relevant documentation, and the
+   [independent change review](../../../docs/development/agentic-change-review.md)
+   workflow for its applicability, request, and report contract.
 2. Reproduce the problem with the smallest safe input.
 3. Record expected and actual behavior.
 4. Identify the failing boundary and root cause.
@@ -16,6 +18,12 @@ description: Investigate and fix a reproducible VoxLeaf defect with a minimal re
 7. Run focused tests, then broader relevant checks.
 8. Review privacy, cancellation, and bounded-resource effects.
 9. Update documentation if public behavior or operational guidance changed.
+10. For behavioral or cross-component fixes, delegate to `change_reviewer` with
+    the reproduction, expected behavior, complete diff, code identities, and
+    exact host-check evidence. Pause writing during review. Resolve findings,
+    rerun affected checks, and obtain APPROVE for the current patch. Missing
+    evidence or an unavailable reviewer is BLOCKED. Record an exemption only
+    for the nonbehavioral cases defined by the review workflow.
 
 ## Diagnostic rules
 
@@ -36,4 +44,5 @@ Report:
 - Regression test.
 - Fix.
 - Commands and results.
+- Independent Change Review ID/verdict and resolved findings, or exemption reason.
 - Remaining uncertainty.

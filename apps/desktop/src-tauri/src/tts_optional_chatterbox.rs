@@ -23,9 +23,9 @@ use tauri::{AppHandle, Manager, State};
 use zip::ZipArchive;
 
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
-const PACKAGE_ID: &str = "voxleaf-chatterbox-v2";
-const PACKAGE_VERSION: &str = "2";
-const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v2.json";
+const PACKAGE_ID: &str = "voxleaf-chatterbox-v3";
+const PACKAGE_VERSION: &str = "3";
+const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v3.json";
 const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
@@ -45,7 +45,7 @@ const MODEL_CARD_SOURCE: &str =
 const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
+    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v3.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
@@ -135,7 +135,7 @@ struct OptionalPackageManifest {
     runtime: OptionalRuntime,
     withholding_reason: Option<String>,
     runtime_artifact: Option<RuntimeArtifact>,
-    runtime_correction: RuntimeCorrection,
+    runtime_correction: Option<RuntimeCorrection>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -414,6 +414,13 @@ fn validate_sha256(value: &str) -> bool {
 }
 
 fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalProfileError> {
+    validate_manifest_version(manifest, PACKAGE_VERSION)
+}
+
+fn validate_manifest_version(
+    manifest: &OptionalPackageManifest,
+    version: &str,
+) -> Result<(), OptionalProfileError> {
     let identity = &manifest.identity;
     let requirements = &manifest.requirements;
     let runtime = &manifest.runtime;
@@ -421,14 +428,14 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
     if manifest.schema_version != 2
         || !matches!(manifest.availability.as_str(), "withheld" | "downloadable")
         || identity.profile_id != PROFILE_ID
-        || identity.package_version != PACKAGE_VERSION
+        || identity.package_version != version
         || identity.engine_version != "0.1.7"
         || identity.model_id != "ResembleAI/chatterbox"
         || identity.model_revision != MODEL_REVISION
         || manifest.languages.as_slice() != ["en".to_owned(), "es".to_owned()]
         || manifest.layout.root != "app-local-data/tts"
         || manifest.layout.staging != format!("staging/{PROFILE_ID}/operation")
-        || manifest.layout.installed != format!("cb/{PACKAGE_VERSION}")
+        || manifest.layout.installed != format!("cb/{version}")
         || ![
             &manifest.licences.chatterbox,
             &manifest.licences.model,
@@ -453,9 +460,13 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || !validate_sha256(&runtime.adapter_sha256)
         || !validate_sha256(&runtime.service_sha256)
         || runtime.torch_version != "2.9.1+cu128"
-        || runtime.release_tag != "chatterbox-runtime-v2"
+        || runtime.release_tag != format!("chatterbox-runtime-v{version}")
         || runtime.dependency_lock.path
-            != "services/tts/release/profiles/chatterbox/requirements.lock"
+            != if version == "2" {
+                "services/tts/release/profiles/chatterbox/requirements.lock"
+            } else {
+                "services/tts/release/profiles/chatterbox-v3/requirements.lock"
+            }
         || !validate_sha256(&runtime.dependency_lock.sha256)
         || limits.maximum_concurrency != 1
         || limits.maximum_redirects != 2
@@ -467,7 +478,11 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || limits.maximum_installed_bytes != 9_000_000_000
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
-        || !validate_runtime_correction(&manifest.runtime_correction)
+        || !match (version, &manifest.runtime_correction) {
+            ("3", None) => true,
+            ("2", Some(correction)) => validate_runtime_correction(correction),
+            _ => false,
+        }
     {
         return Err(OptionalProfileError::Invalid);
     }
@@ -494,12 +509,12 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         }
         ("withheld", Some(runtime_artifact), None, Some(reason))
             if reason == "clean-host-validation-pending"
-                && validate_runtime_artifact(runtime_artifact, limits) =>
+                && validate_runtime_artifact(runtime_artifact, limits, version) =>
         {
             Ok(())
         }
         ("downloadable", Some(runtime_artifact), Some(measurements), None)
-            if validate_runtime_artifact(runtime_artifact, limits)
+            if validate_runtime_artifact(runtime_artifact, limits, version)
                 && validate_measurements(manifest, runtime_artifact, measurements) =>
         {
             Ok(())
@@ -523,7 +538,11 @@ fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
             })
 }
 
-fn validate_runtime_artifact(artifact: &RuntimeArtifact, limits: &AcquisitionLimits) -> bool {
+fn validate_runtime_artifact(
+    artifact: &RuntimeArtifact,
+    limits: &AcquisitionLimits,
+    version: &str,
+) -> bool {
     if artifact.parts.is_empty()
         || artifact.parts.len() > limits.maximum_runtime_parts
         || artifact.installed_bytes == 0
@@ -535,9 +554,12 @@ fn validate_runtime_artifact(artifact: &RuntimeArtifact, limits: &AcquisitionLim
     }
     let mut total = 0_u64;
     for (index, part) in artifact.parts.iter().enumerate() {
-        let expected_filename = format!("voxleaf-chatterbox-runtime-v2.zip.part-{:03}", index + 1);
+        let expected_filename = format!(
+            "voxleaf-chatterbox-runtime-v{version}.zip.part-{:03}",
+            index + 1
+        );
         let expected_url = format!(
-            "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/{expected_filename}"
+            "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v{version}/{expected_filename}"
         );
         if part.filename != expected_filename
             || part.url != expected_url
@@ -669,7 +691,26 @@ fn package_root(root: &Path) -> PathBuf {
 }
 
 fn legacy_package_root(root: &Path) -> PathBuf {
-    root.join("profiles").join(PROFILE_ID).join(PACKAGE_VERSION)
+    root.join("profiles").join(PROFILE_ID).join("2")
+}
+
+fn retained_package_root(root: &Path) -> PathBuf {
+    profile_root(root).join("2")
+}
+
+fn retained_package_exists(root: &Path) -> bool {
+    retained_package_root(root).exists() || legacy_package_root(root).exists()
+}
+
+fn runtime_manifest_name(manifest: &OptionalPackageManifest) -> String {
+    if manifest.identity.package_version == PACKAGE_VERSION {
+        RUNTIME_MANIFEST_NAME.to_owned()
+    } else {
+        format!(
+            "runtime-manifest-v{}.json",
+            manifest.identity.package_version
+        )
+    }
 }
 
 fn staging_root(root: &Path) -> PathBuf {
@@ -907,11 +948,12 @@ fn verify_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
 ) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    let manifest_name = runtime_manifest_name(manifest_authority);
     let runtime_authority = manifest_authority
         .runtime_artifact
         .as_ref()
         .ok_or(OptionalProfileError::VerificationFailed)?;
-    let manifest_path = root.join(RUNTIME_MANIFEST_NAME);
+    let manifest_path = root.join(&manifest_name);
     let manifest_bytes =
         fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
@@ -921,8 +963,12 @@ fn verify_runtime(
     let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&manifest_bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
     if manifest.schema_version != 2
-        || manifest.package_id != PACKAGE_ID
-        || manifest.package_version != PACKAGE_VERSION
+        || manifest.package_id
+            != format!(
+                "voxleaf-chatterbox-v{}",
+                manifest_authority.identity.package_version
+            )
+        || manifest.package_version != manifest_authority.identity.package_version
         || manifest.profile_id != PROFILE_ID
         || manifest.service_module != "voxleaf_tts.chatterbox_service"
         || manifest.files.is_empty()
@@ -937,12 +983,12 @@ fn verify_runtime(
         .iter()
         .map(|record| record.path.clone())
         .collect::<HashSet<_>>();
-    if expected.len() != manifest.files.len() || expected.contains(RUNTIME_MANIFEST_NAME) {
+    if expected.len() != manifest.files.len() || expected.contains(&manifest_name) {
         return Err(OptionalProfileError::VerificationFailed);
     }
     let mut actual = HashSet::new();
     collect_files(root, root, &canonical_root, &mut actual)?;
-    actual.remove(RUNTIME_MANIFEST_NAME);
+    actual.remove(&manifest_name);
     for artifact in &manifest_authority.model_artifacts {
         let relative = format!("models/{}", artifact.filename);
         let model = root.join(&relative);
@@ -1033,26 +1079,31 @@ fn runtime_manifest_for_bytecode_cleanup(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
 ) -> Result<InstalledRuntimeManifest, OptionalProfileError> {
+    let manifest_name = runtime_manifest_name(manifest_authority);
     let runtime_authority = manifest_authority
         .runtime_artifact
         .as_ref()
         .ok_or(OptionalProfileError::VerificationFailed)?;
-    let bytes = fs::read(root.join(RUNTIME_MANIFEST_NAME))
+    let bytes = fs::read(root.join(&manifest_name))
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
     let hash = format!("{:x}", Sha256::digest(&bytes));
     if hash != runtime_authority.runtime_manifest_sha256
-        && hash
-            != manifest_authority
-                .runtime_correction
-                .accepted_runtime_manifest_sha256
+        && !manifest_authority
+            .runtime_correction
+            .as_ref()
+            .is_some_and(|correction| hash == correction.accepted_runtime_manifest_sha256)
     {
         return Err(OptionalProfileError::VerificationFailed);
     }
     let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
     if manifest.schema_version != 2
-        || manifest.package_id != PACKAGE_ID
-        || manifest.package_version != PACKAGE_VERSION
+        || manifest.package_id
+            != format!(
+                "voxleaf-chatterbox-v{}",
+                manifest_authority.identity.package_version
+            )
+        || manifest.package_version != manifest_authority.identity.package_version
         || manifest.profile_id != PROFILE_ID
         || manifest.service_module != "voxleaf_tts.chatterbox_service"
         || manifest.files.is_empty()
@@ -1203,152 +1254,15 @@ fn remove_transient_numba_cache_files(root: &Path) -> Result<(), OptionalProfile
     Ok(())
 }
 
-fn migrate_legacy_package_root(root: &Path) -> Result<(), OptionalProfileError> {
-    let destination = package_root(root);
-    if destination.exists() {
-        return Ok(());
-    }
-    let legacy = legacy_package_root(root);
-    if !legacy.exists() {
-        return Ok(());
-    }
-    canonical_contained_directory(root, &legacy)?;
-    let parent = destination
-        .parent()
-        .ok_or(OptionalProfileError::CleanupFailed)?;
-    canonical_managed_root(root)?;
-    if parent.exists() {
-        canonical_contained_directory(root, parent)?;
-    }
-    fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    canonical_contained_directory(root, parent)?;
-    invalidate_verified_runtime_receipt();
-    fs::rename(&legacy, &destination).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    invalidate_verified_runtime_receipt();
-    if let Some(profile) = legacy.parent() {
-        let _ = fs::remove_dir(profile);
-        if let Some(profiles) = profile.parent() {
-            let _ = fs::remove_dir(profiles);
-        }
-    }
-    Ok(())
-}
-
-fn corrected_runtime_manifest(manifest_bytes: &[u8]) -> Result<Vec<u8>, OptionalProfileError> {
-    let mut value = serde_json::from_slice::<serde_json::Value>(manifest_bytes)
-        .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let files = value
-        .get_mut("files")
-        .and_then(serde_json::Value::as_array_mut)
-        .ok_or(OptionalProfileError::VerificationFailed)?;
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        if files
-            .iter()
-            .any(|record| record.get("path").and_then(serde_json::Value::as_str) == Some(relative))
-        {
-            return Err(OptionalProfileError::VerificationFailed);
-        }
-        files.push(serde_json::json!({
-            "path": relative,
-            "sha256": format!("{:x}", Sha256::digest(contents)),
-            "sizeBytes": contents.len(),
-        }));
-    }
-    files.sort_by(|left, right| {
-        left.get("path")
-            .and_then(serde_json::Value::as_str)
-            .cmp(&right.get("path").and_then(serde_json::Value::as_str))
-    });
-    let mut corrected =
-        serde_json::to_vec_pretty(&value).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    corrected.push(b'\n');
-    Ok(corrected)
-}
-
-fn repair_runtime_modules(
-    root: &Path,
-    manifest_authority: &OptionalPackageManifest,
-    legacy_manifest_sha256: &str,
-) -> Result<(), OptionalProfileError> {
-    let runtime_authority = manifest_authority
-        .runtime_artifact
-        .as_ref()
-        .ok_or(OptionalProfileError::VerificationFailed)?;
-    let manifest_path = root.join(RUNTIME_MANIFEST_NAME);
-    let manifest_bytes =
-        fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
-    if manifest_hash == runtime_authority.runtime_manifest_sha256 {
-        return Ok(());
-    }
-    if manifest_hash != legacy_manifest_sha256 {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
-
-    let corrected = corrected_runtime_manifest(&manifest_bytes)?;
-    if format!("{:x}", Sha256::digest(&corrected)) != runtime_authority.runtime_manifest_sha256 {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
-
-    invalidate_verified_runtime_receipt();
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        let target = root.join(safe_relative_path(relative)?);
-        if target.exists() {
-            if !target.is_file()
-                || sha256_file(&target)? != format!("{:x}", Sha256::digest(contents))
-            {
-                return Err(OptionalProfileError::VerificationFailed);
-            }
-            fs::remove_file(&target).map_err(|_| OptionalProfileError::CleanupFailed)?;
-        }
-    }
-    let mut legacy_authority = manifest_authority.clone();
-    legacy_authority
-        .runtime_artifact
-        .as_mut()
-        .ok_or(OptionalProfileError::VerificationFailed)?
-        .runtime_manifest_sha256 = legacy_manifest_sha256.to_owned();
-    verify_runtime(root, &legacy_authority)?;
-
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        let target = root.join(safe_relative_path(relative)?);
-        fs::create_dir_all(
-            target
-                .parent()
-                .ok_or(OptionalProfileError::VerificationFailed)?,
-        )
-        .map_err(|_| OptionalProfileError::CleanupFailed)?;
-        fs::write(target, contents).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    }
-    fs::write(&manifest_path, corrected).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    verify_runtime(root, manifest_authority)?;
-    Ok(())
-}
-
-fn repair_legacy_runtime_modules(
-    root: &Path,
-    manifest_authority: &OptionalPackageManifest,
-) -> Result<(), OptionalProfileError> {
-    repair_runtime_modules(
-        root,
-        manifest_authority,
-        &manifest_authority
-            .runtime_correction
-            .accepted_runtime_manifest_sha256,
-    )
-}
-
 fn prepare_installed_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
 ) -> Result<(), OptionalProfileError> {
-    migrate_legacy_package_root(root)?;
     let package = package_root(root);
     if package.exists() {
         canonical_contained_directory(root, &package)?;
         remove_transient_numba_cache_files(&package)?;
         remove_unmanifested_python_bytecode(&package, manifest_authority)?;
-        repair_legacy_runtime_modules(&package, manifest_authority)?;
     }
     Ok(())
 }
@@ -1459,7 +1373,6 @@ fn promote(
     }
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
     canonical_contained_directory(root, parent)?;
-    repair_legacy_runtime_modules(staging, manifest)?;
     verify_runtime(staging, manifest)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
@@ -1744,12 +1657,34 @@ impl OptionalChatterboxManager {
 
     fn snapshot_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
-        if let Some(snapshot) = self.operation_snapshot(&manifest) {
+        self.snapshot_with_manifest(root, &manifest)
+    }
+
+    fn snapshot_with_manifest(
+        &self,
+        root: &Path,
+        manifest: &OptionalPackageManifest,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+        if let Some(snapshot) = self.operation_snapshot(manifest) {
+            return Ok(snapshot);
+        }
+        let active_exists = package_root(root).exists();
+        let retained_exists = retained_package_exists(root);
+        if (!active_exists && retained_exists)
+            || (manifest.availability == "withheld" && (active_exists || retained_exists))
+        {
+            let mut snapshot = snapshot_from(
+                manifest,
+                OptionalProfileState::Failed,
+                0,
+                Some("tts-optional-profile-unavailable"),
+            );
+            snapshot.installed_bytes = None;
             return Ok(snapshot);
         }
         if manifest.availability == "withheld" {
             return Ok(snapshot_from(
-                &manifest,
+                manifest,
                 OptionalProfileState::Withheld,
                 0,
                 None,
@@ -1759,23 +1694,23 @@ impl OptionalChatterboxManager {
             .runtime_artifact
             .as_ref()
             .ok_or(OptionalProfileError::Invalid)?;
-        match prepare_and_verify_installed_runtime(root, &manifest, true) {
+        match prepare_and_verify_installed_runtime(root, manifest, true) {
             Ok(_) => Ok(snapshot_from(
-                &manifest,
+                manifest,
                 OptionalProfileState::Installed,
                 0,
                 None,
             )),
             Err(OptionalProfileError::VerificationFailed) if package_root(root).exists() => {
                 Ok(snapshot_from(
-                    &manifest,
+                    manifest,
                     OptionalProfileState::Failed,
                     0,
                     Some("installed-package-invalid"),
                 ))
             }
             Err(OptionalProfileError::VerificationFailed) => Ok(snapshot_from(
-                &manifest,
+                manifest,
                 OptionalProfileState::Absent,
                 0,
                 None,
@@ -2006,14 +1941,14 @@ impl OptionalChatterboxManager {
 
     fn remove_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
-        if manifest.availability == "withheld" {
-            return Ok(snapshot_from(
-                &manifest,
-                OptionalProfileState::Withheld,
-                0,
-                None,
-            ));
-        }
+        self.remove_with_manifest(root, &manifest)
+    }
+
+    fn remove_with_manifest(
+        &self,
+        root: &Path,
+        manifest: &OptionalPackageManifest,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         {
             let operation = self
                 .operation
@@ -2036,6 +1971,7 @@ impl OptionalChatterboxManager {
             let package = package_root(root);
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
+            remove_contained_directory(root, &retained_package_root(root))?;
             let legacy = legacy_package_root(root);
             remove_contained_directory(root, &legacy)?;
             let cache = profile_root(root).join("cache");
@@ -2046,8 +1982,12 @@ impl OptionalChatterboxManager {
         })?;
         self.clear_operation();
         Ok(snapshot_from(
-            &manifest,
-            OptionalProfileState::Absent,
+            manifest,
+            if manifest.availability == "withheld" {
+                OptionalProfileState::Withheld
+            } else {
+                OptionalProfileState::Absent
+            },
             0,
             None,
         ))
@@ -2236,8 +2176,8 @@ mod tests {
             archive_sha256: "0".repeat(64),
             installed_bytes: 1_024,
             parts: vec![RuntimePart {
-                filename: "voxleaf-chatterbox-runtime-v2.zip.part-001".to_owned(),
-                url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001".to_owned(),
+                filename: "voxleaf-chatterbox-runtime-v3.zip.part-001".to_owned(),
+                url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v3/voxleaf-chatterbox-runtime-v3.zip.part-001".to_owned(),
                 sha256: "1".repeat(64),
                 download_bytes: 10,
             }],
@@ -2314,7 +2254,11 @@ mod tests {
 
     #[test]
     fn checked_in_authority_enables_the_measured_ordinary_package() {
-        let manifest = exact_manifest().expect("checked in manifest should be valid");
+        let manifest: OptionalPackageManifest = serde_json::from_slice(include_bytes!(
+            "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
+        ))
+        .expect("historical authority should parse");
+        validate_manifest_version(&manifest, "2").expect("historical authority should validate");
         assert_eq!(manifest.availability, "downloadable");
         let runtime = manifest
             .runtime_artifact
@@ -2522,24 +2466,12 @@ mod tests {
     }
 
     #[test]
-    fn installed_legacy_runtime_moves_to_short_root_and_repairs_generated_modules() {
+    fn installed_v3_runtime_verifies_after_transient_numba_cache_cleanup() {
         let root = TestRoot::new();
-        let legacy = legacy_package_root(&root.0);
-        let mut authority = write_runtime(&legacy);
-        let legacy_manifest = fs::read(legacy.join(RUNTIME_MANIFEST_NAME))
-            .expect("legacy manifest should be readable");
-        authority
-            .runtime_correction
-            .accepted_runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&legacy_manifest));
-        let corrected =
-            corrected_runtime_manifest(&legacy_manifest).expect("corrected manifest should render");
-        authority
-            .runtime_artifact
-            .as_mut()
-            .expect("runtime authority should exist")
-            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&corrected));
+        let installed = package_root(&root.0);
+        let authority = write_runtime(&installed);
 
-        let transient_cache = legacy.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        let transient_cache = installed.join("runtime/Lib/site-packages/librosa/core/__pycache__");
         fs::create_dir_all(&transient_cache).expect("transient cache should be created");
         fs::write(transient_cache.join("audio.nbc"), b"cache")
             .expect("transient data should be written");
@@ -2547,20 +2479,8 @@ mod tests {
             .expect("transient index should be written");
 
         prepare_installed_runtime(&root.0, &authority)
-            .expect("legacy package should move and repair");
-        let installed = package_root(&root.0);
+            .expect("installed package cache cleanup should succeed");
         assert!(installed.exists());
-        assert!(!legacy.exists());
-        assert!(
-            installed
-                .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
-                .to_string_lossy()
-                .len()
-                < legacy
-                    .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
-                    .to_string_lossy()
-                    .len()
-        );
 
         assert!(
             !installed
@@ -2571,17 +2491,6 @@ mod tests {
             !installed
                 .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbi")
                 .exists()
-        );
-        for (relative, contents) in GENERATED_RUNTIME_FILES {
-            assert_eq!(
-                fs::read(installed.join(relative)).expect("generated module should exist"),
-                contents
-            );
-        }
-        assert_eq!(
-            fs::read(installed.join(RUNTIME_MANIFEST_NAME))
-                .expect("corrected manifest should be readable"),
-            corrected
         );
         assert!(verify_runtime(&installed, &authority).is_ok());
     }
@@ -2688,6 +2597,20 @@ mod tests {
             Err(OptionalProfileError::VerificationFailed)
         );
         assert!(outside.0.join("runtime/python.exe").exists());
+        for relative in [
+            "cb/2",
+            "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
+        ] {
+            let managed = TestRoot::new();
+            let retained = managed.0.join(relative);
+            fs::create_dir_all(retained.parent().unwrap()).unwrap();
+            symlink(&outside.0, &retained).unwrap();
+            assert_eq!(
+                OptionalChatterboxManager::default().remove_at(&managed.0),
+                Err(OptionalProfileError::VerificationFailed)
+            );
+            assert!(outside.0.join("runtime/python.exe").exists());
+        }
     }
 
     #[test]
@@ -2697,6 +2620,12 @@ mod tests {
         fs::create_dir_all(&staging).expect("staging fixture should be created");
         fs::write(staging.join("partial.bin"), b"partial")
             .expect("staging fixture should be written");
+        let retained = retained_package_root(&root.0);
+        let legacy = legacy_package_root(&root.0);
+        for directory in [&retained, &legacy] {
+            fs::create_dir_all(directory).unwrap();
+            fs::write(directory.join("keep.bin"), b"historical").unwrap();
+        }
         let manager = OptionalChatterboxManager::default();
         manager.set_operation(
             OptionalProfileState::Downloading,
@@ -2707,6 +2636,9 @@ mod tests {
 
         assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
         assert!(staging.join("partial.bin").exists());
+        for directory in [&retained, &legacy] {
+            assert_eq!(fs::read(directory.join("keep.bin")).unwrap(), b"historical");
+        }
     }
 
     #[test]
@@ -2934,9 +2866,135 @@ mod tests {
             .select_at(&root.0)
             .expect("selection should reach consent");
         assert_eq!(selected.state, OptionalProfileState::Confirming);
-        assert_eq!(selected.download_bytes, Some(8_231_893_387));
+        assert_eq!(selected.download_bytes, Some(8_239_933_601));
         assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
         assert!(!staging_root(&root.0).exists());
         assert!(!profile_root(&root.0).exists());
+    }
+    #[test]
+    fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
+        let manifest = exact_manifest().expect("v3 authority valid");
+        assert_eq!(manifest.identity.package_version, "3");
+        assert_eq!(manifest.layout.installed, "cb/3");
+        assert!(manifest.runtime_correction.is_none());
+        let runtime = manifest.runtime_artifact.as_ref().unwrap();
+        assert_eq!(
+            runtime
+                .parts
+                .iter()
+                .map(|part| part.download_bytes)
+                .sum::<u64>(),
+            5_030_981_677
+        );
+        assert_eq!(runtime.installed_bytes, 5_027_425_801);
+        let measurements = manifest.measurements.as_ref().unwrap();
+        assert_eq!(measurements.download_bytes, 8_239_933_601);
+        assert_eq!(measurements.installed_bytes, 8_236_377_725);
+        assert_eq!(measurements.temporary_bytes, 13_270_915_278);
+        let mut changed = manifest.clone();
+        changed.runtime_correction = serde_json::from_slice::<OptionalPackageManifest>(include_bytes!("../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json")).unwrap().runtime_correction;
+        assert_eq!(
+            validate_manifest(&changed),
+            Err(OptionalProfileError::Invalid)
+        );
+        changed = manifest;
+        changed.identity.package_version = "2".to_owned();
+        assert_eq!(
+            validate_manifest(&changed),
+            Err(OptionalProfileError::Invalid)
+        );
+    }
+
+    #[test]
+    fn retained_v2_is_cleanup_only_and_survives_observation_and_cancellation() {
+        for roots in [
+            vec!["cb/2"],
+            vec!["profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2"],
+            vec![
+                "cb/2",
+                "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
+            ],
+        ] {
+            for withheld in [false, true] {
+                let root = TestRoot::new();
+                for relative in &roots {
+                    let directory = root.0.join(relative);
+                    fs::create_dir_all(&directory).unwrap();
+                    fs::write(directory.join("keep.bin"), b"historical").unwrap();
+                }
+                let unrelated = root.0.join("cb/other-version");
+                let unrelated_profile = root.0.join("profiles/unrelated/2");
+                for directory in [&unrelated, &unrelated_profile] {
+                    fs::create_dir_all(directory).unwrap();
+                    fs::write(directory.join("keep.bin"), b"unrelated").unwrap();
+                }
+                let manager = OptionalChatterboxManager::default();
+                let mut authority = exact_manifest().unwrap();
+                if withheld {
+                    authority.availability = "withheld".to_owned();
+                }
+                let snapshot = manager.snapshot_with_manifest(&root.0, &authority).unwrap();
+                assert_eq!(snapshot.state, OptionalProfileState::Failed);
+                assert_eq!(snapshot.failure, Some("tts-optional-profile-unavailable"));
+                assert_eq!(snapshot.installed_bytes, None);
+                manager.select_at(&root.0).unwrap();
+                manager.cancel_at(&root.0).unwrap();
+                for relative in &roots {
+                    assert_eq!(
+                        fs::read(root.0.join(relative).join("keep.bin")).unwrap(),
+                        b"historical"
+                    );
+                }
+                assert!(!package_root(&root.0).exists());
+                assert_eq!(
+                    prepare_and_verify_installed_runtime(&root.0, &authority, false),
+                    Err(OptionalProfileError::VerificationFailed)
+                );
+                manager.remove_with_manifest(&root.0, &authority).unwrap();
+                for relative in &roots {
+                    assert!(!root.0.join(relative).exists());
+                }
+                for directory in [&unrelated, &unrelated_profile] {
+                    assert_eq!(fs::read(directory.join("keep.bin")).unwrap(), b"unrelated");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots() {
+        let root = TestRoot::new();
+        let active = package_root(&root.0);
+        let authority = write_runtime(&active);
+        let retained = retained_package_root(&root.0);
+        fs::create_dir_all(&retained).unwrap();
+        fs::write(retained.join("keep.bin"), b"retained").unwrap();
+        let manager = OptionalChatterboxManager::default();
+        assert_eq!(
+            manager
+                .snapshot_with_manifest(&root.0, &authority)
+                .unwrap()
+                .state,
+            OptionalProfileState::Installed
+        );
+        assert_eq!(fs::read(retained.join("keep.bin")).unwrap(), b"retained");
+        let mut withheld = authority;
+        withheld.availability = "withheld".to_owned();
+        let unavailable = manager.snapshot_with_manifest(&root.0, &withheld).unwrap();
+        assert_eq!(unavailable.state, OptionalProfileState::Failed);
+        assert_eq!(
+            unavailable.failure,
+            Some("tts-optional-profile-unavailable")
+        );
+        assert_eq!(unavailable.installed_bytes, None);
+        assert_eq!(
+            manager
+                .remove_with_manifest(&root.0, &withheld)
+                .unwrap()
+                .state,
+            OptionalProfileState::Withheld
+        );
+        assert!(!active.exists());
+        assert!(!retained.exists());
     }
 }

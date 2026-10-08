@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -45,14 +45,14 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/source-manifest-v2.json",
+      "resources/release/optional/chatterbox/source-manifest-v3.json",
     ),
     "{}",
   );
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/runtime-package-evidence-v3.json",
+      "resources/release/optional/chatterbox/runtime-package-evidence-v4.json",
     ),
     "{}",
   );
@@ -66,20 +66,43 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
     ),
     JSON.stringify({
       availability,
+      identity: { packageVersion: "3" },
+      layout: { installed: "cb/3" },
+      runtime: { releaseTag: "chatterbox-runtime-v3" },
       measurements: {
-        downloadBytes: 8_231_893_387,
-        installedBytes: 8_228_503_309,
-        temporaryBytes: 13_254_834_850,
+        downloadBytes: 8_239_933_601,
+        installedBytes: 8_236_377_725,
+        temporaryBytes: 13_270_915_278,
         minimumFreeBytes: 20_000_000_000,
       },
     }),
   );
   return installed;
 }
+
+test("ordinary artifact rejects a v2 identity or a legacy correction in v3", async () => {
+  for (const mutate of [
+    (manifest) => (manifest.identity.packageVersion = "2"),
+    (manifest) => (manifest.runtimeCorrection = {}),
+  ]) {
+    const installed = await createArtifact();
+    const manifestPath = path.join(
+      installed,
+      "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+    );
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    mutate(manifest);
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await assert.rejects(
+      () => validateOrdinaryArtifact(installed),
+      /ordinary-manifest-authority/,
+    );
+  }
+});
 
 test("arguments resolve the ordinary package defaults without PATH lookup", () => {
   const environment = { LOCALAPPDATA: root, USERPROFILE: root };
@@ -105,7 +128,7 @@ test("arguments resolve the ordinary package defaults without PATH lookup", () =
   );
   assert.match(
     journey.receipt,
-    /ordinary-chatterbox-journey-evidence-v1\.json$/,
+    /ordinary-chatterbox-journey-evidence-v2\.json$/,
   );
 });
 

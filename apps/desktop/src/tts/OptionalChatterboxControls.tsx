@@ -37,9 +37,9 @@ const CANCELLATION_SCOPE_COPY =
   "Cancelling download or verification removes only this operation's incomplete staging and partial files. It cannot resume later and never removes a verified installed package.";
 
 const CHATTERBOX_DISCLOSURE = Object.freeze({
-  transfer: "8,231,893,387 bytes (8.23 GB / 7.67 GiB)",
-  installed: "8,228,503,309 bytes (8.23 GB / 7.66 GiB)",
-  temporary: "13,254,834,850 bytes (13.25 GB / 12.35 GiB)",
+  transfer: "8,239,933,601 bytes (8.24 GB / 7.67 GiB)",
+  installed: "8,236,377,725 bytes (8.24 GB / 7.67 GiB)",
+  temporary: "13,270,915,278 bytes (13.27 GB / 12.36 GiB)",
   preflight: "20,000,000,000 bytes (20 GB / 18.63 GiB)",
 });
 
@@ -67,10 +67,11 @@ function ChatterboxDisclosure(): ReactElement {
         fixed countdown or a made-up percentage for that work.
       </p>
       <p>
-        Representative observations, not guarantees: Quick audible start was
-        39.966 seconds (Spanish) and 33.905 seconds (English); direct cold runs
-        were 29.61 and 82.34 seconds; working-set peaks were 4,861,247,488 and
-        4,896,034,816 bytes; VRAM peaks were 3,711 and 3,731 MiB.
+        Historical v2 observations, not current v3 measurements or guarantees:
+        Quick audible start was 39.966 seconds (Spanish) and 33.905 seconds
+        (English); direct cold runs were 29.61 and 82.34 seconds; working-set
+        peaks were 4,861,247,488 and 4,896,034,816 bytes; VRAM peaks were 3,711
+        and 3,731 MiB.
       </p>
     </div>
   );
@@ -290,14 +291,14 @@ export function OptionalChatterboxControls({
             {displayBytes(snapshot.downloadBytes)}; install{" "}
             {displayBytes(snapshot.installedBytes)}; temporary storage{" "}
             {displayBytes(snapshot.temporaryBytes)}; free space required{" "}
-            {displayBytes(snapshot.minimumFreeBytes)}. A representative cold
-            start rounded to{" "}
+            {displayBytes(snapshot.minimumFreeBytes)}. Historical v2 profile: A
+            representative cold start rounded to{" "}
             {snapshot.coldStartSeconds ?? "a measured number of"} seconds;
             actual startup varies and can exceed one minute.
           </p>
           <ChatterboxDisclosure />
           <p>
-            GPU: Chatterbox measured{" "}
+            GPU: Historical v2 profile: Chatterbox measured{" "}
             {displayMiB(snapshot.measuredPeakDedicatedVramMiB)} VRAM. VoxLeaf
             requires {displayMiB(snapshot.minimumTotalDedicatedVramMiB)} total
             and {displayMiB(snapshot.minimumAvailableDedicatedVramMiB)}{" "}

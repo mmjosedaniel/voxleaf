@@ -4,6 +4,21 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
+Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
+production completion and unresolved runtime investigation are deferred to a
+future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
+Existing development-only integration, tests and historical evidence are retained.
+
+The [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
+integrates the separately published v3 prerelease after the 2026-10-06 audit
+exposed advisories in v2. The production v3 dependency audit and the rebuilt
+installed journey now pass, including Chatterbox/Piper in both languages,
+removal and reinstallation. A reproduced completion/cancellation race is
+contained in the shared process client without changing the coordinator.
+Independent review approved the integration, and all three integration CI gates
+passed; the completed plan records their exact evidence. Historical v2 assets
+and evidence are retained, and no new installer is published.
+
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized
@@ -118,15 +133,15 @@ targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
 download. Milestone 4A implements the fail-closed native lifecycle and
 Settings controls. Milestone 4B now implements the split acquisition while its
-v2 manifest is downloadable only after the renderer and native live compatibility
+v3 manifest is downloadable only after the renderer and native live compatibility
 gates pass: six allowlisted model-data files
 are acquired directly from the official
 `ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
 Each file remains bounded and SHA-256 verified; no model-repository code may
 execute. The reviewed Chatterbox runtime is reproducibly built, split into
 three bounded assets, and published under the immutable
-[`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2)
-release. The validated optional path requires explicit consent, bounded
+[`chatterbox-runtime-v3`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v3)
+prerelease. The optional path requires explicit consent, bounded
 download, exact verification, atomic installation, separate activation,
 offline operation, and application-owned removal. The ordinary manifest exposes
 Download only to a compatible current host; that does not revoke Chatterbox
@@ -252,7 +267,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): implemented authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries; final evidence is recorded in the completed M003.1 ExecPlan.
 - [`architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md`](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md): accept support claims based on published requirements and representative compatible-host evidence rather than exhaustive per-computer testing.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
-- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json) and [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json): preserved historical evidence and repository-reconciled current ordinary authority; neither is a signature or public-publication claim.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json): generated security-refreshed v3 package and publication identities. Earlier runtime evidence v2/v3 remains historical; runtime evidence alone does not establish installer acceptance or signing.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
@@ -326,13 +341,15 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, renewed Milestone 7 decision and exact-artifact receipts, completed 6B ordinary acquisition/release isolation, basic audit result and limitations, pending external signing, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
-- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
-- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
+- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
+- [`development/agentic-change-review.md`](development/agentic-change-review.md): independent Astra review of feature and bug-fix behavior, regression coverage, exact-patch evidence, and correction handling.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol/Astra-directed audit, Sol implementation, independent Astra validation, Sol Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
@@ -353,7 +370,10 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
 - [`plans/completed/M010-002-reader-settings-and-playback-controls.md`](plans/completed/M010-002-reader-settings-and-playback-controls.md): completed pre-M011 reader-first settings and playback-control follow-up, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, the sequential six-arm portfolio, renewed human all-rate confirmation, and passing Ubuntu/Windows closeout checks.
 - [`plans/completed/M011-package-validate-and-release-mvp.md`](plans/completed/M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, independent release decisions, and passing PR #207 checks. Public signing stays an external future action.
-- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
+
+Historical reference: [`synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md)
+is superseded by completed M009 for synchronization work. Its original path
+remains available for links in completed plans; it is not an active ExecPlan.
 
 For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).

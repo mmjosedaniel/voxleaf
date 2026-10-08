@@ -54,6 +54,19 @@ Before changing code or architecture:
 - Do not silently change public contracts.
 - Do not rewrite unrelated code.
 
+## Feature and bug review
+
+- For runtime behavior, public-contract, or cross-component feature/bug changes,
+  delegate an independent review to `change_reviewer` (GPT-6 Astra high) before
+  acceptance. Follow `docs/development/agentic-change-review.md`.
+- The reviewer inspects code and host-test evidence without editing or running
+  tests. Resolve actionable findings and obtain approval for the exact current
+  patch; missing evidence or an unavailable reviewer must be reported as blocked.
+- Trivial nonbehavioral documentation/spelling/formatting changes are exempt.
+  Refactor campaigns retain their existing validator instead of adding this role.
+- Keep the existing concurrency limit and user authorization boundaries. A review
+  report does not replace required checks or authorize Git mutations.
+
 ## Systematic refactoring
 
 - Use `$orchestrate-safe-refactor` for a multi-file clean-code, readability, or
@@ -75,11 +88,15 @@ Before changing code or architecture:
   the staged names and diff before committing, and never carry a rejected
   worker patch into the next unit.
 - Reuse one auditor, one worker, and one validator task throughout a campaign
-  batch. Also reuse one Luna Git-steward task when the current Codex surface
-  exposes that model. Do not silently substitute another model: if Luna is
-  unavailable, record that fact and let Sol execute the same Git Action Order
-  directly. Bind accepted-change orders to the exact HEAD and approved path
-  identities. Git may mutate only while source writing and validation are idle.
+  batch. Use GPT-6.1 Sol for audit, implementation, and Git stewardship, and
+  GPT-6 Astra for independent validation. The primary director may use either
+  model. If the Git-steward role is unavailable, record that fact and let the
+  director execute the same Git Action Order directly. Do not silently replace
+  an unavailable auditor, worker, or validator with another model.
+  Bind accepted-change orders to the immutable validation Report ID, HEAD, and
+  exact validated path identities. Recheck that evidence before staging and
+  commit; drift requires a new validation report, never refreshed approval
+  hashes. Git may mutate only while source writing and validation are idle.
 - Never manually refactor generated sources, frozen evaluation authority,
   historical evidence, or completed ExecPlans.
 - Require an ExecPlan before a significant, multi-package, or multi-stage
