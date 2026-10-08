@@ -1,5 +1,6 @@
 import {
   Uint8ArrayReader,
+  Uint8ArrayWriter,
   ZipReader,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +9,19 @@ import {
   applyEpubFixtureMutations,
   buildComprehensiveEpubFixture,
   buildDeterministicZipFixture,
+  buildMinimalEpub2Fixture,
   buildMinimalEpubFixture,
   buildReaderLongChapterEpubFixture,
   buildReaderNavigationEpubFixture,
   buildReaderRasterEpubFixture,
   buildReaderReflowEpubFixture,
   buildReaderRestorationEpubFixture,
+  EPUB2_CANONICAL_NCX_DOCTYPE,
+  EPUB2_CANONICAL_XHTML11_DOCTYPE,
+  minimalChapterDocument,
+  minimalEpub2Guide,
+  minimalEpub2PackageDocument,
+  minimalNcxDocument,
   READER_FIXTURE_EXPECTED_LOCATORS,
   READER_SEMANTIC_BLOCK_LIMIT,
   READER_SEMANTIC_BLOCK_OVER_LIMIT,
@@ -52,6 +60,78 @@ describe("deterministic EPUB fixture support", () => {
     expect(minimalFirst).toEqual(minimalSecond);
     expect(richFirst).toEqual(richSecond);
     expect(richFirst).not.toEqual(minimalFirst);
+  });
+
+  it("builds reviewable byte-identical OPF 2 and NCX inputs without changing EPUB 3 defaults", async () => {
+    const guide = minimalEpub2Guide();
+    const options = {
+      metadataForm: "deprecated-wrappers" as const,
+      guide,
+      ncxDoctype: EPUB2_CANONICAL_NCX_DOCTYPE,
+      chapterDoctype: EPUB2_CANONICAL_XHTML11_DOCTYPE,
+    };
+    const [
+      directFirst,
+      directSecond,
+      wrappedFirst,
+      wrappedSecond,
+      epub3First,
+      epub3Second,
+    ] = await Promise.all([
+      buildMinimalEpub2Fixture(),
+      buildMinimalEpub2Fixture({
+        packageDocument: minimalEpub2PackageDocument(),
+        ncxDocument: minimalNcxDocument(),
+      }),
+      buildMinimalEpub2Fixture(options),
+      buildMinimalEpub2Fixture(options),
+      buildMinimalEpubFixture(),
+      buildMinimalEpubFixture(),
+    ]);
+
+    expect(directSecond).toEqual(directFirst);
+    expect(wrappedSecond).toEqual(wrappedFirst);
+    expect(wrappedFirst).not.toEqual(directFirst);
+    expect(epub3Second).toEqual(epub3First);
+    expect(directFirst).not.toEqual(epub3First);
+
+    const reader = new ZipReader(new Uint8ArrayReader(wrappedFirst), {
+      useWebWorkers: false,
+    });
+    try {
+      const entries = await reader.getEntries();
+      expect(entries.map((entry) => entry.filename)).toEqual([
+        "mimetype",
+        "META-INF/container.xml",
+        "EPUB/package.opf",
+        "EPUB/toc.ncx",
+        "EPUB/text/chapter.xhtml",
+      ]);
+      const textByName = new Map<string, string>();
+      for (const entry of entries) {
+        if (!("getData" in entry)) {
+          throw new Error("expected only file entries in minimal EPUB 2");
+        }
+        const content = await entry.getData(new Uint8ArrayWriter(), {
+          useWebWorkers: false,
+        });
+        textByName.set(entry.filename, new TextDecoder().decode(content));
+      }
+
+      expect(textByName.get("EPUB/package.opf")).toContain('version="2.0"');
+      expect(textByName.get("EPUB/package.opf")).toContain('<spine toc="ncx">');
+      expect(textByName.get("EPUB/package.opf")).toContain("<dc-metadata>");
+      expect(textByName.get("EPUB/package.opf")).toContain("<x-metadata>");
+      expect(textByName.get("EPUB/package.opf")).toContain(guide);
+      expect(textByName.get("EPUB/toc.ncx")).toBe(
+        `${EPUB2_CANONICAL_NCX_DOCTYPE}${minimalNcxDocument()}`,
+      );
+      expect(textByName.get("EPUB/text/chapter.xhtml")).toBe(
+        `${EPUB2_CANONICAL_XHTML11_DOCTYPE}${minimalChapterDocument()}`,
+      );
+    } finally {
+      await reader.close();
+    }
   });
 
   it("fixes physical order, timestamps, attributes, and compression", async () => {

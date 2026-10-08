@@ -5,6 +5,7 @@ import type { HardwareProfilePreferenceRepository } from "../persistence/hardwar
 import type { NarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 import {
   HardwareProfileCompatibilityCoordinator,
+  chatterboxAcquisitionPresentation,
   type HardwareDevelopmentGatePort,
   type HardwareProfileDetectionPort,
 } from "./hardware-profile-compatibility";
@@ -184,6 +185,49 @@ describe("hardware profile compatibility coordinator", () => {
     expect(snapshot.selectionSource).toBe("recommendation");
     expect(snapshot.fallbackAvailable).toBe(true);
     expect(snapshot.profiles).toHaveLength(7);
+  });
+
+  it("admits Chatterbox acquisition from its exact supported profile, not the active Piper selection", async () => {
+    const snapshot = await new HardwareProfileCompatibilityCoordinator(
+      dependencies(),
+    ).check("application-start");
+
+    expect(snapshot.activeProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(chatterboxAcquisitionPresentation(snapshot)).toEqual({
+      allowed: true,
+      message: "",
+    });
+  });
+
+  it("blocks Chatterbox acquisition at one-below capacity and unknown facts", async () => {
+    const snapshot = await new HardwareProfileCompatibilityCoordinator(
+      dependencies(),
+    ).check("application-start");
+    const oneBelow = {
+      ...snapshot,
+      profiles: snapshot.profiles.map((profile) =>
+        profile.profileId === "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+          ? { ...profile, state: "incompatible" as const }
+          : profile,
+      ),
+    };
+    const unknown = {
+      ...snapshot,
+      profiles: snapshot.profiles.map((profile) =>
+        profile.profileId === "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+          ? { ...profile, state: "unknown" as const }
+          : profile,
+      ),
+    };
+
+    expect(chatterboxAcquisitionPresentation(oneBelow).allowed).toBe(false);
+    expect(chatterboxAcquisitionPresentation(oneBelow).message).toMatch(
+      /does not currently meet/,
+    );
+    expect(chatterboxAcquisitionPresentation(unknown).allowed).toBe(false);
+    expect(chatterboxAcquisitionPresentation(unknown).message).toMatch(
+      /not established/,
+    );
   });
 
   it.each([

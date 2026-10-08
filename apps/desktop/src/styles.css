@@ -57,54 +57,6 @@ body {
   overflow: hidden;
 }
 
-.shell-header-reader {
-  display: grid;
-  flex: 0 0 auto;
-  grid-template-columns: auto minmax(18rem, 1fr) minmax(13rem, 20rem);
-  gap: 1rem;
-  align-items: center;
-}
-
-.shell-header-reader .shell-brand {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-
-.shell-header-reader .shell-label,
-.shell-header-reader .shell-description {
-  display: none;
-}
-
-.shell-header-reader h1 {
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-}
-
-.shell-header-reader .shell-open-controls {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, auto);
-  gap: 0.75rem;
-  align-items: end;
-}
-
-.shell-header-reader .file-picker {
-  margin: 0;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-}
-
-.shell-header-reader .file-picker input {
-  min-width: 0;
-  padding: 0.45rem 0.6rem;
-}
-
-.shell-header-reader .open-status {
-  min-height: 0;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
 .hardware-compatibility {
   flex: 0 0 auto;
   margin-top: 1rem;
@@ -877,28 +829,6 @@ button.semantic-internal-link {
   line-height: 1.5;
 }
 
-.close-publication {
-  margin-top: 1.25rem;
-  padding: 0.7rem 1rem;
-  border: 1px solid #52705e;
-  border-radius: 0.75rem;
-  color: #24563a;
-  background: #f4f7f2;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.close-publication:focus-visible {
-  outline: 0.2rem solid #1d6b43;
-  outline-offset: 0.2rem;
-}
-
-.publication-header .close-publication {
-  flex: 0 0 auto;
-  margin-top: 0;
-}
-
 .product-narration {
   flex: 0 0 auto;
   border: 1px solid #b7c7b9;
@@ -1221,14 +1151,6 @@ button.semantic-internal-link {
 }
 
 @media (max-width: 64rem) {
-  .shell-header-reader {
-    grid-template-columns: minmax(0, 1fr) minmax(13rem, 20rem);
-  }
-
-  .shell-header-reader .shell-brand {
-    display: none;
-  }
-
   .reader-preference-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1241,10 +1163,6 @@ button.semantic-internal-link {
 
   .reader-toc {
     position: static;
-  }
-
-  .shell-header-reader {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1277,33 +1195,12 @@ button.semantic-internal-link {
     padding: 0.5rem;
   }
 
-  .shell-header-reader .shell-open-controls {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.35rem;
-  }
-
-  .shell-header-reader .file-picker {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.25rem;
-  }
-
-  .shell-header-reader .open-status {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .publication-header {
     align-items: flex-start;
   }
 
   .shell-card-reader .publication-summary h2 {
     font-size: 1.05rem;
-  }
-
-  .publication-header .close-publication {
-    padding: 0.5rem 0.65rem;
-    font-size: 0.8rem;
   }
 
   .product-narration-compact {
@@ -1548,6 +1445,31 @@ button.semantic-internal-link {
   display: grid;
   gap: 0.75rem;
   padding: 0.75rem;
+}
+
+.reader-settings-content .optional-chatterbox-controls {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--reader-border);
+}
+
+.reader-settings-content .optional-chatterbox-controls h4,
+.reader-settings-content .optional-chatterbox-controls p {
+  margin: 0;
+}
+
+.reader-settings-content .optional-chatterbox-confirmation,
+.reader-settings-content .optional-chatterbox-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.reader-settings-content .optional-chatterbox-progress progress {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .reader-settings-content .hardware-compatibility-narration fieldset,

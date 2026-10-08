@@ -4,6 +4,21 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
+Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
+production completion and unresolved runtime investigation are deferred to a
+future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
+Existing development-only integration, tests and historical evidence are retained.
+
+The [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
+integrates the separately published v3 prerelease after the 2026-10-06 audit
+exposed advisories in v2. The production v3 dependency audit and the rebuilt
+installed journey now pass, including Chatterbox/Piper in both languages,
+removal and reinstallation. A reproduced completion/cancellation race is
+contained in the shared process client without changing the coordinator.
+Independent review approved the integration, and all three integration CI gates
+passed; the completed plan records their exact evidence. Historical v2 assets
+and evidence are retained, and no new installer is published.
+
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized
@@ -40,8 +55,9 @@ The historical M010
 [`tts-support-matrix-v1`](architecture/tts-support-matrix-v1.md) makes
 Piper/davefx the sole supported and automatically recommendable profile when
 compatible and configured, keeps Qwen/Serena development-only, and records
-that automatic engine failover remains disabled. M011 still owns runtime/model
-distribution and license fulfillment. M010.1's completed v2 overlay is
+that automatic engine failover remains disabled. M011 now owns the implemented
+verified Piper core payload and still owns its installer plus optional-model
+distribution. M010.1's completed v2 overlay is
 described below.
 
 M010.1 is complete. Milestones 1 through 5 freeze and execute the
@@ -94,27 +110,132 @@ cleanup units. Renewed maintainer listening confirms correct slowdown across
 the admitted range, and pull request #170 passes the required Ubuntu and
 Windows checks.
 
-M011 is in progress and has a detailed active
-[`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md).
+M011's renewed Milestone 7 record accepts a local/portfolio MVP GO; its
+detailed
+[`packaging and release ExecPlan`](plans/completed/M011-package-validate-and-release-mvp.md)
+is archived after PR #207 passed Windows native foundation, Ubuntu portable
+foundation, and Production dependency graphs on the exact implementation-and-
+evidence head.
 Milestone 1 freezes
 [`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
 accepts
 [ADR-0042](architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
-before dependency or package results. Its proportional
+before dependency or package results. The renewed Milestone 7 record applies
+[ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md)
+and
+[`mvp-release-authority-v2`](architecture/mvp-release-authority-v2.md), which
+replace only the exhaustive per-computer interpretation of the independent
+claim gates. Support now uses published requirements plus representative
+compatible-host evidence; every v1 security, integrity, privacy, cancellation,
+and lifecycle control remains in force. The proportional
 [`release security and distribution boundary`](development/release-security-and-distribution.md)
 targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
-download. The Chatterbox path requires explicit consent, a minimal audited
-graph, fixed-manifest integrity verification, atomic installation, separate
-activation, offline clean-host proof, and application-owned removal; Qwen stays
-development-only and outside the first distributable product. Milestone 2
+download. Milestone 4A implements the fail-closed native lifecycle and
+Settings controls. Milestone 4B now implements the split acquisition while its
+v3 manifest is downloadable only after the renderer and native live compatibility
+gates pass: six allowlisted model-data files
+are acquired directly from the official
+`ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
+Each file remains bounded and SHA-256 verified; no model-repository code may
+execute. The reviewed Chatterbox runtime is reproducibly built, split into
+three bounded assets, and published under the immutable
+[`chatterbox-runtime-v3`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v3)
+prerelease. The optional path requires explicit consent, bounded
+download, exact verification, atomic installation, separate activation,
+offline operation, and application-owned removal. The ordinary manifest exposes
+Download only to a compatible current host; that does not revoke Chatterbox
+runtime support on a host that fails the gate. Qwen stays development-only and
+outside the first distributable product.
+ADR-0044 corrects only current Chatterbox product admission: the measured
+`3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
+while the evaluated nominal 8-GB class remains recommended and disclosed.
+ADR-0045's distinct unsigned local validation installer is preserved as
+historical evidence. Milestone 6B retired it as a competing product surface
+after the ordinary release-locked journey passed on the representative host.
+ADR-0046 records the next installed-package findings: the immutable runtime-v2
+parts omitted two generated VoxLeaf service modules and the historical
+installed root produced a failing 261-character Python path. The validation
+build now migrates only the exact legacy manifest to the shorter `cb/2` root,
+applies the hash-frozen two-file correction locally, and fully verifies the
+corrected package without another optional-payload download. Its first-use
+clarification permits repair of only allowlisted generated cache data and keeps
+one successful complete-verification receipt only in native process memory;
+within-process reuse is guarded by tree metadata and is not claimed to resist
+malicious same-user tampering (ADR-0046 defines this MVP limitation); every new
+application process verifies the full authority again. Direct
+content-safe model/service probes and the exact installed Spanish and English
+WebView2 arms now pass after conventionalizing only canonical verbatim paths at
+the child-process boundary. The installed bilingual and packaged lifecycle
+results are representative support evidence under authority v2. Public signing
+remains externally pending.
+M011 Milestone 6A is complete for implementation and development-host evidence.
+It keeps Settings visibly populated during profile transitions, distinguishes
+truthful first-Play startup phases, makes optional-
+package removal discoverable, explains that acquisition cancellation deletes
+only incomplete staging, and separates optional-package retention from ordinary
+preferences in the uninstall journey. ADR-0047's defaults are implemented:
+interactive Chatterbox removal is selected when exact optional data exists,
+preference/recovery removal is not selected, and silent uninstall preserves
+both unless an explicit bounded option is supplied. Focused desktop regressions
+and the six-outcome packaged lifecycle matrix pass for both local product
+identities on the development host. Authority v2 accepts those results for
+conditional Chatterbox support, ordinary compatibility-gated availability, and
+the separate public-signing boundary. Completed Milestone 6B reconciles the
+exact package size, discloses Chatterbox's generally more natural/expressive but
+subjective quality and resource costs, compiles repository-development
+fallbacks out of the release, and passes its ordinary installed journey under
+poisoned development environment inputs without uninstalling Python, Rust,
+Node.js, Cargo, or other tools from the representative computer.
+Pre-release Milestone 3.1 is complete.
+[ADR-0048](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+and its
+[`completed ExecPlan`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
+admit a bounded reflowable OPF 2.0/NCX profile alongside the unchanged EPUB 3
+profile. Current EPUB evidence passes 35 files/653 tests; the completed
+downstream evidence passes desktop 53 files/536 tests plus 18 Node,
+Playwright 7-test, and packaged-native matrices prove package, navigation,
+semantic/resource/locator, reader/restoration, narration, privacy, and
+cancellation behavior. This is not full EPUB 2 conformance; M011 Milestone 7
+consumes the completed result.
+Milestone 5 packages version `0.1.0` as a release-only current-user Windows x64
+NSIS installer containing the exact verified bilingual Piper core. The current
+unsigned local artifact identity is recorded in the generated package evidence
+after each rebuild; it is not a public-release identity.
+Renewed Milestone 7 binds the current `181,596,357`-byte installer, SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`,
+to passing exact-artifact install, first-start, repair, uninstall-choice, and
+ordinary compatible-host Chatterbox journey evidence outside the sandbox.
+Defender was not run and SmartScreen was not observed for that exact hash. The
+renewed record says **GO** for Piper portfolio readiness. Piper is a CPU path
+with no GPU requirement, and the maintainer also confirmed that VoxLeaf worked
+on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU.
+This is representative functionality evidence, not a promise of identical
+performance on every Windows computer. Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
-production audits, bounded dependency-update intake, and a deterministic
-363-component release inventory. It does not yet create an installer or the
-optional acquisition flow. Piper-core,
-optional-Chatterbox, and signed-public readiness are separate gates. Signing
-does not block a truthful local demo, but an unsigned general download is not
-approved.
+audits, bounded update intake, and the component inventory. Milestone 3 adds
+the deterministic bilingual Piper core, complete notices/source fulfillment,
+offline smoke evidence, and native fixed-manifest verification. Chatterbox is
+also **GO when the published Windows/CUDA/VRAM/RAM/CPU gate passes**, backed by
+the Spanish and English representative-host results. The ordinary optional
+manifest exposes Chatterbox Download only after the current host passes its
+published live compatibility gate.
+Signed-public readiness is a separate **pending external authorization** state
+because no trusted signing identity is available. The unsigned package is a
+local/portfolio MVP, not a trusted general-public installer. The 2026-08-03
+Milestone 7 record remains a historical preliminary snapshot; the renewed
+decision and PR #207's required checks close M011 at the unsigned local/
+portfolio level.
+
+The basic MVP code, logic, and security audit reviewed all 825 tracked items in
+its worktree inventory. Standard Codex Security scan
+`6db53928-14cd-4825-bd80-2680f7d5eac1` covered that 825/825 inventory and
+recorded zero reportable findings; it was a static source review and does not
+replace runtime, dependency/advisory, package, fuzzing, penetration, or external
+security testing. The accompanying manual review closed two bounded lifecycle
+gaps: failed narration preparation now completes active shutdown before
+availability recovery restarts, and a Windows Job Object assignment failure now
+terminates and reaps the just-spawned TTS child.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -123,13 +244,14 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements, plus the implemented M011 lifecycle-feedback addendum.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
 ## Architecture
 
 - [`architecture/system-diagram.md`](architecture/system-diagram.md): canonical implemented/approved component map, EPUB-to-audio flow, status legend, and maintenance conditions.
+- [`architecture/system-diagram-compact.md`](architecture/system-diagram-compact.md): simplified product-level map of local EPUB reading, local narration, bounded playback, synchronization, and optional Chatterbox installation.
 - [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, implemented EPUB/reader/narration-preparation behavior, and the current TTS feasibility boundary.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/adaptive-buffer-authority-v1.md`](architecture/adaptive-buffer-authority-v1.md): frozen M008 quick/prepared/refill thresholds, simultaneous resource limits, ownership, lifecycle, volume/speed, and truthful UX authority.
@@ -139,7 +261,13 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/reader-settings-playback-authority-v1.md`](architecture/reader-settings-playback-authority-v1.md): frozen M010.2 Milestone 1 shell, Settings, English-fallback migration, bounded preference, exact playback-rate arithmetic, backend-comparison, resource, privacy, and validation authority.
 - [`architecture/reader-settings-playback-authority-v2.md`](architecture/reader-settings-playback-authority-v2.md): frozen M010.2 Milestone 2A six-rate, exact-candidate, fee-free licence, media-only CSP, lifecycle, resource, and result-lineage comparison authority.
 - [`architecture/reader-settings-playback-authority-v3.md`](architecture/reader-settings-playback-authority-v3.md): frozen M010.2 Milestone 2C selected/pending/active rate state, exact boundary-deferred candidates, first-activation/recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority.
-- [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen M011 Windows/Piper core, optional Chatterbox acquisition, package topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority.
+- [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen historical M011 Windows/Piper core and single-archive optional Chatterbox topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority; Milestone 4B additively supersedes only its Chatterbox acquisition shape through authority v2.
+- [`architecture/mvp-release-authority-v2.md`](architecture/mvp-release-authority-v2.md): accepted M011 claim authority using published compatibility requirements plus representative host evidence, while separating runtime support, ordinary-build download availability, and externally authorized public signing.
+- [`architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md`](architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md): accepted additive installer authority separating default interactive Chatterbox removal from default reader-state retention while keeping silent uninstall non-destructive without explicit bounded options.
+- [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): implemented authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries; final evidence is recorded in the completed M003.1 ExecPlan.
+- [`architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md`](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md): accept support claims based on published requirements and representative compatible-host evidence rather than exhaustive per-computer testing.
+- [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json): generated security-refreshed v3 package and publication identities. Earlier runtime evidence v2/v3 remains historical; runtime evidence alone does not establish installer acceptance or signing.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
@@ -198,6 +326,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorizes a separate v3 comparison where a pending rate applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under new first-activation and RAM limits.
 - [`architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freezes the immutable v3 candidate, boundary-transition, recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority before implementation or measurement.
 - [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes; Milestone 5 implements the exact selection without dependency or CSP expansion.
+- [`architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md`](architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md): replaces the conservative 8-GB Chatterbox minimum with the measured-capacity 6-GB-class/4,668-MiB-free product gate while retaining 8 GB as recommended and evaluated.
+- [`architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md`](architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md): retains immutable runtime-v2 release assets while applying one hash-closed two-module correction and short Windows-safe install root before full re-verification.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -209,14 +339,19 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
-- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, closed Piper core and optional Chatterbox dependency/audit boundary, mandatory remaining release gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
-- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, renewed Milestone 7 decision and exact-artifact receipts, completed 6B ordinary acquisition/release isolation, basic audit result and limitations, pending external signing, and deliberately deferred enterprise hardening.
+- [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
+- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
+- [`development/agentic-change-review.md`](development/agentic-change-review.md): independent Astra review of feature and bug-fix behavior, regression coverage, exact-patch evidence, and correction handling.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol/Astra-directed audit, Sol implementation, independent Astra validation, Sol Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, optional integrity-checked Chatterbox download/removal package, core/optional dependency and licence closure, clean-host validation, signing path, and independent core/optional/public release decisions.
+- [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
+- [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
+- [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
@@ -234,7 +369,11 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
 - [`plans/completed/M010-002-reader-settings-and-playback-controls.md`](plans/completed/M010-002-reader-settings-and-playback-controls.md): completed pre-M011 reader-first settings and playback-control follow-up, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, the sequential six-arm portfolio, renewed human all-rate confirmation, and passing Ubuntu/Windows closeout checks.
-- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
+- [`plans/completed/M011-package-validate-and-release-mvp.md`](plans/completed/M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, independent release decisions, and passing PR #207 checks. Public signing stays an external future action.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
+
+Historical reference: [`synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md)
+is superseded by completed M009 for synchronization work. Its original path
+remains available for links in completed plans; it is not an active ExecPlan.
 
 For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).

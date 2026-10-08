@@ -129,7 +129,7 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
 def test_release_component_inventory_is_complete_and_content_safe() -> None:
     inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
     components = inventory["components"]
-    assert len(components) == 363
+    assert len(components) == 400
     assert len({component["id"] for component in components}) == len(components)
     assert {component["scope"] for component in components} == {
         "core",
@@ -165,7 +165,9 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         component["name"] for component in components if component["scope"] == "not-shipped"
     } == {"Qwen development profiles"}
     assert inventory["lockIdentities"]["piperCore"]["sha256"] == _sha256(CORE_LOCK)
-    assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(CHATTERBOX_LOCK)
+    assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(
+        RELEASE_ROOT / "profiles" / "chatterbox-v3" / "requirements.lock"
+    )
 
 
 def test_python_licence_evidence_contains_only_exact_release_components() -> None:
@@ -186,3 +188,29 @@ def test_python_licence_evidence_contains_only_exact_release_components() -> Non
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_active_successor_graph_is_security_refreshed_and_exact() -> None:
+    successor = RELEASE_ROOT / "profiles" / "chatterbox-v3"
+    requirements = (successor / "requirements.in").read_text()
+    assert "transformers==5.17.0" in requirements
+    assert "tokenizers==0.23.1" in requirements
+    assert "urllib3==2.8.0" in requirements
+    assert len(_requirement_blocks(successor / "requirements.lock")) == 79
+    policy = json.loads(AUDIT_POLICY.read_text())
+    graph = next(graph for graph in policy["pythonGraphs"] if graph["id"] == "chatterbox-optional")
+    expected = "services/tts/release/profiles/chatterbox-v3/requirements.lock"
+    assert graph["lock"] == expected
+    assert graph["requirements"] == expected
+    inventory = json.loads(COMPONENT_INVENTORY.read_text())
+    components = {
+        component["name"]: component
+        for component in inventory["components"]
+        if component["scope"] == "optional" and component["ecosystem"] == "python"
+    }
+    for name, version in {
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.1",
+        "urllib3": "2.8.0",
+    }.items():
+        assert components[name]["versionOrRevision"] == version

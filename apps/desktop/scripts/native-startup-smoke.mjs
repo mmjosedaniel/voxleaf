@@ -17,6 +17,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 import {
+  runWebDriverElementInteractionWithRetry,
   runWebDriverInteractionWithRetry,
   WebDriverClient,
   WebDriverClientError,
@@ -25,19 +26,26 @@ import {
   assertNativeSmokeInvariant,
   assertNativeSmokeInvariants,
   nativeSmokeInvariantFailureCode,
+  resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "./bilingual-portfolio-host.mjs";
+import { selectAdaptiveTtsAlternateProfile } from "./adaptive-tts-profile-selection.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
-const executablePath = path.join(
-  desktopRoot,
-  "src-tauri",
-  "target",
-  "release",
-  "voxleaf-desktop.exe",
+const executablePath = resolveNativeSmokeExecutable(
+  process.argv.slice(2),
+  path.join(
+    desktopRoot,
+    "src-tauri",
+    "target",
+    "release",
+    "voxleaf-desktop.exe",
+  ),
 );
 const STARTUP_TIMEOUT_MS = 90_000;
+const OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS = 180_000;
+const OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS = 300_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
@@ -951,6 +959,66 @@ async function adaptiveReaderExperienceObservation(driver) {
   );
 }
 
+async function prepareParagraphLeafForInteraction(driver) {
+  await waitForCondition(
+    driver,
+    `const leaf = document.querySelector(".paragraph-leaf");
+     const host = leaf?.closest(".paragraph-leaf-host");
+     const rect = leaf?.getBoundingClientRect();
+     return leaf instanceof HTMLButtonElement &&
+       host instanceof HTMLElement &&
+       host.hidden === false &&
+       leaf.disabled === false &&
+       rect !== undefined && rect.width > 0 && rect.height > 0;`,
+  );
+  const focused = await driver.execute(
+    `const leaf = document.querySelector(".paragraph-leaf");
+     if (!(leaf instanceof HTMLButtonElement)) return false;
+     leaf.scrollIntoView({ block: "center", inline: "nearest" });
+     leaf.focus({ preventScroll: true });
+     return document.activeElement === leaf;`,
+  );
+  assert(focused === true, "Native synchronized narration proof failed.");
+  await waitForCondition(
+    driver,
+    `const leaf = document.querySelector(".paragraph-leaf");
+     const host = leaf?.closest(".paragraph-leaf-host");
+     const owner = document.querySelector('[data-reader-scroll-owner="true"]');
+     if (!(leaf instanceof HTMLButtonElement) ||
+         !(host instanceof HTMLElement) ||
+         !(owner instanceof HTMLElement)) return false;
+     const leafRect = leaf.getBoundingClientRect();
+     const ownerRect = owner.getBoundingClientRect();
+     return host.hidden === false &&
+       leaf.disabled === false &&
+       document.activeElement === leaf &&
+       leafRect.width > 0 && leafRect.height > 0 &&
+       leafRect.bottom > ownerRect.top && leafRect.top < ownerRect.bottom &&
+       leafRect.right > ownerRect.left && leafRect.left < ownerRect.right;`,
+  );
+  return await driver.findElement(".paragraph-leaf");
+}
+
+async function paragraphLeafActivationDelivered(driver) {
+  try {
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".paragraph-leaf")
+         ?.getAttribute("data-leaf-state") === "preparing";`,
+      5_000,
+    );
+    return true;
+  } catch (error) {
+    if (
+      error instanceof WebDriverClientError &&
+      error.code === "webdriver-condition-timeout"
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 async function adaptiveActiveHighlightPerceivability(driver) {
   return await driver.execute(
     `const highlightName = "voxleaf-narration-active";
@@ -1439,6 +1507,22 @@ async function runAdaptiveTtsExactHostMatrix(
   setStage("adaptive exact-host collapsed reader experience");
   const initialReaderExperience =
     await adaptiveReaderExperienceObservation(driver);
+  if (
+    initialReaderExperience?.readerScrollOwnerCount !== 1 ||
+    initialReaderExperience.readerScrollOwnerVisible !== true ||
+    initialReaderExperience.compactVisible !== true ||
+    initialReaderExperience.detailExpanded !== false ||
+    initialReaderExperience.detailVisible !== false ||
+    initialReaderExperience.progressBarCount !== 0 ||
+    initialReaderExperience.leafCount !== 1 ||
+    initialReaderExperience.leafVisible !== true ||
+    initialReaderExperience.leafState !== "checkpoint" ||
+    initialReaderExperience.leafAriaCurrent !== false
+  ) {
+    console.error(
+      `Adaptive reader experience observation: ${JSON.stringify(initialReaderExperience)}`,
+    );
+  }
   assert(
     initialReaderExperience?.readerScrollOwnerCount === 1 &&
       initialReaderExperience.readerScrollOwnerVisible === true &&
@@ -1448,7 +1532,7 @@ async function runAdaptiveTtsExactHostMatrix(
       initialReaderExperience.progressBarCount === 0 &&
       initialReaderExperience.leafCount === 1 &&
       initialReaderExperience.leafVisible === true &&
-      initialReaderExperience.leafState === "preview" &&
+      initialReaderExperience.leafState === "checkpoint" &&
       initialReaderExperience.leafAriaCurrent === false,
     "Native synchronized narration proof failed.",
   );
@@ -1622,8 +1706,20 @@ async function runAdaptiveTtsExactHostMatrix(
   try {
     setStage("adaptive exact-host keyboard leaf quick start");
     const quickCommandAtMs = Date.now();
-    const quickStartButton = await driver.findElement(".paragraph-leaf");
-    await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const quickStartButton =
+          await prepareParagraphLeafForInteraction(driver);
+        await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host keyboard leaf quick start (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
@@ -1700,8 +1796,19 @@ async function runAdaptiveTtsExactHostMatrix(
       "Native synchronized narration proof failed.",
     );
     const leafReplacementStartedAtMs = Date.now();
-    const activeLeaf = await driver.findElement(".paragraph-leaf");
-    await driver.sendKeys(activeLeaf, WEBDRIVER_SPACE);
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const activeLeaf = await prepareParagraphLeafForInteraction(driver);
+        await driver.sendKeys(activeLeaf, WEBDRIVER_SPACE);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host active leaf replacement (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
@@ -2221,11 +2328,22 @@ async function runAdaptiveTtsExactHostMatrix(
     await closeReaderSettings(driver);
 
     setStage("adaptive exact-host one-minute prepared checkpoint leaf start");
-    const preparedButton = await driver.findElement(".paragraph-leaf");
     // The earlier active-leaf replacement proves keyboard activation. Use the
-    // native WebDriver click here so the prepared-mode lifecycle does not
-    // repeat WebView2's intermittent off-screen Space-key delivery.
-    await driver.click(preparedButton);
+    // native WebDriver click here after applying the same visible/focused leaf
+    // guard so prepared-mode startup cannot race the post-Settings layout.
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const preparedButton = await prepareParagraphLeafForInteraction(driver);
+        await driver.click(preparedButton);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host one-minute prepared checkpoint leaf start (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
@@ -2572,6 +2690,29 @@ async function selectAdaptiveTtsProfile(
   exerciseSwitch = false,
 ) {
   const serializedProfileId = JSON.stringify(profileId);
+  if (profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+    await waitForCondition(
+      driver,
+      `const state = document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state");
+       return state === "installed" || state === "failed";`,
+      OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS,
+    );
+    const optionalState = await driver.execute(
+      `return document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state") ?? "missing";`,
+    );
+    console.log(
+      `ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
+        profileId,
+        state: optionalState,
+      })}`,
+    );
+    assert(
+      optionalState === "installed",
+      "Native synchronized narration proof failed.",
+    );
+  }
   await waitForCondition(
     driver,
     `const owner = document.querySelector(".hardware-compatibility");
@@ -2640,31 +2781,23 @@ async function selectAdaptiveTtsProfile(
     "Native synchronized narration proof failed.",
   );
   if (exerciseSwitch) {
-    const switched = await driver.execute(
-      `const profileId = ${serializedProfileId};
-       const inputs = Array.from(
-         document.querySelectorAll('input[name="hardware-profile"]'),
-       );
-       const alternate = inputs.find(
-         (candidate) => candidate.value !== profileId,
-       );
-       if (!(alternate instanceof HTMLInputElement)) {
-         return false;
-       }
-       alternate.click();
-       return alternate.value;`,
-    );
-    assert(
-      typeof switched === "string" && switched.length > 0,
-      "Native synchronized narration proof failed.",
-    );
-    await waitForCondition(
+    await selectAdaptiveTtsAlternateProfile({
       driver,
-      `return document.querySelector(".hardware-compatibility")
-         ?.getAttribute("data-compatibility-profile") ===
-         ${JSON.stringify(switched)};`,
-    );
+      profileId,
+      waitForCondition,
+      assert,
+      timeoutMs: STARTUP_TIMEOUT_MS,
+    });
   }
+  await waitForCondition(
+    driver,
+    `const profileId = ${serializedProfileId};
+     const input = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     ).find((candidate) => candidate.value === profileId);
+     return input instanceof HTMLInputElement && !input.matches(":disabled");`,
+    OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
+  );
   const selected = await driver.execute(
     `const profileId = ${serializedProfileId};
      const input = Array.from(
@@ -2684,6 +2817,9 @@ async function selectAdaptiveTtsProfile(
     `return document.querySelector(".hardware-compatibility")
        ?.getAttribute("data-compatibility-profile") ===
        ${serializedProfileId};`,
+    profileId === CHATTERBOX_BILINGUAL_PROFILE_ID
+      ? OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS
+      : STARTUP_TIMEOUT_MS,
   );
   return true;
 }
@@ -2775,22 +2911,39 @@ async function closeReaderContents(driver) {
 
 async function selectNarrationLanguage(driver, language) {
   const serializedLanguage = JSON.stringify(language);
-  const selected = await driver.execute(
-    `const language = ${serializedLanguage};
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
      const input = Array.from(
        document.querySelectorAll('input[name="narration-language"]'),
-     ).find((candidate) => candidate.value === language);
-     if (!(input instanceof HTMLInputElement)) {
+     ).find((candidate) => candidate.value === ${serializedLanguage});
+     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
+       input instanceof HTMLInputElement &&
+       input.disabled === false;`,
+  );
+  const selected = await driver.execute(
+    `const input = document.querySelector(
+       'input[name="narration-language"][value="${language}"]',
+     );
+     const setter = Object.getOwnPropertyDescriptor(
+       HTMLInputElement.prototype,
+       "checked",
+     )?.set;
+     if (!(input instanceof HTMLInputElement) || setter === undefined) {
        return false;
      }
-     input.click();
+     setter.call(input, true);
+     input.dispatchEvent(new MouseEvent("click", { bubbles: true }));
      return true;`,
   );
   assert(selected === true, "Native narration language proof failed.");
   await waitForCondition(
     driver,
-    `return document.querySelector(".hardware-compatibility")
-       ?.getAttribute("data-narration-language") === ${serializedLanguage};`,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-narration-language") ===
+         ${serializedLanguage} &&
+       owner?.getAttribute("data-compatibility-status") !== "checking";`,
+    INTERACTION_TIMEOUT_MS,
   );
 }
 
@@ -3278,7 +3431,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native same-file reselection");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   await driver.execute(
     `document.querySelector(".semantic-raster-host")
        ?.scrollIntoView({ block: "center" });
@@ -3336,7 +3489,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
      };`,
   );
   assert(
-    beforePickerCancellation?.title === "Synthetic comprehensive publication" &&
+    beforePickerCancellation?.title === "Synthetic EPUB version equivalence" &&
       afterPickerCancellation?.title === beforePickerCancellation.title &&
       afterPickerCancellation.status === beforePickerCancellation.status &&
       afterPickerCancellation.imageSource ===
@@ -3358,7 +3511,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native ready publication replacement recovery");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
 
   setStage("native active file-read cancellation setup");
   await driver.execute(
@@ -3419,7 +3572,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native active file-read replacement");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   const cancellationObservation = await driver.execute(
     `const state = globalThis.__voxleafNativeFileReadControl;
      const observation = {
@@ -3475,11 +3628,11 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native file-ingress failure recovery");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   assert(
     (await driver.execute(
       `return document.querySelector("#publication-title")?.textContent ===
-         "Synthetic comprehensive publication" &&
+         "Synthetic EPUB version equivalence" &&
        document.querySelector(".semantic-reader") !== null;`,
     )) === true,
     "Native application did not recover after local file-ingress failures.",
@@ -4945,6 +5098,7 @@ async function run() {
     ),
   );
   const {
+    buildEpubVersionEquivalenceFixture,
     buildMinimalEpubFixture,
     buildReaderLongChapterEpubFixture,
     buildReaderNavigationEpubFixture,
@@ -5026,7 +5180,7 @@ async function run() {
     await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
   } else {
     const [primaryFixture, replacementFixture] = await Promise.all([
-      buildReaderNavigationEpubFixture(),
+      buildEpubVersionEquivalenceFixture("2.0"),
       buildReaderReflowEpubFixture({
         paragraphCount: 4,
         preservedPassageIndex: 2,
@@ -5248,7 +5402,7 @@ async function run() {
       driver,
       `return Array.from(document.querySelectorAll("h2")).some(
          (heading) =>
-           heading.textContent === "Synthetic comprehensive publication" &&
+           heading.textContent === "Synthetic EPUB version equivalence" &&
            heading.getClientRects().length > 0,
        );`,
     );

@@ -54,6 +54,54 @@ Before changing code or architecture:
 - Do not silently change public contracts.
 - Do not rewrite unrelated code.
 
+## Feature and bug review
+
+- For runtime behavior, public-contract, or cross-component feature/bug changes,
+  delegate an independent review to `change_reviewer` (GPT-6 Astra high) before
+  acceptance. Follow `docs/development/agentic-change-review.md`.
+- The reviewer inspects code and host-test evidence without editing or running
+  tests. Resolve actionable findings and obtain approval for the exact current
+  patch; missing evidence or an unavailable reviewer must be reported as blocked.
+- Trivial nonbehavioral documentation/spelling/formatting changes are exempt.
+  Refactor campaigns retain their existing validator instead of adding this role.
+- Keep the existing concurrency limit and user authorization boundaries. A review
+  report does not replace required checks or authorize Git mutations.
+
+## Systematic refactoring
+
+- Use `$orchestrate-safe-refactor` for a multi-file clean-code, readability, or
+  maintainability campaign and `$validate-safe-refactor` for its independent
+  acceptance gate.
+- Audit every target without forcing a modification. `SKIP` is a valid result
+  when no concrete maintainability problem exists.
+- Work in cohesive units consisting normally of one production file, its tests,
+  and at most two directly coupled support files; do not treat an arbitrary file
+  boundary as a behavior boundary.
+- Keep the primary task as director, permit exactly one implementation agent to
+  write at a time, and require a baseline plus post-change validation outside
+  the sandbox before accepting a unit.
+- Start the director with workspace-write permission. Treat custom-agent
+  sandbox settings as requested defaults, not hard isolation: child agents can
+  inherit or be constrained by the primary task's active permission mode.
+- Keep the Git index empty between units. Stage only the exact allowlisted
+  paths, require those paths to have no pre-existing worktree changes, inspect
+  the staged names and diff before committing, and never carry a rejected
+  worker patch into the next unit.
+- Reuse one auditor, one worker, and one validator task throughout a campaign
+  batch. Use GPT-6.1 Sol for audit, implementation, and Git stewardship, and
+  GPT-6 Astra for independent validation. The primary director may use either
+  model. If the Git-steward role is unavailable, record that fact and let the
+  director execute the same Git Action Order directly. Do not silently replace
+  an unavailable auditor, worker, or validator with another model.
+  Bind accepted-change orders to the immutable validation Report ID, HEAD, and
+  exact validated path identities. Recheck that evidence before staging and
+  commit; drift requires a new validation report, never refreshed approval
+  hashes. Git may mutate only while source writing and validation are idle.
+- Never manually refactor generated sources, frozen evaluation authority,
+  historical evidence, or completed ExecPlans.
+- Require an ExecPlan before a significant, multi-package, or multi-stage
+  refactor campaign.
+
 ## Testing expectations
 
 Behavior changes require relevant tests. As implementation is introduced, use the smallest applicable level:

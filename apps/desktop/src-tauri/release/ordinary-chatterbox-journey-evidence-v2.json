@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "application": {
+    "identifier": "com.voxleaf.desktop",
+    "platform": "windows-x86_64",
+    "version": "0.1.0"
+  },
+  "artifact": {
+    "installer": {
+      "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
+      "sizeBytes": 181602965,
+      "sha256": "8bc8d5a54e82a113b9ed2bb727c64742a2d7bd5ba9558d7aab1fd417bc77711d"
+    },
+    "applicationBinary": {
+      "fileName": "voxleaf-desktop.exe",
+      "sizeBytes": 11837440,
+      "sha256": "b2c7b1e1729b2b7bf05ed6b4b9014a931c42aa5d2c3aad36cf5d1ad91b6e9b67"
+    }
+  },
+  "result": "passed",
+  "steps": [
+    "preflight",
+    "install",
+    "gate",
+    "consent",
+    "cancel-download",
+    "verify-staging-cleanup",
+    "retry-download",
+    "activate",
+    "offline-chatterbox-es",
+    "offline-chatterbox-en",
+    "restart",
+    "remove",
+    "offline-piper-after-removal-es",
+    "offline-piper-after-removal-en",
+    "reinstall-optional-package",
+    "verify-reinstalled-package",
+    "uninstall"
+  ],
+  "outcomes": {
+    "releaseLockedRuntime": true,
+    "cleanDevelopmentEnvironmentPassed": true,
+    "hostileDevelopmentEnvironmentPassed": true,
+    "nativeCompatibilityGatePassed": true,
+    "downloadCancellationCleanupPassed": true,
+    "bilingualOfflineNarrationPassed": true,
+    "restartDiscoveryPassed": true,
+    "removalPassed": true,
+    "piperAfterRemovalPassed": true,
+    "optionalPackageReinstallPassed": true,
+    "privateBookTextLogged": false
+  }
+}
