@@ -29,6 +29,10 @@ test("the checked-in Windows release configuration is closed and current", async
     true,
   );
   await validateReleaseConfiguration(repositoryRoot(), false);
+  const { nsisHooks } = await loadReleaseDocuments(repositoryRoot());
+  assert.match(nsisHooks, /después.*podrá/);
+  assert.match(nsisHooks, /deberá adquirirlos/);
+  assert.doesNotMatch(nsisHooks, /Ã|Â|\uFFFD|8\.23 GB/);
 });
 
 test("the release authority rejects broader targets, elevation, and optional payloads", async () => {
@@ -56,6 +60,14 @@ test("the ordinary release requires one downloadable manifest and locked runtime
   for (const [mutate, code] of [
     [
       (value) => (value.optionalManifest.availability = "withheld"),
+      "optional-acquisition-authority",
+    ],
+    [
+      (value) => (value.optionalManifest.identity.packageVersion = "2"),
+      "optional-acquisition-authority",
+    ],
+    [
+      (value) => (value.optionalManifest.runtimeCorrection = {}),
       "optional-acquisition-authority",
     ],
     [
@@ -169,7 +181,7 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
   assert.equal(unsigned.lifecycle.localReleaseGatesPassed, false);
   assert.equal(unsigned.payload.chatterboxRuntimeOrWeightsBundled, false);
   assert.equal(unsigned.optionalChatterbox.releaseLockedRuntime, true);
-  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_231_893_387);
+  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_239_933_601);
   assert.equal(
     unsigned.optionalChatterbox.representativeCompatibleHostJourney,
     "not-run",

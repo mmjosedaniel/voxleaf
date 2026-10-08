@@ -12,6 +12,12 @@ authority, see the [roadmap](../plans/roadmap.md) and
 
 ## Status legend
 
+The security refresh in ADR-0052 changes the active optional package to v3;
+the process topology and local inference boundary are unchanged. Retained v2
+roots are cleanup-only, with no migration or execution fallback. Historical
+M011 checkpoints below retain their original artifact identities; current
+v3 installed acceptance is recorded in the security refresh plan.
+
 | Status               | Meaning                                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **Implemented**      | Production code exists for the stated boundary and repository validation covers it.                               |
@@ -72,7 +78,7 @@ flowchart LR
     SIGN["Trusted Windows signing authority<br/>External; currently unavailable<br/>public publication pending"]:::external
     WEBVIEW2["Microsoft WebView2 Runtime<br/>External Windows prerequisite;<br/>network only when compatible runtime is absent"]:::external
     HF_MODEL_SOURCE["Official ResembleAI/chatterbox model data<br/>full Hugging Face revision + six files;<br/>external acquisition only"]:::external
-    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>published as chatterbox-runtime-v2"]:::implemented
+    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>published as chatterbox-runtime-v3 prerelease"]:::implemented
     PACKAGE["Windows x64 per-user NSIS candidate<br/>VoxLeaf 0.1.0 + Piper ES/EN;<br/>local/portfolio GO; unsigned"]:::implemented
     ORDINARY_ACQUISITION["Ordinary compatible-host acquisition<br/>renderer presentation + native pre-network recheck;<br/>ADR-0050; validation overlay retired"]:::implemented
     RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2-M4B deterministic boundary;<br/>400 components + explicit blind spots"]:::implemented

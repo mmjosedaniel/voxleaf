@@ -29,6 +29,7 @@ import {
   resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "./bilingual-portfolio-host.mjs";
+import { selectAdaptiveTtsAlternateProfile } from "./adaptive-tts-profile-selection.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
@@ -2780,37 +2781,13 @@ async function selectAdaptiveTtsProfile(
     "Native synchronized narration proof failed.",
   );
   if (exerciseSwitch) {
-    const switched = await driver.execute(
-      `const profileId = ${serializedProfileId};
-       const inputs = Array.from(
-         document.querySelectorAll('input[name="hardware-profile"]'),
-       );
-       const alternate = inputs.find(
-         (candidate) => candidate.value !== profileId,
-       );
-       if (!(alternate instanceof HTMLInputElement)) {
-         return false;
-       }
-       const active = document.querySelector(".hardware-compatibility")
-         ?.getAttribute("data-compatibility-profile");
-       const changed = active !== alternate.value;
-       if (changed) {
-         alternate.click();
-       }
-       return { profileId: alternate.value, changed };`,
-    );
-    assert(
-      typeof switched?.profileId === "string" && switched.profileId.length > 0,
-      "Native synchronized narration proof failed.",
-    );
-    if (switched.changed === true) {
-      await waitForCondition(
-        driver,
-        `return document.querySelector(".hardware-compatibility")
-           ?.getAttribute("data-compatibility-profile") ===
-           ${JSON.stringify(switched.profileId)};`,
-      );
-    }
+    await selectAdaptiveTtsAlternateProfile({
+      driver,
+      profileId,
+      waitForCondition,
+      assert,
+      timeoutMs: STARTUP_TIMEOUT_MS,
+    });
   }
   await waitForCondition(
     driver,

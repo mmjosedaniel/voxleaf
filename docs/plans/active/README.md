@@ -17,6 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+No active ExecPlans are currently listed.
+
+## Historical reference
+
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.
+  Its original path is preserved for links in completed plans; it is not an
+  active ExecPlan.

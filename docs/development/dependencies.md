@@ -142,6 +142,67 @@ Torch/Torchaudio rather than calling them clean. No known high or critical
 reachable core or optional package vulnerability may be silently accepted. See
 [`release-security-and-distribution.md`](release-security-and-distribution.md).
 
+On 2026-10-06, the release audit policy was reconciled with RustSec's withdrawal
+of `RUSTSEC-2024-0411` through `RUSTSEC-2024-0420` on 2026-08-14. The GTK3
+bindings resumed maintenance; see the upstream
+[GTK advisory](https://rustsec.org/advisories/RUSTSEC-2024-0415.html) and
+[withdrawal records](https://github.com/RustSec/advisory-db/tree/ef6173cbc5c50ec8166f9a5b28f07834144373ee/crates).
+The exact locked graph now reports seven informational notices: the same five
+Windows-build-reachable Unicode notices and two non-Windows notices for
+`proc-macro-error` and `glib`. The policy removes only those ten withdrawn
+entries. It still rejects new or changed notices, reachability changes and any
+known Rust vulnerability. That policy-only correction left dependencies,
+lockfiles and the four Python advisory blind spots unchanged; the earlier
+17-notice checkpoint remains historical.
+The same local audit then passed Node, Rust, base Python and Piper core, but
+failed the optional Chatterbox graph: `transformers==5.5.0` reports
+`PYSEC-2026-3929` and `PYSEC-2026-4174`; `urllib3==2.7.0` reports
+`PYSEC-2026-4175`, `PYSEC-2026-4176` and `PYSEC-2026-4177`. These findings were
+previously hidden by the earlier Rust policy mismatch. That historical checkpoint
+did not advance the passing audit date. The subsequent bounded v3 update below
+resolves those findings without advisory suppression.
+
+The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
+adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
+`0.23.1` and urllib3 `2.8.0`; the other 76 packages retain their exact pins.
+The complete candidate audit reports zero known findings and the same four
+blind spots. Version `5.10.4` was rejected despite its empty advisory result:
+its custom-generation implementation still downloaded executable code before
+checking trust. The chosen upstream version includes that ordering repair;
+the real-library security probe tests it and tokenizer template containment.
+Native admission and the production audit/inventory now select v3. The complete
+production audit passed on 2026-10-06 before updating its recorded date; four
+URL-package blind spots remain explicit. Published v2 assets remain unchanged
+and installed v2 roots are cleanup-only. Installed v3 acceptance is tracked in
+the plan and [ADR-0052](../architecture/decisions/ADR-0052-admit-security-refreshed-chatterbox-v3.md).
+
+Successor maintainer commands are explicit:
+`pnpm.cmd package:chatterbox-optional:v3:write-source`,
+`pnpm.cmd package:chatterbox-optional:v3:check-source` and
+`pnpm.cmd package:chatterbox-optional:v3`. Default v2 commands and authorities
+retain their prior behavior. Build from a short Windows checkout path: nested
+dependency paths can still exceed conventional Windows path limits. The host
+validation uses an isolated short mirror of the exact reviewed source inputs.
+V3 output/environment lives in the builder's separate `dist/v3` directory.
+
+`pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
+v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
+`pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
+requires the actual GitHub publication readback with exact commit, tag, three
+names, sizes, digests and URLs. It cannot replace already published assets.
+Capture licences from the actual core and v3 interpreters with the existing
+`scripts/release_inventory.py --capture-python-licenses --python <core-python>
+--python <v3-python>` interface, then run `pnpm.cmd inventory:release` and its check.
+
+Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
+package's `runtime/python.exe`, without `PYTHONPATH`, and with
+`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` and
+`PYTHONDONTWRITEBYTECODE=1`. The pnpm security-probe alias uses `python` on
+PATH, so it requires that same interpreter to be selected explicitly. It adds
+no pytest dependency to the runtime. The probe uses synthetic inputs, refuses
+socket connections and verifies the three exact successor versions. Its pass
+does not replace bilingual inference or the ordinary acquisition journey.
+
 ## Shipped application dependencies
 
 These are the only direct libraries that can participate in the current application's runtime output.
@@ -328,7 +389,7 @@ Milestone 4 uses the WebView's built-in HTML file input, `FileReader`, `AbortCon
 
 ### EPUB archive/XML selection evidence
 
-The package-internal executable probes are intentionally not exported from `@voxleaf/epub`; Tasks 2.2 through 2.4 built the production archive and XML security adapters over these proven primitives. The probes, production adapters, and complete public ingestion matrix establish the following behavior with synthetic in-memory input:
+Milestone 3 Task 1.2 selected the ZIP and XML primitives with package-internal executable probes; Tasks 2.2 through 2.4 built the production archive and XML security adapters over them. Those bootstrap-only probes have been retired. The retained `archive-inventory.test.ts`, `archive-reader.test.ts`, `xml-event-reader.test.ts`, and complete public ingestion matrix now cover the following behavior with synthetic in-memory input, including namespace-aware XML with a built-in entity split across the 64-KiB input boundary:
 
 | Concern            | Evidence and accepted boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -338,7 +399,7 @@ The package-internal executable probes are intentionally not exported from `@vox
 | ZIP capabilities   | The wrapper imports `@zip.js/zip.js/lib/zip-core-native.js`, where `native` means the package's pure-JavaScript codec variant. It uses only `Uint8ArrayReader`, `Uint8ArrayWriter`, and `ZipReader`; sets `useWebWorkers`, `useCompressionStream`, and `transferStreams` to `false`; and performs no disk extraction. Runtime spies prove compressed extraction does not construct a worker or call `fetch`.                                                                                                                                                                                                                                                                       |
 | XML security       | `saxes` parses fixed byte chunks with `xmlns: true`, forced XML 1.0, no DOM, and no resolver callback. The production adapter strictly decodes matching UTF-8/UTF-16 signatures and declarations, emits only immutable namespace-URI/local-name events, counts and discards only the inert `html` doctype in content documents, and rejects package/container doctypes, non-HTML names, public/system identifiers, internal subsets, custom entities, XInclude, unsupported or mismatched encodings, and external-resource processing instructions with only `malformed-xml`; network, worker, and DOM spies remain untouched. Built-in XML character references remain supported. |
 | XML cancellation   | The synchronous parser receives policy-bounded bytes in fixed chunks, checks the shared `AbortSignal` and injected monotonic deadline before and after decode writes and at event/text-counting boundaries, and enforces document-size, depth, per-element attribute, per-document node, and ingestion-lifetime UTF-8-equivalent text limits.                                                                                                                                                                                                                                                                                                                                      |
-| Error privacy      | Dependency messages, source strings, entry names, URLs, causes, and raw values do not cross the probe wrappers; tests use canary values to verify fixed codes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Error privacy      | Dependency messages, source strings, entry names, URLs, causes, and raw values do not cross the production archive/XML wrappers; tests use canary values to verify fixed codes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 `@zip.js/zip.js` is BSD-3-Clause licensed, declares no runtime transitive dependencies, has no install lifecycle hook, and reports 5,069,239 unpacked bytes for the complete multi-runtime package. Production EPUB ingestion imports only its narrow pure-JavaScript core. The desktop now reaches it only through the public `@voxleaf/epub` opener; production Vite/Tauri builds, browser/native startup matrices, and reader performance/resource benchmarks cover the resulting application boundary. The Vite chunk-size advisory remains informational rather than an accepted failed gate, and future material bundle/startup changes require remeasurement.
 
@@ -397,7 +458,7 @@ Rustfmt, Clippy, Cargo test, and Cargo build come from the pinned Rust toolchain
 | `jsonschema`       | `4.26.0`                                           | Validates the shared serialized fixture corpus against the canonical Draft 2020-12 schemas entirely offline during Python tests.                               |
 | `referencing`      | `0.37.0`                                           | Registers the retained v1 benchmark schema as an offline resource while validating the v2 summary schema without duplicating its unchanged closed definitions. |
 | `types-jsonschema` | `4.26.0.20260518`                                  | Supplies mypy declarations for the test-only `jsonschema` API.                                                                                                 |
-| `uv_build`         | compatible `0.11.x` selected by the build frontend | Builds the pure-Python source distribution and wheel; it is an isolated build-system requirement, not a service runtime dependency.                            |
+| `uv_build`         | `>=0.11.29,<0.13` selected by the build frontend | Builds the pure-Python source distribution and wheel; it is an isolated build-system requirement, not a service runtime dependency.                            |
 
 Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority. Its existing `referencing` dependency is now direct because the benchmark v2 schema deliberately reuses v1's unchanged closed definitions through an offline registry; neither package is a service runtime dependency. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
 
@@ -408,9 +469,14 @@ Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytes
 | `actions/checkout`     | `6.0.2`                           | Checks out the exact repository revision without persisting credentials.  |
 | `actions/setup-node`   | `6.4.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
 | `actions/setup-python` | `6.2.0`                           | Installs Python from `.python-version`.                                   |
-| `astral-sh/setup-uv`   | `8.1.0`                           | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `astral-sh/setup-uv`   | `10.2.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
 
 Each workflow reference is pinned to a full commit SHA to avoid a mutable tag changing executable CI code. The workflow uses no third-party service, secret, model, book, generated audio, or GPU.
+
+`setup-uv` uses its default `prune-cache: false`, introduced in v9, so it no
+longer prunes the uv cache before saving it. This reduces repeated downloads
+but can increase GitHub Actions cache storage. The workflows explicitly enable
+caching and retain the existing lockfile-based cache keys and uv `0.11.29` pin.
 
 ## Transitive dependencies
 

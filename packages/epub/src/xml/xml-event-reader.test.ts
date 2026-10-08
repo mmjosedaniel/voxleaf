@@ -78,6 +78,42 @@ describe("bounded namespace-aware XML events", () => {
     expect(first).toEqual(second);
   });
 
+  it("preserves namespace-aware text when an entity crosses the 64-KiB input boundary", () => {
+    const inputBoundary = 64 * 1024;
+    const opening = '<package xmlns="urn:package" xmlns:dc="urn:dc"><dc:title>';
+    // The first input chunk ends after "&a", before the entity is complete.
+    const padding = "a".repeat(inputBoundary - opening.length - 2);
+    const decodedText = `${padding}&é`;
+    const { events, summary } = readXml(
+      `${opening}${padding}&amp;é</dc:title></package>`,
+    );
+
+    expect(
+      events
+        .filter((event) => event.type === "start-element")
+        .map(({ name }) => name),
+    ).toEqual([
+      { namespaceUri: "urn:package", localName: "package" },
+      { namespaceUri: "urn:dc", localName: "title" },
+    ]);
+    expect(
+      events
+        .filter((event) => event.type === "end-element")
+        .map(({ name }) => name),
+    ).toEqual([
+      { namespaceUri: "urn:dc", localName: "title" },
+      { namespaceUri: "urn:package", localName: "package" },
+    ]);
+    expect(
+      events
+        .filter((event) => event.type === "text")
+        .map(({ text }) => text)
+        .join(""),
+    ).toBe(decodedText);
+    expect(summary.elementCount).toBe(2);
+    expect(summary.decodedTextBytes).toBe(encodeUtf8(decodedText).byteLength);
+  });
+
   it("emits built-in entity and CDATA content as text without a DOM", () => {
     const domParser = vi.fn(() => {
       throw new Error("DOMParser must not be constructed");

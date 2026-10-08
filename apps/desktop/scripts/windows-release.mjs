@@ -59,12 +59,12 @@ const EXPECTED_RESOURCES = Object.freeze({
   [PIPER_CORE_RESOURCE]: "resources/tts/voxleaf-piper-core-v1/",
   "../../../services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md":
     "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
-  "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json":
-    "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
-  "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json":
-    "resources/release/optional/chatterbox/runtime-package-evidence-v3.json",
-  "../../../services/tts/release/optional/chatterbox/source-manifest-v2.json":
-    "resources/release/optional/chatterbox/source-manifest-v2.json",
+  "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v3.json":
+    "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+  "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json":
+    "resources/release/optional/chatterbox/runtime-package-evidence-v4.json",
+  "../../../services/tts/release/optional/chatterbox/source-manifest-v3.json":
+    "resources/release/optional/chatterbox/source-manifest-v3.json",
 });
 
 function fail(code) {
@@ -106,7 +106,7 @@ export async function loadReleaseDocuments(root) {
     optionalManifest: await readJson(
       path.join(
         root,
-        "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
       ),
     ),
     buildScript: await readFile(
@@ -134,6 +134,7 @@ const UNINSTALL_FLAG_OPTIONS = Object.freeze(
 );
 
 const OPTIONAL_UNINSTALL_ROOTS = Object.freeze([
+  "tts\\cb\\3",
   "tts\\cb\\2",
   "tts\\profiles\\chatterbox-multilingual-v3-cuda-bf16-default-v4\\2",
   "tts\\staging\\chatterbox-multilingual-v3-cuda-bf16-default-v4",
@@ -253,14 +254,18 @@ export function validateClosedReleaseValues(documents) {
   }
   if (
     optionalManifest.availability !== "downloadable" ||
+    optionalManifest.identity?.packageVersion !== "3" ||
+    optionalManifest.layout?.installed !== "cb/3" ||
+    optionalManifest.runtime?.releaseTag !== "chatterbox-runtime-v3" ||
+    "runtimeCorrection" in optionalManifest ||
     "withholdingReason" in optionalManifest ||
     JSON.stringify(optionalManifest.measurements) !==
       JSON.stringify({
         coldStartSeconds: 83,
-        downloadBytes: 8_231_893_387,
-        installedBytes: 8_228_503_309,
+        downloadBytes: 8_239_933_601,
+        installedBytes: 8_236_377_725,
         minimumFreeBytes: 20_000_000_000,
-        temporaryBytes: 13_254_834_850,
+        temporaryBytes: 13_270_915_278,
       }) ||
     optionalManifest.requirements?.platform !== "windows-x86_64" ||
     optionalManifest.requirements?.provider !== "cuda" ||
@@ -480,13 +485,13 @@ export async function createPackageEvidence({
       optionalChatterboxManifestSha256: await sha256(
         path.join(
           root,
-          "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+          "services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
         ),
       ),
       optionalChatterboxRuntimeEvidenceSha256: await sha256(
         path.join(
           root,
-          "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json",
+          "services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json",
         ),
       ),
     },
@@ -520,9 +525,9 @@ export async function createPackageEvidence({
       releaseLockedRuntime: true,
       rendererCompatibilityGateRequired: true,
       nativePreNetworkCompatibilityGateRequired: true,
-      downloadBytes: 8_231_893_387,
-      installedBytes: 8_228_503_309,
-      temporaryBytes: 13_254_834_850,
+      downloadBytes: 8_239_933_601,
+      installedBytes: 8_236_377_725,
+      temporaryBytes: 13_270_915_278,
       minimumFreeBytes: 20_000_000_000,
       representativeCompatibleHostJourney: ordinaryChatterboxStatus,
     },
@@ -583,7 +588,7 @@ async function main(arguments_) {
       await writeFile(
         path.join(
           root,
-          "apps/desktop/src-tauri/release/windows-package-evidence-v2.json",
+          "apps/desktop/src-tauri/release/windows-package-evidence-v3.json",
         ),
         rendered,
         "utf8",

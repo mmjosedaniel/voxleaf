@@ -91,10 +91,18 @@ broad restoration command that could discard pre-existing user work.
 
 ```text
 # Validation Report
+Report ID: <unique target/mode/attempt identifier; never reuse>
 Target ID: <same identifier>
 Mode: BASELINE | POST-CHANGE | PACKAGE | FINAL
 Verdict: PASS | FAIL | BLOCKED | BASELINE-FAIL
 Environment: local PowerShell outside sandbox | exploratory sandbox
+Starting HEAD SHA: <full commit SHA before commands>
+Ending HEAD SHA: <full commit SHA after commands>
+Validated paths: <closed work-order allowlist; explicit paths for PACKAGE/FINAL>
+Validated path identities: <before commands, for every validated path: exact
+porcelain status, worktree SHA-256, and filter-aware expected index blob ID;
+DELETED for an approved deletion, ABSENT for a planned new path in BASELINE>
+Identity recheck: PASS | FAIL | NOT-RUN, <after-command comparison and mismatches>
 Commands and outcomes:
 1. <exact command> -> <exit status and concise result>
 Diff scope: PASS | FAIL, <reason>
@@ -106,6 +114,29 @@ Action required: none | <smallest precise correction>
 
 Only a local PowerShell report can be final acceptance evidence. Never turn a
 sandbox denial into a candidate, implementation, or test rejection.
+
+### Validation identity and freshness
+
+The validator captures HEAD and every validated path identity before running
+commands and recomputes them after the last command. Use the identity commands
+in the Git Action Order section below. Include unchanged allowlisted paths and
+both sides of a rename; never hash an absent path. BASELINE may record ABSENT
+for a planned addition. POST-CHANGE must resolve it to a real identity or an
+approved DELETED entry. Ignored build outputs are not added to this manifest.
+
+PASS requires identical starting/ending HEAD, identical before/after path
+identities, an empty index, and all required checks passing. Missing evidence
+or identity drift returns BLOCKED, even when tests exit zero; retain any actual
+test failures in the report. Keep writers and Git mutations idle throughout
+validation. Snapshots supplement that rule; they do not replace it.
+
+An issued report is immutable. A later HEAD, allowlist, or validated-file change
+invalidates its use for staging. The validator must review the new state, rerun
+the required acceptance commands, and issue a new Report ID. Neither director
+nor steward may refresh hashes in an old PASS or attach it to a different patch.
+Keep identity evidence outside the validated paths to avoid self-referential
+hashes. Evidence-only documentation is staged separately under its own order;
+editing documentation already in the allowlist requires revalidation too.
 
 ## Correction Order
 
@@ -124,8 +155,8 @@ Do not bundle multiple unrelated review preferences into one correction.
 
 ## Git Action Order
 
-The Sol director issues this only while every source writer and validator is
-idle. Read-only Git inspection does not need an order; every Git mutation does.
+The director (Sol or Astra) issues this only while every source writer and
+validator is idle. Read-only Git inspection does not need an order; every Git mutation does.
 A `SETUP` order may precede validation and is limited to one clean-state update
 or branch action. An `ACCEPTED-CHANGE` order requires an accepted Validation
 Report. A `REMOTE-HANDOFF` order requires final validation plus explicit
@@ -145,8 +176,8 @@ Clean-state evidence: <empty index; SETUP also requires a clean worktree>
 Allowed paths: <closed literal list or none>
 Approved path identities: <for every allowed path, exact porcelain status,
 worktree SHA-256, and filter-aware expected index blob ID, or DELETED>
-Validation evidence: <accepted report identifier and verdict or
-not-applicable-for-setup>
+Validation evidence: <immutable accepted Report ID, mode, verdict, and full
+report or exact retrievable reference; not-applicable-for-setup>
 Commit message: <exact message or none>
 Remote target: <exact remote and branch or none>
 Pull request: <exact title, base, body source, and draft state or none>
@@ -156,21 +187,35 @@ merge, cherry-pick, amend, force-push, branch/tag deletion, PR merge/close
 Completion output: Git Report only
 ```
 
-Use separate SETUP orders for `UPDATE-MAIN-FF` and branch creation: Sol reviews
-the first Git Report and uses its ending HEAD as the second order's expected
+Use separate SETUP orders for `UPDATE-MAIN-FF` and branch creation: the director
+reviews the first Git Report and uses its ending HEAD as the second order's expected
 HEAD. `STAGE` and `COMMIT` may appear together as the ordered list
 `[STAGE, COMMIT]`; the steward must stop before the second action if the first
 does not pass every staged review.
 
+For ACCEPTED-CHANGE, require an immutable POST-CHANGE PASS report with a
+passing identity recheck. Copy Expected HEAD SHA and Approved path identities
+from that report, not from a fresh snapshot taken by the director. Allowed paths
+must exactly equal Validated paths. Verify the order against the report first;
+a missing report, BASELINE-only evidence, extra path, or identity mismatch
+returns BLOCKED before staging and requires a new validator report and order.
+SETUP remains exempt; REMOTE-HANDOFF still requires its separate FINAL evidence.
+
 Immediately before mutation, recompute the full HEAD SHA and each approved path
-identity. For an existing path,
+identity against the order and, for ACCEPTED-CHANGE, its validation report.
+For an existing path,
 `Get-FileHash -Algorithm SHA256 -LiteralPath <path>` binds the exact worktree
 bytes, while `git hash-object --path=<path> -- <path>` computes the blob Git
 should stage after repository filters. Use
 `DELETED` only when the approved path is absent. Include the exact porcelain
 status so additions, modifications, deletions, and renames cannot be confused.
 After staging, compare index blob IDs and staged status to the expected index
-identities, then recheck HEAD immediately before committing.
+identities. Staging intentionally changes porcelain status; do not compare that
+status verbatim with the pre-stage snapshot or rewrite the validation report.
+Immediately before committing, recheck HEAD, worktree hashes/deletions, and
+staged blob identities against the validated values. If any mismatch appears,
+return BLOCKED without committing or further mutation; preserve the index and
+user work for the director. Do not repair the mismatch by refreshing the order.
 
 `PUSH` and `OPEN-PR` require quoted current-task user authorization. An earlier
 general preference or repository instruction is not sufficient. A HEAD,
@@ -189,7 +234,9 @@ Commands and outcomes: <exact commands without secrets>
 Staged paths: <exact paths or none>
 Path identity review: PASS | FAIL | not-applicable
 Staged review: PASS | FAIL | not-applicable
-Validation evidence consumed: <identifier and verdict>
+Validation evidence consumed: <Report ID and verdict>
+Validation identity review: PASS | FAIL | not-applicable, <report/order/live
+identity agreement, or exact mismatch and required revalidation>
 Commit: <SHA and subject or none>
 Remote result: <push or PR URL/result or none>
 Ending branch and status: <exact evidence>
