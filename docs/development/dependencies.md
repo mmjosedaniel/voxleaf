@@ -469,9 +469,14 @@ Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytes
 | `actions/checkout`     | `6.0.2`                           | Checks out the exact repository revision without persisting credentials.  |
 | `actions/setup-node`   | `6.4.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
 | `actions/setup-python` | `6.2.0`                           | Installs Python from `.python-version`.                                   |
-| `astral-sh/setup-uv`   | `8.1.0`                           | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `astral-sh/setup-uv`   | `10.2.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
 
 Each workflow reference is pinned to a full commit SHA to avoid a mutable tag changing executable CI code. The workflow uses no third-party service, secret, model, book, generated audio, or GPU.
+
+`setup-uv` uses its default `prune-cache: false`, introduced in v9, so it no
+longer prunes the uv cache before saving it. This reduces repeated downloads
+but can increase GitHub Actions cache storage. The workflows explicitly enable
+caching and retain the existing lockfile-based cache keys and uv `0.11.29` pin.
 
 ## Transitive dependencies
 
