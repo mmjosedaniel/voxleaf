@@ -452,7 +452,7 @@ Rustfmt, Clippy, Cargo test, and Cargo build come from the pinned Rust toolchain
 
 | Dependency         | Resolved version                                   | Purpose                                                                                                                                                        |
 | ------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ruff`             | `0.15.22`                                          | Formats and lints the Python package.                                                                                                                          |
+| `ruff`             | `0.16.10`                                          | Formats and lints the Python package.                                                                                                                          |
 | `mypy`             | `2.3.0`                                            | Performs strict static type checking.                                                                                                                          |
 | `pytest`           | `9.1.1`                                            | Runs deterministic Python smoke and cross-language contract-conformance tests.                                                                                 |
 | `jsonschema`       | `4.26.0`                                           | Validates the shared serialized fixture corpus against the canonical Draft 2020-12 schemas entirely offline during Python tests.                               |

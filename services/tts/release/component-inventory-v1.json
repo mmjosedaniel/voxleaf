@@ -14158,7 +14158,7 @@
     },
     "piperCore": {
       "path": "services/tts/release/core/uv.lock",
-      "sha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e"
+      "sha256": "465e6066d7e8a57cc33ec77abac2b2601f59923c40f60b39327e5d9c4aed4fa6"
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",
