@@ -405,7 +405,7 @@ describe("bounded local publication resources", () => {
     });
   });
 
-  it("allows retry after caller cancellation without publishing stale source", async () => {
+  it("allows retry after a pre-aborted caller request and keeps its cancellation reason content-free", async () => {
     const archive = new DeferredArchive();
     const values = narrationPublicationValues(8, async () => undefined);
     const publication = createOpenedPublication(
@@ -493,9 +493,8 @@ describe("bounded local publication resources", () => {
       if (second.status !== "batch") {
         throw new Error("expected second public narration batch");
       }
-      expect(second.segments[0]?.sourceRange).not.toEqual(
-        first.segments[0]?.sourceRange,
-      );
+      expect(second.segments).toHaveLength(1);
+      expect(second.continuation).toEqual(second.segments[0]?.sourceRange.end);
 
       const final = await publication.prepareNarration({
         startLocator: second.continuation,
@@ -509,6 +508,21 @@ describe("bounded local publication resources", () => {
       }
       expect(final.segments).toHaveLength(1);
       expect(final).not.toHaveProperty("continuation");
+      expect([
+        first.segments[0]?.text,
+        second.segments[0]?.text,
+        final.segments[0]?.text,
+      ]).toEqual(["Primera frase.", "Segunda frase.", "Tercera frase."]);
+      for (const [index, batch] of [first, second, final].entries()) {
+        const block = requiredLocatedBlock(values.locatorIndex.blocks[index]);
+        expect(batch.segments[0]?.sourceRange.start).toEqual(
+          block.startLocator,
+        );
+        expect(batch.segments[0]?.sourceRange.end).toEqual({
+          ...block.startLocator,
+          textOffsetCodePoints: block.textLengthCodePoints,
+        });
+      }
     } finally {
       await publication.close();
     }
@@ -551,6 +565,18 @@ describe("bounded local publication resources", () => {
         maximumSegments: 16,
       });
 
+      expect(historical.status).toBe("complete");
+      expect(bilingualSpanish.status).toBe("complete");
+      if (
+        historical.status !== "complete" ||
+        bilingualSpanish.status !== "complete"
+      ) {
+        throw new Error(
+          "expected complete historical and bilingual Spanish narration",
+        );
+      }
+      expect(historical.segments.length).toBeGreaterThan(0);
+      expect(bilingualSpanish.segments.length).toBeGreaterThan(0);
       expect(bilingualSpanish).toEqual(historical);
       expect(bilingualEnglish.status).toBe("complete");
       if (bilingualEnglish.status !== "complete") {
@@ -935,14 +961,16 @@ describe("bounded local publication resources", () => {
     });
     expect(unknownProfile.status).toBe("invalid-request");
 
-    const notYetImplementedEnglish = await publication.prepareNarration({
+    const invalidLegacyProfileEnglish = await publication.prepareNarration({
       startLocator: start,
       profile: "narration-v1",
       defaultLanguage: "en" as "es",
       maximumSegments: 1,
     });
-    expect(notYetImplementedEnglish.status).toBe("invalid-request");
-    expect(JSON.stringify(notYetImplementedEnglish)).not.toContain("Canario");
+    expect(invalidLegacyProfileEnglish.status).toBe("invalid-request");
+    expect(JSON.stringify(invalidLegacyProfileEnglish)).not.toContain(
+      "Canario",
+    );
 
     const invalidBilingualNeutral = await publication.prepareNarration({
       startLocator: start,
