@@ -9,7 +9,7 @@
     "build": "vite build",
     "dev": "vite",
     "tauri": "tauri",
-    "test": "vitest run && node --test scripts/native-webdriver-client.node-test.mjs scripts/bilingual-portfolio-host.node-test.mjs scripts/windows-release.node-test.mjs scripts/chatterbox-validation-release.node-test.mjs",
+    "test": "vitest run && node --test scripts/native-webdriver-client.node-test.mjs scripts/bilingual-portfolio-host.node-test.mjs scripts/ordinary-chatterbox-release-host.node-test.mjs scripts/windows-release.node-test.mjs",
     "test:browser": "playwright test",
     "test:browser:install": "playwright install chromium",
     "test:native-driver-client": "node --test scripts/native-webdriver-client.node-test.mjs",

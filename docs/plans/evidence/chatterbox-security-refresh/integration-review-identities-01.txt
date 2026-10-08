@@ -1,0 +1,761 @@
+{
+  "head": "998c7b24cda7e969e9ed0344f348506bf38af3b0",
+  "paths": [
+    {
+      "path": ".agents/PLANS.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "b3d824de1f4cec24e2bb9ba69b38f16ba19df1df332571a02fb08bb266c8dd2e",
+      "blob": "4713819b1b9f67392fe24fac0999b7d501ca6ad5"
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "ownership": "task",
+      "status": " M .github/dependabot.yml",
+      "sha256": "fbdd5f37d9c3e824d767468b514b738cdebf3e6078bafbf6ecd8b95636fdbf5d",
+      "blob": "1d7479e5caf3dfe148c702427cf83f8c5336d88e"
+    },
+    {
+      "path": ".github/workflows/foundation-checks.yml",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2c4c3173a20a1860a715c7b8101564682e04e1dd1054aa371724675095024967",
+      "blob": "f5c0352423abff9122170793effe75cb7b511d3e"
+    },
+    {
+      "path": ".github/workflows/release-audit.yml",
+      "ownership": "support",
+      "status": "",
+      "sha256": "fd1e7b26476b5f265b093e7c864517bc8b5c8488c23e76dfeefc6bd989db4bed",
+      "blob": "5b1aeb2244d835ab074c22cf6198c744f8853ae2"
+    },
+    {
+      "path": "AGENTS.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "37690a14aa074430df32a3182a8b6b6c44fedeaa8275139933adbf8e91636a98",
+      "blob": "786ada807f8f7f1967f7a7d5a366d2d67a431086"
+    },
+    {
+      "path": "apps/desktop/scripts/native-startup-smoke.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "7238e6807b3d832f810f6811ab3e4b15d567969f91d89012fb2a41e1a0f7e4ac",
+      "blob": "2e502ceb4eecdbab0d301cbdcdddc571b859f94a"
+    },
+    {
+      "path": "apps/desktop/scripts/native-webdriver-client.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "b898bb5c312c3099e2e43656a8ff27dba2dd9137ece26aaa73255dcef7381051",
+      "blob": "bfdeae55313b5a4f3d249eb03709632aa0ee8540"
+    },
+    {
+      "path": "apps/desktop/scripts/ordinary-chatterbox-release-host.mjs",
+      "ownership": "task",
+      "status": " M apps/desktop/scripts/ordinary-chatterbox-release-host.mjs",
+      "sha256": "3aa548141f9519a40cb47b8a3c2f5721bbab4175c2604bcc5a23acea42b8e647",
+      "blob": "745a8cb5d7029db4bb892f36b7d7846e8c1f812e"
+    },
+    {
+      "path": "apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs",
+      "ownership": "task",
+      "status": " M apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs",
+      "sha256": "e4ce72daea73ea9b43c9b0fcfc69fedd0b7905490cb44f9cc3d6f499bd7c277d",
+      "blob": "593a78e1b8accb1a28b3bb9b1b34af1da67fa765"
+    },
+    {
+      "path": "apps/desktop/scripts/windows-release.mjs",
+      "ownership": "task",
+      "status": " M apps/desktop/scripts/windows-release.mjs",
+      "sha256": "ab725b0a4d0d8369b838974d4db4f300389ec8f4aaf70045cf727797a966b78a",
+      "blob": "8c7c70f4540caa7a8bf4e9f943513630da6c034e"
+    },
+    {
+      "path": "apps/desktop/scripts/windows-release.node-test.mjs",
+      "ownership": "task",
+      "status": " M apps/desktop/scripts/windows-release.node-test.mjs",
+      "sha256": "4d33a04edaf11eec22d63fb6237fc8c7d4185bf557c4b17cd16090835d9290eb",
+      "blob": "50bbfba8ca124091bc09780121623f957084431c"
+    },
+    {
+      "path": "apps/desktop/src-tauri/Cargo.lock",
+      "ownership": "support",
+      "status": "",
+      "sha256": "faa4815994d3a8701ba6ad435265248e14a448c16e102c0ec4238bcab02303a8",
+      "blob": "9f179e492849a25ef4cba2e50117f317b66e399c"
+    },
+    {
+      "path": "apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v1.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2aac38b50b554106372aa55dad4c29d7f93da5f0290003b0bd2466b57dd1468d",
+      "blob": "ef7e33a4764520dfdc8a70e10376dd572e1de150"
+    },
+    {
+      "path": "apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v2.json",
+      "ownership": "task",
+      "status": "?? apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v2.json",
+      "sha256": "e1d334b4fc974f44e285e4ed0fea3829ea611a5aa62491607de19d971c499597",
+      "blob": "6ad70a64d5641072fb097fce64de67fb4c4c5049"
+    },
+    {
+      "path": "apps/desktop/src-tauri/release/windows-package-evidence-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "10649558af73347741cdbc28c860e2fe7c2ac52483d8f9fba5c1dd010279c0f9",
+      "blob": "4377af549178ed73e4ed799b58cc0c77cb51b335"
+    },
+    {
+      "path": "apps/desktop/src-tauri/release/windows-package-evidence-v3.json",
+      "ownership": "task",
+      "status": "?? apps/desktop/src-tauri/release/windows-package-evidence-v3.json",
+      "sha256": "bc186871b522acba69f8a6247281f0f2acf1d761389eb53a8676f68311e7cf5d",
+      "blob": "b44b7b9a57d78d300ce58cfeec6ea4a3e0940334"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "ownership": "task",
+      "status": " M apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "sha256": "dafeb94ab831ec8363d4add45b38d8c916cf7e8143ee060430d20786e1dcc94c",
+      "blob": "d9f7dc7954fef4fe56416ae477f6bde6eb2c1416"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "7b418a161164ea42e5749941d29223e6c88957f9b33f2a1d05e91c1c999c2aad",
+      "blob": "d98d393b680bf411bd5789e95364f27fece41708"
+    },
+    {
+      "path": "apps/desktop/src-tauri/tauri.release.conf.json",
+      "ownership": "task",
+      "status": " M apps/desktop/src-tauri/tauri.release.conf.json",
+      "sha256": "43da61e7853a911babb33847217f314f2119c432f5a9adcee06c6617fa3aeedd",
+      "blob": "6e7cc234d4be55ae9736b9cf1be45c533340d65d"
+    },
+    {
+      "path": "apps/desktop/src-tauri/windows/nsis-hooks.nsh",
+      "ownership": "task",
+      "status": " M apps/desktop/src-tauri/windows/nsis-hooks.nsh",
+      "sha256": "6882c8f6eea4242312ad2d7e1809d131fd2a72dfa39b2641e599daa160740a14",
+      "blob": "fc781d0d7b05dd165d4ef3cd2c64d926cb130e03"
+    },
+    {
+      "path": "apps/desktop/src/App.tsx",
+      "ownership": "support",
+      "status": "",
+      "sha256": "cfdcf0f1a2a816a026c0533e7f7f9ad1c7b5b590a0dde109e7d141f769c5b13b",
+      "blob": "65808bbbec4042937f6ee5e08917dea65920c5f8"
+    },
+    {
+      "path": "apps/desktop/src/reader/ReaderPublication.test.tsx",
+      "ownership": "support",
+      "status": "",
+      "sha256": "dc0fa3c43803b6694a72f813e64e595b284195ed0b616d88e8d3549b311c0e7d",
+      "blob": "57bd519293dff2bff71fb37f2567aa1fec774d0b"
+    },
+    {
+      "path": "apps/desktop/src/reader/ReaderPublication.tsx",
+      "ownership": "support",
+      "status": "",
+      "sha256": "fd8d4ea774ade14ec57a66e851befb386629e02a79e898019a21dd037d450d73",
+      "blob": "aaf5193cd44bc5f5f0d51141847191ca1adf81a4"
+    },
+    {
+      "path": "apps/desktop/src/tts/OptionalChatterboxControls.test.tsx",
+      "ownership": "task",
+      "status": " M apps/desktop/src/tts/OptionalChatterboxControls.test.tsx",
+      "sha256": "31099ee453eb13235fa5c64d9bae35740310a8e4024e4c199f67dee9076176f3",
+      "blob": "1abec4aa9470d54aafa0818f937f47225c8c729c"
+    },
+    {
+      "path": "apps/desktop/src/tts/OptionalChatterboxControls.tsx",
+      "ownership": "task",
+      "status": " M apps/desktop/src/tts/OptionalChatterboxControls.tsx",
+      "sha256": "af6c83f621c2d43b4b0c885bddebf5e12a8383d59f62885c7ee49eacd2ccebf2",
+      "blob": "8a314d5a0c4b85aabf176534b6cc5926bf10cf1a"
+    },
+    {
+      "path": "apps/desktop/src/tts/process-client.test.ts",
+      "ownership": "task",
+      "status": " M apps/desktop/src/tts/process-client.test.ts",
+      "sha256": "e9c78e4038becbe99706e8c7b42f919984c7d61474e2c2f43f4a19ea109e02d2",
+      "blob": "b1676bfc32aa80eb372bbe6d6b08805bffbc0fc9"
+    },
+    {
+      "path": "apps/desktop/src/tts/process-client.ts",
+      "ownership": "task",
+      "status": " M apps/desktop/src/tts/process-client.ts",
+      "sha256": "0c15b34e2035aaafa6816c070d6be36042c2d577373ad4986fd6d8f8380cc493",
+      "blob": "8918e5e0ba238b814c1bdd254ed1af2947f3614e"
+    },
+    {
+      "path": "apps/desktop/src/tts/product-narration-coordinator.test.ts",
+      "ownership": "support",
+      "status": "",
+      "sha256": "caa6dcb3e96482f288f1972f6661b453657e95e95de3bedab1097829694eb262",
+      "blob": "bf5b0a8c5dfdddceb8414e1f58d92c60cdaae0d8"
+    },
+    {
+      "path": "apps/desktop/src/tts/product-narration-coordinator.ts",
+      "ownership": "support",
+      "status": "",
+      "sha256": "1063d715a7db4d96a94638ce1f00b3abb38d2a02461f58f6b942d687acf45e0b",
+      "blob": "60cab7f948a54a5a91edac6418ffc4fb6a0db66b"
+    },
+    {
+      "path": "docs/README.md",
+      "ownership": "task",
+      "status": " M docs/README.md",
+      "sha256": "159ab537dce1e1b38362f012fdf989bcbf73ab8d298fe9d9bf17f4d6fc275d9b",
+      "blob": "54dedb3de74be8d7a2e6533d0f4b3680396e0804"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "50aee0d2cc8ae6b1e54a404544a25a171323738cf30ac02b3b63344e1fab9b32",
+      "blob": "4834096cd05bd0eeb9f9c02f9ae8ecc8157e0323"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "740c2f45c112ee57f219f75bae6ebd896f9111e96588d40d6fbc54e57de3681d",
+      "blob": "8b0cdb7aefff089741641dc73889b50f17975039"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "814d02230cd9fa934a02b2cf0bd810f25560c3ad35a698f17d62ef92430fa80a",
+      "blob": "86a60084fb2124727b51852365fcf2ff6433bed4"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "3253570eb17b690dfe48b531f4ff9081c95fbed160fa71c261befde157fa2c20",
+      "blob": "336a9ac220b3c3c6cd4050e60e9e9b46ba8a6a5d"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "fcb60ff743e7d8500c13ad003e7b9a12ac90862f7be75827f6dc22d3665d4a68",
+      "blob": "0a6cc045930bc8973a73a91c088e21555fc23467"
+    },
+    {
+      "path": "docs/architecture/decisions/ADR-0052-admit-security-refreshed-chatterbox-v3.md",
+      "ownership": "task",
+      "status": "?? docs/architecture/decisions/ADR-0052-admit-security-refreshed-chatterbox-v3.md",
+      "sha256": "fb39fa35416260ff9a216a49e578cfcb7410c4af48f81a3cc10d1006e15421e7",
+      "blob": "9d395128e793c467447a3f4370231907ccbc8b78"
+    },
+    {
+      "path": "docs/architecture/decisions/README.md",
+      "ownership": "task",
+      "status": " M docs/architecture/decisions/README.md",
+      "sha256": "b52d10aacd83a02667c3fc480ee7b97177ee30978c5b2d1190f1640401eed1fa",
+      "blob": "68bae8b7e9e18f12c5807b0972d766a64a9ff100"
+    },
+    {
+      "path": "docs/architecture/overview.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "900e508867859c501dd162449cb5b7e771949cfe7520d1f55fbdcd8ffae7a78e",
+      "blob": "f6dc85026d2a18e8a915a36d96ed084963e2f8a4"
+    },
+    {
+      "path": "docs/architecture/system-diagram.md",
+      "ownership": "task",
+      "status": " M docs/architecture/system-diagram.md",
+      "sha256": "be8f65f3eac1cbcbf0026797e60427ed5124340fd252afd5224c60c6daa5b743",
+      "blob": "0fb437031043c6ccdac2f2f8e9e5e6b6f0bb3153"
+    },
+    {
+      "path": "docs/development/agentic-change-review.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "de4c430a5de120d9c900d6bad0bebbfeec81673614b30f242f3154efbedcfc39",
+      "blob": "373443e17547185e2294d906bdc9cb489daca67c"
+    },
+    {
+      "path": "docs/development/dependencies.md",
+      "ownership": "task",
+      "status": " M docs/development/dependencies.md",
+      "sha256": "4114e88997c4e6606c37db7b0fb0aab09a5a7a46e674136945571788da726e38",
+      "blob": "863386fdf34a54b7a7b9cfcfbb2a204737df9e4f"
+    },
+    {
+      "path": "docs/development/release-security-and-distribution.md",
+      "ownership": "task",
+      "status": " M docs/development/release-security-and-distribution.md",
+      "sha256": "8a34809d7be4d4b9fd24becd8b5d5926d111c5d9612ea0e7b1910ea17a60f948",
+      "blob": "bd21c35d3f8b8da71f4e7728fcdf22241291fbb0"
+    },
+    {
+      "path": "docs/development/testing.md",
+      "ownership": "task",
+      "status": " M docs/development/testing.md",
+      "sha256": "c7c3933b427ffb53faba2e092d6e726e9eaf88f001208b043d440efbe6ddc485",
+      "blob": "0a7d4fb7559db10bac0b6811b3d0b48db5d46e71"
+    },
+    {
+      "path": "docs/plans/active/chatterbox-security-dependency-refresh.md",
+      "ownership": "task",
+      "status": " M docs/plans/active/chatterbox-security-dependency-refresh.md",
+      "sha256": "4baed190fef82b08c2103034baf16853cc2d5b07946ebf714f7f1ebdf0d9775f",
+      "blob": "d58b9bce310be987b46ff678d2029d729351c95f"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/change-review-01.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "7390562da6ecf482b7cda8d568c642ca3a067158b2b30d7f7457b249844585c7",
+      "blob": "4ba948146fb0ee4ee4423bb2b3051a1e324e613e"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/host-validation.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a4fc7bfc69e500efa87263412abb97fae1f63588717cbeceaa69081df544271b",
+      "blob": "96b8031de65f6c1769f7f2a6877db09a81cb3f7a"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/integration-baseline.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/integration-baseline.md",
+      "sha256": "c24c6802cf31f7ab951f150cc3d2262bdeca34dd24d8dcc13f1d052c3af0a048",
+      "blob": "3b374600511533a818eff015997636322df79ce7"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/integration-host-validation.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/integration-host-validation.md",
+      "sha256": "39ec6216340ef46bec677211593cc5ad7393a79ac74ffa41569f6b41a713f61f",
+      "blob": "83e8d7b0a80a9d87938f396cbe51d8c23c8bb096"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/piper-containment-validation.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/piper-containment-validation.md",
+      "sha256": "cbc3e043413d3a9bfe8130875367a8de684439758d6bced386f58ac0f6d70f2c",
+      "blob": "71b8c7717d54f064fb47bcae370c3e7f6a1ec52c"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/piper-transition-diagnosis.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/piper-transition-diagnosis.md",
+      "sha256": "745fe1ca5d8d8d1486dd14c8596a3315202f26ca55059a935977f6ba25c756d5",
+      "blob": "057c72c61612c377b1b4c87ae47e8198b634781e"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/review-identities-01.txt",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a03ea65630bb0af2537275b79267ea82acdde168c140685287e947f8d8378623",
+      "blob": "12b59f2012cf6dcd3937cfca42809f0ac40c7eb4"
+    },
+    {
+      "path": "docs/product/mvp.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "1e617120a6ed7705238d898976985d5e5dffb419adcb0b51f4fcf3258af57130",
+      "blob": "875ac0d1bf4cf23832e58fb9ab827f8a19f825c1"
+    },
+    {
+      "path": "docs/user/windows-release.md",
+      "ownership": "task",
+      "status": " M docs/user/windows-release.md",
+      "sha256": "1cf08deca0635ee219b4ec41977ca40af1a873d081c51b885c8c25ec7c9e94e9",
+      "blob": "5a3598583faf5efa974cc031c2312259b63acbeb"
+    },
+    {
+      "path": "package.json",
+      "ownership": "task",
+      "status": " M package.json",
+      "sha256": "f225a21b04ee6b1a73ead560248bbc9eb5c1f31f08c363deb4db63581f21cd0e",
+      "blob": "20b3e64bfb38830077e54f3f426c88609a87c4e6"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "ownership": "support",
+      "status": "",
+      "sha256": "94de96b08f6e984531e04890618ae69854193321d41bc725dc076b0a23d88442",
+      "blob": "f9c68edafc5a7beaa6d29ad8aef3cc2658d46ff1"
+    },
+    {
+      "path": "scripts/release-audit.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2b366e734f12fae0cdee25e103eb020490979d415dedca1a50ad5b24648dc8f0",
+      "blob": "247bf8db7b87d271f0c8be3e44b8aa0840d18ca7"
+    },
+    {
+      "path": "scripts/release_inventory.py",
+      "ownership": "task",
+      "status": " M scripts/release_inventory.py",
+      "sha256": "0db95594c90478f20d4c21416a5d8c9f8db4a7ed328cbb35a0713cee6186047f",
+      "blob": "45bd20d6e97d43043f45e988b4571f10084beccf"
+    },
+    {
+      "path": "scripts/test-windows-package-lifecycle.ps1",
+      "ownership": "task",
+      "status": " M scripts/test-windows-package-lifecycle.ps1",
+      "sha256": "9dad5e0e84fb67550a5f86fcf7c68809f542ebdab919e2e5cdb5a8f1342ffab6",
+      "blob": "d8f94432ae999057d48dbff138b6ff60f86b6c4b"
+    },
+    {
+      "path": "services/tts/release/audit-policy.json",
+      "ownership": "task",
+      "status": " M services/tts/release/audit-policy.json",
+      "sha256": "adeb8b6ea14956d20a3a1c34d73df84c1d5d8d18102e2c4f04339978601dfa33",
+      "blob": "ba435e12f06a83f8bdf4a7eeb8a4c906e16b24e5"
+    },
+    {
+      "path": "services/tts/release/component-inventory-v1.json",
+      "ownership": "task",
+      "status": " M services/tts/release/component-inventory-v1.json",
+      "sha256": "9d218ec445a2a886f28d180d2913c8d11f0d7dc94b79966f21a1166e685dc11e",
+      "blob": "26f0c58f643dcc0671ea05973eaa7a98fc606e7a"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "aa884cef6b7f659ec2c861a6ed31eb076da5d56ff8125c8552a719d2eb946a77",
+      "blob": "d82dcebc233e66faa859032aa7020174d9161136"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/licenses/tokenizers-0.23.1-LICENSE.txt",
+      "ownership": "support",
+      "status": "",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+      "blob": "d980ca82956dc31417a9422d9451c0c022a77e0e"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "ownership": "task",
+      "status": "?? services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "sha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12",
+      "blob": "752533a071f31c1e58fc5cc7530d16f57a2e8836"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "64ab2fd0db6dcf24a6f37c19c6866c6fa5a348fac5fb0c04dbec55fdc4fe9cc9",
+      "blob": "d110e09ebba2de8b32ed0f1795f75ba993f28dbe"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "dd5253e5f868cd2543082ab2b416761bc685f51c20edbb44b275a436cba1fad8",
+      "blob": "b5088935b332db1dfb0cd432f30e5a0f52557b8e"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json",
+      "ownership": "task",
+      "status": "?? services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json",
+      "sha256": "bbcde47df59d6d9c190238653ab9eae725b9bdfda4fbb33bc59813a2595d4cff",
+      "blob": "920921142629f7906bde9b04584abf744d59b726"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "c1f728efd631f8f09798de5df6a9097cb8239bf5db5d95ecbe451c3394e3c6fe",
+      "blob": "d012c9fe43a6132a06532365f8efc0f7dd5b7360"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/source-manifest-v3.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f1eae833b75625f290a94f06abcb2cd70a39ffe23603d9fec523999b8f0eb6d6",
+      "blob": "92286f79ec4455dbb6d8dd1150164fcf6d20ab55"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox-v3/requirements.in",
+      "ownership": "support",
+      "status": "",
+      "sha256": "c54940fd1df4150820b75c016cc7128d33add2b86a9f59ab380333945b5692db",
+      "blob": "7c8f40a9498b39b494dbd734caf98fc969d00586"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
+      "ownership": "support",
+      "status": "",
+      "sha256": "9d580af2c1655cc4e971cd4db2a17e6364eea7ee429b207cf0ee52f291e1fcef",
+      "blob": "6f70c153a1842408eb101acb79f6a1abc953bd32"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox/requirements.in",
+      "ownership": "support",
+      "status": "",
+      "sha256": "631568ed3159a71e4650c9e616f44d44db66bbe649310fa478fe533e59cabd27",
+      "blob": "476f0620d66f934b24faa1667cebb4ab6029e320"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a",
+      "blob": "20e60a218db9c652fd1cede7b9f752e623337556"
+    },
+    {
+      "path": "services/tts/release/python-license-evidence.json",
+      "ownership": "task",
+      "status": " M services/tts/release/python-license-evidence.json",
+      "sha256": "35b00e65bacedb2e1c2cb757fc618f8c46e5bf62912039ae962ae4ff34d3f10f",
+      "blob": "fcd6df4e552c2ae9e9307e871036e27d284e8be2"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/__init__.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "e73f48db20d063411d2b6e7a0b599a24b01159f3b233f5506c835cc09a8e49b5",
+      "blob": "e1ca52fb4b454afe0343e9c5608afd339e54a5d7"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/chatterbox_adapter.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f7fd0e9f745954dbe5881a5428972793f619335a643a7d3b768368a6fdca707e",
+      "blob": "37bc2d9d23881f98456971a669be38a5e4499d67"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/chatterbox_service.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "feedf00f006699fea7fae2bed1d5192709be2e8b124ac48339bc99b44b284727",
+      "blob": "34138d0195a77d4fb591599cd58cb95dfd21c264"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/engine.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "29784f682d3d1201069b99abe757d286edf71ed3bcb55be4908aef7f4b63350b",
+      "blob": "2e187534926ce5ae65d78062f7af69595c8b3fc2"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/fake_engine.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "7a79f01a35a74ccdc0a08217e612f7e12c98cfabad58dde5e94ea84486791760",
+      "blob": "69e1ab744e390e1183ad88f29c2bd17e8094ad40"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/generated/__init__.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
+      "blob": "c41d6e3ee129f20950ffce91073ead2caec94ebb"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/generated/protocol_schemas.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650",
+      "blob": "334dbea0b4a445740aa68f756e230fd959441082"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/protocol.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "792175578ceaf334f7cf9da25666ec8c6ec64a00e15d8756fc87cbf5b0b2b4f9",
+      "blob": "7127fa73d02782e9a22085cbef341632e425ed9e"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/release_chatterbox.py",
+      "ownership": "task",
+      "status": " M services/tts/src/voxleaf_tts/release_chatterbox.py",
+      "sha256": "9cb1c2f5f41a6032050e88161f19d71fd13da780fc4d46c113cbd4edab58b4ec",
+      "blob": "f330481e2c6844acd99cdb8266cc065b6a1004e9"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/release_core.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "498926f8fd11fe496e5acb9ffcaec3fff0758567dbc4f04947701ab03942ecf0",
+      "blob": "edf28d6f71ea43fdc88e1c10eb51a93c8af3fb07"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/service.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "5f64cfe8ff6960ec11a704ab44d5ad5a46d51ae32d57a6dff8c08e54d2389d12",
+      "blob": "9ead3cb9b957102262563ff2d2db47da3ba6e799"
+    },
+    {
+      "path": "services/tts/tests/test_release_chatterbox.py",
+      "ownership": "task",
+      "status": " M services/tts/tests/test_release_chatterbox.py",
+      "sha256": "b3878ddc5c3ed10d516376f858fad4da15507b1c2727079046efcbd67d6578ff",
+      "blob": "5e3e57d238965b864c1e61b5ee97a123534ca648"
+    },
+    {
+      "path": "services/tts/tests/test_release_core.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "8529da0826b6153bc7ac20d50b210667d106b581625f62863f56433711d09674",
+      "blob": "4c6470fe3941442794a3ccb773664561dd0dc0b1"
+    },
+    {
+      "path": "services/tts/tests/test_release_dependency_graphs.py",
+      "ownership": "task",
+      "status": " M services/tts/tests/test_release_dependency_graphs.py",
+      "sha256": "494a69c1481e048e8e9070bd41b709521b89ac93e04a4fb846f0cb77d95dea24",
+      "blob": "928d4ebef62c7bccd0fe1c6992a5425b3f312e9c"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-audit-final.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "12111cbed1acc983fbce0147eb1d984eda741fb096eae1718ef120ad6c943149",
+      "blob": "2bd7d340f352395b57672fba324f59562d870967"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-check-after-containment.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "0b0f820ee7a6ed5e6533551e77ec70c6d2104c82e6e7dde86550417cae1e732e",
+      "blob": "c1940c8da0f077529677bde60663cb3ca83dd28b"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-check.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2decaa865b266e20eec76d81eac03d19436ca8fb0d0eda948150873a72c4e3ec",
+      "blob": "a58485d5672875e926dfd1b3befff0ef9d4ae353"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-installed-after-containment.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2078d3e4d458d6e8ab78e1f3234fafe2d00bd7b278dfc79fe1e45f362d9b3b9c",
+      "blob": "d7c30919a45a31b42419670e07f11447b03ddf09"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-installed-validation.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "903dec40b59468867bcc059088a0300b3ae483f2d8763b1fe2e5a07cdd970df3",
+      "blob": "7298c74cf5a097a87166d6eef1f70eee77d53591"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-journey-retry.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a3cd5b507e5a06c0ca3ab01bba4bdbb6dbf1433513115a1fc3ffaf691291b21b",
+      "blob": "a2415906447e12b7167510ab233452b733a9d7e9"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-package-after-containment.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "0929dedd4b147da97b8159aa46a56a98be0b75de6f1c3edca9205355c470e037",
+      "blob": "a5baf45d3347b9a2f63ad82629ee861ac4a1c7d9"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-package-check-after-containment.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "ed3aef5471edf6764ac63b4d20c13fc9a4e28f168930d037648f33980bb7ba50",
+      "blob": "db931d0cb98f8c2b93de4a57f6eb93ca2f1b1a6e"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/integration-package-windows-retry.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "1f172a69bc71344ff419a5efbbdd4c9e6bae3a51e63a8c5f2d487ccfdc70814d",
+      "blob": "3558a1dccbc71009b11e47bc428d76e0a110318e"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/observe-tts-invoke.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f32f9e845e357e60b1c38da087ade1a31e28edfb6627d9ce8ab90d2f67d9fe76",
+      "blob": "353ce7a5cb91451ec7eb156608a53cf4c845fad9"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/piper-en-fetch-observed.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "8ac8907c6e183e2e6a5f479944a6f32c088ce9c7b861f2309fcb580ceee1f80c",
+      "blob": "2d1e6eddd432d77b40d686cc8572bb9481b6d844"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/piper-en-plain-after-containment.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "c1e8d3ca38f956cc2bbf7af02a6ec9ee48310efc6026a496cf30414fce0f5b02",
+      "blob": "2c0ae24ae790999d0afca825c7d5b9ac38ef8bfe"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/piper-en-plain.log",
+      "ownership": "support",
+      "status": "",
+      "sha256": "157d4f1ead76e8632d87b4bd531babf439c9a7e43edddc4a590939348d2d7ca4",
+      "blob": "027551960426bb915ce37ef63037650ca9ab0ae1"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/probe-cancel-completion-race.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "cffcdec908229253fca3ca308ce5e9623b55552ebcb4553f1296c4914aeeafc5",
+      "blob": "f9a8ebdd4d1fcb957b2bc9ee70c77234d9958909"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/published-v3.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "9448f2a2e85cf13ba453e8ab09f9edfe99f660ab4459bbb378442be4053d08a2",
+      "blob": "72ea57d079763055e6442d4c3e1802a635db0f74"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/reproduce-piper-en.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "223b061b9a45d6dc5ae5a7e620087914131777dd857de7a33661ecbf9a07edb1",
+      "blob": "30d874b0aa0f3f1f9dd3642e2f454a403989819f"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/resource-smoke-launcher.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a218ef697e63d0bf3b30b1df3becfcad096b9d589c738d5f9f050cbbb5dc6282",
+      "blob": "55ec904c1e076a72ee7797e90cea6e3e7872e093"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/resource-smoke.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a3ef797e85f57ac6ad78096acd632467a461d33e69023852e30a56cfce636e50",
+      "blob": "5d4285ba5c887b27e3a32e144fe9a7d9ecd230c2"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/run-installed-validation.ps1",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f3a1c4b5b20d31e3f9fcd0364e55609e3111dad7dc2f40c4dd0f5897720b891f",
+      "blob": "ef0dc2eb89b714b64e6710306772bd34ffc32c93"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/run-piper-en-diagnostic.ps1",
+      "ownership": "support",
+      "status": "",
+      "sha256": "d13f6ba8144ee9df5d71459ed9d8808c4d15fcda851b9f8835608691c27618c4",
+      "blob": "4457b2efe056e55d0fd87536865ea77d85c46914"
+    }
+  ]
+}

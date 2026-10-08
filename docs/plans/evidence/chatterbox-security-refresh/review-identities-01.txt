@@ -1,0 +1,264 @@
+{
+  "head": "30fd57b91817817dba62d81ee6494bf3f46d8464",
+  "paths": [
+    {
+      "path": "AGENTS.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "37690a14aa074430df32a3182a8b6b6c44fedeaa8275139933adbf8e91636a98",
+      "blob": "786ada807f8f7f1967f7a7d5a366d2d67a431086"
+    },
+    {
+      "path": "docs/development/agentic-change-review.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "de4c430a5de120d9c900d6bad0bebbfeec81673614b30f242f3154efbedcfc39",
+      "blob": "373443e17547185e2294d906bdc9cb489daca67c"
+    },
+    {
+      "path": "docs/development/dependencies.md",
+      "ownership": "task",
+      "status": " M docs/development/dependencies.md",
+      "sha256": "68acaa0117bea003f952f3fa6b0eadfb34698e26fd8f7c6d1ddb29611ec14299",
+      "blob": "b5463f875bcbc879e66e68c9239e971327a3d13b"
+    },
+    {
+      "path": "docs/plans/active/chatterbox-security-dependency-refresh.md",
+      "ownership": "task",
+      "status": "?? docs/plans/active/chatterbox-security-dependency-refresh.md",
+      "sha256": "f91f0412d725dbd75a67947a9fb17b3aadd5d05dd75333b8b65d10c1cf26aa95",
+      "blob": "2f4827a02457d30a1ecbcaa92c968b192662b920"
+    },
+    {
+      "path": "docs/plans/active/README.md",
+      "ownership": "task",
+      "status": " M docs/plans/active/README.md",
+      "sha256": "9e62e1c389d095bfe7eb21318b422c51db89bd87940477d17004dd7fc46856dc",
+      "blob": "4332c597c20695ff9f42ae7a610491fee3677cba"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/baseline.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/baseline.md",
+      "sha256": "678a0d2646e4647a4204b7a6b92049a277cfcc7d863f7b0b41bbe456cc056f83",
+      "blob": "345b69f651214f5c2fd74a041b997382f169f87d"
+    },
+    {
+      "path": "docs/plans/evidence/chatterbox-security-refresh/host-validation.md",
+      "ownership": "task",
+      "status": "?? docs/plans/evidence/chatterbox-security-refresh/host-validation.md",
+      "sha256": "a4fc7bfc69e500efa87263412abb97fae1f63588717cbeceaa69081df544271b",
+      "blob": "96b8031de65f6c1769f7f2a6877db09a81cb3f7a"
+    },
+    {
+      "path": "docs/README.md",
+      "ownership": "task",
+      "status": " M docs/README.md",
+      "sha256": "7229ad1ccdc1eb3a867d4af8066637d3f58b32408384681b4ca46eb4557778a8",
+      "blob": "f155bfe7121eb3c9dd7821c7a644b72e04d1d4bb"
+    },
+    {
+      "path": "package.json",
+      "ownership": "task",
+      "status": " M package.json",
+      "sha256": "d55465a9090ee2ddcc39ffb1e94ab0fcca8d47e0c8ac7ad406713494c399356c",
+      "blob": "2809b20f3a042e69838e968d81a71255b4c557f2"
+    },
+    {
+      "path": "scripts/release-audit.mjs",
+      "ownership": "support",
+      "status": "",
+      "sha256": "2b366e734f12fae0cdee25e103eb020490979d415dedca1a50ad5b24648dc8f0",
+      "blob": "247bf8db7b87d271f0c8be3e44b8aa0840d18ca7"
+    },
+    {
+      "path": "scripts/test-chatterbox-dependency-security.py",
+      "ownership": "task",
+      "status": "?? scripts/test-chatterbox-dependency-security.py",
+      "sha256": "fa3f518c62e01ed05a40be411ab3f6382faf79ae4471e25008630896adb54663",
+      "blob": "b197ffa5b6e648b3cbcac184bed975584330ba2a"
+    },
+    {
+      "path": "services/tts/release/audit-policy.json",
+      "ownership": "task",
+      "status": " M services/tts/release/audit-policy.json",
+      "sha256": "01ebe7900bf86b00b08270ffe063bd9c12fdd4350bf96c45aeb9c506e6ac5686",
+      "blob": "73553eb829b7ba5f70197c4b15e0f6cf096fc464"
+    },
+    {
+      "path": "services/tts/release/component-inventory-v1.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "d9b7e5d5e0ae5aa8f23daed8018f4f322a4891e00d3147df1651fd283b6e3ea9",
+      "blob": "a73a8b3c47e7c43d2b5a7465269072f7809383f0"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/licenses/tokenizers-0.23.1-LICENSE.txt",
+      "ownership": "task",
+      "status": "?? services/tts/release/optional/chatterbox/licenses/tokenizers-0.23.1-LICENSE.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+      "blob": "d980ca82956dc31417a9422d9451c0c022a77e0e"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "64ab2fd0db6dcf24a6f37c19c6866c6fa5a348fac5fb0c04dbec55fdc4fe9cc9",
+      "blob": "d110e09ebba2de8b32ed0f1795f75ba993f28dbe"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "dd5253e5f868cd2543082ab2b416761bc685f51c20edbb44b275a436cba1fad8",
+      "blob": "b5088935b332db1dfb0cd432f30e5a0f52557b8e"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "c1f728efd631f8f09798de5df6a9097cb8239bf5db5d95ecbe451c3394e3c6fe",
+      "blob": "d012c9fe43a6132a06532365f8efc0f7dd5b7360"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/source-manifest-v3.json",
+      "ownership": "task",
+      "status": "?? services/tts/release/optional/chatterbox/source-manifest-v3.json",
+      "sha256": "f1eae833b75625f290a94f06abcb2cd70a39ffe23603d9fec523999b8f0eb6d6",
+      "blob": "92286f79ec4455dbb6d8dd1150164fcf6d20ab55"
+    },
+    {
+      "path": "services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
+      "ownership": "support",
+      "status": "",
+      "sha256": "aa884cef6b7f659ec2c861a6ed31eb076da5d56ff8125c8552a719d2eb946a77",
+      "blob": "d82dcebc233e66faa859032aa7020174d9161136"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox-v3/requirements.in",
+      "ownership": "task",
+      "status": "?? services/tts/release/profiles/chatterbox-v3/requirements.in",
+      "sha256": "c54940fd1df4150820b75c016cc7128d33add2b86a9f59ab380333945b5692db",
+      "blob": "7c8f40a9498b39b494dbd734caf98fc969d00586"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
+      "ownership": "task",
+      "status": "?? services/tts/release/profiles/chatterbox-v3/requirements.lock",
+      "sha256": "9d580af2c1655cc4e971cd4db2a17e6364eea7ee429b207cf0ee52f291e1fcef",
+      "blob": "6f70c153a1842408eb101acb79f6a1abc953bd32"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox/requirements.in",
+      "ownership": "support",
+      "status": "",
+      "sha256": "631568ed3159a71e4650c9e616f44d44db66bbe649310fa478fe533e59cabd27",
+      "blob": "476f0620d66f934b24faa1667cebb4ab6029e320"
+    },
+    {
+      "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "ownership": "support",
+      "status": "",
+      "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a",
+      "blob": "20e60a218db9c652fd1cede7b9f752e623337556"
+    },
+    {
+      "path": "services/tts/release/python-license-evidence.json",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f169130cc537d2dbc1e840d4092ec0137c67509138f5cd9b01a422e0cd9dc68b",
+      "blob": "1ce8cadc9b6f6ced92564cfa0d84cd782082ecf9"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/__init__.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "e73f48db20d063411d2b6e7a0b599a24b01159f3b233f5506c835cc09a8e49b5",
+      "blob": "e1ca52fb4b454afe0343e9c5608afd339e54a5d7"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/chatterbox_adapter.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "f7fd0e9f745954dbe5881a5428972793f619335a643a7d3b768368a6fdca707e",
+      "blob": "37bc2d9d23881f98456971a669be38a5e4499d67"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/chatterbox_service.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "feedf00f006699fea7fae2bed1d5192709be2e8b124ac48339bc99b44b284727",
+      "blob": "34138d0195a77d4fb591599cd58cb95dfd21c264"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/engine.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "29784f682d3d1201069b99abe757d286edf71ed3bcb55be4908aef7f4b63350b",
+      "blob": "2e187534926ce5ae65d78062f7af69595c8b3fc2"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/fake_engine.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "7a79f01a35a74ccdc0a08217e612f7e12c98cfabad58dde5e94ea84486791760",
+      "blob": "69e1ab744e390e1183ad88f29c2bd17e8094ad40"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/generated/__init__.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
+      "blob": "c41d6e3ee129f20950ffce91073ead2caec94ebb"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/generated/protocol_schemas.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650",
+      "blob": "334dbea0b4a445740aa68f756e230fd959441082"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/protocol.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "792175578ceaf334f7cf9da25666ec8c6ec64a00e15d8756fc87cbf5b0b2b4f9",
+      "blob": "7127fa73d02782e9a22085cbef341632e425ed9e"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/release_chatterbox.py",
+      "ownership": "task",
+      "status": " M services/tts/src/voxleaf_tts/release_chatterbox.py",
+      "sha256": "5c284859535a4c34eb4a5229fda25ef6fa67be75ef0c34a67f79e73ccae7cd18",
+      "blob": "ef53716f64305bba2e5dfb8488611ae97794a400"
+    },
+    {
+      "path": "services/tts/src/voxleaf_tts/service.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "5f64cfe8ff6960ec11a704ab44d5ad5a46d51ae32d57a6dff8c08e54d2389d12",
+      "blob": "9ead3cb9b957102262563ff2d2db47da3ba6e799"
+    },
+    {
+      "path": "services/tts/tests/test_release_chatterbox.py",
+      "ownership": "task",
+      "status": " M services/tts/tests/test_release_chatterbox.py",
+      "sha256": "fd41181b3ffaf8c3d8aa9087b705b0ddd9d32a1a1e03c77110adb5d3b9eb28e4",
+      "blob": "536a413c3b8a896af394355ca3d8e26aa3e844fa"
+    },
+    {
+      "path": "tmp/chatterbox-security-refresh/smoke.py",
+      "ownership": "support",
+      "status": "",
+      "sha256": "4406e5ddb1afa0489c9fb70aa449f3384f6c7a337ea5406c9d913ce2a3d9a4ac",
+      "blob": "fc819b797cedd0b61dc1819f5787197e1486c126"
+    }
+  ]
+}

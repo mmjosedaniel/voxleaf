@@ -218,6 +218,6 @@ requires-dist = [
 dev = [
     { name = "mypy", specifier = ">=2.3.0,<3" },
     { name = "pytest", specifier = ">=9.1.1,<10" },
-    { name = "ruff", specifier = ">=0.15.22,<0.16" },
+    { name = "ruff", specifier = ">=0.15.22,<0.17" },
     { name = "types-jsonschema", specifier = ">=4.26,<5" },
 ]

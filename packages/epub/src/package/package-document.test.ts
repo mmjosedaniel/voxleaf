@@ -38,8 +38,20 @@ const DEFAULT_MANIFEST = `
 
 const DEFAULT_SPINE = `<itemref idref="chapter"/>`;
 
+const EPUB2_METADATA = `
+  <dc:identifier id="pub-id">urn:synthetic:book-epub2</dc:identifier>
+  <dc:title> Synthetic EPUB 2 title </dc:title>
+  <dc:language>en</dc:language>
+  <dc:creator>Synthetic EPUB 2 Author</dc:creator>
+  <dc:date>2026-07-22</dc:date>`;
+
+const EPUB2_MANIFEST = `
+  <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+  <item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`;
+
 const DEFAULT_RESOURCE_ENTRIES = [
   ["EPUB/nav.xhtml", "navigation"],
+  ["EPUB/toc.ncx", "pending-ncx-parser"],
   ["EPUB/text/chapter.xhtml", "chapter"],
   ["EPUB/fallback.xhtml", "fallback"],
   ["EPUB/scripted.xhtml", "scripted"],
@@ -84,6 +96,7 @@ describe("EPUB package document parsing", () => {
           modified: "2026-07-22T12:34:56Z",
         },
         navigation: {
+          kind: "xhtml",
           resourceId: "nav",
           path: "EPUB/nav.xhtml",
         },
@@ -142,6 +155,154 @@ describe("EPUB package document parsing", () => {
       expect(JSON.stringify(parsed)).not.toContain("synthetic-tool");
       expect(JSON.stringify(parsed)).not.toContain("synthetic-cover");
     });
+  });
+
+  it.each([
+    ["direct", EPUB2_METADATA],
+    [
+      "deprecated wrappers",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><x-metadata><meta name="generator" content="synthetic-tool"/><ext:private xmlns:ext="urn:synthetic:metadata" id="private-id"><ext:nested id="nested-id">ignored</ext:nested></ext:private></x-metadata>`,
+    ],
+  ])(
+    "admits immutable EPUB 2 metadata in the %s form",
+    async (_name, metadata) => {
+      const opf = createEpub2PackageDocument({ metadata });
+
+      await withArchive(opf, {}, async (archive) => {
+        const parsed = await resolveAndParse(archive);
+
+        expect(parsed).toMatchObject({
+          version: "2.0",
+          renditionLayout: "reflowable",
+          metadata: {
+            uniqueIdentifier: "urn:synthetic:book-epub2",
+            identifiers: ["urn:synthetic:book-epub2"],
+            titles: ["Synthetic EPUB 2 title"],
+            languages: ["en"],
+            creators: ["Synthetic EPUB 2 Author"],
+          },
+          navigation: {
+            kind: "ncx",
+            resourceId: "ncx",
+            path: "EPUB/toc.ncx",
+          },
+          spine: [
+            {
+              index: 0,
+              idref: "chapter",
+              contentResourceId: "chapter",
+              path: "EPUB/text/chapter.xhtml",
+              linear: true,
+            },
+          ],
+        });
+        expect(parsed.metadata).not.toHaveProperty("modified");
+        expect(JSON.stringify(parsed)).not.toContain("2026-07-22");
+        expect(JSON.stringify(parsed)).not.toContain("synthetic-tool");
+        expect(Object.isFrozen(parsed)).toBe(true);
+        expect(Object.isFrozen(parsed.metadata)).toBe(true);
+        expect(Object.isFrozen(parsed.navigation)).toBe(true);
+      });
+    },
+  );
+
+  it("validates and ignores direct EPUB 2 supplemental metadata", async () => {
+    const metadata = `${EPUB2_METADATA}
+      <meta name="cover" content="synthetic-cover"/>
+      <ext:private xmlns:ext="urn:synthetic:metadata" id="private-id"><ext:nested id="nested-id">ignored</ext:nested></ext:private>`;
+
+    await withArchive(
+      createEpub2PackageDocument({ metadata }),
+      {},
+      async (archive) => {
+        const parsed = await resolveAndParse(archive);
+        expect(parsed.metadata.creators).toEqual(["Synthetic EPUB 2 Author"]);
+        expect(JSON.stringify(parsed)).not.toContain("synthetic-cover");
+        expect(JSON.stringify(parsed)).not.toContain("nested-id");
+      },
+    );
+  });
+
+  it.each([
+    [
+      "direct Dublin Core mixed with a wrapper",
+      `${EPUB2_METADATA}<dc-metadata><dc:title>Other</dc:title></dc-metadata>`,
+    ],
+    [
+      "Dublin Core outside dc-metadata",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><dc:title>Other</dc:title>`,
+    ],
+    [
+      "supplemental metadata outside x-metadata",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><meta name="cover" content="synthetic-cover"/>`,
+    ],
+    [
+      "x-metadata without dc-metadata",
+      `<x-metadata><meta name="cover" content="synthetic-cover"/></x-metadata>`,
+    ],
+    [
+      "duplicate dc-metadata",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><dc-metadata><dc:title>Other</dc:title></dc-metadata>`,
+    ],
+    [
+      "duplicate x-metadata",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><x-metadata/><x-metadata/>`,
+    ],
+    [
+      "Dublin Core inside x-metadata",
+      `<dc-metadata>${EPUB2_METADATA}</dc-metadata><x-metadata><dc:title>Other</dc:title></x-metadata>`,
+    ],
+    [
+      "nested metadata wrapper",
+      `<dc-metadata><dc-metadata>${EPUB2_METADATA}</dc-metadata></dc-metadata>`,
+    ],
+    [
+      "duplicate ID in ignored supplemental metadata",
+      `${EPUB2_METADATA}<ext:private xmlns:ext="urn:synthetic:metadata" id="private-id"><ext:nested id="private-id">ignored</ext:nested></ext:private>`,
+    ],
+  ])("rejects malformed EPUB 2 metadata: %s", async (_name, metadata) => {
+    await expectFixtureError(
+      createEpub2PackageDocument({ metadata }),
+      {},
+      "malformed-package",
+    );
+  });
+
+  it.each([
+    [
+      "identifier",
+      `<dc:title>Title</dc:title><dc:language>en</dc:language>`,
+      "malformed-package",
+    ],
+    [
+      "title",
+      `<dc:identifier id="pub-id">id</dc:identifier><dc:language>en</dc:language>`,
+      "malformed-package",
+    ],
+    [
+      "language",
+      `<dc:identifier id="pub-id">id</dc:identifier><dc:title>Title</dc:title>`,
+      "malformed-package",
+    ],
+    [
+      "unique-identifier relationship",
+      `<dc:identifier id="other-id">id</dc:identifier><dc:title>Title</dc:title><dc:language>en</dc:language>`,
+      "broken-reference",
+    ],
+  ] as const)(
+    "requires EPUB 2 %s without requiring modified metadata",
+    async (_name, metadata, code) => {
+      await expectFixtureError(
+        createEpub2PackageDocument({ metadata }),
+        {},
+        code,
+      );
+    },
+  );
+
+  it("rejects an EPUB 2 guide before the required spine", async () => {
+    const opf = `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" unique-identifier="pub-id"><metadata>${EPUB2_METADATA}</metadata><manifest>${EPUB2_MANIFEST}</manifest><guide/><spine toc="ncx">${DEFAULT_SPINE}</spine></package>`;
+    await expectFixtureError(opf, {}, "malformed-package");
   });
 
   it.each([
@@ -536,6 +697,155 @@ describe("EPUB package document parsing", () => {
     },
   );
 
+  it.each([
+    ["missing spine toc", EPUB2_MANIFEST, "", "malformed-package"],
+    [
+      "missing toc manifest ID",
+      EPUB2_MANIFEST,
+      `toc="missing"`,
+      "broken-reference",
+    ],
+    [
+      "wrong NCX media type",
+      `<item id="ncx" href="toc.ncx" media-type="application/xml"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+      `toc="ncx"`,
+      "unsupported-resource",
+    ],
+    [
+      "parameterized NCX media type",
+      `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml; charset=utf-8"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+      `toc="ncx"`,
+      "unsupported-resource",
+    ],
+    [
+      "remote NCX",
+      `<item id="ncx" href="https://example.invalid/private-ncx" media-type="application/x-dtbncx+xml"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+      `toc="ncx"`,
+      "unsupported-resource",
+    ],
+    [
+      "NCX fallback chain",
+      `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml" fallback="chapter"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+      `toc="ncx"`,
+      "unsupported-resource",
+    ],
+  ] as const)(
+    "enforces the EPUB 2 spine-to-NCX relationship: %s",
+    async (_name, manifest, spineAttributes, code) => {
+      await expectFixtureError(
+        createEpub2PackageDocument({ manifest, spineAttributes }),
+        {},
+        code,
+      );
+    },
+  );
+
+  it("validates and ignores an optional local EPUB 2 guide", async () => {
+    const guide = `<guide><reference id="opening" type="text" title=" Synthetic opening " href="text/chapter.xhtml#chapter-one"/></guide>`;
+    await withArchive(
+      createEpub2PackageDocument({ trailingSections: guide }),
+      {},
+      async (archive) => {
+        const parsed = await resolveAndParse(archive);
+        expect(parsed.version).toBe("2.0");
+        expect(JSON.stringify(parsed)).not.toContain("Synthetic opening");
+        expect(JSON.stringify(parsed)).not.toContain("chapter-one");
+      },
+    );
+  });
+
+  it.each([
+    [
+      "empty guide type",
+      `<guide><reference type=" " href="text/chapter.xhtml"/></guide>`,
+      "malformed-package",
+    ],
+    [
+      "empty guide title",
+      `<guide><reference type="text" title=" " href="text/chapter.xhtml"/></guide>`,
+      "malformed-package",
+    ],
+    [
+      "remote guide target",
+      `<guide><reference type="text" href="https://example.invalid/private-guide"/></guide>`,
+      "broken-reference",
+    ],
+    [
+      "undeclared guide target",
+      `<guide><reference type="text" href="fallback.xhtml"/></guide>`,
+      "broken-reference",
+    ],
+    [
+      "non-content guide target",
+      `<guide><reference type="toc" href="toc.ncx"/></guide>`,
+      "unsupported-resource",
+    ],
+    ["duplicate guide", `<guide/><guide/>`, "malformed-package"],
+    ["deprecated tours", `<tours/>`, "unsupported-resource"],
+  ] as const)(
+    "rejects an unsupported EPUB 2 guide structure: %s",
+    async (_name, trailingSections, code) => {
+      await expectFixtureError(
+        createEpub2PackageDocument({ trailingSections }),
+        {},
+        code,
+      );
+    },
+  );
+
+  it("does not use the EPUB 2 guide as fallback for a missing NCX relation", async () => {
+    await expectFixtureError(
+      createEpub2PackageDocument({
+        manifest: `<item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+        spineAttributes: "",
+        trailingSections: `<guide><reference type="text" href="text/chapter.xhtml"/></guide>`,
+      }),
+      {},
+      "malformed-package",
+    );
+  });
+
+  it("enforces exact EPUB 2 manifest and spine limits", async () => {
+    const opf = createEpub2PackageDocument();
+    await withArchive(
+      opf,
+      { policy: { maxManifestItems: 2, maxSpineItems: 1 } },
+      async (archive) => {
+        await expect(resolveAndParse(archive)).resolves.toMatchObject({
+          version: "2.0",
+          manifest: [{ id: "ncx" }, { id: "chapter" }],
+          spine: [{ idref: "chapter" }],
+        });
+      },
+    );
+    await expectFixtureError(
+      opf,
+      { policy: { maxManifestItems: 1 } },
+      "resource-limit-exceeded",
+    );
+    await expectFixtureError(
+      opf,
+      { policy: { maxSpineItems: 0 } },
+      "resource-limit-exceeded",
+    );
+  });
+
+  it("honors cancellation after resolving an EPUB 2 package", async () => {
+    const controller = new AbortController();
+    await withArchive(
+      createEpub2PackageDocument(),
+      { signal: controller.signal },
+      async (archive) => {
+        const resolved = await resolveContainerPackage(archive);
+        controller.abort("private-epub2-cancellation");
+        await expectPackageError(
+          () => parsePackageDocument(archive, resolved),
+          "cancelled",
+        );
+      },
+    );
+  });
+
   it("rejects malformed package bytes transactionally after resolution", async () => {
     await withArchive(createPackageDocument(), {}, async (archive) => {
       const resolved = await resolveContainerPackage(archive);
@@ -632,27 +942,41 @@ describe("EPUB package document parsing", () => {
 });
 
 interface PackageDocumentOptions {
+  readonly version?: "2.0" | "3.0";
   readonly packageAttributes?: string;
   readonly metadata?: string;
   readonly manifest?: string;
   readonly spine?: string;
   readonly spineAttributes?: string;
+  readonly trailingSections?: string;
 }
 
 function createPackageDocument(options: PackageDocumentOptions = {}): string {
+  const version = options.version ?? "3.0";
   const packageAttributes =
     options.packageAttributes ?? `unique-identifier="pub-id"`;
-  const metadata = options.metadata ?? DEFAULT_METADATA;
-  const manifest = options.manifest ?? DEFAULT_MANIFEST;
+  const metadata =
+    options.metadata ?? (version === "2.0" ? EPUB2_METADATA : DEFAULT_METADATA);
+  const manifest =
+    options.manifest ?? (version === "2.0" ? EPUB2_MANIFEST : DEFAULT_MANIFEST);
   const spine = options.spine ?? DEFAULT_SPINE;
-  const spineAttributes = options.spineAttributes ?? "";
+  const spineAttributes =
+    options.spineAttributes ?? (version === "2.0" ? `toc="ncx"` : "");
+  const trailingSections = options.trailingSections ?? "";
   return `<package xmlns="http://www.idpf.org/2007/opf"
       xmlns:dc="http://purl.org/dc/elements/1.1/"
-      version="3.0" ${packageAttributes}>
+      version="${version}" ${packageAttributes}>
     <metadata>${metadata}</metadata>
     <manifest>${manifest}</manifest>
     <spine ${spineAttributes}>${spine}</spine>
+    ${trailingSections}
   </package>`;
+}
+
+function createEpub2PackageDocument(
+  options: Omit<PackageDocumentOptions, "version"> = {},
+): string {
+  return createPackageDocument({ ...options, version: "2.0" });
 }
 
 interface ArchiveFixtureOptions {
