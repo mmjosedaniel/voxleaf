@@ -17,7 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-No active ExecPlans are currently listed.
+- [`native-rust-module-organization.md`](native-rust-module-organization.md):
+  planned organization of native Rust responsibilities, diagnostics, and module
+  navigation. Six independently validated stages; implementation has not
+  started. Chatterbox extraction requires a fresh audit addressing the prior
+  accepted SKIP.
 
 ## Historical reference
 
