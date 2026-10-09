@@ -55,7 +55,7 @@ def test_core_release_graph_is_minimal_and_exact() -> None:
     project = tomllib.loads(CORE_PROJECT.read_text(encoding="utf-8"))
     assert project["project"]["requires-python"] == ">=3.12,<3.13"
     assert project["project"]["dependencies"] == [
-        "onnxruntime==1.27.0",
+        "onnxruntime==1.30.0",
         "piper-tts==1.4.2",
         "voxleaf-tts",
     ]
@@ -129,8 +129,45 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
 def test_release_component_inventory_is_complete_and_content_safe() -> None:
     inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
     components = inventory["components"]
-    assert len(components) == 400
+    assert len(components) == 418
     assert len({component["id"] for component in components}) == len(components)
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "node"
+        and component["name"] in {"@tauri-apps/api", "@zip.js/zip.js", "react", "react-dom"}
+    } == {
+        "npm:@tauri-apps/api@2.12.1",
+        "npm:@zip.js/zip.js@2.23.0",
+        "npm:react@19.3.0",
+        "npm:react-dom@19.3.0",
+    }
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "rust" and component["name"] in {"reqwest", "base64"}
+    } == {"cargo:reqwest@0.13.5", "cargo:base64@0.22.1", "cargo:base64@0.23.1"}
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "rust" and component["name"] == "windows"
+    } == {"cargo:windows@0.61.3", "cargo:windows@0.62.2"}
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "rust"
+        and component["name"] in {"zip", "typed-path", "zlib-rs"}
+    } == {"cargo:zip@8.6.0", "cargo:typed-path@0.12.3", "cargo:zlib-rs@0.6.7"}
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "rust" and component["name"] in {"sha2", "digest"}
+    } == {
+        "cargo:sha2@0.10.9",
+        "cargo:sha2@0.11.0",
+        "cargo:digest@0.10.7",
+        "cargo:digest@0.11.3",
+    }
     assert {component["scope"] for component in components} == {
         "core",
         "optional",
@@ -165,7 +202,9 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         component["name"] for component in components if component["scope"] == "not-shipped"
     } == {"Qwen development profiles"}
     assert inventory["lockIdentities"]["piperCore"]["sha256"] == _sha256(CORE_LOCK)
-    assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(CHATTERBOX_LOCK)
+    assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(
+        RELEASE_ROOT / "profiles" / "chatterbox-v3" / "requirements.lock"
+    )
 
 
 def test_python_licence_evidence_contains_only_exact_release_components() -> None:
@@ -186,3 +225,29 @@ def test_python_licence_evidence_contains_only_exact_release_components() -> Non
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_active_successor_graph_is_security_refreshed_and_exact() -> None:
+    successor = RELEASE_ROOT / "profiles" / "chatterbox-v3"
+    requirements = (successor / "requirements.in").read_text()
+    assert "transformers==5.17.0" in requirements
+    assert "tokenizers==0.23.1" in requirements
+    assert "urllib3==2.8.0" in requirements
+    assert len(_requirement_blocks(successor / "requirements.lock")) == 79
+    policy = json.loads(AUDIT_POLICY.read_text())
+    graph = next(graph for graph in policy["pythonGraphs"] if graph["id"] == "chatterbox-optional")
+    expected = "services/tts/release/profiles/chatterbox-v3/requirements.lock"
+    assert graph["lock"] == expected
+    assert graph["requirements"] == expected
+    inventory = json.loads(COMPONENT_INVENTORY.read_text())
+    components = {
+        component["name"]: component
+        for component in inventory["components"]
+        if component["scope"] == "optional" and component["ecosystem"] == "python"
+    }
+    for name, version in {
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.1",
+        "urllib3": "2.8.0",
+    }.items():
+        assert components[name]["versionOrRevision"] == version

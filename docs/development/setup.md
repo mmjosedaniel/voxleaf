@@ -130,7 +130,7 @@ The selected versions establish a reproducible foundation with the reviewed low-
 | Prerequisite             | Selected version or policy                                                       | Minimum supported version                                          | Verified Windows state                         |
 | ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------- |
 | Windows development host | Native 64-bit Windows; current host is 25H2 build `26200.8875`                   | Windows 10 version 1803, 64-bit                                    | Satisfied                                      |
-| Node.js                  | `24.18.0` LTS, pinned in `.nvmrc`                                                | `22.12.0` LTS; supported majors are constrained in `package.json`  | `v24.18.0`                                     |
+| Node.js                  | `24.18.0` LTS, pinned in `.nvmrc`                                                | `22.22.2` on Node 22 or `24.15.0` on Node 24; see `engines.node`   | `v24.18.0`                                     |
 | Package manager          | pnpm `11.15.1`, pinned by `packageManager` and `engines.pnpm` in `package.json`  | Exactly `11.15.1` for reproducible installs                        | `11.15.1`                                      |
 | Rust compiler            | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml`                        | `1.77.2`, the Tauri 2 baseline                                     | `rustc 1.97.1`                                 |
 | Cargo                    | Cargo bundled with pinned Rust `1.97.1`                                          | Cargo bundled with Rust `1.77.2`                                   | `cargo 1.97.1`                                 |
@@ -142,7 +142,7 @@ The selected versions establish a reproducible foundation with the reviewed low-
 ### Selection rationale
 
 - [Tauri's Windows prerequisites](https://v2.tauri.app/start/prerequisites/) require Microsoft C++ Build Tools, WebView2, Rust with an MSVC host, and an LTS Node.js release for a JavaScript frontend.
-- [Vite requires Node.js 20.19+ or 22.12+](https://vite.dev/guide/). Node 20 is end-of-life, so VoxLeaf supports the maintained Node 22 and 24 LTS lines and selects the newer Node 24 LTS line. The [Node.js release policy](https://nodejs.org/en/about/previous-releases) recommends production applications use maintained LTS releases.
+- [Vite requires Node.js 20.19+ or 22.12+](https://vite.dev/guide/), but the locked `jsdom@30.1.2` test environment requires at least Node `22.22.2` or `24.15.0` on the supported LTS lines. VoxLeaf therefore declares `^22.22.2 || ^24.15.0` and keeps `.nvmrc` and CI pinned to `24.18.0`. Node 20 is end-of-life. The [Node.js release policy](https://nodejs.org/en/about/previous-releases) recommends production applications use maintained LTS releases.
 - [pnpm 11 requires Node.js 22 or newer](https://pnpm.io/installation#compatibility). VoxLeaf pins one exact pnpm release so different package-manager versions cannot produce different lock data.
 - [Tauri 2's official plugins](https://github.com/tauri-apps/plugins-workspace#readme) establish Rust `1.77.2` as the baseline. VoxLeaf pins [the current stable Rust release](https://blog.rust-lang.org/releases/) instead of relying on a moving `stable` channel. Cargo is installed and selected with that Rust toolchain.
 - Python `3.12.10` is the last Python 3.12 maintenance release with an official Windows installer. Python 3.12 remains within [PyTorch's supported Windows range](https://pytorch.org/get-started/locally/), while the exact TTS-model compatibility decision remains deferred.
@@ -335,13 +335,15 @@ general hardware support.
 
 M010 and M010.1 Milestone 6 accept the exact admitted local profiles through
 separate native-only configurations. Each interpreter must resolve to its
-ignored locked candidate environment, each model root must contain only the
+ignored locked environment (the current release core for Piper, frozen candidate
+environments for the other engines), each model root must contain only the
 frozen exact artifacts, and an enabled outbound firewall rule must target
 every configured interpreter:
 
 ```powershell
 $env:VOXLEAF_TTS_PIPER_ENABLED = "1"
-$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+uv sync --project services/tts/release/core --locked --no-dev --reinstall-package voxleaf-tts
+$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/release/core/.venv/Scripts/python.exe").Path
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
 
 $env:VOXLEAF_TTS_PIPER_EN_ENABLED = "1"

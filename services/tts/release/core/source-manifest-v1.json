@@ -91,6 +91,6 @@
   ],
   "coreLock": {
     "path": "services/tts/release/core/uv.lock",
-    "sha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e"
+    "sha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc"
   }
 }

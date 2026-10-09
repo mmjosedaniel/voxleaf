@@ -274,7 +274,7 @@
       "evidence": "installed package licence classifier",
       "license": "MIT",
       "name": "onnxruntime",
-      "version": "1.27.0"
+      "version": "1.30.0"
     },
     {
       "evidence": "installed package License-Expression",
@@ -454,7 +454,7 @@
       "evidence": "reviewed package metadata/source licence",
       "license": "Apache-2.0",
       "name": "tokenizers",
-      "version": "0.22.2"
+      "version": "0.23.1"
     },
     {
       "evidence": "reviewed package metadata/source licence",
@@ -478,7 +478,7 @@
       "evidence": "installed package License field",
       "license": "Apache-2.0",
       "name": "transformers",
-      "version": "5.5.0"
+      "version": "5.17.0"
     },
     {
       "evidence": "installed package License-Expression",
@@ -496,7 +496,7 @@
       "evidence": "installed package License-Expression",
       "license": "MIT",
       "name": "urllib3",
-      "version": "2.7.0"
+      "version": "2.8.0"
     },
     {
       "evidence": "repository LICENSE",

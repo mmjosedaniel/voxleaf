@@ -8,6 +8,7 @@ import {
   type Browser,
   type Page,
 } from "@playwright/test";
+import { closeSettings, openSettings } from "./settings-helpers";
 
 const BATCH_SIZE_BLOCKS = 250;
 const SELECTED_LIVE_BLOCK_LIMIT = 10_000;
@@ -847,6 +848,7 @@ test("measures the production React renderer at the accepted chapter limit", asy
     });
 
     const targetStartedAt = await page.evaluate(() => performance.now());
+    await page.getByRole("button", { name: "Show table of contents" }).click();
     await page
       .getByRole("navigation", { name: "Table of contents" })
       .getByRole("button", { name: "Deep target" })
@@ -903,6 +905,7 @@ test("measures the production React renderer at the accepted chapter limit", asy
     const incrementalAppendMs =
       instrumentation.completeAt - instrumentation.resumeStartedAt;
 
+    const settings = await openSettings(page);
     const preferenceReflowMs = await page.evaluate(
       () =>
         new Promise<number>((resolve, reject) => {
@@ -921,6 +924,8 @@ test("measures the production React renderer at the accepted chapter limit", asy
           );
         }),
     );
+
+    await closeSettings(page, settings);
 
     expect(instrumentation.firstContentAt).toBeGreaterThan(0);
     expect(instrumentation.completeAt).toBeGreaterThan(
@@ -1094,6 +1099,9 @@ test("proves production reader resources remain bounded across repeated lifecycl
       const openMs =
         (await page.evaluate(() => performance.now())) - openStartedAt;
 
+      await page
+        .getByRole("button", { name: "Show table of contents" })
+        .click();
       const openingTarget = page
         .getByRole("navigation", { name: "Table of contents" })
         .getByRole("button", { name: "Opening" });
@@ -1105,6 +1113,9 @@ test("proves production reader resources remain bounded across repeated lifecycl
       await expect(image).toHaveAttribute("src", /^blob:/u);
 
       const chapterStartedAt = await page.evaluate(() => performance.now());
+      await page
+        .getByRole("button", { name: "Show table of contents" })
+        .click();
       await page
         .getByRole("navigation", { name: "Table of contents" })
         .getByRole("button", { name: "Continuation" })

@@ -1,6 +1,7 @@
 import {
   Uint8ArrayReader,
   Uint8ArrayWriter,
+  ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
 import type { ZipWriterAddDataOptions } from "@zip.js/zip.js/lib/zip-core-native.js";
@@ -11,6 +12,8 @@ import { inventoryEpubArchive } from "./archive-inventory.js";
 
 const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
 const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
+const ZIP64_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06064b50;
+const ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIGNATURE = 0x07064b50;
 
 const MAX_ARCHIVE_ENTRIES = 4_096;
 const MAX_ENTRY_UNCOMPRESSED_BYTES = 64 * 1_048_576;
@@ -32,6 +35,7 @@ interface TestEntry {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -237,6 +241,46 @@ describe("OCF mimetype validation", () => {
 });
 
 describe("ZIP structure and entry policy", () => {
+  it.each([
+    undefined,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    -1,
+    0.5,
+    0x1_0000_0000,
+  ])(
+    "rejects missing or invalid CRC32 metadata (%s) before reading entry data",
+    async (crc32) => {
+      const archive = await createArchive([mimetypeEntry()]);
+      const getEntries = ZipReader.prototype.getEntriesGenerator;
+      const getData = vi.fn();
+      vi.spyOn(ZipReader.prototype, "getEntriesGenerator").mockImplementation(
+        async function* (this: ZipReader<Uint8Array>, options) {
+          for await (const entry of getEntries.call(this, options)) {
+            if (crc32 === undefined) {
+              delete entry.crc32;
+            } else {
+              entry.crc32 = crc32;
+            }
+            if (!entry.directory) {
+              entry.getData = getData;
+            }
+            yield entry;
+          }
+          return true;
+        },
+      );
+
+      const error = await captureArchiveError(archive);
+      expect(getData).not.toHaveBeenCalled();
+      expect(error).toMatchObject({
+        code: "invalid-container",
+        message: "invalid-container",
+      });
+      expect(error.cause).toBeUndefined();
+    },
+  );
+
   it.each([
     {
       name: "appended data",
@@ -637,8 +681,26 @@ function findLocalHeader(view: DataView, filename: string): number {
 
 function findCentralDirectory(view: DataView, filename: string): number {
   const endOffset = findEndOfCentralDirectory(view);
-  const directoryOffset = view.getUint32(endOffset + 16, true);
-  const entryCount = view.getUint16(endOffset + 10, true);
+  let directoryOffset = view.getUint32(endOffset + 16, true);
+  let entryCount = view.getUint16(endOffset + 10, true);
+  if (directoryOffset === 0xffff_ffff || entryCount === 0xffff) {
+    const locatorOffset = endOffset - 20;
+    if (
+      view.getUint32(locatorOffset, true) !==
+      ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIGNATURE
+    ) {
+      throw new Error("synthetic ZIP64 locator not found");
+    }
+    const zip64Offset = Number(view.getBigUint64(locatorOffset + 8, true));
+    if (
+      view.getUint32(zip64Offset, true) !==
+      ZIP64_END_OF_CENTRAL_DIRECTORY_SIGNATURE
+    ) {
+      throw new Error("synthetic ZIP64 directory not found");
+    }
+    directoryOffset = Number(view.getBigUint64(zip64Offset + 48, true));
+    entryCount = Number(view.getBigUint64(zip64Offset + 32, true));
+  }
   let offset = directoryOffset;
 
   for (let index = 0; index < entryCount; index += 1) {

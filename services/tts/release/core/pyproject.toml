@@ -4,13 +4,14 @@ version = "0.0.0"
 description = "Minimal private Python/Piper runtime graph for the VoxLeaf Windows MVP"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "onnxruntime==1.27.0",
+    "onnxruntime==1.30.0",
     "piper-tts==1.8.0",
     "voxleaf-tts",
 ]
 
 [tool.uv]
 exclude-newer = "2026-08-01T00:00:00Z"
+exclude-newer-package = { onnxruntime = "2026-09-11T00:00:00Z" }
 
 [tool.uv.sources]
 voxleaf-tts = { path = "../..", editable = false }

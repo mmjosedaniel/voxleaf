@@ -1,6 +1,6 @@
 {
   "audits": {
-    "date": "2026-08-01",
+    "date": "2026-10-06",
     "policy": "services/tts/release/audit-policy.json",
     "result": "no known vulnerabilities; recorded informational RustSec notices and four optional Python advisory blind spots",
     "tools": {
@@ -715,6 +715,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:base64@0.23.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "base64",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/base64/0.23.1",
+      "versionOrRevision": "0.23.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:bit-set@0.8.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -885,6 +920,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/block-buffer/0.10.4",
       "versionOrRevision": "0.10.4"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:block-buffer@0.12.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "block-buffer",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/block-buffer/0.12.1",
+      "versionOrRevision": "0.12.1"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -1380,6 +1450,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:const-oid@0.10.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Apache-2.0 OR MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "const-oid",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/const-oid/0.10.2",
+      "versionOrRevision": "0.10.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:cookie@0.18.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -1445,6 +1550,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/cpufeatures/0.2.17",
       "versionOrRevision": "0.2.17"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:cpufeatures@0.3.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "8b2a41393f66f16b0823bb79094d54ac5fbd34ab292ddafb9a0456ac9f87d201"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "cpufeatures",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/cpufeatures/0.3.0",
+      "versionOrRevision": "0.3.0"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -1585,6 +1725,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/crypto-common/0.1.7",
       "versionOrRevision": "0.1.7"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:crypto-common@0.2.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "crypto-common",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/crypto-common/0.2.2",
+      "versionOrRevision": "0.2.2"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -1970,6 +2145,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/digest/0.10.7",
       "versionOrRevision": "0.10.7"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:digest@0.11.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "digest",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/digest/0.11.3",
+      "versionOrRevision": "0.11.3"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -3405,6 +3615,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/httparse/1.10.1",
       "versionOrRevision": "1.10.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:hybrid-array@0.4.14",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "707114b52a152fa7bdb290cd7cd5912d9467273b6d74e21b8d81aca1f8533f6b"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "hybrid-array",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/hybrid-array/0.4.14",
+      "versionOrRevision": "0.4.14"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -5545,7 +5790,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:reqwest@0.13.4",
+      "id": "cargo:reqwest@0.13.5",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -5554,7 +5799,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+        "value": "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -5573,8 +5818,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/reqwest/0.13.4",
-      "versionOrRevision": "0.13.4"
+      "source": "https://crates.io/crates/reqwest/0.13.5",
+      "versionOrRevision": "0.13.5"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -6485,6 +6730,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/sha2/0.10.9",
       "versionOrRevision": "0.10.9"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:sha2@0.11.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "446ba717509524cb3f22f17ecc096f10f4822d76ab5c0b9822c5f9c284e825f4"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "sha2",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/sha2/0.11.0",
+      "versionOrRevision": "0.11.0"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -8310,6 +8590,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:typed-path@0.12.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "typed-path",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/typed-path/0.12.3",
+      "versionOrRevision": "0.12.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:typeid@1.0.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9216,6 +9531,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:windows-collections@0.3.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "23b2d95af1a8a14a3c7367e1ed4fc9c20e0a26e79551b1454d72583c97cc6610"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-collections",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-collections/0.3.2",
+      "versionOrRevision": "0.3.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:windows-core@0.61.2",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9251,6 +9601,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:windows-core@0.62.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "b8e83a14d34d0623b51dce9581199302a221863196a1dde71a7663a4c2be9deb"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-core",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-core/0.62.2",
+      "versionOrRevision": "0.62.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:windows-future@0.2.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9281,6 +9666,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/windows-future/0.2.1",
       "versionOrRevision": "0.2.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:windows-future@0.3.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-future",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-future/0.3.2",
+      "versionOrRevision": "0.3.2"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -9461,6 +9881,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:windows-numerics@0.3.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "6e2e40844ac143cdb44aead537bbf727de9b044e107a0f1220392177d15b0f26"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-numerics",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-numerics/0.3.1",
+      "versionOrRevision": "0.3.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:windows-result@0.3.4",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9496,6 +9951,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:windows-result@0.4.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "7781fa89eaf60850ac3d2da7af8e5242a5ea78d1a11c49bf2910bb5a73853eb5"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-result",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-result/0.4.1",
+      "versionOrRevision": "0.4.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:windows-strings@0.4.2",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9526,6 +10016,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/windows-strings/0.4.2",
       "versionOrRevision": "0.4.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:windows-strings@0.5.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "7837d08f69c77cf6b07689544538e017c1bfcf57e34b4c0ff58e6c2cd3b37091"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-strings",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-strings/0.5.1",
+      "versionOrRevision": "0.5.1"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -9671,6 +10196,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:windows-threading@0.2.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "3949bd5b99cafdf1c7ca86b43ca564028dfe27d66958f2470940f73d86d75b37"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows-threading",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows-threading/0.2.1",
+      "versionOrRevision": "0.2.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:windows-version@0.1.7",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9736,6 +10296,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/windows/0.61.3",
       "versionOrRevision": "0.61.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:windows@0.62.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "windows",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/windows/0.62.2",
+      "versionOrRevision": "0.62.2"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -10231,7 +10826,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:zip@2.4.2",
+      "id": "cargo:zip@8.6.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -10240,7 +10835,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "fabe6324e908f85a1c52063ce7aa26b68dcb7eb6dbc83a2d148403c9bc3eba50"
+        "value": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -10259,8 +10854,43 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/zip/2.4.2",
-      "versionOrRevision": "2.4.2"
+      "source": "https://crates.io/crates/zip/8.6.0",
+      "versionOrRevision": "8.6.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:zlib-rs@0.6.7",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "34b31d188d9d685a4f9c7b46d6e36631b07058d2cfe190267adce54dc230bf12"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Zlib",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "zlib-rs",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/zlib-rs/0.6.7",
+      "versionOrRevision": "0.6.7"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -10336,7 +10966,7 @@
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:@tauri-apps/api@2.11.1",
+      "id": "npm:@tauri-apps/api@2.12.1",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10345,7 +10975,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA=="
+        "value": "DeyFHa3wynpyoqTDikDEDGTJIq4LQ5USfolQGRmGIWT6JMADyxZBTDa5cAdT3tDg73rUXufPaCwN7aXBos4OnQ=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10365,13 +10995,13 @@
       },
       "scope": "core",
       "source": "https://github.com/tauri-apps/tauri#readme",
-      "versionOrRevision": "2.11.1"
+      "versionOrRevision": "2.12.1"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:@zip.js/zip.js@2.8.30",
+      "id": "npm:@zip.js/zip.js@2.23.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10380,7 +11010,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "ig0aIElRmwDhe+tCyd/aAN9dluG0owGYjafCn7w4k/e+DHsit93yXLB+hBVgc8g/5jYp54L09LSECqEMNXNqgA=="
+        "value": "K5obAqfrO7zhycnCupM9aaoZ9kx0SA0kv7+Z2oOUsdpWquv4s/Z4zyD7AdTqxrK3pgPM+ozaUi8kdRQbCWaIrQ=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10400,13 +11030,13 @@
       },
       "scope": "core",
       "source": "https://gildas-lormeau.github.io/zip.js",
-      "versionOrRevision": "2.8.30"
+      "versionOrRevision": "2.23.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:react-dom@19.2.7",
+      "id": "npm:react-dom@19.3.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10415,7 +11045,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ=="
+        "value": "JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10435,13 +11065,13 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "19.2.7"
+      "versionOrRevision": "19.3.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:react@19.2.7",
+      "id": "npm:react@19.3.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10450,7 +11080,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ=="
+        "value": "E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10470,7 +11100,7 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "19.2.7"
+      "versionOrRevision": "19.3.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -10511,7 +11141,7 @@
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:scheduler@0.27.0",
+      "id": "npm:scheduler@0.28.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10520,7 +11150,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="
+        "value": "juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10540,7 +11170,7 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "0.27.0"
+      "versionOrRevision": "0.28.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -10797,7 +11427,7 @@
       "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
-      "id": "pypi:onnxruntime@1.27.0",
+      "id": "pypi:onnxruntime@1.30.0",
       "inclusion": {
         "processBoundary": "private local TTS child",
         "purpose": "Minimal private local-service and Piper runtime graph.",
@@ -10806,9 +11436,9 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "services/tts/release/core/uv.lock",
-        "lockedArtifact": "https://files.pythonhosted.org/packages/c3/b7/dd3a524ed93a820dff1af902d0412957ab12499953333e9daa01af5bc480/onnxruntime-1.27.0-cp312-cp312-macosx_14_0_arm64.whl",
-        "sizeBytes": 18433506,
-        "value": "a14c2ce45312def86b77aea651f46565e45960cf5f0721bfdff449165086ab76"
+        "lockedArtifact": "https://files.pythonhosted.org/packages/31/6f/48169f2e62b405bff5053cbd1d73fb5ce41ef7ecd13bb3bfcc191e689b8a/onnxruntime-1.30.0-cp312-cp312-macosx_14_0_arm64.whl",
+        "sizeBytes": 21544867,
+        "value": "001ed726c9bd5e2bc92faade7d37d889e9606a350b7d5529f0227df2e3bb57fd"
       },
       "license": {
         "evidence": "installed package licence classifier",
@@ -10827,8 +11457,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://pypi.org/project/onnxruntime/1.27.0/",
-      "versionOrRevision": "1.27.0"
+      "source": "https://pypi.org/project/onnxruntime/1.30.0/",
+      "versionOrRevision": "1.30.0"
     },
     {
       "artifactState": "packaged in the deterministic Piper core payload",
@@ -11132,7 +11762,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 1,
         "value": "f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b"
       },
@@ -11168,7 +11798,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494"
       },
@@ -11204,7 +11834,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
       },
@@ -11240,7 +11870,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "1c4ab2f2972764c896a8ac61ac53e261c8d29f0c6ccd652f84e18f08a4cab190"
       },
@@ -11276,7 +11906,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "4f56daa940913d3f09d589c191c74e5a6d51762b3a9e37dd53b7437afd6cda15"
       },
@@ -11312,7 +11942,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"
       },
@@ -11348,7 +11978,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 100,
         "value": "02cb7ff33ded4f1532476731f89ede53e2e488a8e6205515a82144246ffa7dcc"
       },
@@ -11384,7 +12014,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 93,
         "value": "0327fcd59a935777d83410750c50600ee9571af2846f71ce40f25b13da1ef380"
       },
@@ -11420,7 +12050,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 1,
         "value": "bb7363a76c0c0432a0305681fe2e533bbfb0f10fcf7b98d75a439d9a909f1576"
       },
@@ -11456,7 +12086,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6"
       },
@@ -11492,7 +12122,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"
       },
@@ -11528,7 +12158,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "32ef34fa461ff32e1c33061025c0f583884f19d2f0aba200234f4e771f777eda"
       },
@@ -11564,7 +12194,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "4cbcdd55a6efadb9dbea26b858f4fb3264567b52d69ca0d25b721b553f60ea82"
       },
@@ -11600,7 +12230,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "18e53f9e539096320470f62c6360a6fd5727ff28cffda566265316e13fcdb612"
       },
@@ -11636,7 +12266,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193"
       },
@@ -11672,7 +12302,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "7be2ad23a14607ccc71808e68fe30848aeace7058ace17852f68e2a68e310402"
       },
@@ -11708,7 +12338,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "b57ddbafedfaef7018c1ecab32aa200a9d7ca26b77965f64e48b70061249d279"
       },
@@ -11744,7 +12374,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"
       },
@@ -11780,7 +12410,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 22,
         "value": "078af43569c2e05233137a93a33d2293f95c272745eaf030a9bb5f27bb0c9e9c"
       },
@@ -11816,7 +12446,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
       },
@@ -11852,7 +12482,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"
       },
@@ -11888,7 +12518,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "004d4e70350517e24c68a7dbb7dc5e40b2b6aefef8f94bf7a85f6f9835102ea5"
       },
@@ -11924,7 +12554,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2"
       },
@@ -11960,7 +12590,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "2d21d1cc5a017bd0559e36150c21c830ab1dc304dedd1b7ea85d20f45ef3edd7"
       },
@@ -11996,7 +12626,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
       },
@@ -12032,7 +12662,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713"
       },
@@ -12068,7 +12698,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe"
       },
@@ -12104,7 +12734,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "0c26707e2efad8aa1bfc5b7ce170f3fccc2e4918ff85989ba9ffa9facb2be326"
       },
@@ -12140,7 +12770,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3"
       },
@@ -12176,7 +12806,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "0b6415c4fd68bff4c29288abe67c6d80b587e0e1e2cfb0aad23e4559504a7fa1"
       },
@@ -12212,7 +12842,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 25,
         "value": "02853fe4214acb3780fc920c3fee10564b61d58a35e1b78afcc8a546c2deaba3"
       },
@@ -12248,7 +12878,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49"
       },
@@ -12284,7 +12914,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 89,
         "value": "0303439a41979d9e74d18ff5e2dd8c43ed6c6001fd40e5bf2e43f7bd9bbc523f"
       },
@@ -12320,7 +12950,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
       },
@@ -12356,7 +12986,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 39,
         "value": "0d2ffd05a2575b1519dc928c0b93c06339eb67173ff53acb00724502cda231cf"
       },
@@ -12392,7 +13022,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f"
       },
@@ -12428,7 +13058,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 66,
         "value": "01e2dd6c9b19d333a00282330cc8a73d38d8dabc306dc5b42cd668c3ac82e833"
       },
@@ -12464,7 +13094,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "42fdedf44e5b2ca7505630d45b4ac3058f38d8485cba9fe1652ca23152df7489"
       },
@@ -12500,7 +13130,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509"
       },
@@ -12536,7 +13166,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 25,
         "value": "0999e3ee1b18c48e1fb51d11af35ef59852c7f4f50569c9550c25faef0616ad1"
       },
@@ -12572,7 +13202,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 36,
         "value": "03a8c78d01d9781b28a6989f6fa1bb2c4f2d51201cf99d3dd875df6fbd96b23b"
       },
@@ -12608,7 +13238,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "3d701d14e9a8828f1edd28bb70b725908b34277cdd72cf7d6a83f94dadc6b6a0"
       },
@@ -12644,7 +13274,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 24,
         "value": "19e45e4af88e3fe3261458d4b8cc461957ae2782a358a3560503569bf3b23b72"
       },
@@ -12680,7 +13310,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e"
       },
@@ -12716,7 +13346,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 87,
         "value": "00808c5e14ef63ac5161091d242999076604ff74b883423a11e5d7bbb38bf756"
       },
@@ -12752,7 +13382,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "0555d18370482847566ffabcaa53ad7c6c1c29f195989ae1ed634a05f76ea1e0"
       },
@@ -12788,7 +13418,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed"
       },
@@ -12824,7 +13454,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 8,
         "value": "11d6b0ec246892d85215b0a13ca6e0233cf5284b68f0ac02646427f4ff88a799"
       },
@@ -12860,7 +13490,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29"
       },
@@ -12896,7 +13526,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f"
       },
@@ -12932,7 +13562,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 73,
         "value": "00c4bdeba853cc34e7dd471f16b4114f4162dc03e6b7afcc2128711f0eca823c"
       },
@@ -12968,7 +13598,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"
       },
@@ -13004,7 +13634,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 114,
         "value": "062f8cb7a9739c4835d22bd96f370c59aba89f257adcfa53be3cc209e08d3ae0"
       },
@@ -13040,7 +13670,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"
       },
@@ -13076,7 +13706,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 1,
         "value": "733735f3191589136587695111b1a09975a8f758a76aea6dac587ed6cc74ebc2"
       },
@@ -13112,7 +13742,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb"
       },
@@ -13148,7 +13778,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 116,
         "value": "0be972be84cfcaf46c8c6edf690ca0f154ac17babf1f6a955a51579b34ad2dc5"
       },
@@ -13184,7 +13814,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "786a5ff8b5ca023507e0a6a8c7793a6aa1b1550a73d7676851d1b8c8b12889c5"
       },
@@ -13220,7 +13850,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 17,
         "value": "040070828e36dc8e122178bbbd5830ff9e97920affb84cbe0f46442497bed358"
       },
@@ -13256,7 +13886,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 31,
         "value": "051075bda8b7aab87b1906ab3d4740a1e1224a19d7b3781a576736edc94e76aa"
       },
@@ -13292,7 +13922,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 61,
         "value": "010f4333c96c9bb1a4516269e33cb5917b08ef2166d5556ca2fd9f082a9e6ea0"
       },
@@ -13328,7 +13958,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef"
       },
@@ -13364,7 +13994,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"
       },
@@ -13400,7 +14030,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
       },
@@ -13436,7 +14066,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 9,
         "value": "0a6ae43c50c71b4e020cc55382925cb89451c1ed1a0c3d0f5d802da269226849"
       },
@@ -13472,7 +14102,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 26,
         "value": "1577865e993f98ffb261257c3060fa76ec3db44ed3f181b16464268000424464"
       },
@@ -13508,7 +14138,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 36,
         "value": "00cc552cecb92e3157cfee6b01c081b809728b5ff2bf88c875cc179627445837"
       },
@@ -13544,7 +14174,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 57,
         "value": "0017c7d2a0cd9a4f1bdc00d946b45edcf90bb0e271e8f084c1ce542bf6708c32"
       },
@@ -13580,7 +14210,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517"
       },
@@ -13616,7 +14246,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb"
       },
@@ -13644,7 +14274,7 @@
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "python",
-      "id": "python:tokenizers@0.22.2:chatterbox",
+      "id": "python:tokenizers@0.23.1:chatterbox",
       "inclusion": {
         "processBoundary": "optional private local TTS child",
         "purpose": "Minimal bilingual Chatterbox inference dependency.",
@@ -13652,9 +14282,9 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
-        "lockedAlternativeHashCount": 24,
-        "value": "143b999bdc46d10febb15cbffb4207ddd1f410e2c755857b5a0797961bbdc113"
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
+        "lockedAlternativeHashCount": 17,
+        "value": "120468fb4c24faf0543c835a4fabafa4deb3f20a035c9b6e83d0b553a97615d4"
       },
       "license": {
         "evidence": "reviewed package metadata/source licence",
@@ -13673,8 +14303,8 @@
         "voiceOrModel": false
       },
       "scope": "optional",
-      "source": "https://pypi.org/project/tokenizers/0.22.2/",
-      "versionOrRevision": "0.22.2"
+      "source": "https://pypi.org/project/tokenizers/0.23.1/",
+      "versionOrRevision": "0.23.1"
     },
     {
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
@@ -13688,7 +14318,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 1,
         "value": "3a01f0b64c10a82d444d9fd06b3e8c567b1158b76b2764b8f51bfd8f535064b0"
       },
@@ -13724,7 +14354,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 1,
         "value": "88896c7bfa486102439fab6c85ac834176617e9c06eb0be9074c07ee1183b47d"
       },
@@ -13760,7 +14390,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "55b0b0dbd97462d06ebee91e4dac24ed4d4702be82b24f07e6c1d27e08cea220"
       },
@@ -13788,7 +14418,7 @@
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "python",
-      "id": "python:transformers@5.5.0:chatterbox",
+      "id": "python:transformers@5.17.0:chatterbox",
       "inclusion": {
         "processBoundary": "optional private local TTS child",
         "purpose": "Minimal bilingual Chatterbox inference dependency.",
@@ -13796,9 +14426,9 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
-        "value": "821a9ff0961abbb29eb1eb686d78df1c85929fdf213a3fe49dc6bd94f9efa944"
+        "value": "78ec1ce21579b38dfb83950a0658cd119f87212a2fcfdff478096ce9d6c03801"
       },
       "license": {
         "evidence": "installed package License field",
@@ -13817,8 +14447,8 @@
         "voiceOrModel": false
       },
       "scope": "optional",
-      "source": "https://pypi.org/project/transformers/5.5.0/",
-      "versionOrRevision": "5.5.0"
+      "source": "https://pypi.org/project/transformers/5.17.0/",
+      "versionOrRevision": "5.17.0"
     },
     {
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
@@ -13832,7 +14462,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "629bd12ea5d13a17148125d9a264f949eb171fb3f120f9b04d85873cab054fa5"
       },
@@ -13868,7 +14498,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
       },
@@ -13896,7 +14526,7 @@
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "python",
-      "id": "python:urllib3@2.7.0:chatterbox",
+      "id": "python:urllib3@2.8.0:chatterbox",
       "inclusion": {
         "processBoundary": "optional private local TTS child",
         "purpose": "Minimal bilingual Chatterbox inference dependency.",
@@ -13904,9 +14534,9 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
-        "value": "231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c"
+        "value": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
       },
       "license": {
         "evidence": "installed package License-Expression",
@@ -13925,8 +14555,8 @@
         "voiceOrModel": false
       },
       "scope": "optional",
-      "source": "https://pypi.org/project/urllib3/2.7.0/",
-      "versionOrRevision": "2.7.0"
+      "source": "https://pypi.org/project/urllib3/2.8.0/",
+      "versionOrRevision": "2.8.0"
     },
     {
       "artifactState": "dependency lock closed; downloadable artifact selection belongs to M011 Milestone 4",
@@ -13940,7 +14570,7 @@
       },
       "integrity": {
         "algorithm": "SHA-256",
-        "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+        "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
         "lockedAlternativeHashCount": 2,
         "value": "25ad4e16390cd314347dd8f1de67a2ac538ae658ed4ab9db16029c07c188e97f"
       },
@@ -14115,19 +14745,19 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "faa4815994d3a8701ba6ad435265248e14a448c16e102c0ec4238bcab02303a8"
+      "sha256": "7646582545047fea31396692fa800ebcbacb12efef3b727b75a6c301d4dae1e2"
     },
     "chatterboxOptional": {
-      "path": "services/tts/release/profiles/chatterbox/requirements.lock",
-      "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a"
+      "path": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
+      "sha256": "9d580af2c1655cc4e971cd4db2a17e6364eea7ee429b207cf0ee52f291e1fcef"
     },
     "piperCore": {
       "path": "services/tts/release/core/uv.lock",
-      "sha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e"
+      "sha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc"
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",
-      "sha256": "94de96b08f6e984531e04890618ae69854193321d41bc725dc076b0a23d88442"
+      "sha256": "62fe4936057df421e7264705be1941b60cc7a6513022a163285bae777f311701"
     }
   },
   "schemaVersion": 1,
