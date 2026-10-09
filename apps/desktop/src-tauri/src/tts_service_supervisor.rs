@@ -63,8 +63,7 @@ const CANDIDATE_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock"
 );
 #[cfg(not(feature = "release-locked-runtime"))]
-const PIPER_LOCK_BYTES: &[u8] =
-    include_bytes!("../../../../services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
+const PIPER_LOCK_BYTES: &[u8] = include_bytes!("../../../../services/tts/release/core/uv.lock");
 #[cfg(not(feature = "release-locked-runtime"))]
 const CHATTERBOX_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock"
@@ -236,15 +235,14 @@ impl ExactRuntime {
             .canonicalize()
             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
         let expected_python = repository_root
-            .join("services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe")
+            .join("services/tts/release/core/.venv/Scripts/python.exe")
             .canonicalize()
             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
         let configured_python = absolute_existing_path(python_key, false)?;
         if configured_python != expected_python {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
-        let candidate_lock =
-            repository_root.join("services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
+        let candidate_lock = repository_root.join("services/tts/release/core/uv.lock");
         if fs::read(candidate_lock).map_err(|_| TtsNativeFailure::ChildUnavailable)?
             != PIPER_LOCK_BYTES
         {

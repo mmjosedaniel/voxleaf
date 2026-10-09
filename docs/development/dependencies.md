@@ -37,6 +37,16 @@ M011's release graph now fulfills the Piper GPL/CC0 notices, exact corresponding
 source, model provenance, and measured installer boundary. Clean-host release
 acceptance and trusted signing remain separate unavailable evidence.
 
+The current Piper runtime refresh is defined by
+[ADR-0053](../architecture/decisions/ADR-0053-refresh-piper-onnxruntime.md):
+`services/tts/release/core` pins Piper `1.4.2` and ONNX Runtime `1.30.0` for both
+packaged and native development execution. Only ONNX Runtime receives a later
+uv resolution cutoff (`2026-09-11T00:00:00Z`); every other package keeps its pin
+and original cutoff. The historical v6/v8 candidate projects and results still
+identify ONNX Runtime `1.27.0`. They are not current-runtime acceptance evidence.
+Exact interpreter, version, CPU provider, voice hashes and offline checks remain
+mandatory; no general version range is accepted by the production adapter.
+
 M010 Milestone 7 adds no dependency, manifest, lockfile, runtime capability,
 or distribution edge. The final
 [`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) confirms

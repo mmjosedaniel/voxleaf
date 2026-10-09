@@ -55,7 +55,7 @@ def test_core_release_graph_is_minimal_and_exact() -> None:
     project = tomllib.loads(CORE_PROJECT.read_text(encoding="utf-8"))
     assert project["project"]["requires-python"] == ">=3.12,<3.13"
     assert project["project"]["dependencies"] == [
-        "onnxruntime==1.27.0",
+        "onnxruntime==1.30.0",
         "piper-tts==1.4.2",
         "voxleaf-tts",
     ]

@@ -335,13 +335,15 @@ general hardware support.
 
 M010 and M010.1 Milestone 6 accept the exact admitted local profiles through
 separate native-only configurations. Each interpreter must resolve to its
-ignored locked candidate environment, each model root must contain only the
+ignored locked environment (the current release core for Piper, frozen candidate
+environments for the other engines), each model root must contain only the
 frozen exact artifacts, and an enabled outbound firewall rule must target
 every configured interpreter:
 
 ```powershell
 $env:VOXLEAF_TTS_PIPER_ENABLED = "1"
-$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+uv sync --project services/tts/release/core --locked --no-dev --reinstall-package voxleaf-tts
+$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/release/core/.venv/Scripts/python.exe").Path
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
 
 $env:VOXLEAF_TTS_PIPER_EN_ENABLED = "1"
