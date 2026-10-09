@@ -11,7 +11,7 @@ dependencies = [
 
 [tool.uv]
 exclude-newer = "2026-08-01T00:00:00Z"
-exclude-newer-package = { onnxruntime = "2026-09-11T00:00:00Z" }
+exclude-newer-package = { onnxruntime = "2026-09-11T00:00:00Z", piper-tts = "2026-09-05T00:00:00Z" }
 
 [tool.uv.sources]
 voxleaf-tts = { path = "../..", editable = false }

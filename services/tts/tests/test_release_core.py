@@ -73,9 +73,9 @@ def test_source_manifest_closes_runtime_sources_and_both_voices() -> None:
     }
     piper = manifest["piper"]
     assert isinstance(piper, dict)
-    assert piper["version"] == "1.4.2"
-    assert piper["sourceRevision"] == "d6975e21a440c0d8b6e5fb7c41027409af13d44d"
-    assert piper["phonemizerSourceRevision"] == ("212928b394a96e8fd2096616bfd54e17845c48f6")
+    assert piper["version"] == "1.8.0"
+    assert piper["sourceRevision"] == "639388b6317fc4731e91d53da42aea68fd4166ff"
+    assert piper["phonemizerSourceRevision"] == ("724808c5a83f9ef95fdd0db886ba7ba537ff224a")
     voices = manifest["voices"]
     assert isinstance(voices, list)
     assert {voice["language"] for voice in voices} == {"en", "es"}
@@ -92,6 +92,20 @@ def test_core_excludes_release_builders_and_their_stale_install_metadata() -> No
     ):
         assert _excluded_site_file(Path(relative))
     assert not _excluded_site_file(Path("voxleaf_tts/piper_service.py"))
+
+
+def test_core_excludes_unreachable_language_helpers_and_hebrew_model() -> None:
+    for relative in (
+        "piper/g2pw_onnx.py",
+        "piper/phonemize_hebrew.py",
+        "piper/phonemize_japanese.py",
+        "piper/phonemize_thai.py",
+        "piper/hebrew/__init__.py",
+        "piper/hebrew/nakdimon.onnx",
+    ):
+        assert _excluded_site_file(Path(relative))
+    for relative in ("piper/voice.py", "piper/phonemize_espeak.py", "piper/espeakbridge.pyd"):
+        assert not _excluded_site_file(Path(relative))
 
 
 @pytest.mark.parametrize(

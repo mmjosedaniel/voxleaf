@@ -1,10 +1,10 @@
 {
-  "coreLockSha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc",
+  "coreLockSha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97",
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
-      "sha256": "b50aef9a005dd78aed84fa58c246355293a528c6930473f2b89c2cee23231910",
-      "sizeBytes": 36165
+      "sha256": "e733b4ce3a9b062f0231b594d1eb69e296d98113c655e5ad1159c7fa2a9740b9",
+      "sizeBytes": 36166
     },
     {
       "path": "notices/ESPEAK-NG-GPL-3.0.txt",
@@ -18,8 +18,8 @@
     },
     {
       "path": "notices/PIPER-SOURCE-FULFILLMENT.md",
-      "sha256": "e51a7d87eedb100b4186170aabd61351f16d3ad889e0f814f72b41628c6e9edc",
-      "sizeBytes": 1650
+      "sha256": "876d50e934edbe8bf8592a87fe87679d5cac733dbe1d0f6ea43dbe2f17a71a3b",
+      "sizeBytes": 1657
     },
     {
       "path": "notices/PIPER-VOICES-MIT.txt",
@@ -38,7 +38,7 @@
     },
     {
       "path": "notices/THIRD-PARTY-NOTICES.md",
-      "sha256": "099689afe218d01d8a7b410925686913d34dc9848184132e3853bc1b432e3fe7",
+      "sha256": "aa8133ce1e3514d5775a0f242b2542ae95b9dda4b1d8c8dbe88b258b40b6fe1f",
       "sizeBytes": 2661
     },
     {
@@ -167,9 +167,14 @@
       "sizeBytes": 1089
     },
     {
-      "path": "notices/python/piper_tts-1.4.2.dist-info/COPYING",
+      "path": "notices/python/piper_tts-1.8.0.dist-info/COPYING",
       "sha256": "5f631fae467c82b8cd28fd1ec425c816895a35f9d94e36bee0e0164570e8e0f6",
       "sizeBytes": 35823
+    },
+    {
+      "path": "notices/python/piper_tts-1.8.0.dist-info/licenses/LICENSE.g2pW-Apache-2.0",
+      "sha256": "8d1f32544c26f4cbfee59ec9d5c273427f68d1af5b56a6dd5864a36846fe2565",
+      "sizeBytes": 11834
     },
     {
       "path": "notices/python/referencing-0.37.0.dist-info/COPYING",
@@ -7668,13 +7673,18 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/config.py",
-      "sha256": "764fc36d019d3644336334e58c810b8bd17b68224101d1337ae993a97522f4c8",
-      "sizeBytes": 3866
+      "sha256": "1256c0433b0dc3821f53a83a46eb115cf6020ba868974d9b40d94723f2f7bae6",
+      "sizeBytes": 4915
     },
     {
       "path": "runtime/Lib/site-packages/piper/const.py",
       "sha256": "e2cf7db61b349b5376152d72b8e86a057c55ed0d5b4f33c51704ce3c5fc0b549",
       "sizeBytes": 111
+    },
+    {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/ab_dict",
+      "sha256": "a1136aa1b156fdc3e5bf2f55f468bfd68e4f6a577930bf0506fb5c016028145e",
+      "sizeBytes": 2774
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/af_dict",
@@ -7752,6 +7762,11 @@
       "sizeBytes": 1566347
     },
     {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/crh_dict",
+      "sha256": "a3533ac5629373d170c15081c98899707541db84ba3e380a23a8420dfac35001",
+      "sizeBytes": 9156
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/cs_dict",
       "sha256": "61e649cdf0339e9e8248bdcdfa88b19c2cd129ef21e530adfe1860115420681d",
       "sizeBytes": 50455
@@ -7783,8 +7798,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/en_dict",
-      "sha256": "1053f74a34af38abb6fbd64b7838dacbc655a687c48ce1bb663d364a127b05de",
-      "sizeBytes": 168204
+      "sha256": "e287f8e93e02fa0d4cd246d954309d932c2b71c803dc52176368534bf884173e",
+      "sizeBytes": 168294
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/eo_dict",
@@ -7793,8 +7808,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/es_dict",
-      "sha256": "e7c6347e407d5c14f283eeada18b86c6d560b03b62f53659473109bbff096757",
-      "sizeBytes": 49285
+      "sha256": "fc93aa40fcddeea4b1b47943d80f2c2c76aad143ad591bea4d287d4002f6a869",
+      "sizeBytes": 49543
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/et_dict",
@@ -7808,8 +7823,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/fa_dict",
-      "sha256": "e3aa6e751a344da7924b0ed871e06a6afb053f6bfe87dfd7914ffa24e90cd03c",
-      "sizeBytes": 292907
+      "sha256": "1ed62a6754f03e2a2bc58f381a033889874cd8a89acafbbcdfa227f1924f3d32",
+      "sizeBytes": 318802
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/fi_dict",
@@ -7818,8 +7833,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/fr_dict",
-      "sha256": "e399ab924c4d10beef1fc310b30ea56e4ddfd8b4b64b8ed978e9c65394d49b2d",
-      "sizeBytes": 63727
+      "sha256": "7fea4f08be72e857f26131e89fa71fd11fe242375fc62315e7fe8959d52a06f4",
+      "sizeBytes": 63979
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/ga_dict",
@@ -7858,8 +7873,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/he_dict",
-      "sha256": "f18c40ad0a761249d1ccd00210c038b3f63a948518219624c6f5baa19e9283c8",
-      "sizeBytes": 10665
+      "sha256": "adf92cf1662b7a1728efe80b43f2de5b93c951a9db3de3c36d7fc1348fa6e34c",
+      "sizeBytes": 10697
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/hi_dict",
@@ -7878,8 +7893,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/hu_dict",
-      "sha256": "e90e57f1f97042aa1cc6370aeced562b119b4fe156fd83f10165fdfb68676269",
-      "sizeBytes": 180009
+      "sha256": "41dfe6e003b020e2ca632b14e0575ce308a09868cc4d04416c7f25b81a7421e4",
+      "sizeBytes": 190421
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/hy_dict",
@@ -7898,8 +7913,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/intonations",
-      "sha256": "031a105bf6bb2ebcd73a2c579ccfb42469b27266db0078af65ae298fd3588b21",
-      "sizeBytes": 2312
+      "sha256": "c4ff28c76c30cf7d9f07643e08ec39e68769ef648098269b5c0ab7731218e219",
+      "sizeBytes": 2584
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/io_dict",
@@ -8072,6 +8087,11 @@
       "sizeBytes": 46
     },
     {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/cau/ab",
+      "sha256": "b40ba79ddcf3edfd366e0ffb456aed41c7c7e4affadb6e6507af89efaf72d1fb",
+      "sizeBytes": 28
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/ccs/ka",
       "sha256": "0f029cf14cc3349c1b01720b38fe3b3aeea6d4399a30ef9ab195a612ecf85a75",
       "sizeBytes": 127
@@ -8148,8 +8168,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/gmq/sv",
-      "sha256": "24f294fbeb1e5e6517419a1262c27d4dfd9802857b651a2f151ac7f6e6b76008",
-      "sizeBytes": 27
+      "sha256": "8699176eb45c5b17a8090cfbfa175d120eddffa81a4c6638b711c681b6b9f79c",
+      "sizeBytes": 192
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/gmw/af",
@@ -8453,13 +8473,18 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/roa/pt-BR",
-      "sha256": "717d37d521c957c94458f0a6a71201f7146504515cb23a7f35dd6aa2328c57ee",
-      "sizeBytes": 116
+      "sha256": "5ad528d8eb9d67fe7365c71e1f475393b939e67495621569f35e6282b6f9d4ea",
+      "sizeBytes": 194
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/roa/ro",
       "sha256": "38ddd5fe55ac26a394b07e5e489d5447c9cc1339f169a4d20e02a128200b7db2",
       "sizeBytes": 28
+    },
+    {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/roa/rup",
+      "sha256": "ac0d5219dee26c641ed088139712d5652ec7b275065a406e95f1920fd98daa5e",
+      "sizeBytes": 102
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/sai/gn",
@@ -8542,6 +8567,11 @@
       "sizeBytes": 27
     },
     {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/trk/crh",
+      "sha256": "ebfece6ddf0b58bbbc7630faf21ca75507a8554bcfe64256a7386f8783435b13",
+      "sizeBytes": 106
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/trk/cv",
       "sha256": "930f79f780ae64db8e2eeeda4eaaaa50ff85713cc375a245cb03a239abac4710",
       "sizeBytes": 43
@@ -8612,6 +8642,11 @@
       "sizeBytes": 49
     },
     {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/xgn/mn",
+      "sha256": "53b7ad74cbf277a0f9b79a36de58958ced5b66f41304a513b1c5b1ba2741de84",
+      "sizeBytes": 27
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/zle/be",
       "sha256": "410fecaa1512e13b64c863e622d7544707ad9d295d67a1e99ff5f01b742ee3e8",
       "sizeBytes": 56
@@ -8628,8 +8663,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/zle/ru-cl",
-      "sha256": "30e65b1a1b476daa92c7caa951fc169534cdf2a41cc2dbb77cdbba4ed4433119",
-      "sizeBytes": 97
+      "sha256": "7cc7581fd88670dfce6f2fb52d956b313720d302fac2f9089dfb81a6ae878121",
+      "sizeBytes": 87
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/lang/zle/uk",
@@ -8717,6 +8752,11 @@
       "sizeBytes": 92345
     },
     {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/mn_dict",
+      "sha256": "bdb3bed1f30a4f0e353cdee0368b87de35cca4a9520e68bbe5026901182f79e3",
+      "sizeBytes": 15707
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/mr_dict",
       "sha256": "f712a7525db108ef9769aee53fdd1cd141f0df372778924691b89623aa6fc22f",
       "sizeBytes": 87391
@@ -8788,23 +8828,23 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/phondata",
-      "sha256": "a0b643b155cb6b12628d9e7865b57d9fca0d35844614f2594a5e009c80c80bb4",
-      "sizeBytes": 554740
+      "sha256": "e4e698524686da9e207c79c1e6c896a024b0b4412741cdd28f059ebae0a78112",
+      "sizeBytes": 594464
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/phondata-manifest",
-      "sha256": "aef7909c68a1369de597b69b62742e3ec0efa7aaae25a6c304fc5e9812f118eb",
-      "sizeBytes": 22855
+      "sha256": "290e107c2924ad7269bab7e5eb6a8c9462de73a69c62542e6db335afcd1efe46",
+      "sizeBytes": 23475
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/phonindex",
-      "sha256": "ddaddb27c8f60d788631f219303fdedc894eed5d0499a6f93187e863a11af423",
-      "sizeBytes": 44904
+      "sha256": "093104ededac06529465db6c51769d0bf8311f9eaec7a0b881599734e40a230e",
+      "sizeBytes": 48584
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/phontab",
-      "sha256": "d15c42e99a6f792775c281173bbc82c86b490c2d4a939215a1d526768c1db8ce",
-      "sizeBytes": 59520
+      "sha256": "cfee959088c75a2f9a8b78535f34eeea3ed7cac24615a57581ae3a9060de68c2",
+      "sizeBytes": 63700
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/piqd_dict",
@@ -8818,8 +8858,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/pt_dict",
-      "sha256": "94c689153e12e9c5e0ecbf60518a93ebb2ea0fbe805c63d97fa84c43331424e9",
-      "sizeBytes": 76389
+      "sha256": "ba6655f595d14de610eaa954e5f87bf6da914e622763f92a3d987be4fb9a7125",
+      "sizeBytes": 140619
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/py_dict",
@@ -8853,8 +8893,13 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/ru_dict",
-      "sha256": "70f4727cd00a3b38689f3a3d1190b4fd9e51071a9af1bdb976c0b6182f22b009",
-      "sizeBytes": 8609166
+      "sha256": "ad087eb02abe6eb061d74e8cb438aab322443bd6dd3620e76497c5694310fe6c",
+      "sizeBytes": 9053144
+    },
+    {
+      "path": "runtime/Lib/site-packages/piper/espeak-ng-data/rup_dict",
+      "sha256": "27e934f5fa9459665fc54bf4b5792282515cac49bec03395584f5d16dab5a410",
+      "sizeBytes": 3475
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/sd_dict",
@@ -8903,8 +8948,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/sv_dict",
-      "sha256": "565f058b14f1c89c6bfa44fc3700793886a39c7818f1037ad1f4961fa7517509",
-      "sizeBytes": 47836
+      "sha256": "97c5a874526a3f1bed3d3de7bce246593b809ca3246677fed33c8f072635bde5",
+      "sizeBytes": 58948
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeak-ng-data/sw_dict",
@@ -9503,8 +9548,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeakbridge.pyd",
-      "sha256": "52c59d1351a70b509df5a04c1da2dc33f6369d7029f7e538bfda8e15c1a47d3a",
-      "sizeBytes": 501248
+      "sha256": "29631a68cf69727df76071561c9d839dfd05ae326e7f4ed01ae4a69d03f63429",
+      "sizeBytes": 500224
     },
     {
       "path": "runtime/Lib/site-packages/piper/espeakbridge.pyi",
@@ -9512,14 +9557,24 @@
       "sizeBytes": 574
     },
     {
+      "path": "runtime/Lib/site-packages/piper/img/logo.png",
+      "sha256": "4e19189de654bd9652527ac198e4c050feba94731d1f45b9eb77c826302baf53",
+      "sizeBytes": 8573
+    },
+    {
+      "path": "runtime/Lib/site-packages/piper/img/ohf-library.png",
+      "sha256": "b354cd62a17b73bcfff950179dd8ac238620205c0c16845133f3f54aa57c422a",
+      "sizeBytes": 8612
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/phoneme_ids.py",
-      "sha256": "0edfcf60190f02f575c681373741e0ef9c02f9b095dfe7039f872995b636edf8",
-      "sizeBytes": 3599
+      "sha256": "52862c46de16528acd630eed8561e5f44b9c91b713e3b352d71a99d3a7545463",
+      "sizeBytes": 3713
     },
     {
       "path": "runtime/Lib/site-packages/piper/phonemize_espeak.py",
-      "sha256": "1dc3bba08724f07d16e6f2da32b7c654f849c0f2c693b521a1d03aaaa107ea55",
-      "sizeBytes": 1884
+      "sha256": "a8a5c29ec2bf96d2e148a3e178a6619ead8b23e192f0f8c9f1fc802972a9c2ff",
+      "sizeBytes": 3195
     },
     {
       "path": "runtime/Lib/site-packages/piper/py.typed",
@@ -9552,37 +9607,47 @@
       "sizeBytes": 197
     },
     {
+      "path": "runtime/Lib/site-packages/piper/templates/index.html",
+      "sha256": "f3900906fb00128bed8cac43b8038ee5d6d48d2e9f8bf2e6a5ce3f139e49401c",
+      "sizeBytes": 19393
+    },
+    {
       "path": "runtime/Lib/site-packages/piper/voice.py",
-      "sha256": "5e656dd4e89705fd81073e39f3d8e2ac251b70ed2da9e8035fb129439aa0a9b5",
-      "sizeBytes": 17473
+      "sha256": "a4008b5ca2a13ac3ce5cb52fb77608cca202816b7e8cff630f2c566234cf63c5",
+      "sizeBytes": 20445
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/METADATA",
-      "sha256": "519fbe0256a391f97b3ae2e380333000698b5cdaeeca801086f0416c64f54a68",
-      "sizeBytes": 2389
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/METADATA",
+      "sha256": "d2e0ee4e999f4d541244cae1553247443f3618f58477ec0edbb066e03766e6cb",
+      "sizeBytes": 2730
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/RECORD",
-      "sha256": "57e92f9926e4a44dcb028cd51a787c62ff2cc97685006bfb84bea1c62bbcad32",
-      "sizeBytes": 35204
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/RECORD",
+      "sha256": "b4acf5cecf630638137018ba390d1cabac5b3657587fa2d5aae07400ba19700c",
+      "sizeBytes": 38377
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/WHEEL",
-      "sha256": "fcf1a1e806014a33a99c79f249a6f014d98f6538a8516fc402a33ff395422de1",
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/WHEEL",
+      "sha256": "628b409d021c972dea9b7eb8c562b66e5891b762d3e365bff62667f61e530604",
       "sizeBytes": 94
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/entry_points.txt",
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/entry_points.txt",
       "sha256": "47ecc901730f338ec31c90e4e4ad2da33ee23804f1dfc455f7c7e4a303318f4a",
       "sizeBytes": 46
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/licenses/COPYING",
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/licenses/COPYING",
       "sha256": "5f631fae467c82b8cd28fd1ec425c816895a35f9d94e36bee0e0164570e8e0f6",
       "sizeBytes": 35823
     },
     {
-      "path": "runtime/Lib/site-packages/piper_tts-1.4.2.dist-info/top_level.txt",
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/licenses/licenses/LICENSE.g2pW-Apache-2.0",
+      "sha256": "8d1f32544c26f4cbfee59ec9d5c273427f68d1af5b56a6dd5864a36846fe2565",
+      "sizeBytes": 11834
+    },
+    {
+      "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/top_level.txt",
       "sha256": "dc58cba74e2fc92092e98629b3a8db0a1c8ebe28f8e5f191f8c1cfa41154225c",
       "sizeBytes": 6
     },
@@ -9813,7 +9878,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/piper_adapter.py",
-      "sha256": "e3cfbaac51e5911a8079aca4acf53020a6c082ecce528f676afd6f822ff204ba",
+      "sha256": "78c335d25979165213a86c7fb0f4f95d2f2620b8ff7cc56279f1f2b823174020",
       "sizeBytes": 18017
     },
     {
@@ -10003,18 +10068,18 @@
     },
     {
       "path": "source-manifest-v1.json",
-      "sha256": "faaa67cf9b62fc9cf0dfce015604834d085b9452544a9adfe4000a3d83f6c740",
-      "sizeBytes": 3654
+      "sha256": "4c340ca48878a1558d792901ba66a81ed1432b8de33cd1fd0c723287c29982af",
+      "sizeBytes": 3655
     },
     {
-      "path": "sources/espeak-ng-212928b394a96e8fd2096616bfd54e17845c48f6.tar.gz",
-      "sha256": "1f201cabc73e569a7cb434d40d3b30980f923010f8ecd4d1c4ae94691ac2888a",
-      "sizeBytes": 17815706
+      "path": "sources/espeak-ng-724808c5a83f9ef95fdd0db886ba7ba537ff224a.tar.gz",
+      "sha256": "7d8ebd78201923a443245362a928999977d1721c3eeba596eafc6ea8db7e243c",
+      "sizeBytes": 18647838
     },
     {
-      "path": "sources/piper1-gpl-d6975e21a440c0d8b6e5fb7c41027409af13d44d.tar.gz",
-      "sha256": "ebf535912b5760e33ff5c01a483bfc9c58b13c18c7c6ccfb4cec0184dc14f747",
-      "sizeBytes": 4836428
+      "path": "sources/piper1-gpl-639388b6317fc4731e91d53da42aea68fd4166ff.tar.gz",
+      "sha256": "a7045b7ef4268d1088047c20a69ae447b552e579dacb42d3dc18f53576aa54ce",
+      "sizeBytes": 24738952
     },
     {
       "path": "voices/en/MODEL_CARD",
@@ -10049,7 +10114,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 283142869,
+  "payloadBytes": 304582059,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

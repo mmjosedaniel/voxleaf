@@ -20,19 +20,19 @@ runtime as `runtime/LICENSE.txt`.
 
 Source: <https://www.python.org/downloads/release/python-31210/>
 
-## Piper 1.4.2 and its embedded espeak-ng phonemizer
+## Piper 1.8.0 and its embedded espeak-ng phonemizer
 
-`piper-tts` 1.4.2 is GPL-3.0-or-later. Its wheel embeds a native phonemizer
-built from espeak-ng revision `212928b394a96e8fd2096616bfd54e17845c48f6`.
+`piper-tts` 1.8.0 is GPL-3.0-or-later. Its wheel embeds a native phonemizer
+built from espeak-ng revision `724808c5a83f9ef95fdd0db886ba7ba537ff224a`.
 The payload includes the GPL text and the complete exact Piper and espeak-ng
 source archives under `sources/`; see `PIPER-SOURCE-FULFILLMENT.md` for the
 identity and rebuild relationship.
 
 Sources:
 
-- <https://pypi.org/project/piper-tts/1.4.2/>
-- <https://github.com/OHF-Voice/piper1-gpl/tree/v1.4.2>
-- <https://github.com/espeak-ng/espeak-ng/tree/212928b394a96e8fd2096616bfd54e17845c48f6>
+- <https://pypi.org/project/piper-tts/1.8.0/>
+- <https://github.com/OHF-Voice/piper1-gpl/tree/v1.8.0>
+- <https://github.com/espeak-ng/espeak-ng/tree/724808c5a83f9ef95fdd0db886ba7ba537ff224a>
 
 ## Piper voices
 

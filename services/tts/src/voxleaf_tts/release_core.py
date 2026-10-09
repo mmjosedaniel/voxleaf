@@ -245,6 +245,10 @@ def _excluded_site_file(path: Path) -> bool:
         "piper/http_server.py",
         "piper/patch_voice_with_alignment.py",
         "piper/phonemize_chinese.py",
+        "piper/g2pw_onnx.py",
+        "piper/phonemize_hebrew.py",
+        "piper/phonemize_japanese.py",
+        "piper/phonemize_thai.py",
     }
     normalized = path.as_posix()
     dormant_voxleaf_paths = {
@@ -264,6 +268,7 @@ def _excluded_site_file(path: Path) -> bool:
         or normalized in dormant_piper_paths
         or normalized in dormant_voxleaf_paths
         or normalized.startswith("piper/train/")
+        or normalized.startswith("piper/hebrew/")
     )
 
 
@@ -417,7 +422,7 @@ def _write_notices(
         notice_root / "PYTHON-3.12.10-LICENSE.txt",
     )
     _copy_file(
-        site_packages / "piper_tts-1.4.2.dist-info/licenses/COPYING",
+        site_packages / "piper_tts-1.8.0.dist-info/licenses/COPYING",
         notice_root / "PIPER-GPL-3.0.txt",
     )
     _copy_file(

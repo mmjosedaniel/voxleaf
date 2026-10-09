@@ -56,7 +56,7 @@ def test_core_release_graph_is_minimal_and_exact() -> None:
     assert project["project"]["requires-python"] == ">=3.12,<3.13"
     assert project["project"]["dependencies"] == [
         "onnxruntime==1.30.0",
-        "piper-tts==1.4.2",
+        "piper-tts==1.8.0",
         "voxleaf-tts",
     ]
     assert _locked_python_packages(CORE_LOCK) == {

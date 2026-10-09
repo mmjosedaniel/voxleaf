@@ -183,7 +183,7 @@ fn validate_manifest_authority(manifest: &RuntimeManifest) -> Result<(), Package
         || manifest.package_version != "1"
         || manifest.platform != "windows-x86_64"
         || manifest.core_lock_sha256
-            != "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc"
+            != "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97"
         || manifest.runtime.python_path != "runtime/python.exe"
         || manifest.runtime.site_packages_path != "runtime/Lib/site-packages"
         || manifest.runtime.service_module != "voxleaf_tts.piper_service"
@@ -367,7 +367,7 @@ mod tests {
             "packageId": PACKAGE_ID,
             "packageVersion": "1",
             "platform": "windows-x86_64",
-            "coreLockSha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc",
+            "coreLockSha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97",
             "payloadBytes": payload_bytes,
             "runtime": {
                 "pythonPath": "runtime/python.exe",

@@ -32,7 +32,7 @@ from .protocol import (
 SPANISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
 ENGLISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1"
 CANDIDATE_ID: Final = SPANISH_CANDIDATE_ID
-ENGINE_VERSION: Final = "1.4.2"
+ENGINE_VERSION: Final = "1.8.0"
 ONNXRUNTIME_VERSION: Final = "1.30.0"
 MODEL_REVISION: Final = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
 VOICE_ID: Final = "es_ES-davefx-medium"

@@ -12,8 +12,8 @@ authority, see the [roadmap](../plans/roadmap.md) and
 
 ## Status legend
 
-The Piper runtime refresh in ADR-0053 binds both packaged and native development
-Piper execution to the current core release lock. Historical candidate locks
+The Piper runtime refreshes in ADR-0053/ADR-0054 bind packaged and native
+development Piper execution to the current core release lock. Historical candidate locks
 remain evaluation evidence; the one-process local inference topology is unchanged.
 
 The security refresh in ADR-0052 changes the active optional package to v3;

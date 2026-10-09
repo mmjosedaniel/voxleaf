@@ -13,21 +13,21 @@
     }
   },
   "piper": {
-    "version": "1.4.2",
-    "wheelSha256": "9c4a3a11f5889ea9d0df4414dce2bd9bee5ce7d9cf604c8fd5e307441d4c031f",
-    "sourceRevision": "d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+    "version": "1.8.0",
+    "wheelSha256": "5da9bfdb05dfe15da3536859d422e605483ffa6d2b3ec2c5b9593bae6b5aa6a4",
+    "sourceRevision": "639388b6317fc4731e91d53da42aea68fd4166ff",
     "source": {
-      "filename": "piper1-gpl-d6975e21a440c0d8b6e5fb7c41027409af13d44d.tar.gz",
-      "sha256": "ebf535912b5760e33ff5c01a483bfc9c58b13c18c7c6ccfb4cec0184dc14f747",
-      "sizeBytes": 4836428,
-      "url": "https://codeload.github.com/OHF-Voice/piper1-gpl/tar.gz/d6975e21a440c0d8b6e5fb7c41027409af13d44d"
+      "filename": "piper1-gpl-639388b6317fc4731e91d53da42aea68fd4166ff.tar.gz",
+      "sha256": "a7045b7ef4268d1088047c20a69ae447b552e579dacb42d3dc18f53576aa54ce",
+      "sizeBytes": 24738952,
+      "url": "https://codeload.github.com/OHF-Voice/piper1-gpl/tar.gz/639388b6317fc4731e91d53da42aea68fd4166ff"
     },
-    "phonemizerSourceRevision": "212928b394a96e8fd2096616bfd54e17845c48f6",
+    "phonemizerSourceRevision": "724808c5a83f9ef95fdd0db886ba7ba537ff224a",
     "phonemizerSource": {
-      "filename": "espeak-ng-212928b394a96e8fd2096616bfd54e17845c48f6.tar.gz",
-      "sha256": "1f201cabc73e569a7cb434d40d3b30980f923010f8ecd4d1c4ae94691ac2888a",
-      "sizeBytes": 17815706,
-      "url": "https://codeload.github.com/espeak-ng/espeak-ng/tar.gz/212928b394a96e8fd2096616bfd54e17845c48f6"
+      "filename": "espeak-ng-724808c5a83f9ef95fdd0db886ba7ba537ff224a.tar.gz",
+      "sha256": "7d8ebd78201923a443245362a928999977d1721c3eeba596eafc6ea8db7e243c",
+      "sizeBytes": 18647838,
+      "url": "https://codeload.github.com/espeak-ng/espeak-ng/tar.gz/724808c5a83f9ef95fdd0db886ba7ba537ff224a"
     }
   },
   "voiceRepository": {
@@ -91,6 +91,6 @@
   ],
   "coreLock": {
     "path": "services/tts/release/core/uv.lock",
-    "sha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc"
+    "sha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97"
   }
 }
