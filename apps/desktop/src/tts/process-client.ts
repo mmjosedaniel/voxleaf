@@ -451,9 +451,24 @@ export class TtsProcessClient {
     this.active = undefined;
     this.sink.release();
     this.state = "cancelling";
-    const controls = await this.invokeControls("cancel_tts_generation", {
-      scope,
-    });
+    let controls: readonly TtsProtocolControlV1[];
+    try {
+      controls = await this.invokeControls("cancel_tts_generation", { scope });
+    } catch (error) {
+      if (
+        error instanceof TtsProcessClientError &&
+        error.code === "tts-service-invalid-state"
+      ) {
+        // Native work may finish before its response reaches this client.
+        // Only validated shutdown can establish containment and permit restart.
+        try {
+          await this.shutdown();
+        } catch {
+          // Unconfirmed shutdown leaves restart refused; retain the cancel error.
+        }
+      }
+      throw error;
+    }
     expectKinds(controls, ["state", "cancelled", "state"]);
     const cancelling = controls[0]!;
     const cancelled = controls[1]!;

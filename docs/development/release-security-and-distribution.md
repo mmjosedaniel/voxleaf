@@ -2,6 +2,33 @@
 
 ## Purpose
 
+### Current Chatterbox security successor
+
+The bounded security refresh under ADR-0052 selects package v3 and its
+`chatterbox-runtime-v3` prerelease. Transformers 5.17.0, Tokenizers 0.23.1 and
+urllib3 2.8.0 replace three pins; the other 76 and all six model identities
+remain fixed. Full production advisory audit passes with the four existing
+URL-package blind spots explicitly retained. V3 includes a complete runtime
+closure and the upstream Tokenizers licence; it has no v2 repair overlay.
+
+Its exact download/installed/staging values are 8,239,933,601 / 8,236,377,725 /
+13,270,915,278 bytes. Native admission is v3-only. Old `cb/2` and historical
+profile `/2` roots remain observable for explicit guarded removal, not execution
+or migration. Hardware thresholds stay unchanged; historical profile timings
+and VRAM observations are identified separately from new representative probes.
+
+Current generated authority is `optional-package-manifest-v3.json` plus runtime
+evidence v4. The refreshed installer/journey identities belong to Windows
+package evidence v3 and ordinary journey evidence v2. The rebuilt installed
+journey passed acquisition/cancellation, Chatterbox ES/EN, restart, removal,
+Piper ES/EN, reinstallation and uninstall. Those generated receipts bind the
+result to the exact installer and separately recorded installed executable;
+preparation/publication alone does not establish these gates.
+The [completed plan](../plans/completed/chatterbox-security-dependency-refresh.md)
+records exact commands, results and independent review. Existing M011 artifact
+values below are historical checkpoints, not hashes of the refreshed installer.
+No new installer is publicly published, and no signing claim is added.
+
 This document records the security and distribution boundary that roadmap
 Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
@@ -90,10 +117,10 @@ journey. Complete applicable branch validation is recorded in the ExecPlan;
 PR #207's required checks pass and the plan is archived. Trusted signing remains
 a future external publication action.
 
-### Exact current candidate identity
+### Historical M011 candidate identity
 
-The canonical current evidence is the checked-in release evidence and package
-manifests, not older hashes retained in the historical implementation record:
+The following values identify the accepted M011 checkpoint. Current successor
+identities are in the generated records named above:
 
 - Windows x64 current-user NSIS installer: `181,596,357` bytes, SHA-256
   `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`;

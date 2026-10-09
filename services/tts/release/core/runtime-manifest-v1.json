@@ -1,5 +1,5 @@
 {
-  "coreLockSha256": "3614294db486d1128d9e9f50ddad73f7ad166ebdd6d059a12af5b8ac66e6ce6e",
+  "coreLockSha256": "465e6066d7e8a57cc33ec77abac2b2601f59923c40f60b39327e5d9c4aed4fa6",
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
@@ -9998,7 +9998,7 @@
     },
     {
       "path": "source-manifest-v1.json",
-      "sha256": "06b70e728fb2c46040f61f727422eadbc6ebe9001c4e885d5a2db6c0869c3949",
+      "sha256": "5318407d11131f04c906e760690109214b8b80f3a3c75dd1397d1ddb9c2ec024",
       "sizeBytes": 3654
     },
     {
