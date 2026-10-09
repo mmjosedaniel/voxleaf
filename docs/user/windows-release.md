@@ -18,15 +18,28 @@ If a compatible WebView2 runtime is absent, the embedded Microsoft bootstrapper
 requires an internet connection to install that Windows prerequisite. Normal
 EPUB reading and Piper narration do not require a network connection.
 
-An unsigned local build is suitable only for maintainer-operated validation or
-a portfolio demonstration. Do not offer it as a trusted general-public
-download. Public distribution requires a trusted signature, successful
+Unsigned local builds are intended for controlled local validation and portfolio
+use. Piper is a Windows x64 CPU profile with no discrete-GPU
+requirement; representative evidence includes successful use on an independent
+older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. This does not promise
+identical behavior on every PC. Do not offer the unsigned artifact as a trusted
+general-public download. Public distribution requires a trusted signature, successful
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
-### Maintainer-only Chatterbox validation build
+Generated Windows package evidence records the exact installer size, SHA-256,
+normal-user lifecycle and ordinary compatible-host journey results. An earlier
+installer's checksum does not identify a rebuilt artifact. Local validation
+does not establish a trusted signature, Defender or SmartScreen result.
+Renewed
+Milestone 7 accepts Chatterbox as supported when the published host gate passes.
+The ordinary build offers Download only after Settings and native code pass
+that live gate; signed public publication remains pending external
+authorization. These are separate channel states, not engine failures.
 
-`VoxLeaf-Chatterbox-Validation 0.1.0` is a separate unsigned package used only
+### Historical maintainer-only Chatterbox validation build
+
+`VoxLeaf-Chatterbox-Validation 0.1.0` was a separate unsigned package used only
 to test the optional download on the maintainer's compatible computer. It has a
 different Windows identity and data root, does not replace ordinary VoxLeaf,
 and is not a public installer. Before downloading, Settings discloses an
@@ -41,15 +54,22 @@ Chatterbox download**. That action performs the native admission check and
 opens the measured confirmation; only the separate **Download Chatterbox**
 action starts network transfer.
 
-The final `181,694,782`-byte validation installer has SHA-256
-`289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`.
-It repairs the first installed runtime closure, moves only its exact verified
-legacy package to a Windows-safe short application-data path, and converts
-native verbatim paths to conventional Windows paths only when starting the
-embedded Python child. Microsoft Defender reports no threats for that exact
-unsigned file. Reinstalling this build preserves and reuses an already verified
-Chatterbox download; it does not download the optional package again. The first
-integrity pass and model cold load can still take tens of seconds.
+During download or verification, **Cancel download** signals the native
+operation and removes that operation's incomplete staging and partial files
+when cancellation settles. It returns Chatterbox to not installed, does not
+retain a resumable partial download, and never removes a package that had
+already completed verified installation.
+
+The validation installer is unsigned and ships with an adjacent SHA-256 file;
+verify that checksum before use. The exact local artifact and Defender result
+are recorded in the completed M011 ExecPlan rather than embedded here, because
+this document is itself part of the installer payload. The build repairs the first
+installed runtime closure, moves only its exact verified legacy package to a
+Windows-safe short application-data path, and converts native verbatim paths to
+conventional Windows paths only when starting the embedded Python child.
+Reinstalling preserves and reuses an already verified Chatterbox download; it
+does not download the optional package again. The first integrity pass and model
+cold load can still take tens of seconds.
 
 Download, installation, activation, and first narration are separate steps.
 Activation is explicit and does not load the model. On the first Chatterbox
@@ -66,13 +86,88 @@ Use only one running VoxLeaf validation instance while Chatterbox is being
 installed, verified, or removed. Cross-process optional-package coordination is
 still a public-release gate, not a completed claim of this unsigned build.
 
-The exact installed Spanish Chatterbox playback matrix now passes on the
-maintainer's compatible computer. Quick startup took `45.990` seconds in that
-validation run, so the UI can remain in preparation while integrity verification
-and cold model load complete. This is development-host evidence, not general
-hardware or public-release proof. English narration, application restart,
-removal/reinstall, Piper-after-removal, independent clean-host validation, and
-public signing remain open.
+After verified installation, Settings exposes **Activate Chatterbox** and
+**Remove Chatterbox** as separate actions. Removal first contains an owned
+Chatterbox child and then deletes only the exact optional runtime, model,
+removable cache, and staging data. It does not uninstall VoxLeaf, remove Piper,
+delete preferences or reading progress, or search for EPUB files.
+
+The exact installed Spanish and English Chatterbox playback arms now pass on the
+representative compatible computer. The Milestone 6A rerun measured Quick startup
+at about `40.0` seconds in Spanish and `33.9` seconds in English, so the UI can
+remain in preparation while integrity verification and cold model load complete.
+Both arms recorded zero underruns, generated-audio files, and external requests.
+Together with the published Windows x64/CUDA/VRAM/RAM/CPU admission gate, this
+is representative evidence for the compatible hardware class; it is not a
+guarantee for every GPU or driver combination. The ordinary manifest was
+withheld at that historical validation-build checkpoint.
+Public signing remains separately pending.
+
+Settings stays populated during profile transitions and reports a truthful
+content-free applying phase instead of going blank. First Chatterbox Play can
+report installed-package verification, combined local service/model startup,
+narration preparation, first-audio generation, and buffering before playback.
+While no audio owns playback, the existing safe Stop path is labelled
+**Cancel start**; once playback begins it returns to **Stop**. No fixed duration
+or invented percentage is shown for verification or model loading. This
+feedback does not make the validation build public-release evidence.
+
+### Ordinary Chatterbox download
+
+Milestone 6B retired the separate validation identity. The same closed
+acquisition path is enabled in ordinary VoxLeaf only after the renderer-facing
+compatibility presentation passes and native code repeats the gate before any
+network operation.
+
+On a passing computer, Settings will present Chatterbox as the generally more
+natural and expressive quality option compared with Piper, while noting that
+voice preference varies. Before network access, the confirmation must disclose:
+
+- `8,239,933,601` download bytes (about 8.24 GB/7.67 GiB);
+- an installed total of `8,236,377,725` bytes (about 8.24 GB/7.67 GiB);
+- a peak temporary requirement of `13,270,915,278` bytes (about 13.27 GB/
+  12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
+- 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
+  and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
+  currently available dedicated VRAM; nominal 7,680-MiB/8-GB-class VRAM remains
+  the evaluated recommendation; and
+- licence, offline, cancellation, activation, removal, and reacquisition
+  consequences.
+
+The security-refreshed runtime uses package v3. Retained v2 data is not executed
+or migrated into v3. If only older data remains, Settings offers removal;
+acquiring v3 requires explicit consent. Observation, failed downloads and
+cancellation preserve retained data. Explicit Remove Chatterbox removes the
+owned current and retained package roots; unrelated versions and reader data
+remain outside that operation. Disk usage can include both retained and current
+packages until removal.
+
+Initial Chatterbox load can exceed one minute. Historical v2 direct cold runs
+were `29.61` and `82.34` seconds; the renewed exact-artifact journey measured
+Quick command-to-audible at `49.269` seconds in Spanish and `37.773` seconds in
+English. Historical v2 process-tree working-set peaks were
+`4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
+`3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
+countdown or guarantee for every compatible computer, and are not new v3
+measurements. The historical hardware gate is retained after representative
+v3 memory checks; current artifact evidence records successor observations.
+
+The package occupies disk after installation; it does not permanently reserve
+RAM or VRAM. Loading and inference do use GPU, VRAM, RAM, and CPU and may
+temporarily make the computer less responsive. Narration/model controls may be
+unavailable during a truthful loading phase, but visual reading must remain
+usable. **Cancel start** is available while the existing identity-safe startup
+path can honor it; **Stop** returns once audio is playing. No fake non-byte
+percentage or fixed duration is shown.
+
+The ordinary release must use only its verified application-owned private
+runtime. End users do not need system Python, Rust, Cargo, Node.js, `uv`, `pip`,
+or CUDA Toolkit. The release test does not uninstall those tools: it compiles
+development fallbacks out, launches the installed product under removed or
+hostile development/Python variables and a misleading `PATH`, and proves that
+the absolute private `runtime/python.exe` and application-owned module/model
+roots are used. Windows/WebView2 and the NVIDIA driver/hardware gate above remain
+real prerequisites.
 
 ## Repair or replace a version
 
@@ -88,10 +183,38 @@ outside the core program directory.
 
 ## Uninstall
 
-Use **Installed apps** in Windows. Interactive uninstall asks whether to remove
-VoxLeaf preferences, recovery state, staging data, and optional profiles. The
-default and silent uninstall preserve that application data. Either choice is
-limited to VoxLeaf-owned roots and never searches for or deletes EPUB files.
+Use **Installed apps** in Windows. When an exact application-owned Chatterbox
+root exists, interactive uninstall first offers a separate Chatterbox choice.
+It is selected by default, explains that removal reclaims about 8.23 GB and
+requires acquisition again, and can be unchecked independently. The following
+preference/recovery choice is not selected by default. Neither choice searches
+for or deletes EPUB files, Piper, generated narration, or unrelated Local App
+Data entries. This split follows
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md).
+
+Silent uninstall preserves both data classes unless an exact option authorizes
+one of them:
+
+```text
+/REMOVE_CHATTERBOX_DATA=1
+/REMOVE_PREFERENCES_AND_RECOVERY=1
+/REMOVE_APP_DATA=1
+```
+
+The first option removes only the exact optional runtime, model, removable
+cache, and acquisition staging roots. The second removes only bounded reader
+preferences, reading positions, and recovery state. Supplying both composes the
+two removals; the legacy third option also selects both. Missing options and
+values other than exact `1` preserve data. Repair/version replacement always
+preserves both classes.
+
+If Chatterbox is intentionally retained, Windows removes the application UI
+that exposes **Remove Chatterbox**. Reinstall the same VoxLeaf product identity
+(ordinary VoxLeaf or the separate Chatterbox validation build), remove
+Chatterbox from Settings, and uninstall again. Do not guess at or broadly delete
+Local App Data paths. Automated lifecycle validation covers repair and all six
+silent outcomes for both identities. A future interactive journey remains
+useful regression coverage, not a prerequisite for saying that Piper works.
 
 ## Verify a release artifact
 

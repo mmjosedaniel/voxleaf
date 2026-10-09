@@ -59,11 +59,18 @@ portfolio and full local repository checks pass. Maintainer all-rate
 confirmation and pull request #170's required Ubuntu/Windows checks also pass,
 and M010.2 is archived.
 M011 Milestone 3 implements the deterministic licence-complete Piper core
-payload. Milestone 4 adds the deliberately withheld optional-Chatterbox
-acquisition lifecycle and source-package checks; the exact runtime parts are
-published, but no end-user Download action is enabled until final release
-evidence exists. Installer integration, clean-host release validation, and
-signing remain M011 work.
+payload. Milestone 4 adds the optional-Chatterbox acquisition lifecycle and
+source-package checks; the exact runtime parts are published, and the ordinary
+build exposes Download only after its live compatibility gate passes twice.
+Milestone 5 implements the unsigned local installer and
+external-credential signing command; Milestone 6A implements lifecycle feedback
+and bounded uninstall choices. Under ADR-0049 and release authority v2,
+renewed Milestone 7 accepts Piper local/portfolio GO, Chatterbox runtime support
+on systems that pass its published host gate, and the optional package on a
+compatible host. The ordinary
+Chatterbox manifest is compatibility-gated and the release is compiled without
+development-runtime fallbacks. Signed public publication remains pending external
+authorization. PR #207's required checks pass and M011 is archived.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -82,8 +89,8 @@ playback. The constrained development inference, transport, narration
 dispatch, audio playback, and segment-level synchronization path is implemented
 and exact-host validated. Measured matching does not promote the development
 profile: supported Piper fallback and explicit identity-safe recovery are now
-implemented, while compliant distribution and installers remain
-unimplemented.
+implemented. The unsigned local Piper portfolio installer also exists; only a
+trusted general-public channel remains pending external signing authorization.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
@@ -357,6 +364,14 @@ new terminal does not inherit values set in an older terminal. VoxLeaf
 separately checks hardware fit and exact runtime configuration; hardware
 compatibility alone does not enable Play.
 
+These variables are development inputs, not end-user prerequisites. The current
+supervisor checks explicit enablement and exact repository paths rather than an
+arbitrary Python on `PATH`; packaged runtimes use their own absolute private
+interpreter. Milestone 6B compiles these fallback branches out of the ordinary
+release, so its installed-package proof can run on this same
+computer without uninstalling Python, Rust, Cargo, Node.js, or model-development
+environments.
+
 These values remain native-only and are never returned to the renderer,
 logged, persisted, or placed in protocol frames. Both Piper voices use the
 same bounded `narration-piper-v2` segment policy; the English path composes it
@@ -553,6 +568,14 @@ package evidence. The installer includes the WebView2 bootstrapper; when the
 Windows prerequisite is absent, that Microsoft bootstrapper can require
 network access. Normal EPUB reading and Piper narration remain local.
 
+The rebuilt candidate identity is emitted into generated package evidence. A
+rebuild changes that identity and requires new hash-bound lifecycle and ordinary
+journey receipts before carrying forward exact-artifact acceptance. The current
+candidate has those receipts, is `unsigned-local`, and is accepted for
+controlled local use and the portfolio MVP under ADR-0049/release authority v2.
+It is not a trusted public artifact; that channel requires an authorized
+signature and its verification evidence.
+
 The signed maintainer path is:
 
 ```powershell
@@ -570,7 +593,7 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-Milestone 4 has a deliberately withheld optional-package manifest. This command
+Milestone 4 has a compatibility-gated optional-package manifest. This command
 checks only the tracked source manifest: it performs no model download, archive
 build, installation, acquisition, or narration.
 
@@ -583,27 +606,53 @@ not an end-user setup step. It requires an explicitly supplied, absolute,
 ignored exact-model root, enough controlled build capacity, and the final
 licence/provenance review. It creates all runtime, archive, and model output
 only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
-not update the checked-in withheld download manifest. Do not run it merely to
+not update the checked-in ordinary acquisition manifest. Do not run it merely to
 use the application or to enable the optional profile.
 
-### Build the local Chatterbox acquisition validation installer
+### Historical local Chatterbox acquisition validation installer
 
-ADR-0045 authorizes one separate unsigned build for the maintainer's current
-compatible Windows computer. It does not enable Chatterbox in the ordinary
-VoxLeaf package and it is not a public-release artifact.
+ADR-0045 authorized one separate unsigned build for the maintainer's compatible
+Windows computer. That historical build had the distinct identity
+`com.voxleaf.desktop.chatterbox-validation`, contained Piper but not Chatterbox
+runtime/model bytes, and exercised the real gated download without changing the
+ordinary manifest. ADR-0050 and Milestone 6B retire its overlay, Cargo feature,
+package configuration, and commands after promoting the same closed path into
+ordinary VoxLeaf. The historical hashes and results remain in the M011 progress
+log; they are not current build instructions or public-release artifacts.
 
-```powershell
-pnpm.cmd package:windows:chatterbox-validation:check
-pnpm.cmd package:windows:chatterbox-validation
-```
+### M011 6B ordinary-release isolation validation
 
-The build has the distinct identity `com.voxleaf.desktop.chatterbox-validation`
-and can coexist with ordinary VoxLeaf. It contains Piper but not Chatterbox
-runtime or model bytes. Settings exposes the real download only in this build;
-the native host and free-space gates still run before consent/download, and
-the user must explicitly approve the approximately 7.67-GiB transfer. The
-ignored installer and checksum are created beneath
-`apps/desktop/src-tauri/target/release/bundle/nsis` and must remain local.
+The validation-only identity above is historical evidence. Milestone 6B uses
+the ordinary package path, the single canonical manifest after exact measurement
+reconciliation, and a checked-in ordinary-package test command.
+
+The test builds the ordinary installer with a release-only compile feature that
+excludes repository/environment runtime fallbacks. It launches the installed
+artifact from a child process where every `VOXLEAF_TTS_DEV_*`,
+`VOXLEAF_TTS_PIPER_*`, and `VOXLEAF_TTS_CHATTERBOX_*` key plus
+`VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT` is removed or poisoned;
+`PYTHONHOME`, `PYTHONPATH`, `PYTHONUSERBASE`, `VIRTUAL_ENV`, `CONDA_PREFIX`, and
+`CONDA_DEFAULT_ENV` are removed; and a misleading `PATH` places sentinel Python,
+Rust, Cargo, Node.js, `uv`, and `pip` names first. The assertions must show that
+the child executable is the absolute application-owned `runtime/python.exe`, its
+module/model roots are verified application-owned roots, and missing or invalid
+package data fails closed rather than falling back.
+
+This process-scoped environment is sufficient and safer than uninstalling
+development tools. Rust is already compiled into the desktop executable. Piper
+ships a private interpreter, service packages, and voices; installed Chatterbox
+ships its own CPython/runtime graph and exact model data. End users do not need
+system Python, Rust, Cargo, Node.js, `uv`, `pip`, or CUDA Toolkit. Actual external
+requirements remain 64-bit Windows, WebView2 (the installer carries Microsoft's
+bootstrapper, which may need a network if WebView2 is absent), and for
+Chatterbox the published NVIDIA driver/GPU/CUDA-bfloat16, RAM, VRAM, processor,
+and storage gate.
+
+After deterministic/static isolation checks, run the ordinary installed
+gate/consent/cancel/download/verify/activate, Spanish and English offline
+narration, restart, removal, reinstall, and Piper-after-removal journey on the
+representative compatible computer. Keep content-safe results and do not record
+private paths or process command lines.
 
 ## Local TTS feasibility preflight
 

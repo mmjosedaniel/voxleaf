@@ -17,16 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M011-package-validate-and-release-mvp.md`](M011-package-validate-and-release-mvp.md):
-  approved next-milestone plan. It freezes and implements the Windows x64/
-  Piper Spanish-English core, a separately gated optional Chatterbox GPU
-  download with explicit consent and verified lifecycle, exact core/optional
-  dependency/licence/integrity boundaries, clean-host complete-MVP validation,
-  signing path, and independent core/optional/public release decisions.
-  Milestones 1-3 and 4A are complete. Milestone 4B's deterministic acquisition
-  implementation and authorized runtime publication are complete; clean-host
-  validation remains open, and later packaging/signing/release milestones
-  remain active.
+No active ExecPlans are currently listed.
+
+## Historical reference
+
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.
+  Its original path is preserved for links in completed plans; it is not an
+  active ExecPlan.

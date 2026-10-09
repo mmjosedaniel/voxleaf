@@ -7,6 +7,7 @@ use tauri::Manager;
 #[cfg(test)]
 mod hardware_profile_authority;
 mod host_profile_detection;
+mod sha256_hex;
 mod tts_optional_chatterbox;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
@@ -136,6 +137,7 @@ fn main() {
             host_profile_detection::detect_host_profile_compatibility,
             tts_protocol_probe::run_tts_protocol_probe,
             tts_service_supervisor::exact_tts_demo_available,
+            tts_service_supervisor::release_locked_runtime_enabled,
             tts_service_supervisor::tts_profile_configuration_available,
             tts_optional_chatterbox::optional_chatterbox_snapshot,
             tts_optional_chatterbox::select_optional_chatterbox,

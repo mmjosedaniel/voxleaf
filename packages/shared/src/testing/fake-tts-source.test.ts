@@ -138,6 +138,7 @@ describe("scripted fake TTS source", () => {
       segmentId: "segment:synthetic-1",
       error: { code: "operation-cancelled", severity: "recoverable" },
     });
+    expect(source.getPendingRequestCount()).toBe(0);
 
     clock.advanceBy(20);
     expect(request.getStatus()).toBe("cancelled");
@@ -158,6 +159,7 @@ describe("scripted fake TTS source", () => {
 
     expect(request.cancel()).toBe(true);
     expect(request.getStatus()).toBe("cancellation-requested");
+    expect(source.getPendingRequestCount()).toBe(1);
     clock.advanceBy(10);
 
     const result = request.getResult();
@@ -183,6 +185,7 @@ describe("scripted fake TTS source", () => {
       }),
     ).toBe("stale-generation");
     expect(request.getStatus()).toBe("completed");
+    expect(source.getPendingRequestCount()).toBe(0);
   });
 
   it("emits configured recoverable and fatal errors deterministically", () => {

@@ -12,6 +12,8 @@ description: Implement a complete VoxLeaf feature across the affected desktop, E
 3. Read the relevant architecture documents and ADRs.
 4. Inspect an existing similar implementation and its tests.
 5. Create an ExecPlan when the change meets `.agents/PLANS.md` criteria.
+6. Read [independent change review](../../../docs/development/agentic-change-review.md)
+   for review inputs, verdicts, and exact-patch acceptance.
 
 ## Procedure
 
@@ -24,6 +26,11 @@ description: Implement a complete VoxLeaf feature across the affected desktop, E
 7. Update product, architecture, setup, or testing documentation.
 8. Run the relevant repository checks.
 9. Review the final diff for unrelated changes.
+10. Delegate the behavioral change to `change_reviewer` with acceptance criteria,
+    the complete diff, code identities, and exact host-check evidence. Pause
+    writing during review. Resolve findings, rerun affected checks, and obtain
+    APPROVE for the current patch before completion; report missing evidence or
+    an unavailable reviewer as BLOCKED, not as a completed review.
 
 ## Constraints
 
@@ -44,4 +51,5 @@ Report:
 - Tests or benchmarks added.
 - Commands executed and results.
 - Privacy and performance implications.
+- Independent Change Review ID/verdict and resolved findings, or exemption reason.
 - Remaining risks and assumptions.

@@ -1109,6 +1109,10 @@ mod tests {
         value * 1_024 * MEBIBYTE_BYTES
     }
 
+    fn mebibytes(value: u64) -> u64 {
+        value * MEBIBYTE_BYTES
+    }
+
     fn directml_precisions() -> PrecisionReport {
         PrecisionReport {
             float32: Availability::Available,
@@ -1154,23 +1158,133 @@ mod tests {
         }
     }
 
-    #[test]
-    fn optional_download_gate_requires_the_closed_cuda_bfloat16_facts() {
-        let report = normalize_snapshot(complete_snapshot());
-        assert!(optional_cuda_bf16_profile_admitted_from_report(
-            report, 8, 24_576, 4_096, 5_632, 4_668,
-        ));
+    fn threshold_optional_snapshot() -> NativeHostSnapshot {
+        let mut snapshot = complete_snapshot();
+        snapshot.logical_processor_count = ProbeValue::Known(8);
+        snapshot.memory = ProbeValue::Known(NativeMemory {
+            total_bytes: mebibytes(24_576),
+            available_bytes: mebibytes(4_096),
+        });
+        snapshot.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: Some(mebibytes(5_632)),
+            available_dedicated_memory_bytes: Some(mebibytes(4_668)),
+        }]);
+        snapshot
+    }
 
-        let mut insufficient = complete_snapshot();
-        insufficient.cuda_devices = ProbeValue::Unknown;
-        assert!(!optional_cuda_bf16_profile_admitted_from_report(
-            normalize_snapshot(insufficient),
+    fn optional_profile_admitted(snapshot: NativeHostSnapshot) -> bool {
+        optional_cuda_bf16_profile_admitted_from_report(
+            normalize_snapshot(snapshot),
             8,
             24_576,
             4_096,
             5_632,
             4_668,
-        ));
+        )
+    }
+
+    #[test]
+    fn optional_download_gate_accepts_every_exact_numeric_threshold() {
+        assert!(optional_profile_admitted(threshold_optional_snapshot()));
+    }
+
+    #[test]
+    fn optional_download_gate_rejects_one_below_every_numeric_threshold() {
+        let mut insufficient = threshold_optional_snapshot();
+        insufficient.logical_processor_count = ProbeValue::Known(7);
+        assert!(!optional_profile_admitted(insufficient));
+
+        let mut insufficient = threshold_optional_snapshot();
+        insufficient.memory = ProbeValue::Known(NativeMemory {
+            total_bytes: mebibytes(24_575),
+            available_bytes: mebibytes(4_096),
+        });
+        assert!(!optional_profile_admitted(insufficient));
+
+        let mut insufficient = threshold_optional_snapshot();
+        insufficient.memory = ProbeValue::Known(NativeMemory {
+            total_bytes: mebibytes(24_576),
+            available_bytes: mebibytes(4_095),
+        });
+        assert!(!optional_profile_admitted(insufficient));
+
+        let mut insufficient = threshold_optional_snapshot();
+        insufficient.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: Some(mebibytes(5_631)),
+            available_dedicated_memory_bytes: Some(mebibytes(4_668)),
+        }]);
+        assert!(!optional_profile_admitted(insufficient));
+
+        let mut insufficient = threshold_optional_snapshot();
+        insufficient.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: Some(mebibytes(5_632)),
+            available_dedicated_memory_bytes: Some(mebibytes(4_667)),
+        }]);
+        assert!(!optional_profile_admitted(insufficient));
+    }
+
+    #[test]
+    fn optional_download_gate_fails_closed_for_each_unknown_capacity() {
+        let mut unknown = threshold_optional_snapshot();
+        unknown.logical_processor_count = ProbeValue::Unknown;
+        assert!(!optional_profile_admitted(unknown));
+
+        let mut unknown = threshold_optional_snapshot();
+        unknown.memory = ProbeValue::Unknown;
+        assert!(!optional_profile_admitted(unknown));
+
+        let mut unknown = threshold_optional_snapshot();
+        unknown.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: None,
+            available_dedicated_memory_bytes: Some(mebibytes(4_668)),
+        }]);
+        assert!(!optional_profile_admitted(unknown));
+
+        let mut unknown = threshold_optional_snapshot();
+        unknown.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: Some(mebibytes(5_632)),
+            available_dedicated_memory_bytes: None,
+        }]);
+        assert!(!optional_profile_admitted(unknown));
+    }
+
+    #[test]
+    fn optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts() {
+        assert!(optional_profile_admitted(threshold_optional_snapshot()));
+
+        let mut unsupported = threshold_optional_snapshot();
+        unsupported.platform.operating_system = OperatingSystem::Other;
+        assert!(!optional_profile_admitted(unsupported));
+
+        let mut unsupported = threshold_optional_snapshot();
+        unsupported.platform.architecture = Architecture::Aarch64;
+        assert!(!optional_profile_admitted(unsupported));
+
+        let mut unsupported = threshold_optional_snapshot();
+        if let ProbeValue::Known(adapters) = &mut unsupported.adapters {
+            adapters[0].device_class = DeviceClass::IntegratedGpu;
+        }
+        assert!(!optional_profile_admitted(unsupported));
+
+        let mut unsupported = threshold_optional_snapshot();
+        if let ProbeValue::Known(devices) = &mut unsupported.cuda_devices {
+            devices[0].precisions.bfloat16 = Availability::Unavailable;
+        }
+        assert!(!optional_profile_admitted(unsupported));
+
+        let mut unknown = threshold_optional_snapshot();
+        unknown.cuda_devices = ProbeValue::Unknown;
+        assert!(!optional_profile_admitted(unknown));
     }
 
     fn report(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityReportV1 {

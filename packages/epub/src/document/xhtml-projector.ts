@@ -1435,7 +1435,11 @@ export async function projectXhtmlDocumentProjection(
       maximumBytes: archive.budget.policy.maxContentDocumentBytes,
     });
     const reader = createXmlEventReader(archive.budget);
-    reader.read(bytes, "content", (event) => projector.consume(event));
+    reader.read(
+      bytes,
+      packageDocument.version === "2.0" ? "epub2-content" : "content",
+      (event) => projector.consume(event),
+    );
     return projector.complete();
   } catch (error: unknown) {
     throw mapProjectionError(error);

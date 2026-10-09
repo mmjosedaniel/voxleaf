@@ -1466,6 +1466,61 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it("waits for failed narration-preparation cleanup before rechecking availability", async () => {
+    const prepareNarration = vi
+      .fn<OpenedPublication["prepareNarration"]>()
+      .mockRejectedValueOnce(new Error("content-free-preparation-rejection"))
+      .mockResolvedValueOnce(completeResult());
+    const { client, coordinator } = createHarness({ prepareNarration });
+    const performShutdown = client.shutdown.bind(client);
+    let releaseShutdown = (): void => undefined;
+    const shutdownBlocked = new Promise<void>((resolve) => {
+      releaseShutdown = resolve;
+    });
+    const shutdown = vi
+      .spyOn(client, "shutdown")
+      .mockImplementation(async () => {
+        await shutdownBlocked;
+        await performShutdown();
+      });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().failure === "narration-preparation-failed",
+    );
+    await settleUntil(() => shutdown.mock.calls.length === 1);
+
+    coordinator.resetRecoveryEpisode();
+    await new Promise<void>((resolve) => {
+      globalThis.setTimeout(resolve, 0);
+    });
+    expect(coordinator.observe().availability).toBe("checking");
+
+    releaseShutdown();
+    await settleUntil(() => coordinator.observe().availability === "available");
+    expect(coordinator.observe()).toMatchObject({
+      failure: undefined,
+      metrics: { retainedAudioUnitCount: 0 },
+    });
+    expect(client.observe()).toEqual({
+      serviceInstanceId: undefined,
+      state: "stopped",
+      hasActiveGeneration: false,
+      retainedAudioUnits: 0,
+    });
+
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    expect(prepareNarration).toHaveBeenCalledTimes(2);
+    expect(client.synthesized).toHaveLength(1);
+    expect(client.synthesized[0]).toMatchObject({
+      sessionId: "session:product-test-3",
+      generationId: "generation:product-test-3",
+    });
+    await coordinator.close();
+  });
+
   it("contains a warm failure before exposing one explicit identity-safe restart", async () => {
     const { client, coordinator, prepareNarration } = createHarness();
     const prepare = vi

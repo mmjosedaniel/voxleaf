@@ -10,6 +10,10 @@ import type {
 } from "./xml-event-reader.js";
 
 const UTF8_BOM = Uint8Array.of(0xef, 0xbb, 0xbf);
+const CANONICAL_NCX_DOCTYPE =
+  '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">';
+const CANONICAL_XHTML11_DOCTYPE =
+  '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -74,6 +78,42 @@ describe("bounded namespace-aware XML events", () => {
     expect(first).toEqual(second);
   });
 
+  it("preserves namespace-aware text when an entity crosses the 64-KiB input boundary", () => {
+    const inputBoundary = 64 * 1024;
+    const opening = '<package xmlns="urn:package" xmlns:dc="urn:dc"><dc:title>';
+    // The first input chunk ends after "&a", before the entity is complete.
+    const padding = "a".repeat(inputBoundary - opening.length - 2);
+    const decodedText = `${padding}&é`;
+    const { events, summary } = readXml(
+      `${opening}${padding}&amp;é</dc:title></package>`,
+    );
+
+    expect(
+      events
+        .filter((event) => event.type === "start-element")
+        .map(({ name }) => name),
+    ).toEqual([
+      { namespaceUri: "urn:package", localName: "package" },
+      { namespaceUri: "urn:dc", localName: "title" },
+    ]);
+    expect(
+      events
+        .filter((event) => event.type === "end-element")
+        .map(({ name }) => name),
+    ).toEqual([
+      { namespaceUri: "urn:dc", localName: "title" },
+      { namespaceUri: "urn:package", localName: "package" },
+    ]);
+    expect(
+      events
+        .filter((event) => event.type === "text")
+        .map(({ text }) => text)
+        .join(""),
+    ).toBe(decodedText);
+    expect(summary.elementCount).toBe(2);
+    expect(summary.decodedTextBytes).toBe(encodeUtf8(decodedText).byteLength);
+  });
+
   it("emits built-in entity and CDATA content as text without a DOM", () => {
     const domParser = vi.fn(() => {
       throw new Error("DOMParser must not be constructed");
@@ -128,6 +168,75 @@ describe("bounded namespace-aware XML events", () => {
         ),
       "malformed-xml",
     );
+  });
+
+  it.each([
+    [
+      "NCX",
+      "ncx" as const,
+      CANONICAL_NCX_DOCTYPE,
+      '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"/>',
+    ],
+    [
+      "EPUB 2 XHTML 1.1",
+      "epub2-content" as const,
+      CANONICAL_XHTML11_DOCTYPE,
+      '<html xmlns="http://www.w3.org/1999/xhtml"/>',
+    ],
+  ])("accepts the exact inert %s doctype", (_name, kind, doctype, root) => {
+    expect(readXml(`${doctype}${root}`, kind).summary.elementCount).toBe(1);
+  });
+
+  it("accepts absent EPUB 2 doctypes and XML-permitted whitespace in canonical declarations", () => {
+    expect(readXml("<ncx/>", "ncx").summary.elementCount).toBe(1);
+    expect(readXml("<html/>", "epub2-content").summary.elementCount).toBe(1);
+    expect(
+      readXml(
+        "<!DOCTYPE\tncx\nPUBLIC\r'-//NISO//DTD ncx 2005-1//EN'\t'http://www.daisy.org/z3986/2005/ncx-2005-1.dtd' ><ncx/>",
+        "ncx",
+      ).summary.elementCount,
+    ).toBe(1);
+    expect(
+      readXml(
+        "<!DOCTYPE html\tPUBLIC '-//W3C//DTD XHTML 1.1//EN'\n'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'><html/>",
+        "epub2-content",
+      ).summary.elementCount,
+    ).toBe(1);
+  });
+
+  it.each([
+    [
+      "NCX public identifier",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//FR" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx/>',
+    ],
+    [
+      "NCX system identifier",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "https://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx/>',
+    ],
+    [
+      "NCX internal subset",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd" [<!ENTITY private-canary "secret">]><ncx/>',
+    ],
+    [
+      "XHTML public identifier",
+      "epub2-content" as const,
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html/>',
+    ],
+    [
+      "XHTML system identifier",
+      "epub2-content" as const,
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "https://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html/>',
+    ],
+    [
+      "plain XHTML declaration",
+      "epub2-content" as const,
+      "<!DOCTYPE html><html/>",
+    ],
+  ])("rejects a near-miss %s doctype", (_name, kind, xml) => {
+    expectXmlError(() => readXml(xml, kind), "malformed-xml");
   });
 
   it.each([

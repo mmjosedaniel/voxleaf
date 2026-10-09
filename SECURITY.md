@@ -38,9 +38,9 @@ Derived narration text has the same sensitive-content boundary as source book te
 
 ## Current release readiness
 
-VoxLeaf is pre-alpha. The current repository is appropriate for controlled
-local development and maintainer-operated portfolio demonstrations, but it is
-not yet approved as a general public Windows installer.
+VoxLeaf is pre-alpha. The exact unsigned candidate is approved as a local or
+portfolio Windows x64 MVP with Piper. It is not a trusted general-public
+Windows installer because no signing identity is currently authorized.
 
 The native supervisor provides strict profile selection, framed protocol
 bounds, identity-first cancellation, and process-tree cleanup. It does not
@@ -50,20 +50,50 @@ current Windows user. Development firewall rules and offline environment
 variables are additional local controls, not end-user installation or sandbox
 evidence.
 
-Roadmap Milestone 11 owns exact shipped dependency audits, runtime/model/voice
-integrity and acquisition, third-party licence and provenance fulfillment,
-normal-user packaging, uninstall safety, clean-host privacy validation, and
-the signing path. Its planned core contains Piper Spanish/English; Chatterbox
-Spanish/English is a separate optional GPU download only after explicit
-consent, minimal dependency/advisory closure, fixed-manifest integrity checks,
-atomic installation, offline proof, and application-owned removal. Qwen is not
-part of the first distributable product. Piper-core readiness,
-optional-Chatterbox readiness, and signed public publication are separate
-gates. An unsigned local build may be demonstrated honestly, but must not be
-offered as a trusted general-public installer.
+Roadmap Milestone 11 through Milestone 6B implements exact shipped dependency audits,
+runtime/model/voice integrity and acquisition, third-party licence and
+provenance fulfillment, the unsigned local package, bounded uninstall choices,
+and an external-credential signing path. Its intended core contains Piper
+Spanish/English; Chatterbox Spanish/English is a separate optional GPU download
+only after explicit consent, both live compatibility gates, documented
+dependency/advisory review, fixed-manifest integrity checks, bounded atomic
+installation, offline proof, and application-owned removal. Qwen is not part of
+the first distributable product.
+The renewed Milestone 7 record accepts Piper-core portfolio readiness as
+**GO**, the optional Chatterbox package as **GO on a compatible host**, and
+Chatterbox runtime support as
+**supported when its published host gate passes**, using representative
+compatible-host evidence under
+[`mvp-release-authority-v2`](docs/architecture/mvp-release-authority-v2.md).
+
+Completed M011 Milestone 6B enables ordinary Chatterbox acquisition only after
+the renderer compatibility gate passes, while native code repeats the gate
+before any network access. It reconciles exact package measurements and user
+resource warnings, compiles repository-development fallbacks out of release
+binaries, and passes the representative private-runtime journey under hostile
+environment inputs without requiring Python or Rust to be uninstalled.
+
+The post-6B basic code, logic, and security audit includes Standard Codex
+Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1`, which reviewed all 825
+tracked items in its worktree inventory and recorded zero reportable findings.
+This was a static source review and does not replace runtime,
+dependency/advisory, package, fuzzing, penetration, or external security
+testing. Manual review also ensured that failed narration preparation completes
+active shutdown before availability recovery restarts and that failed Windows
+Job Object assignment terminates and reaps the just-spawned child.
+
+The exact audit-fix package now passes its renewed normal-user lifecycle and
+ordinary Chatterbox journey. Generated evidence binds those passes to installer
+SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+while retaining `unsigned-local` and `publicPublicationAllowed: false`.
+
+Signed public publication is **pending external authorization** because a
+trusted signing identity is unavailable. All integrity, privacy, cancellation,
+bounded acquisition, and cleanup controls remain required.
 
 See
 [`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)
 for the proportional MVP boundary and
-[`docs/plans/active/M011-package-validate-and-release-mvp.md`](docs/plans/active/M011-package-validate-and-release-mvp.md)
+[`docs/plans/completed/M011-package-validate-and-release-mvp.md`](docs/plans/completed/M011-package-validate-and-release-mvp.md)
 for the implementation and validation plan.
