@@ -6,6 +6,7 @@ Completed plans are historical evidence. Do not edit them to describe a later im
 
 ## Completed plans
 
+- [`development-toolchain-pr-222.md`](development-toolchain-pr-222.md): prepared 16 development dependency upgrades, deferred unsupported TypeScript 7, aligned Node requirements, and restored the benchmark's current UI interactions; local checks, browser/native benchmarks and independent review passed, with remote CI tracked in PR #222.
 - [`legacy-runtime-cleanup.md`](legacy-runtime-cleanup.md): removed inactive Chatterbox v2 migration/repair and unused V1 preference metadata, preserved v3 cache-cleanup coverage and historical authority, and passed independent host validation.
 - [`residual-code-cleanup.md`](residual-code-cleanup.md): removed unused reader styles and language options, retired the temporary narration bridge, and migrated its lifecycle tests to the public API; independent browser, package, portable, and native repository gates passed.
 - [`bootstrap-test-cleanup.md`](bootstrap-test-cleanup.md): retired unused EPUB dependency probes and a shared-only test, transferred incremental XML coverage to the production reader, and strengthened isolated Python import verification; independent host validation passed.
