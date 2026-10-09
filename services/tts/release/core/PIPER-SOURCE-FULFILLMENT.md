@@ -1,20 +1,20 @@
 # Piper corresponding-source fulfillment
 
 The `voxleaf-piper-core-v1` binary payload derives its executable Piper runtime
-from the `piper-tts` 1.4.2 Windows wheel identified by SHA-256
-`9c4a3a11f5889ea9d0df4414dce2bd9bee5ce7d9cf604c8fd5e307441d4c031f`.
+from the `piper-tts` 1.8.0 Windows wheel identified by SHA-256
+`5da9bfdb05dfe15da3536859d422e605483ffa6d2b3ec2c5b9593bae6b5aa6a4`.
 PyPI's provenance record binds that release to upstream commit
-`d6975e21a440c0d8b6e5fb7c41027409af13d44d` and tag `v1.4.2`.
-VoxLeaf omits dormant server, download, training, command-line, and Chinese-
+`639388b6317fc4731e91d53da42aea68fd4166ff` and tag `v1.8.0`.
+VoxLeaf omits dormant server, download, training, command-line, and unused-language
 phonemization helpers that its local adapter cannot reach. It does not modify
 the retained upstream files.
 
 Rather than relying on a later written offer, the same payload includes:
 
-- `sources/piper1-gpl-d6975e21a440c0d8b6e5fb7c41027409af13d44d.tar.gz`,
+- `sources/piper1-gpl-639388b6317fc4731e91d53da42aea68fd4166ff.tar.gz`,
   the exact full Piper source tree with its Python/C source, build scripts,
   `COPYING`, and CMake configuration; and
-- `sources/espeak-ng-212928b394a96e8fd2096616bfd54e17845c48f6.tar.gz`,
+- `sources/espeak-ng-724808c5a83f9ef95fdd0db886ba7ba537ff224a.tar.gz`,
   the exact source revision named by that Piper CMake configuration and used
   to build the statically linked phonemizer and packaged language data.
 

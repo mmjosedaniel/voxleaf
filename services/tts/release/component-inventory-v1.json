@@ -11538,7 +11538,7 @@
       "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
-      "id": "pypi:piper-tts@1.4.2",
+      "id": "pypi:piper-tts@1.8.0",
       "inclusion": {
         "processBoundary": "private local TTS child",
         "purpose": "Minimal private local-service and Piper runtime graph.",
@@ -11547,9 +11547,9 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "services/tts/release/core/uv.lock",
-        "lockedArtifact": "https://files.pythonhosted.org/packages/86/53/3c636c4250e8cb489c50c6dda9d64400518e8c6600576850104b3232b562/piper_tts-1.4.2.tar.gz",
-        "sizeBytes": 4364835,
-        "value": "dbe7e5391d7657f8a5f2b7ce7cdbafc5bbc559de2af15e5299ce298323eade51"
+        "lockedArtifact": "https://files.pythonhosted.org/packages/02/cc/95b18b58d9c235d8e0bcece7321b7a7347873c14f9fea2c734b31ef04ff2/piper_tts-1.8.0.tar.gz",
+        "sizeBytes": 24276117,
+        "value": "830588aded347df579c91a32703e0fc2a3685d84f1e3533b14f2de69135d4904"
       },
       "license": {
         "evidence": "installed package License field",
@@ -11568,8 +11568,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://pypi.org/project/piper-tts/1.4.2/",
-      "versionOrRevision": "1.4.2"
+      "source": "https://pypi.org/project/piper-tts/1.8.0/",
+      "versionOrRevision": "1.8.0"
     },
     {
       "artifactState": "packaged in the deterministic Piper core payload",
@@ -14753,7 +14753,7 @@
     },
     "piperCore": {
       "path": "services/tts/release/core/uv.lock",
-      "sha256": "e9416ef6b7d19ebcff3eed559417088d67ab0829bf1a7e91dc9325fa018c08fc"
+      "sha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97"
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",

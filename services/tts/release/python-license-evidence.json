@@ -298,7 +298,7 @@
       "evidence": "installed package License field",
       "license": "GPL-3.0-or-later",
       "name": "piper-tts",
-      "version": "1.4.2"
+      "version": "1.8.0"
     },
     {
       "evidence": "installed package License-Expression",
