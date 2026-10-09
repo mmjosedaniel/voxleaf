@@ -17,6 +17,7 @@ use std::{
     time::UNIX_EPOCH,
 };
 
+use crate::sha256_hex::encode_sha256;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
@@ -534,7 +535,7 @@ fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
             .all(|(record, (path, contents))| {
                 record.path == path
                     && record.size_bytes == contents.len() as u64
-                    && record.sha256 == format!("{:x}", Sha256::digest(contents))
+                    && record.sha256 == encode_sha256(Sha256::digest(contents))
             })
 }
 
@@ -655,7 +656,7 @@ fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
             .read(&mut buffer)
             .map_err(|_| OptionalProfileError::VerificationFailed)?;
         if read == 0 {
-            return Ok(format!("{:x}", digest.finalize()));
+            return Ok(encode_sha256(digest.finalize()));
         }
         digest.update(&buffer[..read]);
     }
@@ -676,7 +677,7 @@ fn sha256_file_cancelled(
             .read(&mut buffer)
             .map_err(|_| OptionalProfileError::VerificationFailed)?;
         if read == 0 {
-            return Ok(format!("{:x}", digest.finalize()));
+            return Ok(encode_sha256(digest.finalize()));
         }
         digest.update(&buffer[..read]);
     }
@@ -857,7 +858,7 @@ fn runtime_authority_key(
         update_receipt_hash(&mut hasher, artifact.sha256.as_bytes());
         update_receipt_hash(&mut hasher, &artifact.download_bytes.to_le_bytes());
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(encode_sha256(hasher.finalize()))
 }
 
 fn collect_runtime_tree_stamp(
@@ -917,7 +918,7 @@ fn runtime_tree_stamp(root: &Path, canonical_root: &Path) -> Result<String, Opti
         update_receipt_hash(&mut hasher, &seconds.to_le_bytes());
         update_receipt_hash(&mut hasher, &nanos.to_le_bytes());
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(encode_sha256(hasher.finalize()))
 }
 
 fn resolve_directory(
@@ -956,7 +957,7 @@ fn verify_runtime(
     let manifest_path = root.join(&manifest_name);
     let manifest_bytes =
         fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
+    let manifest_hash = encode_sha256(Sha256::digest(&manifest_bytes));
     if manifest_hash != runtime_authority.runtime_manifest_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
@@ -1086,7 +1087,7 @@ fn runtime_manifest_for_bytecode_cleanup(
         .ok_or(OptionalProfileError::VerificationFailed)?;
     let bytes = fs::read(root.join(&manifest_name))
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let hash = format!("{:x}", Sha256::digest(&bytes));
+    let hash = encode_sha256(Sha256::digest(&bytes));
     if hash != runtime_authority.runtime_manifest_sha256
         && !manifest_authority
             .runtime_correction
@@ -1600,7 +1601,7 @@ fn reassemble_runtime(
     output
         .flush()
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    if format!("{:x}", digest.finalize()) != artifact.archive_sha256 {
+    if encode_sha256(digest.finalize()) != artifact.archive_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
     Ok(())
@@ -2216,7 +2217,7 @@ mod tests {
             fs::write(&path, contents).expect("fixture should be written");
             records.push(serde_json::json!({
                 "path": relative,
-                "sha256": format!("{:x}", Sha256::digest(contents)),
+                "sha256": encode_sha256(Sha256::digest(contents)),
                 "sizeBytes": contents.len(),
             }));
         }
@@ -2241,14 +2242,14 @@ mod tests {
         authority.model_artifacts = vec![ModelArtifact {
             filename: "model.safetensors".to_owned(),
             url: "https://huggingface.co/example/model.safetensors".to_owned(),
-            sha256: format!("{:x}", Sha256::digest(b"model")),
+            sha256: encode_sha256(Sha256::digest(b"model")),
             download_bytes: 5,
         }];
         authority
             .runtime_artifact
             .as_mut()
             .expect("runtime authority should exist")
-            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&manifest));
+            .runtime_manifest_sha256 = encode_sha256(Sha256::digest(&manifest));
         authority
     }
 
@@ -2370,12 +2371,17 @@ mod tests {
             filename: "artifact.bin".to_owned(),
             url: "https://github.com/mmjosedaniel/voxleaf/releases/download/test/artifact.bin"
                 .to_owned(),
-            sha256: format!("{:x}", Sha256::digest(b"data")),
+            sha256: encode_sha256(Sha256::digest(b"data")),
             download_bytes: 4,
         };
         fs::write(&path, b"data").expect("fixture should be written");
         assert!(verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)).is_ok());
 
+        fs::write(&path, b"dAta").expect("same-size substitution should be written");
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
         fs::write(&path, b"dat").expect("truncated fixture should be written");
         assert_eq!(
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
@@ -2392,7 +2398,7 @@ mod tests {
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
             Err(OptionalProfileError::VerificationFailed)
         );
-        artifact.sha256 = format!("{:x}", Sha256::digest(b"data"));
+        artifact.sha256 = encode_sha256(Sha256::digest(b"data"));
         assert_eq!(
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(true)),
             Err(OptionalProfileError::Cancelled)
@@ -2405,19 +2411,19 @@ mod tests {
         fs::write(root.0.join("part-1"), b"abc").expect("first part should be written");
         fs::write(root.0.join("part-2"), b"def").expect("second part should be written");
         let artifact = RuntimeArtifact {
-            archive_sha256: format!("{:x}", Sha256::digest(b"abcdef")),
+            archive_sha256: encode_sha256(Sha256::digest(b"abcdef")),
             installed_bytes: 1,
             parts: vec![
                 RuntimePart {
                     filename: "part-1".to_owned(),
                     url: "https://github.com/part-1".to_owned(),
-                    sha256: format!("{:x}", Sha256::digest(b"abc")),
+                    sha256: encode_sha256(Sha256::digest(b"abc")),
                     download_bytes: 3,
                 },
                 RuntimePart {
                     filename: "part-2".to_owned(),
                     url: "https://github.com/part-2".to_owned(),
-                    sha256: format!("{:x}", Sha256::digest(b"def")),
+                    sha256: encode_sha256(Sha256::digest(b"def")),
                     download_bytes: 3,
                 },
             ],
@@ -2806,8 +2812,9 @@ mod tests {
     fn hashes_optional_payloads_without_a_large_stack_allocation() {
         let root = TestRoot::new();
         let path = root.0.join("payload.bin");
-        fs::write(&path, vec![7_u8; 2 * COPY_BUFFER_BYTES]).expect("fixture should be written");
-        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * COPY_BUFFER_BYTES]));
+        fs::write(&path, vec![7_u8; 2 * 1024 * 1024]).expect("fixture should be written");
+        // Independent SHA-256 reference for two MiB of byte 0x07.
+        let expected = "c406296b30d433e27c08e2989ad557c7e9ae7825d1bea14c42aa4ef53c9e8a9d";
         let actual = std::thread::Builder::new()
             .stack_size(256 * 1024)
             .spawn(move || sha256_file(&path))

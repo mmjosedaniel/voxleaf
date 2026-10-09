@@ -81,7 +81,7 @@ flowchart LR
     CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>published as chatterbox-runtime-v3 prerelease"]:::implemented
     PACKAGE["Windows x64 per-user NSIS candidate<br/>VoxLeaf 0.1.0 + Piper ES/EN;<br/>local/portfolio GO; unsigned"]:::implemented
     ORDINARY_ACQUISITION["Ordinary compatible-host acquisition<br/>renderer presentation + native pre-network recheck;<br/>ADR-0050; validation overlay retired"]:::implemented
-    RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2-M4B deterministic boundary;<br/>400 components + explicit blind spots"]:::implemented
+    RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2-M4B deterministic boundary;<br/>416 components + explicit blind spots"]:::implemented
 
     subgraph DEVICE["User device / local-only trust boundary"]
         subgraph DESKTOP["apps/desktop"]

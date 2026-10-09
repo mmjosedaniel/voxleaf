@@ -7,6 +7,7 @@ use tauri::Manager;
 #[cfg(test)]
 mod hardware_profile_authority;
 mod host_profile_detection;
+mod sha256_hex;
 mod tts_optional_chatterbox;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
