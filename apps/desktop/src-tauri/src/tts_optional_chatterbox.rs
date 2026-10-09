@@ -17,6 +17,7 @@ use std::{
     time::UNIX_EPOCH,
 };
 
+use crate::sha256_hex::encode_sha256;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
@@ -534,7 +535,7 @@ fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
             .all(|(record, (path, contents))| {
                 record.path == path
                     && record.size_bytes == contents.len() as u64
-                    && record.sha256 == format!("{:x}", Sha256::digest(contents))
+                    && record.sha256 == encode_sha256(Sha256::digest(contents))
             })
 }
 
@@ -655,7 +656,7 @@ fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
             .read(&mut buffer)
             .map_err(|_| OptionalProfileError::VerificationFailed)?;
         if read == 0 {
-            return Ok(format!("{:x}", digest.finalize()));
+            return Ok(encode_sha256(digest.finalize()));
         }
         digest.update(&buffer[..read]);
     }
@@ -676,7 +677,7 @@ fn sha256_file_cancelled(
             .read(&mut buffer)
             .map_err(|_| OptionalProfileError::VerificationFailed)?;
         if read == 0 {
-            return Ok(format!("{:x}", digest.finalize()));
+            return Ok(encode_sha256(digest.finalize()));
         }
         digest.update(&buffer[..read]);
     }
@@ -857,7 +858,7 @@ fn runtime_authority_key(
         update_receipt_hash(&mut hasher, artifact.sha256.as_bytes());
         update_receipt_hash(&mut hasher, &artifact.download_bytes.to_le_bytes());
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(encode_sha256(hasher.finalize()))
 }
 
 fn collect_runtime_tree_stamp(
@@ -917,7 +918,7 @@ fn runtime_tree_stamp(root: &Path, canonical_root: &Path) -> Result<String, Opti
         update_receipt_hash(&mut hasher, &seconds.to_le_bytes());
         update_receipt_hash(&mut hasher, &nanos.to_le_bytes());
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(encode_sha256(hasher.finalize()))
 }
 
 fn resolve_directory(
@@ -956,7 +957,7 @@ fn verify_runtime(
     let manifest_path = root.join(&manifest_name);
     let manifest_bytes =
         fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
+    let manifest_hash = encode_sha256(Sha256::digest(&manifest_bytes));
     if manifest_hash != runtime_authority.runtime_manifest_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
@@ -1086,7 +1087,7 @@ fn runtime_manifest_for_bytecode_cleanup(
         .ok_or(OptionalProfileError::VerificationFailed)?;
     let bytes = fs::read(root.join(&manifest_name))
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let hash = format!("{:x}", Sha256::digest(&bytes));
+    let hash = encode_sha256(Sha256::digest(&bytes));
     if hash != runtime_authority.runtime_manifest_sha256
         && !manifest_authority
             .runtime_correction
@@ -1254,158 +1255,15 @@ fn remove_transient_numba_cache_files(root: &Path) -> Result<(), OptionalProfile
     Ok(())
 }
 
-fn migrate_legacy_package_root(root: &Path) -> Result<(), OptionalProfileError> {
-    let destination = retained_package_root(root);
-    if destination.exists() {
-        return Ok(());
-    }
-    let legacy = legacy_package_root(root);
-    if !legacy.exists() {
-        return Ok(());
-    }
-    canonical_contained_directory(root, &legacy)?;
-    let parent = destination
-        .parent()
-        .ok_or(OptionalProfileError::CleanupFailed)?;
-    canonical_managed_root(root)?;
-    if parent.exists() {
-        canonical_contained_directory(root, parent)?;
-    }
-    fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    canonical_contained_directory(root, parent)?;
-    invalidate_verified_runtime_receipt();
-    fs::rename(&legacy, &destination).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    invalidate_verified_runtime_receipt();
-    if let Some(profile) = legacy.parent() {
-        let _ = fs::remove_dir(profile);
-        if let Some(profiles) = profile.parent() {
-            let _ = fs::remove_dir(profiles);
-        }
-    }
-    Ok(())
-}
-
-fn corrected_runtime_manifest(manifest_bytes: &[u8]) -> Result<Vec<u8>, OptionalProfileError> {
-    let mut value = serde_json::from_slice::<serde_json::Value>(manifest_bytes)
-        .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let files = value
-        .get_mut("files")
-        .and_then(serde_json::Value::as_array_mut)
-        .ok_or(OptionalProfileError::VerificationFailed)?;
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        if files
-            .iter()
-            .any(|record| record.get("path").and_then(serde_json::Value::as_str) == Some(relative))
-        {
-            return Err(OptionalProfileError::VerificationFailed);
-        }
-        files.push(serde_json::json!({
-            "path": relative,
-            "sha256": format!("{:x}", Sha256::digest(contents)),
-            "sizeBytes": contents.len(),
-        }));
-    }
-    files.sort_by(|left, right| {
-        left.get("path")
-            .and_then(serde_json::Value::as_str)
-            .cmp(&right.get("path").and_then(serde_json::Value::as_str))
-    });
-    let mut corrected =
-        serde_json::to_vec_pretty(&value).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    corrected.push(b'\n');
-    Ok(corrected)
-}
-
-fn repair_runtime_modules(
-    root: &Path,
-    manifest_authority: &OptionalPackageManifest,
-    legacy_manifest_sha256: &str,
-) -> Result<(), OptionalProfileError> {
-    let manifest_name = runtime_manifest_name(manifest_authority);
-    let runtime_authority = manifest_authority
-        .runtime_artifact
-        .as_ref()
-        .ok_or(OptionalProfileError::VerificationFailed)?;
-    let manifest_path = root.join(&manifest_name);
-    let manifest_bytes =
-        fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
-    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
-    if manifest_hash == runtime_authority.runtime_manifest_sha256 {
-        return Ok(());
-    }
-    if manifest_hash != legacy_manifest_sha256 {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
-
-    let corrected = corrected_runtime_manifest(&manifest_bytes)?;
-    if format!("{:x}", Sha256::digest(&corrected)) != runtime_authority.runtime_manifest_sha256 {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
-
-    invalidate_verified_runtime_receipt();
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        let target = root.join(safe_relative_path(relative)?);
-        if target.exists() {
-            if !target.is_file()
-                || sha256_file(&target)? != format!("{:x}", Sha256::digest(contents))
-            {
-                return Err(OptionalProfileError::VerificationFailed);
-            }
-            fs::remove_file(&target).map_err(|_| OptionalProfileError::CleanupFailed)?;
-        }
-    }
-    let mut legacy_authority = manifest_authority.clone();
-    legacy_authority
-        .runtime_artifact
-        .as_mut()
-        .ok_or(OptionalProfileError::VerificationFailed)?
-        .runtime_manifest_sha256 = legacy_manifest_sha256.to_owned();
-    verify_runtime(root, &legacy_authority)?;
-
-    for (relative, contents) in GENERATED_RUNTIME_FILES {
-        let target = root.join(safe_relative_path(relative)?);
-        fs::create_dir_all(
-            target
-                .parent()
-                .ok_or(OptionalProfileError::VerificationFailed)?,
-        )
-        .map_err(|_| OptionalProfileError::CleanupFailed)?;
-        fs::write(target, contents).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    }
-    fs::write(&manifest_path, corrected).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    verify_runtime(root, manifest_authority)?;
-    Ok(())
-}
-
-fn repair_legacy_runtime_modules(
-    root: &Path,
-    manifest_authority: &OptionalPackageManifest,
-) -> Result<(), OptionalProfileError> {
-    match &manifest_authority.runtime_correction {
-        Some(correction) => repair_runtime_modules(
-            root,
-            manifest_authority,
-            &correction.accepted_runtime_manifest_sha256,
-        ),
-        None => Ok(()),
-    }
-}
-
 fn prepare_installed_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
 ) -> Result<(), OptionalProfileError> {
-    let package = if manifest_authority.identity.package_version == "2" {
-        migrate_legacy_package_root(root)?;
-        retained_package_root(root)
-    } else {
-        package_root(root)
-    };
+    let package = package_root(root);
     if package.exists() {
         canonical_contained_directory(root, &package)?;
         remove_transient_numba_cache_files(&package)?;
         remove_unmanifested_python_bytecode(&package, manifest_authority)?;
-        repair_legacy_runtime_modules(&package, manifest_authority)?;
     }
     Ok(())
 }
@@ -1516,7 +1374,6 @@ fn promote(
     }
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
     canonical_contained_directory(root, parent)?;
-    repair_legacy_runtime_modules(staging, manifest)?;
     verify_runtime(staging, manifest)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
@@ -1744,7 +1601,7 @@ fn reassemble_runtime(
     output
         .flush()
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    if format!("{:x}", digest.finalize()) != artifact.archive_sha256 {
+    if encode_sha256(digest.finalize()) != artifact.archive_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
     Ok(())
@@ -2360,7 +2217,7 @@ mod tests {
             fs::write(&path, contents).expect("fixture should be written");
             records.push(serde_json::json!({
                 "path": relative,
-                "sha256": format!("{:x}", Sha256::digest(contents)),
+                "sha256": encode_sha256(Sha256::digest(contents)),
                 "sizeBytes": contents.len(),
             }));
         }
@@ -2385,14 +2242,14 @@ mod tests {
         authority.model_artifacts = vec![ModelArtifact {
             filename: "model.safetensors".to_owned(),
             url: "https://huggingface.co/example/model.safetensors".to_owned(),
-            sha256: format!("{:x}", Sha256::digest(b"model")),
+            sha256: encode_sha256(Sha256::digest(b"model")),
             download_bytes: 5,
         }];
         authority
             .runtime_artifact
             .as_mut()
             .expect("runtime authority should exist")
-            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&manifest));
+            .runtime_manifest_sha256 = encode_sha256(Sha256::digest(&manifest));
         authority
     }
 
@@ -2514,12 +2371,17 @@ mod tests {
             filename: "artifact.bin".to_owned(),
             url: "https://github.com/mmjosedaniel/voxleaf/releases/download/test/artifact.bin"
                 .to_owned(),
-            sha256: format!("{:x}", Sha256::digest(b"data")),
+            sha256: encode_sha256(Sha256::digest(b"data")),
             download_bytes: 4,
         };
         fs::write(&path, b"data").expect("fixture should be written");
         assert!(verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)).is_ok());
 
+        fs::write(&path, b"dAta").expect("same-size substitution should be written");
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
         fs::write(&path, b"dat").expect("truncated fixture should be written");
         assert_eq!(
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
@@ -2536,7 +2398,7 @@ mod tests {
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
             Err(OptionalProfileError::VerificationFailed)
         );
-        artifact.sha256 = format!("{:x}", Sha256::digest(b"data"));
+        artifact.sha256 = encode_sha256(Sha256::digest(b"data"));
         assert_eq!(
             verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(true)),
             Err(OptionalProfileError::Cancelled)
@@ -2549,19 +2411,19 @@ mod tests {
         fs::write(root.0.join("part-1"), b"abc").expect("first part should be written");
         fs::write(root.0.join("part-2"), b"def").expect("second part should be written");
         let artifact = RuntimeArtifact {
-            archive_sha256: format!("{:x}", Sha256::digest(b"abcdef")),
+            archive_sha256: encode_sha256(Sha256::digest(b"abcdef")),
             installed_bytes: 1,
             parts: vec![
                 RuntimePart {
                     filename: "part-1".to_owned(),
                     url: "https://github.com/part-1".to_owned(),
-                    sha256: format!("{:x}", Sha256::digest(b"abc")),
+                    sha256: encode_sha256(Sha256::digest(b"abc")),
                     download_bytes: 3,
                 },
                 RuntimePart {
                     filename: "part-2".to_owned(),
                     url: "https://github.com/part-2".to_owned(),
-                    sha256: format!("{:x}", Sha256::digest(b"def")),
+                    sha256: encode_sha256(Sha256::digest(b"def")),
                     download_bytes: 3,
                 },
             ],
@@ -2610,38 +2472,12 @@ mod tests {
     }
 
     #[test]
-    fn installed_legacy_runtime_moves_to_short_root_and_repairs_generated_modules() {
+    fn installed_v3_runtime_verifies_after_transient_numba_cache_cleanup() {
         let root = TestRoot::new();
-        let legacy = legacy_package_root(&root.0);
-        let mut authority = write_runtime(&legacy);
-        authority.identity.package_version = "2".to_owned();
-        authority.runtime_correction = serde_json::from_slice::<OptionalPackageManifest>(include_bytes!("../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json")).expect("historical authority parses").runtime_correction;
-        let mut fixture: serde_json::Value =
-            serde_json::from_slice(&fs::read(legacy.join(RUNTIME_MANIFEST_NAME)).unwrap()).unwrap();
-        fixture["packageId"] = "voxleaf-chatterbox-v2".into();
-        fixture["packageVersion"] = "2".into();
-        fs::remove_file(legacy.join(RUNTIME_MANIFEST_NAME)).unwrap();
-        fs::write(
-            legacy.join("runtime-manifest-v2.json"),
-            serde_json::to_vec(&fixture).unwrap(),
-        )
-        .unwrap();
-        let legacy_manifest = fs::read(legacy.join("runtime-manifest-v2.json"))
-            .expect("legacy manifest should be readable");
-        authority
-            .runtime_correction
-            .as_mut()
-            .expect("historical correction exists")
-            .accepted_runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&legacy_manifest));
-        let corrected =
-            corrected_runtime_manifest(&legacy_manifest).expect("corrected manifest should render");
-        authority
-            .runtime_artifact
-            .as_mut()
-            .expect("runtime authority should exist")
-            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&corrected));
+        let installed = package_root(&root.0);
+        let authority = write_runtime(&installed);
 
-        let transient_cache = legacy.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        let transient_cache = installed.join("runtime/Lib/site-packages/librosa/core/__pycache__");
         fs::create_dir_all(&transient_cache).expect("transient cache should be created");
         fs::write(transient_cache.join("audio.nbc"), b"cache")
             .expect("transient data should be written");
@@ -2649,20 +2485,8 @@ mod tests {
             .expect("transient index should be written");
 
         prepare_installed_runtime(&root.0, &authority)
-            .expect("legacy package should move and repair");
-        let installed = retained_package_root(&root.0);
+            .expect("installed package cache cleanup should succeed");
         assert!(installed.exists());
-        assert!(!legacy.exists());
-        assert!(
-            installed
-                .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
-                .to_string_lossy()
-                .len()
-                < legacy
-                    .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
-                    .to_string_lossy()
-                    .len()
-        );
 
         assert!(
             !installed
@@ -2673,17 +2497,6 @@ mod tests {
             !installed
                 .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbi")
                 .exists()
-        );
-        for (relative, contents) in GENERATED_RUNTIME_FILES {
-            assert_eq!(
-                fs::read(installed.join(relative)).expect("generated module should exist"),
-                contents
-            );
-        }
-        assert_eq!(
-            fs::read(installed.join("runtime-manifest-v2.json"))
-                .expect("corrected manifest should be readable"),
-            corrected
         );
         assert!(verify_runtime(&installed, &authority).is_ok());
     }
@@ -2941,25 +2754,145 @@ mod tests {
 
     #[test]
     fn safe_extraction_rejects_archive_entries_outside_the_exact_package_root() {
-        let root = TestRoot::new();
-        let archive_path = root.0.join("unsafe.zip");
-        {
-            let file = File::create(&archive_path).expect("archive should be created");
-            let mut archive = zip::ZipWriter::new(file);
-            archive
-                .start_file("../outside.txt", zip::write::SimpleFileOptions::default())
-                .expect("unsafe entry fixture should be added");
-            archive
-                .write_all(b"outside")
-                .expect("fixture should be written");
-            archive.finish().expect("archive should finish");
+        for name in [
+            "../outside.txt".to_owned(),
+            "other-package/outside.txt".to_owned(),
+            format!("{PACKAGE_ID}/../outside.txt"),
+            format!("{PACKAGE_ID}//outside.txt"),
+            format!("{PACKAGE_ID}/C:/outside.txt"),
+            format!("{PACKAGE_ID}/runtime\\outside.txt"),
+        ] {
+            let root = TestRoot::new();
+            let archive_path = root.0.join("unsafe.zip");
+            {
+                let file = File::create(&archive_path).expect("archive should be created");
+                let mut archive = zip::ZipWriter::new(file);
+                archive
+                    .start_file(name, zip::write::SimpleFileOptions::default())
+                    .expect("unsafe entry fixture should be added");
+                archive
+                    .write_all(b"outside")
+                    .expect("fixture should be written");
+                archive.finish().expect("archive should finish");
+            }
+            assert!(matches!(
+                extract_archive(
+                    &archive_path,
+                    &root.0.join("extract"),
+                    1024,
+                    &AtomicBool::new(false),
+                ),
+                Err(OptionalProfileError::VerificationFailed | OptionalProfileError::Invalid)
+            ));
+            assert!(!root.0.join("outside.txt").exists());
+            assert!(!root.0.join("extract").exists());
         }
+    }
+
+    #[test]
+    fn extraction_accepts_stored_and_deflated_files_only_within_the_total_limit() {
+        for method in [
+            zip::CompressionMethod::Stored,
+            zip::CompressionMethod::Deflated,
+        ] {
+            let root = TestRoot::new();
+            let archive_path = root.0.join("package.zip");
+            let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+            for (name, bytes) in [
+                ("runtime/python.exe", b"payload".as_slice()),
+                ("runtime/data", b"abc".as_slice()),
+            ] {
+                archive
+                    .start_file(
+                        format!("{PACKAGE_ID}/{name}"),
+                        zip::write::SimpleFileOptions::default().compression_method(method),
+                    )
+                    .unwrap();
+                archive.write_all(bytes).unwrap();
+            }
+            archive.finish().unwrap();
+
+            let exact = root.0.join("exact");
+            assert_eq!(
+                extract_archive(&archive_path, &exact, 10, &AtomicBool::new(false)),
+                Ok(())
+            );
+            assert_eq!(
+                fs::read(exact.join("runtime/python.exe")).unwrap(),
+                b"payload"
+            );
+            assert_eq!(fs::read(exact.join("runtime/data")).unwrap(), b"abc");
+
+            let limited = root.0.join("limited");
+            assert_eq!(
+                extract_archive(&archive_path, &limited, 9, &AtomicBool::new(false)),
+                Err(OptionalProfileError::VerificationFailed)
+            );
+            assert!(!limited.join("runtime/data").exists());
+        }
+    }
+
+    #[test]
+    fn extraction_rejects_symbolic_link_entries_without_creating_the_target() {
+        let root = TestRoot::new();
+        let archive_path = root.0.join("link.zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive
+            .add_symlink(
+                format!("{PACKAGE_ID}/runtime/link"),
+                "../../outside.txt",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+        archive.finish().unwrap();
+        let target = root.0.join("extract");
+        assert_eq!(
+            extract_archive(&archive_path, &target, 1024, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        assert!(!target.exists());
+        assert!(!root.0.join("outside.txt").exists());
+    }
+
+    #[test]
+    fn extraction_rejects_corrupt_entry_bytes_and_truncated_archives() {
+        let root = TestRoot::new();
+        let archive_path = root.0.join("package.zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive
+            .start_file(
+                format!("{PACKAGE_ID}/runtime/data"),
+                zip::write::SimpleFileOptions::default()
+                    .compression_method(zip::CompressionMethod::Stored),
+            )
+            .unwrap();
+        archive.write_all(b"payload").unwrap();
+        archive.finish().unwrap();
+        let data_start = {
+            let mut archive = ZipArchive::new(File::open(&archive_path).unwrap()).unwrap();
+            archive.by_index(0).unwrap().data_start().unwrap() as usize
+        };
+        let original = fs::read(&archive_path).unwrap();
+        let mut corrupt = original.clone();
+        corrupt[data_start] ^= 1;
+        fs::write(&archive_path, corrupt).unwrap();
         assert_eq!(
             extract_archive(
                 &archive_path,
-                &root.0.join("extract"),
-                1024,
-                &AtomicBool::new(false),
+                &root.0.join("corrupt"),
+                7,
+                &AtomicBool::new(false)
+            ),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+
+        fs::write(&archive_path, &original[..original.len() - 10]).unwrap();
+        assert_eq!(
+            extract_archive(
+                &archive_path,
+                &root.0.join("truncated"),
+                7,
+                &AtomicBool::new(false)
             ),
             Err(OptionalProfileError::VerificationFailed)
         );
@@ -2999,8 +2932,9 @@ mod tests {
     fn hashes_optional_payloads_without_a_large_stack_allocation() {
         let root = TestRoot::new();
         let path = root.0.join("payload.bin");
-        fs::write(&path, vec![7_u8; 2 * COPY_BUFFER_BYTES]).expect("fixture should be written");
-        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * COPY_BUFFER_BYTES]));
+        fs::write(&path, vec![7_u8; 2 * 1024 * 1024]).expect("fixture should be written");
+        // Independent SHA-256 reference for two MiB of byte 0x07.
+        let expected = "c406296b30d433e27c08e2989ad557c7e9ae7825d1bea14c42aa4ef53c9e8a9d";
         let actual = std::thread::Builder::new()
             .stack_size(256 * 1024)
             .spawn(move || sha256_file(&path))
