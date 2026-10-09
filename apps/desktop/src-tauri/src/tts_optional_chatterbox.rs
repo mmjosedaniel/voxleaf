@@ -2754,25 +2754,145 @@ mod tests {
 
     #[test]
     fn safe_extraction_rejects_archive_entries_outside_the_exact_package_root() {
-        let root = TestRoot::new();
-        let archive_path = root.0.join("unsafe.zip");
-        {
-            let file = File::create(&archive_path).expect("archive should be created");
-            let mut archive = zip::ZipWriter::new(file);
-            archive
-                .start_file("../outside.txt", zip::write::SimpleFileOptions::default())
-                .expect("unsafe entry fixture should be added");
-            archive
-                .write_all(b"outside")
-                .expect("fixture should be written");
-            archive.finish().expect("archive should finish");
+        for name in [
+            "../outside.txt".to_owned(),
+            "other-package/outside.txt".to_owned(),
+            format!("{PACKAGE_ID}/../outside.txt"),
+            format!("{PACKAGE_ID}//outside.txt"),
+            format!("{PACKAGE_ID}/C:/outside.txt"),
+            format!("{PACKAGE_ID}/runtime\\outside.txt"),
+        ] {
+            let root = TestRoot::new();
+            let archive_path = root.0.join("unsafe.zip");
+            {
+                let file = File::create(&archive_path).expect("archive should be created");
+                let mut archive = zip::ZipWriter::new(file);
+                archive
+                    .start_file(name, zip::write::SimpleFileOptions::default())
+                    .expect("unsafe entry fixture should be added");
+                archive
+                    .write_all(b"outside")
+                    .expect("fixture should be written");
+                archive.finish().expect("archive should finish");
+            }
+            assert!(matches!(
+                extract_archive(
+                    &archive_path,
+                    &root.0.join("extract"),
+                    1024,
+                    &AtomicBool::new(false),
+                ),
+                Err(OptionalProfileError::VerificationFailed | OptionalProfileError::Invalid)
+            ));
+            assert!(!root.0.join("outside.txt").exists());
+            assert!(!root.0.join("extract").exists());
         }
+    }
+
+    #[test]
+    fn extraction_accepts_stored_and_deflated_files_only_within_the_total_limit() {
+        for method in [
+            zip::CompressionMethod::Stored,
+            zip::CompressionMethod::Deflated,
+        ] {
+            let root = TestRoot::new();
+            let archive_path = root.0.join("package.zip");
+            let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+            for (name, bytes) in [
+                ("runtime/python.exe", b"payload".as_slice()),
+                ("runtime/data", b"abc".as_slice()),
+            ] {
+                archive
+                    .start_file(
+                        format!("{PACKAGE_ID}/{name}"),
+                        zip::write::SimpleFileOptions::default().compression_method(method),
+                    )
+                    .unwrap();
+                archive.write_all(bytes).unwrap();
+            }
+            archive.finish().unwrap();
+
+            let exact = root.0.join("exact");
+            assert_eq!(
+                extract_archive(&archive_path, &exact, 10, &AtomicBool::new(false)),
+                Ok(())
+            );
+            assert_eq!(
+                fs::read(exact.join("runtime/python.exe")).unwrap(),
+                b"payload"
+            );
+            assert_eq!(fs::read(exact.join("runtime/data")).unwrap(), b"abc");
+
+            let limited = root.0.join("limited");
+            assert_eq!(
+                extract_archive(&archive_path, &limited, 9, &AtomicBool::new(false)),
+                Err(OptionalProfileError::VerificationFailed)
+            );
+            assert!(!limited.join("runtime/data").exists());
+        }
+    }
+
+    #[test]
+    fn extraction_rejects_symbolic_link_entries_without_creating_the_target() {
+        let root = TestRoot::new();
+        let archive_path = root.0.join("link.zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive
+            .add_symlink(
+                format!("{PACKAGE_ID}/runtime/link"),
+                "../../outside.txt",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+        archive.finish().unwrap();
+        let target = root.0.join("extract");
+        assert_eq!(
+            extract_archive(&archive_path, &target, 1024, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        assert!(!target.exists());
+        assert!(!root.0.join("outside.txt").exists());
+    }
+
+    #[test]
+    fn extraction_rejects_corrupt_entry_bytes_and_truncated_archives() {
+        let root = TestRoot::new();
+        let archive_path = root.0.join("package.zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive
+            .start_file(
+                format!("{PACKAGE_ID}/runtime/data"),
+                zip::write::SimpleFileOptions::default()
+                    .compression_method(zip::CompressionMethod::Stored),
+            )
+            .unwrap();
+        archive.write_all(b"payload").unwrap();
+        archive.finish().unwrap();
+        let data_start = {
+            let mut archive = ZipArchive::new(File::open(&archive_path).unwrap()).unwrap();
+            archive.by_index(0).unwrap().data_start().unwrap() as usize
+        };
+        let original = fs::read(&archive_path).unwrap();
+        let mut corrupt = original.clone();
+        corrupt[data_start] ^= 1;
+        fs::write(&archive_path, corrupt).unwrap();
         assert_eq!(
             extract_archive(
                 &archive_path,
-                &root.0.join("extract"),
-                1024,
-                &AtomicBool::new(false),
+                &root.0.join("corrupt"),
+                7,
+                &AtomicBool::new(false)
+            ),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+
+        fs::write(&archive_path, &original[..original.len() - 10]).unwrap();
+        assert_eq!(
+            extract_archive(
+                &archive_path,
+                &root.0.join("truncated"),
+                7,
+                &AtomicBool::new(false)
             ),
             Err(OptionalProfileError::VerificationFailed)
         );

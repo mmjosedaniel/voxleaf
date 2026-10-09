@@ -129,7 +129,7 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
 def test_release_component_inventory_is_complete_and_content_safe() -> None:
     inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
     components = inventory["components"]
-    assert len(components) == 416
+    assert len(components) == 418
     assert len({component["id"] for component in components}) == len(components)
     assert {
         component["id"]
@@ -141,6 +141,12 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         for component in components
         if component["ecosystem"] == "rust" and component["name"] == "windows"
     } == {"cargo:windows@0.61.3", "cargo:windows@0.62.2"}
+    assert {
+        component["id"]
+        for component in components
+        if component["ecosystem"] == "rust"
+        and component["name"] in {"zip", "typed-path", "zlib-rs"}
+    } == {"cargo:zip@8.6.0", "cargo:typed-path@0.12.3", "cargo:zlib-rs@0.6.7"}
     assert {
         component["id"]
         for component in components
