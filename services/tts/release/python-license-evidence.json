@@ -274,7 +274,7 @@
       "evidence": "installed package licence classifier",
       "license": "MIT",
       "name": "onnxruntime",
-      "version": "1.27.0"
+      "version": "1.30.0"
     },
     {
       "evidence": "installed package License-Expression",

@@ -6,6 +6,7 @@ import hashlib
 import json
 import struct
 import sys
+import tomllib
 from collections.abc import Iterator
 from pathlib import Path, PureWindowsPath
 from types import ModuleType, SimpleNamespace
@@ -235,7 +236,18 @@ def _segment(text: str = "Texto sintético local.") -> dict[str, object]:
     }
 
 
-def test_frozen_constants_match_v6_profile_and_candidate_lock() -> None:
+def test_current_adapter_runtime_matches_the_locked_release_graph() -> None:
+    core = REPOSITORY_ROOT / "services" / "tts" / "release" / "core"
+    project = tomllib.loads((core / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = tomllib.loads((core / "uv.lock").read_text(encoding="utf-8"))
+    assert ONNXRUNTIME_VERSION == "1.30.0"
+    assert f"onnxruntime=={ONNXRUNTIME_VERSION}" in project["project"]["dependencies"]
+    assert [
+        package["version"] for package in lock["package"] if package["name"] == "onnxruntime"
+    ] == [ONNXRUNTIME_VERSION]
+
+
+def test_voice_and_generation_constants_preserve_the_v6_authority() -> None:
     profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
     candidate = profile["candidate"]
 
@@ -251,7 +263,8 @@ def test_frozen_constants_match_v6_profile_and_candidate_lock() -> None:
         }
         for artifact in ARTIFACTS
     )
-    assert candidate["runtime"]["onnxruntime"] == ONNXRUNTIME_VERSION
+    # The v6 evaluation remains immutable; ADR-0053 governs the current runtime.
+    assert candidate["runtime"]["onnxruntime"] == "1.27.0"
     assert candidate["runtime"]["sampleRateHz"] == SOURCE_SAMPLE_RATE_HZ
     assert candidate["generation"] == {
         "speakerId": None,
@@ -334,7 +347,7 @@ def test_english_profile_uses_the_exact_joe_voice_and_model_paths(
 
 @pytest.mark.parametrize(
     ("distribution", "version"),
-    [("piper-tts", "0.0.0"), ("onnxruntime", "1.26.0")],
+    [("piper-tts", "0.0.0"), ("onnxruntime", "1.26.0"), ("onnxruntime", "1.27.0")],
 )
 def test_rejects_runtime_version_mismatch_before_import(
     tmp_path: Path,

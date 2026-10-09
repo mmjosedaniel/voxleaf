@@ -66,6 +66,8 @@ ADR-0002-short-description.md
 
 - [`ADR-0052-admit-security-refreshed-chatterbox-v3.md`](ADR-0052-admit-security-refreshed-chatterbox-v3.md): admit the separately published security-refreshed package, preserve v2 as cleanup-only data, and retain explicit hardware/evidence boundaries.
 
+- [`ADR-0053-refresh-piper-onnxruntime.md`](ADR-0053-refresh-piper-onnxruntime.md): refresh the current Piper runtime independently of immutable historical evaluation identities, validated by fresh bilingual host journeys.
+
 ## Template
 
 ```markdown
