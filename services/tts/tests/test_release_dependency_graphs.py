@@ -134,6 +134,17 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
     assert {
         component["id"]
         for component in components
+        if component["ecosystem"] == "node"
+        and component["name"] in {"@tauri-apps/api", "@zip.js/zip.js", "react", "react-dom"}
+    } == {
+        "npm:@tauri-apps/api@2.12.1",
+        "npm:@zip.js/zip.js@2.23.0",
+        "npm:react@19.3.0",
+        "npm:react-dom@19.3.0",
+    }
+    assert {
+        component["id"]
+        for component in components
         if component["ecosystem"] == "rust" and component["name"] in {"reqwest", "base64"}
     } == {"cargo:reqwest@0.13.5", "cargo:base64@0.22.1", "cargo:base64@0.23.1"}
     assert {

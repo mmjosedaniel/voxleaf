@@ -1,8 +1,10 @@
 import {
   Uint8ArrayReader,
   Uint8ArrayWriter,
+  ZipReader,
   ZipWriter,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
+import type { FileEntry } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { parseArchiveEntryPath } from "../paths/archive-path.js";
@@ -23,6 +25,7 @@ const ZIP_WRITER_OPTIONS = Object.freeze({
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -100,7 +103,7 @@ describe("bounded EPUB archive reads", () => {
     }
   });
 
-  it("rejects observed bytes above a falsified declaration and returns no partial data", async () => {
+  it("rejects a falsified stored size in the codec and returns no partial data", async () => {
     const archiveBytes = await createArchive("x".repeat(21), 0);
     const falsified = setEntryUncompressedSize(
       archiveBytes,
@@ -119,7 +122,7 @@ describe("bounded EPUB archive reads", () => {
         );
       });
 
-      expect(error).toMatchObject({ code: "resource-limit-exceeded" });
+      expect(error).toMatchObject({ code: "invalid-container" });
       expect(returnedData).toBeUndefined();
       expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
     } finally {
@@ -127,7 +130,7 @@ describe("bounded EPUB archive reads", () => {
     }
   });
 
-  it("enforces the compression ratio during real decompression", async () => {
+  it("rejects a falsified deflate size before oversized output reaches the writer", async () => {
     const archiveBytes = await createArchive("a".repeat(1_024));
     const declaredSize = getEntryCompressedSize(
       archiveBytes,
@@ -151,12 +154,66 @@ describe("bounded EPUB archive reads", () => {
           archive.readEntry(
             parseArchiveEntryPath("EPUB/chapter.xhtml", "file"),
           ),
-        "resource-limit-exceeded",
+        "invalid-container",
       );
+      expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
     } finally {
       await archive.close();
     }
   });
+
+  it.each(["entry-size", "compression-ratio"] as const)(
+    "enforces the writer's %s limit independently of the codec",
+    async (limit) => {
+      const archiveBytes = await createArchive("chapter");
+      const getEntries = ZipReader.prototype.getEntriesGenerator;
+      let chapter: FileEntry | undefined;
+      vi.spyOn(ZipReader.prototype, "getEntriesGenerator").mockImplementation(
+        async function* (this: ZipReader<Uint8Array>, options) {
+          for await (const entry of getEntries.call(this, options)) {
+            if (!entry.directory && entry.filename === "EPUB/chapter.xhtml") {
+              chapter = entry;
+            }
+            yield entry;
+          }
+          return true;
+        },
+      );
+      const archive = await openEpubArchive(archiveBytes, {
+        policy:
+          limit === "entry-size"
+            ? { maxEntryUncompressedBytes: 20 }
+            : { compressionRatioGraceBytes: 20, maxCompressionRatio: 1 },
+      });
+      try {
+        if (chapter === undefined) {
+          throw new Error("synthetic chapter entry not found");
+        }
+        vi.spyOn(chapter, "getData").mockImplementation(async (writer) => {
+          const { writable } = writer as {
+            writable: WritableStream<Uint8Array>;
+          };
+          const sink = writable.getWriter();
+          try {
+            await sink.write(new Uint8Array(21));
+          } finally {
+            sink.releaseLock();
+          }
+          throw new Error("oversized codec output was accepted");
+        });
+        await expectArchiveReadError(
+          () =>
+            archive.readEntry(
+              parseArchiveEntryPath("EPUB/chapter.xhtml", "file"),
+            ),
+          "resource-limit-exceeded",
+        );
+        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
+      } finally {
+        await archive.close();
+      }
+    },
+  );
 
   it("checks CRC during the bounded content read and hides dependency details", async () => {
     const archiveBytes = await createArchive("private-canary", 0);

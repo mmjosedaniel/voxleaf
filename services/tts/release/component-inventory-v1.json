@@ -10966,7 +10966,7 @@
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:@tauri-apps/api@2.11.1",
+      "id": "npm:@tauri-apps/api@2.12.1",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10975,7 +10975,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA=="
+        "value": "DeyFHa3wynpyoqTDikDEDGTJIq4LQ5USfolQGRmGIWT6JMADyxZBTDa5cAdT3tDg73rUXufPaCwN7aXBos4OnQ=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10995,13 +10995,13 @@
       },
       "scope": "core",
       "source": "https://github.com/tauri-apps/tauri#readme",
-      "versionOrRevision": "2.11.1"
+      "versionOrRevision": "2.12.1"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:@zip.js/zip.js@2.8.30",
+      "id": "npm:@zip.js/zip.js@2.23.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -11010,7 +11010,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "ig0aIElRmwDhe+tCyd/aAN9dluG0owGYjafCn7w4k/e+DHsit93yXLB+hBVgc8g/5jYp54L09LSECqEMNXNqgA=="
+        "value": "K5obAqfrO7zhycnCupM9aaoZ9kx0SA0kv7+Z2oOUsdpWquv4s/Z4zyD7AdTqxrK3pgPM+ozaUi8kdRQbCWaIrQ=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -11030,13 +11030,13 @@
       },
       "scope": "core",
       "source": "https://gildas-lormeau.github.io/zip.js",
-      "versionOrRevision": "2.8.30"
+      "versionOrRevision": "2.23.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:react-dom@19.2.7",
+      "id": "npm:react-dom@19.3.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -11045,7 +11045,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ=="
+        "value": "JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -11065,13 +11065,13 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "19.2.7"
+      "versionOrRevision": "19.3.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:react@19.2.7",
+      "id": "npm:react@19.3.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -11080,7 +11080,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ=="
+        "value": "E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -11100,7 +11100,7 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "19.2.7"
+      "versionOrRevision": "19.3.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -11141,7 +11141,7 @@
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:scheduler@0.27.0",
+      "id": "npm:scheduler@0.28.0",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -11150,7 +11150,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="
+        "value": "juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -11170,7 +11170,7 @@
       },
       "scope": "core",
       "source": "https://react.dev/",
-      "versionOrRevision": "0.27.0"
+      "versionOrRevision": "0.28.0"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -14757,7 +14757,7 @@
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",
-      "sha256": "94de96b08f6e984531e04890618ae69854193321d41bc725dc076b0a23d88442"
+      "sha256": "893d25ecb2bbacc76e9e6d5605e21666736f241509144998a7026c5f99a8c758"
     }
   },
   "schemaVersion": 1,

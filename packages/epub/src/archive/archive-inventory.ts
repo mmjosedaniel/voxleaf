@@ -1,4 +1,6 @@
 import {
+  ERR_UNSAFE_FILENAME,
+  ERR_UNSUPPORTED_UINT64,
   Uint8ArrayReader,
   ZipReader,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
@@ -154,6 +156,16 @@ function createCandidateEntry(
     return fail("unsupported-protection");
   }
 
+  const crc32 = entry.crc32;
+  if (
+    crc32 === undefined ||
+    !Number.isInteger(crc32) ||
+    crc32 < 0 ||
+    crc32 > 0xffff_ffff
+  ) {
+    return fail("invalid-container");
+  }
+
   const kind = readEntryKind(entry);
   const path = decodeArchiveEntryPath(entry.rawFilename, kind, budget.policy);
   const expectedDecodedFilename =
@@ -181,7 +193,7 @@ function createCandidateEntry(
       compressionMethod,
       compressedSize: entry.compressedSize,
       uncompressedSize: entry.uncompressedSize,
-      crc32: entry.signature,
+      crc32,
       localHeaderOffset: entry.offset,
       zip64: entry.zip64 === true,
     }),
@@ -455,6 +467,14 @@ function mapArchiveError(
         ? "resource-limit-exceeded"
         : "unsafe-entry",
     );
+  }
+
+  if (error instanceof Error && error.message === ERR_UNSAFE_FILENAME) {
+    return new EpubArchiveError("unsafe-entry");
+  }
+
+  if (error instanceof Error && error.message === ERR_UNSUPPORTED_UINT64) {
+    return new EpubArchiveError("resource-limit-exceeded");
   }
 
   if (budget !== undefined) {
