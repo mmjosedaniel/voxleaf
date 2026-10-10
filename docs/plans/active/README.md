@@ -17,6 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [TTS service organization plan](tts-service-organization.md) is ready for
+implementation. It defines bounded Python packaging-integrity, release-authority,
+benchmark-corpus and quality-tooling extractions, with independent host validation
+and preserved runtime/frozen-authority boundaries. Source implementation has not
+started.
+
 The [desktop source organization plan](../completed/desktop-source-organization.md)
 is complete and archived. Semantic planning, Web Audio and ordered CSS extractions
 passed independent unit and combined validation. Changes remain unstaged with
