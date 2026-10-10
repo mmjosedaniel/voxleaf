@@ -1,0 +1,46 @@
+{
+  "reportId": "NRTL-PROBE-POST-01",
+  "mode": "POST-CHANGE",
+  "environment": "local PowerShell outside sandbox",
+  "pnpm": "11.15.1",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "commands": [
+    {
+      "command": "pnpm.cmd format:check:rust",
+      "exitCode": 0,
+      "startedUtc": "2026-10-10T04:32:04.8673722Z",
+      "durationSeconds": 0.5605734,
+      "log": "format-check-rust.log"
+    },
+    {
+      "command": "pnpm.cmd lint:rust",
+      "exitCode": 0,
+      "startedUtc": "2026-10-10T04:32:05.4306582Z",
+      "durationSeconds": 3.6445598,
+      "log": "lint-rust.log"
+    },
+    {
+      "command": "pnpm.cmd test:rust",
+      "exitCode": 0,
+      "startedUtc": "2026-10-10T04:32:09.0754458Z",
+      "durationSeconds": 8.3870976,
+      "log": "test-rust.log"
+    }
+  ],
+  "identityRecheck": true,
+  "diffCheckExit": 0,
+  "runs": [
+    {
+      "configuration": "default",
+      "expectedCount": 87,
+      "parsedCount": 87,
+      "summary": "test result: ok. 87 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s"
+    },
+    {
+      "configuration": "release-locked-runtime",
+      "expectedCount": 88,
+      "parsedCount": 88,
+      "summary": "test result: ok. 88 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s"
+    }
+  ]
+}

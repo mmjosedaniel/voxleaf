@@ -1,0 +1,2209 @@
+{
+  "verdict": "PASS",
+  "closedDocumentationPathCount": 180,
+  "localLinkCount": 266,
+  "anchorCount": 6,
+  "requiredSections": 12,
+  "milestoneCount": 6,
+  "completeMilestones": 6,
+  "acceptedUnits": 10,
+  "reportCount": 22,
+  "byteCheckedEvidenceCount": 150,
+  "reports": [
+    {
+      "id": "NRTL-HASH-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-HASH-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-FRAMING-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-FRAMING-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CORE-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CORE-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-FAKE-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-FAKE-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-HANDOFF-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-HANDOFF-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CB-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CB-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-SUP-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-SUP-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CONTRACT-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-CONTRACT-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-PROBE-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-PROBE-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-HW-BASELINE-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-HW-POST-01",
+      "verdict": "PASS",
+      "commands": 3
+    },
+    {
+      "id": "NRTL-PACKAGE-01",
+      "verdict": "PASS",
+      "commands": 1
+    },
+    {
+      "id": "NRTL-FINAL-01",
+      "verdict": "PASS",
+      "commands": 2
+    }
+  ],
+  "byteChecks": [
+    {
+      "report": "NRTL-HASH-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HASH-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FRAMING-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CORE-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FAKE-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HANDOFF-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "fixture-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "reflow-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CB-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "fixture-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "reflow-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-SUP-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "fixture-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-CONTRACT-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "frozen-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PROBE-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-BASELINE-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "source-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-HW-POST-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PACKAGE-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PACKAGE-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PACKAGE-01",
+      "file": "campaign-integrity.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PACKAGE-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-PACKAGE-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "after.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "campaign-integrity-before.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "campaign-integrity.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "final-review.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "preflight.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "report.md",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "results.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "test-comparison.json.txt",
+      "matchesOriginal": true
+    },
+    {
+      "report": "NRTL-FINAL-01",
+      "file": "test-identities.json.txt",
+      "matchesOriginal": true
+    }
+  ],
+  "links": [
+    {
+      "source": "docs/development/agentic-refactoring.md",
+      "target": "agentic-change-review.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/agentic-refactoring.md",
+      "target": "../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md#validation-report",
+      "exists": true
+    },
+    {
+      "source": "docs/development/agentic-refactoring.md",
+      "target": "../plans/completed/native-rust-module-organization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/agentic-refactoring.md",
+      "target": "../plans/completed/native-rust-test-layout.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/agentic-refactoring.md",
+      "target": "testing.md#native-rust-unit-test-layout",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "agentic-refactoring.md#native-rust-navigation",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/chatterbox-security-dependency-refresh.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../../benchmarks/tts/selection-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../architecture/synchronization-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../architecture/performance-budget.md#visual-reader-reference-limits",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M005-narration-text-preparation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M006-local-tts-feasibility-and-engine-profiles.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M006-001-local-tts-profile-blocker-resolution.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../../benchmarks/tts/selection-v3.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "setup.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../../benchmarks/tts/service-handoff-result-v1-exact-host.json",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../architecture/tts-support-matrix-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/development/testing.md",
+      "target": "../plans/completed/M011-package-validate-and-release-mvp.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/active/README.md",
+      "target": "../roadmap.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/active/README.md",
+      "target": "../completed/native-rust-test-layout.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/active/README.md",
+      "target": "../completed/native-rust-module-organization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/active/README.md",
+      "target": "synchronized-reader-and-startup-buffer.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../completed/native-rust-module-organization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/README.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../README.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../product/mvp.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../architecture/overview.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../architecture/system-diagram.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../roadmap.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../development/agentic-refactoring.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../../development/testing.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-module-organization/audits.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-module-organization/NR-final-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/initial-inventory.json.txt",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-HASH-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-HASH-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-CORE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-FAKE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-CB-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-SUP-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-CONTRACT-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-PROBE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-HW-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-FINAL-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/README.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/native-rust-test-layout.md",
+      "target": "../evidence/native-rust-test-layout/NRTL-FINAL-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "native-rust-test-layout.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "native-rust-module-organization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "development-toolchain-pr-222.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "legacy-runtime-cleanup.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "residual-code-cleanup.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "bootstrap-test-cleanup.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "chatterbox-security-dependency-refresh.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "bounded-settings-and-chatterbox-modularization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M001-engineering-foundation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M002-shared-contracts-and-test-harness.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M003-secure-epub-ingestion-and-document-model.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M003-001-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M004-reflowable-visual-reader-and-position-restoration.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M004-001-native-webdriver-startup-smoke.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M005-narration-text-preparation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M006-local-tts-feasibility-and-engine-profiles.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M006-001-local-tts-profile-blocker-resolution.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M006-002-qwen-short-segment-batch-feasibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M007-local-tts-service-and-process-protocol.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M008-bounded-adaptive-prebuffering.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M008-001-boundary-aware-audio-transitions.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M009-synchronized-reading-and-narration.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M009-001-reader-experience-stabilization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M010-hardware-profiles-fallback-and-operational-resilience.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M010-001-bilingual-narration-and-candidate-screening.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "M010-002-reader-settings-and-playback-controls.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/completed/README.md",
+      "target": "typescript-maintainability-batch-20260803.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HASH-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HASH-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HASH-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HASH-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FRAMING-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FRAMING-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FRAMING-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FRAMING-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CORE-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CORE-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CORE-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CORE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FAKE-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FAKE-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FAKE-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FAKE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HANDOFF-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HANDOFF-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HANDOFF-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HANDOFF-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CB-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CB-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CB-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CB-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-SUP-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-SUP-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-SUP-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-SUP-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CONTRACT-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CONTRACT-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CONTRACT-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-CONTRACT-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-PROBE-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-PROBE-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-PROBE-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-PROBE-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HW-audit-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HW-order-01.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HW-BASELINE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-HW-POST-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "initial-inventory.json.txt",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-PACKAGE-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "NRTL-FINAL-01/report.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "../../completed/native-rust-test-layout.md",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "../../../development/testing.md#native-rust-unit-test-layout",
+      "exists": true
+    },
+    {
+      "source": "docs/plans/evidence/native-rust-test-layout/README.md",
+      "target": "../../../development/agentic-refactoring.md#native-rust-navigation",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/chatterbox-security-dependency-refresh.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/piper-narration-preparation-profile-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-support-matrix-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M011-package-validate-and-release-mvp.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/mvp-release-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0042-freeze-mvp-release-authority.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/mvp-release-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/release-security-and-distribution.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/system-diagram.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/roadmap.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/vision.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/project-brief.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/mvp.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/reader-settings-and-playback-controls.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/post-mvp-tts-candidate-backlog.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "product/glossary.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/system-diagram.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/system-diagram-compact.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/overview.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/performance-budget.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/adaptive-buffer-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/playback-transition-pause-policy-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/synchronization-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/reader-experience-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/reader-settings-playback-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/reader-settings-playback-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/reader-settings-playback-authority-v3.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/mvp-release-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/mvp-release-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/chatterbox-official-acquisition-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/hardware-profile-recovery-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/qwen-development-vram-admission-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-support-matrix-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-support-matrix-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/bilingual-narration-authority-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/bilingual-narration-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/narration-normalization-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/narration-normalization-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/narration-preparation-limits-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/chatterbox-narration-preparation-profile-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v3.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v4.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v5.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v6.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v7.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v8.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v9.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v10.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v11.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-feasibility-profile-v12.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v11.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v12.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/piper-narration-preparation-profile-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/piper-narration-preparation-profile-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-profile-runtime-configuration-availability-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v6.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/tts-service-protocol-v1.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v5.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v4.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../benchmarks/tts/selection-v3.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0018-reader-experience-stabilization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0020-admit-piper-cpu-fallback.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0022-qwen-development-vram-admission.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0023-final-m010-support-and-recovery.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0030-freeze-corrective-full-evaluation-v12.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "architecture/decisions/",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/setup.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/testing.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/troubleshooting.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/dependencies.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/release-security-and-distribution.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "user/windows-release.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/git-workflow.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/agentic-change-review.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "development/agentic-refactoring.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/roadmap.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/active/",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/native-rust-test-layout.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/native-rust-module-organization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/bounded-settings-and-chatterbox-modularization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/typescript-maintainability-batch-20260803.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M001-engineering-foundation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M002-shared-contracts-and-test-harness.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M003-secure-epub-ingestion-and-document-model.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M004-reflowable-visual-reader-and-position-restoration.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M004-001-native-webdriver-startup-smoke.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M005-narration-text-preparation.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M006-local-tts-feasibility-and-engine-profiles.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M006-001-local-tts-profile-blocker-resolution.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M006-002-qwen-short-segment-batch-feasibility.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M007-local-tts-service-and-process-protocol.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M008-bounded-adaptive-prebuffering.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M009-synchronized-reading-and-narration.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M009-001-reader-experience-stabilization.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M008-001-boundary-aware-audio-transitions.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M010-001-bilingual-narration-and-candidate-screening.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M010-002-reader-settings-and-playback-controls.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/M011-package-validate-and-release-mvp.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/completed/",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "plans/active/synchronized-reader-and-startup-buffer.md",
+      "exists": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "../.agents/PLANS.md",
+      "exists": true
+    }
+  ],
+  "failures": []
+}

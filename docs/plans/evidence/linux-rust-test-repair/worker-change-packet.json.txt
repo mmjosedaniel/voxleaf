@@ -1,0 +1,45 @@
+{
+  "task": "LINUX-RUST-REPAIR-01",
+  "source_before_sha256": "c153948b3681d2f5538053c62e247c221ecbe8d3950b0132924f6ce51d53c5dd",
+  "source_after_sha256": "d8f5554c725758d300e58b153b0da417f62e5d1de21efe89b44a774958fd8937",
+  "source_byte_delta": 2,
+  "source_changes": "Only two underscore insertions: parameter declaration and cfg(windows) use",
+  "ico_sha256": "d2fdf6e9b1f1c4f5f594cacfefc40c487b9818b77a94a4773c481a999febffa4",
+  "ico_directory_entry_zero_based": 5,
+  "ico_payload_offset": 4554,
+  "ico_payload_length": 4292,
+  "png_sha256": "008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8",
+  "png_width": 256,
+  "png_height": 256,
+  "png_bit_depth": 8,
+  "png_color_type": 6,
+  "png_color": "RGBA",
+  "png_chunks": [
+    {
+      "type": "IHDR",
+      "length": 13,
+      "crc32": "5c72a866"
+    },
+    {
+      "type": "IDAT",
+      "length": 4235,
+      "crc32": "e352ba6a"
+    },
+    {
+      "type": "IEND",
+      "length": 0,
+      "crc32": "ae426082"
+    }
+  ],
+  "delta": [
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "before": "c153948b3681d2f5538053c62e247c221ecbe8d3950b0132924f6ce51d53c5dd",
+      "after": "d8f5554c725758d300e58b153b0da417f62e5d1de21efe89b44a774958fd8937"
+    }
+  ],
+  "new_path": "apps/desktop/src-tauri/icons/icon.png",
+  "preserved_path_count": 1133,
+  "tests_run": false,
+  "git_mutations": false
+}

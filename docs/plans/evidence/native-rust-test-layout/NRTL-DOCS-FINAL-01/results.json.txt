@@ -1,0 +1,11 @@
+{
+  "reportId": "NRTL-DOCS-FINAL-01",
+  "mode": "FINAL",
+  "environment": "local PowerShell outside sandbox",
+  "identityRecheck": true,
+  "documentationCheckExit": 0,
+  "diffCheckExit": 0,
+  "protectedHistoryExit": 0,
+  "nativeFinalIdentityDrift": [],
+  "pathCount": 180
+}

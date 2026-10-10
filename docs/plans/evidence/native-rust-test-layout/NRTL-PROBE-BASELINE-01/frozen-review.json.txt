@@ -1,0 +1,6 @@
+{
+  "frozenRawExact": true,
+  "capturedBoundaryLength": 1261,
+  "sha256": "4a85acf9398301db3ea9275bc8bd0770dbd34fdc1d293efe5e47bfd194559626",
+  "boundary": "Includes cfg(test) through closing brace, excludes its trailing newline"
+}

@@ -1,0 +1,23 @@
+$ cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings && cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets --features release-locked-runtime -- -D warnings
+   Compiling voxleaf-desktop v0.1.0 (/var/tmp/voxleaf-linux-rust-comparison-20261010/complete-02/current/apps/desktop/src-tauri)
+error: proc macro panicked
+  --> src/main.rs:54:16
+   |
+54 | ...ld(tauri...xt!())
+   |       ^^^^^...^^^^^
+   |
+   = help: message: failed to open icon /var/tmp/voxleaf-linux-rust-comparison-20261010/complete-02/current/apps/desktop/src-tauri/icons/icon.png: No such file or directory (os error 2)
+
+error: unused variable: `command`
+  --> src/tts_service_supervisor.rs:89:31
+   |
+89 | ...ld(command: &...
+   |       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_command`
+   |
+   = note: `-D unused-variables` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_variables)]`
+
+error: could not compile `voxleaf-desktop` (bin "voxleaf-desktop") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `voxleaf-desktop` (bin "voxleaf-desktop" test) due to 2 previous errors
+[ELIFECYCLE] Command failed with exit code 101.

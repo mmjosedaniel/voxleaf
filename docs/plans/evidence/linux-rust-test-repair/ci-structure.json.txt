@@ -1,0 +1,11 @@
+{
+  "yamlParsed": true,
+  "rootSettingsPreserved": true,
+  "existingJobsPreserved": true,
+  "onlyNewJob": "ubuntu-native",
+  "runner": "ubuntu-24.04",
+  "pinnedActions": true,
+  "threeRustCommandsMatchPassingComparison": true,
+  "shellScripts": 7,
+  "remoteExecution": false
+}

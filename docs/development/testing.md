@@ -13,6 +13,43 @@
   unit, integration, format, lint, type, schema, build, Python, Rust, browser,
   WebView2, model, firewall, performance, and exact-host validation.
 
+## Native Rust unit-test layout
+
+The ten native owners with unit-test suites keep production in `<owner>.rs`
+and declare a private `#[cfg(test)] mod tests;` child at `<owner>/tests.rs`.
+The child retains private parent access through its existing imports. These
+are unit tests in the same crate, not public test hooks or Cargo integration
+tests. Keep existing names, assertions, cleanup and platform/feature
+conditions when changing physical layout.
+
+`tts_protocol_contract/tests.rs` owns the fifteen valid and three invalid
+fixture entries, fixture helper and four tests; only those four tests gained
+the `::tests::` namespace in this relocation. Relative include spellings change
+with source depth, but resolved fixture paths and bytes must remain identical.
+
+`tts_protocol_probe.rs` deliberately retains its entire test-only
+`frozen_authority` block unchanged. Its executable tests and four test-only
+helpers live in `tts_protocol_probe/tests.rs`. Keep the probe independent from
+production protocol framing. `hardware_profile_authority.rs` is already a
+separate test-only module and remains unchanged.
+
+The existing Windows probe is at `host_profile_detection/windows_probe.rs`
+under the same private `#[cfg(windows)]` module. Its source-privacy test in
+`host_profile_detection/tests.rs` unconditionally inspects the parent, Windows
+child and test file, including the Windows source on non-Windows hosts. Keep
+the same fragmented forbidden strings and assertions across all three files.
+
+Runtime-callable synthetic-child, handoff, probe and supervisor diagnostics
+remain outside `cfg(test)`. Preserve `diagnostics/{mod,cli}.rs` and
+`tts_service_supervisor/host_diagnostics.rs` as executable owners. Windows
+test-layout evidence did not claim execution of the two retained Unix-only
+Chatterbox symlink tests. The later Linux Rust comparison below executes both
+successfully. The Rust commands cover both default and
+`release-locked-runtime`; compare collected identities/results separately.
+
+See [native Rust navigation](agentic-refactoring.md#native-rust-navigation)
+for the complete file mapping and the test-layout ExecPlan for exact evidence.
+
 ## Deterministic foundation checks
 
 The Chatterbox security refresh adds explicit successor authority checks:
@@ -34,8 +71,9 @@ Qwen inference. New generated outputs are
 Native regressions cover each retained v2 root independently, both together,
 available/withheld states, non-migration, cancellation, exact removal, unrelated
 root preservation and busy guards. Unix-only symlink branches do not run on
-Windows, and the existing Ubuntu portable job does not run Rust. This local
-record therefore does not claim execution of those branches.
+Windows, and the Ubuntu portable job does not run Rust. That historical local
+security-refresh record did not claim execution of those branches; the later
+Linux Rust comparison below supplies their execution evidence.
 
 The same follow-up reproduced a native-completion/cancellation interleaving in
 the real process client with a simulated invoke boundary. Focused client tests
@@ -51,11 +89,35 @@ Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python 
 
 GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
 
-Both foundation jobs check out complete Git history. Frozen TTS result validators
+The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
+with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
+existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
+prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
+`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
+`pnpm test:rust` in distinct steps. Lint and tests cover both default and
+`release-locked-runtime`. This new job has not been executed remotely.
+
+The independently accepted
+[Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
+ran locally through normal PowerShell and WSL Ubuntu 24.04.3 with Rust 1.97.1,
+Node 24.18.0, and pnpm 11.15.1. Both repaired HEAD and refactor snapshots pass
+formatting, Clippy, and 85 default/86 release-locked tests; both retained Unix
+symlink tests execute successfully in each configuration and comparison arm.
+Windows separately passes 87 default/88 release-locked tests and
+`pnpm.cmd test:native-startup`. This is Rust execution evidence; Linux desktop,
+packaged WebView, and model support remain outside its scope.
+
+The compatibility patch derives `icons/icon.png` byte-for-byte from existing
+ICO entry 5 (zero-based, offset 4554, length 4292): the same 256-pixel RGBA
+artwork. Its precise parameter/variant adjustments preserve tests, public APIs,
+runtime topology, and warning policy. The original failed comparison remains
+historical evidence.
+
+All three foundation jobs check out complete Git history. Frozen TTS result validators
 use strict Git ancestry to prove that an execution commit follows its authority
 checkpoint, so a depth-one checkout cannot supply the required evidence.
 
-Both jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to explicit tool/dependency acquisition and the signed WebView2/EdgeDriver setup; test execution itself uses no external service.
+All three jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to explicit tool/dependency acquisition and the signed WebView2/EdgeDriver setup; test execution itself uses no external service.
 
 ### Implemented deterministic tests
 

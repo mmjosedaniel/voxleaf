@@ -1,0 +1,20 @@
+{
+  "task": "LINUX-RUST-REPAIR-01-platform-expects",
+  "path": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+  "before_sha256": "dea38d7bcd326cecd10061fff371c95513bebca4e518c3cd438c476997589551",
+  "after_sha256": "9e4fe772172cf3e82a1e8761d8e4e48ddf198252467693747f2ee74bd2260794",
+  "added_line_count": 20,
+  "exact_enum_edit_count": 2,
+  "expected_attribute_count": 5,
+  "reversal_check": "PASS",
+  "source_snapshot": "tmp/linux-rust-repair/detector-before.rs",
+  "edit_map": "tmp/linux-rust-repair/platform-expect-edits.json",
+  "preserved_paths": {
+    "apps/desktop/src-tauri/src/host_profile_detection/windows_probe.rs": "6c8edee5637c864caa31a54ef813845d26e080e6387907ff4df72b136eb8d60e",
+    "apps/desktop/src-tauri/icons/icon.png": "008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8",
+    "apps/desktop/src-tauri/src/tts_service_supervisor.rs": "d8f5554c725758d300e58b153b0da417f62e5d1de21efe89b44a774958fd8937",
+    "apps/desktop/src-tauri/src/host_profile_detection/tests.rs": "9b7c555b379fd00699ae93ed218395b16797022b73a1a850f85139422fa3318f"
+  },
+  "tests_run": false,
+  "git_mutations": false
+}

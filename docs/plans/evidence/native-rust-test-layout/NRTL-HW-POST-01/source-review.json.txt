@@ -1,0 +1,12 @@
+{
+  "parentExact": true,
+  "testsWithOnlyScanExtensionExact": true,
+  "windowsTokensEqual": true,
+  "windowsTokenCount": 2779,
+  "forbiddenDefinitionsExact": true,
+  "forbiddenCount": 17,
+  "scanViolations": [],
+  "otherSourceChanges": [],
+  "testsLines": 590,
+  "windowsLines": 405
+}

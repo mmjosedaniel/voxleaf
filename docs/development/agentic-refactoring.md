@@ -301,6 +301,38 @@ frozen probe, runtime-callable synthetic child, hardware detector/authority,
 handoff diagnostic and shared SHA helper at their existing paths. Audit decisions
 and exact validation are in the [completed native Rust plan](../plans/completed/native-rust-module-organization.md).
 
+### Private native test children
+
+The test-layout campaign retains production ownership and logical module paths.
+These private children are declared with `#[cfg(test)] mod tests;`
+under `apps/desktop/src-tauri/src/`:
+
+| Production owner | Unit-test child |
+| --- | --- |
+| `sha256_hex.rs` | `sha256_hex/tests.rs` |
+| `tts_service_protocol.rs` | `tts_service_protocol/tests.rs` |
+| `tts_release_core.rs` | `tts_release_core/tests.rs` |
+| `tts_service_fake_child.rs` | `tts_service_fake_child/tests.rs` |
+| `tts_service_handoff.rs` | `tts_service_handoff/tests.rs` |
+| `tts_optional_chatterbox.rs` | `tts_optional_chatterbox/tests.rs` |
+| `tts_service_supervisor.rs` | `tts_service_supervisor/tests.rs` |
+| `tts_protocol_contract.rs` | `tts_protocol_contract/tests.rs` |
+| `tts_protocol_probe.rs` | `tts_protocol_probe/tests.rs` |
+| `host_profile_detection.rs` | `host_profile_detection/tests.rs` |
+
+`host_profile_detection/windows_probe.rs` contains the existing private
+Windows implementation; report types, normalization, admission and the Tauri
+command remain in the parent. The hardware source-privacy test covers all
+three resulting files. The frozen probe authority remains in its parent;
+`hardware_profile_authority.rs` remains the separate test-only authority.
+The synthetic child, handoff, independent probe and supervisor diagnostics
+remain available in non-test builds. No public API or runtime owner was added.
+
+The [test-layout ExecPlan](../plans/completed/native-rust-test-layout.md) records
+each unit's fresh baseline, immutable order, source identities and independent
+acceptance. See [testing guidance](testing.md#native-rust-unit-test-layout)
+for fixture, namespace, platform and frozen-authority constraints.
+
 ## First use
 
 Use the first task only to inventory and plan one package. A sensible starting

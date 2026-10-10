@@ -1,0 +1,214 @@
+$ cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml && cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime
+   Compiling voxleaf-desktop v0.1.0 (/var/tmp/voxleaf-linux-rust-comparison-20261010/repair-01/current/apps/desktop/src-tauri)
+warning: variant `Malformed` is never constructed
+   --> src/host_profile_detection.rs:142:5
+    |
+137 | enum ProbeValue<T> {
+    |      ---------- variant in this enum
+...
+142 |     Malformed,
+    |     ^^^^^^^^^
+    |
+    = note: `ProbeValue` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `voxleaf-desktop` (bin "voxleaf-desktop" test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.61s
+     Running unittests src/main.rs (/var/tmp/voxleaf-linux-rust-comparison-20261010/target/debug/deps/voxleaf_desktop-66e88e14a8d5a9d7)
+
+running 85 tests
+test hardware_profile_authority::tests::freezes_native_probe_surfaces_without_shell_or_remote_fallback ... ok
+test host_profile_detection::tests::distinguishes_partial_permission_denied_and_malformed_observations ... ok
+test host_profile_detection::tests::discarded_unusable_adapter_does_not_poison_a_known_provider ... ok
+test hardware_profile_authority::tests::canonical_schema_freezes_exact_units_maxima_and_provider_set ... ok
+test hardware_profile_authority::tests::current_tauri_boundary_has_no_plugin_or_renderer_capability ... ok
+test host_profile_detection::tests::fails_closed_for_unknown_provider_and_ambiguous_exact_tie ... ok
+test hardware_profile_authority::tests::committed_reports_are_content_free_and_identity_free ... ok
+test host_profile_detection::tests::admits_only_one_concurrent_probe_and_releases_the_guard ... ok
+test host_profile_detection::tests::optional_download_gate_accepts_every_exact_numeric_threshold ... ok
+test host_profile_detection::tests::optional_download_gate_fails_closed_for_each_unknown_capacity ... ok
+test host_profile_detection::tests::optional_download_gate_rejects_one_below_every_numeric_threshold ... ok
+test host_profile_detection::tests::normalizes_complete_snapshot_without_identity_or_support_claims ... ok
+test host_profile_detection::tests::optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts ... ok
+test host_profile_detection::tests::preserves_integrated_only_low_memory_and_no_provider_scenarios ... ok
+test host_profile_detection::tests::selected_provider_with_unknown_memory_remains_partial ... ok
+test host_profile_detection::tests::selects_one_conservative_multi_adapter_candidate ... ok
+test host_profile_detection::tests::unsupported_platform_is_explicitly_unavailable ... ok
+test sha256_hex::tests::preserves_known_sha256_values_and_leading_zeroes ... ok
+test tts_optional_chatterbox::tests::downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts ... ok
+test tts_optional_chatterbox::tests::free_space_gate_is_inclusive_and_result_blind ... ok
+test tts_optional_chatterbox::tests::redirect_policy_rejects_source_substitution_and_non_https_targets ... ok
+test tts_optional_chatterbox::tests::checked_in_authority_enables_the_measured_ordinary_package ... ok
+test tts_optional_chatterbox::tests::manifest_rejects_mutable_model_revision_and_unexpected_files ... ok
+test tts_optional_chatterbox::tests::extraction_observes_cancellation_before_any_payload_is_installed ... ok
+test tts_optional_chatterbox::tests::extraction_rejects_symbolic_link_entries_without_creating_the_target ... ok
+test host_profile_detection::tests::implementation_has_no_process_network_model_or_persistence_surface ... ok
+test tts_optional_chatterbox::tests::successor_authority_has_exact_new_identity_and_no_legacy_correction ... ok
+test tts_optional_chatterbox::tests::downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation ... ok
+test tts_optional_chatterbox::tests::extraction_rejects_corrupt_entry_bytes_and_truncated_archives ... ok
+test tts_optional_chatterbox::tests::transient_numba_cache_path_must_be_a_contained_directory ... ok
+test tts_protocol_contract::tests::rust_boundary_rejects_nested_narration_and_audio_drift ... ok
+test tts_optional_chatterbox::tests::runtime_discovery_rejects_mutated_stale_and_traversal_payloads ... ok
+test tts_optional_chatterbox::tests::installed_runtime_removes_only_unmanifested_python_cache_bytecode ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_keeps_frozen_maximum_arithmetic ... ok
+test tts_optional_chatterbox::tests::extraction_accepts_stored_and_deflated_files_only_within_the_total_limit ... ok
+test tts_optional_chatterbox::tests::installed_v3_runtime_verifies_after_transient_numba_cache_cleanup ... ok
+test tts_optional_chatterbox::tests::transient_numba_cache_rejects_a_symlink_outside_the_package ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_rejects_shared_invalid_controls ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_matches_every_closed_control_kind ... ok
+test tts_optional_chatterbox::tests::concurrent_installed_runtime_checks_are_serialized ... ok
+test tts_protocol_probe::tests::exposes_only_fixed_content_free_failure_codes ... ok
+test tts_protocol_probe::tests::rejects_a_second_active_probe_without_queueing ... ok
+test tts_protocol_probe::tests::rejects_below_minimum_payload_lengths_before_allocation ... ok
+test tts_protocol_probe::tests::freezes_exact_and_maximum_plus_one_authority_dimensions ... ok
+test tts_optional_chatterbox::tests::valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots ... ok
+test tts_optional_chatterbox::tests::native_host_gate_rejects_before_confirmation_staging_or_network_work ... ok
+test tts_optional_chatterbox::tests::ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent ... ok
+test tts_protocol_probe::tests::rejects_partial_unknown_or_mutated_headers ... ok
+test tts_protocol_probe::tests::accepts_only_the_active_complete_identity_and_finite_audio ... ok
+test tts_optional_chatterbox::tests::installed_runtime_verifies_after_safe_python_bytecode_cleanup ... ok
+test tts_optional_chatterbox::tests::verified_runtime_receipt_rechecks_tree_and_authority_changes ... ok
+test tts_protocol_probe::tests::rejects_truncated_payloads_without_partial_publication ... ok
+test tts_optional_chatterbox::tests::installed_package_root_rejects_a_symlink_outside_the_managed_root ... ok
+test tts_optional_chatterbox::tests::ordinary_selection_requires_confirmation_without_creating_staging ... ok
+test tts_protocol_probe::tests::rejects_maximum_plus_one_before_reading_a_payload ... ok
+test tts_protocol_probe::tests::accepts_exact_control_and_audio_payload_limits ... ok
+test tts_optional_chatterbox::tests::removal_rejects_an_active_download_without_touching_staging ... ok
+test tts_optional_chatterbox::tests::promotion_replaces_only_the_versioned_package_after_complete_verification ... ok
+test tts_release_core::tests::io_errors_remain_content_free ... ok
+test tts_optional_chatterbox::tests::runtime_reassembly_is_ordered_bounded_and_cancellable ... ok
+test tts_service_supervisor::tests::exact_runtime_never_writes_bytecode_into_verified_packages ... ok
+test tts_release_core::tests::rejects_unsafe_manifest_paths ... ok
+test tts_service_supervisor::tests::exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state ... ok
+test tts_service_supervisor::tests::profile_configuration_rejects_unknown_profile_identity ... ok
+test tts_service_supervisor::tests::profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup ... ok
+test tts_service_supervisor::tests::rejects_text_and_identity_bounds_before_dispatch ... ok
+test tts_service_supervisor::tests::validates_segment_and_generates_native_owned_request_identity ... ok
+test tts_service_handoff::tests::bounded_consumer_rejects_a_second_unit_and_zeroes_release ... ok
+test tts_service_handoff::tests::content_safe_case_serialization_contains_no_segment_or_text_field ... ok
+test tts_service_handoff::tests::frozen_profile_builds_bounded_content_only_inside_the_native_request ... ok
+test tts_service_protocol::tests::rejects_declared_over_limit_before_reading_payload ... ok
+test tts_service_protocol::tests::frame_round_trip_keeps_kind_and_payload ... ok
+test tts_service_protocol::tests::strict_control_decoder_rejects_duplicate_keys ... ok
+test tts_service_supervisor::tests::exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package ... ok
+test tts_service_supervisor::tests::fixed_failure_surface_contains_no_dynamic_input ... ok
+test tts_optional_chatterbox::tests::safe_extraction_rejects_archive_entries_outside_the_exact_package_root ... ok
+test tts_service_protocol::tests::validates_exact_audio_and_rejects_non_finite_values ... ok
+test tts_release_core::tests::accepts_only_the_exact_manifest_and_payload ... ok
+test tts_release_core::tests::rejects_changed_installed_manifest_and_unknown_profile ... ok
+test tts_release_core::tests::tracked_manifest_matches_core_lock_and_native_authority ... ok
+test tts_optional_chatterbox::tests::retained_v2_is_cleanup_only_and_survives_observation_and_cancellation ... ok
+test tts_release_core::tests::rejects_truncated_substituted_and_stale_payloads ... ok
+test tts_optional_chatterbox::tests::hashes_optional_payloads_without_a_large_stack_allocation ... ok
+test tts_release_core::tests::hashes_the_packaged_payload_without_a_large_stack_allocation ... ok
+test tts_service_fake_child::tests::normal_child_emits_canonical_ordered_complete_unit ... ok
+
+test result: ok. 85 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+   Compiling voxleaf-desktop v0.1.0 (/var/tmp/voxleaf-linux-rust-comparison-20261010/repair-01/current/apps/desktop/src-tauri)
+warning: variant `Malformed` is never constructed
+   --> src/host_profile_detection.rs:142:5
+    |
+137 | enum ProbeValue<T> {
+    |      ---------- variant in this enum
+...
+142 |     Malformed,
+    |     ^^^^^^^^^
+    |
+    = note: `ProbeValue` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `voxleaf-desktop` (bin "voxleaf-desktop" test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.78s
+     Running unittests src/main.rs (/var/tmp/voxleaf-linux-rust-comparison-20261010/target/debug/deps/voxleaf_desktop-660d5573191e3f64)
+
+running 86 tests
+test host_profile_detection::tests::admits_only_one_concurrent_probe_and_releases_the_guard ... ok
+test host_profile_detection::tests::distinguishes_partial_permission_denied_and_malformed_observations ... ok
+test host_profile_detection::tests::discarded_unusable_adapter_does_not_poison_a_known_provider ... ok
+test hardware_profile_authority::tests::current_tauri_boundary_has_no_plugin_or_renderer_capability ... ok
+test hardware_profile_authority::tests::committed_reports_are_content_free_and_identity_free ... ok
+test host_profile_detection::tests::fails_closed_for_unknown_provider_and_ambiguous_exact_tie ... ok
+test hardware_profile_authority::tests::canonical_schema_freezes_exact_units_maxima_and_provider_set ... ok
+test hardware_profile_authority::tests::freezes_native_probe_surfaces_without_shell_or_remote_fallback ... ok
+test host_profile_detection::tests::optional_download_gate_accepts_every_exact_numeric_threshold ... ok
+test host_profile_detection::tests::optional_download_gate_fails_closed_for_each_unknown_capacity ... ok
+test host_profile_detection::tests::normalizes_complete_snapshot_without_identity_or_support_claims ... ok
+test host_profile_detection::tests::optional_download_gate_rejects_one_below_every_numeric_threshold ... ok
+test host_profile_detection::tests::optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts ... ok
+test host_profile_detection::tests::preserves_integrated_only_low_memory_and_no_provider_scenarios ... ok
+test host_profile_detection::tests::selects_one_conservative_multi_adapter_candidate ... ok
+test host_profile_detection::tests::selected_provider_with_unknown_memory_remains_partial ... ok
+test host_profile_detection::tests::unsupported_platform_is_explicitly_unavailable ... ok
+test sha256_hex::tests::preserves_known_sha256_values_and_leading_zeroes ... ok
+test tts_optional_chatterbox::tests::downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts ... ok
+test tts_optional_chatterbox::tests::free_space_gate_is_inclusive_and_result_blind ... ok
+test tts_optional_chatterbox::tests::redirect_policy_rejects_source_substitution_and_non_https_targets ... ok
+test tts_optional_chatterbox::tests::checked_in_authority_enables_the_measured_ordinary_package ... ok
+test tts_optional_chatterbox::tests::manifest_rejects_mutable_model_revision_and_unexpected_files ... ok
+test tts_optional_chatterbox::tests::ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent ... ok
+test host_profile_detection::tests::implementation_has_no_process_network_model_or_persistence_surface ... ok
+test tts_optional_chatterbox::tests::installed_runtime_removes_only_unmanifested_python_cache_bytecode ... ok
+test tts_optional_chatterbox::tests::successor_authority_has_exact_new_identity_and_no_legacy_correction ... ok
+test tts_optional_chatterbox::tests::extraction_observes_cancellation_before_any_payload_is_installed ... ok
+test tts_optional_chatterbox::tests::downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation ... ok
+test tts_optional_chatterbox::tests::promotion_replaces_only_the_versioned_package_after_complete_verification ... ok
+test tts_optional_chatterbox::tests::extraction_rejects_corrupt_entry_bytes_and_truncated_archives ... ok
+test tts_optional_chatterbox::tests::ordinary_selection_requires_confirmation_without_creating_staging ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_keeps_frozen_maximum_arithmetic ... ok
+test tts_protocol_contract::tests::rust_boundary_rejects_nested_narration_and_audio_drift ... ok
+test tts_optional_chatterbox::tests::native_host_gate_rejects_before_confirmation_staging_or_network_work ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_rejects_shared_invalid_controls ... ok
+test tts_protocol_contract::tests::rust_fixture_surface_matches_every_closed_control_kind ... ok
+test tts_optional_chatterbox::tests::installed_runtime_verifies_after_safe_python_bytecode_cleanup ... ok
+test tts_protocol_probe::tests::accepts_only_the_active_complete_identity_and_finite_audio ... ok
+test tts_optional_chatterbox::tests::runtime_reassembly_is_ordered_bounded_and_cancellable ... ok
+test tts_optional_chatterbox::tests::installed_package_root_rejects_a_symlink_outside_the_managed_root ... ok
+test tts_optional_chatterbox::tests::valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots ... ok
+test tts_protocol_probe::tests::freezes_exact_and_maximum_plus_one_authority_dimensions ... ok
+test tts_optional_chatterbox::tests::installed_v3_runtime_verifies_after_transient_numba_cache_cleanup ... ok
+test tts_protocol_probe::tests::rejects_below_minimum_payload_lengths_before_allocation ... ok
+test tts_protocol_probe::tests::exposes_only_fixed_content_free_failure_codes ... ok
+test tts_optional_chatterbox::tests::transient_numba_cache_rejects_a_symlink_outside_the_package ... ok
+test tts_optional_chatterbox::tests::removal_rejects_an_active_download_without_touching_staging ... ok
+test tts_protocol_probe::tests::rejects_a_second_active_probe_without_queueing ... ok
+test tts_protocol_probe::tests::rejects_maximum_plus_one_before_reading_a_payload ... ok
+test tts_optional_chatterbox::tests::runtime_discovery_rejects_mutated_stale_and_traversal_payloads ... ok
+test tts_optional_chatterbox::tests::transient_numba_cache_path_must_be_a_contained_directory ... ok
+test tts_protocol_probe::tests::rejects_partial_unknown_or_mutated_headers ... ok
+test tts_protocol_probe::tests::accepts_exact_control_and_audio_payload_limits ... ok
+test tts_protocol_probe::tests::rejects_truncated_payloads_without_partial_publication ... ok
+test tts_release_core::tests::io_errors_remain_content_free ... ok
+test tts_release_core::tests::rejects_unsafe_manifest_paths ... ok
+test tts_optional_chatterbox::tests::extraction_rejects_symbolic_link_entries_without_creating_the_target ... ok
+test tts_service_protocol::tests::frame_round_trip_keeps_kind_and_payload ... ok
+test tts_service_protocol::tests::rejects_declared_over_limit_before_reading_payload ... ok
+test tts_service_protocol::tests::strict_control_decoder_rejects_duplicate_keys ... ok
+test tts_service_handoff::tests::bounded_consumer_rejects_a_second_unit_and_zeroes_release ... ok
+test tts_service_protocol::tests::validates_exact_audio_and_rejects_non_finite_values ... ok
+test tts_optional_chatterbox::tests::verified_runtime_receipt_rechecks_tree_and_authority_changes ... ok
+test tts_service_handoff::tests::content_safe_case_serialization_contains_no_segment_or_text_field ... ok
+test tts_optional_chatterbox::tests::concurrent_installed_runtime_checks_are_serialized ... ok
+test tts_service_supervisor::tests::exact_runtime_never_writes_bytecode_into_verified_packages ... ok
+test tts_service_supervisor::tests::exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package ... ok
+test tts_optional_chatterbox::tests::safe_extraction_rejects_archive_entries_outside_the_exact_package_root ... ok
+test tts_service_supervisor::tests::release_locked_runtime_rejects_development_only_profiles_and_defaults ... ok
+test tts_service_supervisor::tests::profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup ... ok
+test tts_service_supervisor::tests::rejects_text_and_identity_bounds_before_dispatch ... ok
+test tts_service_supervisor::tests::profile_configuration_rejects_unknown_profile_identity ... ok
+test tts_service_supervisor::tests::fixed_failure_surface_contains_no_dynamic_input ... ok
+test tts_service_supervisor::tests::exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state ... ok
+test tts_release_core::tests::accepts_only_the_exact_manifest_and_payload ... ok
+test tts_service_supervisor::tests::validates_segment_and_generates_native_owned_request_identity ... ok
+test tts_service_handoff::tests::frozen_profile_builds_bounded_content_only_inside_the_native_request ... ok
+test tts_release_core::tests::tracked_manifest_matches_core_lock_and_native_authority ... ok
+test tts_release_core::tests::rejects_changed_installed_manifest_and_unknown_profile ... ok
+test tts_optional_chatterbox::tests::extraction_accepts_stored_and_deflated_files_only_within_the_total_limit ... ok
+test tts_optional_chatterbox::tests::retained_v2_is_cleanup_only_and_survives_observation_and_cancellation ... ok
+test tts_release_core::tests::rejects_truncated_substituted_and_stale_payloads ... ok
+test tts_optional_chatterbox::tests::hashes_optional_payloads_without_a_large_stack_allocation ... ok
+test tts_release_core::tests::hashes_the_packaged_payload_without_a_large_stack_allocation ... ok
+test tts_service_fake_child::tests::normal_child_emits_canonical_ordered_complete_unit ... ok
+
+test result: ok. 86 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+

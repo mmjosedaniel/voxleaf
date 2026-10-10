@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=/var/tmp/voxleaf-linux-rust-comparison-20261010
+mkdir -p "$root/tools/downloads" "$root/evidence"
+export CARGO_HOME="$root/tools/cargo"
+export RUSTUP_HOME="$root/tools/rustup"
+cd "$root/tools/downloads"
+curl --proto '=https' --tlsv1.2 --fail --location --retry 2 -o rustup-init https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
+curl --proto '=https' --tlsv1.2 --fail --location --retry 2 -o rustup-init.sha256 https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init.sha256
+sha256sum --check rustup-init.sha256
+chmod +x rustup-init
+./rustup-init -y --no-modify-path --profile minimal --default-toolchain 1.97.1 --component rustfmt,clippy
+curl --proto '=https' --tlsv1.2 --fail --location --retry 2 -o node.tar.xz https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.xz
+curl --proto '=https' --tlsv1.2 --fail --location --retry 2 -o SHASUMS256.txt https://nodejs.org/dist/v24.18.0/SHASUMS256.txt
+node_hash=$(awk '$2 == "node-v24.18.0-linux-x64.tar.xz" {print $1}' SHASUMS256.txt)
+test -n "$node_hash"
+printf '%s  node.tar.xz\n' "$node_hash" | sha256sum --check
+tar -xf node.tar.xz -C "$root/tools"
+export PATH="$root/tools/node-v24.18.0-linux-x64/bin:$CARGO_HOME/bin:/usr/local/bin:/usr/bin:/bin"
+npm install --global --prefix "$root/tools/pnpm" --ignore-scripts pnpm@11.15.1
+export PATH="$root/tools/pnpm/bin:$PATH"
+rustc --version
+cargo --version
+node --version
+pnpm --version

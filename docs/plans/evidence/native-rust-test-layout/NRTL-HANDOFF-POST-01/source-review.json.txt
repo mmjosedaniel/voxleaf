@@ -1,0 +1,10 @@
+{
+  "productionPrefixAndPrivateDeclarationExact": true,
+  "dedentedBodyWithOnlyIncludeDepthCorrectionExact": true,
+  "childLines": 42,
+  "aggregateDiffLines": 87,
+  "withinCeiling": true,
+  "fixtures": [],
+  "otherSourceChanges": [],
+  "unexpectedNewSource": []
+}

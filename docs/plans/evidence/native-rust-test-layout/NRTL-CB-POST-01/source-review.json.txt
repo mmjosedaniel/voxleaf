@@ -1,0 +1,23 @@
+{
+  "productionPrefixAndPrivateDeclarationExact": true,
+  "dedentedBodyWithOnlyIncludeDepthCorrectionExact": false,
+  "childLines": 986,
+  "aggregateDiffLines": 1976,
+  "withinCeiling": true,
+  "fixtures": [
+    {
+      "literal": "../../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "resolved": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+      "matchesOriginal": true
+    },
+    {
+      "literal": "../../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "resolved": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+      "matchesOriginal": true
+    }
+  ],
+  "otherSourceChanges": [],
+  "unexpectedNewSource": []
+}

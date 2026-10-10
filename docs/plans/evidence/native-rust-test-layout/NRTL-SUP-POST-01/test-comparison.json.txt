@@ -1,0 +1,12 @@
+[
+  {
+    "configuration": "default",
+    "differences": [],
+    "duplicates": 0
+  },
+  {
+    "configuration": "release-locked-runtime",
+    "differences": [],
+    "duplicates": 0
+  }
+]

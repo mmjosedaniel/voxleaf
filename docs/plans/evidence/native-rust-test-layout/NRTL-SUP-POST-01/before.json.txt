@@ -1,0 +1,306 @@
+{
+  "head": "f06c80e04da2025342b1002a548f03ca17e7cc0b",
+  "branch": "codex/native-rust-test-layout",
+  "indexEmpty": true,
+  "allStatus": [
+    " M apps/desktop/src-tauri/src/sha256_hex.rs",
+    " M apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+    " M apps/desktop/src-tauri/src/tts_release_core.rs",
+    " M apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+    " M apps/desktop/src-tauri/src/tts_service_handoff.rs",
+    " M apps/desktop/src-tauri/src/tts_service_protocol.rs",
+    " M apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+    " M docs/plans/active/native-rust-test-layout.md",
+    "?? apps/desktop/src-tauri/src/sha256_hex/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_release_core/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_service_fake_child/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_service_handoff/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_service_protocol/tests.rs",
+    "?? apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/fixture-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/reflow-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CB-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CONTRACT-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-CORE-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FAKE-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-FRAMING-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HANDOFF-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/source-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-POST-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HASH-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-HW-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-PROBE-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/after.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/before.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/fixture-review.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/report.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/results.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/test-comparison.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-BASELINE-01/test-identities.json.txt",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-audit-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/NRTL-SUP-order-01.md",
+    "?? docs/plans/evidence/native-rust-test-layout/initial-inventory.json.txt"
+  ],
+  "paths": [
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_service_supervisor.rs"
+      ],
+      "sha256": "c153948b3681d2f5538053c62e247c221ecbe8d3950b0132924f6ce51d53c5dd",
+      "blob": "aed2d4cc6544428b5e76d80e7465d5549fc6a2d6"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs"
+      ],
+      "sha256": "853e06deec2013d72696f893d15aba86f2baeedb08236130b85e2c5e0d62754b",
+      "blob": "1099ae86295ff062b4574c5845701dcd1d6e1ad4"
+    }
+  ],
+  "nativePaths": [
+    {
+      "path": "apps/desktop/src-tauri/src/diagnostics/cli.rs",
+      "status": [],
+      "sha256": "38281c0ffec327ff94b0bac8b03d4996dcc53c8db87dc105b2cf75a1ac572a4a",
+      "blob": "b12c4ebe1f05e8b8d743b37d53447e75e29c1426"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/diagnostics/mod.rs",
+      "status": [],
+      "sha256": "ec71a68d0320ab467b16b2955ee63b621a2d1bcb7d40b53303cf9439b02fae52",
+      "blob": "42e8dd69f38410ba80a99da5b42acfe9a9439e2e"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "status": [],
+      "sha256": "9bab30b92ca1ffa7be9acd59ad55328846d4a2da40480f91a234fcfce8b4b069",
+      "blob": "14b798efe3bb36e6b1d16d96a19f4468150413b7"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "status": [],
+      "sha256": "ae456cd4b1cbc4f2a606b533e4da23e580863119af376ea3d8ed263586f3e3c3",
+      "blob": "64d383f801e5ffeba6fb426786efc7f22a8f86d4"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/main.rs",
+      "status": [],
+      "sha256": "0005ae37462873acd98477c22d525920c52b9f7d4f9013734c665d6566596682",
+      "blob": "8a055c4ff4454f186210903b1493bff35b7ce19a"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/sha256_hex.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/sha256_hex.rs"
+      ],
+      "sha256": "6d78277864124209819a3038c675238652e1ebe8a4497ee09b02c18849d1b060",
+      "blob": "6d5493ebf6414cfd9c11fb8cd908915f1a08feee"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/sha256_hex/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/sha256_hex/tests.rs"
+      ],
+      "sha256": "ebb0c5f415220af07b2144e092b2482f2c770149ce101242a690b80265e148f0",
+      "blob": "38da5d9f870d3999a1109c1899a70f112d40000b"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_optional_chatterbox.rs"
+      ],
+      "sha256": "e525734297ce7cf8b437e5fc50b75a9f6d680ca6fc56707ee36acae5caf45ecf",
+      "blob": "8cc8be9ddcdd7b676b0743b3cbb6b8ecc2d74513"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs"
+      ],
+      "sha256": "e0c1dad918fe95b11ed38d8739a16650ee27fefe3c7beaa6d0212b9e2059d8df",
+      "blob": "2cf45dc8c74b27a4a68b12dd2c0cc904045df7b2"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "status": [],
+      "sha256": "116e2b08b796c548eaaa237c57a1fec42d284bdc5839c7a84c764321c3a73290",
+      "blob": "3b446af96742db8ad02bebdf664a244c4c52d4ee"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "status": [],
+      "sha256": "8c0d1446ded02795e3dd3b788adf18f61e721070ed81e1c7142c3634dc1ec3da",
+      "blob": "68282b4388d07db800185068ac3a5ee7c06f50da"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_release_core.rs"
+      ],
+      "sha256": "d7d7a341729c67343c316a7d36f78ba0dc7fba522af9031e3a89b118b685e1ad",
+      "blob": "f9ef9cfea3ec7afe3c4a999da5d5a0e42a990756"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_release_core/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_release_core/tests.rs"
+      ],
+      "sha256": "b4d7f0f79cb08c81b0127bba034946048cf3a1164135e47e36a7b3ecaa62318a",
+      "blob": "9d6485ee26632f7e91b04640748089b04b9509f0"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_service_fake_child.rs"
+      ],
+      "sha256": "59656ca25b6a061f0722eb01ed956028d80b8ff4f2aa3ea3ea05f51394a65448",
+      "blob": "223971a920f818f3b84390ce2a3cf39cd520863f"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_fake_child/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_service_fake_child/tests.rs"
+      ],
+      "sha256": "0819bbfb4eb4aa6092ad75556eec77270af84650f8dfffc15a40f7a9f67d0c03",
+      "blob": "7b757f57abfccffec3d0631ad4da90accd81343c"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_service_handoff.rs"
+      ],
+      "sha256": "e76299179970234f314d2329149c75e251c3d24750f11aabaad27e1b12a8dbc7",
+      "blob": "b1f113330b9e10e829aa1af71c610d61e47415e5"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_handoff/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_service_handoff/tests.rs"
+      ],
+      "sha256": "0fd5e6ebdd3b5ed2b84272ff844db119d9c9d420a872ee2d6bb030ab81a279a6",
+      "blob": "41f743fb886449e3488062b330e26d9d5f38e0fd"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_service_protocol.rs"
+      ],
+      "sha256": "a8895ec9f5c569569c5cc37de451d37304822731e565c94a1665d080ce426617",
+      "blob": "d3fac47c4985d6cc6ac0e5663fc971d506a2cc49"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_protocol/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_service_protocol/tests.rs"
+      ],
+      "sha256": "245872478d849a4084e4005a75f60203df8b18b3cca23c06148d0f733ec046c1",
+      "blob": "52c719dc1dae467c8dd68398ecb2154946079d42"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "status": [
+        " M apps/desktop/src-tauri/src/tts_service_supervisor.rs"
+      ],
+      "sha256": "c153948b3681d2f5538053c62e247c221ecbe8d3950b0132924f6ce51d53c5dd",
+      "blob": "aed2d4cc6544428b5e76d80e7465d5549fc6a2d6"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor/host_diagnostics.rs",
+      "status": [],
+      "sha256": "3ecfd77675db84bd9a1f98738a43bb095a9a54ad1dbd22ef928fbc12d2edea5d",
+      "blob": "86f0a71a3f392eb0874798cd17f0f2ca94f84fac"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs",
+      "status": [
+        "?? apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs"
+      ],
+      "sha256": "853e06deec2013d72696f893d15aba86f2baeedb08236130b85e2c5e0d62754b",
+      "blob": "1099ae86295ff062b4574c5845701dcd1d6e1ad4"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 10h ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +253
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 253, reused 253, downloaded 0, added 253, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @types/node 26.6.4
++ eslint 10.12.0
++ eslint-plugin-react-hooks 7.1.1
++ eslint-plugin-react-refresh 0.5.7
++ globals 17.13.0
++ json-schema-to-typescript 16.0.0
++ prettier 3.9.9
++ typescript 6.0.3
++ typescript-eslint 8.71.0
++ vitest 5.0.3
+
+Done in 647ms using pnpm v11.15.1

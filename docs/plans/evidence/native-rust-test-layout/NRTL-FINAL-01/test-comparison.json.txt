@@ -1,0 +1,16 @@
+[
+  {
+    "configuration": "default",
+    "differences": [],
+    "duplicates": 0,
+    "hardwareTestCount": 15,
+    "liveWindows": "ok"
+  },
+  {
+    "configuration": "release-locked-runtime",
+    "differences": [],
+    "duplicates": 0,
+    "hardwareTestCount": 15,
+    "liveWindows": "ok"
+  }
+]

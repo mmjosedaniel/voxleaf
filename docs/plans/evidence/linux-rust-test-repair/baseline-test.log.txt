@@ -1,0 +1,21 @@
+$ cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml && cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime
+   Compiling voxleaf-desktop v0.1.0 (/var/tmp/voxleaf-linux-rust-comparison-20261010/complete-02/current/apps/desktop/src-tauri)
+error: proc macro panicked
+  --> src/main.rs:54:16
+   |
+54 | ...ld(tauri...xt!())
+   |       ^^^^^...^^^^^
+   |
+   = help: message: failed to open icon /var/tmp/voxleaf-linux-rust-comparison-20261010/complete-02/current/apps/desktop/src-tauri/icons/icon.png: No such file or directory (os error 2)
+
+warning: unused variable: `command`
+  --> src/tts_service_supervisor.rs:89:31
+   |
+89 | ...ld(command: &...
+   |       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_command`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `voxleaf-desktop` (bin "voxleaf-desktop" test) generated 1 warning
+error: could not compile `voxleaf-desktop` (bin "voxleaf-desktop" test) due to 1 previous error; 1 warning emitted
+[ELIFECYCLE] Command failed with exit code 101.

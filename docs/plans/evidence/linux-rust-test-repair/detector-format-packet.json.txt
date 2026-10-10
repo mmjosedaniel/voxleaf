@@ -1,0 +1,14 @@
+{
+  "task": "LINUX-RUST-REPAIR-01-detector-format",
+  "path": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+  "before_sha256": "9e4fe772172cf3e82a1e8761d8e4e48ddf198252467693747f2ee74bd2260794",
+  "after_sha256": "6ee4394b57942aa6b0234526b8042fb8ff629d0c6cc981ac0e723dd5b0f9a933",
+  "original_before_sha256": "dea38d7bcd326cecd10061fff371c95513bebca4e518c3cd438c476997589551",
+  "exact_expansion_count": 4,
+  "format_added_lines": 12,
+  "total_added_lines": 32,
+  "reversal_check": "PASS",
+  "refreshed_map": "tmp/linux-rust-repair/platform-expect-edits.json",
+  "tests_run": false,
+  "git_mutations": false
+}

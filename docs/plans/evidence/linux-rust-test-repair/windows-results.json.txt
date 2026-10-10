@@ -1,0 +1,22 @@
+[
+  {
+    "command": "pnpm.cmd format:check:rust",
+    "exit": 0,
+    "log": "C:\\Users\\mmjos\\Desktop\\workbeanch\\voxleaf\\tmp\\linux-rust-repair\\windows-format-check-rust.log"
+  },
+  {
+    "command": "pnpm.cmd lint:rust",
+    "exit": 0,
+    "log": "C:\\Users\\mmjos\\Desktop\\workbeanch\\voxleaf\\tmp\\linux-rust-repair\\windows-lint-rust.log"
+  },
+  {
+    "command": "pnpm.cmd test:rust",
+    "exit": 0,
+    "log": "C:\\Users\\mmjos\\Desktop\\workbeanch\\voxleaf\\tmp\\linux-rust-repair\\windows-test-rust.log"
+  },
+  {
+    "command": "pnpm.cmd test:native-startup",
+    "exit": 1,
+    "log": "C:\\Users\\mmjos\\Desktop\\workbeanch\\voxleaf\\tmp\\linux-rust-repair\\windows-test-native-startup.log"
+  }
+]

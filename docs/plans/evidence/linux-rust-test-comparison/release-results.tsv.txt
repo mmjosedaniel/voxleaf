@@ -1,0 +1,5 @@
+snapshot	command	exit
+baseline	release-clippy	101
+baseline	release-tests	101
+current	release-clippy	101
+current	release-tests	101

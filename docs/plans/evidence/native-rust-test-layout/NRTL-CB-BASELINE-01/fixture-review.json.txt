@@ -1,0 +1,27 @@
+[
+  {
+    "target": "services/tts/src/voxleaf_tts/generated/__init__.py",
+    "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
+    "unchanged": true
+  },
+  {
+    "target": "services/tts/src/voxleaf_tts/generated/protocol_schemas.py",
+    "sha256": "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650",
+    "unchanged": true
+  },
+  {
+    "target": "services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
+    "sha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12",
+    "unchanged": true
+  },
+  {
+    "target": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+    "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+    "unchanged": true
+  },
+  {
+    "target": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+    "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d",
+    "unchanged": true
+  }
+]

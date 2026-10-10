@@ -1,0 +1,7 @@
+snapshot	command	exit
+baseline	format:check:rust	0
+baseline	lint:rust	101
+baseline	test:rust	101
+current	format:check:rust	0
+current	lint:rust	101
+current	test:rust	101
