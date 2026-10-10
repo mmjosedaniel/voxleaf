@@ -17,7 +17,8 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-No active ExecPlans are currently listed.
+No current implementation ExecPlans. The completed native Rust organization
+campaign is archived in [completed plans](../completed/native-rust-module-organization.md).
 
 ## Historical reference
 
