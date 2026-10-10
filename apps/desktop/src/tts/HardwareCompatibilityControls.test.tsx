@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import {
@@ -490,10 +490,30 @@ describe("hardware compatibility controls", () => {
   });
 
   it("has explicit reduced-motion, forced-color, and focus treatment", () => {
-    const styles = readFileSync(
-      resolve(import.meta.dirname, "../styles.css"),
-      "utf8",
-    );
+    const entryPath = resolve(import.meta.dirname, "../styles.css");
+    const entry = readFileSync(entryPath, "utf8");
+    const importPaths = entry
+      .split(/\r?\n/u)
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0)
+      .map((statement) => {
+        const match = /^@import "(\.\/styles\/[a-z-]+\.css)";$/u.exec(
+          statement,
+        );
+        expect(match).not.toBeNull();
+        return match![1]!;
+      });
+    expect(importPaths).toEqual([
+      "./styles/shell-and-publication.css",
+      "./styles/reader.css",
+      "./styles/narration-and-publication-states.css",
+      "./styles/accessibility-and-responsive.css",
+      "./styles/reader-shell-and-settings.css",
+    ]);
+    expect(new Set(importPaths).size).toBe(5);
+    const styles = importPaths
+      .map((path) => readFileSync(resolve(dirname(entryPath), path), "utf8"))
+      .join("\n");
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(styles).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.hardware-compatibility/,

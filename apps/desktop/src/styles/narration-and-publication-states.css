@@ -1,0 +1,254 @@
+.empty-publication,
+.reader-failure {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #d7dfd7;
+  border-radius: 0.75rem;
+  background: #f4f7f2;
+}
+
+.empty-publication h2,
+.reader-failure h2 {
+  margin: 0;
+  color: #183d2a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+}
+
+.empty-publication p,
+.reader-failure p {
+  margin: 0.75rem 0 0;
+  color: #405047;
+  line-height: 1.5;
+}
+
+.product-narration {
+  flex: 0 0 auto;
+  border: 1px solid #b7c7b9;
+  border-radius: 0.75rem;
+  color: #263c30;
+  background: #f4f7f2;
+}
+
+.product-narration-compact {
+  display: flex;
+  min-width: 0;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+}
+
+.product-narration-summary {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+}
+
+.product-narration-summary h3,
+.product-narration-summary p {
+  margin: 0;
+}
+
+.product-narration-summary h3 {
+  color: #183d2a;
+  font-size: 1rem;
+}
+
+.product-narration-summary p {
+  color: #405047;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.product-narration-summary .product-narration-warning {
+  color: #694c00;
+  font-weight: 700;
+}
+
+.product-narration-summary .product-narration-error {
+  color: #8a2f24;
+  font-weight: 700;
+}
+
+.product-narration-compact-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.product-narration-compact-actions button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #52705e;
+  border-radius: 0.55rem;
+  color: #24563a;
+  background: #fdfefb;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-narration-compact-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.product-narration-compact-actions button:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.product-narration-detail {
+  max-height: min(24rem, 45vh);
+  border-top: 1px solid #b7c7b9;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.adaptive-preparation {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0;
+  padding: 1.25rem;
+  border: 0;
+  border-radius: 0;
+  color: #263c30;
+  background: #f4f7f2;
+}
+
+.adaptive-preparation h3,
+.adaptive-preparation p {
+  margin: 0;
+}
+
+.adaptive-preparation-mode {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #c4d0c5;
+  border-radius: 0.75rem;
+}
+
+.adaptive-preparation-mode > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.adaptive-preparation-mode label span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.adaptive-preparation-mode small {
+  color: #405047;
+  line-height: 1.4;
+}
+
+.adaptive-preparation-target {
+  display: grid !important;
+  gap: 0.4rem !important;
+  margin-top: 0.25rem;
+}
+
+.adaptive-preparation-target select,
+.adaptive-preparation-settings select {
+  max-width: 18rem;
+  padding: 0.55rem;
+  border: 1px solid #8da194;
+  border-radius: 0.5rem;
+  color: inherit;
+  background: #fdfefb;
+  font: inherit;
+}
+
+.adaptive-preparation > button,
+.adaptive-preparation-actions button {
+  justify-self: start;
+  padding: 0.7rem 1rem;
+  border: 1px solid #52705e;
+  border-radius: 0.65rem;
+  color: #f8fbf7;
+  background: #24563a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.adaptive-preparation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.adaptive-preparation button:focus-visible,
+.adaptive-preparation input:focus-visible,
+.adaptive-preparation select:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.adaptive-preparation-status {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border-left: 0.3rem solid #52705e;
+  background: #fdfefb;
+}
+
+.adaptive-preparation-loaded,
+.adaptive-preparation-settings,
+.adaptive-preparation-settings label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.adaptive-preparation-settings input[type="range"] {
+  width: min(100%, 32rem);
+}
+
+.adaptive-preparation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.product-narration-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.product-narration-navigation button {
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #52705e;
+  border-radius: 0.65rem;
+  color: #24563a;
+  background: #f4f7f2;
+  font: inherit;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.product-narration-navigation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.product-narration-navigation button:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.adaptive-preparation-settings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
