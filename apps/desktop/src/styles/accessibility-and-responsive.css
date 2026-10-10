@@ -1,0 +1,180 @@
+@media (prefers-color-scheme: dark) {
+  .semantic-reader[data-reader-theme="system"] {
+    --reader-surface: #14201a;
+    --reader-surface-muted: #1c2b23;
+    --reader-surface-code: #24352b;
+    --reader-text: #e4eee7;
+    --reader-text-muted: #bdccc2;
+    --reader-heading: #f4faf5;
+    --reader-link: #9ed7b3;
+    --reader-border: #496052;
+    --reader-focus: #79e0a1;
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hardware-compatibility,
+  .hardware-compatibility * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .semantic-reader,
+  .semantic-reader * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  ::highlight(voxleaf-narration-active) {
+    color: HighlightText;
+    background-color: Highlight;
+    text-decoration-color: HighlightText;
+  }
+
+  .semantic-reader,
+  .adaptive-preparation,
+  .adaptive-preparation-mode,
+  .adaptive-preparation-target select,
+  .adaptive-preparation-settings select,
+  .hardware-compatibility,
+  .product-narration,
+  .product-narration-compact-actions button,
+  .reader-preferences,
+  .reader-preference select,
+  .reader-toc,
+  .reader-chapter-controls button,
+  .product-narration-navigation button,
+  .semantic-raster-placeholder {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
+    forced-color-adjust: auto;
+  }
+
+  .reader-preference select:focus-visible,
+  .hardware-compatibility summary:focus-visible,
+  .hardware-compatibility button:focus-visible,
+  .hardware-compatibility input:focus-visible,
+  .paragraph-leaf:focus-visible,
+  .product-narration-compact-actions button:focus-visible,
+  .adaptive-preparation button:focus-visible,
+  .adaptive-preparation input:focus-visible,
+  .adaptive-preparation select:focus-visible,
+  .reader-skip-link:focus-visible,
+  .reader-return-link:focus-visible,
+  .reader-toc:focus,
+  .reader-toc-link:focus-visible,
+  .reader-chapter-controls button:focus-visible,
+  .product-narration-navigation button:focus-visible,
+  .semantic-internal-link:focus-visible,
+  .semantic-document:focus,
+  .semantic-document [tabindex="-1"]:focus {
+    outline-color: Highlight;
+  }
+
+  .paragraph-leaf,
+  .paragraph-leaf[data-leaf-state="preparing"],
+  .paragraph-leaf[data-leaf-state="audible"],
+  .paragraph-leaf[data-leaf-state="checkpoint"] {
+    border-color: ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+    forced-color-adjust: auto;
+  }
+}
+
+@media (max-width: 64rem) {
+  .reader-preference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .reader-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reader-toc {
+    position: static;
+  }
+}
+
+@media (max-width: 32rem) {
+  .app-shell {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .shell-card {
+    display: grid;
+    align-content: start;
+    min-height: 100vh;
+    padding: 1rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-shell.app-shell-reader {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .shell-card-reader {
+    min-height: 0;
+    padding: 0.5rem;
+  }
+
+  .publication-header {
+    align-items: flex-start;
+  }
+
+  .shell-card-reader .publication-summary h2 {
+    font-size: 1.05rem;
+  }
+
+  .product-narration-compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-narration-compact-actions {
+    justify-content: flex-start;
+  }
+
+  .semantic-reader {
+    padding: 0.5rem;
+  }
+
+  .reader-viewport {
+    padding-inline: 0.25rem;
+  }
+
+  .reader-content {
+    padding-inline-start: 2.75rem;
+  }
+
+  .reader-preference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adaptive-preparation-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reader-chapter-controls button {
+    flex: 1 1 9rem;
+  }
+
+  .product-narration-navigation button {
+    flex: 1 1 12rem;
+  }
+}

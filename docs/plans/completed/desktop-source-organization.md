@@ -6,12 +6,16 @@ Improve three demonstrated maintenance boundaries in `apps/desktop/src` without
 changing product behavior: semantic render planning, the Web Audio playback
 backend, and the ordered application stylesheet.
 
-This is a cross-milestone maintenance plan. The 2026-10-10 request authorizes
-creating this ExecPlan and a local branch from `main`. Source implementation has
-not started. The plan is not an Approved Work Order and does not authorize
-staging, commits, pushes, pull requests, model acquisition, or installed-package
-changes. A subsequent request to execute the plan starts the workflow below;
-Git publication remains a separate action.
+This is a cross-milestone maintenance plan. The initial 2026-10-10 request
+authorized the plan and local branch. The subsequent execution request authorized
+all three units, required host validation and evidence/documentation updates,
+while prohibiting staging, commits, pushes, pull requests, model acquisition,
+installed-package changes and firewall changes. Subsequent explicit authorization
+permitted one normal-flow Chatterbox v3 installation and one temporary exact
+interpreter outbound block, with removal afterward. All three source units are
+now independently accepted and combined F passed. The temporary rule is removed;
+this plan is complete and archived, with final documentation closure checked
+separately. No Git mutation is authorized; accepted changes remain unstaged.
 
 ## User-visible outcome
 
@@ -33,6 +37,28 @@ commit, leaving `main` unchanged and the index/worktree clean before the
 documentation edits. No remote update was performed. Reinspect the checkout
 before execution; this snapshot is not an implementation baseline.
 
+Execution HEAD is `ebe5edd5f8d6b29dee6a6c5267f635cf6fe2d5d5`, the committed
+planning document, on the existing `codex/desktop-source-organization` branch.
+Initial index/worktree were clean. Fresh evidence is indexed
+[here](../evidence/desktop-source-organization/README.md). All thirteen source/test
+paths are accepted at the three immutable POST-CHANGE-02 reports and remain
+unstaged. Semantic extraction uses501 combined lines, PCM801, CSS3349. CSS required
+one formatter-only correction; other units required no source correction.
+
+Historical blockers and their resolutions remain recorded: existing driver
+mismatch; absent current optional Chatterbox package; missing isolation for its
+installed interpreter; standalone N inheriting real-model environment flags.
+Authorized normal-flow installation retained v2. The exact temporary rule was
+removed and its absence verified after final tests. Fresh PCM baseline03 and post-change02 both
+passed the complete six-arm H command; both Piper six-rate matrices passed.
+Qwen's measured buffering exceeds MVP goals despite harness PASS; ADR-0051 remains.
+No source/harness repair, threshold relaxation or additional host change occurred.
+
+CSS source reconstructs exactly and fresh compiled JS/CSS/worklet bytes match PCM
+post02. That report's model observations remain applicable to unchanged affected
+runtime inputs; fresh CSS D/B/N passed. Rebuilt executable binary equality is not
+claimed. Independent FINAL-01 passed the combined scope and evidence checks.
+
 The review inventoried 121 files: 66 non-test TypeScript/TSX files, 54 separate
 test files, and one stylesheet. The first count includes test setup and frozen
 authority modules; it is not a count of eligible production refactors. Existing
@@ -50,10 +76,10 @@ normally colocated with the behavior they protect.
 | `tts/product-narration-coordinator.ts` | 1,909 lines | SKIP. Scheduling, playback, and recovery already delegate; further splitting cancellation/session identity would add ownership handoffs. |
 | `tts/adaptive-buffer-scheduler.ts` | 1,005 lines | SKIP. Bounded FIFO, reservations, and readiness belong to one state machine. |
 
-These are source-inspection findings, not runtime results. No implementation
-baseline, browser run, native acceptance, or model-backed acceptance has been
-performed for this plan. Other source files are context or outside this bounded
-campaign, not implicitly audited and accepted for modification.
+The table records planning source-inspection findings, not runtime results.
+Fresh execution results below supersede its implementation-status snapshot.
+Other source files remain context or outside this bounded campaign, not
+implicitly audited and accepted for modification.
 
 ## Scope and non-goals
 
@@ -259,14 +285,15 @@ Store concise Audit Packets, Orders, and immutable Validation Reports under
 `docs/plans/evidence/desktop-source-organization/` when execution begins. Include
 identities, invariants, exact commands/outcomes, environment, and limitations.
 Keep raw logs, CSS snapshots, temporary scripts, and captures in ignored
-`tmp/evidence/desktop-source-organization/<run>/`. No acceptance evidence exists
-yet; do not create placeholder PASS receipts.
+`tmp/evidence/desktop-source-organization/<run>/`. Preserve actual immutable
+acceptance and failed-baseline reports; do not create placeholder PASS receipts.
 
 ## Milestones
 
 ### Milestone 1: confirm execution inventory and unit terms
 
-Status: Not started. Branch and documentation setup are complete separately.
+Status: Complete. Execution inventory, refreshed first audit and independent
+group D baseline PASS are recorded; first work order frozen.
 
 On an instruction to execute, read the required context, confirm actual branch,
 HEAD/index/status, role availability, scripts, and the three source allowlists.
@@ -276,7 +303,8 @@ remaining files as SKIP/context/excluded rather than creating extra units.
 
 ### Milestone 2: extract semantic render planning
 
-Status: Not started.
+Status: Complete. Unit 1 accepted at immutable POST-CHANGE-02 source identities;
+changes remain unstaged.
 
 Execute Unit 1 with baseline group D and post-change groups D, B, and N below.
 The new nested batching regression must assert actual rendered order and bounded
@@ -285,7 +313,8 @@ independent PASS for the exact three-path patch and all stated invariants.
 
 ### Milestone 3: isolate the Web Audio backend
 
-Status: Not started.
+Status: Complete. Three paths/801 lines accepted at immutable
+DESKTOP-PCM-01-POST-CHANGE-02 identities; all D/B/N/H commands PASS.
 
 Execute Unit 2 with baseline groups D and H and post-change groups D, B, N,
 and H. Establish the relevant model-backed baseline before changing the backend;
@@ -295,7 +324,8 @@ Accept only with independent deterministic and applicable packaged evidence.
 
 ### Milestone 4: split the ordered stylesheet
 
-Status: Not started.
+Status: Complete. Seven paths/3349 lines accepted at DESKTOP-STYLES-01-POST-CHANGE-02;
+exact reconstruction and fresh compiled CSS equality, all D/B/N commands PASS.
 
 Execute Unit 3 with baseline groups D and B plus the frozen stylesheet capture,
 then post-change groups D, B, N, and the reconstruction equality check. Inspect
@@ -305,7 +335,9 @@ stylesheet/test migration atomic within this one accepted unit.
 
 ### Milestone 5: accept the combined patch and close documentation
 
-Status: Not started.
+Status: Complete. Independent FINAL-01 PASS on all thirteen accepted source/test
+paths; temporary rule removed, plan archived and indexes updated. Separate final
+documentation closure verifies those follow-up records without changing code.
 
 Have the independent validator run group F against the complete frozen patch,
 review source/test integrity, privacy/artifacts, unchanged frozen authorities,
@@ -435,6 +467,234 @@ revert rather than rewriting history. Git actions still require their own order.
 
 ## Progress log
 
+- 2026-10-10: [Combined FINAL-01](../evidence/desktop-source-organization/FINAL-validation-01.md)
+  independent PASS: check:portable, check and git diff --check exit0;1448 Vitest,
+  51 Node,406 Python and87+88 Rust tests. All thirteen source identities unchanged,
+  compiled assets/exact CSS reconstruction PASS,248 local links resolved. Prior
+  full H applicability independently accepted for unchanged runtime inputs;
+  no fresh H or executable byte-equality claim. Nonfatal cache/bundle warnings
+  retained. [Temporary rule cleanup](../evidence/desktop-source-organization/CHATTERBOX-firewall-cleanup-01.md)
+  completed and absence verified outside sandbox. Reviewed canonical diagram:
+  unchanged architecture, no edit warranted. Archived plan and updated indexes;
+  independent documentation closure follows. No staging/commit/push/PR.
+
+- 2026-10-10: Accepted [CSS post-change02](../evidence/desktop-source-organization/STYLES-post-change-02.md)
+  PASS, all eight D/B/N commands, exact source reconstruction and fresh compiled
+  JS/CSS/worklet byte equality with PCM post02. Director rechecked seven hashes
+  and HEAD; index empty, prior units preserved. One formatter correction cycle.
+  Canonical diagram still matches unchanged owners/processes/trust/persistence.
+  Proceed to independent F on the complete thirteen-path source patch, explicitly
+  evaluating continued H applicability. No replay of unaffected model matrices.
+
+- 2026-10-10: Worker applied [CSS formatting correction](../evidence/desktop-source-organization/STYLES-change-02.md),
+  +3/-1 in the single test call; exact regex/assertions/CSS unchanged. Combined
+  unit3349 lines. Director inspected; new full independent validation pending.
+
+- 2026-10-10: [CSS post-change01](../evidence/desktop-source-organization/STYLES-post-change-01.md)
+  FAIL at required formatting, one test .exec call wrap. Exact reconstruction,
+  package build/typecheck and588 Vitest/38 Node PASS; lint/build/B/N unrun.
+  Issued [correction01](../evidence/desktop-source-organization/STYLES-correction-01.md)
+  for only formatter layout in the permitted test. First of two correction
+  cycles; no CSS or assertion change. Full fresh post-change remains required.
+
+- 2026-10-10: Sole worker delivered [CSS change](../evidence/desktop-source-organization/STYLES-change-01.md),
+  seven paths/3347 combined lines, within3400. Director inspected ordered entry
+  and actual-import test adaptation with all original assertions retained.
+  Independent D/B/N, exact reconstruction and compiled CSS proof pending.
+
+- 2026-10-10: [CSS baseline01](../evidence/desktop-source-organization/STYLES-baseline-01.md)
+  independent PASS, seven D/B commands, exact original and compiled CSS frozen,
+  accepted Units1/2 unchanged. Built JS/CSS/worklet match PCM post02. Froze
+  [DESKTOP-STYLES-WORK-01](../evidence/desktop-source-organization/STYLES-order-01.md)
+  with seven paths/3400 lines; sole worker may implement exact contiguous split.
+
+- 2026-10-10: Accepted refreshed [CSS audit](../evidence/desktop-source-organization/STYLES-audit-01.md)
+  and [draft](../evidence/desktop-source-organization/STYLES-draft-01.md). Original
+  CSS/test clean, five leaves absent, exact complete-rule boundaries confirmed.
+  Independent D/B baseline and frozen original/built CSS capture pending.
+
+- 2026-10-10: Accepted [PCM post-change02](../evidence/desktop-source-organization/PCM-post-change-02.md)
+  PASS after fresh D/B/N/H: all nine commands exit0, complete six-arm H PASS,
+  both Piper six-rate matrices PASS. Standalone N uses the existing model-free
+  environment policy; H retains full real profiles. Source/install/isolation
+  identities unchanged, index empty, zero runtime processes. Director rechecked
+  exact three source hashes and HEAD; zero source correction cycles. Qwen
+  buffering exceeds MVP goals despite harness PASS; ADR-0051 unchanged.
+  Begin refreshed CSS audit. Temporary rule retained until final evidence reuse
+  is decided, then remove it through the existing helper.
+
+- 2026-10-10: [PCM post-change01](../evidence/desktop-source-organization/PCM-post-change-01.md)
+  FAIL: D/B PASS, N exit1 at service lifecycle probe, H unrun. Exact source and
+  installed/isolation identities remain unchanged, index empty, processes cleared.
+  [Read-only environment diagnosis](../evidence/desktop-source-organization/PCM-native-environment-diagnosis-01.md)
+  confirms N inherited real-runtime flags while its deterministic lifecycle
+  expects the fake; H explicitly sanitizes these flags. The inner failed operation
+  is not exposed. Authorize a new full D/B/N/H report with unchanged N command in
+  its model-free environment, H in its real-profile environment. No source edit
+  or correction loop; the failed report remains immutable and no next unit starts.
+
+- 2026-10-10: Sole worker returned [PCM change packet](../evidence/desktop-source-organization/PCM-change-01.md),
+  three paths/801 combined lines, unchanged tests and no deviations. Director
+  inspected the actual extraction and imports; independent post-change D/B/N/H
+  is pending. No acceptance or next-unit work yet; zero correction cycles.
+
+- 2026-10-10: Accepted independent
+  [DESKTOP-PCM-01-BASELINE-03](../evidence/desktop-source-organization/PCM-baseline-03.md)
+  PASS: six D commands and full H exit0, all six journeys and both Piper
+  six-rate matrices PASS. Source/install/isolation identities unchanged, empty
+  index and zero remaining task runtime processes. Qwen harness PASS retains
+  observed buffering beyond MVP targets; no changed product-performance claim.
+  Froze [DESKTOP-PCM-WORK-01](../evidence/desktop-source-organization/PCM-order-01.md)
+  against that exact report and refreshed audit, three paths/850 lines.
+  Temporary interpreter block remains enabled for post-change validation;
+  task-owned removal remains required afterward. Prior failures remain historical.
+
+- 2026-10-10 14:15 America/Bogota: User requested the Windows elevation prompt
+  again and it completed. Host verification confirms the unique temporary rule
+  `VoxLeaf-DesktopOrg-ChatterboxV3-01a126fa-Temporary`: enabled, Outbound, Block,
+  Any profile, exact current installed `cb/3/runtime/python.exe`. Helper receipt
+  records creation at 19:15:44Z. No existing rule changed. The four-hour safety
+  cleanup deadline is 23:15:44Z; director must request earlier removal after
+  required tests or a new blocker. HEAD/index/source scope remains unchanged.
+  Proceed to fresh uninstrumented DESKTOP-PCM-01-BASELINE-03 D/H.
+
+- 2026-10-10: Windows rejected the helper launch with `El usuario ha cancelado
+  la operacion` (the returned message used Spanish accents). No helper receipt
+  exists and host inspection confirms zero rules with the reserved exact name.
+  The PowerShell wrapper's exit 0 is not a successful launch: Start-Process
+  reported an error before returning a process. No D/H/model run began.
+  User was asked whether to reopen the native elevation prompt when available
+  to accept it. The chat authorization remains distinct from Windows elevation.
+
+- 2026-10-10: User authorized one temporary outbound Block rule for installed
+  `cb/3/runtime/python.exe` and removal after the tests. Prepared a task-local
+  fixed-action helper under ignored
+  `tmp/evidence/desktop-source-organization/CHATTERBOX-FIREWALL-01/temporary-rule.ps1`.
+  It checks interpreter identity and rule-name absence, creates only
+  `VoxLeaf-DesktopOrg-ChatterboxV3-01a126fa-Temporary`, and removes that exact
+  unchanged rule when `remove-requested` appears beside the script or after a
+  four-hour safety deadline. No broader firewall change is authorized.
+  The normal host token is not administrator; the Windows elevation request is
+  pending. No created-rule or resumed-baseline evidence exists yet.
+
+- 2026-10-10: [Fresh baseline 02 prerequisite check](../evidence/desktop-source-organization/PCM-baseline-02.md)
+  returned BLOCKED before D/H: verified installed v3 selects its private
+  `cb/3/runtime/python.exe`, but host inspection found zero enabled outbound
+  Block rules for that exact executable. Developer-interpreter isolation does
+  not cover this newly installed path. No model arm or test command ran and no
+  firewall mutation occurred. Source/install identities are stable; index empty.
+  Asked the user to authorize one exact temporary outbound block for the installed
+  interpreter and removal of only that rule after the required tests. Until an
+  actual reply, the original firewall prohibition remains in force.
+
+- 2026-10-10: [Authorized Chatterbox preparation](../evidence/desktop-source-organization/CHATTERBOX-preparation-01.md)
+  completed through normal VoxLeaf Settings. The UI reported verified local
+  installation; host inspection confirms current `cb/3` present and `cb/2`
+  retained. No model journey is claimed. Refreshed
+  [PCM audit](../evidence/desktop-source-organization/PCM-audit-refresh-02.md)
+  retains the original three paths, invariants, tests and 850-line ceiling.
+  Next gate is a fresh uninstrumented independent D/H baseline; no PCM order yet.
+
+- 2026-10-10: User explicitly authorized current Chatterbox v3 acquisition and
+  installation through VoxLeaf, followed by fresh baseline and plan continuation.
+  This is separate host preparation, not a source-work allowlist expansion.
+  Director verified approximately 452 GB free on C: against the manifest's
+  20 GB requirement, launched the existing packaged executable, opened a
+  repository-authored synthetic EPUB, and used normal Settings profile selection
+  plus Download Chatterbox. The UI reported download startup. Preparation is
+  in progress; no installed-state, model acceptance, or plan completion yet.
+  Existing v2 data is retained; no Remove action or firewall/Git mutation.
+
+- 2026-10-10: User authorized a bounded diagnosis of the Piper Spanish timeout,
+  retaining no-download/no-installation/no-firewall and no-Git-mutation limits.
+  Reused the read-only auditor and independent validator. Report
+  [PIPER-ES-PROFILE-DIAG-01](../evidence/desktop-source-organization/PIPER-ES-profile-diagnosis-01.md)
+  records one existing filtered runner invocation outside sandbox, exit 1.
+  Temporary content-free instrumentation preserved original actions, assertions,
+  and deadline: Chatterbox became enabled, received the original alternate click,
+  entered `confirming`, and never replaced active Piper. Host checks confirm
+  `cb/3` absent and retained `cb/2` present; no inference/rate matrix was reached.
+  This is diagnostic evidence, not a replacement baseline or model acceptance.
+  All source/executable identities stayed unchanged, index empty, and no task
+  runtime processes remained. No install, download, firewall or harness change.
+  The [bounded recovery assessment](../evidence/desktop-source-organization/profile-prerequisite-recovery-01.md)
+  found no supported alternate-root/offline-import mechanism. Keep Unit 2/3
+  and F blocked until separately authorized package preparation and fresh D/H.
+
+- 2026-10-10: Independent [bounded closure review](../evidence/desktop-source-organization/closure-01.md)
+  confirmed accepted source identities, untouched PCM/CSS/frozen paths, empty
+  index, 301 resolved local links and no matching task runtime processes.
+  `git diff --check` passed outside sandbox. Corrected its one documentation
+  finding (obsolete claim that no acceptance evidence existed); no source edit.
+  Group F remains unrun and the campaign remains blocked, not complete.
+
+- 2026-10-10: [DESKTOP-PCM-01-BASELINE-01](../evidence/desktop-source-organization/PCM-baseline-01.md)
+  returned BASELINE-FAIL outside sandbox. All six D commands passed (588 Vitest,
+  38 Node). Complete H command exited 1: preflights and model-free native
+  lifecycle passed, then Piper Spanish failed during profile selection with
+  `webdriver-condition-timeout`. No model arm or Piper rate matrix completed;
+  all remaining five arms are unrun. ADR-0051 scoped acceptance is unavailable.
+  HEAD/path/index and prior Unit 1 identities remain unchanged. No PCM work
+  order or edit was issued; CSS and group F remain pending. No retries, harness
+  repairs, installs/downloads or firewall changes were made to bypass the failure.
+- 2026-10-10: Reviewed canonical system diagram against the accepted render-plan
+  extraction: same React-reader owner, process/package/trust/persistence and
+  narration flow; no diagram edit needed. Retained all four planning SKIPs,
+  colocated tests, frozen WSOLA/authority paths and completed plans. Updated
+  current plan/index/evidence status while source worker and validator were idle.
+  Resumption requires a separately bounded diagnosis of the baseline timeout,
+  then fresh D/H baseline before Unit 2; no root cause or repair is claimed here.
+
+- 2026-10-10: Accepted refreshed [PCM audit](../evidence/desktop-source-organization/PCM-audit-01.md)
+  and [draft terms](../evidence/desktop-source-organization/PCM-draft-01.md):
+  three paths/850-line ceiling, unchanged tests and frozen WSOLA paths. Existing
+  model/interpreter locations and outbound blocks are present; process-local
+  documented environment assignments are authorized, with no installation or
+  firewall changes. Independent D/H baseline must complete before extraction.
+
+- 2026-10-10: Unit 1 accepted after
+  [DESKTOP-SEMANTIC-DOCUMENT-01-POST-CHANGE-02](../evidence/desktop-source-organization/SEMANTIC-post-change-02.md)
+  PASS: all eight D/B/N commands reran outside sandbox using the existing
+  matching driver; 588 Vitest, 38 Node and 7 browser tests plus complete
+  model-free native smoke passed. Director rechecked the exact three SHA-256
+  identities and HEAD against the immutable report; index remains empty.
+  No source correction loops used. Next: refreshed Unit 2 audit and D/H baseline.
+
+- 2026-10-10: [SEMANTIC post-change 01](../evidence/desktop-source-organization/SEMANTIC-post-change-01.md)
+  is BLOCKED: all D commands and 7 browser tests passed (588 Vitest / 38 Node),
+  but native startup exited 1 at WebView session creation after a successful
+  release build. Identity/index recheck passed. Read-only
+  [driver diagnosis](../evidence/desktop-source-organization/driver-diagnosis-01.md)
+  found inherited EdgeDriver 150 against WebView2 155. An already-installed,
+  valid Microsoft-signed 155.0.4283.45 driver matches exactly. Director approved
+  its process-local override and a new full D/B/N validation report; no download,
+  installation, harness/source edit or correction loop was needed. Original
+  failed command remains recorded unchanged.
+
+- 2026-10-10: Sole worker returned [SEMANTIC change](../evidence/desktop-source-organization/SEMANTIC-change-01.md),
+  501 added/deleted lines in the three permitted paths. Director reviewed the
+  extraction and additive nested-yield regression; independent post-change
+  groups D/B/N are pending. No unit acceptance or next-unit implementation yet.
+
+- 2026-10-10: Independent [SEMANTIC baseline](../evidence/desktop-source-organization/SEMANTIC-baseline-01.md)
+  PASS: all six group D commands outside sandbox, 54 files/587 Vitest plus
+  38 Node tests, unchanged HEAD/path identities and empty index. Froze
+  [DESKTOP-SEMANTIC-WORK-01](../evidence/desktop-source-organization/SEMANTIC-order-01.md)
+  for three paths/700 changed lines; one source worker may now implement.
+
+- 2026-10-10 execution: User authorized all three units and required host checks,
+  with no staging, commits, push, PR, branch recreation or main update. Actual
+  branch is `codex/desktop-source-organization`, HEAD
+  `ebe5edd5f8d6b29dee6a6c5267f635cf6fe2d5d5` (the plan commit); initial worktree
+  and index are clean. Named auditor/worker GPT-6.1 Sol high and independent
+  validator GPT-6 Astra high are available and reused. No Git steward is needed
+  because every Git mutation is prohibited. Accepted the refreshed
+  [first audit](../evidence/desktop-source-organization/SEMANTIC-audit-01.md) and
+  prepared [draft terms](../evidence/desktop-source-organization/SEMANTIC-draft-01.md).
+  Source implementation has not begun. Host preparation found an existing
+  Corepack shim for pinned pnpm 11.15.1; process-local PATH selects it offline
+  instead of fallback pnpm 11.25.0, without installation changes.
+
 - 2026-10-10: Reviewed the current frontend inventory and existing test layout.
   Independent planning audits identified the three bounded CHANGE units and
   retained the large lifecycle owners as SKIP. No source or runtime acceptance.
@@ -448,6 +708,23 @@ revert rather than rewriting history. Git actions still require their own order.
   passed for required sections, links, configured commands, scope, and Git state.
 
 ## Discoveries and decisions
+
+- The authorized live diagnosis identifies the alternate Chatterbox activation
+  prerequisite, before Piper inference. Hardware compatibility and configured
+  development runtimes are insufficient when packaged selection requires a
+  verified current optional installation. Do not skip the alternate switch,
+  use retained v2, bypass verification, extend timeouts, or claim installing
+  v3 alone guarantees the later model matrices. The supported preparation
+  workflow requires separate download/installation authorization.
+- Existing EdgeDriver 150 did not match WebView2 155. Selecting the already
+  installed signed matching driver process-locally resolved native session
+  creation; the initial failed command and subsequent full PASS are both retained.
+- The model-backed baseline failed before any PCM extraction. Compatible/active
+  profile diagnostics do not prove successful profile-selection completion or
+  any model journey. Preserve the exact failed stage without inferring its cause.
+- A failed required Piper arm prevents current ADR-0051 acceptance; Qwen's
+  exclusion cannot excuse missing Piper/Chatterbox evidence. Keep later units
+  pending without discarding the independently accepted Unit 1 patch.
 
 - Large files do not automatically need division. Preserve existing publication
   and narration lifetimes where splitting would increase coordination cost.
@@ -466,7 +743,7 @@ revert rather than rewriting history. Git actions still require their own order.
 
 ## Final validation results
 
-Planning/documentation validation: PASS in local PowerShell outside the sandbox
+Historical planning/documentation validation: PASS in local PowerShell outside the sandbox
 on 2026-10-10. Structural/reference/script inspection found all 12 required
 sections, 22 existing local links, 13 distinct configured commands, balanced
 code fences, and five unstarted implementation milestones. Both documentation
@@ -477,7 +754,39 @@ plan, `docs/plans/active/README.md`, and `docs/README.md`, with no source change
 The independent read-only planning review is not an implementation validation
 report. Branch setup passed as recorded above.
 
-Implementation acceptance: NOT RUN. There is no implementation baseline,
-Approved Work Order, source patch, regression result, independent post-change
-PASS, performance result, or newly accepted model-backed evidence for this plan.
-The implementation milestones remain open.
+Current execution acceptance: **PASS: all three units and combined F; plan archived.**
+
+| Area | Actual result |
+| --- | --- |
+| Unit 1 baseline | PASS, DESKTOP-SEMANTIC-DOCUMENT-01-BASELINE-01, six D commands |
+| Unit 1 first post-change | BLOCKED, POST-CHANGE-01: D/B passed; N exited 1 before session creation |
+| Unit 1 accepted post-change | PASS, DESKTOP-SEMANTIC-DOCUMENT-01-POST-CHANGE-02: fresh D/B/N, 588 Vitest + 38 Node + 7 browser tests and packaged model-free smoke |
+| Unit 1 exact patch | Three files, 501 added/deleted lines; nested DOM regression; identity recheck PASS; zero source correction loops |
+| Unit 2 audit/order | CHANGE, DESKTOP-PCM-WORK-01 frozen, three source paths/850 lines |
+| Unit 2 accepted patch | POST-CHANGE-02 PASS, all nine D/B/N/H commands, 801 combined lines, zero source correction cycles |
+| Historical Unit 2 baseline01 | BASELINE-FAIL: D PASS; H exit1 at Piper Spanish profile selection |
+| Historical host preparation / baseline02 | Authorized v3 installation; baseline02 BLOCKED before D/H without installed-interpreter isolation. Later renewed elevation created the authorized exact temporary rule |
+| Authorized blocker diagnosis | PIPER-ES-PROFILE-DIAG-01: filtered instrumented host run exit 1; alternate Chatterbox click enters confirming while cb/3 is absent; original 90-second activation wait expires; no source change or replacement baseline |
+| Fresh baseline 03 | PASS D/H, global H exit0, all six journeys and both Piper six-rate matrices PASS |
+| Model limits | Qwen harness PASS exceeds MVP buffering targets; ADR-0051 deferral unchanged |
+| Unit 3 / CSS equality | POST-CHANGE-02 PASS, all eight D/B/N commands,3349 lines; exact source reconstruction and compiled JS/CSS/worklet equality; one formatting correction |
+| Group F / archive | FINAL-01 PASS: check:portable, check, git diff --check; plan archived after acceptance |
+| Combined test totals | 1448 Vitest,51 Node,406 Python; Rust87 default +88 release-locked; all passed |
+| Host cleanup | Authorized exact temporary rule removed and absence verified; current Chatterbox v3 retained |
+| Architecture | Canonical system diagram reviewed; same runtime ownership and topology |
+| Git | Existing branch and execution HEAD unchanged, index empty, all thirteen accepted source/test paths plus docs unstaged; no staging/commit/push/PR |
+
+See the [evidence index](../evidence/desktop-source-organization/README.md) for
+immutable reports and exact commands/identities. Raw post-change/baseline logs
+remain in ignored `tmp/evidence/desktop-source-organization/`. Initial Unit 1
+baseline output was reported through the validator and summarized in its receipt;
+no retrospective raw-log capture is claimed. Fresh model-backed baseline and
+post-change PCM evidence both pass; no performance improvement is claimed.
+
+The current [combined final report](../evidence/desktop-source-organization/FINAL-validation-01.md)
+binds all thirteen accepted paths. Expensive H observations are reused only after
+independent source/config/runtime-input and fresh frontend-byte equivalence
+review; H was not rerun after CSS. N did run freshly for the completed CSS state.
+Nonfatal pytest cache-write and bundle-size warnings remain disclosed. Finite
+test evidence does not establish arbitrary EPUBs, hardware or subjective audio
+quality. The temporary rule is gone; no further model run is part of this closeout.

@@ -8,6 +8,8 @@ Use the [evidence retention policy](../../development/evidence-retention.md) for
 
 ## Completed plans
 
+- [`desktop-source-organization.md`](desktop-source-organization.md): extracted semantic render planning and Web Audio contracts/backend, split the stylesheet with exact cascade reconstruction, and passed independent unit/model/portable/native validation. Changes remain unstaged; no Git publication.
+
 - [`pr-evidence-retention.md`](pr-evidence-retention.md): archived 276 original evidence files, retired 224 raw captures, retained immutable summaries/identities, added the tested retention guard and passed independent host acceptance; cleanup commit/push pending.
 
 - [`linux-rust-test-comparison.md`](linux-rust-test-comparison.md): repaired the pre-existing Linux compilation/lint blockers, passed independent paired 85/86 Rust suites and both Unix symlink cases, retained Windows 87/88 and native-startup success, and added the reviewed Ubuntu Rust CI job; remote execution was pending at original closeout; the later Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.

@@ -390,6 +390,95 @@ describe("semantic document rendering", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("preserves nested quote and list order across two browser yields", () => {
+    const pending: Array<() => void> = [];
+    const scheduleRenderYield: ScheduleLargeChapterYield = (resume) => {
+      pending.push(resume);
+      return () => {
+        const index = pending.indexOf(resume);
+        if (index !== -1) {
+          pending.splice(index, 1);
+        }
+      };
+    };
+    const paragraphTexts = Array.from(
+      { length: 500 },
+      (_, index) => `Nested paragraph ${index}`,
+    );
+    const quote = Object.freeze({
+      kind: "block-quote",
+      children: Object.freeze([
+        Object.freeze({
+          kind: "list",
+          ordered: true,
+          items: Object.freeze(
+            paragraphTexts.map((value) =>
+              Object.freeze({
+                children: Object.freeze([
+                  Object.freeze({
+                    kind: "paragraph",
+                    children: Object.freeze([text(value)]),
+                  }),
+                ]),
+              }),
+            ),
+          ),
+        }),
+      ]),
+    }) satisfies SemanticBlock;
+
+    render(
+      <SemanticDocumentContent
+        document={documentWith([quote])}
+        scheduleRenderYield={scheduleRenderYield}
+      />,
+    );
+
+    const article = screen.getByRole("article", {
+      name: "Current reading section",
+    });
+    expect(article.querySelectorAll("p")).toHaveLength(248);
+    expect(
+      Array.from(
+        article.querySelectorAll("blockquote > ol > li > p"),
+        (paragraph) => paragraph.textContent,
+      ),
+    ).toEqual(paragraphTexts.slice(0, 248));
+    expect(article).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading more of this reading section.",
+    );
+    expect(pending).toHaveLength(1);
+
+    act(() => pending.shift()!());
+
+    expect(article.querySelectorAll("p")).toHaveLength(498);
+    expect(
+      Array.from(
+        article.querySelectorAll("blockquote > ol > li > p"),
+        (paragraph) => paragraph.textContent,
+      ),
+    ).toEqual(paragraphTexts.slice(0, 498));
+    expect(article).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading more of this reading section.",
+    );
+    expect(pending).toHaveLength(1);
+
+    act(() => pending.shift()!());
+
+    expect(article.querySelectorAll("p")).toHaveLength(500);
+    expect(
+      Array.from(
+        article.querySelectorAll("blockquote > ol > li > p"),
+        (paragraph) => paragraph.textContent,
+      ),
+    ).toEqual(paragraphTexts);
+    expect(article).not.toHaveAttribute("aria-busy");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(pending).toHaveLength(0);
+  });
+
   it("rejects an over-limit chapter before rendering publisher content", () => {
     const rejectedParagraph = Object.freeze({
       kind: "paragraph",
