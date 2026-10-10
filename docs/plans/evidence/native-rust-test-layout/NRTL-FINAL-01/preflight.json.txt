@@ -1,0 +1,15 @@
+{
+  "driver": "C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/native-rust-module-organization/webdriver-155.0.4283.45/msedgedriver.exe",
+  "driverVersion": "Microsoft Edge WebDriver 155.0.4283.45 (50f24ef2aa5369a074b8888b7db82d9c0652d642)",
+  "signatureStatus": "Valid",
+  "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+  "driverSha256": "dc99c208c10a5364e61c4e5b1341be492f3224de753adb23e973be97875b1892",
+  "webview": [
+    {
+      "version": "155.0.4283.45",
+      "binaryExists": true,
+      "binaryVersion": "155.0.4283.45"
+    }
+  ],
+  "tauriDriver": "C:\\Users\\mmjos\\.cargo\\bin\\tauri-driver.exe"
+}

@@ -1,0 +1,13 @@
+$ErrorActionPreference = 'Stop'
+$results = @()
+foreach ($scriptName in @('format:check:rust', 'lint:rust', 'test:rust', 'test:native-startup')) {
+  $log = Join-Path (Get-Location) ('tmp/linux-rust-repair/windows-' + $scriptName.Replace(':', '-') + '.log')
+  Write-Output "Running pnpm.cmd $scriptName"
+  & pnpm.cmd $scriptName *> $log
+  $result = $LASTEXITCODE
+  $results += [ordered]@{command="pnpm.cmd $scriptName";exit=$result;log=$log}
+  Get-Content -LiteralPath $log -Tail 12
+  Write-Output "Exit: $result"
+  $results | ConvertTo-Json -Depth 3 | Set-Content tmp/linux-rust-repair/windows-results.json
+}
+if (@($results | Where-Object { $_.exit -ne 0 }).Count) { exit 1 }

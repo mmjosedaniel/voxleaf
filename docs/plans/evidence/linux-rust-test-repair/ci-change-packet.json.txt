@@ -1,0 +1,26 @@
+{
+  "task": "LINUX-RUST-REPAIR-01-CI",
+  "original_workflow_prefix_preserved": true,
+  "paths": [
+    {
+      "path": ".github/workflows/foundation-checks.yml",
+      "before_sha256": "9c0f51980c092804eb4ca7a33c68908e841cd943a0d13835eb0957c0c7c63bbd",
+      "after_sha256": "96691b7135b5d0deb94ddcefda4f327abaf4399d9546b89e2d4d3759085656c7",
+      "snapshot": "tmp/linux-rust-repair/ci-before/foundation-checks.yml"
+    },
+    {
+      "path": "docs/development/testing.md",
+      "before_sha256": "324b403efde9ba3d41c397f5abe3fa53dbdd3c4494d9037f041425033538a8bc",
+      "after_sha256": "09d01713c471b439157fff89cb07b00a6b802a7696ab5e90e637d77ab2d52594",
+      "snapshot": "tmp/linux-rust-repair/ci-before/testing.md"
+    },
+    {
+      "path": "docs/development/setup.md",
+      "before_sha256": "32537d9c5c0cb0267b9ac0a1f78345f24ada3d0f2c6fb28299c556799631b9d0",
+      "after_sha256": "05eb66548f3b04a71c1d1baec97c86ad0ecd9c3cc28fbb3674102358c29ab318",
+      "snapshot": "tmp/linux-rust-repair/ci-before/setup.md"
+    }
+  ],
+  "tests_run": false,
+  "git_mutations": false
+}

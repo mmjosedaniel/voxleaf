@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -uo pipefail
+root=/var/tmp/voxleaf-linux-rust-comparison-20261010
+attempt="$root/complete-02"
+export CARGO_HOME="$root/tools/cargo"
+export RUSTUP_HOME="$root/tools/rustup"
+export CARGO_TARGET_DIR="$root/target"
+export CARGO_BUILD_JOBS=2
+export PATH="$root/tools/pnpm/bin:$root/tools/node-v24.18.0-linux-x64/bin:$CARGO_HOME/bin:/usr/local/bin:/usr/bin:/bin"
+printf 'snapshot\tcommand\texit\n' > "$attempt/evidence/release-results.tsv"
+overall=0
+for snapshot in baseline current; do
+  cd "$attempt/$snapshot" || exit 2
+  cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets --features release-locked-runtime -- -D warnings > "$attempt/evidence/$snapshot-release-clippy.log" 2>&1
+  result=$?
+  printf '%s\trelease-clippy\t%s\n' "$snapshot" "$result" >> "$attempt/evidence/release-results.tsv"
+  if [ "$result" -ne 0 ]; then overall=1; fi
+  cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime > "$attempt/evidence/$snapshot-release-tests.log" 2>&1
+  result=$?
+  printf '%s\trelease-tests\t%s\n' "$snapshot" "$result" >> "$attempt/evidence/release-results.tsv"
+  if [ "$result" -ne 0 ]; then overall=1; fi
+  sha256sum --check "$attempt/evidence/$snapshot-inputs.sha256" > "$attempt/evidence/$snapshot-release-input-recheck.log" 2>&1 || exit 2
+  find . -type f -not -path '*/node_modules/*' -not -path './apps/desktop/src-tauri/gen/*' -print | LC_ALL=C sort > "$attempt/evidence/$snapshot-final-paths.txt"
+done
+cat "$attempt/evidence/release-results.tsv"
+exit "$overall"

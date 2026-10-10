@@ -6,6 +6,10 @@ Completed plans are historical evidence. Do not edit them to describe a later im
 
 ## Completed plans
 
+- [`linux-rust-test-comparison.md`](linux-rust-test-comparison.md): repaired the pre-existing Linux compilation/lint blockers, passed independent paired 85/86 Rust suites and both Unix symlink cases, retained Windows 87/88 and native-startup success, and added the reviewed Ubuntu Rust CI job; remote execution pending and changes uncommitted.
+
+- [`native-rust-test-layout.md`](native-rust-test-layout.md): completed six stages and ten private test-file moves, extracted the existing Windows probe, preserved assertions/fixtures/frozen authority and passed independent per-unit, portable, full and native-startup validation; all changes remain unstaged and uncommitted.
+
 - [`native-rust-module-organization.md`](native-rust-module-organization.md): completed all six stages with two diagnostic-only Rust extractions, ten independently audited SKIPs, unchanged runtime/contracts and passing Rust, WebView2, portable and full repository checks; local commits only.
 - [`development-toolchain-pr-222.md`](development-toolchain-pr-222.md): prepared 16 development dependency upgrades, deferred unsupported TypeScript 7, aligned Node requirements, and restored the benchmark's current UI interactions; local checks, browser/native benchmarks and independent review passed, with remote CI tracked in PR #222.
 - [`legacy-runtime-cleanup.md`](legacy-runtime-cleanup.md): removed inactive Chatterbox v2 migration/repair and unused V1 preference metadata, preserved v3 cache-cleanup coverage and historical authority, and passed independent host validation.

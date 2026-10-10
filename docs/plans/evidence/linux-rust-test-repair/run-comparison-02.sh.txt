@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=/var/tmp/voxleaf-linux-rust-comparison-20261010
+repo=/mnt/c/Users/mmjos/Desktop/workbeanch/voxleaf
+attempt="$root/repair-02"
+test ! -e "$attempt"
+mkdir -p "$attempt/baseline" "$attempt/evidence"
+tar -xf "$repo/tmp/linux-rust-comparison/baseline-full.tar" -C "$attempt/baseline"
+cp -a "$attempt/baseline" "$attempt/current"
+cp -a "$repo/apps/desktop/src-tauri/src/." "$attempt/current/apps/desktop/src-tauri/src/"
+python3 - "$attempt" "$repo" <<'PY'
+import sys,pathlib,hashlib,json
+attempt,repo=map(pathlib.Path,sys.argv[1:])
+old=b'fn configure_supervised_child(command: &mut Command) {\n    #[cfg(windows)]\n    command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);\n}'
+new=old.replace(b'command',b'_command')
+p=attempt/'baseline/apps/desktop/src-tauri/src/tts_service_supervisor.rs'
+b=p.read_bytes(); assert b.count(old)==1; p.write_bytes(b.replace(old,new))
+p=attempt/'current/apps/desktop/src-tauri/src/tts_service_supervisor.rs'
+assert p.read_bytes().replace(b'\r\n',b'\n').count(new)==1
+edit_map=json.loads((repo/'tmp/linux-rust-repair/platform-expect-edits.json').read_text(encoding='utf-8-sig'))
+for name in ('baseline','current'):
+    p=attempt/name/'apps/desktop/src-tauri/src/host_profile_detection.rs'
+    b=p.read_bytes(); normalized=b.replace(b'\r\n',b'\n')
+    if name=='baseline':
+        for edit in edit_map:
+            old_block=edit['before'].encode(); new_block=edit['after'].encode()
+            assert normalized.count(old_block)==1
+            normalized=normalized.replace(old_block,new_block)
+        p.write_bytes(normalized)
+    else:
+        for edit in edit_map:
+            assert normalized.count(edit['after'].encode())==1
+icon=(repo/'apps/desktop/src-tauri/icons/icon.png').read_bytes()
+assert hashlib.sha256(icon).hexdigest()=='008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8'
+for name in ('baseline','current'):
+    (attempt/name/'apps/desktop/src-tauri/icons/icon.png').write_bytes(icon)
+PY
+export CARGO_HOME="$root/tools/cargo" RUSTUP_HOME="$root/tools/rustup" CARGO_TARGET_DIR="$root/target" CARGO_BUILD_JOBS=2
+export PATH="$root/tools/pnpm/bin:$root/tools/node-v24.18.0-linux-x64/bin:$CARGO_HOME/bin:/usr/local/bin:/usr/bin:/bin"
+{ uname -a; cat /etc/os-release; rustc --version; cargo --version; node --version; pnpm --version; } > "$attempt/evidence/environment.log"
+printf 'snapshot\tcommand\texit\n' > "$attempt/evidence/results.tsv"
+overall=0
+for snapshot in baseline current; do
+  cd "$attempt/$snapshot"
+  find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$attempt/evidence/$snapshot-inputs.sha256"
+  pnpm install --frozen-lockfile --ignore-scripts > "$attempt/evidence/$snapshot-bootstrap.log" 2>&1
+  for script in format:check:rust lint:rust test:rust; do
+    logfile="$attempt/evidence/$snapshot-${script//:/-}.log"
+    printf '\nRunning %s: pnpm %s\n' "$snapshot" "$script"
+    set +e
+    pnpm "$script" > "$logfile" 2>&1
+    result=$?
+    set -e
+    printf '%s\t%s\t%s\n' "$snapshot" "$script" "$result" >> "$attempt/evidence/results.tsv"
+    tail -n 15 "$logfile"
+    printf 'Exit: %s\n' "$result"
+    if [ "$result" -ne 0 ]; then overall=1; fi
+  done
+  sha256sum --check "$attempt/evidence/$snapshot-inputs.sha256" > "$attempt/evidence/$snapshot-input-recheck.log" 2>&1
+  find . -type f -not -path '*/node_modules/*' -not -path './apps/desktop/src-tauri/gen/*' -print | LC_ALL=C sort > "$attempt/evidence/$snapshot-final-paths.txt"
+done
+cat "$attempt/evidence/results.tsv"
+exit "$overall"

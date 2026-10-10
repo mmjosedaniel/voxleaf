@@ -1,6 +1,6 @@
 # Native Rust test layout
 
-Created: 2026-10-09. Status: planning complete; implementation not started.
+Created: 2026-10-09. Status: completed; ten units and all host aggregate gates accepted; changes unstaged.
 
 ## Goal
 
@@ -14,11 +14,10 @@ does not add a product roadmap milestone or reopen their acceptance. It builds
 on the [completed native organization plan](../completed/native-rust-module-organization.md),
 whose diagnostic extractions and recorded SKIP decisions remain valid.
 
-The current request authorizes this ExecPlan and its index entries. Source
-implementation, branches, commits, push, PR creation, and release operations
-have not been requested by creating this document. At execution, honor the
-authorization in that request; do not inherit Git authority from the previous
-completed campaign.
+The execution request authorized all six stages, ten units, validations and
+documentation. The existing branch was retained. All source and documentation
+changes remain unstaged and uncommitted; no branch creation/switch, main update,
+push, PR or package publication was performed.
 
 ## User-visible outcome
 
@@ -40,28 +39,27 @@ Planning inspected `main` at
 before this plan's documentation edits. This is provenance, not an execution
 baseline; inspect the actual checkout again before implementation.
 
-There are fifteen Rust files under `apps/desktop/src-tauri/src/`. Nine
-production files contain inline `tests` modules; a tenth,
-`tts_protocol_contract.rs`, contains test-only fixture tables and four
-root-level tests. The crate currently has a binary entry point and no `lib.rs`.
+The planning snapshot contained fifteen Rust files under `apps/desktop/src-tauri/src/`. Nine
+production files contained inline `tests` modules; a tenth,
+`tts_protocol_contract.rs`, contained test-only fixture tables and four
+root-level tests. The crate retains a binary entry point and no `lib.rs`.
 
 All source paths in the following queue are relative to
 `apps/desktop/src-tauri/src/`. Line counts include tests, comments, and blank
-lines; they describe the inspected snapshot, not defects. Every destination
-in this table is proposed and does not yet exist.
+lines; they describe the inspected snapshot, not defects. All destinations in the table now exist and have independent acceptance.
 
 | Unit | Existing owner | Lines | New unit-test file | Implementation status |
 | --- | --- | ---: | --- | --- |
-| NRTL-HASH | `sha256_hex.rs` | 41 | `sha256_hex/tests.rs` | Not started |
-| NRTL-FRAMING | `tts_service_protocol.rs` | 355 | `tts_service_protocol/tests.rs` | Not started |
-| NRTL-CORE | `tts_release_core.rs` | 484 | `tts_release_core/tests.rs` | Not started |
-| NRTL-FAKE | `tts_service_fake_child.rs` | 408 | `tts_service_fake_child/tests.rs` | Not started |
-| NRTL-HANDOFF | `tts_service_handoff.rs` | 557 | `tts_service_handoff/tests.rs` | Not started |
-| NRTL-CB | `tts_optional_chatterbox.rs` | 3,127 | `tts_optional_chatterbox/tests.rs` | Not started |
-| NRTL-SUP | `tts_service_supervisor.rs` | 1,953 | `tts_service_supervisor/tests.rs` | Not started |
-| NRTL-CONTRACT | `tts_protocol_contract.rs` | 643 | `tts_protocol_contract/tests.rs` | Not started |
-| NRTL-PROBE | `tts_protocol_probe.rs` | 684 | `tts_protocol_probe/tests.rs` | Not started |
-| NRTL-HW | `host_profile_detection.rs` | 1,678 | `host_profile_detection/tests.rs` | Not started |
+| NRTL-HASH | `sha256_hex.rs` | 41 | `sha256_hex/tests.rs` | Accepted (unstaged) |
+| NRTL-FRAMING | `tts_service_protocol.rs` | 355 | `tts_service_protocol/tests.rs` | Accepted (unstaged) |
+| NRTL-CORE | `tts_release_core.rs` | 484 | `tts_release_core/tests.rs` | Accepted (unstaged) |
+| NRTL-FAKE | `tts_service_fake_child.rs` | 408 | `tts_service_fake_child/tests.rs` | Accepted (unstaged) |
+| NRTL-HANDOFF | `tts_service_handoff.rs` | 557 | `tts_service_handoff/tests.rs` | Accepted (unstaged) |
+| NRTL-CB | `tts_optional_chatterbox.rs` | 3,127 | `tts_optional_chatterbox/tests.rs` | Accepted (unstaged) |
+| NRTL-SUP | `tts_service_supervisor.rs` | 1,953 | `tts_service_supervisor/tests.rs` | Accepted (unstaged) |
+| NRTL-CONTRACT | `tts_protocol_contract.rs` | 643 | `tts_protocol_contract/tests.rs` | Accepted (unstaged) |
+| NRTL-PROBE | `tts_protocol_probe.rs` | 684 | `tts_protocol_probe/tests.rs` | Accepted (unstaged) |
+| NRTL-HW | `host_profile_detection.rs` | 1,678 | `host_profile_detection/tests.rs` | Accepted (unstaged) |
 
 NRTL-HW also creates `host_profile_detection/windows_probe.rs` from the
 existing private `windows_probe` module. Its production and test movements
@@ -78,8 +76,13 @@ The other five files have explicit dispositions:
   `tts_service_supervisor/host_diagnostics.rs` contain executable diagnostic
   wiring, not embedded unit-test suites: retain them unchanged.
 
-The previous campaign's PASS results are historical evidence. No fresh Rust,
-native, or model-backed acceptance has been established for this plan.
+The previous campaign's PASS results remain historical evidence. This execution
+established a fresh clean baseline at HEAD
+`f06c80e04da2025342b1002a548f03ca17e7cc0b` on the existing
+`codex/native-rust-test-layout` branch. The final source tree has 26 Rust
+files, all ten private test children, and the separate Windows child. The five
+excluded sources remain byte-identical. See the
+[evidence index](../evidence/native-rust-test-layout/README.md) for fresh reports.
 
 ## Scope and non-goals
 
@@ -284,7 +287,7 @@ and issues BASELINE evidence. A relevant existing failure is `BASELINE-FAIL`;
 do not rewrite tests to make a relocation possible. Each later unit gets its
 own current-state baseline under the same contract.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ### 2. Establish the layout in the smaller owners
 
@@ -297,7 +300,7 @@ Retain runtime-callable synthetic-child and handoff code in their parents.
 comparison, assertion review, and resolved-fixture comparison. No new shared
 test abstraction or production visibility is needed.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ### 3. Separate the larger stateful suites
 
@@ -311,7 +314,7 @@ Leave `host_diagnostics.rs` and production lifecycle/package owners intact.
 for both feature configurations, including platform-conditioned tests on the
 appropriate host. Compare embedded fixture identities and test cleanup logic.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ### 4. Separate contract and independent-probe tests
 
@@ -323,7 +326,7 @@ eighteen contract fixtures, the four intentional test-path mappings, all nine
 unchanged probe test paths, and the unchanged frozen-authority block. Production
 probe entry points remain compiled outside `cfg(test)`.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ### 5. Organize hardware detection and preserve source coverage
 
@@ -338,7 +341,7 @@ the relocated FFI/cleanup body and source-scan coverage. A non-Windows compile
 cannot establish Windows acceptance. No hardware-support promotion follows
 from the current host result.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ### 6. Document the convention and validate the complete result
 
@@ -357,7 +360,7 @@ progress/results sections, move this plan to `docs/plans/completed/`, and update
 `docs/plans/active/README.md` and `docs/README.md`. Validate links after the move.
 The original completed native plan and its evidence remain unchanged.
 
-**Status:** Not started.
+**Status:** Complete.
 
 ## Testing and benchmark strategy
 
@@ -446,9 +449,63 @@ changes. Do not alter installations, books, model caches, or generated audio.
   six existing script names, ten proposed test destinations, and exactly the
   three intended documentation changes. A second read-only planning review
   found no actionable issue in the contract/probe instructions.
-- Milestones 1-6: Not started. New execution evidence will be recorded separately
-  from the prior campaign's results.
+- Execution progress is recorded below; evidence is separate from the prior campaign.
 
+- 2026-10-09: Execution authorized for all six stages and ten units, with no
+  staging, commits, branch changes, main update, push, PR or publication. Fresh
+  host inspection found clean worktree/index on existing branch
+  `codex/native-rust-test-layout`, HEAD
+  `f06c80e04da2025342b1002a548f03ca17e7cc0b`. Reused role instances were created
+  with requested models: auditor/worker GPT-6.1 Sol high, validator GPT-6 Astra
+  high, each bound to the current repository role instructions; no steward is
+  needed because Git mutations are forbidden. The worker remains idle during
+  validation. Current source inventory records 15 files, 41 literal includes,
+  90 source test functions with conditions, and protected/excluded identities in
+  [initial inventory](../evidence/native-rust-test-layout/initial-inventory.json.txt).
+  NRTL-HASH audit CHANGE accepted, two paths/60-line ceiling; independent
+  [NRTL-HASH-BASELINE-01](../evidence/native-rust-test-layout/NRTL-HASH-BASELINE-01/report.md)
+  passes all three exact Rust commands outside sandbox, 87 default and 88
+  release tests, unchanged identities and empty index. The immutable
+  [work order](../evidence/native-rust-test-layout/NRTL-HASH-order-01.md) is now
+  approved. Existing Corepack shim selects pinned pnpm 11.15.1 through
+  process-local PATH only; no toolchain configuration was edited. Unix-only
+  tests are retained but not executed on this Windows host.
+- 2026-10-09: NRTL-HASH accepted after independent [NRTL-HASH-POST-01](../evidence/native-rust-test-layout/NRTL-HASH-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-FRAMING accepted after independent [NRTL-FRAMING-POST-01](../evidence/native-rust-test-layout/NRTL-FRAMING-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-CORE accepted after independent [NRTL-CORE-POST-01](../evidence/native-rust-test-layout/NRTL-CORE-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-FAKE accepted after independent [NRTL-FAKE-POST-01](../evidence/native-rust-test-layout/NRTL-FAKE-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-HANDOFF accepted after independent [NRTL-HANDOFF-POST-01](../evidence/native-rust-test-layout/NRTL-HANDOFF-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-CB accepted after independent [NRTL-CB-POST-01](../evidence/native-rust-test-layout/NRTL-CB-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-SUP accepted after independent [NRTL-SUP-POST-01](../evidence/native-rust-test-layout/NRTL-SUP-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-CONTRACT accepted after independent [NRTL-CONTRACT-POST-01](../evidence/native-rust-test-layout/NRTL-CONTRACT-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-PROBE accepted after independent [NRTL-PROBE-POST-01](../evidence/native-rust-test-layout/NRTL-PROBE-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+- 2026-10-09: NRTL-HW accepted after independent [NRTL-HW-POST-01](../evidence/native-rust-test-layout/NRTL-HW-POST-01/report.md), all three exact host Rust gates passed, test identities/results and source invariants preserved, live accepted identities rechecked, index empty. Source changes remain unstaged; no Git mutations.
+
+
+- 2026-10-09: All ten units independently accepted. Supplemental read-only auditor
+  found no actionable source issue. [NRTL-PACKAGE-01](../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md)
+  passed `pnpm.cmd check:portable` on the host. Testing/navigation convention
+  and evidence index now documented. Full/native-startup aggregate acceptance
+  and final archival remain outstanding.
+
+- 2026-10-09: All ten units accepted with individual fresh BASELINE and POST reports.
+  Aggregate [NRTL-PACKAGE-01](../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md)
+  and [NRTL-FINAL-01](../evidence/native-rust-test-layout/NRTL-FINAL-01/report.md)
+  pass the three specified host aggregate commands. All source identities remain
+  accepted; source writers stayed idle. Updated contributor testing/navigation
+  guidance and evidence navigation. Reviewed the canonical architecture diagram:
+  no runtime topology, owner or trust boundary changed. Archived this plan and
+  updated active/completed/documentation indexes; a separate documentation
+  receipt verifies this closeout without changing the source manifests.
 ## Discoveries and decisions
 
 - Inline Rust unit tests are idiomatic. Separate private child files are also
@@ -467,20 +524,24 @@ changes. Do not alter installations, books, model caches, or generated audio.
 - Only four contract test paths intentionally change. All other existing test
   names, conditions, assertions, and fixture identities must be preserved.
 - The canonical system diagram describes the same runtime topology after these
-  movements. Contributor testing/navigation docs require updates at execution.
+  movements. Contributor testing/navigation docs now record the convention.
 
 ## Final validation results
 
-| Area | Current result |
+| Area | Result |
 | --- | --- |
-| Planning inventory, destinations, exceptions, and commands | Inspected against the current repository; documented above. |
-| Plan structure, local links, whitespace, and documentation-only diff | PASS on 2026-10-09 in local PowerShell outside the sandbox: 12 required sections, 6 milestones, 13 local links, 6 configured scripts, and 10 proposed test destinations. `git diff --check` and `git diff --cached --quiet` exited 0; only this plan and the two documentation indexes changed. |
-| Independent planning review of contract/probe instructions | No actionable findings; read-only review, not implementation acceptance. |
-| Per-unit host baselines and post-change reports | Not run; implementation has not started. |
-| Test identity, fixture, frozen-authority, and source-scan preservation | Acceptance criteria defined; not yet validated on an implementation. |
-| Package and final native gates | Not run for this plan. |
-| Independent implementation acceptance and archive | Pending; this plan remains active. |
+| Fresh baseline and coordination | Clean initial worktree/index, unchanged execution HEAD, exact requested auditor/worker/validator models; one source writer, idle during validation. |
+| Ten unit baselines and post-change reports | PASS: each unit independently ran `format:check:rust`, `lint:rust` and `test:rust` before/after editing. See [all twenty reports and ten orders](../evidence/native-rust-test-layout/README.md). |
+| Tests, assertions and conditions | PASS: exact 87 default / 88 release-locked Windows names/results, with only the four documented contract namespace mappings. All ninety source test functions retained. Two Unix-only tests remain unexecuted on this host. |
+| Fixtures, frozen authority and exclusions | PASS: original fixture targets/bytes, complete frozen probe block, five excluded sources and executable diagnostics preserved. |
+| Hardware extraction and privacy scan | PASS: unchanged Windows implementation/visibility/FFI/cleanup; all fifteen hardware tests execute on Windows. Existing privacy assertions inspect all three resulting sources unconditionally. |
+| Portable package gate | PASS: [NRTL-PACKAGE-01](../evidence/native-rust-test-layout/NRTL-PACKAGE-01/report.md), `pnpm.cmd check:portable`. This is not non-Windows Rust evidence. |
+| Full repository and native startup | PASS: [NRTL-FINAL-01](../evidence/native-rust-test-layout/NRTL-FINAL-01/report.md), `pnpm.cmd check` and `pnpm.cmd test:native-startup`, tied to the final source identities. |
+| Architecture and navigation | Reviewed canonical diagram: private file moves preserve runtime topology, trust boundaries and ownership, so no diagram edit is needed. Testing/navigation convention and plan indexes updated. |
+| Archive and documentation receipt | All six stages complete; archived here after source FINAL acceptance. Separate documentation identity/link review is recorded as `NRTL-DOCS-FINAL-01` alongside the source evidence. |
+| Git and remaining scope | HEAD unchanged; empty index; all changes unstaged, no commits/push/PR/publication. No non-Windows Rust execution, model-backed journey or new performance/general-hardware claim. |
 
-Creating this document does not complete the refactor or revalidate any prior
-runtime claim. Record actual commands, outcomes, immutable report references,
-and host limitations here during execution.
+The reports preserve immutable source identities; later source changes require
+new validation. Documentation has a separate closeout manifest so archiving
+does not rewrite source acceptance. Raw local logs and the byte-preserving
+`.json.txt` evidence format are explained in the evidence index.

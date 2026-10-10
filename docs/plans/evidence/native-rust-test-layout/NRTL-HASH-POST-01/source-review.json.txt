@@ -1,0 +1,6 @@
+{
+  "productionPrefixAndPrivateDeclarationExact": true,
+  "dedentedBodyExact": true,
+  "childLines": 26,
+  "aggregateDiffLines": 55
+}

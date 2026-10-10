@@ -1,0 +1,10 @@
+[
+  {
+    "before": "enum DeviceClass {\n    Cpu,\n    DiscreteGpu,\n    IntegratedGpu,\n    Software,\n    Unknown,\n}",
+    "after": "enum DeviceClass {\n    Cpu,\n    DiscreteGpu,\n    #[cfg_attr(\n        all(not(windows), not(test)),\n        expect(\n            dead_code,\n            reason = \"Constructed by the Windows probe and synthetic tests.\"\n        )\n    )]\n    IntegratedGpu,\n    #[cfg_attr(\n        all(not(windows), not(test)),\n        expect(\n            dead_code,\n            reason = \"Constructed by the Windows probe and synthetic tests.\"\n        )\n    )]\n    Software,\n    Unknown,\n}"
+  },
+  {
+    "before": "enum ProbeValue<T> {\n    Known(T),\n    Unknown,\n    PermissionDenied,\n    Unavailable,\n    Malformed,\n}",
+    "after": "enum ProbeValue<T> {\n    #[cfg_attr(\n        all(not(windows), not(test)),\n        expect(\n            dead_code,\n            reason = \"Constructed by the Windows probe and synthetic tests.\"\n        )\n    )]\n    Known(T),\n    Unknown,\n    #[cfg_attr(\n        all(not(windows), not(test)),\n        expect(\n            dead_code,\n            reason = \"Constructed by the Windows probe and synthetic tests.\"\n        )\n    )]\n    PermissionDenied,\n    Unavailable,\n    #[cfg_attr(\n        not(windows),\n        expect(dead_code, reason = \"Constructed only by the Windows probe.\")\n    )]\n    Malformed,\n}"
+  }
+]

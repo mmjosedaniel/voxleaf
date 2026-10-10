@@ -188,7 +188,42 @@ The pinned toolchains and installed native prerequisites are recorded above. The
 
 ### Optional WSL environment
 
-The maintainer uses WSL Ubuntu for Git and terminal work, and it may also be used for documentation and isolated platform-independent checks. The Codex Windows execution context could not enumerate the maintainer's registered distribution during final Milestone 1 validation, so no WSL project command is claimed as locally validated evidence. The `Ubuntu portable foundation` CI job verifies `pnpm check:portable` on Ubuntu 24.04; this is portable Linux evidence, not proof that a particular WSL toolchain or clone is configured correctly.
+The maintainer uses WSL Ubuntu for Git and terminal work, documentation, and
+isolated platform-independent checks. During historical final Milestone 1
+validation, the Codex Windows context could not enumerate the distribution;
+that record contained no locally validated WSL project command. The 2026-10-10
+[Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
+supersedes that limitation for its exact isolated WSL Ubuntu 24.04.3 snapshots:
+both comparison arms pass 85 default/86 release-locked tests, including both
+Unix symlink tests. Windows separately passes 87/88 tests and native startup.
+The `Ubuntu portable foundation` job still runs only `pnpm check:portable`;
+the added `Ubuntu Rust foundation` job is configured but has not run remotely.
+
+For bounded Linux Rust checks, use an isolated Linux working directory with
+Node 24.18.0 from `.nvmrc`, pnpm 11.15.1, and Rust 1.97.1. From the repository
+root, these Bash commands install the
+[official Tauri Linux prerequisites](https://v2.tauri.app/start/prerequisites/#linux)
+plus `pkg-config`, install locked JavaScript dependencies without lifecycle
+scripts, and run the three configured Rust checks:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+  libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
+  libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
+corepack enable
+corepack prepare pnpm@11.15.1 --activate
+rustup toolchain install 1.97.1 --profile minimal --component rustfmt,clippy
+rustup show active-toolchain
+pnpm install --frozen-lockfile --ignore-scripts
+export CARGO_BUILD_JOBS=2
+pnpm format:check:rust
+pnpm lint:rust
+pnpm test:rust
+```
+
+This comparison validates native Rust checks in that environment; Linux
+desktop distribution, packaged WebView, and model support remain outside scope.
 
 WSL is not an authoritative substitute for native Windows Tauri builds, packaging, Windows permissions, filesystem behavior, or desktop runtime validation. A check passing in WSL does not satisfy a task that requires native Windows validation.
 
@@ -898,6 +933,6 @@ the [benchmark README](../../benchmarks/tts/README.md#disposable-blinded-quality
 
 ## Continuous integration
 
-The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install package dependencies from committed lockfiles. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
+The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. All three jobs install package dependencies from committed lockfiles. The added `Ubuntu Rust foundation` job installs Linux prerequisites and pinned Rust, then runs `pnpm format:check:rust`, `pnpm lint:rust`, and `pnpm test:rust` with bounded build concurrency. Its local comparative evidence passes; remote execution remains pending. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
 
 Dependency ownership, direct package purposes, production alternatives, and transitive-lock review rules are documented in [`dependencies.md`](dependencies.md).

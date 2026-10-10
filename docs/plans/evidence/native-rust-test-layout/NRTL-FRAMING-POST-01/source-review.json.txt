@@ -1,0 +1,17 @@
+{
+  "productionPrefixAndPrivateDeclarationExact": true,
+  "dedentedBodyWithOnlyIncludeDepthCorrectionExact": true,
+  "childLines": 54,
+  "aggregateDiffLines": 111,
+  "withinCeiling": true,
+  "fixtures": [
+    {
+      "literal": "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "sha256": "e87baae6dfcaa348223e184ce8f0dba13fa4509a17f736f57abe3321069bedcd",
+      "matchesOriginal": true
+    }
+  ],
+  "otherSourceChanges": [],
+  "unexpectedNewSource": []
+}

@@ -1,0 +1,17 @@
+{
+  "productionPrefixAndPrivateDeclarationExact": true,
+  "dedentedBodyWithOnlyIncludeDepthCorrectionExact": false,
+  "childLines": 299,
+  "aggregateDiffLines": 601,
+  "withinCeiling": true,
+  "fixtures": [
+    {
+      "literal": "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753",
+      "matchesOriginal": true
+    }
+  ],
+  "otherSourceChanges": [],
+  "unexpectedNewSource": []
+}

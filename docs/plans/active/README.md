@@ -17,9 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`native-rust-test-layout.md`](native-rust-test-layout.md): planned separation
-  of native Rust unit tests into private child files and extraction of the
-  existing Windows hardware-probe submodule; implementation has not started.
+No current implementation plan remains. The [Linux Rust comparison](../completed/linux-rust-test-comparison.md) is complete; its former active path is a navigation-only redirect for historical evidence.
+
+The completed
+[native Rust test-layout campaign](../completed/native-rust-test-layout.md)
+records all ten accepted units and aggregate host validation.
 
 The preceding native Rust organization campaign is archived in
 [completed plans](../completed/native-rust-module-organization.md).

@@ -1,0 +1,716 @@
+[
+  {
+    "configuration": "default",
+    "expectedCount": 87,
+    "tests": [
+      {
+        "name": "hardware_profile_authority::tests::current_tauri_boundary_has_no_plugin_or_renderer_capability",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::freezes_native_probe_surfaces_without_shell_or_remote_fallback",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::admits_only_one_concurrent_probe_and_releases_the_guard",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::distinguishes_partial_permission_denied_and_malformed_observations",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::discarded_unusable_adapter_does_not_poison_a_known_provider",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::committed_reports_are_content_free_and_identity_free",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::canonical_schema_freezes_exact_units_maxima_and_provider_set",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_accepts_every_exact_numeric_threshold",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_fails_closed_for_each_unknown_capacity",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_rejects_one_below_every_numeric_threshold",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::preserves_integrated_only_low_memory_and_no_provider_scenarios",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::normalizes_complete_snapshot_without_identity_or_support_claims",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::selected_provider_with_unknown_memory_remains_partial",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::selects_one_conservative_multi_adapter_candidate",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::unsupported_platform_is_explicitly_unavailable",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::fails_closed_for_unknown_provider_and_ambiguous_exact_tie",
+        "result": "ok"
+      },
+      {
+        "name": "sha256_hex::tests::preserves_known_sha256_values_and_leading_zeroes",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::checked_in_authority_enables_the_measured_ordinary_package",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::implementation_has_no_process_network_model_or_persistence_surface",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_observes_cancellation_before_any_payload_is_installed",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_rejects_symbolic_link_entries_without_creating_the_target",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::free_space_gate_is_inclusive_and_result_blind",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_rejects_corrupt_entry_bytes_and_truncated_archives",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::manifest_rejects_mutable_model_revision_and_unexpected_files",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::native_host_gate_rejects_before_confirmation_staging_or_network_work",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::ordinary_selection_requires_confirmation_without_creating_staging",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::redirect_policy_rejects_source_substitution_and_non_https_targets",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_accepts_stored_and_deflated_files_only_within_the_total_limit",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::runtime_reassembly_is_ordered_bounded_and_cancellable",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_runtime_verifies_after_safe_python_bytecode_cleanup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::removal_rejects_an_active_download_without_touching_staging",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_runtime_removes_only_unmanifested_python_cache_bytecode",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_keeps_frozen_maximum_arithmetic",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_boundary_rejects_nested_narration_and_audio_drift",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::successor_authority_has_exact_new_identity_and_no_legacy_correction",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_matches_every_closed_control_kind",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_rejects_shared_invalid_controls",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_v3_runtime_verifies_after_transient_numba_cache_cleanup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::exposes_only_fixed_content_free_failure_codes",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::transient_numba_cache_path_must_be_a_contained_directory",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::accepts_exact_control_and_audio_payload_limits",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::safe_extraction_rejects_archive_entries_outside_the_exact_package_root",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::accepts_only_the_active_complete_identity_and_finite_audio",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::freezes_exact_and_maximum_plus_one_authority_dimensions",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::concurrent_installed_runtime_checks_are_serialized",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::runtime_discovery_rejects_mutated_stale_and_traversal_payloads",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::promotion_replaces_only_the_versioned_package_after_complete_verification",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_a_second_active_probe_without_queueing",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_partial_unknown_or_mutated_headers",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_truncated_payloads_without_partial_publication",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_maximum_plus_one_before_reading_a_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::io_errors_remain_content_free",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_below_minimum_payload_lengths_before_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_unsafe_manifest_paths",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::accepts_only_the_exact_manifest_and_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::verified_runtime_receipt_rechecks_tree_and_authority_changes",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::tracked_manifest_matches_core_lock_and_native_authority",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::frozen_profile_builds_bounded_content_only_inside_the_native_request",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::content_safe_case_serialization_contains_no_segment_or_text_field",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::frame_round_trip_keeps_kind_and_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::bounded_consumer_rejects_a_second_unit_and_zeroes_release",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::rejects_declared_over_limit_before_reading_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::strict_control_decoder_rejects_duplicate_keys",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::validates_exact_audio_and_rejects_non_finite_values",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_never_writes_bytecode_into_verified_packages",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_changed_installed_manifest_and_unknown_profile",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::profile_configuration_rejects_unknown_profile_identity",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::hashes_optional_payloads_without_a_large_stack_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::fixed_failure_surface_contains_no_dynamic_input",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::supervised_children_use_the_windows_no_console_flag",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::rejects_text_and_identity_bounds_before_dispatch",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::validates_segment_and_generates_native_owned_request_identity",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::retained_v2_is_cleanup_only_and_survives_observation_and_cancellation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::failed_job_assignment_kills_and_reaps_the_spawned_child",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_truncated_substituted_and_stale_payloads",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::hashes_the_packaged_payload_without_a_large_stack_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_fake_child::tests::normal_child_emits_canonical_ordered_complete_unit",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::production_windows_probe_emits_only_the_bounded_report",
+        "result": "ok"
+      }
+    ],
+    "summary": "test result: ok. 87 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s"
+  },
+  {
+    "configuration": "release-locked-runtime",
+    "expectedCount": 88,
+    "tests": [
+      {
+        "name": "host_profile_detection::tests::admits_only_one_concurrent_probe_and_releases_the_guard",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::current_tauri_boundary_has_no_plugin_or_renderer_capability",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::fails_closed_for_unknown_provider_and_ambiguous_exact_tie",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::discarded_unusable_adapter_does_not_poison_a_known_provider",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::distinguishes_partial_permission_denied_and_malformed_observations",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::freezes_native_probe_surfaces_without_shell_or_remote_fallback",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::committed_reports_are_content_free_and_identity_free",
+        "result": "ok"
+      },
+      {
+        "name": "hardware_profile_authority::tests::canonical_schema_freezes_exact_units_maxima_and_provider_set",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_accepts_every_exact_numeric_threshold",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_fails_closed_for_each_unknown_capacity",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_rejects_one_below_every_numeric_threshold",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::preserves_integrated_only_low_memory_and_no_provider_scenarios",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::selected_provider_with_unknown_memory_remains_partial",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::selects_one_conservative_multi_adapter_candidate",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::unsupported_platform_is_explicitly_unavailable",
+        "result": "ok"
+      },
+      {
+        "name": "sha256_hex::tests::preserves_known_sha256_values_and_leading_zeroes",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::normalizes_complete_snapshot_without_identity_or_support_claims",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::checked_in_authority_enables_the_measured_ordinary_package",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::free_space_gate_is_inclusive_and_result_blind",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::manifest_rejects_mutable_model_revision_and_unexpected_files",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::implementation_has_no_process_network_model_or_persistence_surface",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_observes_cancellation_before_any_payload_is_installed",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_rejects_symbolic_link_entries_without_creating_the_target",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::native_host_gate_rejects_before_confirmation_staging_or_network_work",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::ordinary_selection_requires_confirmation_without_creating_staging",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::redirect_policy_rejects_source_substitution_and_non_https_targets",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_runtime_removes_only_unmanifested_python_cache_bytecode",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_rejects_corrupt_entry_bytes_and_truncated_archives",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_runtime_verifies_after_safe_python_bytecode_cleanup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::extraction_accepts_stored_and_deflated_files_only_within_the_total_limit",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::successor_authority_has_exact_new_identity_and_no_legacy_correction",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::installed_v3_runtime_verifies_after_transient_numba_cache_cleanup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::runtime_reassembly_is_ordered_bounded_and_cancellable",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_boundary_rejects_nested_narration_and_audio_drift",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::removal_rejects_an_active_download_without_touching_staging",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::promotion_replaces_only_the_versioned_package_after_complete_verification",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::transient_numba_cache_path_must_be_a_contained_directory",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_keeps_frozen_maximum_arithmetic",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::safe_extraction_rejects_archive_entries_outside_the_exact_package_root",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_rejects_shared_invalid_controls",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_contract::rust_fixture_surface_matches_every_closed_control_kind",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::runtime_discovery_rejects_mutated_stale_and_traversal_payloads",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::accepts_only_the_active_complete_identity_and_finite_audio",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::accepts_exact_control_and_audio_payload_limits",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::exposes_only_fixed_content_free_failure_codes",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::freezes_exact_and_maximum_plus_one_authority_dimensions",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_a_second_active_probe_without_queueing",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_below_minimum_payload_lengths_before_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_truncated_payloads_without_partial_publication",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_maximum_plus_one_before_reading_a_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_protocol_probe::tests::rejects_partial_unknown_or_mutated_headers",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::io_errors_remain_content_free",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_unsafe_manifest_paths",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::bounded_consumer_rejects_a_second_unit_and_zeroes_release",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::verified_runtime_receipt_rechecks_tree_and_authority_changes",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::tracked_manifest_matches_core_lock_and_native_authority",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::content_safe_case_serialization_contains_no_segment_or_text_field",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_handoff::tests::frozen_profile_builds_bounded_content_only_inside_the_native_request",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::concurrent_installed_runtime_checks_are_serialized",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::frame_round_trip_keeps_kind_and_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::rejects_declared_over_limit_before_reading_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_changed_installed_manifest_and_unknown_profile",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::strict_control_decoder_rejects_duplicate_keys",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_protocol::tests::validates_exact_audio_and_rejects_non_finite_values",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::accepts_only_the_exact_manifest_and_payload",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_never_writes_bytecode_into_verified_packages",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::fixed_failure_surface_contains_no_dynamic_input",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::profile_configuration_rejects_unknown_profile_identity",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::release_locked_runtime_rejects_development_only_profiles_and_defaults",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::rejects_text_and_identity_bounds_before_dispatch",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::supervised_children_use_the_windows_no_console_flag",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::validates_segment_and_generates_native_owned_request_identity",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_supervisor::tests::failed_job_assignment_kills_and_reaps_the_spawned_child",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::hashes_optional_payloads_without_a_large_stack_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_optional_chatterbox::tests::retained_v2_is_cleanup_only_and_survives_observation_and_cancellation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::rejects_truncated_substituted_and_stale_payloads",
+        "result": "ok"
+      },
+      {
+        "name": "tts_release_core::tests::hashes_the_packaged_payload_without_a_large_stack_allocation",
+        "result": "ok"
+      },
+      {
+        "name": "tts_service_fake_child::tests::normal_child_emits_canonical_ordered_complete_unit",
+        "result": "ok"
+      },
+      {
+        "name": "host_profile_detection::tests::production_windows_probe_emits_only_the_bounded_report",
+        "result": "ok"
+      }
+    ],
+    "summary": "test result: ok. 88 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s"
+  }
+]

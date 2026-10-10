@@ -1,0 +1,7 @@
+{
+  "command": "pnpm.cmd test:native-startup",
+  "exit": 0,
+  "driverVersion": "155.0.4283.45",
+  "driverSignature": "Valid Microsoft Corporation",
+  "log": "windows-native-retry.log"
+}

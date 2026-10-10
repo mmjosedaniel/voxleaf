@@ -1,0 +1,88 @@
+$ErrorActionPreference = 'Stop'
+$root = 'C:\Users\mmjos\Desktop\workbeanch\voxleaf'
+$supervisorRelative = 'apps/desktop/src-tauri/src/tts_service_supervisor.rs'
+$supervisor = Join-Path $root $supervisorRelative
+$before = Join-Path $root 'tmp/linux-rust-repair/supervisor-before.rs'
+$ico = Join-Path $root 'apps/desktop/src-tauri/icons/icon.ico'
+$png = Join-Path $root 'apps/desktop/src-tauri/icons/icon.png'
+function Hash-File([string]$path) { (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant() }
+function Hash-Bytes([byte[]]$bytes) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant() }
+function Read-Big32([byte[]]$bytes, [int]$offset) { [uint32]([uint64]$bytes[$offset]*16777216 + [uint64]$bytes[$offset+1]*65536 + [uint64]$bytes[$offset+2]*256 + [uint64]$bytes[$offset+3]) }
+function Crc32([byte[]]$bytes, [int]$offset, [int]$length) {
+    [uint64]$crc = 4294967295
+    for ($i=$offset; $i -lt $offset+$length; $i++) {
+        $crc = $crc -bxor [uint64]$bytes[$i]
+        for ($j=0; $j -lt 8; $j++) {
+            if ($crc -band 1) { $crc = ($crc -shr 1) -bxor [uint64]3988292384 } else { $crc = $crc -shr 1 }
+        }
+    }
+    [uint32]($crc -bxor [uint64]4294967295)
+}
+$manifest = Get-Content -Raw -LiteralPath (Join-Path $root 'tmp/linux-rust-repair/before.json') | ConvertFrom-Json
+$preHashes = @{}
+foreach ($item in $manifest.paths) {
+    $path = Join-Path $root $item.path
+    $preHashes[$item.path] = if (Test-Path -LiteralPath $path) { Hash-File $path } else { 'DELETED' }
+}
+$sourceHashBefore = Hash-File $supervisor
+if ($sourceHashBefore -ne 'c153948b3681d2f5538053c62e247c221ecbe8d3950b0132924f6ce51d53c5dd' -or $sourceHashBefore -ne (Hash-File $before)) { throw 'Supervisor source drifted from saved pre-repair bytes' }
+$icoHashBefore = Hash-File $ico
+if ($icoHashBefore -ne 'd2fdf6e9b1f1c4f5f594cacfefc40c487b9818b77a94a4773c481a999febffa4') { throw 'ICO source identity mismatch' }
+if (Test-Path -LiteralPath $png) { throw 'icon.png already exists; refusing overwrite' }
+$icoBytes = [IO.File]::ReadAllBytes($ico)
+if ([BitConverter]::ToUInt16($icoBytes,0) -ne 0 -or [BitConverter]::ToUInt16($icoBytes,2) -ne 1 -or [BitConverter]::ToUInt16($icoBytes,4) -ne 6) { throw 'Unexpected ICO directory' }
+$entryIndex = 5
+$entryOffset = 6+16*$entryIndex
+$payloadSize = [BitConverter]::ToUInt32($icoBytes,$entryOffset+8)
+$payloadOffset = [BitConverter]::ToUInt32($icoBytes,$entryOffset+12)
+if ($icoBytes[$entryOffset] -ne 0 -or $icoBytes[$entryOffset+1] -ne 0 -or [BitConverter]::ToUInt16($icoBytes,$entryOffset+6) -ne 32 -or $payloadSize -ne 4292 -or $payloadOffset -ne 4554 -or $payloadOffset+$payloadSize -gt $icoBytes.Length) { throw 'Unexpected 256-pixel ICO payload entry' }
+$pngBytes = [byte[]]::new($payloadSize)
+[Array]::Copy($icoBytes,$payloadOffset,$pngBytes,0,$payloadSize)
+if ([Convert]::ToHexString($pngBytes[0..7]) -ne '89504E470D0A1A0A') { throw 'PNG signature mismatch' }
+$chunks = [Collections.Generic.List[object]]::new()
+$cursor = 8
+while ($cursor -lt $pngBytes.Length) {
+    if ($cursor+12 -gt $pngBytes.Length) { throw 'Truncated PNG chunk' }
+    $length = Read-Big32 $pngBytes $cursor
+    if ($cursor+12+[uint64]$length -gt $pngBytes.Length) { throw 'PNG chunk exceeds payload' }
+    $type = [Text.Encoding]::ASCII.GetString($pngBytes,$cursor+4,4)
+    $expectedCrc = Read-Big32 $pngBytes ($cursor+8+$length)
+    if ((Crc32 $pngBytes ($cursor+4) (4+$length)) -ne $expectedCrc) { throw "CRC mismatch: $type" }
+    $chunks.Add([PSCustomObject]@{ type=$type; length=$length; crc32=('{0:x8}' -f $expectedCrc) })
+    $cursor += 12+$length
+    if ($type -eq 'IEND') { break }
+}
+if ($cursor -ne $pngBytes.Length -or $chunks[0].type -ne 'IHDR' -or $chunks[0].length -ne 13 -or $chunks[$chunks.Count-1].type -ne 'IEND' -or $chunks[$chunks.Count-1].length -ne 0 -or @($chunks | Where-Object { $_.type -eq 'IDAT' }).Count -eq 0) { throw 'Invalid PNG chunk structure' }
+$width = Read-Big32 $pngBytes 16
+$height = Read-Big32 $pngBytes 20
+if ($width -ne 256 -or $height -ne 256 -or $pngBytes[24] -ne 8 -or $pngBytes[25] -ne 6 -or $pngBytes[26] -ne 0 -or $pngBytes[27] -ne 0 -or $pngBytes[28] -ne 0) { throw 'PNG is not expected 256x256 8-bit RGBA' }
+$pngHash = Hash-Bytes $pngBytes
+if ($pngHash -ne '008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8') { throw 'PNG payload identity mismatch' }
+$encoding = [Text.Encoding]::GetEncoding(28591)
+$sourceBytes = [IO.File]::ReadAllBytes($supervisor)
+$source = $encoding.GetString($sourceBytes)
+$oldParameter = 'fn configure_supervised_child(command: &mut Command)'
+$oldUse = '    command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);'
+if ([regex]::Matches($source,[regex]::Escape($oldParameter)).Count -ne 1 -or [regex]::Matches($source,[regex]::Escape($oldUse)).Count -ne 1) { throw 'Expected two unique identifier occurrences absent' }
+$patched = $source.Replace($oldParameter,'fn configure_supervised_child(_command: &mut Command)').Replace($oldUse,'    _command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);')
+$patchedBytes = $encoding.GetBytes($patched)
+if ($patchedBytes.Length -ne $sourceBytes.Length+2 -or $patched.Replace('fn configure_supervised_child(_command: &mut Command)',$oldParameter).Replace('    _command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);',$oldUse) -cne $source) { throw 'Supervisor delta exceeds exact two underscore additions' }
+[IO.File]::WriteAllBytes($supervisor,$patchedBytes)
+[IO.File]::WriteAllBytes($png,$pngBytes)
+if ((Hash-File $supervisor) -ne (Hash-Bytes $patchedBytes) -or (Hash-File $png) -ne $pngHash -or (Hash-File $ico) -ne $icoHashBefore) { throw 'Written content or source asset mismatch' }
+$delta = @()
+foreach ($item in $manifest.paths) {
+    $path = Join-Path $root $item.path
+    $actual = if (Test-Path -LiteralPath $path) { Hash-File $path } else { 'DELETED' }
+    if ($actual -ne $preHashes[$item.path]) { $delta += [PSCustomObject]@{ path=$item.path; before=$preHashes[$item.path]; after=$actual } }
+}
+if ($delta.Count -ne 1 -or $delta[0].path -ne $supervisorRelative) { throw 'Unexpected repository delta during repair' }
+$packet = [ordered]@{
+    task='LINUX-RUST-REPAIR-01'; source_before_sha256=$sourceHashBefore; source_after_sha256=(Hash-File $supervisor);
+    source_byte_delta=2; source_changes='Only two underscore insertions: parameter declaration and cfg(windows) use';
+    ico_sha256=$icoHashBefore; ico_directory_entry_zero_based=$entryIndex; ico_payload_offset=$payloadOffset; ico_payload_length=$payloadSize;
+    png_sha256=$pngHash; png_width=$width; png_height=$height; png_bit_depth=8; png_color_type=6; png_color='RGBA'; png_chunks=$chunks;
+    delta=$delta; new_path='apps/desktop/src-tauri/icons/icon.png'; preserved_path_count=($manifest.paths.Count-1); tests_run=$false; git_mutations=$false
+}
+$packet | ConvertTo-Json -Depth 6 | Set-Content -Encoding utf8 -LiteralPath (Join-Path $root 'tmp/linux-rust-repair/worker-change-packet.json')
+$packet | ConvertTo-Json -Depth 6

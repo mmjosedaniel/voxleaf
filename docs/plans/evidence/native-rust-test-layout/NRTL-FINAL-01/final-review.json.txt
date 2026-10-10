@@ -1,0 +1,6 @@
+{
+  "repositoryStatusDifferences": [],
+  "builtBinarySha256": "7df5c992e6cc1ecda4a243bf8b9de180f8bf5f114350d62babbf387e604c6be4",
+  "builtBinaryBytes": 12328960,
+  "diagnosticSummary": "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication replacement cleanup completed, no errors, no external requests."
+}

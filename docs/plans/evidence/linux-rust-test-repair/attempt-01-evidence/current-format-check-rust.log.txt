@@ -1,0 +1,1 @@
+$ cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml

@@ -1,0 +1,92 @@
+[
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake.json",
+    "sha256": "25044b782cac1e1ad43d53d4ec4edf2efec71384d53aaaa309ff1d9c3b3115f6",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-load.json",
+    "sha256": "44abb501d7719c7644fd186a5edcaf3621af023ca5458329d25794440317f242",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-warm.json",
+    "sha256": "b434d70b6cbff921ffc8e8f5a5e5dbefec7ac60a84493d1bc05643007e7b533c",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+    "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancel.json",
+    "sha256": "f3a2ec0a2e9f8320eee6d2643738ff68ee61d4a5aa793e4e2e34a4397944ae64",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-health.json",
+    "sha256": "4583b24e55875ac9a6b110779fdc0865ab24977db3a91c7facda7fe2b75ed7d2",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-shutdown.json",
+    "sha256": "f8a9abc9c524c0a454dcdd65937429f12e61a5f14f5799ce699622a6cb0fcfbe",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake-accepted.json",
+    "sha256": "a19063eec8dacceb85df9468f5c53627bcff905629882d5603826f670eb0af24",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-state.json",
+    "sha256": "b68810940c37e80182c3a191ea66d4d98d2ec7ba15848285142b5d8cec1ba294",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-capabilities.json",
+    "sha256": "e45d28cbd1ae911248b60960183751a70fb2666f8250fd572ac7de9e4229cb63",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+    "sha256": "e87baae6dfcaa348223e184ce8f0dba13fa4509a17f736f57abe3321069bedcd",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-completed.json",
+    "sha256": "90026180520ecde398b751ac0977d3bc769d6ced55c83cf9a1fb34e5af3207af",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancelled.json",
+    "sha256": "bb8c1007550cfef8f5d03339d365a13db052ce272e3deb4917052f95e9115d90",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-error.json",
+    "sha256": "188daaf452d4da6e7a908f24e043f91064ebd2b349effdd1eddb7132a34b0f02",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-protocol-rejected.json",
+    "sha256": "d2a63f593e079e403ad13c00fccc12922aed2ac40a73b5b7c09f53e2075dd6ff",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-field.json",
+    "sha256": "ab0a7f0a0df45206d39e26ea7723a15a498550d9704a6eb677aeb26205f3ec59",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unsupported-protocol.json",
+    "sha256": "6410ba5c2ba920deff2a5ca0819daa3d8f357e0e3af93c43be84e878b6d90063",
+    "unchanged": true
+  },
+  {
+    "target": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-kind.json",
+    "sha256": "4565b32a6bffcd1a45ffef359cf771ca22788aa86281e0ccc86ac2c340b34c11",
+    "unchanged": true
+  }
+]

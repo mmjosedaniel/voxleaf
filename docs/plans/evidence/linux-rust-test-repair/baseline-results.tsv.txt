@@ -1,0 +1,2 @@
+lint:rust	101
+test:rust	101

@@ -1,0 +1,50 @@
+$ cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings && cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets --features release-locked-runtime -- -D warnings
+   Compiling voxleaf-desktop v0.1.0 (/var/tmp/voxleaf-linux-rust-comparison-20261010/repair-01/baseline/apps/desktop/src-tauri)
+error: variants `IntegratedGpu` and `Software` are never constructed
+  --> src/host_profile_detection.rs:59:5
+   |
+56 | enum DeviceClass {
+   |      ----------- variants in this enum
+...
+59 |     IntegratedGpu,
+   |     ^^^^^^^^^^^^^
+60 |     Software,
+   |     ^^^^^^^^
+   |
+   = note: `DeviceClass` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `-D dead-code` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: variants `Known`, `PermissionDenied`, and `Malformed` are never constructed
+   --> src/host_profile_detection.rs:138:5
+    |
+137 | enum ProbeValue<T> {
+    |      ---------- variants in this enum
+138 |     Known(T),
+    |     ^^^^^
+139 |     Unknown,
+140 |     Permi...enied,
+    |     ^^^^^...^^^^^
+141 |     Unavailable,
+142 |     Malformed,
+    |     ^^^^^^^^^
+    |
+    = note: `ProbeValue` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+error: variant `Malformed` is never constructed
+   --> src/host_profile_detection.rs:142:5
+    |
+137 | enum ProbeValue<T> {
+    |      ---------- variant in this enum
+...
+142 |     Malformed,
+    |     ^^^^^^^^^
+    |
+    = note: `ProbeValue` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `-D dead-code` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: could not compile `voxleaf-desktop` (bin "voxleaf-desktop") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `voxleaf-desktop` (bin "voxleaf-desktop" test) due to 1 previous error
+[ELIFECYCLE] Command failed with exit code 101.

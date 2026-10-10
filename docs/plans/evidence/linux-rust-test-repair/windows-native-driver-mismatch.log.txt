@@ -1,0 +1,29 @@
+$ pnpm --filter @voxleaf/desktop test:native-startup
+$ tauri build && node scripts/native-startup-smoke.mjs
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `pnpm build`
+$ vite build
+vite v8.3.2 building client environment for production...
+transforming...
+✓ 183 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                           0.50 kB │ gzip:   0.30 kB
+dist/assets/incremental-wsola-v3-worklet-C8gQhKHK.js      3.30 kB
+dist/assets/index-N6B5ULJr.css                           26.84 kB │ gzip:   5.33 kB
+dist/assets/index-BBudV8IM.js                         1,025.24 kB │ gzip: 240.57 kB
+
+✓ built in 763ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+   Compiling voxleaf-desktop v0.1.0 (C:\Users\mmjos\Desktop\workbeanch\voxleaf\apps\desktop\src-tauri)
+    Finished `release` profile [optimized] target(s) in 31.76s
+       Built application at: C:\Users\mmjos\Desktop\workbeanch\voxleaf\apps\desktop\src-tauri\target\release\voxleaf-desktop.exe
+Native startup smoke failed during native WebView session creation [webdriver-session-not-created].
+C:\Users\mmjos\Desktop\workbeanch\voxleaf\apps\desktop:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @voxleaf/desktop@0.1.0 test:native-startup: `tauri build && node scripts/native-startup-smoke.mjs`
+Exit status 1
+[ELIFECYCLE] Command failed with exit code 1.
