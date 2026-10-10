@@ -17,6 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [desktop source organization plan](desktop-source-organization.md) defines
+three sequential units: semantic render-plan extraction, Web Audio backend
+separation, and an ordered CSS split. Its implementation milestones have not
+started; the large publication/narration lifecycle owners remain out of scope.
+
 The [PR #229 evidence retention cleanup](../completed/pr-evidence-retention.md) is technically complete and archived; its separate Git publication handoff is pending. The [Linux Rust comparison](../completed/linux-rust-test-comparison.md) is complete; its former active path is a navigation-only redirect for historical evidence.
 
 The completed
