@@ -1,6 +1,6 @@
 # TTS service organization
 
-Status: ready for implementation; source implementation has not started.
+Status: Complete; four independently accepted source units and final portable/native gates passed.
 Created: 2026-10-10.
 Planning base: `main` at `fbb39a175062a6ad70a2283b9878c6b0dd4a1db0`.
 Intended implementation branch: `codex/tts-service-organization`.
@@ -23,10 +23,11 @@ evaluation presentation and score calculation without reading the full build or
 session lifecycle. Existing desktop behavior, Python entrypoints, CLI output,
 package identities and evaluation results remain unchanged.
 
-The current request authorizes this plan, a branch from local `main`, and one
-documentation commit. It does not start source implementation. A later execution
-request must establish its Git authorization explicitly; this plan does not grant
-automatic implementation commits, remote publication or release publication.
+The 2026-10-10 execution request authorizes the four ordered source units,
+documentation and independent host validation on the prepared branch. Leave all
+changes unstaged and uncommitted, with an empty index between disjoint units.
+No push, pull request, authority regeneration or release publication is authorized.
+The earlier branch/documentation-commit authorization covered plan authoring only.
 
 ## 3. Current state
 
@@ -52,9 +53,9 @@ Paths in this table are relative to `services/tts`. These observations are stati
 planning evidence, not a passing test baseline. Audits may narrow a candidate or
 return SKIP; never force a change to make a file shorter.
 
-The current Piper site-package copier excludes the two release-builder filenames
-individually. A new `voxleaf_tts/packaging/` tree would otherwise be copied into
-the distributed core. Chatterbox uses an explicit `runtimeModules` list for local
+At planning time, the Piper site-package copier excluded the two release-builder
+filenames individually. PY-CORE now also excludes the entire exact
+`voxleaf_tts/packaging/` subtree. Chatterbox uses an explicit `runtimeModules` list for local
 service sources. These are different policies and must remain independently
 understood and tested.
 
@@ -128,10 +129,11 @@ Read these before implementing and use the current checkout as authority:
 
 ## 6. Architecture and constraints
 
-### Proposed internal layout
+### Implemented internal layout
 
-The following paths are proposed, not implemented. Names and ownership must be
-confirmed in each accepted Audit Packet before baseline and a frozen work order.
+The following paths were confirmed by execution audits and implemented through
+four disjoint, independently accepted work orders. See the
+[developer guide](../../development/tts-service-organization.md) for ownership.
 
 ```text
 services/tts/
@@ -235,7 +237,7 @@ Never carry a rejected patch into another unit. Preserve unrelated user changes.
 
 ### Milestone 0: Refresh inventory and establish executable work orders
 
-Status: not started for implementation.
+Status: complete; tracked inventory, clean initial state, roles and four baselines recorded.
 
 Confirm the current branch, HEAD, index and tracked Python inventory. Record every
 target as CHANGE, SKIP, BLOCKED or EXCLUDED with evidence. The planning packet for
@@ -251,7 +253,7 @@ prerequisites or failing relevant tests stop that unit before edits.
 
 ### Phase A, milestone 1: PY-CORE — extract Piper integrity
 
-Status: proposed; planning audit CHANGE, implementation not started.
+Status: complete; accepted by `PY-CORE-POST-CHANGE-02` (409 tests).
 
 Closed proposed allowlist:
 
@@ -278,7 +280,7 @@ Piper cached-artifact check in section 8; explain the check's evidence limit.
 
 ### Phase A, milestone 2: PY-CHATTERBOX — separate optional release authority
 
-Status: proposed; planning audit CHANGE, execution refresh and baseline required.
+Status: complete; accepted by `PY-CHATTERBOX-POST-CHANGE-03` (414 tests).
 
 Closed proposed allowlist:
 
@@ -290,7 +292,7 @@ Closed proposed allowlist:
 Follow the audited direction facade -> authority -> integrity, plus facade ->
 integrity; neither helper imports the facade. Move `PackageVersion`,
 `PackageLayout`, the canonical error type, package/hash/part-limit constants,
-root/hash/path/JSON validation, `_artifact`, AST loader verification and
+root/hash/path/JSON validation, `_artifact`, and
 runtime-manifest construction/verification to integrity. For the proposed helper
 depth, `repository_root()` changes from `parents[4]` to `parents[5]`; test the
 returned repository root rather than assuming the old depth still works.
@@ -302,6 +304,12 @@ explicit writer functions remain available but are not run against tracked
 authority. Keep measurements, license-copy constants, acquisition/copying,
 environment synchronization, staging, archive splitting and CLI in the facade.
 Re-export required existing bindings explicitly.
+
+Execution audit narrows this extraction: retain `verify_safe_model_load_sites`
+and its `ast` import in the facade with its sole production consumer,
+`build_package`. The initial relocation estimate exceeded the 2,050-line budget;
+this cohesive narrowing preserves every existing loader assertion and avoids
+increasing the closed scope or reducing test coverage.
 
 Preserve v2/v3 defaults and distinctions, generated-module closure, source and
 acquisition identities, safe-loader rejection, canonical manifests and split
@@ -316,7 +324,7 @@ Python gates and all four optional-package authority checks in section 8.
 
 ### Phase B, milestone 3: PY-CORPUS — separate benchmark input loading
 
-Status: candidate; audit and baseline required.
+Status: complete; accepted by `PY-CORPUS-POST-CHANGE-02` (446 tests).
 
 Closed proposed allowlist:
 
@@ -342,7 +350,7 @@ Python gates, with all existing harness and bilingual tests included by pytest.
 
 ### Phase B, milestone 4: PY-QUALITY — separate presentation and calculation
 
-Status: candidate; audit and baseline required.
+Status: complete; accepted by `PY-QUALITY-POST-CHANGE-01` (457 tests).
 
 Closed proposed allowlist:
 
@@ -352,8 +360,10 @@ Closed proposed allowlist:
 - `services/tts/tests/test_benchmark_quality.py`
 
 Move `_render_evaluator_html` into presentation. Extract score validation and the
-calculation portion of `aggregate_scores` into a pure function over already-read
-metadata, ordered cases, cards and correction data. Retain file reads/writes,
+per-candidate calculation portion of `aggregate_scores` into a pure function over
+already-read ordered cases, cards and correction data. The execution audit kept
+the outer candidate loop, metadata/card/correction validation and each separate
+corpus read in its original order in `quality.py`. Retain file reads/writes,
 session safety, generation, finalization, submit/correct orchestration and cleanup
 in `quality.py`. Define shared score constants/error identity in the lowest
 necessary module, with explicit compatible imports and no reverse dependency.
@@ -370,7 +380,7 @@ byte-preserving move is outside this work order.
 
 ### Milestone 5: Combined acceptance and developer navigation
 
-Status: not started.
+Status: complete; guide, aggregate review and `FINAL-01` portable/native gates passed.
 
 Run package/final checks from section 8, inspect the aggregate diff, compare
 protected identities and verify all original import/CLI routes. Record each
@@ -380,8 +390,8 @@ quota is required; a large remaining lifecycle owner can be a valid result.
 After source validation is idle, add a concise module map to
 `docs/development/tts-service-organization.md` and link it from `docs/README.md`.
 Explain runtime versus maintainer tooling, helper ownership, separate tests,
-generated/frozen files, commands and package-exclusion policy. This is a proposed
-documentation path, not an existing guide. Update this plan and its index entries
+generated/frozen files, commands and package-exclusion policy. The guide now exists.
+Update this plan and its index entries
 with actual outcomes. Recheck documentation after the last edit.
 
 Review the canonical system diagram and architecture overview. Update them only
@@ -509,6 +519,67 @@ scoped Git order; do not rewrite shared history or published artifacts.
 
 ## 10. Progress log
 
+- Final independent `FINAL-01` PASS: complete `pnpm.cmd check:portable`,
+  `pnpm.cmd check` and `git diff --check` passed outside the sandbox. Python 457,
+  shared 209, EPUB 651, desktop 588 plus 38 Node, evidence 13 and Rust 87/88
+  tests passed; native Tauri release executable compiled. All 16 approved source
+  identities and 393 protected raw hashes remain unchanged. Immutable HEAD/blob
+  comparison covered all 1,035 initial tracked paths without unrelated drift.
+  The full initial raw-SHA snapshot key was unavailable; FINAL-01 explicitly
+  distinguishes the HEAD/blob comparison from the original 393-file raw check.
+- Archived this plan after all four units and aggregate gates passed. Guide and
+  navigation indexes describe completed implementation. Git index remains empty;
+  all changes are unstaged, with no commit, push or PR. Final documentation-only
+  closure is recorded separately in the evidence index after this last edit.
+
+- PY-QUALITY accepted with `PY-QUALITY-POST-CHANGE-01`: all five Python host
+  gates passed, 457 tests, unchanged HTML/scoring/read-order baseline probes and
+  six unchanged original test bodies. The patch used 624 of 650 allowed changed
+  lines. No correction loop was required.
+- Added the developer module map and concise evidence index. Reviewed the system
+  diagram and architecture overview: process, runtime, trust, persistence and
+  deployment boundaries are unchanged, so neither architectural document needs
+  revision. Only maintainer-internal ownership moved.
+
+- PY-CORPUS accepted with `PY-CORPUS-POST-CHANGE-02`: all five Python host
+  gates passed, 446 tests, and all moved/retained definitions compare identically.
+  Thirty-two synthetic cases characterize existing admission/error behavior.
+  One import-order correction; protocol runners and resource ownership unchanged.
+
+- Phase A accepted with `PHASE-A-PACKAGE-01`: `pnpm.cmd check:portable` exit 0,
+  all eight source identities unchanged, 414 Python tests and complete configured
+  portable suites/builds passed. Native final acceptance subsequently passed in FINAL-01.
+
+- PY-CHATTERBOX accepted with `PY-CHATTERBOX-POST-CHANGE-03` PASS: 414 tests,
+  all nine host commands, 53 definition comparisons and isolated wheel imports.
+  AST loading checks remain with their sole build consumer after a narrower
+  execution audit kept the patch within the 2,050-line ceiling (actual 1,973).
+  Two new-test expression corrections are documented in immutable failed
+  reports; no runtime/authority/lock changes or test suppressions were needed.
+
+- PY-CORE accepted with independent `PY-CORE-POST-CHANGE-02` PASS: 409 Python
+  tests, all six required commands, unchanged extracted-definition ASTs and
+  maintainer-wheel byte/import checks. Source remains unstaged. The first
+  baseline launcher failure and first post-change import-lint failure remain
+  separately retained under `docs/plans/evidence/tts-service-organization/`.
+  Existing Corepack shim selection resolved the tool version; one import-only
+  correction resolved lint without configuration changes or weakened tests.
+
+- 2026-10-10 execution: Verified prepared branch `codex/tts-service-organization`
+  at `a3fa08accbf7752e7638ff24aca73211ec8aeb92`, with initially clean worktree
+  and empty index. Current tracked service inventory: 205 files, including 159
+  Python files (15 source, 89 benchmarks, 55 tests). Installed environments,
+  caches, distributions and model trees are excluded. Two generated Python
+  modules remain excluded from manual changes; tests retain their layout.
+- Execution roles available: reusable `clean_code_auditor` and
+  `clean_code_worker` (GPT-6.1 Sol high), plus `refactor_validator` (GPT-6 Astra
+  high). Git stewardship is idle because Git mutations are not authorized.
+  The independent validator captured all 1,035 tracked-file identities on the
+  host before source work. Director scratch inventory/protected identities are
+  under ignored `tmp/evidence/tts-service-organization/preparation/`.
+- At preparation, PY-CORE execution audit began before any source order was
+  approved; subsequent acceptance is recorded above.
+
 - 2026-10-10: Refreshed the tracked Python inventory and four main responsibility
   candidates on clean `main` at the planning base. Reviewed existing commands,
   tests, packaging policies and the Python validation route. No tests were run
@@ -523,7 +594,7 @@ scoped Git order; do not rewrite shared history or published artifacts.
   preserved runtime/frozen boundaries and documented deferred runner/test moves.
 - 2026-10-10: User authorized a branch from `main` and one commit for this plan.
   Source implementation, baseline/post-change tests and campaign acceptance
-  remain not started.
+  had not started at that historical authoring step.
 - 2026-10-10: Created `codex/tts-service-organization` from the verified local
   `main` planning base after completing the draft. The documentation-only host
   check passed for the plan and both indexes; no source paths changed.
@@ -531,12 +602,12 @@ scoped Git order; do not rewrite shared history or published artifacts.
 | Milestone | Status |
 | --- | --- |
 | Plan authoring and documentation checks | Complete |
-| Implementation inventory and independent baselines | Not started |
-| PY-CORE | Not started |
-| PY-CHATTERBOX | Not started |
-| PY-CORPUS | Not started |
-| PY-QUALITY | Not started |
-| Combined validation, developer map and archival | Not started |
+| Implementation inventory and independent baselines | Complete |
+| PY-CORE | Complete; POST-CHANGE-02 |
+| PY-CHATTERBOX | Complete; POST-CHANGE-03 |
+| PY-CORPUS | Complete; POST-CHANGE-02 |
+| PY-QUALITY | Complete; POST-CHANGE-01 |
+| Combined validation, developer map and archival | Complete; FINAL-01 |
 
 ## 11. Discoveries and decisions
 
@@ -544,8 +615,8 @@ scoped Git order; do not rewrite shared history or published artifacts.
    nesting alone would introduce fixture-root and discovery churn.
 2. A flat maintainer package with named helpers is the smallest initial structure
    justified by the audit. Keep CLI facades and runtime module names stable.
-3. Piper copies an installed local distribution and currently excludes builders
-   by filename. Whole-subtree exclusion must land with the first new helper.
+3. Piper copies an installed local distribution and originally excluded builders
+   by filename. Whole-subtree exclusion landed with the first new helper.
    Chatterbox has a different explicit local-source allowlist.
 4. Keeping assembly/rollback, harness resource ownership and quality-session I/O
    together avoids splitting state transitions just to meet a line-count limit.
@@ -555,12 +626,13 @@ scoped Git order; do not rewrite shared history or published artifacts.
 6. Cached-artifact checks and deterministic tests have a narrower claim than a
    fresh release build. Record that limit rather than presenting old artifacts
    as output of refactored code.
-7. This plan's commit authorization is documentation-only. Source work, release
-   actions, future commits and publication keep their own authorization scope.
+7. The execution request authorizes source and documentation work, explicitly
+   without staging, commits, push or PR. Earlier plan-authoring commit permission
+   does not authorize any Git mutation during execution.
 
 ## 12. Final validation results
 
-Documentation validation: **PASS**, 2026-10-10, local PowerShell outside the
+Historical plan-authoring validation: **PASS**, 2026-10-10, local PowerShell outside the
 sandbox. The authoring check
 `& ./tmp/evidence/tts-service-organization-planning/check-plan.ps1` verified all
 12 required sections, 23 existing reference links, 14 configured script names,
@@ -570,10 +642,27 @@ the separately authorized staging step. The scratch check is an ignored authorin
 aid, not a new repository command or implementation acceptance gate.
 
 This result covers only `docs/plans/active/tts-service-organization.md`,
-`docs/plans/active/README.md` and `docs/README.md`. Recheck after the last edit and
-inspect the staged paths/diff before the documentation commit. Product suites were
-not run for this documentation-only change.
+`docs/plans/active/README.md` and `docs/README.md` at authoring time. It is not
+current implementation acceptance. No staging or commit is authorized now.
 
-Implementation result: **NOT STARTED**. No Python refactor, new module, test
-baseline, post-change PASS, package rebuild, benchmark run or product behavior
-change is established by this document.
+Implementation units: **PASS**. Independent baseline and post-change receipts,
+exact HEAD/path identities, corrections and command results are retained in the
+[evidence index](../evidence/tts-service-organization/README.md). All four units
+were implemented; none was skipped or remains blocked. The initial 159 tracked
+Python files are supplemented by eight new unstaged helpers; pytest now passes
+457 tests. Runtime/contract/generated/frozen files and the index remain unchanged.
+
+Phase A `pnpm.cmd check:portable`: **PASS**, `PHASE-A-PACKAGE-01`.
+Final `pnpm.cmd check:portable`, `pnpm.cmd check` and `git diff --check`:
+**PASS**, [FINAL-01](../evidence/tts-service-organization/FINAL-01.md). The full
+gate includes Rust format/Clippy, 87/88 Rust tests and native release compilation;
+portable and full suites both include all 457 Python tests. Documentation guide,
+plan and indexes were reviewed; last-edit closure follows archival and is retained
+in the evidence index. Existing pytest cache and Vite bundle-size warnings are
+nonfatal. Source identities are the unchanged union of the four accepted reports.
+
+No in-scope unit remains blocked or skipped. Deferred release-stage, protocol-runner,
+provider-unification and test-directory work remains deferred. Package authority/
+cached-artifact checks are not new runtime builds; this campaign makes no new
+model-performance claim. HEAD and branch remain unchanged; all source/docs changes
+are unstaged, the index is empty, and no commit, push or PR was made.
