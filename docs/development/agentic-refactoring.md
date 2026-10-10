@@ -283,6 +283,24 @@ commands and outcomes; remaining risks; and the next queue position. Do not
 push or create a PR unless I explicitly request it.
 ```
 
+## Native Rust navigation
+
+The native organization campaign applies the same evidence/identity discipline
+with the Rust and host commands in its ExecPlan; it does not change the generic
+TypeScript skill scope. Under `apps/desktop/src-tauri/src/`, `main.rs` owns Tauri
+registration, managed state, setup and shutdown. `diagnostics/cli.rs` owns the
+existing executable-mode dispatch. The private
+`tts_service_supervisor/host_diagnostics.rs` child owns the model-free supervisor
+matrix and remains callable through `tts_service_supervisor::run_host`.
+Production lifecycle, runtime selection, containment, commands and model-backed
+diagnostics remain in `tts_service_supervisor.rs`; no new lifecycle accessor is
+needed for the child diagnostic.
+
+Keep the cohesive package verifiers, protocol contract/transport, independent
+frozen probe, runtime-callable synthetic child, hardware detector/authority,
+handoff diagnostic and shared SHA helper at their existing paths. Audit decisions
+and exact validation are in the [completed native Rust plan](../plans/completed/native-rust-module-organization.md).
+
 ## First use
 
 Use the first task only to inventory and plan one package. A sensible starting

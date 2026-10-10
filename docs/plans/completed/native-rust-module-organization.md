@@ -1,6 +1,6 @@
 # Native Rust module organization
 
-Created: 2026-10-09. Status: planning complete; implementation not started.
+Created: 2026-10-09. Completed: 2026-10-09. Status: complete; independently accepted.
 
 ## Goal
 
@@ -13,11 +13,12 @@ This is one maintenance ExecPlan spanning native work introduced by M007,
 M010, and M011. It does not create a new product roadmap or reopen those
 completed milestones. Its descriptive filename follows `.agents/PLANS.md`.
 
-The current request authorizes this plan and its documentation index entries.
-It does not start source implementation or authorize Git mutations, publishing,
-model downloads, or changes to an existing user installation. A subsequent
-execution instruction must be interpreted together with the user's actual
-authorization; a passing review is not permission to commit or publish.
+The execution request on 2026-10-09 authorizes all six stages, reuse or creation
+of a dedicated `codex/` branch from the current checkout, and small local commits
+of this plan's documentation and independently accepted units. It forbids push,
+PR creation, merge, and automatic updates of main. Existing installations,
+models, and personal data must be preserved; destructive test-resource changes
+require separate authorization. A passing review does not broaden this scope.
 
 ## User-visible outcome
 
@@ -55,9 +56,26 @@ include comments, blank lines, and embedded tests; they do not establish defects
 | NR-HASH | `sha256_hex.rs` | 41 | Small digest encoding helper with real callers in both package verifiers. Presumptive retain. |
 | NR-AUTH | `hardware_profile_authority.rs` | 163 | Test-only schema, fixture, capability, and privacy authority checks. Preserve assertions and protected authority. |
 
-No fresh independent Audit Packet or implementation baseline exists for these
-targets under this plan. Their initial disposition is `NOT AUDITED`; the
-table records inspection hypotheses, not approved changes.
+The table above retains planning provenance. Fresh execution audits are recorded
+in [the campaign audit record](../evidence/native-rust-module-organization/audits.md).
+The current dispositions below supersede the initial NOT AUDITED state. Both
+source units completed independent baseline, implementation and post-change
+acceptance before their exact-path local commits.
+
+| Target | Fresh decision | Execution status |
+| --- | --- | --- |
+| NR-CB | SKIP | Retain intentional verification/mutation boundary |
+| NR-SUP | CHANGE, model-free `run_host` only | Accepted and committed as `719dea0` |
+| NR-HW | SKIP | Retain private Windows probe and injected normalization |
+| NR-MAIN | CHANGE, CLI dispatch only | Accepted and committed as `2451b3d` |
+| NR-PROBE | SKIP | Retain independent frozen probe authority |
+| NR-FAKE | SKIP | Retain executable and development-default synthetic peer |
+| NR-HANDOFF | SKIP | Retain frozen diagnostic and ADR-0051 scope |
+| NR-CONTRACT | SKIP | Retain cohesive closed semantic predicates |
+| NR-FRAMING | SKIP | Retain cohesive bounded transport |
+| NR-CORE | SKIP | Retain distinct packaged Piper verification |
+| NR-HASH | SKIP | Retain already-shared digest encoding |
+| NR-AUTH | SKIP | Retain test-only hardware authority |
 
 ### Prior Chatterbox decision
 
@@ -290,7 +308,9 @@ and independent baseline with the applicable gates below. Expected: relevant
 commands pass on unchanged code and the allowlist/index are clean. A historical
 test result is not a baseline. No source edits on BASELINE-FAIL.
 
-**Status:** Not started. Planning inspection does not complete this milestone.
+**Status:** Complete. All twelve fresh audits recorded; NR-MAIN's clean
+three-path allowlist has independent [BASELINE-03 PASS](../evidence/native-rust-module-organization/NR-MAIN-baseline-03.md)
+and an immutable [work order](../evidence/native-rust-module-organization/NR-MAIN-work-order.md).
 
 ### Milestone 2: Decide and, if justified, organize optional Chatterbox
 
@@ -306,7 +326,9 @@ verification, runtime discovery, repair, or removal paths. Review both callers
 in `main.rs` and the supervisor. Missing required host evidence blocks acceptance
 of the affected change, not unrelated audit work.
 
-**Status:** Not started; SKIP remains a valid result.
+**Status:** Complete by fresh NR-CB SKIP. The current v3/retained-v2 code and tests
+reinforce the intentional mutation/verification boundary; the audit found no
+new benefit that justifies revoking MOD-B. No Chatterbox source changed.
 
 ### Milestone 3: Separate supervisor adapters and process configuration
 
@@ -323,7 +345,10 @@ for runtime construction or lifecycle paths. Inspect environment scrubbing,
 Windows paths, Job Object cleanup, binary responses, and default/release cfg
 selection. No newly widened runtime capability.
 
-**Status:** Not started.
+**Status:** Complete. Only the model-free `run_host` extraction was justified,
+independently validated and committed as `719dea0`. Configuration, containment,
+adapters and model-backed helpers retain evidence-backed SKIP decisions.
+No production lifecycle change occurred.
 
 ### Milestone 4: Organize hardware probing and preserve authority coverage
 
@@ -339,7 +364,10 @@ If host-admission implementation is moved, require the ordinary Chatterbox
 preflight against the candidate artifact. Explicitly disclose platform arms
 not executed; portable TypeScript checks do not exercise Unix Rust branches.
 
-**Status:** Not started.
+**Status:** Complete by fresh NR-HW and NR-AUTH SKIP. The existing private
+Windows probe, injected normalization tests, admission predicate and authority
+tests already establish useful boundaries. Retaining the layout also preserves
+the source-surface privacy test's complete implementation coverage.
 
 ### Milestone 5: Consolidate navigation, diagnostics, and bootstrap
 
@@ -356,7 +384,11 @@ feature availability. For diagnostic branches not executed by native startup,
 name the existing harness that exercises them and retain the model-scope limits
 below. No new binary, feature, plugin, or command surface.
 
-**Status:** Not started.
+**Status:** Complete for NR-MAIN and the seven unchanged remaining targets.
+CLI extraction passed independent baseline/post checks and is committed as
+`2451b3d`. All remaining navigation candidates were audited and retained by SKIP.
+NR-SUP's diagnostic placement is completed once in Milestone 3, with no second
+body rewrite or forced broader directory tree.
 
 ### Milestone 6: Complete independent acceptance and documentation
 
@@ -377,7 +409,13 @@ all triggered native/package evidence on the current identities. Archive this
 plan and update both indexes only after required work is complete. A blocked
 accepted CHANGE remains open; an evidence-backed SKIP may close normally.
 
-**Status:** Not started.
+**Status:** Complete. Both source units accepted/committed, all ten SKIPs recorded,
+contributor navigation updated, architecture reviewed without topology change.
+[PACKAGE](../evidence/native-rust-module-organization/NR-package-01.md) and
+[FINAL](../evidence/native-rust-module-organization/NR-final-01.md) independently
+pass against the complete fifteen-path source inventory. The plan is archived
+with updated documentation indexes; documentation is committed separately from
+the accepted source units.
 
 ## Testing and benchmark strategy
 
@@ -491,6 +529,85 @@ authorized Git action. No rejected patch advances to the next unit.
 
 ## Progress log
 
+- 2026-10-09 closeout: accepted immutable NR-PACKAGE-01-20261009 and
+  NR-FINAL-01-20261009, both PASS at
+  `719dea00f824ef6e3bf92c531f0b04d9be14ceb9`, with independent before/after
+  captures of [NR-SOURCE-MANIFEST-01](../evidence/native-rust-module-organization/NR-source-manifest-01.md).
+  Portable/full checks, native WebView2 and diff checks pass. All six stages are
+  complete; two changes and ten SKIPs, no rejected patch or open source work.
+  Archived this plan and updated contributor/index navigation. No push, PR,
+  merge, main update, model download or existing installation/data mutation.
+- 2026-10-09 execution: independent NR-PACKAGE-01-20261009 PASS on `719dea0`:
+  `pnpm.cmd check:portable` and `git diff --check` exit 0; fifteen source
+  identities unchanged before/after and index empty. Shared 209, EPUB 651,
+  desktop 587 plus 38 Node, Python 406 tests; generated contracts, type checks
+  and portable builds pass. Ten SKIPs unchanged; all 41 includes resolve to
+  the same 33 unique targets. Nonfatal pytest cache-permission and Vite chunk
+  warnings disclosed. Separate FINAL capture and full native gates now running.
+- 2026-10-09 execution: steward NR-SUP-COMMIT-01 passed immutable report/order/live
+  agreement, exact staging, staged diff/blob inspection and pre-commit recheck.
+  Local commit `719dea00f824ef6e3bf92c531f0b04d9be14ceb9`
+  (`refactor(native): isolate model-free supervisor diagnostics`) contains only
+  the two accepted paths; index empty after commit and all director documentation
+  preserved. No remote operation. PACKAGE/FINAL validation now binds all fifteen
+  current native source paths to this HEAD and compares the complete campaign
+  against execution base `ed42154668bd71d500b5beab77485f9fd20ee2a2`.
+- 2026-10-09 execution: accepted [NR-SUP-POST-01](../evidence/native-rust-module-organization/NR-SUP-post-01.md),
+  PASS on `2451b3da80f3821081279e11869cb83a4ae67cd7` with exact two-path
+  identities and passing before/after recheck. All five host gates pass, Rust
+  counts 87/88 unchanged. Function text and fixture bytes equivalent; production
+  owners untouched. Zero correction loops. Authorize exact source-only local
+  commit; keep documentation outside its staging order.
+- 2026-10-09 execution: NR-SUP Change Packet delivered exactly two paths and 223
+  added/removed lines. The worker moved `run_host` unchanged apart from the
+  necessary fixture include depth, retained its entry point by re-export and
+  used explicit private-child imports. No tests or runtime methods changed.
+  Director scope review passes; independent post-change validation is running.
+- 2026-10-09 execution: [NR-SUP-BASELINE-01](../evidence/native-rust-module-organization/NR-SUP-baseline-01.md)
+  PASS on `2451b3d`, pristine two-path allowlist and empty index, all five host
+  commands passed, 87/88 Rust tests and native matrix. Issued the immutable
+  [NR-SUP work order](../evidence/native-rust-module-organization/NR-SUP-work-order.md)
+  for only `run_host` plus private child wiring, 280-line ceiling. Fixture bytes
+  bound by SHA256; all runtime/model/lifecycle implementations remain protected.
+- 2026-10-09 execution: steward order NR-MAIN-COMMIT-01 passed report/order/live
+  SHA256/blob/status checks, exact staging/diff review and pre-commit recheck.
+  Local commit `2451b3da80f3821081279e11869cb83a4ae67cd7`
+  (`refactor(native): isolate diagnostic CLI dispatch`) contains only the three
+  accepted source files. Index empty afterwards; plan/evidence preserved outside
+  commit. No remote operation. NR-SUP fresh baseline requested on this new HEAD.
+- 2026-10-09 execution: accepted [NR-MAIN-POST-01](../evidence/native-rust-module-organization/NR-MAIN-post-01.md),
+  PASS on HEAD `ed42154668bd71d500b5beab77485f9fd20ee2a2`, exact three-path
+  identities recorded in the immutable report and rechecked before/after all
+  five host commands. Rust remains 87/88 and native WebView2 passes. Exact-text
+  comparison preserves both CLI body and Tauri tail. Zero correction loops.
+  Source commit may stage only this report's three paths; evidence stays separate.
+- 2026-10-09 execution: [NR-MAIN-BASELINE-03](../evidence/native-rust-module-organization/NR-MAIN-baseline-03.md)
+  passed every frozen command outside sandbox after process-local tool selection.
+  Issued the immutable NR-MAIN work order. Worker moved the entire iterator/match
+  unchanged into `diagnostics/cli.rs`, declared the narrow module and called it
+  before Tauri setup. Change Packet: exactly three allowed files, 213 added plus
+  removed lines, no tests or contracts changed, no deviations. Director diff
+  review found the requested mechanical move; independent POST-CHANGE is running.
+- 2026-10-09 execution: all twelve audits complete: two bounded CHANGE decisions
+  (NR-MAIN CLI dispatch; NR-SUP model-free host diagnostic), ten SKIPs. Hardware,
+  package verifiers, contracts, framing, probe, fake child, handoff and SHA retain
+  their existing boundaries. See the [audit inventory](../evidence/native-rust-module-organization/audits.md).
+- 2026-10-09 execution: NR-MAIN-BASELINE-01 was BLOCKED by global pnpm mismatch;
+  existing Corepack pnpm 11.15.1 resolved it. [BASELINE-02](../evidence/native-rust-module-organization/NR-MAIN-baseline-02.md)
+  passed format/Clippy/Rust (87/88) but native startup failed at WebView session
+  creation on unchanged source. Host inspection found driver 150 versus runtime
+  155. A new ignored test-only Microsoft-signed EdgeDriver 155.0.4283.45 was
+  provisioned without replacing an existing driver or installation. Baseline-03
+  repeats the unchanged commands with the supported process-local driver path.
+  No implementation order issued while baseline acceptance is pending.
+- 2026-10-09 execution: fresh inspection found a clean worktree and empty index
+  on `codex/native-rust-module-organization` at
+  `ed42154668bd71d500b5beab77485f9fd20ee2a2`. Reuse this dedicated branch without
+  updating main. All twelve tracked native targets still exist. The named Sol
+  auditor/worker/steward and Astra validator are available and have been started
+  once for reuse, with no supporting delegation and one source writer maximum.
+  Audits and validation-resource inspection are in progress; historical results
+  are not execution evidence. No source work order has been approved yet.
 - 2026-10-09: Created the planning document from current native source, scripts,
   architecture/ADR guidance, agent contracts, and the accepted MOD-B audit.
   Recorded twelve targets, six milestones, a conditional module tree, immutable
@@ -506,6 +623,22 @@ authorized Git action. No rejected patch advances to the next unit.
 
 ## Discoveries and decisions
 
+- Final structure intentionally stays mostly flat. Only `diagnostics/cli.rs`
+  (with its module declaration) and the private supervisor `host_diagnostics.rs`
+  are justified additions. There is no new generic TTS/packages/hardware tree.
+- Reviewed `docs/architecture/system-diagram.md` and `overview.md` against both
+  bounded patches. They retain the same Tauri owner, one child tree, protocol,
+  trust/privacy boundaries, package verification, persistence and runtime/model
+  selection. No diagram or architecture-text change is warranted; contributor
+  navigation is documented separately. M005 narration preparation is untouched.
+- Execution host inspection found an existing VoxLeaf installation and data
+  root. Preserve them. Installer/journey commands are unavailable for this
+  resource under current authorization; unrelated model-free units can proceed.
+- NR-MAIN's initial closed unit is `main.rs`, new `diagnostics/mod.rs`, and new
+  `diagnostics/cli.rs`, limited to the intact nine-branch CLI extraction (250
+  added/removed lines maximum). Baseline/post commands are the three Rust
+  scripts, native-startup, and `git diff --check`; see the audit record for all
+  invariants and untriggered-gate reasons. No source order before baseline PASS.
 - The flat twelve-file directory is not itself a defect. The strongest audit
   candidates are mixed runtime/adaptor/diagnostic responsibilities, not size.
 - MOD-B already accepted keeping Chatterbox together. This plan preserves that
@@ -518,22 +651,30 @@ authorized Git action. No rejected patch advances to the next unit.
 - Hardware contains a source-inspection privacy test. Moving only its facade
   without extending its scan would silently reduce coverage.
 - No new roadmap or milestone number is needed. The existing roadmap and
-  completed plans remain unchanged; this active plan owns execution tracking.
+  previously completed plans remain unchanged; this plan owns execution tracking.
 
 ## Final validation results
 
-Implementation: **Not started.** No native refactor, runtime pass, independent
-baseline, or installed-artifact acceptance is claimed by creating this plan.
+Implementation: **Complete: two independently accepted source units committed
+locally, aggregate PACKAGE and FINAL PASS.** Five source paths changed (229 insertions,
+207 deletions); ten original files retain their implementation. No installed-
+artifact or model-backed runtime acceptance is claimed by this campaign.
 
 | Check | Result |
 | --- | --- |
-| Planning documentation structure, links, commands, and scope | PASS: local PowerShell outside sandbox, exit 0; twelve sections, six milestones, fourteen existing scripts, file/index references, whitespace/fences, handler count, `git diff --check`, empty index, and exact three-file scope |
-| NR-CB/SUP/HW and remaining target audits | Not started; prior MOD-B SKIP is historical input only |
-| Baseline and post-change Rust/native gates | Not run; required during authorized implementation |
-| Piper/Chatterbox and installed-package gates | Not run; applicability/resources to be frozen per work order |
-| Independent final campaign report | Not issued |
-| Architecture diagram review | Planning finds no intended topology change; recheck after implementation |
+| Planning documentation checks | Historical planning PASS retained above; not execution acceptance |
+| Twelve fresh audits | Two CHANGE, ten SKIP; current source and MOD-B compared independently |
+| NR-MAIN baseline | BASELINE-03 PASS; attempts 01/02 retain tool-version/environment failures |
+| NR-MAIN post-change | POST-01 PASS; exact body/Tauri tail, five host commands, Rust 87/88, native WebView2 |
+| NR-SUP baseline | BASELINE-01 PASS on post-NR-MAIN HEAD, five host commands |
+| NR-SUP post-change | POST-01 PASS; exact body/fixture, five host commands, Rust 87/88, native matrix/WebView2 |
+| Piper/Chatterbox model and installed-package gates | N/A: shared model/runtime/lifecycle/selection/admission/acquisition/verifier/install owners unchanged; not run |
+| Independent package report | NR-PACKAGE-01 PASS, portable aggregate and diff check, fifteen stable identities |
+| Independent final report | NR-FINAL-01 PASS on `719dea0`; `pnpm.cmd check`, `pnpm.cmd test:native-startup`, `git diff --check` all exit 0; fifteen identities stable |
+| Architecture diagram/overview review | Same component/process/trust/persistence/runtime topology; no edit needed |
+| Documentation closeout/archive | Contributor map and indexes updated; plan archived after independent source PACKAGE/FINAL acceptance |
 
-Replace pending entries with exact report IDs and command outcomes as work is
-performed. Do not mark a milestone complete based on the proposed directory
-tree, old test counts, a build alone, or acceptance of this planning document.
+Unix native branches and model-backed diagnostic CLI branches were not executed.
+Qwen remains deferred under ADR-0051 with existing code/tests retained. Existing
+installation and personal data remain untouched; installer commands were not
+needed and were not run. No push, PR, merge or main update is authorized.
