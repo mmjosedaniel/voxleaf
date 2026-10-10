@@ -1,0 +1,1371 @@
+{
+  "head": "f06c80e04da2025342b1002a548f03ca17e7cc0b",
+  "branch": "codex/native-rust-test-layout",
+  "status": [],
+  "sourceCount": 15,
+  "includeCount": 41,
+  "testFunctionCount": 90,
+  "sourceIdentities": [
+    {
+      "path": "apps/desktop/src-tauri/src/diagnostics/cli.rs",
+      "status": [],
+      "sha256": "38281c0ffec327ff94b0bac8b03d4996dcc53c8db87dc105b2cf75a1ac572a4a",
+      "blob": "b12c4ebe1f05e8b8d743b37d53447e75e29c1426"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/diagnostics/mod.rs",
+      "status": [],
+      "sha256": "ec71a68d0320ab467b16b2955ee63b621a2d1bcb7d40b53303cf9439b02fae52",
+      "blob": "42e8dd69f38410ba80a99da5b42acfe9a9439e2e"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "status": [],
+      "sha256": "9bab30b92ca1ffa7be9acd59ad55328846d4a2da40480f91a234fcfce8b4b069",
+      "blob": "14b798efe3bb36e6b1d16d96a19f4468150413b7"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "status": [],
+      "sha256": "ae456cd4b1cbc4f2a606b533e4da23e580863119af376ea3d8ed263586f3e3c3",
+      "blob": "64d383f801e5ffeba6fb426786efc7f22a8f86d4"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/main.rs",
+      "status": [],
+      "sha256": "0005ae37462873acd98477c22d525920c52b9f7d4f9013734c665d6566596682",
+      "blob": "8a055c4ff4454f186210903b1493bff35b7ce19a"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/sha256_hex.rs",
+      "status": [],
+      "sha256": "427bd48feee99c62afc9cd9ee06d4a21af7d53dabf3e688342dbcf1601795fa6",
+      "blob": "4822b8e76a7f648c5e8be924f5fa9ab9c670aaab"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "status": [],
+      "sha256": "8966b977a42213e3b0f374aa49fac57124bb4583568982cf138c12354bf329b7",
+      "blob": "357b764ff987c0b368502fd3c56f7549dbc118ed"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "status": [],
+      "sha256": "116e2b08b796c548eaaa237c57a1fec42d284bdc5839c7a84c764321c3a73290",
+      "blob": "3b446af96742db8ad02bebdf664a244c4c52d4ee"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "status": [],
+      "sha256": "8c0d1446ded02795e3dd3b788adf18f61e721070ed81e1c7142c3634dc1ec3da",
+      "blob": "68282b4388d07db800185068ac3a5ee7c06f50da"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "status": [],
+      "sha256": "b663a7f1b4a79ff9a119e1f336511739a006028740db39c57cfa5a2c782949b8",
+      "blob": "77be00e9095ee24008bcf0066badf257ee479a30"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+      "status": [],
+      "sha256": "f3ec7d102b499f8416ef1588cf337bca56d4b3cd83bbf3d1d226c4e19d7a8ae5",
+      "blob": "72b4a5991f0e67392b0080125778dbf64e3d2d18"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "status": [],
+      "sha256": "705834ea94881c61954747bbf59957c3a8560b0baf1ade4359787858d5798351",
+      "blob": "18b070187f3e4d1894485e3bad4796a0f07cd60f"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "status": [],
+      "sha256": "a9d02464362fca0f4c3c87fc6335c22934cede1ee102b97795e89814e870cf88",
+      "blob": "c4aae1ecab74b88b1f6f6637a7c9cb935fe5fbeb"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "status": [],
+      "sha256": "e339de585a0439d15dd879afd41fe364a0a68e57569cc027cc144b98e925b87d",
+      "blob": "71c9a4c069a816989b264dfe9148e33ac03ec497"
+    },
+    {
+      "path": "apps/desktop/src-tauri/src/tts_service_supervisor/host_diagnostics.rs",
+      "status": [],
+      "sha256": "3ecfd77675db84bd9a1f98738a43bb095a9a54ad1dbd22ef928fbc12d2edea5d",
+      "blob": "86f0a71a3f392eb0874798cd17f0f2ca94f84fac"
+    }
+  ],
+  "includes": [
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 7,
+      "kind": "str",
+      "literal": "../../../../packages/shared/schemas/host-profile-compatibility-report/v1.schema.json",
+      "resolved": "packages/shared/schemas/host-profile-compatibility-report/v1.schema.json",
+      "sha256": "2735ff70582810f2a4d79e2e0db6a00108524c7402a054b22ffdf2a06d30d114"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 10,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json",
+      "resolved": "packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json",
+      "sha256": "f732e43fb9d7088dd41ad1258104a654dfadf432ebd7a5da49967e1eb2bd97f3"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 13,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-unknown.json",
+      "resolved": "packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-unknown.json",
+      "sha256": "61ed161ba162511c47e155a990196975d9d1bc98e6747c99531c03552cc29b98"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 16,
+      "kind": "str",
+      "literal": "../tauri.conf.json",
+      "resolved": "apps/desktop/src-tauri/tauri.conf.json",
+      "sha256": "b76a7342c6ce9918bb499ddd50f4910667d50cf5dda564e3103ab8d56a99191a"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 17,
+      "kind": "str",
+      "literal": "../Cargo.toml",
+      "resolved": "apps/desktop/src-tauri/Cargo.toml",
+      "sha256": "98076653b33d485837aa7ce81b62f650ec12f48b83342f0d7c8d399577333f51"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1634,
+      "kind": "str",
+      "literal": "host_profile_detection.rs",
+      "resolved": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "sha256": "ae456cd4b1cbc4f2a606b533e4da23e580863119af376ea3d8ed263586f3e3c3"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 33,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/src/voxleaf_tts/generated/__init__.py",
+      "resolved": "services/tts/src/voxleaf_tts/generated/__init__.py",
+      "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 37,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/src/voxleaf_tts/generated/protocol_schemas.py",
+      "resolved": "services/tts/src/voxleaf_tts/generated/protocol_schemas.py",
+      "sha256": "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 48,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "resolved": "services/tts/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "sha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2258,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "resolved": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 3022,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "resolved": "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "sha256": "8242bfd841a8aed01dc914c743df69b90a4ed8e13883ea03a6568b0d3e92d25d"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 18,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake.json",
+      "sha256": "25044b782cac1e1ad43d53d4ec4edf2efec71384d53aaaa309ff1d9c3b3115f6"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 24,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-load.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-load.json",
+      "sha256": "44abb501d7719c7644fd186a5edcaf3621af023ca5458329d25794440317f242"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 30,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-warm.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-warm.json",
+      "sha256": "b434d70b6cbff921ffc8e8f5a5e5dbefec7ac60a84493d1bc05643007e7b533c"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 36,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 42,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancel.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancel.json",
+      "sha256": "f3a2ec0a2e9f8320eee6d2643738ff68ee61d4a5aa793e4e2e34a4397944ae64"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 48,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-health.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-health.json",
+      "sha256": "4583b24e55875ac9a6b110779fdc0865ab24977db3a91c7facda7fe2b75ed7d2"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 54,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-shutdown.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-shutdown.json",
+      "sha256": "f8a9abc9c524c0a454dcdd65937429f12e61a5f14f5799ce699622a6cb0fcfbe"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 60,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake-accepted.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-handshake-accepted.json",
+      "sha256": "a19063eec8dacceb85df9468f5c53627bcff905629882d5603826f670eb0af24"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 66,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-state.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-state.json",
+      "sha256": "b68810940c37e80182c3a191ea66d4d98d2ec7ba15848285142b5d8cec1ba294"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 72,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-capabilities.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-capabilities.json",
+      "sha256": "e45d28cbd1ae911248b60960183751a70fb2666f8250fd572ac7de9e4229cb63"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 78,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "sha256": "e87baae6dfcaa348223e184ce8f0dba13fa4509a17f736f57abe3321069bedcd"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 84,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-completed.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-completed.json",
+      "sha256": "90026180520ecde398b751ac0977d3bc769d6ced55c83cf9a1fb34e5af3207af"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 90,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancelled.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-cancelled.json",
+      "sha256": "bb8c1007550cfef8f5d03339d365a13db052ce272e3deb4917052f95e9115d90"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 96,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-error.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-error.json",
+      "sha256": "188daaf452d4da6e7a908f24e043f91064ebd2b349effdd1eddb7132a34b0f02"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 102,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-protocol-rejected.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-protocol-rejected.json",
+      "sha256": "d2a63f593e079e403ad13c00fccc12922aed2ac40a73b5b7c09f53e2075dd6ff"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 110,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-field.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-field.json",
+      "sha256": "ab0a7f0a0df45206d39e26ea7723a15a498550d9704a6eb677aeb26205f3ec59"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 113,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unsupported-protocol.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unsupported-protocol.json",
+      "sha256": "6410ba5c2ba920deff2a5ca0819daa3d8f357e0e3af93c43be84e878b6d90063"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 116,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-kind.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-kind.json",
+      "sha256": "4565b32a6bffcd1a45ffef359cf771ca22788aa86281e0ccc86ac2c340b34c11"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 15,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/core/runtime-manifest-v1.json",
+      "resolved": "services/tts/release/core/runtime-manifest-v1.json",
+      "sha256": "3f1a2d311a5f7a857cb95402f3dbc187d42c5878c4208c9ebd12cb3b4dc7a27c"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 392,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/core/uv.lock",
+      "resolved": "services/tts/release/core/uv.lock",
+      "sha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+      "line": 352,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 21,
+      "kind": "str",
+      "literal": "../../../../benchmarks/tts/service-handoff-profile-v1.json",
+      "resolved": "benchmarks/tts/service-handoff-profile-v1.json",
+      "sha256": "1ec39e6bd45064bb8ddd65b43e5ffee76b5a546bb2766f11af2d9c0ee116a2d3"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 22,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 335,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-audio-metadata.json",
+      "sha256": "e87baae6dfcaa348223e184ce8f0dba13fa4509a17f736f57abe3321069bedcd"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 64,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+      "resolved": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+      "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 68,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/release/core/uv.lock",
+      "resolved": "services/tts/release/core/uv.lock",
+      "sha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 70,
+      "kind": "bytes",
+      "literal": "../../../../services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock",
+      "resolved": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock",
+      "sha256": "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1513,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1671,
+      "kind": "str",
+      "literal": "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor/host_diagnostics.rs",
+      "line": 14,
+      "kind": "str",
+      "literal": "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "resolved": "packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json",
+      "sha256": "b57cf18ab2b6a922d9018f028a7b1002d2916b706f7b574299cb30f2f7600753"
+    }
+  ],
+  "sourceTests": [
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 74,
+      "name": "freezes_native_probe_surfaces_without_shell_or_remote_fallback",
+      "attributes": "    #[test]\n    fn freezes_native_probe_surfaces_without_shell_or_remote_fallback("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 92,
+      "name": "current_tauri_boundary_has_no_plugin_or_renderer_capability",
+      "attributes": "    #[test]\n    fn current_tauri_boundary_has_no_plugin_or_renderer_capability("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 113,
+      "name": "canonical_schema_freezes_exact_units_maxima_and_provider_set",
+      "attributes": "    #[test]\n    fn canonical_schema_freezes_exact_units_maxima_and_provider_set("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 149,
+      "name": "committed_reports_are_content_free_and_identity_free",
+      "attributes": "    #[test]\n    fn committed_reports_are_content_free_and_identity_free("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1188,
+      "name": "optional_download_gate_accepts_every_exact_numeric_threshold",
+      "attributes": "    #[test]\n    fn optional_download_gate_accepts_every_exact_numeric_threshold("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1193,
+      "name": "optional_download_gate_rejects_one_below_every_numeric_threshold",
+      "attributes": "    #[test]\n    fn optional_download_gate_rejects_one_below_every_numeric_threshold("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1232,
+      "name": "optional_download_gate_fails_closed_for_each_unknown_capacity",
+      "attributes": "    #[test]\n    fn optional_download_gate_fails_closed_for_each_unknown_capacity("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1261,
+      "name": "optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts",
+      "attributes": "    #[test]\n    fn optional_download_gate_requires_the_closed_platform_cuda_and_bfloat16_facts("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1311,
+      "name": "normalizes_complete_snapshot_without_identity_or_support_claims",
+      "attributes": "    #[test]\n    fn normalizes_complete_snapshot_without_identity_or_support_claims("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1389,
+      "name": "distinguishes_partial_permission_denied_and_malformed_observations",
+      "attributes": "    #[test]\n    fn distinguishes_partial_permission_denied_and_malformed_observations("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1416,
+      "name": "selects_one_conservative_multi_adapter_candidate",
+      "attributes": "    #[test]\n    fn selects_one_conservative_multi_adapter_candidate("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1455,
+      "name": "discarded_unusable_adapter_does_not_poison_a_known_provider",
+      "attributes": "    #[test]\n    fn discarded_unusable_adapter_does_not_poison_a_known_provider("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1492,
+      "name": "selected_provider_with_unknown_memory_remains_partial",
+      "attributes": "    #[test]\n    fn selected_provider_with_unknown_memory_remains_partial("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1511,
+      "name": "preserves_integrated_only_low_memory_and_no_provider_scenarios",
+      "attributes": "    #[test]\n    fn preserves_integrated_only_low_memory_and_no_provider_scenarios("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1560,
+      "name": "fails_closed_for_unknown_provider_and_ambiguous_exact_tie",
+      "attributes": "    #[test]\n    fn fails_closed_for_unknown_provider_and_ambiguous_exact_tie("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1601,
+      "name": "unsupported_platform_is_explicitly_unavailable",
+      "attributes": "    #[test]\n    fn unsupported_platform_is_explicitly_unavailable("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1621,
+      "name": "admits_only_one_concurrent_probe_and_releases_the_guard",
+      "attributes": "    #[test]\n    fn admits_only_one_concurrent_probe_and_releases_the_guard("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1632,
+      "name": "implementation_has_no_process_network_model_or_persistence_surface",
+      "attributes": "    #[test]\n    fn implementation_has_no_process_network_model_or_persistence_surface("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1662,
+      "name": "production_windows_probe_emits_only_the_bounded_report",
+      "attributes": "    #[cfg(windows)]\n    #[test]\n    fn production_windows_probe_emits_only_the_bounded_report("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/sha256_hex.rs",
+      "line": 18,
+      "name": "preserves_known_sha256_values_and_leading_zeroes",
+      "attributes": "    #[test]\n    fn preserves_known_sha256_values_and_leading_zeroes("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2256,
+      "name": "checked_in_authority_enables_the_measured_ordinary_package",
+      "attributes": "    #[test]\n    fn checked_in_authority_enables_the_measured_ordinary_package("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2289,
+      "name": "downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts",
+      "attributes": "    #[test]\n    fn downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2317,
+      "name": "redirect_policy_rejects_source_substitution_and_non_https_targets",
+      "attributes": "    #[test]\n    fn redirect_policy_rejects_source_substitution_and_non_https_targets("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2345,
+      "name": "manifest_rejects_mutable_model_revision_and_unexpected_files",
+      "attributes": "    #[test]\n    fn manifest_rejects_mutable_model_revision_and_unexpected_files("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2366,
+      "name": "downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation",
+      "attributes": "    #[test]\n    fn downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2408,
+      "name": "runtime_reassembly_is_ordered_bounded_and_cancellable",
+      "attributes": "    #[test]\n    fn runtime_reassembly_is_ordered_bounded_and_cancellable("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2457,
+      "name": "promotion_replaces_only_the_versioned_package_after_complete_verification",
+      "attributes": "    #[test]\n    fn promotion_replaces_only_the_versioned_package_after_complete_verification("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2474,
+      "name": "installed_v3_runtime_verifies_after_transient_numba_cache_cleanup",
+      "attributes": "    #[test]\n    fn installed_v3_runtime_verifies_after_transient_numba_cache_cleanup("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2504,
+      "name": "installed_runtime_removes_only_unmanifested_python_cache_bytecode",
+      "attributes": "    #[test]\n    fn installed_runtime_removes_only_unmanifested_python_cache_bytecode("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2531,
+      "name": "installed_runtime_verifies_after_safe_python_bytecode_cleanup",
+      "attributes": "    #[test]\n    fn installed_runtime_verifies_after_safe_python_bytecode_cleanup("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2549,
+      "name": "transient_numba_cache_path_must_be_a_contained_directory",
+      "attributes": "    #[test]\n    fn transient_numba_cache_path_must_be_a_contained_directory("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2565,
+      "name": "transient_numba_cache_rejects_a_symlink_outside_the_package",
+      "attributes": "    #[cfg(unix)]\n    #[test]\n    fn transient_numba_cache_rejects_a_symlink_outside_the_package("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2588,
+      "name": "installed_package_root_rejects_a_symlink_outside_the_managed_root",
+      "attributes": "    #[cfg(unix)]\n    #[test]\n    fn installed_package_root_rejects_a_symlink_outside_the_managed_root("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2622,
+      "name": "removal_rejects_an_active_download_without_touching_staging",
+      "attributes": "    #[test]\n    fn removal_rejects_an_active_download_without_touching_staging("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2650,
+      "name": "concurrent_installed_runtime_checks_are_serialized",
+      "attributes": "    #[test]\n    fn concurrent_installed_runtime_checks_are_serialized("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2689,
+      "name": "verified_runtime_receipt_rechecks_tree_and_authority_changes",
+      "attributes": "    #[test]\n    fn verified_runtime_receipt_rechecks_tree_and_authority_changes("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2726,
+      "name": "free_space_gate_is_inclusive_and_result_blind",
+      "attributes": "    #[test]\n    fn free_space_gate_is_inclusive_and_result_blind("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2732,
+      "name": "runtime_discovery_rejects_mutated_stale_and_traversal_payloads",
+      "attributes": "    #[test]\n    fn runtime_discovery_rejects_mutated_stale_and_traversal_payloads("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2755,
+      "name": "safe_extraction_rejects_archive_entries_outside_the_exact_package_root",
+      "attributes": "    #[test]\n    fn safe_extraction_rejects_archive_entries_outside_the_exact_package_root("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2792,
+      "name": "extraction_accepts_stored_and_deflated_files_only_within_the_total_limit",
+      "attributes": "    #[test]\n    fn extraction_accepts_stored_and_deflated_files_only_within_the_total_limit("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2835,
+      "name": "extraction_rejects_symbolic_link_entries_without_creating_the_target",
+      "attributes": "    #[test]\n    fn extraction_rejects_symbolic_link_entries_without_creating_the_target("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2857,
+      "name": "extraction_rejects_corrupt_entry_bytes_and_truncated_archives",
+      "attributes": "    #[test]\n    fn extraction_rejects_corrupt_entry_bytes_and_truncated_archives("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2901,
+      "name": "extraction_observes_cancellation_before_any_payload_is_installed",
+      "attributes": "    #[test]\n    fn extraction_observes_cancellation_before_any_payload_is_installed("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2931,
+      "name": "hashes_optional_payloads_without_a_large_stack_allocation",
+      "attributes": "    #[test]\n    fn hashes_optional_payloads_without_a_large_stack_allocation("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2948,
+      "name": "ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent",
+      "attributes": "    #[test]\n    fn ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2964,
+      "name": "native_host_gate_rejects_before_confirmation_staging_or_network_work",
+      "attributes": "    #[test]\n    fn native_host_gate_rejects_before_confirmation_staging_or_network_work("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2984,
+      "name": "ordinary_selection_requires_confirmation_without_creating_staging",
+      "attributes": "    #[test]\n    fn ordinary_selection_requires_confirmation_without_creating_staging("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 3001,
+      "name": "successor_authority_has_exact_new_identity_and_no_legacy_correction",
+      "attributes": "    #[test]\n    fn successor_authority_has_exact_new_identity_and_no_legacy_correction("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 3035,
+      "name": "retained_v2_is_cleanup_only_and_survives_observation_and_cancellation",
+      "attributes": "    #[test]\n    fn retained_v2_is_cleanup_only_and_survives_observation_and_cancellation("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 3091,
+      "name": "valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots",
+      "attributes": "    #[test]\n    fn valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 580,
+      "name": "rust_fixture_surface_matches_every_closed_control_kind",
+      "attributes": "#[test]\nfn rust_fixture_surface_matches_every_closed_control_kind("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 595,
+      "name": "rust_fixture_surface_rejects_shared_invalid_controls",
+      "attributes": "#[test]\nfn rust_fixture_surface_rejects_shared_invalid_controls("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 602,
+      "name": "rust_fixture_surface_keeps_frozen_maximum_arithmetic",
+      "attributes": "#[test]\nfn rust_fixture_surface_keeps_frozen_maximum_arithmetic("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 610,
+      "name": "rust_boundary_rejects_nested_narration_and_audio_drift",
+      "attributes": "#[test]\nfn rust_boundary_rejects_nested_narration_and_audio_drift("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 415,
+      "name": "accepts_exact_control_and_audio_payload_limits",
+      "attributes": "    #[test]\n    fn accepts_exact_control_and_audio_payload_limits("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 429,
+      "name": "rejects_maximum_plus_one_before_reading_a_payload",
+      "attributes": "    #[test]\n    fn rejects_maximum_plus_one_before_reading_a_payload("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 443,
+      "name": "rejects_below_minimum_payload_lengths_before_allocation",
+      "attributes": "    #[test]\n    fn rejects_below_minimum_payload_lengths_before_allocation("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 457,
+      "name": "rejects_partial_unknown_or_mutated_headers",
+      "attributes": "    #[test]\n    fn rejects_partial_unknown_or_mutated_headers("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 484,
+      "name": "rejects_truncated_payloads_without_partial_publication",
+      "attributes": "    #[test]\n    fn rejects_truncated_payloads_without_partial_publication("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 493,
+      "name": "accepts_only_the_active_complete_identity_and_finite_audio",
+      "attributes": "    #[test]\n    fn accepts_only_the_active_complete_identity_and_finite_audio("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 548,
+      "name": "exposes_only_fixed_content_free_failure_codes",
+      "attributes": "    #[test]\n    fn exposes_only_fixed_content_free_failure_codes("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 571,
+      "name": "freezes_exact_and_maximum_plus_one_authority_dimensions",
+      "attributes": "    #[test]\n    fn freezes_exact_and_maximum_plus_one_authority_dimensions("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 674,
+      "name": "rejects_a_second_active_probe_without_queueing",
+      "attributes": "    #[test]\n    fn rejects_a_second_active_probe_without_queueing("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 388,
+      "name": "tracked_manifest_matches_core_lock_and_native_authority",
+      "attributes": "    #[test]\n    fn tracked_manifest_matches_core_lock_and_native_authority("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 406,
+      "name": "accepts_only_the_exact_manifest_and_payload",
+      "attributes": "    #[test]\n    fn accepts_only_the_exact_manifest_and_payload("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 416,
+      "name": "rejects_truncated_substituted_and_stale_payloads",
+      "attributes": "    #[test]\n    fn rejects_truncated_substituted_and_stale_payloads("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 434,
+      "name": "rejects_changed_installed_manifest_and_unknown_profile",
+      "attributes": "    #[test]\n    fn rejects_changed_installed_manifest_and_unknown_profile("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 452,
+      "name": "rejects_unsafe_manifest_paths",
+      "attributes": "    #[test]\n    fn rejects_unsafe_manifest_paths("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 463,
+      "name": "io_errors_remain_content_free",
+      "attributes": "    #[test]\n    fn io_errors_remain_content_free("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 468,
+      "name": "hashes_the_packaged_payload_without_a_large_stack_allocation",
+      "attributes": "    #[test]\n    fn hashes_the_packaged_payload_without_a_large_stack_allocation("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+      "line": 350,
+      "name": "normal_child_emits_canonical_ordered_complete_unit",
+      "attributes": "    #[test]\n    fn normal_child_emits_canonical_ordered_complete_unit("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 517,
+      "name": "frozen_profile_builds_bounded_content_only_inside_the_native_request",
+      "attributes": "    #[test]\n    fn frozen_profile_builds_bounded_content_only_inside_the_native_request("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 531,
+      "name": "bounded_consumer_rejects_a_second_unit_and_zeroes_release",
+      "attributes": "    #[test]\n    fn bounded_consumer_rejects_a_second_unit_and_zeroes_release("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 544,
+      "name": "content_safe_case_serialization_contains_no_segment_or_text_field",
+      "attributes": "    #[test]\n    fn content_safe_case_serialization_contains_no_segment_or_text_field("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 311,
+      "name": "rejects_declared_over_limit_before_reading_payload",
+      "attributes": "    #[test]\n    fn rejects_declared_over_limit_before_reading_payload("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 324,
+      "name": "strict_control_decoder_rejects_duplicate_keys",
+      "attributes": "    #[test]\n    fn strict_control_decoder_rejects_duplicate_keys("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 333,
+      "name": "validates_exact_audio_and_rejects_non_finite_values",
+      "attributes": "    #[test]\n    fn validates_exact_audio_and_rejects_non_finite_values("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 348,
+      "name": "frame_round_trip_keeps_kind_and_payload",
+      "attributes": "    #[test]\n    fn frame_round_trip_keeps_kind_and_payload("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1678,
+      "name": "validates_segment_and_generates_native_owned_request_identity",
+      "attributes": "    #[test]\n    fn validates_segment_and_generates_native_owned_request_identity("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1685,
+      "name": "rejects_text_and_identity_bounds_before_dispatch",
+      "attributes": "    #[test]\n    fn rejects_text_and_identity_bounds_before_dispatch("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1701,
+      "name": "fixed_failure_surface_contains_no_dynamic_input",
+      "attributes": "    #[test]\n    fn fixed_failure_surface_contains_no_dynamic_input("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1730,
+      "name": "profile_configuration_rejects_unknown_profile_identity",
+      "attributes": "    #[test]\n    fn profile_configuration_rejects_unknown_profile_identity("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1740,
+      "name": "profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup",
+      "attributes": "    #[test]\n    fn profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1759,
+      "name": "exact_runtime_never_writes_bytecode_into_verified_packages",
+      "attributes": "    #[test]\n    fn exact_runtime_never_writes_bytecode_into_verified_packages("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1776,
+      "name": "exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state",
+      "attributes": "    #[test]\n    fn exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1829,
+      "name": "release_locked_runtime_rejects_development_only_profiles_and_defaults",
+      "attributes": "    #[cfg(feature = \"release-locked-runtime\")]\n    #[test]\n    fn release_locked_runtime_rejects_development_only_profiles_and_defaults("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1852,
+      "name": "exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package",
+      "attributes": "    #[test]\n    fn exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1878,
+      "name": "exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary",
+      "attributes": "    #[cfg(windows)]\n    #[test]\n    fn exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1918,
+      "name": "supervised_children_use_the_windows_no_console_flag",
+      "attributes": "    #[cfg(windows)]\n    #[test]\n    fn supervised_children_use_the_windows_no_console_flag("
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1925,
+      "name": "failed_job_assignment_kills_and_reaps_the_spawned_child",
+      "attributes": "    #[cfg(windows)]\n    #[test]\n    fn failed_job_assignment_kills_and_reaps_the_spawned_child("
+    }
+  ],
+  "conditions": [
+    {
+      "source": "apps/desktop/src-tauri/src/hardware_profile_authority.rs",
+      "line": 1,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 566,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 977,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 980,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1012,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1016,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1092,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/host_profile_detection.rs",
+      "line": 1662,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/main.rs",
+      "line": 8,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/sha256_hex.rs",
+      "line": 13,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 767,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 773,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 1402,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 1416,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2138,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2565,
+      "text": "#[cfg(unix)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_optional_chatterbox.rs",
+      "line": 2588,
+      "text": "#[cfg(unix)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 14,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 108,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_contract.rs",
+      "line": 575,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 30,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 58,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 252,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 265,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 280,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 285,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_protocol_probe.rs",
+      "line": 393,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_release_core.rs",
+      "line": 308,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_fake_child.rs",
+      "line": 336,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_handoff.rs",
+      "line": 513,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_protocol.rs",
+      "line": 299,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 18,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 20,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 63,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 67,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 69,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 86,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 90,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 94,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 135,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 152,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 202,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 215,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 292,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 296,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 307,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 381,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 385,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 398,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 402,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 408,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 412,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 499,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 524,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 528,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 592,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 598,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 601,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 605,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 634,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 640,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 653,
+      "text": "#[cfg(not(windows))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 679,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 861,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 868,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 874,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 878,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1480,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1484,
+      "text": "#[cfg(not(feature = \"release-locked-runtime\"))]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1652,
+      "text": "#[cfg(test)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1656,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1659,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1662,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1829,
+      "text": "#[cfg(feature = \"release-locked-runtime\")]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1878,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1918,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor.rs",
+      "line": 1925,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor/host_diagnostics.rs",
+      "line": 9,
+      "text": "#[cfg(windows)]"
+    },
+    {
+      "source": "apps/desktop/src-tauri/src/tts_service_supervisor/host_diagnostics.rs",
+      "line": 80,
+      "text": "#[cfg(windows)]"
+    }
+  ],
+  "frozenSha256": "4a85acf9398301db3ea9275bc8bd0770dbd34fdc1d293efe5e47bfd194559626",
+  "frozenLength": 1261
+}
