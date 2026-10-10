@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import cast
 
 import pytest
 
+from benchmarks import quality, quality_presentation, quality_scoring
 from benchmarks.adapters.manifest import (
     PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
@@ -15,7 +17,7 @@ from benchmarks.adapters.manifest import (
     SUPERTONIC_CANDIDATE_ID,
 )
 from benchmarks.cli import parse_preflight_request
-from benchmarks.contracts import GenerationRequest
+from benchmarks.contracts import BenchmarkCorpus, GenerationRequest
 from benchmarks.preflight import PreflightRequest
 from benchmarks.quality import (
     CORRECTION_REASON,
@@ -29,6 +31,7 @@ from benchmarks.quality import (
     submit_scorecard,
 )
 from benchmarks.quality_cli import GENERATE_FIELDS, QualityCommandError, _require_fields
+from benchmarks.quality_scoring import _aggregate_candidate_scores
 
 
 class FakeQualityAdapter:
@@ -377,3 +380,258 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
             reason_code=CORRECTION_REASON,
             raw_root=raw_root,
         )
+
+
+def _synthetic_scorecards() -> tuple[dict[str, tuple[str, str]], list[dict[str, object]]]:
+    na = "not-applicable"
+    cells = (
+        ((1, 5, na), (2, 4, 5)),
+        ((1, na, na), (5, na, na)),
+        ((na, na, na), (2, 4, na)),
+        ((2, 3, 4), (1, 2, na)),
+        ((5, 5, 1), (1, 1, 5)),
+        ((na, 2, 4), (na, na, 5)),
+        ((1, 2, 3), (4, 5, na)),
+    )
+    by_sample = {
+        f"{index:032x}": (candidate_id, case_id)
+        for index, (candidate_id, case_id) in enumerate(
+            (
+                ("candidate-a", "case-a"),
+                ("candidate-a", "case-b"),
+                ("candidate-b", "case-a"),
+                ("candidate-b", "case-b"),
+            ),
+            1,
+        )
+    }
+    cards: list[dict[str, object]] = []
+    for evaluator in range(3):
+        samples: list[dict[str, object]] = []
+        for sample_id, (candidate_id, case_id) in by_sample.items():
+            case_index = int(case_id == "case-b")
+            samples.append(
+                {
+                    "sampleId": sample_id,
+                    "caseId": case_id,
+                    "scores": {
+                        dimension: (
+                            values[case_index][evaluator] if candidate_id == "candidate-a" else 4
+                        )
+                        for dimension, values in zip(DIMENSIONS, cells, strict=True)
+                    },
+                    "meaningChangingDefect": candidate_id == "candidate-a"
+                    and (evaluator, case_index) in {(0, 0), (1, 0), (2, 1)},
+                }
+            )
+        cards.append(
+            {
+                "sessionId": "c" * 32,
+                "evaluatorId": f"evaluator-{evaluator + 1:02d}",
+                "samples": samples,
+            }
+        )
+    return by_sample, cards
+
+
+def _expected_quality(candidate_id: str) -> dict[str, object]:
+    first = candidate_id == "candidate-a"
+    means = (3.5, 3.0, 3.0, 2.25, 3.0, 4.0, 3.25) if first else (4.0,) * 7
+    return {
+        "evaluatorCount": 3,
+        "blindOrder": True,
+        "scale": "1-5",
+        "overallMean": 3.142857142857143 if first else 4.0,
+        "dimensions": dict(zip(DIMENSIONS, means, strict=True)),
+        "meaningChangingDefects": 2 if first else 0,
+        "limitations": [
+            "small-panel",
+            "spanish-only",
+            "fixed-voices-only",
+            "synthetic-corpus-only",
+            "not-accessibility-certification",
+        ],
+    }
+
+
+def test_quality_leaf_bindings_and_entire_evaluator_html() -> None:
+    for name in ("DIMENSIONS", "QualitySessionError", "_score"):
+        assert getattr(quality, name) is getattr(quality_scoring, name)
+    name = "_render_evaluator_html"
+    assert getattr(quality, name) is getattr(quality_presentation, name)
+    name = "DIMENSIONS"
+    assert getattr(quality, name) is getattr(quality_presentation, name)
+    assert QualitySessionError.__module__ == "benchmarks.quality"
+    error = QualitySessionError("missing-dimension")
+    assert isinstance(error, RuntimeError)
+    assert error.code == "missing-dimension"
+    assert str(error) == "tts-benchmark-quality:missing-dimension"
+    for value in (True, False, 0, 6, 1.0, None):
+        with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:invalid-scorecard$"):
+            quality_scoring._score(value)
+    card: dict[str, object] = {
+        "sessionId": "a" * 32,
+        "evaluatorId": "evaluator-01",
+        "samples": [
+            {
+                "sampleId": "b" * 32,
+                "caseId": "synthetic-case",
+                "scores": {dimension: None for dimension in DIMENSIONS},
+                "meaningChangingDefect": None,
+            }
+        ],
+    }
+    payload = quality_presentation._render_evaluator_html("evaluator-01", card).encode("utf-8")
+    assert len(payload) == 3675
+    assert (
+        hashlib.sha256(payload).hexdigest()
+        == "24ff8309930111c671c17a53145e71f03b0f10488143cfcc53f66aa0c76b8e15"
+    )
+
+
+@pytest.mark.parametrize("candidate_id", ["candidate-a", "candidate-b"])
+def test_pure_quality_scores_match_original_multievaluator_result(candidate_id: str) -> None:
+    by_sample, cards = _synthetic_scorecards()
+    assert _aggregate_candidate_scores(
+        candidate_id, ("case-a", "case-b"), by_sample, cards, {("evaluator-01", "case-a")}
+    ) == _expected_quality(candidate_id)
+
+
+@pytest.mark.parametrize(
+    "fault, error_type",
+    [
+        ("missing-dimension", QualitySessionError),
+        ("missing-key", KeyError),
+        ("nonmapping", TypeError),
+    ],
+)
+def test_pure_quality_scores_preserve_missing_dimension_and_raw_errors(
+    fault: str, error_type: type[Exception]
+) -> None:
+    by_sample, cards = _synthetic_scorecards()
+    for card in cards:
+        for sample in cast(list[dict[str, object]], card["samples"])[:2]:
+            scores = cast(dict[str, object], sample["scores"])
+            if fault == "missing-dimension":
+                scores["artifactFreedom"] = "not-applicable"
+            elif fault == "missing-key":
+                del scores["artifactFreedom"]
+            else:
+                sample["scores"] = None
+    with pytest.raises(error_type) as caught:
+        _aggregate_candidate_scores("candidate-a", ("case-a", "case-b"), by_sample, cards, set())
+    if fault == "missing-dimension":
+        assert cast(QualitySessionError, caught.value).code == "missing-dimension"
+        assert str(caught.value) == "tts-benchmark-quality:missing-dimension"
+
+
+def test_scorecard_rejects_actual_reordering(tmp_path: Path) -> None:
+    _, cards = _synthetic_scorecards()
+    card = cards[0]
+    session = tmp_path / "quality-v2" / ("c" * 32)
+    (session / "scorecards").mkdir(parents=True)
+    (session / "session.json").write_text(
+        json.dumps({"state": "ready", "evaluatorIds": ["evaluator-01"]}), encoding="utf-8"
+    )
+    (session / "scorecards" / "evaluator-01.template.json").write_text(
+        json.dumps(card), encoding="utf-8"
+    )
+    samples = cast(list[dict[str, object]], card["samples"])
+    samples[0], samples[1] = samples[1], samples[0]
+    with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:invalid-scorecard$"):
+        submit_scorecard("c" * 32, card, raw_root=tmp_path)
+    assert not (session / "scorecards" / "evaluator-01.completed.json").exists()
+
+
+@pytest.mark.parametrize("fault", [None, "later-candidate", "missing-dimension", "later-corpus"])
+def test_quality_aggregation_preserves_read_and_failure_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fault: str | None
+) -> None:
+    by_sample, cards = _synthetic_scorecards()
+    session = tmp_path / "quality-v2" / ("c" * 32)
+    (session / "scorecards").mkdir(parents=True)
+    metadata: dict[str, object] = {
+        "state": "ready",
+        "evaluatorIds": [card["evaluatorId"] for card in cards],
+        "expectedCandidates": [
+            "candidate-a",
+            None if fault == "later-candidate" else "candidate-b",
+        ],
+        "protocolVersion": "tts-feasibility-profile-v2",
+    }
+    if fault == "missing-dimension":
+        for card in cards:
+            for sample in cast(list[dict[str, object]], card["samples"])[:2]:
+                cast(dict[str, object], sample["scores"])["artifactFreedom"] = "not-applicable"
+    files: dict[str, object] = {
+        "session.json": metadata,
+        "randomization-key.json": {
+            "samples": [
+                {"sampleId": sample_id, "candidateId": candidate_id, "caseId": case_id}
+                for sample_id, (candidate_id, case_id) in by_sample.items()
+            ]
+        },
+        "scorecards/evaluator-01.correction.json": {
+            "sessionId": "c" * 32,
+            "evaluatorId": "evaluator-01",
+            "caseId": "case-a",
+            "previousMeaningChangingDefect": True,
+            "correctedMeaningChangingDefect": False,
+            "reasonCode": CORRECTION_REASON,
+        },
+    }
+    files.update({f"scorecards/{card['evaluatorId']}.completed.json": card for card in cards})
+    for relative_path, value in files.items():
+        (session / relative_path).write_text(json.dumps(value), encoding="utf-8")
+    reads: list[str] = []
+    original_read = quality._read_mapping
+
+    def read_mapping(path: Path) -> dict[str, object]:
+        reads.append(path.name)
+        return original_read(path)
+
+    def load_corpus(path: Path) -> BenchmarkCorpus:
+        reads.append(path.name)
+        if fault == "later-corpus" and reads.count("corpus-v1.json") == 2:
+            raise OSError("synthetic-corpus-failure")
+        return BenchmarkCorpus("synthetic", ("case-a", "case-b"), (), {})
+
+    monkeypatch.setattr(quality, "_read_mapping", read_mapping)
+    monkeypatch.setattr(quality, "load_corpus", load_corpus)
+    if fault is None:
+        results = {
+            candidate_id: _expected_quality(candidate_id)
+            for candidate_id in ("candidate-a", "candidate-b")
+        }
+        assert aggregate_scores("c" * 32, raw_root=tmp_path) == {
+            "status": "pass",
+            "sessionId": "c" * 32,
+            "evaluatorCount": 3,
+            "eligibleForPromotion": True,
+            "candidates": results,
+        }
+        assert json.loads((session / "quality.aggregate.json").read_text(encoding="utf-8")) == {
+            "sessionVersion": "tts-quality-session-v1",
+            "sessionId": "c" * 32,
+            "eligibleForPromotion": True,
+            "candidates": results,
+        }
+    else:
+        code = "invalid-metadata" if fault == "later-candidate" else fault
+        error_type = OSError if fault == "later-corpus" else QualitySessionError
+        message = (
+            "synthetic-corpus-failure"
+            if fault == "later-corpus"
+            else f"tts-benchmark-quality:{code}"
+        )
+        with pytest.raises(error_type, match=f"^{message}$"):
+            aggregate_scores("c" * 32, raw_root=tmp_path)
+        assert not (session / "quality.aggregate.json").exists()
+    assert reads == [
+        "session.json",
+        "evaluator-01.completed.json",
+        "evaluator-02.completed.json",
+        "evaluator-03.completed.json",
+        "evaluator-01.correction.json",
+        "randomization-key.json",
+    ] + ["corpus-v1.json"] * (1 if fault in {"later-candidate", "missing-dimension"} else 2)

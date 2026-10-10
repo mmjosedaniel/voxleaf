@@ -8,10 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from voxleaf_tts import release_chatterbox
+from voxleaf_tts.packaging import chatterbox_authority, chatterbox_integrity
 from voxleaf_tts.release_chatterbox import (
     PACKAGE_DIRECTORY_NAME,
     SUCCESSOR_BUILD_COMMIT,
     PackageLayout,
+    PackageVersion,
     ReleaseChatterboxError,
     _configure_embedded_python,
     _copy_notices,
@@ -280,6 +283,75 @@ def _manifest(files: dict[str, bytes]) -> dict[str, object]:
             for path, value in sorted(files.items())
         ]
     }
+
+
+def test_extracted_helpers_share_facade_bindings_class_identity_and_repository_root() -> None:
+    assert repository_root() == Path(__file__).resolve().parents[3]
+    for name in (
+        "PackageVersion",
+        "PackageLayout",
+        "ReleaseChatterboxError",
+        "repository_root",
+        "build_runtime_manifest",
+        "verify_package_tree",
+    ):
+        assert getattr(release_chatterbox, name) is getattr(chatterbox_integrity, name)
+    for name in ("load_source_manifest", "load_acquisition_manifest", "successor_runtime_evidence"):
+        assert getattr(release_chatterbox, name) is getattr(chatterbox_authority, name)
+    for cls in (PackageLayout, ReleaseChatterboxError):
+        assert cls.__module__ == "voxleaf_tts.release_chatterbox"
+        assert cls.__qualname__ == cls.__name__
+        assert getattr(chatterbox_authority, cls.__name__) is cls
+
+
+@pytest.mark.parametrize("package_version", ["2", "3"])
+def test_runtime_module_copy_keeps_the_current_allowlist_and_excludes_nested_helpers(
+    tmp_path: Path, package_version: PackageVersion
+) -> None:
+    manifest = load_source_manifest(package_version=package_version)
+    modules = manifest["runtimeModules"]
+    assert isinstance(modules, list)
+    files = {module: module.encode() for module in modules}
+    root, staging = tmp_path / "repo", tmp_path / "staging"
+    _write_tree(root / "services/tts/src/voxleaf_tts", files)
+    _write_tree(
+        root / "services/tts/src/voxleaf_tts",
+        {
+            "packaging/chatterbox_integrity.py": b"maintainer integrity",
+            "packaging/chatterbox_authority.py": b"maintainer authority",
+            "packaging/nested/unlisted.py": b"nested maintainer helper",
+        },
+    )
+    _copy_runtime_modules(root, staging, manifest)
+    target = staging / "runtime/Lib/site-packages/voxleaf_tts"
+    assert not (target / "packaging").exists()
+    assert {
+        path.relative_to(target).as_posix(): path.read_bytes()
+        for path in target.rglob("*")
+        if path.is_file()
+    } == files
+
+
+@pytest.mark.parametrize(
+    "package_version,expected_sha256",
+    [
+        ("2", "14d0d52e08ef937a9a8ef87d0346cc3ffb8a43fd2ccac25d824ac32d96ec520e"),
+        ("3", "f62cc4bec21707a3444d66aa42f6e638dc8d8a4104335f8bcd4c79b9291c4bd0"),
+    ],
+)
+def test_fixed_input_runtime_manifest_matches_versioned_baseline_bytes(
+    tmp_path: Path, package_version: PackageVersion, expected_sha256: str
+) -> None:
+    _write_tree(
+        tmp_path,
+        {
+            "runtime/python.exe": b"python",
+            "runtime/Lib/site-packages/voxleaf_tts/service.py": b"service",
+        },
+    )
+    rendered = render_manifest(build_runtime_manifest(tmp_path, package_version=package_version))
+    assert len(rendered) == 678
+    assert _sha256(rendered) == expected_sha256
 
 
 def test_source_manifest_closes_the_one_optional_profile_and_six_model_files() -> None:

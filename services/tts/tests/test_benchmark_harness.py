@@ -11,6 +11,7 @@ from typing import Final, cast
 
 import pytest
 
+from benchmarks import harness, harness_corpus, harness_errors
 from benchmarks.contracts import (
     AdapterCapabilities,
     ArtifactSummary,
@@ -30,6 +31,10 @@ from benchmarks.harness import (
     MAX_INPUT_UTF8_BYTES,
     MAX_SAMPLE_FRAMES_PER_REQUEST,
     BenchmarkHarness,
+    _fail,
+    _HarnessFailure,
+    _read_string,
+    load_bilingual_corpus,
     load_corpus,
 )
 from benchmarks.metrics import (
@@ -52,6 +57,149 @@ SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summa
 V3_SCHEMA_PATH: Final = (
     REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v3.schema.json"
 )
+
+
+def _synthetic_corpus(bilingual: bool) -> dict[str, object]:
+    case_ids = ("b", "a", "c", "d", "e") if bilingual else ("b", "a")
+    return {
+        "corpusVersion": "tts-bilingual-corpus-v7" if bilingual else "",
+        "cases": [
+            {"caseId": name, "language": "es", "text": " \tΩ\r\n", "privacyCanary": ""}
+            for name in case_ids
+        ],
+        "performanceOrder": list(reversed(case_ids)),
+        "sustainedSequence": ["a", "b", "a"],
+        "qualityOrderByLanguage": {"es": list(reversed(case_ids)), "en": []},
+        "unknownField": True,
+    }
+
+
+@pytest.mark.parametrize("bilingual", [False, True])
+def test_synthetic_corpus_preserves_insertion_projection_and_sensitive_bytes(
+    tmp_path: Path, bilingual: bool
+) -> None:
+    path = tmp_path / "corpus.json"
+    path.write_text(json.dumps(_synthetic_corpus(bilingual)), encoding="utf-8")
+    corpus = load_bilingual_corpus(path, "es") if bilingual else load_corpus(path)
+    assert tuple(corpus.cases) == (("b", "a", "c", "d", "e") if bilingual else ("b", "a"))
+    assert corpus.performance_order == tuple(reversed(tuple(corpus.cases)))
+    assert corpus.sustained_sequence == (corpus.performance_order if bilingual else ("a", "b", "a"))
+    assert corpus.cases["b"].text.encode() == b" \t\xce\xa9\r\n"
+    assert corpus.cases["b"].privacy_canary == ""
+    assert corpus.corpus_version == ("tts-bilingual-corpus-v7" if bilingual else "")
+
+
+def test_legacy_performance_order_admits_repeats_when_length_matches(tmp_path: Path) -> None:
+    value = _synthetic_corpus(False)
+    value["performanceOrder"] = ["b", "b"]
+    path = tmp_path / "corpus.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+    assert load_corpus(path).performance_order == ("b", "b")
+
+
+def test_bilingual_five_entry_order_admits_repeats_and_skips_other_language_fields(
+    tmp_path: Path,
+) -> None:
+    value = _synthetic_corpus(True)
+    value["cases"] = cast(list[object], value["cases"])[:2] + [{"language": "en", "text": None}]
+    value["qualityOrderByLanguage"] = {"es": ["a", "b", "a", "b", "b"]}
+    path = tmp_path / "corpus.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+    corpus = load_bilingual_corpus(path, "es")
+    assert tuple(corpus.cases) == ("b", "a")
+    assert corpus.performance_order == corpus.sustained_sequence == ("a", "b", "a", "b", "b")
+    with pytest.raises(_HarnessFailure, match="^tts-benchmark:invalid-request:benchmark$"):
+        load_bilingual_corpus(path, "fr")
+
+
+@pytest.mark.parametrize("bilingual", [False, True])
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "shape",
+        "cases-shape",
+        "case-shape",
+        "nonstring",
+        "duplicate",
+        "missing",
+        "length",
+        "order-shape",
+        "order-nonstring",
+        "version",
+    ],
+)
+def test_synthetic_corpus_rejects_malformed_shapes_fields_duplicates_and_references(
+    tmp_path: Path, bilingual: bool, defect: str
+) -> None:
+    value = _synthetic_corpus(bilingual)
+    cases = cast(list[object], value["cases"])
+    order_key = "qualityOrderByLanguage" if bilingual else "performanceOrder"
+    if defect == "cases-shape":
+        value["cases"] = None
+    elif defect == "case-shape":
+        cases.append(None)
+    elif defect == "nonstring":
+        cast(dict[str, object], cases[0])["text"] = 1
+    elif defect == "duplicate":
+        cases.append(cases[0])
+    elif defect == "order-shape":
+        value[order_key] = None
+    elif defect == "order-nonstring":
+        value[order_key] = {"es": [None] * 5} if bilingual else [None] * 2
+    elif defect in {"missing", "length"}:
+        order = ["missing"] * len(cases) if defect == "missing" else ["b"]
+        value[order_key] = {"es": order} if bilingual else order
+    elif defect == "version":
+        value["corpusVersion"] = None
+    path = tmp_path / "corpus.json"
+    path.write_text(json.dumps([] if defect == "shape" else value), encoding="utf-8")
+    with pytest.raises(_HarnessFailure, match="^tts-benchmark:invalid-request:benchmark$"):
+        if bilingual:
+            load_bilingual_corpus(path, "es")
+        else:
+            load_corpus(path)
+
+
+@pytest.mark.parametrize("bilingual", [False, True])
+@pytest.mark.parametrize(
+    "payload,error_type",
+    [(None, FileNotFoundError), (b"\xff", UnicodeDecodeError), (b"{", json.JSONDecodeError)],
+)
+def test_corpus_file_unicode_and_json_errors_propagate_unwrapped(
+    tmp_path: Path, bilingual: bool, payload: bytes | None, error_type: type[Exception]
+) -> None:
+    path = tmp_path / "corpus.json"
+    if payload is not None:
+        path.write_bytes(payload)
+    with pytest.raises(error_type):
+        if bilingual:
+            load_bilingual_corpus(path, "es")
+        else:
+            load_corpus(path)
+
+
+@pytest.mark.parametrize("request_id", [None, "synthetic-request"])
+def test_corpus_and_harness_share_failure_identity_fields_and_message(
+    request_id: str | None,
+) -> None:
+    for owner, names in (
+        (harness_corpus, ("_read_string", "load_corpus", "load_bilingual_corpus")),
+        (harness_errors, ("_HarnessFailure", "_fail")),
+    ):
+        for name in names:
+            assert getattr(harness, name) is getattr(owner, name)
+    assert _HarnessFailure.__module__ == "benchmarks.harness"
+    assert issubclass(_HarnessFailure, RuntimeError)
+    assert _read_string(" \tΩ\r\n") == " \tΩ\r\n"
+    assert _read_string("") == ""
+    with pytest.raises(_HarnessFailure) as captured:
+        if request_id is None:
+            _read_string(0)
+        else:
+            _fail("invalid-request", request_id)
+    assert captured.value.code == "invalid-request"
+    assert captured.value.request_id == (request_id or "benchmark")
+    assert str(captured.value) == f"tts-benchmark:invalid-request:{request_id or 'benchmark'}"
 
 
 def fixture_metadata() -> SummaryMetadata:
