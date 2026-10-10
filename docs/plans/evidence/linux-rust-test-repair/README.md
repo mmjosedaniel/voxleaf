@@ -2,7 +2,24 @@
 
 Date: 2026-10-10. Comparative verdict: **PASS**.
 [Independent comparison report](LINUX-RUST-REPAIR-COMPARE-02.md).
-The CI addition has separate review evidence; remote CI execution is not claimed.
+The CI addition has separate review evidence. At original closeout, remote CI execution had not yet been run; the later Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
+
+## Archived raw captures
+
+The Markdown receipts below retain their original outcomes. Raw captures,
+logs and temporary scripts referenced by those receipts were retired from this
+checkout after verifying all 276 entries in the local archive
+`Documents/Codex/artifacts/voxleaf/pr-229-evidence-5401f899/original-evidence.zip`.
+Archive SHA-256:
+`80f9b59a9d38730f1046b01a5dac3cb5e8f3f0a599807759242a51a95ecc30fc`.
+The adjacent `manifest.json` records every original path, size and entry hash.
+Recover selected entries to ignored scratch and verify their manifest hashes;
+do not overwrite unrelated work. The archive is local only. Original public
+captures remain reviewable at the full commit link below. Local scratch paths
+in unchanged receipts are historical provenance, not current checkout links.
+See the [retention policy](../../../development/evidence-retention.md).
+
+[Original repair captures](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair).
 
 ## Scope and provenance
 
@@ -18,7 +35,7 @@ native test-layout refactor is preserved. Three paths repair Linux compatibility
 - `icons/icon.png`: the exact existing ICO entry 5 payload, offset 4554, length
   4292 bytes; 256x256 RGBA8. SHA256
   `008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8`.
-  `apply-two-file-repair.ps1.txt` records extraction and signature/chunk CRC checks.
+  [apply-two-file-repair.ps1.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/apply-two-file-repair.ps1.txt) records extraction and signature/chunk CRC checks.
   No image regeneration, dependency, ICO/SVG or Tauri configuration change.
 
 Fresh Ubuntu snapshots compare **HEAD plus the repair** against **the accepted
@@ -56,7 +73,7 @@ After the icon/parameter fix, `attempt-01-evidence` records passing 85/86 tests
 but Clippy failures on the five Windows-only constructed variants. The final
 `attempt-02-evidence` records all six configured script executions returning 0.
 A preliminary format check identified four multiline attribute formatting fixes;
-`detector-format-packet.json.txt` records the corrected 32-line annotation delta.
+[detector-format-packet.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/detector-format-packet.json.txt) records the corrected 32-line annotation delta.
 
 The first Windows invocation encountered pnpm 11.25.0 from the injected fallback
 PATH and stopped at the engine guard. The authoritative retry uses process-local
@@ -66,17 +83,17 @@ WebView session with driver 150.0.4078.83 against installed WebView2 155.0.4283.
 The existing CI acquisition tool obtained driver 155.0.4283.45; its Microsoft
 Authenticode signature was verified. The unchanged command passed with that
 isolated driver selected only for the test process. The old driver and browser
-installation were not modified. `windows-results.json.txt` retains the first
-smoke failure; `windows-native-retry-result.json.txt` records its successful retry.
+installation were not modified. [windows-results.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/windows-results.json.txt) retains the first
+smoke failure; [windows-native-retry-result.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/windows-native-retry-result.json.txt) records its successful retry.
 
 ## Evidence layout
 
-Structured files, logs and scripts are byte-preserved `.txt` copies outside
-format/execution globs. The independent report's scratch references correspond
-to these retained copies. Before/after identities bind the exact validated
-source; the comparison receipt deliberately excludes the subsequently added CI
-workflow, which receives independent change review. No staging, commits, push,
-branch changes or PR. The architecture diagram was reviewed: topology unchanged.
+Markdown reports and the exact CI review-input manifest remain in this checkout.
+Structured command captures, logs and scripts are in the verified archive and
+original commit. Historical scratch references in unchanged reports describe
+the original run. Before/after identities bind its validated source; the
+comparison excludes the later CI workflow, which has independent change review.
+The architecture review found unchanged topology.
 
 ## Final CI review and closeout
 
@@ -84,13 +101,13 @@ branch changes or PR. The architecture diagram was reviewed: topology unchanged.
 no findings. The role returned the report read-only; the director persisted its
 text and byte-copied the exact 41-path manifest to `review-input.json.txt`.
 Manifest SHA256: `e49b7446e23eb9ef3891994ffb93a365d5acb558767a036f23c83d0a89bdf303`.
-Its scratch link remains valid locally; this retained copy has identical bytes.
+The [retained CI source identities](review-input.json.txt) have identical bytes; the report's original absolute scratch link is historical.
 
 The new `ubuntu-native` job is configured, with root workflow settings and both
 existing jobs preserved. `pnpm.cmd format:check:typescript` exits 0; semantic
 YAML comparison and syntax checks for all seven Bash steps pass. The job's three
-Rust commands match the successful Ubuntu comparison. No remote job was run.
-CI check logs and the bounded worker packet are retained alongside this index.
+Rust commands match the successful Ubuntu comparison. At original closeout, no remote job had been run; the subsequent Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
+CI check logs and the bounded worker packet are archived; the Markdown approval remains alongside this index.
 
 The [completed ExecPlan](../../completed/linux-rust-test-comparison.md) records
 all decisions and results. Its former active path is a navigation-only redirect

@@ -4,10 +4,27 @@ Date: 2026-10-10. Verdict: **BASELINE-FAIL**.
 [Independent report](LINUX-RUST-COMPARE-01.md).
 [Active follow-up](../../active/linux-rust-test-comparison.md).
 
+## Archived raw captures
+
+The Markdown receipts below retain their original outcomes. Raw captures,
+logs and temporary scripts referenced by those receipts were retired from this
+checkout after verifying all 276 entries in the local archive
+`Documents/Codex/artifacts/voxleaf/pr-229-evidence-5401f899/original-evidence.zip`.
+Archive SHA-256:
+`80f9b59a9d38730f1046b01a5dac3cb5e8f3f0a599807759242a51a95ecc30fc`.
+The adjacent `manifest.json` records every original path, size and entry hash.
+Recover selected entries to ignored scratch and verify their manifest hashes;
+do not overwrite unrelated work. The archive is local only. Original public
+captures remain reviewable at the full commit link below. Local scratch paths
+in unchanged receipts are historical provenance, not current checkout links.
+See the [retention policy](../../../development/evidence-retention.md).
+
+[Original failed comparison captures](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-comparison).
+
 The pre-refactor baseline is HEAD
 `f06c80e04da2025342b1002a548f03ca17e7cc0b`. A complete Git archive contains all
 912 tracked files. The current snapshot overlays only the 26 accepted native
-Rust files, for 923 input files. Hashes and final path sets are retained.
+Rust files, for 923 input files. Hashes and final path sets are archived with the original captures.
 No original source, fixture, Cargo/package lock or CI configuration changed.
 
 Execution: normal local Windows PowerShell outside the automation sandbox,
@@ -53,8 +70,9 @@ attempt above includes every HEAD file, resolves every source include and uses
 A first `/tmp` toolchain directory also disappeared on WSL restart; the retained
 attempt uses `/var/tmp`. Neither exploratory attempt is acceptance evidence.
 
-All structured/log/script files are preserved as `.txt` copies to keep these
-records outside executable/formatting globs. Raw source archives, caches and
-tools remain in ignored/local scratch. The current source and previous campaign
-evidence remain unchanged. CI addition is conditional on a future successful
-comparison and was not made. No staging, commits, branch changes, push or PR.
+Structured/log/script files from this failed comparison are in the verified
+archive and original commit, rather than the current checkout. Raw source
+archives, caches and tools remain local execution provenance. The historical
+BASELINE-FAIL is unchanged; the [subsequent repair](../linux-rust-test-repair/README.md)
+records separate successful evidence. This comparison did not add CI or perform
+staging, commits, branch changes, push or PR operations.

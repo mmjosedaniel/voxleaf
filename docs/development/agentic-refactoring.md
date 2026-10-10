@@ -10,6 +10,15 @@ Features and behavioral bug fixes use the separate
 `change_reviewer` does not replace this campaign's `refactor_validator` and is
 not an additional mandatory role for behavior-preserving units.
 
+## Evidence storage
+
+Apply the [evidence retention policy](evidence-retention.md) to Audit Packets,
+Work Orders and Validation Reports. Commit concise immutable receipts and
+curated source identities; put raw captures, logs and temporary execution scripts
+in ignored `tmp/evidence/<run>/` or expiring CI artifacts. Record archive/recovery
+links when retiring current-PR captures. The existing `check` and
+`check:portable` commands begin with the index guard and its isolated tests.
+
 ## Why the workflow is bounded
 
 VoxLeaf currently has hundreds of TypeScript and TSX files. A literal

@@ -1,6 +1,0 @@
-{
-  "command": "pnpm.cmd format:check:typescript",
-  "exit": 0,
-  "yamlStructure": "PASS",
-  "bashSyntax": "PASS"
-}

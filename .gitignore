@@ -106,3 +106,13 @@ AGENTS.override.md
 **/AGENTS.override.md
 .codex/local/
 .codex/sessions/
+
+# Raw validation output belongs in tmp/evidence/<run> or CI artifacts.
+# The index guard permits only Markdown and the four reviewed identity records.
+docs/plans/evidence/**/*
+!docs/plans/evidence/**/
+!docs/plans/evidence/**/*.md
+!docs/plans/evidence/native-rust-test-layout/initial-inventory.json.txt
+!docs/plans/evidence/linux-rust-test-repair/review-input.json.txt
+!docs/plans/evidence/chatterbox-security-refresh/review-identities-01.txt
+!docs/plans/evidence/chatterbox-security-refresh/integration-review-identities-01.txt

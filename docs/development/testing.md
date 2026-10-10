@@ -13,6 +13,15 @@
   unit, integration, format, lint, type, schema, build, Python, Rust, browser,
   WebView2, model, firewall, performance, and exact-host validation.
 
+## Validation artifact retention
+
+Follow the [evidence retention policy](evidence-retention.md): keep concise
+summaries and reviewed identities in Git, and raw logs/captures in ignored
+`tmp/evidence/<run>/` or CI artifacts with explicit retention. Run
+`pnpm check:evidence` and `pnpm test:evidence` from local PowerShell outside the
+sandbox. Both commands also start the existing `check` and `check:portable`
+CI gates. The tests use isolated temporary Git repositories.
+
 ## Native Rust unit-test layout
 
 The ten native owners with unit-test suites keep production in `<owner>.rs`

@@ -4,9 +4,13 @@ Move finished ExecPlans here after their validation results and final decisions 
 
 Completed plans are historical evidence. Do not edit them to describe a later implementation; create a new plan or ADR instead.
 
+Use the [evidence retention policy](../../development/evidence-retention.md) for supporting summaries, identities and archived raw captures. The [PR #229 cleanup](pr-evidence-retention.md) is technically accepted; its separate Git publication handoff is pending.
+
 ## Completed plans
 
-- [`linux-rust-test-comparison.md`](linux-rust-test-comparison.md): repaired the pre-existing Linux compilation/lint blockers, passed independent paired 85/86 Rust suites and both Unix symlink cases, retained Windows 87/88 and native-startup success, and added the reviewed Ubuntu Rust CI job; remote execution pending and changes uncommitted.
+- [`pr-evidence-retention.md`](pr-evidence-retention.md): archived 276 original evidence files, retired 224 raw captures, retained immutable summaries/identities, added the tested retention guard and passed independent host acceptance; cleanup commit/push pending.
+
+- [`linux-rust-test-comparison.md`](linux-rust-test-comparison.md): repaired the pre-existing Linux compilation/lint blockers, passed independent paired 85/86 Rust suites and both Unix symlink cases, retained Windows 87/88 and native-startup success, and added the reviewed Ubuntu Rust CI job; remote execution was pending at original closeout; the later Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
 
 - [`native-rust-test-layout.md`](native-rust-test-layout.md): completed six stages and ten private test-file moves, extracted the existing Windows probe, preserved assertions/fixtures/frozen authority and passed independent per-unit, portable, full and native-startup validation; all changes remain unstaged and uncommitted.
 

@@ -10,6 +10,23 @@ The director reused one GPT-6.1 Sol high auditor, one GPT-6.1 Sol high worker,
 and one GPT-6 Astra high independent validator. Only the worker changed Rust
 source, one unit at a time. Source writers were idle throughout validation.
 
+## Archived raw captures
+
+The Markdown receipts below retain their original outcomes. Raw captures,
+logs and temporary scripts referenced by those receipts were retired from this
+checkout after verifying all 276 entries in the local archive
+`Documents/Codex/artifacts/voxleaf/pr-229-evidence-5401f899/original-evidence.zip`.
+Archive SHA-256:
+`80f9b59a9d38730f1046b01a5dac3cb5e8f3f0a599807759242a51a95ecc30fc`.
+The adjacent `manifest.json` records every original path, size and entry hash.
+Recover selected entries to ignored scratch and verify their manifest hashes;
+do not overwrite unrelated work. The archive is local only. Original public
+captures remain reviewable at the full commit link below. Local scratch paths
+in unchanged receipts are historical provenance, not current checkout links.
+See the [retention policy](../../../development/evidence-retention.md).
+
+[Original collection at source commit](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/native-rust-test-layout).
+
 ## Immutable unit records
 
 Every unit has a fresh audit, passing baseline, frozen work order and independent
@@ -40,17 +57,11 @@ The final layout has twenty-six Rust files. Forty-three includes retain all
 original fixture targets/bytes; the increase of two is the privacy test replacing
 one inline source include with all three resulting hardware source files.
 
-Each report directory includes the report and its original structured JSON
-evidence saved byte-for-byte with a `.json.txt` suffix. The suffix keeps
-immutable evidence outside root code-formatting globs. Read these files as JSON.
-SHA-256 identities describe bytes; filter-aware blob identities and exact Git
-porcelain statuses describe the approved unstaged patch. Supplemental source
-reviews and exact test-comparison records are included where produced.
-
-Raw host command logs remain in the local task directory:
-`C:/Users/mmjos/Documents/Codex/2026-10-09/copia-este-prompt-est-preparado-para/work/native-rust-test-layout/<Report ID>/`.
-Repository reports retain command exit codes, results and structured inventories;
-they do not depend on publishing local logs.
+Each report directory retains its Markdown receipt. The curated initial
+inventory remains in this checkout; other `.json.txt` captures and raw execution
+logs are archived. Their former file references in immutable receipts describe
+the original run. SHA-256, filter-aware blob identities and exact Git statuses
+in those receipts continue to bind the original approved patch.
 
 The default Windows configuration passes 87 tests and `release-locked-runtime`
 passes 88. Exact names and results are compared separately, with only the four

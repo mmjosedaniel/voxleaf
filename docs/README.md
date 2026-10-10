@@ -334,6 +334,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`development/setup.md`](development/setup.md): pinned prerequisites, reproducible setup, environment boundaries, and verified commands.
 - [`development/testing.md`](development/testing.md): test strategy.
+- [`development/evidence-retention.md`](development/evidence-retention.md): curated acceptance summaries and identities, local/CI raw-artifact retention, and the tested Git-index guard.
 - [`development/troubleshooting.md`](development/troubleshooting.md): native
   development watcher/restoration diagnostics plus content-safe exact-demo
   availability, startup, buffering, cancellation, resource, and recovery
@@ -349,7 +350,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/completed/linux-rust-test-comparison.md`](plans/completed/linux-rust-test-comparison.md): completed minimal Linux compatibility repair and independent 85/86-test comparison, including both Unix symlink cases; Windows 87/88 tests and native startup pass, and the reviewed Ubuntu Rust CI job awaits remote execution.
+- [`plans/completed/pr-evidence-retention.md`](plans/completed/pr-evidence-retention.md): technically accepted PR #229 evidence archival/cleanup, retention policy and tested CI guard; separate cleanup commit/push pending.
+- [`plans/completed/linux-rust-test-comparison.md`](plans/completed/linux-rust-test-comparison.md): completed minimal Linux compatibility repair and independent 85/86-test comparison, including both Unix symlink cases; Windows 87/88 tests and native startup pass, and the reviewed Ubuntu Rust CI job subsequently passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
 - [`plans/completed/native-rust-test-layout.md`](plans/completed/native-rust-test-layout.md): completed ten private Rust test-file moves and the existing Windows-probe extraction, preserving production ownership, test assertions, fixtures and frozen authority; independent unit and aggregate host gates passed, with changes unstaged and uncommitted.
 - [`plans/completed/native-rust-module-organization.md`](plans/completed/native-rust-module-organization.md): completed native Rust organization with two independently accepted diagnostic extractions, ten evidence-backed SKIPs and passing portable/native aggregate checks; runtime behavior and Chatterbox's shared mutation boundary remain intact.
 - [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
