@@ -349,6 +349,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/native-rust-test-layout.md`](plans/active/native-rust-test-layout.md): planned native Rust unit-test separation and physical Windows-probe organization, preserving private modules, existing coverage, and frozen authority; implementation has not started.
 - [`plans/completed/native-rust-module-organization.md`](plans/completed/native-rust-module-organization.md): completed native Rust organization with two independently accepted diagnostic extractions, ten evidence-backed SKIPs and passing portable/native aggregate checks; runtime behavior and Chatterbox's shared mutation boundary remain intact.
 - [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.

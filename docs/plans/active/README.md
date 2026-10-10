@@ -17,8 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-No current implementation ExecPlans. The completed native Rust organization
-campaign is archived in [completed plans](../completed/native-rust-module-organization.md).
+- [`native-rust-test-layout.md`](native-rust-test-layout.md): planned separation
+  of native Rust unit tests into private child files and extraction of the
+  existing Windows hardware-probe submodule; implementation has not started.
+
+The preceding native Rust organization campaign is archived in
+[completed plans](../completed/native-rust-module-organization.md).
 
 ## Historical reference
 
