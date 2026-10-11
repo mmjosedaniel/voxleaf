@@ -17,6 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [App readability plan](app-readability.md) is prepared for a bounded shell
+presentation/message extraction into `AppPresentation.tsx`, with stable picker
+identity and unchanged publication ownership. Preference-handler deduplication
+and lifecycle extraction remain SKIP. Implementation has not started.
+
 The [TTS adapter layout plan](../completed/tts-adapter-layout.md) is complete:
 selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4,
 independent three-baseline/22-gate PASS and four candidate/four desktop arms.
