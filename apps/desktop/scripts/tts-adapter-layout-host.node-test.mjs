@@ -644,7 +644,10 @@ test("module closure rejects missing required modules, dormant providers and mai
   }
 });
 test("tree verifier binds actual bytes and rejects missing extra tampered and duplicate records", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "voxleaf-layout-test-"));
+  // TEMP may use a short path or aliased parent; the fixture needs a canonical root.
+  const root = await mkdtemp(
+    path.join(await realpath(tmpdir()), "voxleaf-layout-test-"),
+  );
   try {
     const payload = Buffer.from("synthetic payload");
     await mkdir(path.join(root, "runtime"));
