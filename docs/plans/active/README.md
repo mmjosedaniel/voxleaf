@@ -17,10 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-The [TTS adapter layout plan](tts-adapter-layout.md) is prepared for a selective
-`adapters/` package, coordinated import and payload migration, a refreshed Piper
-core and local-only Chatterbox v4 preparation. Implementation has not started;
-historical Chatterbox authority and active v3 admission remain unchanged.
+The [TTS adapter layout plan](../completed/tts-adapter-layout.md) is complete:
+selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4,
+independent three-baseline/22-gate PASS and four candidate/four desktop arms.
+Firewall cleanup and documentary closeout are independently approved. Historical
+authority and admitted v3 remain protected; implementation is committed for PR handoff. See its
+[execution evidence](../evidence/tts-adapter-layout/README.md).
 
 The [TTS service organization plan](../completed/tts-service-organization.md) is
 complete and archived, with four
