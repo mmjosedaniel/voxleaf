@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from voxleaf_tts.chatterbox_adapter import (
+from voxleaf_tts.adapters.chatterbox import (
     CANDIDATE_ID,
     ENGINE_VERSION,
     GENERATION_SETTINGS,

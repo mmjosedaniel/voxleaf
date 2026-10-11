@@ -13,8 +13,7 @@ from typing import Any, Final
 
 import pytest
 
-from voxleaf_tts.engine import EngineFailure, EngineFailureCode
-from voxleaf_tts.qwen_adapter import (
+from voxleaf_tts.adapters.qwen import (
     AIDEN_CANDIDATE_ID,
     AIDEN_ENGLISH_PROFILE,
     CODEC_SAMPLES_PER_TOKEN,
@@ -37,6 +36,7 @@ from voxleaf_tts.qwen_adapter import (
     QwenSerenaTtsEngine,
     QwenVoiceProfile,
 )
+from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CANDIDATE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v8.json"

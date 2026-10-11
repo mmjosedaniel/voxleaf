@@ -8,14 +8,14 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, cast
 
-from .engine import (
+from ..engine import (
     EngineCapabilities,
     EngineFailure,
     EngineFailureCode,
     EngineResult,
     WorkIdentity,
 )
-from .protocol import (
+from ..protocol import (
     BYTES_PER_SAMPLE,
     MAX_AUDIO_PAYLOAD_BYTES,
     SAMPLE_RATE_HZ,

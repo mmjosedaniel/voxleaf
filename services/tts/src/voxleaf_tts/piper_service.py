@@ -6,8 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+from .adapters.piper import ENGLISH_PROFILE, SPANISH_PROFILE, PiperCpuTtsEngine
 from .engine import EngineFailure
-from .piper_adapter import ENGLISH_PROFILE, SPANISH_PROFILE, PiperCpuTtsEngine
 from .service import run_service
 
 

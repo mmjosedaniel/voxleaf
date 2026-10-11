@@ -7,7 +7,7 @@
   },
   "authority": {
     "releaseConfigSha256": "43da61e7853a911babb33847217f314f2119c432f5a9adcee06c6617fa3aeedd",
-    "piperRuntimeManifestSha256": "45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8",
+    "piperRuntimeManifestSha256": "3b03502031c188b5aef5c983859a93f506509648a2ddb35dcfec402877398062",
     "optionalChatterboxManifestSha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12",
     "optionalChatterboxRuntimeEvidenceSha256": "bbcde47df59d6d9c190238653ab9eae725b9bdfda4fbb33bc59813a2595d4cff"
   },
@@ -18,18 +18,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181602965,
-      "sha256": "8bc8d5a54e82a113b9ed2bb727c64742a2d7bd5ba9558d7aab1fd417bc77711d"
+      "sizeBytes": 203524546,
+      "sha256": "7e93ee7ac826f8af950b53f517dc238f6b8e878dc47afde8addb7846ff69ae56"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 11837440,
-      "sha256": "fb81330b856cae0d15b28da861409ffbe0e1cba6f8b376360c5cda5d137cdb06"
-    },
-    "installedApplicationBinary": {
-      "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 11837440,
-      "sha256": "b2c7b1e1729b2b7bf05ed6b4b9014a931c42aa5d2c3aad36cf5d1ad91b6e9b67"
+      "sizeBytes": 11798016,
+      "sha256": "8bce632b3fc9e42904ee90396b9f404575560588e1b3d69d3701e1111ffc35a8"
     }
   },
   "payload": {
@@ -52,7 +47,7 @@
     "installedBytes": 8236377725,
     "temporaryBytes": 13270915278,
     "minimumFreeBytes": 20000000000,
-    "representativeCompatibleHostJourney": "representative-compatible-host-passed"
+    "representativeCompatibleHostJourney": "not-run"
   },
   "signature": {
     "status": "unsigned-local",
@@ -62,9 +57,9 @@
     "credentialStoredInRepository": false
   },
   "lifecycle": {
-    "status": "local-install-first-start-repair-uninstall-passed",
+    "status": "not-run",
     "representativeNormalUserHostRequired": true,
-    "localReleaseGatesPassed": true,
+    "localReleaseGatesPassed": false,
     "explicitApplicationDataRemovalStructurallyVerified": true,
     "silentUninstallPreservesApplicationData": true
   },

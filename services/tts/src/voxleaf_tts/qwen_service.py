@@ -6,12 +6,12 @@ import os
 import sys
 from pathlib import Path
 
-from .engine import EngineFailure
-from .qwen_adapter import (
+from .adapters.qwen import (
     AIDEN_ENGLISH_PROFILE,
     SERENA_SPANISH_PROFILE,
     QwenSerenaTtsEngine,
 )
+from .engine import EngineFailure
 from .service import run_service
 
 

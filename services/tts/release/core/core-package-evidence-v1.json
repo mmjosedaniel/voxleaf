@@ -1,6 +1,6 @@
 {
   "authority": {
-    "runtimeManifestSha256": "3f1a2d311a5f7a857cb95402f3dbc187d42c5878c4208c9ebd12cb3b4dc7a27c",
+    "runtimeManifestSha256": "3b03502031c188b5aef5c983859a93f506509648a2ddb35dcfec402877398062",
     "sourceManifestSha256": "4c340ca48878a1558d792901ba66a81ed1432b8de33cd1fd0c723287c29982af"
   },
   "distribution": {
@@ -26,16 +26,16 @@
     "Final clean-host, OS-level offline, install, repair, and uninstall evidence belongs to later M011 milestones."
   ],
   "measurements": {
-    "archiveSha256": "84eaf4f4bd6100f9670eaf749e22f7382dc515546e749d1e2b094f4d9ebba09b",
-    "compressedBytes": 213352281,
-    "fileCount": 2023,
-    "installedBytes": 304989506
+    "archiveSha256": "51c62ffa173376c85d55b0f05a5a86d3577f5fe192439357e16cf6c9fcdd4ac2",
+    "compressedBytes": 213352542,
+    "fileCount": 2024,
+    "installedBytes": 304989710
   },
   "offlineSmoke": {
     "audioPersisted": false,
-    "englishPayloadBytes": 216224,
+    "englishPayloadBytes": 217340,
     "networkProcessApisDenied": true,
-    "spanishPayloadBytes": 231828
+    "spanishPayloadBytes": 237400
   },
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",

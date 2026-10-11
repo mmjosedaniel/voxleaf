@@ -58,6 +58,7 @@ from .packaging.chatterbox_authority import (
 )
 from .packaging.chatterbox_authority import successor_runtime_evidence as successor_runtime_evidence
 from .packaging.chatterbox_authority import successor_source_manifest as successor_source_manifest
+from .packaging.chatterbox_authority import write_local_source_manifest
 from .packaging.chatterbox_authority import write_successor_authority as write_successor_authority
 from .packaging.chatterbox_authority import (
     write_successor_source_manifest as write_successor_source_manifest,
@@ -87,6 +88,7 @@ from .packaging.chatterbox_integrity import repository_root as repository_root
 from .packaging.chatterbox_integrity import safe_relative_path as safe_relative_path
 from .packaging.chatterbox_integrity import sha256_file as sha256_file
 from .packaging.chatterbox_integrity import verify_package_tree as verify_package_tree
+from .packaging.chatterbox_sources import resolve_runtime_sources
 
 DOWNLOAD_TIMEOUT_SECONDS: Final = 120
 FIXED_ZIP_TIMESTAMP: Final = (1980, 1, 1, 0, 0, 0)
@@ -244,13 +246,25 @@ def _copy_tree(source: Path, target: Path, *, runtime_only: bool = False) -> Non
         raise ReleaseChatterboxError("chatterbox-package-staging-failed") from None
 
 
-def _copy_runtime_modules(root: Path, staging: Path, manifest: Mapping[str, object]) -> None:
-    source = root / "services/tts/src/voxleaf_tts"
+def _copy_runtime_modules(
+    root: Path,
+    staging: Path,
+    manifest: Mapping[str, object],
+    *,
+    sources: Mapping[str, bytes] | None = None,
+) -> None:
+    resolved = resolve_runtime_sources(root, manifest) if sources is None else sources
     target = staging / "runtime/Lib/site-packages/voxleaf_tts"
-    for module in cast(
-        list[str], _array(manifest["runtimeModules"], "chatterbox-package-source-manifest-invalid")
-    ):
-        _copy_file(source / module, target / module)
+    try:
+        for module in cast(
+            list[str],
+            _array(manifest["runtimeModules"], "chatterbox-package-source-manifest-invalid"),
+        ):
+            destination = target / module
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(resolved[module])
+    except OSError:
+        raise ReleaseChatterboxError("chatterbox-package-staging-failed") from None
 
 
 def verify_safe_model_load_sites(site_packages: Path) -> None:
@@ -295,7 +309,7 @@ def _copy_notices(
 ) -> None:
     layout = PackageLayout(package_version)
     notices = staging / "notices"
-    if package_version == "3":
+    if package_version in {"3", "4"}:
         _copy_successor_license(root, notices, environment)
     _copy_file(root / "LICENSE", notices / "VOXLEAF-MIT.txt")
     _copy_file(
@@ -412,7 +426,7 @@ def _synchronise_environment(
         str(environment / "Scripts/python.exe"),
         str(lock),
     ]
-    if package_version == "3":
+    if package_version in {"3", "4"}:
         sync_command.append("--require-hashes")
     try:
         subprocess.run(["uv", "venv", "--python", "3.12", str(environment)], check=True, cwd=root)
@@ -439,6 +453,8 @@ def build_package(
         lock["sha256"], "chatterbox-package-source-manifest-invalid"
     ):
         raise ReleaseChatterboxError("chatterbox-package-lock-invalid")
+    # Resolve the complete source closure before sync, download or output mutation.
+    sources = resolve_runtime_sources(root, source)
     dist = layout.dist(root)
     dist.mkdir(parents=True, exist_ok=True)
     environment = dist / "environment"
@@ -462,7 +478,7 @@ def build_package(
         _extract_embedded_python(python_archive, staging / "runtime")
         _configure_embedded_python(staging / "runtime")
         _copy_tree(site_packages, staging / "runtime/Lib/site-packages", runtime_only=True)
-        _copy_runtime_modules(root, staging, source)
+        _copy_runtime_modules(root, staging, source, sources=sources)
         _copy_notices(root, staging, site_packages, source, package_version=package_version)
         rendered = render_manifest(build_runtime_manifest(staging, package_version=package_version))
         (staging / layout.runtime_manifest).write_bytes(rendered)
@@ -482,7 +498,7 @@ def build_package(
     parts = split_archive(archive)
     installed_files = [path for path in target.rglob("*") if path.is_file()]
     runtime_manifest = target / layout.runtime_manifest
-    return PackageMeasurement(
+    measurement = PackageMeasurement(
         archive_sha256=sha256_file(archive),
         compressed_bytes=archive.stat().st_size,
         installed_bytes=sum(path.stat().st_size for path in installed_files),
@@ -490,6 +506,119 @@ def build_package(
         runtime_manifest_sha256=sha256_file(runtime_manifest),
         parts=parts,
     )
+    if package_version == "4":
+        (dist / "local-build-evidence-v4.json").write_bytes(
+            render_manifest(_local_package_receipt(root))
+        )
+    return measurement
+
+
+def _local_package_receipt(root: Path) -> dict[str, object]:
+    """Measure and verify current v4 outputs without publication/execution claims."""
+
+    layout = PackageLayout("4")
+    dist = layout.dist(root)
+    target = dist / layout.directory
+    source = load_source_manifest(root, package_version="4")
+    sources = resolve_runtime_sources(root, source)
+    runtime = _load_json(target / layout.runtime_manifest, "chatterbox-package-runtime-invalid")
+    expected_runtime = build_runtime_manifest(target, package_version="4")
+    if runtime != expected_runtime or (target / layout.runtime_manifest).read_bytes() != (
+        render_manifest(expected_runtime)
+    ):
+        raise ReleaseChatterboxError("chatterbox-package-runtime-invalid")
+    verify_package_tree(target, runtime, package_version="4")
+    module_root = target / "runtime/Lib/site-packages/voxleaf_tts"
+    if {
+        path.relative_to(module_root).as_posix()
+        for path in module_root.rglob("*")
+        if path.is_file()
+    } != set(sources):
+        raise ReleaseChatterboxError("chatterbox-package-runtime-invalid")
+    for module, payload in sources.items():
+        if (module_root / module).read_bytes() != payload:
+            raise ReleaseChatterboxError("chatterbox-package-source-invalid")
+    recipe = root / f"services/tts/release/optional/chatterbox/{layout.source_manifest}"
+    if (target / layout.source_manifest).read_bytes() != recipe.read_bytes():
+        raise ReleaseChatterboxError("chatterbox-package-source-invalid")
+    lock = root / layout.lock_path
+    if (target / "notices/requirements.lock").read_bytes() != lock.read_bytes():
+        raise ReleaseChatterboxError("chatterbox-package-lock-invalid")
+    licence = target / "notices/python/tokenizers-0.23.1/LICENSE"
+    if licence.stat().st_size != 11_357 or sha256_file(licence) != TOKENIZERS_LICENSE_SHA256:
+        raise ReleaseChatterboxError("chatterbox-package-tokenizers-license-invalid")
+    verify_safe_model_load_sites(target / "runtime/Lib/site-packages")
+    archive = dist / layout.archive
+    archive_hash = sha256_file(archive)
+    parts = sorted(dist.glob(f"{layout.archive}.part-*"))
+    combined = hashlib.sha256()
+    part_records: list[dict[str, object]] = []
+    total_bytes = 0
+    if not 1 <= len(parts) <= 4:
+        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    for index, part in enumerate(parts, start=1):
+        size = part.stat().st_size
+        if part.name != f"{layout.archive}.part-{index:03}" or not 0 < size <= MAXIMUM_PART_BYTES:
+            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+        with part.open("rb") as opened:
+            for block in iter(lambda: opened.read(HASH_BLOCK_BYTES), b""):
+                combined.update(block)
+        total_bytes += size
+        part_records.append({"filename": part.name, "sha256": sha256_file(part), "sizeBytes": size})
+    if combined.hexdigest() != archive_hash or total_bytes != archive.stat().st_size:
+        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    files = {
+        path.relative_to(target).as_posix(): path for path in target.rglob("*") if path.is_file()
+    }
+    with zipfile.ZipFile(archive) as opened:
+        expected_names = {f"{layout.directory}/{relative}" for relative in files}
+        if set(opened.namelist()) != expected_names or len(opened.namelist()) != len(files):
+            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+        for relative, path in files.items():
+            digest = hashlib.sha256()
+            size = 0
+            with opened.open(f"{layout.directory}/{relative}") as member:
+                for block in iter(lambda: member.read(HASH_BLOCK_BYTES), b""):
+                    digest.update(block)
+                    size += len(block)
+            if size != path.stat().st_size or digest.hexdigest() != sha256_file(path):
+                raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    return {
+        "schemaVersion": 1,
+        "packageId": layout.directory,
+        "packageVersion": "4",
+        "distribution": {"published": False, "admitted": False},
+        "authority": {
+            "sourceManifestSha256": sha256_file(recipe),
+            "dependencyLockSha256": sha256_file(lock),
+        },
+        "sources": [
+            {
+                "path": module,
+                "sizeBytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+            for module, payload in sources.items()
+        ],
+        "measurements": {
+            "archiveSha256": archive_hash,
+            "compressedBytes": total_bytes,
+            "installedBytes": sum(path.stat().st_size for path in files.values()),
+            "fileCount": len(files),
+            "runtimeManifestSha256": sha256_file(target / layout.runtime_manifest),
+        },
+        "parts": part_records,
+    }
+
+
+def check_local_package(root: Path | None = None) -> None:
+    base = root or repository_root()
+    receipt = PackageLayout("4").dist(base) / "local-build-evidence-v4.json"
+    try:
+        if receipt.read_bytes() != render_manifest(_local_package_receipt(base)):
+            raise ReleaseChatterboxError("chatterbox-package-runtime-invalid")
+    except (OSError, zipfile.BadZipFile):
+        raise ReleaseChatterboxError("chatterbox-package-runtime-invalid") from None
 
 
 def measurement_json(measurement: PackageMeasurement) -> str:
@@ -521,6 +650,7 @@ def main(arguments: list[str] | None = None) -> int:
             "build",
             "check-acquisition",
             "check-source",
+            "check-local",
             "reconcile-evidence",
             "write-source",
             "write-acquisition",
@@ -528,9 +658,21 @@ def main(arguments: list[str] | None = None) -> int:
     )
     parser.add_argument("--no-sync", action="store_true")
     parser.add_argument("--publication", type=Path)
-    parser.add_argument("--package-version", choices=("2", "3"), default="2")
+    parser.add_argument("--package-version", choices=("2", "3", "4"), default="2")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     version = cast(PackageVersion, args.package_version)
+    if args.command == "check-local":
+        if version != "4":
+            parser.error("check-local requires --package-version 4")
+        check_local_package()
+        print("chatterbox-optional-v4-local:current-unpublished-unadmitted")
+        return 0
+    if version == "4" and args.command in {
+        "check-acquisition",
+        "write-acquisition",
+        "reconcile-evidence",
+    }:
+        parser.error("version 4 is local-only and has no acquisition authority")
     if version == "3" and args.command == "check-acquisition":
         check_successor_authority()
         print("chatterbox-v3-acquisition:current")
@@ -544,10 +686,13 @@ def main(arguments: list[str] | None = None) -> int:
     if version == "3" and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
-        if version != "3":
-            parser.error("write-source requires --package-version 3")
-        write_successor_source_manifest()
-        print("chatterbox-optional-v3-source:written")
+        if version not in {"3", "4"}:
+            parser.error("write-source requires --package-version 3 or 4")
+        if version == "4":
+            write_local_source_manifest()
+        else:
+            write_successor_source_manifest()
+        print(f"chatterbox-optional-v{version}-source:written")
         return 0
     if args.command == "check-source":
         load_source_manifest(package_version=version)

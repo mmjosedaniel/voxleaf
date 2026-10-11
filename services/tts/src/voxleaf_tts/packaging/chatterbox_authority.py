@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -26,6 +27,7 @@ from .chatterbox_integrity import (
     safe_relative_path,
     sha256_file,
 )
+from .chatterbox_sources import LOCAL_RUNTIME_MODULES, historical_sources
 
 HISTORICAL_INSTALLED_BYTES: Final = 8_228_465_805
 INSTALLED_BYTES_CORRECTION: Final = 37_504
@@ -138,14 +140,24 @@ def load_source_manifest(
     if len(set(cast(list[str], modules))) != len(modules):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     release = _object(manifest["runtimeRelease"], "chatterbox-package-source-manifest-invalid")
-    if release != {
+    expected_release: dict[str, object] = {
         "maximumPartBytes": MAXIMUM_PART_BYTES,
         "maximumParts": 4,
         "repository": "mmjosedaniel/voxleaf",
         "tag": f"chatterbox-runtime-v{layout.version}",
-    }:
+    }
+    if package_version == "4":
+        expected_release = {
+            "maximumPartBytes": MAXIMUM_PART_BYTES,
+            "maximumParts": 4,
+            "published": False,
+            "admitted": False,
+        }
+    if release != expected_release:
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "3" and manifest != successor_source_manifest(base):
+        raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
+    if package_version == "4" and manifest != local_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     return manifest
 
@@ -179,6 +191,29 @@ def write_successor_source_manifest(root: Path | None = None) -> Path:
     return target
 
 
+def local_source_manifest(root: Path | None = None) -> dict[str, object]:
+    """Keep the v3 lock/models while describing only an unpublished local v4."""
+
+    manifest = successor_source_manifest(root)
+    manifest["packageId"] = PackageLayout("4").directory
+    manifest["packageVersion"] = "4"
+    manifest["runtimeModules"] = list(LOCAL_RUNTIME_MODULES)
+    manifest["runtimeRelease"] = {
+        "maximumPartBytes": MAXIMUM_PART_BYTES,
+        "maximumParts": 4,
+        "published": False,
+        "admitted": False,
+    }
+    return manifest
+
+
+def write_local_source_manifest(root: Path | None = None) -> Path:
+    base = root or repository_root()
+    target = base / "services/tts/release/optional/chatterbox/source-manifest-v4.json"
+    target.write_bytes(render_manifest(local_source_manifest(base)))
+    return target
+
+
 def successor_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
     """Generate current admission from reviewed build measurements, preserving v2."""
 
@@ -190,12 +225,9 @@ def successor_acquisition_manifest(root: Path | None = None) -> dict[str, object
     runtime = cast(dict[str, object], manifest["runtime"])
     runtime["releaseTag"] = "chatterbox-runtime-v3"
     runtime["dependencyLock"] = source["chatterboxLock"]
-    runtime["adapterSha256"] = sha256_file(
-        base / "services/tts/src/voxleaf_tts/chatterbox_adapter.py"
-    )
-    runtime["serviceSha256"] = sha256_file(
-        base / "services/tts/src/voxleaf_tts/chatterbox_service.py"
-    )
+    sources = historical_sources(base, "3")
+    runtime["adapterSha256"] = hashlib.sha256(sources["chatterbox_adapter.py"]).hexdigest()
+    runtime["serviceSha256"] = hashlib.sha256(sources["chatterbox_service.py"]).hexdigest()
     manifest.pop("runtimeCorrection")
     parts = [
         {
