@@ -1,6 +1,8 @@
 # App shell readability
 
-Status: planned; source implementation and runtime validation have not started.
+Status: complete. APP-READABILITY-01 implemented and independently accepted;
+all seven baseline commands and all nine final commands passed outside sandbox.
+One test-fixture correction cycle used; no staging, commits or publication.
 Prepared on 2026-10-11. Branch: `codex/app-readability`, created from clean local
 `main` at `f9c35db8f51adb5080ffa94a31cb9278020a0b1b`.
 
@@ -27,7 +29,15 @@ There is no target line count, performance-improvement claim or new feature.
 
 ## 3. Current state
 
-The inspected `App.tsx` contains 1,039 lines; `App` begins at line 239. It already
+The accepted implementation separates three module-scope presentation components
+and private message helpers into `AppPresentation.tsx`, using narrow readonly
+resource-free projections. App retains all lifecycle ownership and both distinct
+preference handlers. Nine added integration cases protect the extraction;
+existing assertions remain intact. The final unit changes 646 lines over three
+source/test files. See [execution evidence](../evidence/app-readability/README.md).
+
+Planning snapshot (historical): the inspected `App.tsx` contained 1,039 lines;
+`App` began at line 239. It already
 delegates narration configuration to `settings/narration-settings-actions.ts`.
 The completed desktop organization campaign retained restoration, persistence,
 replacement and locator routing in App because they share publication lifetime.
@@ -71,10 +81,10 @@ schema, native and TTS-package work; generated sources; frozen evidence and
 completed plans. Do not move the existing test suite merely to match the new
 component file.
 
-The current request authorizes this ExecPlan and the local branch only. Source
-implementation requires a subsequent execution request. Staging, commits,
-pushes, pull requests and publication are not authorized by this request or by
-a validation PASS. Preserve unrelated work and keep the index empty.
+The 2026-10-11 execution request authorizes implementing this plan and updating
+its documentation. Staging, commits, pushes, pull requests, merge, rebase and
+publication remain prohibited, including after validation PASS. Preserve
+unrelated work and keep the index empty.
 
 ## 5. Relevant files and documentation
 
@@ -198,7 +208,7 @@ an unaccepted patch into another unit or discard overlapping user changes.
 
 ### Milestone 1: Refresh the bounded audit and baseline
 
-Status: not started.
+Status: complete. Current audit accepted; APP-READABILITY-01-BASELINE-01 PASS.
 
 Verify the current branch, HEAD, index and all three paths. Recheck the message/
 markup seams, public type consumers, React Refresh rule and tests. Record the
@@ -213,7 +223,8 @@ or changing unrelated code. Only then issue the immutable Approved Work Order.
 
 ### Milestone 2: Extract the presentation surface
 
-Status: not started.
+Status: complete; final worker patch has 646 changed lines over three files,
+including the independently requested fixture correction.
 
 Create the module-scope components and private message helpers; replace only
 their corresponding App markup/helper usage. Keep coordination and preferences
@@ -229,7 +240,8 @@ does not establish acceptance.
 
 ### Milestone 3: Independently validate equivalence
 
-Status: not started.
+Status: complete; APP-READABILITY-01-POST-CHANGE-02 PASS, all nine commands and
+exact source identity recheck. First failed attempt is retained separately.
 
 The validator reviews the complete diff, test integrity and every invariant,
 repeats the baseline commands and verifies the new file through real App usage.
@@ -244,7 +256,8 @@ fresh validation; do not update old report hashes to fit the new patch.
 
 ### Milestone 4: Document and close
 
-Status: not started.
+Status: complete; results, decisions and receipts recorded, diagram reviewed
+unchanged, plan archived and documentation indexes updated. No Git publication.
 
 Update this plan's progress, decisions and actual outcomes. Review the canonical
 diagram for continued consistency: no process/data-flow or high-level component
@@ -268,7 +281,8 @@ All commands below exist in current configuration. Recheck the scripts and use
 the repository-pinned toolchain at execution time. Run every acceptance command
 from repository root in normal local PowerShell outside the managed sandbox.
 Record exact commands, outcomes and source identities. Sandbox runs are only
-exploratory. The current planning request runs documentation checks only.
+exploratory. The original planning request ran documentation checks only;
+the subsequent execution request ran the full acceptance matrix below.
 
 Baseline and post-change commands:
 
@@ -353,10 +367,27 @@ installed application or persisted user data needs migration for this plan.
   and unsupported-preference cases are identified gaps, not existing App tests.
 - [x] 2026-10-11: independent documentary review approved the corrected plan;
   final host authoring checks passed with the same three-file scope.
-- [ ] Milestone 1: fresh audit, baseline and immutable work order.
-- [ ] Milestone 2: bounded source/test extraction.
-- [ ] Milestone 3: independent post-change and aggregate acceptance.
-- [ ] Milestone 4: documentary closeout and archival.
+- [x] 2026-10-11: execution started on existing `codex/app-readability` at
+  `a1c2b467037e91c82aa0354d697704c967bfb5e6`; initial worktree/index clean, new
+  module absent. No Git mutation was needed. See
+  [execution setup](../evidence/app-readability/execution-setup.md).
+- [x] Milestone 1: current [audit/draft](../evidence/app-readability/audit-and-draft.md)
+  accepted; [baseline PASS](../evidence/app-readability/baseline-01.md) for all
+  seven commands outside sandbox; immutable
+  [work order](../evidence/app-readability/approved-work-order-01.md) issued.
+- [x] Milestone 2: worker delivered the three-file extraction and nine added
+  integration cases, 645 changed lines. Director reviewed
+  [Change Packet](../evidence/app-readability/change-packet-01.md) and full diff;
+  no correction cycle used. Writer inactive before validation.
+- [x] Milestone 3: first post-change attempt found a new picker-test fixture
+  error, preserved in [POST-CHANGE-01](../evidence/app-readability/post-change-01.md).
+  The first correction changed only value seeding in that test, retaining every
+  assertion and both production hashes. Fresh
+  [POST-CHANGE-02](../evidence/app-readability/post-change-02.md) passes all nine
+  commands and exact before/after identities. Final unit: 646 changed lines.
+- [x] Milestone 4: retained immutable receipts, reviewed complete source/docs
+  scope and canonical diagram, recorded limitations, archived plan and updated
+  indexes after source/aggregate acceptance. Index remains empty; no commits.
 
 ## 11. Discoveries and decisions
 
@@ -371,29 +402,71 @@ installed application or persisted user data needs migration for this plan.
   appearance or accessible label of a replacement element.
 - Use one source unit because all edits share App and its integration tests.
   Milestones are ordered stages, not independently accepted dirty baselines.
-- Today's approval concerns the plan and branch. Planning review and historical
-  acceptance reports cannot substitute for this implementation's fresh baseline.
+- The subsequent execution request authorizes source implementation after a
+  fresh independent baseline. Planning review and historical acceptance reports
+  cannot substitute for that baseline.
+- Existing pnpm/EdgeDriver selections needed process-only adaptations: pinned
+  Corepack pnpm 11.15.1 and the existing driver matching WebView2 155.0.4283.45.
+  No repository environment or dependency configuration changed.
+- New preference-failure tests deliberately hold startup hydration pending so
+  the coordinator observes the injected failure. Late startup-read completion
+  remains untested; the existing effect and persistence policies are unchanged.
+- Testing Library invokes the native file-input setter for fireEvent target.value.
+  The initial test fixture therefore failed. Seeding its existing synthetic own
+  property before dispatch fixes the fixture without weakening assertions.
+- Canonical diagram still matches implementation: picker/session/reader,
+  Settings, persistence, local inference and all process/trust/data-flow edges
+  are unchanged. No diagram edit, new architecture or performance claim.
 
 ## 12. Final validation results
 
-Plan preparation checks passed outside the sandbox; independent documentary
-review approved the corrected plan. No source implementation, product test or runtime acceptance is
-claimed. The ignored checker was run from repository root with
+Historical plan preparation checks passed outside the sandbox; independent
+documentary review approved that plan only. The ignored checker was run with
 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tmp/evidence/app-readability/plan-authoring/check-plan.ps1`.
 It checks required sections, links, script registration, index navigation,
 whitespace (including this new file), branch/HEAD/main and the exact authoring
 scope.
 
-| Gate | Current result |
+| Historical preparation gate | Result at preparation time |
 | --- | --- |
 | Planning audit | CHANGE for presentation; SKIP for preference deduplication and lifecycle extraction; tests not run |
 | Branch setup | PASS: `codex/app-readability` from the recorded clean local main; main/HEAD unchanged; no staging or commit |
 | Plan structure, relative links and configured commands | PASS: 12 sections, 11 links and nine commands |
 | Authoring diff scope and whitespace | PASS: this plan and the two documentation indexes; source untouched; empty index |
 | Independent documentary review | PASS after correcting the existing-coverage claim and confirming the narrow presentation inputs; document only |
-| Implementation baseline/post-change reports | Not run; implementation not started |
-| Browser/native and aggregate validation | Not run for this plan |
 
-Replace pending implementation entries only with fresh observed outcomes and
-their immutable report references. Keep the plan active until its actual work
-and required acceptance are complete.
+Current implementation acceptance: independent GPT-6 Astra high report
+`APP-READABILITY-01-POST-CHANGE-02`, PASS at unchanged HEAD
+`a1c2b467037e91c82aa0354d697704c967bfb5e6`. Exact three-path SHA-256,
+filter-aware Git blobs and porcelain identities before/after commands are in
+the [immutable accepted report](../evidence/app-readability/post-change-02.md).
+All commands ran sequentially from repository root in local PowerShell outside
+the sandbox with writer/Git idle.
+
+| Exact command | Baseline | Final corrected patch |
+| --- | --- | --- |
+| `pnpm.cmd run build:packages` | Exit 0 | Exit 0 |
+| `pnpm.cmd --filter @voxleaf/desktop test` | Exit 0; 588 Vitest + 51 Node | Exit 0; 597 Vitest + 51 Node |
+| `pnpm.cmd run format:check:typescript` | Exit 0 | Exit 0 |
+| `pnpm.cmd run lint:typescript` | Exit 0 | Exit 0 |
+| `pnpm.cmd run typecheck:typescript` | Exit 0 | Exit 0 |
+| `pnpm.cmd test:browser` | Exit 0; 7 tests | Exit 0; 7 tests |
+| `pnpm.cmd test:native-startup` | Exit 0 | Exit 0 |
+| `pnpm.cmd check:portable` | Not a baseline gate | Exit 0 |
+| `pnpm.cmd check` | Not a baseline gate | Exit 0 |
+
+Aggregates include 209 shared, 651 EPUB, 597 desktop Vitest, 51 desktop Node,
+485 Python and 13 evidence tests, plus 17 generated-contract checks. Full native
+check also passes 87 default and 88 release-locked Rust tests and release builds.
+The initial implementation attempt failed only the new input fixture; it is
+retained with actual aggregate short-circuit limits, never relabelled PASS.
+
+No unresolved blocker. Non-failing Vite chunk/color warnings and a Python cache
+write warning remain documented; Python tests passed without permission changes.
+No model-backed benchmark/audio-quality/hardware-support claim. Raw captures
+remain ignored under `tmp/evidence/app-readability/`; curated Markdown receipts
+are in [execution evidence](../evidence/app-readability/README.md).
+
+Final Git scope: three implementation files, this plan's archival, three
+documentation indexes and the unit's Markdown receipts. Existing branch/HEAD
+remain unchanged and the index empty. No staging, commit, push, PR, merge or rebase.
