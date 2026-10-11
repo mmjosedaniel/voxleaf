@@ -336,6 +336,234 @@ class ControlledNarrationCoordinator {
 }
 
 describe("desktop reader lifecycle surface", () => {
+  it("preserves the picker node and resets its value before opening or cancelling selection", async () => {
+    const pending: Array<(result: LocalPublicationOpenResult) => void> = [];
+    const flow = createTestFlow(() => {
+      expect(input).toHaveValue("");
+      return new Promise((resolve) => pending.push(resolve));
+    });
+    render(<App openFlow={flow} />);
+    const input = screen.getByLabelText("Open a book");
+    Object.defineProperty(input, "value", {
+      configurable: true,
+      writable: true,
+      value: "C:\\fakepath\\first.epub",
+    });
+    selectEpub("first.epub");
+    expect(input).toHaveValue("");
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Validating and opening the selected EPUB.",
+    );
+    await act(async () =>
+      pending[0]?.({
+        status: "ready",
+        publication: createTestPublication("First book", []),
+      }),
+    );
+    await waitFor(() =>
+      expect(input).toHaveAccessibleDescription(
+        "The EPUB opened successfully.",
+      ),
+    );
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    expect(screen.getByText("Author not provided")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveClass("visually-hidden");
+    Object.defineProperty(input, "value", {
+      value: "C:\\fakepath\\cancelled.epub",
+    });
+    fireEvent.change(input, { target: { files: [] } });
+    expect(input).toHaveValue("");
+    expect(
+      screen.getByRole("heading", { name: "First book" }),
+    ).toBeInTheDocument();
+    expect(flow.open).toHaveBeenCalledTimes(1);
+    expect(flow.close).not.toHaveBeenCalled();
+    selectEpub("replacement.epub");
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    expect(screen.queryByRole("heading", { name: "First book" })).toBeNull();
+    await act(async () =>
+      pending[1]?.({
+        status: "ready",
+        publication: createTestPublication("Replacement book"),
+      }),
+    );
+    await screen.findByRole("heading", { name: "Replacement book" });
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    selectEpub("invalid.epub");
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    await act(async () =>
+      pending[2]?.({ status: "rejected", reason: "invalid-epub" }),
+    );
+    expect(screen.getByLabelText("Open a book")).toBe(input);
+    expect(input).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "That file is not a valid supported EPUB.",
+    );
+    expect(screen.getByRole("status")).toHaveClass("open-status-error");
+    expect(screen.getByRole("status")).not.toHaveClass("visually-hidden");
+  });
+
+  it.each([
+    [
+      "exact",
+      "unsupported-version",
+      "settled",
+      "Reading position restored.",
+      "Saved reader appearance settings could not be used. Default settings are active.",
+    ],
+    [
+      "exact",
+      "unavailable",
+      "settled",
+      "Reading position restored.",
+      "Saved reader appearance settings could not be used. Default settings are active.",
+    ],
+    [
+      "recovered",
+      "unsupported-version",
+      "settled",
+      "Reading position restored to the nearest available passage.",
+      "The saved reading position was adjusted to the nearest available passage.",
+    ],
+    [
+      "unavailable",
+      "unavailable",
+      "settled",
+      "The EPUB opened, but saved reader state is unavailable.",
+      "Saved reader state is unavailable. Reading continues from the beginning.",
+    ],
+    [
+      "malformed",
+      "unsupported-version",
+      "settled",
+      "The EPUB opened at the beginning because its saved position could not be used.",
+      "The saved reading position could not be used. Reading continues from the beginning.",
+    ],
+    [
+      "recovered",
+      "unavailable",
+      "unavailable",
+      "The EPUB opened, but its saved reading position could not be aligned.",
+      "VoxLeaf could not align the saved reading position.",
+    ],
+    [
+      "recovered",
+      "unavailable",
+      "superseded",
+      "The EPUB opened successfully.",
+      undefined,
+    ],
+  ] as const)(
+    "preserves notice precedence for %s position, %s preferences and %s settlement",
+    async (
+      position,
+      preference,
+      settlement,
+      expectedStatus,
+      expectedNotice,
+    ) => {
+      const publication = createTestPublication();
+      const repository = createTestReaderPositionRepository();
+      // Keep startup hydration pending: it otherwise caches ready preferences
+      // before publication restoration can read the injected failure status.
+      vi.mocked(repository.readPreferences)
+        .mockReturnValueOnce(new Promise(() => undefined))
+        .mockResolvedValue({ status: preference });
+      if (position === "exact" || position === "recovered") {
+        vi.mocked(repository.readPosition).mockResolvedValue({
+          status: "ready",
+          state: persistedState(TEST_LOCATED_BLOCK.startLocator),
+        });
+        if (position === "recovered") {
+          vi.mocked(publication.resolveLocator).mockReturnValue({
+            status: "recovered",
+            reason: "nearest-offset",
+            locator: TEST_LOCATED_BLOCK.startLocator,
+            locatedBlock: TEST_LOCATED_BLOCK,
+          });
+        }
+      } else {
+        vi.mocked(repository.readPosition).mockResolvedValue({
+          status: position,
+        });
+      }
+      let readerProps: ReadyPublicationContentProps | undefined;
+      function ControlledReader(props: ReadyPublicationContentProps) {
+        readerProps = props;
+        return <article aria-label="Notice policy reader">{TEST_TEXT}</article>;
+      }
+      render(
+        <App
+          openFlow={createTestFlow(() =>
+            Promise.resolve({ status: "ready", publication }),
+          )}
+          readerPositionRepository={repository}
+          ReadyPublicationContent={ControlledReader}
+        />,
+      );
+      selectEpub();
+      await screen.findByRole("article", { name: "Notice policy reader" });
+      expect(repository.readPreferences).toHaveBeenCalledTimes(2);
+      if (position === "exact" || position === "recovered") {
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Restoring saved reader state.",
+        );
+        expect(screen.queryByLabelText("Reading position recovery")).toBeNull();
+        act(() =>
+          readerProps?.onInitialRestorationSettled?.({
+            status: settlement,
+            locator: TEST_LOCATED_BLOCK.startLocator,
+          }),
+        );
+      }
+      expect(screen.getByRole("status")).toHaveTextContent(expectedStatus);
+      expect(screen.getByRole("status")).toHaveClass("visually-hidden");
+      expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+      if (expectedNotice === undefined) {
+        expect(screen.queryByLabelText("Reading position recovery")).toBeNull();
+      } else {
+        expect(
+          screen.getByLabelText("Reading position recovery"),
+        ).toHaveTextContent(expectedNotice);
+      }
+    },
+  );
+
+  it("shows a later publication's notice after dismissing the previous one", async () => {
+    const first = createTestPublication("First notice book");
+    const second = createTestPublication("Second notice book");
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "unavailable",
+    });
+    const flow = createTestFlow(
+      vi
+        .fn<LocalPublicationOpenFlow["open"]>()
+        .mockResolvedValueOnce({ status: "ready", publication: first })
+        .mockResolvedValueOnce({ status: "ready", publication: second }),
+    );
+    render(<App openFlow={flow} readerPositionRepository={repository} />);
+    selectEpub("first.epub");
+    await screen.findByLabelText("Reading position recovery");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss restoration notice" }),
+    );
+    expect(screen.queryByLabelText("Reading position recovery")).toBeNull();
+    selectEpub("second.epub");
+    expect(
+      await screen.findByLabelText("Reading position recovery"),
+    ).toHaveTextContent(
+      "Saved reader state is unavailable. Reading continues from the beginning.",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Second notice book" }),
+    ).toBeInTheDocument();
+  });
+
   it("keeps the empty shell focused on one styled book-opening action", () => {
     render(<App />);
     const input = screen.getByLabelText("Open a book");

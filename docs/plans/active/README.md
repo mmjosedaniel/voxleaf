@@ -17,6 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [App readability plan](../completed/app-readability.md) is complete and
+archived: three presentation components/private messages, nine added integration
+cases and independent baseline/post-change plus portable/native aggregate PASS.
+Picker identity and publication ownership remain unchanged. Preference-handler
+deduplication and lifecycle extraction remain SKIP; no staging or commits.
+
 The [TTS adapter layout plan](../completed/tts-adapter-layout.md) is complete:
 selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4,
 independent three-baseline/22-gate PASS and four candidate/four desktop arms.

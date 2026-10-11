@@ -8,6 +8,8 @@ Use the [evidence retention policy](../../development/evidence-retention.md) for
 
 ## Completed plans
 
+- [`app-readability.md`](app-readability.md): three stateless shell-presentation components and private messages, narrow readonly props, nine added integration cases and independent baseline/post-change/aggregate PASS. Preserved input identity, distinct preference handlers and publication lifecycle; no staging or commits.
+
 - [`tts-adapter-layout.md`](tts-adapter-layout.md): selective four-engine adapter layout, refreshed Piper and isolated local Chatterbox v4; preserved v2/v3 authorities and v3 admission. Independent three-baseline/22-gate PASS, bilingual candidate/desktop matrices, verified firewall cleanup and documentary closeout. Implementation committed for PR handoff; no package publication.
 
 - [`tts-service-organization.md`](tts-service-organization.md): four independently accepted Python packaging-integrity, versioned release-authority, corpus and quality extractions; unchanged runtime/frozen authority, 457 Python tests and passing portable/native aggregate checks. All changes remain unstaged; no Git publication.
