@@ -8,6 +8,8 @@ Use the [evidence retention policy](../../development/evidence-retention.md) for
 
 ## Completed plans
 
+- [`tts-service-organization.md`](tts-service-organization.md): four independently accepted Python packaging-integrity, versioned release-authority, corpus and quality extractions; unchanged runtime/frozen authority, 457 Python tests and passing portable/native aggregate checks. All changes remain unstaged; no Git publication.
+
 - [`desktop-source-organization.md`](desktop-source-organization.md): extracted semantic render planning and Web Audio contracts/backend, split the stylesheet with exact cascade reconstruction, and passed independent unit/model/portable/native validation. Changes remain unstaged; no Git publication.
 
 - [`pr-evidence-retention.md`](pr-evidence-retention.md): archived 276 original evidence files, retired 224 raw captures, retained immutable summaries/identities, added the tested retention guard and passed independent host acceptance; cleanup commit/push pending.

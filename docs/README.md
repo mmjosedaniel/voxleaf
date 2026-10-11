@@ -351,6 +351,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
+- [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation; all changes remain unstaged.
 - [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Changes remain unstaged; no Git publication.
 - [`plans/completed/pr-evidence-retention.md`](plans/completed/pr-evidence-retention.md): technically accepted PR #229 evidence archival/cleanup, retention policy and tested CI guard; separate cleanup commit/push pending.
 - [`plans/completed/linux-rust-test-comparison.md`](plans/completed/linux-rust-test-comparison.md): completed minimal Linux compatibility repair and independent 85/86-test comparison, including both Unix symlink cases; Windows 87/88 tests and native startup pass, and the reviewed Ubuntu Rust CI job subsequently passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.

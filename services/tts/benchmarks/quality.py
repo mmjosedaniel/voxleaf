@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import html
 import importlib
 import json
-import math
 import re
 import secrets
 import shutil
-import statistics
 import wave
 from collections.abc import Callable, Mapping, MutableSequence, Sequence, Sized
 from contextlib import suppress
@@ -28,6 +25,11 @@ from benchmarks.contracts import GenerationRequest
 from benchmarks.diagnostics import DiagnosticCapture
 from benchmarks.harness import load_corpus
 from benchmarks.preflight import PreflightRequest
+from benchmarks.quality_presentation import _render_evaluator_html as _render_evaluator_html
+from benchmarks.quality_scoring import DIMENSIONS as DIMENSIONS
+from benchmarks.quality_scoring import QualitySessionError as QualitySessionError
+from benchmarks.quality_scoring import _aggregate_candidate_scores as _aggregate_candidate_scores
+from benchmarks.quality_scoring import _score as _score
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 LEGACY_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
@@ -37,15 +39,6 @@ QUALITY_ROOT_NAME: Final = "quality-v2"
 PROTOCOL_VERSION: Final = "tts-feasibility-profile-v2"
 SESSION_VERSION: Final = "tts-quality-session-v1"
 LEGACY_EXPECTED_CANDIDATES: Final = (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID)
-DIMENSIONS: Final = (
-    "intelligibility",
-    "spanishPronunciation",
-    "punctuationDialogue",
-    "numericExpressions",
-    "foreignNames",
-    "naturalness",
-    "artifactFreedom",
-)
 MAXIMUM_EVALUATORS: Final = 8
 MAXIMUM_AUDIO_SECONDS: Final = 120
 MAXIMUM_SAMPLE_RATE_HZ: Final = 96_000
@@ -54,14 +47,6 @@ _SESSION_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _SAMPLE_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _EVALUATOR_ID: Final = re.compile(r"^evaluator-[0-9]{2}$")
 CORRECTION_REASON: Final = "evaluator-clarified-no-meaning-change"
-
-
-class QualitySessionError(RuntimeError):
-    """Fixed content-free quality-session failure."""
-
-    def __init__(self, code: str) -> None:
-        super().__init__(f"tts-benchmark-quality:{code}")
-        self.code = code
 
 
 class QualityAudioAdapter(Protocol):
@@ -365,77 +350,6 @@ def _scorecard(
     }
 
 
-def _render_evaluator_html(
-    evaluator_id: str,
-    scorecard: Mapping[str, object],
-) -> str:
-    safe_id = html.escape(evaluator_id)
-    payload = json.dumps(scorecard, ensure_ascii=True, separators=(",", ":"))
-    dimensions = json.dumps(DIMENSIONS)
-    return f"""<!doctype html>
-<html lang="es">
-<meta charset="utf-8">
-<title>VoxLeaf blinded TTS quality — {safe_id}</title>
-<style>
-body{{font:16px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem}}
-article{{border:1px solid #bbb;border-radius:8px;padding:1rem;margin:1rem 0}}
-fieldset{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}}
-label{{display:flex;flex-direction:column;gap:.25rem}} button{{font-size:1rem;padding:.7rem}}
-</style>
-<h1>Evaluación TTS a ciegas</h1>
-<p>Escuche cada muestra. Puntúe 1–5 o “No aplica”. No intente identificar el motor.</p>
-<main id="samples"></main>
-<button id="export">Validar y descargar resultados</button>
-<script>
-const card={payload};
-const dimensions={dimensions};
-const labels={{
- intelligibility:"Inteligibilidad",spanishPronunciation:"Pronunciación y acento",
- punctuationDialogue:"Puntuación y diálogo",numericExpressions:"Números y fechas",
- foreignNames:"Nombres extranjeros",naturalness:"Naturalidad y prosodia",
- artifactFreedom:"Sin artefactos, repeticiones ni cortes"
-}};
-const root=document.querySelector("#samples");
-for(const [index,sample] of card.samples.entries()){{
- const article=document.createElement("article");
- article.innerHTML=`<h2>${{index+1}}. ${{sample.caseId}}</h2>
- <audio controls preload="none" src="audio/${{sample.sampleId}}.wav"></audio><fieldset></fieldset>`;
- const fields=article.querySelector("fieldset");
- for(const dimension of dimensions){{
-  const label=document.createElement("label"); label.textContent=labels[dimension];
-  const select=document.createElement("select"); select.dataset.dimension=dimension;
-  select.innerHTML='<option value="">Seleccione</option><option>not-applicable</option>'+
-   [1,2,3,4,5].map(value=>`<option>${{value}}</option>`).join("");
-  label.append(select); fields.append(label);
- }}
- const defect=document.createElement("label");
- defect.textContent="¿Defecto que cambia significado?";
- const defectSelect=document.createElement("select"); defectSelect.dataset.defect="true";
- defectSelect.innerHTML='<option value="">Seleccione</option>'+
-  '<option value="false">No</option><option value="true">Sí</option>';
- defect.append(defectSelect); fields.append(defect); root.append(article);
-}}
-document.querySelector("#export").addEventListener("click",()=>{{
- const articles=[...document.querySelectorAll("article")];
- for(const [index,article] of articles.entries()){{
-  for(const select of article.querySelectorAll("[data-dimension]")){{
-   if(!select.value){{alert(`Falta una puntuación en la muestra ${{index+1}}.`);return;}}
-   card.samples[index].scores[select.dataset.dimension]=select.value==="not-applicable"?
-    "not-applicable":Number(select.value);
-  }}
-  const defect=article.querySelector("[data-defect]");
-  if(!defect.value){{alert(`Falta indicar defectos en la muestra ${{index+1}}.`);return;}}
-  card.samples[index].meaningChangingDefect=defect.value==="true";
- }}
- const blob=new Blob([JSON.stringify(card,null,2)+"\\n"],{{type:"application/json"}});
- const link=document.createElement("a"); link.href=URL.createObjectURL(blob);
- link.download="{safe_id}.completed.json"; link.click(); URL.revokeObjectURL(link.href);
-}});
-</script>
-</html>
-"""
-
-
 def finalize_session(
     session_id: str,
     evaluator_count: int,
@@ -524,14 +438,6 @@ def finalize_session(
         "eligibleForPromotion": evaluator_count
         >= _minimum_evaluators(metadata.get("protocolVersion")),
     }
-
-
-def _score(value: object) -> int | str:
-    if value == "not-applicable":
-        return "not-applicable"
-    if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 5:
-        return value
-    raise QualitySessionError("invalid-scorecard")
 
 
 def submit_scorecard(
@@ -741,71 +647,10 @@ def aggregate_scores(
     for candidate_id in expected_candidates:
         if not isinstance(candidate_id, str):
             raise QualitySessionError("invalid-metadata")
-        dimension_values: dict[str, list[float]] = {dimension: [] for dimension in DIMENSIONS}
-        defects = 0
-        for case_id in load_corpus(_corpus_path(metadata.get("protocolVersion"))).performance_order:
-            matching_sample = next(
-                (
-                    sample_id
-                    for sample_id, identity in by_sample.items()
-                    if identity == (candidate_id, case_id)
-                ),
-                None,
-            )
-            if matching_sample is None:
-                raise QualitySessionError("invalid-metadata")
-            per_dimension: dict[str, list[int]] = {dimension: [] for dimension in DIMENSIONS}
-            for card in cards:
-                samples = cast(list[object], card.get("samples"))
-                raw_sample = next(
-                    (
-                        item
-                        for item in samples
-                        if isinstance(item, dict) and item.get("sampleId") == matching_sample
-                    ),
-                    None,
-                )
-                if not isinstance(raw_sample, dict):
-                    raise QualitySessionError("invalid-scorecard")
-                sample = cast(dict[str, object], raw_sample)
-                scores = cast(dict[str, object], sample["scores"])
-                for dimension in DIMENSIONS:
-                    value = _score(scores[dimension])
-                    if isinstance(value, int):
-                        per_dimension[dimension].append(value)
-                evaluator_id = card.get("evaluatorId")
-                defects += int(
-                    sample["meaningChangingDefect"] is True
-                    and (cast(str, evaluator_id), case_id) not in corrected_defects
-                )
-            for dimension in DIMENSIONS:
-                if per_dimension[dimension]:
-                    dimension_values[dimension].append(
-                        float(statistics.median(per_dimension[dimension]))
-                    )
-        if any(not values for values in dimension_values.values()):
-            raise QualitySessionError("missing-dimension")
-        dimensions = {
-            dimension: sum(values) / len(values) for dimension, values in dimension_values.items()
-        }
-        overall = sum(dimensions.values()) / len(dimensions)
-        if not math.isfinite(overall):
-            raise QualitySessionError("invalid-scorecard")
-        results[candidate_id] = {
-            "evaluatorCount": len(cards),
-            "blindOrder": True,
-            "scale": "1-5",
-            "overallMean": overall,
-            "dimensions": dimensions,
-            "meaningChangingDefects": defects,
-            "limitations": [
-                "small-panel",
-                "spanish-only",
-                "fixed-voices-only",
-                "synthetic-corpus-only",
-                "not-accessibility-certification",
-            ],
-        }
+        corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
+        results[candidate_id] = _aggregate_candidate_scores(
+            candidate_id, corpus.performance_order, by_sample, cards, corrected_defects
+        )
     aggregate = {
         "sessionVersion": SESSION_VERSION,
         "sessionId": session_id,

@@ -6,10 +6,13 @@ from pathlib import Path
 
 import pytest
 
+from voxleaf_tts import release_core
+from voxleaf_tts.packaging import core_integrity
 from voxleaf_tts.release_core import (
     PACKAGE_DIRECTORY_NAME,
     PackageMeasurement,
     ReleaseCoreError,
+    _copy_site_packages,
     _excluded_site_file,
     _sync_core_environment,
     atomic_stage,
@@ -56,6 +59,89 @@ def _write_tree(root: Path, files: dict[str, bytes]) -> None:
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(value)
+
+
+def test_integrity_facade_preserves_bindings_and_qualified_error_identity() -> None:
+    for name in (
+        "HASH_BLOCK_BYTES",
+        "PACKAGE_DIRECTORY_NAME",
+        "RUNTIME_MANIFEST_NAME",
+        "ReleaseCoreError",
+        "sha256_file",
+        "_json_object",
+        "_json_array",
+        "_exact_keys",
+        "_text",
+        "_positive_int",
+        "_nonnegative_int",
+        "_sha256_text",
+        "safe_relative_path",
+        "_load_json",
+        "_file_record",
+        "build_runtime_manifest",
+        "render_manifest",
+        "_manifest_records",
+        "verify_package_tree",
+    ):
+        assert getattr(release_core, name) is getattr(core_integrity, name)
+    assert ReleaseCoreError.__module__ == "voxleaf_tts.release_core"
+    assert ReleaseCoreError.__qualname__ == "ReleaseCoreError"
+    with pytest.raises(ReleaseCoreError, match="^piper-core-invalid-path$"):
+        core_integrity.safe_relative_path("../runtime/python.exe")
+
+
+def test_core_copy_excludes_the_whole_maintainer_tree_and_keeps_runtime_siblings(
+    tmp_path: Path,
+) -> None:
+    source, target = tmp_path / "source", tmp_path / "target"
+    retained = {
+        "voxleaf_tts/piper_service.py": b"service",
+        "voxleaf_tts/protocol.py": b"protocol",
+        "voxleaf_tts/packaging.py": b"similarly named module",
+        "voxleaf_tts/packaging_extra/helper.py": b"similarly named directory",
+    }
+    excluded = {
+        "voxleaf_tts/packaging/__init__.py": b"",
+        "voxleaf_tts/packaging/core_integrity.py": b"maintainer helper",
+        "voxleaf_tts/packaging/nested/future_helper.py": b"nested maintainer helper",
+        "voxleaf_tts/release_core.py": b"builder",
+        "voxleaf_tts/release_chatterbox.py": b"optional builder",
+        "voxleaf_tts/__pycache__/protocol.cpython-312.pyc": b"cache",
+    }
+    _write_tree(source, retained | excluded)
+    _copy_site_packages(source, target)
+    assert not (target / "voxleaf_tts/packaging").exists()
+    assert {
+        path.relative_to(target).as_posix(): path.read_bytes()
+        for path in target.rglob("*")
+        if path.is_file()
+    } == retained
+
+
+def test_fixed_input_runtime_manifest_matches_the_baseline_bytes(tmp_path: Path) -> None:
+    _write_tree(
+        tmp_path,
+        {
+            "runtime/python.exe": b"python",
+            "voices/es/MODEL_CARD": b"spanish",
+            "voices/en/MODEL_CARD": b"english",
+        },
+    )
+    source: dict[str, object] = {
+        "coreLock": {"sha256": "a" * 64},
+        "voices": [
+            {
+                "language": language,
+                "targetDirectory": f"voices/{language}",
+                "profileId": f"synthetic-{language}",
+                "runtimeVoice": f"synthetic-{language}",
+            }
+            for language in ("es", "en")
+        ],
+    }
+    rendered = render_manifest(build_runtime_manifest(tmp_path, source))
+    assert len(rendered) == 1_207
+    assert _sha256(rendered) == "9c2a643d081a6f7f32d7d137815960dd86281a45cd3ee54dfc9619fb2b83af63"
 
 
 def test_source_manifest_closes_runtime_sources_and_both_voices() -> None:
