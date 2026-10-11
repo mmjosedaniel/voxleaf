@@ -7,13 +7,13 @@ from collections.abc import Mapping
 from contextlib import suppress
 from typing import BinaryIO, Final, cast
 
+from .adapters.fake import FakeTtsEngine
 from .engine import (
     EngineFailure,
     EngineFailureCode,
     TtsEngine,
     WorkIdentity,
 )
-from .fake_engine import FakeTtsEngine
 from .protocol import (
     CHANNEL_COUNT,
     PROTOCOL_VERSION,

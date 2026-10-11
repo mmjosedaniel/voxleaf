@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-from .chatterbox_adapter import ChatterboxMultilingualTtsEngine
+from .adapters.chatterbox import ChatterboxMultilingualTtsEngine
 from .engine import EngineFailure
 from .service import run_service
 

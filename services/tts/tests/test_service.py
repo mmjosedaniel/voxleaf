@@ -12,7 +12,7 @@ from typing import Final, cast
 
 import pytest
 
-from voxleaf_tts.fake_engine import FakeEngineOutcome, FakeTtsEngine
+from voxleaf_tts.adapters.fake import FakeEngineOutcome, FakeTtsEngine
 from voxleaf_tts.protocol import (
     Frame,
     FrameKind,

@@ -188,8 +188,10 @@ def _excluded_site_file(path: Path) -> bool:
     normalized = path.as_posix()
     dormant_voxleaf_paths = {
         "voxleaf_tts/chatterbox_adapter.py",
+        "voxleaf_tts/adapters/chatterbox.py",
         "voxleaf_tts/chatterbox_service.py",
         "voxleaf_tts/qwen_adapter.py",
+        "voxleaf_tts/adapters/qwen.py",
         "voxleaf_tts/qwen_service.py",
         "voxleaf_tts/release_chatterbox.py",
         "voxleaf_tts/release_core.py",
@@ -540,7 +542,7 @@ def _smoke_script(language: str) -> str:
         "blocked=lambda *a,**k: (_ for _ in ()).throw(RuntimeError('network-disabled'));"
         "socket.socket=blocked;socket.create_connection=blocked;"
         "from pathlib import Path;"
-        f"from voxleaf_tts.piper_adapter import PiperCpuTtsEngine,{profile_name};"
+        f"from voxleaf_tts.adapters.piper import PiperCpuTtsEngine,{profile_name};"
         f"engine=PiperCpuTtsEngine(Path.cwd(),profile={profile_name});"
         "engine.load();engine.warm();"
         f"identity=engine.begin('request:release',{{'text':{text!r},'sessionId':'session:release','generationId':'generation:release','segmentId':'segment:release'}});"

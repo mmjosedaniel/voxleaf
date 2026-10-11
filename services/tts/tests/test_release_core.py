@@ -95,12 +95,22 @@ def test_core_copy_excludes_the_whole_maintainer_tree_and_keeps_runtime_siblings
 ) -> None:
     source, target = tmp_path / "source", tmp_path / "target"
     retained = {
+        "voxleaf_tts/adapters/__init__.py": b"",
+        "voxleaf_tts/adapters/piper.py": b"piper",
+        "voxleaf_tts/adapters/fake.py": b"fake",
+        "voxleaf_tts/adapters/chatterbox_extra.py": b"similarly named adapter",
+        "voxleaf_tts/adapters/qwen_extra/helper.py": b"similarly named directory",
+        "voxleaf_tts/generated/protocol_schemas.py": b"schema",
         "voxleaf_tts/piper_service.py": b"service",
         "voxleaf_tts/protocol.py": b"protocol",
         "voxleaf_tts/packaging.py": b"similarly named module",
         "voxleaf_tts/packaging_extra/helper.py": b"similarly named directory",
     }
     excluded = {
+        "voxleaf_tts/adapters/chatterbox.py": b"optional engine",
+        "voxleaf_tts/adapters/qwen.py": b"development engine",
+        "voxleaf_tts/chatterbox_service.py": b"optional entrypoint",
+        "voxleaf_tts/qwen_service.py": b"development entrypoint",
         "voxleaf_tts/packaging/__init__.py": b"",
         "voxleaf_tts/packaging/core_integrity.py": b"maintainer helper",
         "voxleaf_tts/packaging/nested/future_helper.py": b"nested maintainer helper",

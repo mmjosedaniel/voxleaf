@@ -14,8 +14,7 @@ from typing import Final
 
 import pytest
 
-from voxleaf_tts.engine import EngineFailure, EngineFailureCode
-from voxleaf_tts.piper_adapter import (
+from voxleaf_tts.adapters.piper import (
     ARTIFACTS,
     CANDIDATE_ID,
     ENGINE_VERSION,
@@ -36,6 +35,7 @@ from voxleaf_tts.piper_adapter import (
     PiperVoiceProfile,
     _is_within,
 )
+from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 
 
 def test_windows_verbatim_runtime_executable_remains_within_runtime_root() -> None:

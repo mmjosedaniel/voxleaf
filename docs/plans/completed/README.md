@@ -8,6 +8,8 @@ Use the [evidence retention policy](../../development/evidence-retention.md) for
 
 ## Completed plans
 
+- [`tts-adapter-layout.md`](tts-adapter-layout.md): selective four-engine adapter layout, refreshed Piper and isolated local Chatterbox v4; preserved v2/v3 authorities and v3 admission. Independent three-baseline/22-gate PASS, bilingual candidate/desktop matrices, verified firewall cleanup and documentary closeout. Implementation committed for PR handoff; no package publication.
+
 - [`tts-service-organization.md`](tts-service-organization.md): four independently accepted Python packaging-integrity, versioned release-authority, corpus and quality extractions; unchanged runtime/frozen authority, 457 Python tests and passing portable/native aggregate checks. All changes remain unstaged; no Git publication.
 
 - [`desktop-source-organization.md`](desktop-source-organization.md): extracted semantic render planning and Web Audio contracts/backend, split the stylesheet with exact cascade reconstruction, and passed independent unit/model/portable/native validation. Changes remain unstaged; no Git publication.

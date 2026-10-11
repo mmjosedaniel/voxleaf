@@ -15,14 +15,14 @@ from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from types import ModuleType
 from typing import Final, Protocol, cast
 
-from .engine import (
+from ..engine import (
     EngineCapabilities,
     EngineFailure,
     EngineFailureCode,
     EngineResult,
     WorkIdentity,
 )
-from .protocol import (
+from ..protocol import (
     CHANNEL_COUNT,
     MAX_AUDIO_PAYLOAD_BYTES,
     MAX_AUDIO_SAMPLE_COUNT,

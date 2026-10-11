@@ -8,8 +8,12 @@ in the [system diagram](../architecture/system-diagram.md) and
 ## Runtime and maintainer tooling
 
 `services/tts/src/voxleaf_tts` contains the local protocol service, engine,
-adapters and their entrypoints. Those runtime modules retain their names and
-behavior. Runtime inference remains local, cancellation stays with the existing
+adapters and their entrypoints. Concrete engines live in `adapters/piper.py`,
+`adapters/chatterbox.py`, `adapters/qwen.py`, and `adapters/fake.py`.
+`adapters/__init__.py` is empty; each entrypoint imports its selected engine
+without loading other providers. The root `engine.py`, `protocol.py`, `service.py`
+and three provider service entrypoints retain their paths and behavior.
+Runtime inference remains local, cancellation stays with the existing
 owners, and ordinary playback does not persist generated audio.
 
 The two `release_*.py` entrypoints and `voxleaf_tts/packaging/` are maintainer
@@ -23,6 +27,7 @@ the filtered Piper runtime and explicitly assembled Chatterbox runtime.
 | `src/voxleaf_tts/release_chatterbox.py` | Optional-runtime acquisition/copying, licences, safe-loader AST admission, synchronization, staging, ZIP/splitting, measurements and CLI |
 | `src/voxleaf_tts/packaging/chatterbox_integrity.py` | Versioned package layout, canonical error, root resolution, hash/path/JSON rules and runtime manifests/tree verification |
 | `src/voxleaf_tts/packaging/chatterbox_authority.py` | Versioned source/acquisition/publication/evidence validation and explicit authority writers; historical v2 and current v3 remain distinct |
+| `src/voxleaf_tts/packaging/chatterbox_sources.py` | Closed raw-Git v2/v3 source provenance shared by historical copying and authority validation; explicit ten-module current v4 closure |
 | `benchmarks/harness.py` | Adapter/clock/memory/observation ownership, request/chunk validation, cancellation and the four historical protocol runners |
 | `benchmarks/harness_corpus.py` | Legacy and bilingual corpus loading, admission and ordered projection |
 | `benchmarks/harness_errors.py` | One shared harness failure type and raising helper |
@@ -42,10 +47,26 @@ Piper's installed site-package copier excludes the exact
 existing release-builder and metadata exclusions. Similar names outside that
 subtree and legitimate runtime siblings still copy.
 
-Chatterbox retains its explicit `runtimeModules` source lists. The historical
-v2 list and v3 generated-module closure differ intentionally. Helpers are not
-added to either list. Do not unify these policies or infer identical rollback
-behavior across builders.
+Piper retains `adapters/piper.py`, `adapters/fake.py`, the empty package marker
+and generated protocol modules. Its exclusions name the exact dormant
+Chatterbox/Qwen implementations and service entrypoints; similar siblings copy.
+
+Chatterbox retains explicit `runtimeModules` lists. Historical v2 copies seven
+verified raw Git blobs at `814fd2f70bd3588d31022207eb976c0ff93712a3`; v3 copies
+nine at `998c7b24cda7e969e9ed0344f348506bf38af3b0`, including the generated
+modules. The resolver verifies every size and SHA-256 before synchronization or
+output mutation. Maintainer historical builds and v3 acquisition checks require
+these commits in local full history. They do not fetch automatically or fall
+back to current source. Packaged inference does not require Git. V2's original
+archive and later generated-module correction remain separate authorities.
+
+Local v4 uses ten current modules, the unchanged v3 hashed dependency lock and
+model revision, the safe loader and exact licence closure. Its environment,
+staging, runtime, archive and parts live under isolated `dist/v4`. Neither v4
+nor maintainer helpers enter historical runtime lists. The local receipt binds
+actual source, recipe, runtime, archive and part bytes and marks the result
+unpublished and unadmitted. Native acquisition and installed runtime discovery
+remain on v3. Do not infer identical rollback behavior across builders.
 
 ## Benchmark and test boundaries
 
@@ -65,11 +86,12 @@ was performed. Relevant files are `test_release_core.py`,
 `test_release_chatterbox.py`, `test_benchmark_harness.py`,
 `test_benchmark_quality.py`, and the existing bilingual/CLI suites.
 
-Generated schemas under `src/voxleaf_tts/generated`, release manifests/evidence/
-locks, frozen `benchmarks/tts` authorities, candidate environments and completed
-plans are protected. Do not regenerate them to accommodate an organizational
-change. Runtime modules, protocol runners and test-directory reorganization
-remain outside this campaign.
+Generated schemas, dependency locks, historical release authority, frozen
+`benchmarks/tts` records and completed plans remain protected. Current Piper
+manifest/evidence and Windows current evidence are refreshed only by their
+existing builders, with exact recovery copies captured first. A partial Piper
+failure requires restoring both tracked outputs and the verified runtime/archive
+together. Old package execution results never validate newly generated bytes.
 
 ## Commands and evidence limits
 
@@ -86,6 +108,13 @@ pnpm.cmd package:chatterbox-optional:check-source
 pnpm.cmd package:chatterbox-optional:check-acquisition
 pnpm.cmd package:chatterbox-optional:v3:check-source
 pnpm.cmd package:chatterbox-optional:v3:check-acquisition
+pnpm.cmd package:chatterbox-optional:v4:write-source
+pnpm.cmd package:chatterbox-optional:v4
+pnpm.cmd package:chatterbox-optional:v4:check-source
+pnpm.cmd package:chatterbox-optional:v4:check-local
+pnpm.cmd test:tts:adapter-layout:preflight
+pnpm.cmd test:tts:adapter-layout:candidate
+pnpm.cmd test:tts:adapter-layout:desktop
 pnpm.cmd check:portable
 pnpm.cmd check
 ```
@@ -103,3 +132,43 @@ boundaries; wheel inspection separately establishes helper inclusion/imports.
 Full payload rebuilding, model performance and hardware claims require their
 own evidence. See the [campaign receipts](../plans/evidence/tts-service-organization/README.md)
 and [evidence retention policy](evidence-retention.md).
+
+`tts-adapter-layout-host.mjs` accepts `--mode preflight|candidate|desktop` and
+absolute contained overrides `--piper-root`, `--chatterbox-root`,
+`--chatterbox-model-root`, `--executable`, and `--receipt`. Defaults select the
+copied core, isolated local v4, installed v3 models, current release executable
+and ignored task receipts. Preflight binds exact trees, model bytes, isolated
+imports and enabled exact-interpreter outbound firewall blocks. On Windows,
+candidate and desktop children select the native Windows PowerShell module
+directory through their own environment for host observations and smoke runs.
+Candidate executes real bilingual framed services in embedded `-I -B` interpreters,
+bounded PCM, malformed-input rejection, cancellation by identity invalidation
+and tree termination, fresh restart/shutdown and filesystem/network observations.
+Only synthetic text is used; audio stays in memory. Desktop reuses the existing
+four selected portfolio arms and native smoke assertions with an explicit
+verified executable, refreshed packaged Piper and admitted installed v3. It
+does not install or uninstall. Use a frozen executable/resources copy through
+`--executable` during acceptance, since aggregate builds can replace `target`.
+These commands produce evidence only when actually run against their recorded
+bytes; a v4 build is neither release publication nor native admission.
+
+The candidate audit policy denies every process launch with `PermissionError`.
+Only the hash-bound NumPy `check_support_sve` default-context single `lscpu`
+probe is classified separately; it remains denied. Piper permits zero such
+attempts and Chatterbox exactly one per fresh process. Unexpected process,
+socket, audio-write and payload/model-write attempts reject acceptance even
+when caught. Bounded activation/denial/exit snapshots are consumed incrementally
+for both forced cancellation and orderly shutdown; absent audit evidence fails
+closed. Synthetic tests execute this same policy with the locked repository
+Python. Actual copied-provider imports and complete candidate execution require
+their own fresh independent evidence under verified offline firewall blocks.
+
+Chatterbox also requires exactly one denied IPv6 capability probe per fresh
+process; Piper permits zero. This separate counter accepts only the verified
+packaged urllib3 `_has_ipv6` bind event, exact function/module/file provenance,
+AF_INET6/SOCK_STREAM/protocol0 socket and tuple `("::1", 0)`. The policy still
+raises `PermissionError` before binding. Other bind, connect and getaddrinfo
+events retain the unexpected-network counter and reject admission, even when
+caught. Both probe budgets apply to forced and orderly exits. These are CPython
+audit-event observations; they do not assert interception of APIs without such
+events. Exact interpreter firewall blocks remain an independent prerequisite.
