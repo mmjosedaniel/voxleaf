@@ -17,6 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [TTS adapter layout plan](tts-adapter-layout.md) is prepared for a selective
+`adapters/` package, coordinated import and payload migration, a refreshed Piper
+core and local-only Chatterbox v4 preparation. Implementation has not started;
+historical Chatterbox authority and active v3 admission remain unchanged.
+
 The [TTS service organization plan](../completed/tts-service-organization.md) is
 complete and archived, with four
 independently accepted Python packaging-integrity, release-authority,

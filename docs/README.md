@@ -351,6 +351,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/tts-adapter-layout.md`](plans/active/tts-adapter-layout.md): planned concrete-engine grouping under `adapters/`, coordinated imports and package continuity, fresh Piper evidence and local-only Chatterbox v4 preparation; implementation has not started.
 - [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
 - [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation; all changes remain unstaged.
 - [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Changes remain unstaged; no Git publication.
