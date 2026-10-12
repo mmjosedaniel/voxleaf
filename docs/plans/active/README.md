@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation ExecPlans.
+- [Desktop state subscription hooks](desktop-state-subscription-hooks.md):
+  planned reusable narration and hardware snapshot hooks with focused lifecycle
+  tests; preserve current state owners and local UI state without Redux,
+  Zustand, or additional dependencies. Implementation and acceptance pending.
 
 The App conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
