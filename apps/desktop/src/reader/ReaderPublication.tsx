@@ -27,7 +27,7 @@ import {
   ActiveVisualLocatorTracker,
   type ActiveVisualLocatorEnvironment,
 } from "./active-visual-locator";
-import { PublicationRasterImageLoader } from "./publication-raster-image-loader";
+import { PublicationRasterImageLoader } from "./images/publication-raster-image-loader";
 import {
   DEFAULT_READER_PREFERENCES,
   type ReaderPreferenceName,

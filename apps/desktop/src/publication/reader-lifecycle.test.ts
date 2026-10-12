@@ -11,7 +11,7 @@ import type {
   LocalPublicationCloseResult,
   LocalPublicationOpenFlow,
   LocalPublicationOpenResult,
-} from "../publication/local-publication-open";
+} from "./local-publication-open";
 import { createReaderLifecycle } from "./reader-lifecycle";
 
 const TEST_BLOCK: SemanticBlock = Object.freeze({

@@ -1,6 +1,13 @@
 # Apps organization follow-up
 
-Status: planned; implementation and runtime validation have not started.
+Status: completed on 2026-10-12; all three source units and combined gates accepted.
+Final source acceptance: APPS-ORG-FINAL-01 PASS; final bounded repair review:
+APPS-SEEK-RACE-REVIEW-02 APPROVE. Documentary archive verification is recorded
+separately in the evidence collection under APPS-ORG-DOCS-01.
+Native extraction and the separately authorized observation-race repair pass
+POST-04's eleven host commands and independent change review. Historical cause
+of the earlier intermittent failures remains unresolved; it is not retroactively
+attributed to the deterministically demonstrated race.
 Prepared on 2026-10-12. Branch: `codex/apps-organization-follow-up`, created
 from clean, up-to-date `main` at
 `731bb67f372fed39a9308dad7584bb6517c8f6ba`.
@@ -38,11 +45,15 @@ acceptance criteria retain their meaning. Contributors can locate publication
 lifecycle code, raster-image code, and each native test responsibility directly.
 
 This plan adds no product feature, performance guarantee, model support,
-dependency, Redux/Zustand store, or public contract. This planning delivery
-authorizes the plan/index commit only; source implementation and any later
-source commit, push, or PR need their own applicable user authorization.
+dependency, Redux/Zustand store, or public contract. The maintainer authorized
+full implementation and section 8 host validation on 2026-10-12, on the existing
+branch, with all changes left unstaged and uncommitted. No branch/base change,
+commit, push, or PR is authorized by this execution request.
 
 ## 3. Current state
+
+The inventory below records the planning baseline and original locations.
+Sections 7, 10 and 12 record the implemented moves and current acceptance.
 
 The planning checkout includes PR #238 and the earlier App presentation and
 effect extractions. `apps/` contains the desktop application; its `src`,
@@ -66,7 +77,8 @@ location. Other host runners call that exact script path.
 The desktop `test` script explicitly enumerates Node test files after Vitest;
 adding a new Node suite without updating that enumeration would omit it from
 normal checks. Current reader and image tests are colocated with their owners.
-Maintained `docs/development/testing.md` names the paths that will move.
+Maintained `docs/development/testing.md` now names the accepted destination
+paths and documents the extracted native helper/test responsibilities.
 
 ## 4. Scope and non-goals
 
@@ -95,6 +107,11 @@ Planning ceiling: six paths, 12,000 added-plus-removed lines, predominantly
 relocation of approximately 4,500 existing lines. Limit non-relocation wiring,
 test and dependency-parameter edits to 700 lines. The auditor must tighten or
 explicitly revise these ceilings before freezing the order.
+
+Execution tightened the extraction ceiling to 10,500 total / 700 non-relocation
+lines; accepted extraction uses 9,862 / 698. A subsequently authorized separate
+seek-observation diagnostic/repair adds 291 lines within its own 400-line order,
+limited to the TTS helper and Node suite. This is not counted as relocation.
 
 Existing `native-webdriver-client.mjs`, `native-smoke-invariants.mjs`,
 `adaptive-tts-profile-selection.mjs`, portfolio runners and their Node tests
@@ -215,6 +232,13 @@ every assertion, failure mapping, threshold, deadline, retry count, selector,
 stage, structured report field, console message and scenario order. Do not
 change acceptance criteria merely to make the extracted harness pass.
 
+A separate authorized repair retains a fresh false-to-true settling transition
+even if it ends between polls. It requires active, armed, initially-false
+instrumentation; historical or stopped evidence cannot pass. A deterministic
+regression established the old sampling defect. The 90-second deadline, 100-ms
+polling, other predicates and scenario order remain unchanged. See the
+[repair review](../evidence/apps-organization-follow-up/APPS-SEEK-RACE-review-01.md).
+
 Nested modules receive resolved paths; they must not recompute `desktopRoot`
 using their deeper `import.meta.url`. Preserve `--executable` and every other
 existing flag. Existing release/portfolio callers keep calling the same file.
@@ -245,7 +269,7 @@ canonical diagram is expected to remain valid; review and record that result.
 
 ### Milestone 1: Reconfirm scope and establish execution baselines
 
-Status: not started.
+Status: complete; all three fresh audits and sequential host baselines PASS.
 
 Use the existing implementation branch; do not create another branch merely
 to execute this plan. Verify the planning commit and current HEAD, clean
@@ -266,12 +290,17 @@ Overlapping changes need a combined order/baseline, not refreshed approval
 hashes. Keep progress documentation outside source validation identities.
 
 Validation: baseline commands from section 8, exact source/test inventory and
-immutable identity manifests. Actual result: pending; planning inspection is
-not a runtime baseline.
+immutable identity manifests. Actual result: `APPS-NATIVE-01-BASELINE-01` PASS
+on all eleven native-unit commands outside sandbox, with unchanged identities
+and empty index. See the [immutable native order and baseline receipt](../evidence/apps-organization-follow-up/APPS-NATIVE-01-order-01.md).
+Publication and images each then passed their own seven-command baselines;
+see the [publication order](../evidence/apps-organization-follow-up/APPS-PUBLICATION-02-order-01.md)
+and [image order](../evidence/apps-organization-follow-up/APPS-IMAGES-03-order-01.md).
 
 ### Milestone 2: Extract and independently accept the native harness
 
-Status: not started. Target: `APPS-NATIVE-01`.
+Status: complete; POST-04 PASS and APPS-SEEK-RACE-REVIEW-01 APPROVE.
+Target: `APPS-NATIVE-01`.
 
 First extract resource observations, then TTS and reader scenarios, retaining
 the owner and dependencies described in section 6. These are checkpoints of
@@ -288,11 +317,15 @@ Keep dependency injection limited to boundaries needed by these tests.
 Validation: deterministic desktop gates, native startup, native reader
 benchmark and the four supported portfolio arms before/after extraction.
 Independently compare assertions, reports, cleanup and module dependencies.
-Actual result: pending. Hardware/setup gaps block this unit's acceptance.
+Actual result: `APPS-NATIVE-01-POST-04` PASS on all eleven commands including
+both Piper and both Chatterbox languages, and independent repair review APPROVE.
+Historical POST-02/03 failures remain recorded without claiming their cause was
+proven. All identities stable, index empty; no performance improvement claimed.
 
 ### Milestone 3: Move the publication lifecycle as one tested unit
 
-Status: not started. Target: `APPS-PUBLICATION-02`.
+Status: complete; APPS-PUBLICATION-02-POST-01 PASS.
+Target: `APPS-PUBLICATION-02`.
 
 Move the source/test pair to `publication/` and update exactly the three
 consumers. Confirm the old files are absent and only one implementation and
@@ -302,11 +335,13 @@ do not add tests solely to prove that an import path changed.
 
 Validation: desktop type/test, format/lint, browser and native startup gates,
 including open/replace/close, stale results and restoration. Actual result:
-pending.
+`APPS-PUBLICATION-02-POST-01` PASS on all seven commands; reverse-import byte
+proof confirms intact bodies: 1,082 total / 10 import-edit lines within 1,150/12.
 
 ### Milestone 4: Group the raster-image modules with their tests
 
-Status: not started. Target: `APPS-IMAGES-03`.
+Status: complete; APPS-IMAGES-03-POST-01 PASS.
+Target: `APPS-IMAGES-03`.
 
 Move the eight files intact and repair imports in the two reader components
 and package-reader integration test. Confirm all four test suites are still
@@ -316,11 +351,14 @@ assertions unchanged.
 
 Validation: desktop type/test, format/lint, browser and native startup gates,
 including malformed/over-limit images, Blob/CSP rendering and replacement/
-unmount resource release. Actual result: pending.
+unmount resource release. Actual result: `APPS-IMAGES-03-POST-01` PASS on all
+seven commands. Eight byte-identical moves and six import replacements use
+5,152 total / 12 import-edit lines within 5,400/20.
 
 ### Milestone 5: Validate the combined result and close documentation
 
-Status: not started.
+Status: complete; combined source PASS, final repair review APPROVE, maintained
+documentation updated and plan archived. Post-move documentary review is separate.
 
 Update the maintained test map only after the moves are accepted. Reconcile
 live path references without rewriting historical plans, evidence or frozen
@@ -338,7 +376,12 @@ leave no redirect in `active/`. Revalidate documentation after that move.
 Source commits, if subsequently authorized, use separate exact-path Git
 Action Orders bound to immutable POST-CHANGE PASS reports. Git remains idle
 during writing/validation. Push and PR creation are separate permissions.
-Actual result: pending.
+Actual result: `APPS-ORG-FINAL-01` PASS and `APPS-SEEK-RACE-REVIEW-02` APPROVE.
+All 32 source identities remain exact; maintained test paths/helper map and
+indexes updated. The canonical system diagram still matches unchanged product,
+process and persistence boundaries. Plan moved to completed without a redirect;
+no other historical plan was edited. Closing documentation is independently
+checked after the move, without rerunning unaffected source gates.
 
 ## 8. Testing and benchmark strategy
 
@@ -360,9 +403,10 @@ pnpm.cmd format:check:typescript
 pnpm.cmd lint:typescript
 ```
 
-The new Node suite becomes part of the existing desktop `test` command in
-Milestone 2; it is proposed work, not a test that currently exists. The two
-file-move units retain their existing assertions and test count. Document any
+The new Node suite is registered once in the existing desktop `test` command.
+It reports 19 cases (13 top-level tests and six subtests), including the separate
+seek-observation regression. POST-04 passes 661 Vitest and 70 total Node tests.
+The two file-move units retain their assertions and collection counts. Document any
 unexpected discovery or collection change as a failure to investigate.
 
 For `APPS-PUBLICATION-02` and `APPS-IMAGES-03`, baseline and post-change also run:
@@ -456,6 +500,73 @@ edit invalidates prior acceptance identities and requires applicable revalidatio
 
 ## 10. Progress log
 
+- 2026-10-12: final combined source accepted under `APPS-ORG-FINAL-01` PASS
+  and the new `APPS-SEEK-RACE-REVIEW-02` APPROVE. Portable/full, native benchmark,
+  preflight and all four model arms pass; browser/native evidence explicitly
+  reused only after exact final-source/environment comparison. Rebuilt PE hash
+  differs and is recorded; no exact-final-PE startup execution is claimed.
+  All 32 source identities and HEAD stable, index empty. Maintained documentation
+  reconciled, diagram reviewed unchanged, plan archived with indexes/links updated.
+  Closing documentary review is recorded separately as `APPS-ORG-DOCS-01`.
+- 2026-10-12: images accepted under `APPS-IMAGES-03-POST-01` PASS after fresh
+  audit, baseline and immutable order. Eight byte-identical moves and six import
+  replacements pass all seven gates, with stable identities and earlier unit
+  guards. Source writers are idle. The director updates maintained documentation;
+  the validator runs aggregate, benchmark and four-model combined acceptance.
+- 2026-10-12: publication lifecycle unit accepted under
+  `APPS-PUBLICATION-02-POST-01` PASS after fresh baseline and immutable order.
+  Whole source/test pair moved; five import replacements only, proven by
+  reverse-import byte identities. All seven required commands pass, including
+  seven browser scenarios and native startup. HEAD and seven identities are
+  stable, index empty, accepted native files unchanged. Images audit is being
+  refreshed before its independent baseline.
+- 2026-10-12: native unit accepted against immutable
+  `APPS-NATIVE-01-POST-04` PASS and `APPS-SEEK-RACE-REVIEW-01` APPROVE,
+  HEAD `520a8d074b7ddf7dc198fe99ecba38a47c6eeb40` and their exact identities.
+  All eleven commands pass, including Chatterbox Spanish/English, with unchanged
+  before/after source identities and empty index. The independent reviewer
+  reports no findings. Auditor is refreshing the publication unit before a
+  fresh baseline and immutable order; accepted native changes remain unstaged.
+- 2026-10-12: POST-04 deterministic gates pass with 661 Vitest and 70 Node
+  tests, including the unchanged previously failing regression. Native startup,
+  reader benchmark and preflight pass. Both Piper Spanish and English full
+  journeys pass; English seek restart is 9,885 ms with zero reported underruns,
+  buffering, stale audio, generated-audio files, external requests and retained
+  cleanup units. Chatterbox's two arms and final identity/review completion are
+  still pending; this progress entry is not yet unit acceptance.
+- 2026-10-12: comparative DIAG-05 Spanish and English both passed unchanged
+  original predicates. Rather than retrying model runs or injecting scheduling
+  delays, the auditor and validator required a source-bound deterministic
+  regression. `APPS-SEEK-RACE-RED-01` fails exactly three cases using the actual
+  old predicate: a completed brief transition is missed, while pre-arm true
+  and stopped observation are incorrectly accepted. The three other freshness
+  controls pass; 661 Vitest tests also pass. The user-authorized separate bug
+  order changes only settling observation to require active, armed, initially
+  false instrumentation with a recorded true transition. All deadlines and
+  other synchronization/stale-audio gates remain unchanged. The original
+  extraction ceiling stays separate from the bounded diagnostic/repair
+  allowance. Full native acceptance `APPS-NATIVE-01-POST-04` and independent
+  change review are in progress. No historical failure causation is claimed.
+- 2026-10-12: diagnostic order `APPS-SEEK-DIAG-01` adds only bounded,
+  content-free observation and a deterministic observer test, preserving all
+  five seek predicates/deadlines. Three pre-runtime formatting/lint failures
+  were corrected and retained as separate receipts; no model retry occurred
+  in those attempts. `APPS-SEEK-DIAG-04-VALIDATION` passes deterministic checks
+  and one isolated instrumented English journey (9,937 ms seek restart), but
+  emits no failing-predicate diagnostic and therefore does not identify or fix
+  the cause. A distinct comparative diagnostic is authorized: run Spanish then
+  English sequentially on the same unchanged instrumented files, matching the
+  model order of the two historical full-run failures. This is not acceptance
+  and must stop at a failure; preserve every result.
+- 2026-10-12: maintainer authorized bounded investigation/correction of the
+  English Piper seek blocker and continuation after acceptance, still without
+  staging or commits. Live branch, HEAD, empty index and six source identities
+  match POST-03. Reused auditor and validator inspect source and retained logs.
+  A separate bug writer is idle pending a precise diagnostic order; the
+  refactor writer remains idle. No acceptance retry is authorized as a substitute
+  for identifying the failed predicate and cause. The historical reports stay
+  immutable. Forensics adds a fourth early wait: `forbidAdaptiveHighlightKey`
+  itself waits before the existing seek catch; earlier summaries omitted it.
 - 2026-10-12: reviewed current tracked organization and concrete consumers;
   confirmed completed source/Rust/App plans remain historical and closed.
 - 2026-10-12: refreshed `main` by fast-forward-only update (already current)
@@ -464,11 +575,62 @@ edit invalidates prior acceptance identities and requires applicable revalidatio
   retained executable owner, explicit Node test wiring and supported model gates.
 - 2026-10-12: prepared this plan and its maintained index entries. Source changes,
   execution baselines and implementation acceptance remain pending.
-- [ ] Milestone 1: execution audit, clean identities and passing baselines.
-- [ ] Milestone 2: native harness extraction independently accepted.
-- [ ] Milestone 3: publication lifecycle move independently accepted.
-- [ ] Milestone 4: image module/test grouping independently accepted.
-- [ ] Milestone 5: combined acceptance, documentation and archival complete.
+- 2026-10-12: execution began on existing `codex/apps-organization-follow-up`
+  at planning commit `520a8d074b7ddf7dc198fe99ecba38a47c6eeb40`; initial worktree
+  and index were clean. The director read the execution plan and workflow
+  contracts and started the named read-only auditor and independent validator.
+  All four custom supporting role definitions are exposed with the required
+  models; Git stewardship remains unused because the maintainer explicitly
+  forbids staging, commits and branch/base changes. One source writer is the
+  maximum, and source work waits for a fresh passing baseline.
+- 2026-10-12: current audits accepted CHANGE for all three targets. Native
+  ceiling tightened to 10,500 total / 700 non-relocation lines; publication to
+  1,150 total / 12 import-edit lines; images to 5,400 total / 20 outside-import
+  lines. Source allowlists remain exactly those in section 4. No additional
+  behavior or architecture change was authorized.
+- 2026-10-12: native baseline `APPS-NATIVE-01-BASELINE-01` passed all eleven
+  section 8 commands in local PowerShell outside sandbox, including the reader
+  benchmark and four Piper/Chatterbox arms. HEAD and all six path identities
+  remained unchanged; index empty. The receipt above freezes the Approved Work
+  Order. Qwen model-backed branches remain deferred, not passed.
+- 2026-10-12: the sole worker authored the six-file native extraction and eleven
+  controlled Node tests, appending the new suite once to the existing command.
+  Reported ceiling: 9,861 added-plus-removed lines including relocation; 697
+  non-relocation lines. Director inspected entry/factory wiring and the new
+  tests. Source writer is idle; independent post-change acceptance is next.
+- 2026-10-12: `APPS-NATIVE-01-POST-01` passed static equivalence, build,
+  typecheck, all 661 Vitest / 62 Node tests and formatting, but failed lint
+  because the new suite lacked an explicit `URL` import. Runtime gates were
+  not run on that failed patch. The [immutable failure and Correction Order 1](../evidence/apps-organization-follow-up/APPS-NATIVE-01-post-01.md)
+  preserve this result. The same worker added only `import { URL } from "node:url";`;
+  totals are now 9,862 / 698 lines. A fresh complete post-change report is required.
+- 2026-10-12: [APPS-NATIVE-01-POST-02](../evidence/apps-organization-follow-up/APPS-NATIVE-01-post-02.md)
+  passed all deterministic gates, native startup, reader benchmark, preflight
+  and Piper Spanish, but Piper English timed out during next-segment seek after
+  passing its six-rate matrix. Chatterbox was not run. Static equivalence and
+  identity recheck pass; the existing logs do not distinguish the three early
+  wait predicates. No refactor cause or pre-existing intermittency is proven.
+  A single unchanged isolated rerun is authorized to check repeatability;
+  it cannot replace complete acceptance. Later units remain untouched.
+- 2026-10-12: [isolated English diagnostic](../evidence/apps-organization-follow-up/APPS-NATIVE-01-diagnostic-01.md)
+  exited zero on identical source identities, completing seek and cleanup.
+  This proves an intermittent outcome on the patch, not a cause or repair.
+  The director authorized one fresh complete acceptance attempt with unchanged
+  criteria; another native failure stops this attempt as an unresolved blocker.
+- 2026-10-12: [APPS-NATIVE-01-POST-03](../evidence/apps-organization-follow-up/APPS-NATIVE-01-post-03.md)
+  again passed commands 1-9 and failed Piper English next-segment seek after its
+  six-rate matrix. Chatterbox was not run; no further retry or speculative
+  correction was attempted. Six source identities and HEAD stayed unchanged,
+  index empty. All 63 original functions and constants remain structurally
+  equivalent after the approved dependency substitutions. No cause is proven.
+  The campaign stops with the native candidate preserved for diagnosis; no
+  later source unit, browser gate, portable/full check or archival was performed.
+  See the [evidence index](../evidence/apps-organization-follow-up/README.md).
+- [x] Milestone 1: execution audit, clean identities and passing baselines.
+- [x] Milestone 2: native harness extraction independently accepted.
+- [x] Milestone 3: publication lifecycle move independently accepted.
+- [x] Milestone 4: image module/test grouping independently accepted.
+- [x] Milestone 5: combined acceptance, documentation and archival complete.
 
 ## 11. Discoveries and decisions
 
@@ -483,9 +645,17 @@ edit invalidates prior acceptance identities and requires applicable revalidatio
   architecture. Keep integration/browser tests at their current level.
 - Retain coordinator ownership, worklet URLs, Rust layout, dependencies and
   completed evidence. The system diagram needs no new component for internal
-  helper modules; final review still remains required.
+  helper modules; final diagram review confirms the same architecture.
 - Use the existing portfolio selection flags for Piper/Chatterbox acceptance
   and preserve ADR-0051's explicit Qwen deferral.
+- Historical English seek failures were intermittent and the exact failed
+  predicate is unknown. The separately authorized investigation demonstrated
+  an observation race with actual injected scripts and three expected failing
+  regressions. Repair and content-free diagnostics passed native POST-04 and
+  independent change review. Do not retroactively attribute the old failures.
+- All three source units and final combined acceptance are approved and remain
+  unstaged. The plan is archived with maintained navigation and test maps updated;
+  the post-move documentation report preserves the final documentary identities.
 
 ## 12. Final validation results
 
@@ -495,12 +665,35 @@ must not be interpreted as runtime acceptance.
 
 | Execution gate | Result |
 | --- | --- |
-| Fresh unit audits and host baselines | Not run; implementation pending. |
-| Native helper extraction and new Node suite | Not implemented. |
-| Publication lifecycle and image/test moves | Not implemented. |
-| Deterministic, browser and native acceptance | Not run for this plan. |
-| Native reader benchmark and four supported TTS arms | Not run for this plan. |
-| Portable/full checks and combined identity report | Not run for this plan. |
-| Maintained test map, final diagram review and archival | Pending implementation. |
+| Fresh unit audits and host baselines | All three CHANGE audits and baselines PASS; immutable orders and identities retained. |
+| Native extraction and Node suite | POST-04 PASS, final repair review REVIEW-02 APPROVE; 9,862/698 extraction lines plus separately authorized 291-line repair/diagnostics. |
+| Publication lifecycle move | POST-01 PASS, seven commands and reverse-import byte proof. |
+| Image/test grouping | POST-01 PASS, seven commands and exact byte/import proof. |
+| Combined deterministic, browser/native | 661 desktop Vitest + 70 Node; seven browser scenarios and native startup PASS on final source in images POST-01, explicitly reused by FINAL-01 after exact source/environment checks. |
+| Native reader benchmark | Fresh FINAL-01 PASS: 10,000 blocks, target 405.3 ms, append 373 ms, reflow 115.5 ms; six-cycle final active observers/URLs and closed-DOM delta zero. |
+| Four supported TTS arms | Fresh Piper ES/EN and Chatterbox ES/EN PASS. English Piper seek 10,143 ms. All arms zero observed underruns, buffering, stale playback, persisted audio, external requests and retained/discarded cleanup units. |
+| Portable/full and identities | Both exit 0 in FINAL-01. Shared 209, EPUB 651, desktop 661 + 70 Node, Python 485, evidence 13; Rust 87/88. Exact 32-path before/after identities and HEAD unchanged; index empty. |
+| Maintained documentation and archive | Testing map/helper ownership documented; diagram reviewed unchanged; completed path and indexes updated, no active redirect or edits to other historical plans. Separate post-move documentary report APPS-ORG-DOCS-01. |
 
-Do not mark the plan complete until those execution requirements are satisfied.
+The [final combined report](../evidence/apps-organization-follow-up/APPS-ORG-FINAL-01.md)
+and [final repair review](../evidence/apps-organization-follow-up/APPS-SEEK-RACE-review-02.md)
+retain commands, UTCs, outcomes, exact identities and provenance. All acceptance
+commands ran in local PowerShell outside sandbox. Raw captures remain ignored.
+
+Qwen model-backed branches remain deferred under ADR-0051, not passed.
+Chatterbox verifies rate-control presentation; its six-rate transition matrix
+was not exercised. Each Rust configuration intentionally ignores the subprocess
+fixture selected only by its assignment-failure test; it is not reported as an
+independently passing test. Nonfatal pytest cache-write, Vite chunk-size and
+browser color-environment warnings are retained. Rebuilt executable bytes differ;
+fresh benchmark/model runs use that rebuild, while browser/native reuse is bound
+to identical source and environment. No universal performance claim is made.
+
+Historical POST-02/03 failure causation remains unknown. The independently
+reproduced observation race is repaired and validated; earlier failed reports
+remain immutable in the [evidence collection](../evidence/apps-organization-follow-up/README.md).
+
+Source and documentation remain unstaged/uncommitted on
+`codex/apps-organization-follow-up`, HEAD
+`520a8d074b7ddf7dc198fe99ecba38a47c6eeb40`; no push or PR.
+Earlier dated progress entries describe historical states, not current blockers.

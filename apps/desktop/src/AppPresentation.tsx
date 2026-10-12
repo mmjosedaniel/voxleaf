@@ -7,7 +7,7 @@ import type {
   ReaderFailureReason,
   ReaderLifecycleState,
   ReaderPublicationSummary,
-} from "./reader/reader-lifecycle";
+} from "./publication/reader-lifecycle";
 
 export type LifecyclePresentation =
   | Readonly<{ status: Exclude<ReaderLifecycleState["status"], "failure"> }>

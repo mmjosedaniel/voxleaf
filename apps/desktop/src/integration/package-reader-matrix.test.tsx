@@ -45,17 +45,17 @@ import { createPublicationSession } from "../publication/publication-session";
 import {
   PublicationRasterImageLoader,
   type RasterImageSourcePreparer,
-} from "../reader/publication-raster-image-loader";
+} from "../reader/images/publication-raster-image-loader";
 import {
   CHAPTER_TOO_LARGE_MESSAGE,
   ReaderNavigationCoordinator,
 } from "../reader/reader-navigation";
 import { ReaderPublicationContent } from "../reader/ReaderPublication";
-import { SemanticRasterImageElement } from "../reader/SemanticRasterImage";
+import { SemanticRasterImageElement } from "../reader/images/SemanticRasterImage";
 import type {
   RasterImageSource,
   RasterImageSourceResult,
-} from "../reader/raster-image-source";
+} from "../reader/images/raster-image-source";
 
 interface ReaderFixtureModule {
   readonly READER_SEMANTIC_BLOCK_OVER_LIMIT: number;

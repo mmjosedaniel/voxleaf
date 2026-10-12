@@ -6,7 +6,7 @@ import {
   type LocalPublicationOpenFailureReason,
   type LocalPublicationOpenFlow,
   type LocalPublicationOpenResult,
-} from "../publication/local-publication-open";
+} from "./local-publication-open";
 
 export interface ReaderPublicationSummary {
   readonly title: string;

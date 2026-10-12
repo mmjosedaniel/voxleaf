@@ -6,7 +6,7 @@ import {
   RestorationNotice,
   type RestorationPresentation,
 } from "./AppPresentation";
-import type { ReaderPublicationSummary } from "./reader/reader-lifecycle";
+import type { ReaderPublicationSummary } from "./publication/reader-lifecycle";
 
 interface ReadyPublicationSectionProps {
   readonly summary: ReaderPublicationSummary;
