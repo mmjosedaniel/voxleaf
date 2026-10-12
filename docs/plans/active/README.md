@@ -17,6 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+The [App hardware effects plan](../completed/app-hardware-effects-readability.md)
+is complete and archived: one hardware visibility binding, five added unit/App
+cases, private preference types and named UI conditions. Independent baseline,
+post-change and both aggregate gates passed; ownership and behavior preserved.
+Changes remain unstaged and uncommitted.
+
 The [App readability plan](../completed/app-readability.md) is complete and
 archived: three presentation components/private messages, nine added integration
 cases and independent baseline/post-change plus portable/native aggregate PASS.

@@ -62,6 +62,7 @@ import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup
 import { ReaderSettingsDialog } from "./settings/ReaderSettingsDialog";
 import { createNarrationSettingsActions } from "./settings/narration-settings-actions";
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
+import { bindHardwareCompatibilityChecks } from "./tts/hardware-compatibility-check-binding";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
@@ -133,6 +134,18 @@ type ReaderPreferenceStatus = "loading" | ReaderPreferencesReadResult["status"];
 type NarrationStartPreferenceStatus =
   "loading" | NarrationStartPreferenceReadResult["status"];
 
+interface ReaderPreferencePresentation {
+  readonly preferences: ReaderPreferencesV1;
+  readonly status: ReaderPreferenceStatus;
+  readonly canPersist: boolean;
+}
+
+interface NarrationStartPreferencePresentation {
+  readonly selection: AdaptiveBufferStartMode;
+  readonly status: NarrationStartPreferenceStatus;
+  readonly canPersist: boolean;
+}
+
 function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
   initialLocator: ReadingLocatorV1,
@@ -188,11 +201,7 @@ export function App({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [readerPreferencePresentation, setReaderPreferencePresentation] =
-    useState<{
-      readonly preferences: ReaderPreferencesV1;
-      readonly status: ReaderPreferenceStatus;
-      readonly canPersist: boolean;
-    }>(() => ({
+    useState<ReaderPreferencePresentation>(() => ({
       preferences: DEFAULT_READER_PREFERENCES,
       status: "loading",
       canPersist: true,
@@ -203,15 +212,12 @@ export function App({
   useEffect(() => {
     currentReaderPreferences.current = readerPreferencePresentation.preferences;
   }, [readerPreferencePresentation.preferences]);
-  const [fallbackNarrationStart, setFallbackNarrationStart] = useState<{
-    readonly selection: AdaptiveBufferStartMode;
-    readonly status: NarrationStartPreferenceStatus;
-    readonly canPersist: boolean;
-  }>(() => ({
-    selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
-    status: "loading",
-    canPersist: true,
-  }));
+  const [fallbackNarrationStart, setFallbackNarrationStart] =
+    useState<NarrationStartPreferencePresentation>(() => ({
+      selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+      status: "loading",
+      canPersist: true,
+    }));
   useStrictModeSafeResourceCleanup(hardwareCompatibilityCoordinator);
   const subscribe = useCallback(
     (listener: () => void) => readerLifecycle.subscribe(listener),
@@ -339,24 +345,14 @@ export function App({
     return narrationCoordinator.subscribe(reconcile);
   }, [narrationCoordinator]);
 
-  useEffect(() => {
-    void hardwareCompatibilityCoordinator.ensureChecked();
-    let observedHidden = document.visibilityState === "hidden";
-    const handleVisibilityChange = (): void => {
-      if (document.visibilityState === "hidden") {
-        observedHidden = true;
-        return;
-      }
-      if (observedHidden) {
-        observedHidden = false;
-        void hardwareCompatibilityCoordinator.check("operating-system-resume");
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [hardwareCompatibilityCoordinator]);
+  useEffect(
+    () =>
+      bindHardwareCompatibilityChecks(
+        hardwareCompatibilityCoordinator,
+        document,
+      ),
+    [hardwareCompatibilityCoordinator],
+  );
 
   useEffect(() => {
     if (
@@ -738,15 +734,18 @@ export function App({
     ],
   );
 
+  const isRestoringReader =
+    viewState.status === "ready" &&
+    (readyRestoration === undefined ||
+      readyRestoration.settlement === "pending");
+  const hasBlockingCloseFailure =
+    viewState.status === "failure" && viewState.reason === "close-failed";
   const isBusy =
     viewState.status === "closing" ||
     viewState.status === "opening" ||
-    (viewState.status === "ready" &&
-      (readyRestoration === undefined ||
-        readyRestoration.settlement === "pending"));
+    isRestoringReader;
   const openDisabled =
-    viewState.status === "closing" ||
-    (viewState.status === "failure" && viewState.reason === "close-failed");
+    viewState.status === "closing" || hasBlockingCloseFailure;
   const lifecyclePresentation: LifecyclePresentation =
     viewState.status === "failure"
       ? { status: "failure", reason: viewState.reason }
