@@ -1,7 +1,9 @@
 # App preference effects readability
 
-Status: ready for implementation; production changes and runtime validation have
-not started. Prepared on 2026-10-11.
+Status: complete and archived on 2026-10-11. Both extractions, characterization,
+focused tests and all independent acceptance gates passed. Changes are unstaged
+and uncommitted on the existing branch.
+Prepared and execution started on 2026-10-11.
 Branch: `codex/app-preference-effects-readability`, created from clean local
 `main` at `0414fdc5b00f407333457ff855e2ae30dc6c8ebf`.
 
@@ -72,8 +74,9 @@ Use one source/test unit, `APP-PREFERENCE-EFFECTS-01`, with this closed allowlis
 3. `apps/desktop/src/settings/app-preference-effects.ts` (new).
 4. `apps/desktop/src/settings/app-preference-effects.test.tsx` (new).
 
-The planning ceiling is four files and approximately 750 added/deleted lines,
-primarily tests. Freeze the exact limit in the work order after baseline; if
+The execution ceiling is four files and at most 1,500 added/deleted lines,
+primarily tests, following the final measured ceiling addendum at `02259dea`. Freeze this limit
+in the work order after baseline; if
 the necessary matrix exceeds it, re-audit and revise the order before expanding.
 Do not compress tests or weaken assertions to meet a numerical target.
 
@@ -87,14 +90,14 @@ native code, Python, inference, playback and generated sources are excluded.
 No new singleton, aggregate App controller, cancellation API, preference cache,
 write-on-read behavior or preference precedence policy is authorized.
 
-Planning documentation paths are this plan, `docs/README.md` and
+Execution documentation paths are this plan, `docs/README.md` and
 `docs/plans/active/README.md`. Future concise evidence belongs under
 `docs/plans/evidence/app-preference-effects-readability/`; raw logs and temporary
 scripts belong in ignored `tmp/evidence/app-preference-effects-readability/`.
 Keep evidence outside the source validation manifest.
 
-The current user request authorizes this document and local branch setup only.
-Implementation starts with a subsequent execution request. This plan does not
+The 2026-10-11 execution request authorizes implementation, tests and
+documentation on the existing branch. This plan does not
 authorize staging, commits, pushes, pull requests or changes to `main`. The
 source phases below form one unit and need no intermediate commit. Preserve
 unrelated work, including these unstaged planning documents, and keep the index
@@ -213,7 +216,7 @@ functions. A new owner, data flow or public policy would exceed this plan.
 
 ### Milestone 1: Refresh the unit and establish its baseline
 
-Status: not started.
+Status: complete. Fresh audit and BASELINE-002 accepted at execution HEAD.
 
 The director reuses one Sol high auditor, one Sol high worker and one Astra high
 validator for this batch; only the worker writes source. They must not delegate.
@@ -233,7 +236,7 @@ may change. The extraction remains gated on the checkpoint below.
 
 ### Milestone 2: Characterize the unchanged production effects
 
-Status: not started.
+Status: complete. CHARACTERIZATION-002 accepted after one mechanical correction.
 
 The worker adds controlled-promise and integration cases in `App.test.tsx`
 against the unchanged production code. Cover the section 8 matrix without
@@ -260,7 +263,7 @@ restart baseline mode, commit, stash or discard them to manufacture clean paths.
 
 ### Milestone 3: Extract both preference connections
 
-Status: not started.
+Status: complete; both connections and 16 module cases accepted by POST-CHANGE-002.
 
 The same worker creates the module and its colocated test file, moves the
 presentation types without altering them, replaces startup hydration with
@@ -274,7 +277,8 @@ function or partial extraction cannot satisfy this milestone.
 
 ### Milestone 4: Independent acceptance and documentation closure
 
-Status: not started.
+Status: complete. POST-CHANGE-002, PACKAGE-001 and FINAL-002 accepted;
+source identities unchanged through documentation closure.
 
 With source writing and Git mutations idle, the independent validator reviews
 the whole unit against baseline, verifies invariants/test integrity and runs
@@ -380,6 +384,75 @@ rollback is needed because persistence formats and writes are unchanged.
 
 ## 10. Progress log
 
+- 2026-10-11 closure: FINAL-002 passed the entire unchanged check: 87 default/
+  88 release-locked Rust tests, 485 Python tests, all TypeScript suites and all
+  builds. The earlier reaping failure remains unexplained and recorded in
+  FINAL-001; no Rust change or assertion relaxation occurred. Accepted exact
+  identity-bound POST-CHANGE-002/PACKAGE-001/FINAL-002 reports; reviewed canonical
+  diagram correspondence and found no architecture change. Archived this plan
+  and updated navigation after acceptance. No staging, commit, push, PR, merge
+  or main modification.
+- 2026-10-11 execution: PACKAGE-001 passed check:portable, including 485 Python
+  tests and all portable builds. FINAL-001 failed the unchanged native
+  `failed_job_assignment_kills_and_reaps_the_spawned_child` assertion in the
+  release-locked Rust suite (87 passed/1 failed), after default Rust 87/87
+  passed. Python/final builds were not reached. Preserved FAIL and authorized
+  one complete unchanged check repeat after read-only host/source inspection;
+  no assertion weakening or out-of-scope fix.
+- 2026-10-11 execution: POST-CHANGE-002 passed all seven commands, including
+  56 desktop files/646 Vitest tests, 51 Node tests, seven Chromium cases and
+  packaged native startup/restart/restoration with zero errors/external requests.
+  Every source identity matched before/after. Both required extractions accepted;
+  PACKAGE and FINAL aggregate reports now running on the same frozen source.
+- 2026-10-11 execution: POST-CHANGE-001 passed build/type/test/format/lint and
+  seven Chromium scenarios, but native release startup could not create its
+  WebView session. Preserved BLOCKED report with matching source identities.
+  Live diagnosis found PATH EdgeDriver 150.0.4078.83 against WebView2
+  155.0.4283.45; an existing Microsoft-signed matching driver was verified.
+  Authorized a process-only driver override and fresh complete POST-CHANGE-002;
+  no source, global environment or dependency changes were needed.
+- 2026-10-11 execution: both extractions and 16 colocated cases implemented;
+  accepted App characterization bytes unchanged. Worker stopped at measured
+  1,419 lines (App tests 757, App 97, module 148, module tests 417), 19 above
+  the 1,400 cap. The auditor found no scope expansion or unnecessary coverage;
+  director accepted a separate numerical addendum to 1,500, preserving frozen
+  orders and reports. No further source edit requested before validation.
+- 2026-10-11 execution: CHARACTERIZATION-001 passed typecheck and 630 Vitest/
+  51 Node tests but failed formatting and two unused mock parameters. Correction
+  loop 1 changed only typed mock signatures and formatting; CHARACTERIZATION-002
+  passed all four commands with unchanged production App, absent modules and
+  matching before/after identities. Accepted 28 new cases (+755/-2 after format).
+  Issued EXTRACTION-ORDER-01 to the same worker, retaining this exact checkpoint
+  and all characterization tests. No commit, stash or baseline reset occurred.
+- 2026-10-11 execution: worker froze 28 characterization cases in App.test.tsx
+  (+729/-1); production App unchanged and module paths absent. Independent
+  checkpoint requested. Read-only auditor found no unnecessary coverage and
+  revised the whole-unit estimate to 1,225-1,365 lines. Director accepted a
+  1,400-line cap for the continuation; the immutable original order and receipts
+  remain unchanged. Focused binding tests must prove exact
+  observe/publish/subscribe ordering beyond the App integration observation.
+- 2026-10-11 execution: independent `APP-PREFERENCE-EFFECTS-01-BASELINE-001`
+  was BLOCKED before compilation because session pnpm 11.25.0 did not match
+  required 11.15.1. Selecting the existing Corepack shim through session-only
+  PATH resolved the prerequisite without dependency edits. New immutable
+  `APP-PREFERENCE-EFFECTS-01-BASELINE-002` passed all six section 8 commands:
+  55 desktop Vitest files/602 tests, 51 Node tests and seven Chromium scenarios;
+  before/after source identities and empty index matched.
+- 2026-10-11 execution: issued the frozen test-only characterization order to
+  the sole Sol high worker. App production remains byte-identical and planned
+  module files absent until the independent checkpoint passes. Reports and
+  orders are under `docs/plans/evidence/app-preference-effects-readability/`.
+- 2026-10-11 execution: verified existing branch at
+  `02259dea3be33202a01ea09ca6609c728536bf0b`, clean worktree and empty index.
+  Historical `0414fdc` remains planning provenance only. Confirmed the exposed
+  Sol high auditor/worker and Astra high validator roles; reused role tasks
+  throughout this one unit. No Git steward is needed because Git mutations
+  are explicitly forbidden.
+- 2026-10-11 execution: accepted the refreshed `APP-PREFERENCE-EFFECTS-01`
+  CHANGE audit, medium risk, and revised the ceiling from the planning estimate
+  of 750 to a maximum of 1,100 added/deleted lines. The complete characterization
+  and module matrix is estimated at 830-1,020 lines including production moves;
+  coverage will not be weakened to meet the ceiling. Source scope is unchanged.
 - 2026-10-11: Rechecked clean local `main` at
   `0414fdc5b00f407333457ff855e2ae30dc6c8ebf`; it includes the completed hardware
   extraction. Read the current effects, tests, contracts and relevant guidance.
@@ -408,29 +481,51 @@ rollback is needed because persistence formats and writes are unchanged.
   area. Lower-level repositories and coordinators remain unchanged.
 - The remaining seven effects keep their current ownership and order. This plan
   does not promise a later general lifecycle extraction.
-- The system diagram was reviewed during planning; these internal functions
-  preserve its application-owned flow. Verify that judgment against the actual
-  implementation during closure.
+- The system diagram was reviewed against the completed implementation: App
+  still owns preference state, repositories/coordinators and lifetime; the
+  support module only connects reads/observations to presentation. No major
+  component, persistence, process, dependency or data-flow change; no diagram
+  or ADR edit is needed.
+- Characterization confirms that active late hydration can replace earlier
+  presentation updates; both event orders remain tested. Closed-dialog fallback
+  callback tests establish callback behavior, not a reachable product defect.
+  No new precedence policy or confirmed product contradiction was introduced.
+- One mechanical source correction loop was used. Toolchain/driver prerequisite
+  recovery and the one unchanged aggregate rerun did not alter source. Preserve
+  all unsuccessful attempts separately; no old PASS hashes were refreshed.
 
 ## 12. Final validation results
 
-Planning-only status:
+All execution reports use HEAD
+`02259dea3be33202a01ea09ca6609c728536bf0b` on the existing
+`codex/app-preference-effects-readability` branch. Historical planning setup at
+`0414fdc` and its documentary checks remain progress-log provenance only.
 
-- Branch setup: PASS, `APP-PREFERENCE-EFFECTS-SETUP-01`, outside-sandbox Git
-  action; base and current HEAD `0414fdc5b00f407333457ff855e2ae30dc6c8ebf`.
-- Plan structure, links, configured commands and scoped diff: PASS. The command
-  `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tmp/evidence/app-preference-effects-readability/plan-authoring/check-plan.ps1`
-  ran outside the sandbox and checked 12 sections, 15 relative/navigation links,
-  nine configured scripts, the exact three-document scope, unchanged branch
-  base/main/HEAD and an empty index. It also ran `git diff --check` for the
-  documentation paths. The temporary checker first rejected a valid hyphenated
-  script name; its matching rule was corrected and the host command passed.
-- Independent documentary review: PASS, the reused auditor approved this plan
-  against `APP-PREFERENCE-EFFECTS-01`; this is not runtime acceptance.
-- Initial runtime baseline and characterization checkpoint: NOT RUN.
-- Production extraction, module tests, post-change and aggregate gates: NOT RUN.
-- Application behavior acceptance: not claimed; no production code changed.
+The [evidence index](../evidence/app-preference-effects-readability/README.md)
+links every immutable report, order, exact command/outcome and full source
+identity manifest. All acceptance ran in local PowerShell outside the sandbox.
 
-At implementation closure, replace pending execution statuses with exact report
-IDs, commands, outcomes and source identities. Do not infer PASS from predecessor
-plans, this read-only audit, or successful branch/document preparation.
+| Report suffix (prefix APP-PREFERENCE-EFFECTS-01-) | Result |
+| --- | --- |
+| BASELINE-001 | BLOCKED: incorrect session pnpm; no source changes. |
+| BASELINE-002 | PASS: all six baseline commands; 602 desktop tests + 51 Node, seven Chromium. |
+| CHARACTERIZATION-001 | FAIL: format and two unused mock parameters; 630 tests + 51 Node passed. |
+| CHARACTERIZATION-002 | PASS: all four commands, unchanged production and absent new modules. |
+| POST-CHANGE-001 | BLOCKED: native session creation, stale PATH driver; first six commands passed. |
+| POST-CHANGE-002 | PASS: all seven commands, 646 desktop tests + 51 Node, Chromium and packaged WebView2. |
+| PACKAGE-001 | PASS: check:portable, shared 209 / EPUB 651 / desktop 646 / Node 51 / Python 485 and builds. |
+| FINAL-001 | FAIL: unchanged Rust release-locked reaping assertion; final stages not reached. |
+| FINAL-002 | PASS: full check, Rust 87 default / 88 release-locked, Python 485, all types/lint/tests/builds. |
+
+Both `usePreferenceHydration(options)` and
+`bindNarrationStartPreferencePresentation(source, publish)` are implemented
+and accepted. All 28 App characterization and 16 focused module cases remain.
+Final four-path patch is 1,419 added/deleted lines within the audited 1,500 cap.
+No source changed after final acceptance; index remains empty.
+
+Material limitations: the native Rust reaping assertion failed once and passed
+the complete unchanged rerun; its intermittent cause is not established or fixed.
+Nonfatal pytest nodeids-cache permission and existing Vite chunk-size warnings
+remain. Matching pnpm/EdgeDriver were selected process-locally, without global
+configuration changes. No model-backed benchmark, inference-performance or new
+support claim is made; those runtime boundaries were unchanged.

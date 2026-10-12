@@ -22,14 +22,12 @@ import type { LocalPublicationOpenFlow } from "./publication/local-publication-o
 import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
-  type ReaderPreferencesReadResult,
 } from "./persistence/reader-position-repository";
 import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
   createWebStorageNarrationStartPreferenceRepository,
   DEFAULT_NARRATION_START_PREFERENCE_V1,
   type NarrationStartPreferenceRepository,
-  type NarrationStartPreferenceReadResult,
 } from "./persistence/narration-start-preference";
 import {
   createWebStorageNarrationPlaybackPreferenceRepository,
@@ -60,6 +58,12 @@ import {
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
 import { ReaderSettingsDialog } from "./settings/ReaderSettingsDialog";
+import {
+  bindNarrationStartPreferencePresentation,
+  usePreferenceHydration,
+  type NarrationStartPreferencePresentation,
+  type ReaderPreferencePresentation,
+} from "./settings/app-preference-effects";
 import { createNarrationSettingsActions } from "./settings/narration-settings-actions";
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { bindHardwareCompatibilityChecks } from "./tts/hardware-compatibility-check-binding";
@@ -129,22 +133,6 @@ interface ReadyReaderRestoration {
 }
 
 type ReaderRestoration = LoadingReaderRestoration | ReadyReaderRestoration;
-
-type ReaderPreferenceStatus = "loading" | ReaderPreferencesReadResult["status"];
-type NarrationStartPreferenceStatus =
-  "loading" | NarrationStartPreferenceReadResult["status"];
-
-interface ReaderPreferencePresentation {
-  readonly preferences: ReaderPreferencesV1;
-  readonly status: ReaderPreferenceStatus;
-  readonly canPersist: boolean;
-}
-
-interface NarrationStartPreferencePresentation {
-  readonly selection: AdaptiveBufferStartMode;
-  readonly status: NarrationStartPreferenceStatus;
-  readonly canPersist: boolean;
-}
 
 function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
@@ -237,62 +225,15 @@ export function App({
   const [dismissedRestorationSequence, setDismissedRestorationSequence] =
     useState<number | undefined>(undefined);
 
-  useEffect(() => {
-    let active = true;
-    void readerPositionRepository
-      .readPreferences()
-      .then((result) => {
-        if (!active) {
-          return;
-        }
-        const preferences =
-          result.status === "ready"
-            ? result.preferences
-            : DEFAULT_READER_PREFERENCES;
-        readerPositionRestoreCoordinator.setPreferences(preferences);
-        setReaderPreferencePresentation({
-          preferences,
-          status: result.status,
-          canPersist: result.status !== "unsupported-version",
-        });
-      })
-      .catch(() => {
-        if (active) {
-          setReaderPreferencePresentation({
-            preferences: DEFAULT_READER_PREFERENCES,
-            status: "unavailable",
-            canPersist: true,
-          });
-        }
-      });
-    void narrationStartPreferenceRepository
-      .read()
-      .then((result) => {
-        if (active) {
-          setFallbackNarrationStart({
-            selection: result.selection,
-            status: result.status,
-            canPersist: result.status !== "unsupported-version",
-          });
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setFallbackNarrationStart({
-            selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
-            status: "unavailable",
-            canPersist: true,
-          });
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [
+  usePreferenceHydration({
     narrationStartPreferenceRepository,
     readerPositionRepository,
     readerPositionRestoreCoordinator,
-  ]);
+    defaultReaderPreferences: DEFAULT_READER_PREFERENCES,
+    defaultNarrationStartPreference: DEFAULT_NARRATION_START_PREFERENCE_V1,
+    setReaderPreferencePresentation,
+    setFallbackNarrationStart,
+  });
   const readyPublication =
     viewState.status === "ready" ? viewState.publication : undefined;
   const readyPublicationSequence =
@@ -333,16 +274,10 @@ export function App({
     if (narrationCoordinator === undefined) {
       return;
     }
-    const reconcile = (): void => {
-      const snapshot = narrationCoordinator.observe();
-      setFallbackNarrationStart({
-        selection: snapshot.selection,
-        status: snapshot.startPreferenceStatus,
-        canPersist: snapshot.canPersistStartPreference,
-      });
-    };
-    reconcile();
-    return narrationCoordinator.subscribe(reconcile);
+    return bindNarrationStartPreferencePresentation(
+      narrationCoordinator,
+      setFallbackNarrationStart,
+    );
   }, [narrationCoordinator]);
 
   useEffect(

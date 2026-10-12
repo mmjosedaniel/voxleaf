@@ -17,11 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-The [App preference effects plan](app-preference-effects-readability.md) is ready
-for implementation. It requires startup hydration and narrator preference
-binding extraction as one bounded unit, with characterization tests before
-source changes and independent acceptance afterward. Implementation has not
-started; restoration, saving and application cleanup remain in App.
+The [App preference effects plan](../completed/app-preference-effects-readability.md)
+is complete and archived. Both startup hydration and narrator preference binding
+were extracted after 28 characterization cases passed against unchanged App;
+16 module cases and independent post-change/browser/native/portable/final gates
+pass. Restoration, saving and application cleanup remain in App. Failed attempts
+and the successful unchanged Rust rerun remain recorded. No staging or commits.
 
 The [App hardware effects plan](../completed/app-hardware-effects-readability.md)
 is complete and archived: one hardware visibility binding, five added unit/App

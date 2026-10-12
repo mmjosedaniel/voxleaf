@@ -22,11 +22,22 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App, type ReadyPublicationContentProps } from "./App";
-import type { ReaderPositionRepository } from "./persistence/reader-position-repository";
+import type {
+  ReaderPositionRepository,
+  ReaderPreferencesReadResult,
+} from "./persistence/reader-position-repository";
+import {
+  DEFAULT_NARRATION_START_PREFERENCE_V1,
+  type NarrationStartPreferenceRepository,
+  type NarrationStartPreferenceReadResult,
+} from "./persistence/narration-start-preference";
+import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-restore-coordinator";
+import { DEFAULT_READER_PREFERENCES } from "./reader/reader-preferences";
+import * as settingsDialog from "./settings/ReaderSettingsDialog";
 import type {
   LocalPublicationOpenFailureReason,
   LocalPublicationOpenFlow,
@@ -334,6 +345,748 @@ class ControlledNarrationCoordinator {
     }
   }
 }
+
+describe("App preference connection characterization", () => {
+  const savedReaderPreferences = Object.freeze({
+    ...DEFAULT_READER_PREFERENCES,
+    textScale: "large" as const,
+    theme: "dark" as const,
+  });
+  const savedSelection = Object.freeze({
+    kind: "prepared" as const,
+    targetMs: 120_000 as const,
+  });
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (reason: unknown) => void;
+    const promise = new Promise<T>((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    return { promise, resolve, reject };
+  }
+
+  function observeSettings() {
+    const OriginalDialog = settingsDialog.ReaderSettingsDialog;
+    const observer = vi
+      .spyOn(settingsDialog, "ReaderSettingsDialog")
+      .mockImplementation((props) => <OriginalDialog {...props} />);
+    const current = () => observer.mock.calls.at(-1)![0];
+    return { observer, current };
+  }
+
+  function pendingPreferences() {
+    const readerRead = deferred<ReaderPreferencesReadResult>();
+    const narrationRead = deferred<NarrationStartPreferenceReadResult>();
+    const reader = createTestReaderPositionRepository();
+    vi.mocked(reader.readPreferences).mockReturnValue(readerRead.promise);
+    const narration: NarrationStartPreferenceRepository = {
+      read: vi.fn(() => narrationRead.promise),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    return { reader, narration, readerRead, narrationRead };
+  }
+
+  function observedNarrator(initial: ProductNarrationSnapshot) {
+    const narrator = new ControlledNarrationCoordinator();
+    let snapshot = initial;
+    const listeners = new Set<() => void>();
+    const disconnects: Array<ReturnType<typeof vi.fn>> = [];
+    const events: string[] = [];
+    vi.spyOn(narrator, "observe").mockImplementation(() => {
+      events.push("observe");
+      return snapshot;
+    });
+    vi.spyOn(narrator, "subscribe").mockImplementation((listener) => {
+      events.push("subscribe");
+      listeners.add(listener);
+      const disconnect = vi.fn(() => listeners.delete(listener));
+      disconnects.push(disconnect);
+      return disconnect;
+    });
+    return {
+      coordinator: narrator as unknown as ProductNarrationCoordinator,
+      disconnects,
+      events,
+      replaceSnapshot(next: ProductNarrationSnapshot) {
+        snapshot = next;
+      },
+      publish(next: ProductNarrationSnapshot) {
+        snapshot = next;
+        for (const listener of listeners) {
+          listener();
+        }
+      },
+    };
+  }
+
+  it.each([
+    "ready",
+    "missing",
+    "malformed",
+    "over-limit",
+    "unavailable",
+    "unsupported-version",
+  ] as const)("preserves resolved %s status without writes", async (status) => {
+    const f = pendingPreferences();
+    const settings = observeSettings();
+    const sink = vi.spyOn(
+      ReaderPositionRestoreCoordinator.prototype,
+      "setPreferences",
+    );
+    render(
+      <App
+        readerPositionRepository={f.reader}
+        narrationStartPreferenceRepository={f.narration}
+      />,
+    );
+    expect(settings.current()).toMatchObject({
+      readerPreferences: DEFAULT_READER_PREFERENCES,
+      readerPreferencesStatus: "loading",
+      canPersistReaderPreferences: true,
+      fallbackNarrationStart: {
+        selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+        status: "loading",
+        canPersist: true,
+      },
+    });
+    expect(vi.mocked(f.reader.readPreferences).mock.contexts).toEqual([
+      f.reader,
+    ]);
+    expect(vi.mocked(f.narration.read).mock.contexts).toEqual([f.narration]);
+    expect(
+      vi.mocked(f.reader.readPreferences).mock.invocationCallOrder[0],
+    ).toBeLessThan(vi.mocked(f.narration.read).mock.invocationCallOrder[0]!);
+    await act(async () => {
+      f.readerRead.resolve(
+        status === "ready"
+          ? { status, preferences: savedReaderPreferences }
+          : { status },
+      );
+      f.narrationRead.resolve({ status, selection: savedSelection });
+    });
+    const preferences =
+      status === "ready" ? savedReaderPreferences : DEFAULT_READER_PREFERENCES;
+    expect(settings.current()).toMatchObject({
+      readerPreferences: preferences,
+      readerPreferencesStatus: status,
+      canPersistReaderPreferences: status !== "unsupported-version",
+      fallbackNarrationStart: {
+        selection: savedSelection,
+        status,
+        canPersist: status !== "unsupported-version",
+      },
+    });
+    expect(sink).toHaveBeenCalledExactlyOnceWith(preferences);
+    expect(sink.mock.invocationCallOrder[0]).toBeLessThan(
+      settings.observer.mock.invocationCallOrder.at(-1)!,
+    );
+    expect(f.reader.writePreferences).not.toHaveBeenCalled();
+    expect(f.reader.writePosition).not.toHaveBeenCalled();
+    expect(f.narration.write).not.toHaveBeenCalled();
+    expect(f.narration.reset).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["reader", "resolve"],
+    ["reader", "reject"],
+    ["narration", "resolve"],
+    ["narration", "reject"],
+  ] as const)(
+    "applies %s %s while the other read stays pending",
+    async (source, outcome) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      render(
+        <App
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+        />,
+      );
+      await act(async () => {
+        if (outcome === "reject") {
+          (source === "reader" ? f.readerRead : f.narrationRead).reject(
+            new Error("Synthetic read failure"),
+          );
+        } else if (source === "reader") {
+          f.readerRead.resolve({
+            status: "ready",
+            preferences: savedReaderPreferences,
+          });
+        } else {
+          f.narrationRead.resolve({
+            status: "ready",
+            selection: savedSelection,
+          });
+        }
+      });
+      expect(settings.current().readerPreferencesStatus).toBe(
+        source === "reader"
+          ? outcome === "resolve"
+            ? "ready"
+            : "unavailable"
+          : "loading",
+      );
+      expect(settings.current().fallbackNarrationStart.status).toBe(
+        source === "narration"
+          ? outcome === "resolve"
+            ? "ready"
+            : "unavailable"
+          : "loading",
+      );
+      expect(settings.current().readerPreferences).toEqual(
+        source === "reader" && outcome === "resolve"
+          ? savedReaderPreferences
+          : DEFAULT_READER_PREFERENCES,
+      );
+      expect(settings.current().fallbackNarrationStart.selection).toEqual(
+        source === "narration" && outcome === "resolve"
+          ? savedSelection
+          : DEFAULT_NARRATION_START_PREFERENCE_V1,
+      );
+      expect(settings.current().canPersistReaderPreferences).toBe(true);
+      expect(settings.current().fallbackNarrationStart.canPersist).toBe(true);
+      expect(f.reader.writePreferences).not.toHaveBeenCalled();
+      expect(f.narration.write).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["resolve", "reject"] as const)(
+    "%s unavailable reader hydration has its own restore-sink behavior",
+    async (outcome) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      const sink = vi.spyOn(
+        ReaderPositionRestoreCoordinator.prototype,
+        "setPreferences",
+      );
+      vi.mocked(f.reader.readPreferences)
+        .mockReturnValueOnce(f.readerRead.promise)
+        .mockResolvedValue({ status: "unavailable" });
+      const reader = vi.fn((props: ReadyPublicationContentProps) => (
+        <article>{props.publication.book.metadata.title}</article>
+      ));
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+          ReadyPublicationContent={reader}
+        />,
+      );
+      await act(async () => {
+        if (outcome === "resolve") {
+          f.readerRead.resolve({ status: "unavailable" });
+        } else {
+          f.readerRead.reject(new Error("Synthetic read failure"));
+        }
+      });
+      expect(settings.current().readerPreferencesStatus).toBe("unavailable");
+      expect(sink).toHaveBeenCalledTimes(outcome === "resolve" ? 1 : 0);
+      selectEpub();
+      await screen.findByRole("article");
+      expect(f.reader.readPreferences).toHaveBeenCalledTimes(
+        outcome === "resolve" ? 1 : 2,
+      );
+      expect(settings.current().readerPreferencesStatus).toBe(
+        outcome === "resolve" ? "ready" : "unavailable",
+      );
+      expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
+        DEFAULT_READER_PREFERENCES,
+      );
+      expect(f.reader.writePreferences).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["before", "during", "after"] as const)(
+    "applies startup reader hydration %s restoration",
+    async (order) => {
+      const f = pendingPreferences();
+      const restorationRead = deferred<ReaderPreferencesReadResult>();
+      const settings = observeSettings();
+      vi.mocked(f.reader.readPreferences)
+        .mockReturnValueOnce(f.readerRead.promise)
+        .mockReturnValue(restorationRead.promise);
+      const restored = {
+        ...DEFAULT_READER_PREFERENCES,
+        textScale: "small" as const,
+      };
+      const reader = vi.fn<
+        (props: ReadyPublicationContentProps) => ReactElement
+      >(() => <article>Preference order reader</article>);
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+          ReadyPublicationContent={reader}
+        />,
+      );
+      const hydrate = () =>
+        act(async () =>
+          f.readerRead.resolve({
+            status: "ready",
+            preferences: savedReaderPreferences,
+          }),
+        );
+      if (order === "before") await hydrate();
+      selectEpub();
+      await waitFor(() => expect(f.reader.readPosition).toHaveBeenCalledOnce());
+      if (order !== "before") {
+        expect(f.reader.readPreferences).toHaveBeenCalledTimes(2);
+        expect(screen.queryByRole("article")).toBeNull();
+        if (order === "during") {
+          await hydrate();
+          expect(settings.current().readerPreferences).toEqual(
+            savedReaderPreferences,
+          );
+        }
+        await act(async () =>
+          restorationRead.resolve({ status: "ready", preferences: restored }),
+        );
+      }
+      await screen.findByRole("article");
+      const initial = order === "after" ? restored : savedReaderPreferences;
+      expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(initial);
+      expect(settings.current().readerPreferences).toEqual(initial);
+      if (order === "after") {
+        await hydrate();
+        expect(settings.current().readerPreferences).toEqual(
+          savedReaderPreferences,
+        );
+        expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(
+          savedReaderPreferences,
+        );
+        expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
+          restored,
+        );
+      }
+      expect(f.reader.readPreferences).toHaveBeenCalledTimes(
+        order === "before" ? 1 : 2,
+      );
+      expect(f.reader.writePreferences).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["read-first", "edit-first"] as const)(
+    "preserves reader edit and late read order: %s",
+    async (order) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      vi.mocked(f.reader.readPreferences)
+        .mockReturnValueOnce(f.readerRead.promise)
+        .mockResolvedValue({ status: "missing" });
+      const reader = vi.fn<
+        (props: ReadyPublicationContentProps) => ReactElement
+      >(() => <article>Edited preference reader</article>);
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+          ReadyPublicationContent={reader}
+        />,
+      );
+      selectEpub();
+      await screen.findByRole("article");
+      const hydrate = () =>
+        act(async () =>
+          f.readerRead.resolve({
+            status: "ready",
+            preferences: savedReaderPreferences,
+          }),
+        );
+      if (order === "read-first") await hydrate();
+      const edited = {
+        ...settings.current().readerPreferences,
+        textScale: "extra-large" as const,
+      };
+      act(() =>
+        settings.current().onReaderPreferenceChange("textScale", "extra-large"),
+      );
+      expect(settings.current().readerPreferences).toEqual(edited);
+      await waitFor(() =>
+        expect(f.reader.writePreferences).toHaveBeenCalledExactlyOnceWith(
+          edited,
+        ),
+      );
+      if (order === "edit-first") await hydrate();
+      const final = order === "read-first" ? edited : savedReaderPreferences;
+      expect(settings.current().readerPreferences).toEqual(final);
+      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(final);
+      expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
+        DEFAULT_READER_PREFERENCES,
+      );
+      expect(f.reader.writePreferences).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(["read-first", "edit-first"] as const)(
+    "preserves fallback narration edit and read order: %s",
+    async (order) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      render(
+        <App
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+        />,
+      );
+      const hydrate = () =>
+        act(async () =>
+          f.narrationRead.resolve({
+            status: "ready",
+            selection: savedSelection,
+          }),
+        );
+      if (order === "read-first") await hydrate();
+      const edited = { kind: "prepared" as const, targetMs: 300_000 as const };
+      await act(async () =>
+        settings.current().fallbackNarrationStart.onSelectionChange(edited),
+      );
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: edited,
+        status: "ready",
+        canPersist: true,
+      });
+      expect(f.narration.write).toHaveBeenCalledExactlyOnceWith(edited);
+      if (order === "edit-first") await hydrate();
+      expect(settings.current().fallbackNarrationStart.selection).toEqual(
+        order === "read-first" ? edited : savedSelection,
+      );
+      expect(f.narration.write).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(["read-first", "reset-first"] as const)(
+    "preserves reset and outstanding narration read order: %s",
+    async (order) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      const hardware = {
+        ensureChecked: vi.fn(async () => undefined),
+        close: vi.fn(),
+        resetLanguage: vi.fn(async () => true),
+      } as unknown as HardwareProfileCompatibilityCoordinator;
+      render(
+        <App
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+          hardwareCompatibilityCoordinator={hardware}
+        />,
+      );
+      const hydrate = () =>
+        act(async () =>
+          f.narrationRead.resolve({
+            status: "ready",
+            selection: savedSelection,
+          }),
+        );
+      if (order === "read-first") await hydrate();
+      await act(async () => {
+        expect(await settings.current().onResetNarrationSettings()).toBe(true);
+      });
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+        status: "ready",
+        canPersist: true,
+      });
+      expect(hardware.resetLanguage).toHaveBeenCalledOnce();
+      expect(f.narration.reset).toHaveBeenCalledOnce();
+      if (order === "reset-first") await hydrate();
+      expect(settings.current().fallbackNarrationStart.selection).toEqual(
+        order === "read-first"
+          ? DEFAULT_NARRATION_START_PREFERENCE_V1
+          : savedSelection,
+      );
+      expect(f.narration.write).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["read-first", "observation-first"] as const)(
+    "preserves narrator notification and late hydration order: %s",
+    async (order) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      vi.mocked(f.reader.readPreferences).mockResolvedValue({
+        status: "missing",
+      });
+      const narrator = observedNarrator(narrationSnapshot("inactive"));
+      const props = {
+        openFlow: createTestFlow(async () => ({
+          status: "ready" as const,
+          publication: createTestPublication(),
+        })),
+        readerPositionRepository: f.reader,
+        narrationStartPreferenceRepository: f.narration,
+        createNarrationCoordinator: () => narrator.coordinator,
+      };
+      const view = render(<App {...props} />);
+      selectEpub();
+      await waitFor(() =>
+        expect(settings.current().narrationCoordinator).toBe(
+          narrator.coordinator,
+        ),
+      );
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: { kind: "quick" },
+        status: "ready",
+        canPersist: true,
+      });
+      const later = {
+        ...narrationSnapshot("inactive"),
+        selection: { kind: "prepared" as const, targetMs: 600_000 as const },
+        startPreferenceStatus: "unsupported-version" as const,
+        canPersistStartPreference: false,
+      };
+      const hydrate = () =>
+        act(async () =>
+          f.narrationRead.resolve({
+            status: "ready",
+            selection: savedSelection,
+          }),
+        );
+      if (order === "read-first") await hydrate();
+      act(() => narrator.publish(later));
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: later.selection,
+        status: "unsupported-version",
+        canPersist: false,
+      });
+      if (order === "observation-first") await hydrate();
+      expect(settings.current().fallbackNarrationStart).toMatchObject(
+        order === "read-first"
+          ? {
+              selection: later.selection,
+              status: "unsupported-version",
+              canPersist: false,
+            }
+          : { selection: savedSelection, status: "ready", canPersist: true },
+      );
+      // The controls have their own store subscriptions. A silent snapshot
+      // change detects a restarted App binding by its fallback publication.
+      const fallbackBeforeRerender = settings.current().fallbackNarrationStart;
+      narrator.replaceSnapshot(narrationSnapshot("inactive"));
+      view.rerender(<App {...props} />);
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: fallbackBeforeRerender.selection,
+        status: fallbackBeforeRerender.status,
+        canPersist: fallbackBeforeRerender.canPersist,
+      });
+      act(() => narrator.publish(narrationSnapshot("inactive")));
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: { kind: "quick" },
+        status: "ready",
+        canPersist: true,
+      });
+      expect(f.reader.readPreferences).toHaveBeenCalledOnce();
+      expect(f.narration.read).toHaveBeenCalledOnce();
+      expect(f.narration.write).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["resolve", "reject"] as const)(
+    "ignores outstanding %s handlers after unmount",
+    async (outcome) => {
+      const f = pendingPreferences();
+      const settings = observeSettings();
+      const sink = vi.spyOn(
+        ReaderPositionRestoreCoordinator.prototype,
+        "setPreferences",
+      );
+      const view = render(
+        <App
+          readerPositionRepository={f.reader}
+          narrationStartPreferenceRepository={f.narration}
+        />,
+      );
+      view.unmount();
+      const renders = settings.observer.mock.calls.length;
+      await act(async () => {
+        if (outcome === "resolve") {
+          f.readerRead.resolve({
+            status: "ready",
+            preferences: savedReaderPreferences,
+          });
+          f.narrationRead.resolve({
+            status: "ready",
+            selection: savedSelection,
+          });
+        } else {
+          f.readerRead.reject(new Error("Synthetic obsolete reader failure"));
+          f.narrationRead.reject(
+            new Error("Synthetic obsolete narration failure"),
+          );
+        }
+      });
+      expect(sink).not.toHaveBeenCalled();
+      expect(settings.observer).toHaveBeenCalledTimes(renders);
+      expect(f.reader.writePreferences).not.toHaveBeenCalled();
+      expect(f.narration.write).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["resolve", "reject"] as const)(
+    "StrictMode ignores obsolete %s while current reads remain effective",
+    async (outcome) => {
+      const f = pendingPreferences();
+      const oldReader = deferred<ReaderPreferencesReadResult>();
+      const oldNarration = deferred<NarrationStartPreferenceReadResult>();
+      vi.mocked(f.reader.readPreferences)
+        .mockReturnValueOnce(oldReader.promise)
+        .mockReturnValueOnce(f.readerRead.promise);
+      vi.mocked(f.narration.read)
+        .mockReturnValueOnce(oldNarration.promise)
+        .mockReturnValueOnce(f.narrationRead.promise);
+      const settings = observeSettings();
+      const sink = vi.spyOn(
+        ReaderPositionRestoreCoordinator.prototype,
+        "setPreferences",
+      );
+      render(
+        <StrictMode>
+          <App
+            readerPositionRepository={f.reader}
+            narrationStartPreferenceRepository={f.narration}
+          />
+        </StrictMode>,
+      );
+      expect(f.reader.readPreferences).toHaveBeenCalledTimes(2);
+      expect(f.narration.read).toHaveBeenCalledTimes(2);
+      await act(async () => {
+        if (outcome === "resolve") {
+          oldReader.resolve({
+            status: "ready",
+            preferences: savedReaderPreferences,
+          });
+          oldNarration.resolve({ status: "ready", selection: savedSelection });
+        } else {
+          oldReader.reject(new Error("Synthetic obsolete reader failure"));
+          oldNarration.reject(
+            new Error("Synthetic obsolete narration failure"),
+          );
+        }
+      });
+      expect(sink).not.toHaveBeenCalled();
+      expect(settings.current().readerPreferencesStatus).toBe("loading");
+      expect(settings.current().fallbackNarrationStart.status).toBe("loading");
+      await act(async () => {
+        f.readerRead.resolve({
+          status: "ready",
+          preferences: savedReaderPreferences,
+        });
+        f.narrationRead.resolve({ status: "ready", selection: savedSelection });
+      });
+      expect(sink).toHaveBeenCalledExactlyOnceWith(savedReaderPreferences);
+      expect(settings.current().readerPreferences).toEqual(
+        savedReaderPreferences,
+      );
+      expect(settings.current().fallbackNarrationStart).toMatchObject({
+        selection: savedSelection,
+        status: "ready",
+        canPersist: true,
+      });
+      expect(f.reader.writePreferences).not.toHaveBeenCalled();
+      expect(f.narration.write).not.toHaveBeenCalled();
+    },
+  );
+
+  it("disconnects replaced narrators and preserves fallback while no coordinator exists", async () => {
+    const f = pendingPreferences();
+    vi.mocked(f.reader.readPreferences).mockResolvedValue({
+      status: "missing",
+    });
+    const settings = observeSettings();
+    const firstSnapshot = {
+      ...narrationSnapshot("inactive"),
+      selection: savedSelection,
+      startPreferenceStatus: "unsupported-version" as const,
+      canPersistStartPreference: false,
+    };
+    const first = observedNarrator(firstSnapshot);
+    const second = observedNarrator(narrationSnapshot("inactive"));
+    const replacement = deferred<LocalPublicationOpenResult>();
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({
+        status: "ready",
+        publication: createTestPublication("First preference owner"),
+      })
+      .mockReturnValueOnce(replacement.promise);
+    const createNarrationCoordinator = vi
+      .fn()
+      .mockReturnValueOnce(first.coordinator)
+      .mockReturnValueOnce(second.coordinator);
+    const view = render(
+      <App
+        openFlow={createTestFlow(open)}
+        readerPositionRepository={f.reader}
+        narrationStartPreferenceRepository={f.narration}
+        createNarrationCoordinator={createNarrationCoordinator}
+      />,
+    );
+    expect(settings.current().narrationCoordinator).toBeUndefined();
+    expect(first.events).toEqual([]);
+    selectEpub();
+    await waitFor(() =>
+      expect(settings.current().narrationCoordinator).toBe(first.coordinator),
+    );
+    expect(settings.current().fallbackNarrationStart).toMatchObject({
+      selection: savedSelection,
+      status: "unsupported-version",
+      canPersist: false,
+    });
+    expect(
+      first.events.some(
+        (event, index) =>
+          event === "observe" && first.events[index + 1] === "subscribe",
+      ),
+    ).toBe(true);
+    selectEpub("replacement.epub");
+    await waitFor(() => expect(open).toHaveBeenCalledTimes(2));
+    expect(settings.current().narrationCoordinator).toBeUndefined();
+    for (const disconnect of first.disconnects) {
+      expect(disconnect).toHaveBeenCalledOnce();
+    }
+    act(() => first.publish(narrationSnapshot("inactive")));
+    expect(settings.current().fallbackNarrationStart).toMatchObject({
+      selection: savedSelection,
+      status: "unsupported-version",
+      canPersist: false,
+    });
+    await act(async () =>
+      replacement.resolve({
+        status: "ready",
+        publication: createTestPublication("Second preference owner"),
+      }),
+    );
+    await waitFor(() =>
+      expect(settings.current().narrationCoordinator).toBe(second.coordinator),
+    );
+    expect(settings.current().fallbackNarrationStart).toMatchObject({
+      selection: { kind: "quick" },
+      status: "ready",
+      canPersist: true,
+    });
+    view.unmount();
+    for (const disconnect of second.disconnects) {
+      expect(disconnect).toHaveBeenCalledOnce();
+    }
+    expect(f.narration.write).not.toHaveBeenCalled();
+    expect(f.narration.reset).not.toHaveBeenCalled();
+  });
+});
 
 describe("desktop reader lifecycle surface", () => {
   it("keeps one effective hardware visibility subscription in StrictMode and disconnects on unmount", async () => {
