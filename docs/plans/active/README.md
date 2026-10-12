@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Apps organization follow-up](apps-organization-follow-up.md): planned native
+  smoke responsibility extraction, publication lifecycle placement and colocated
+  raster-image modules/tests; implementation and acceptance remain pending.
 
 The App conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
