@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useSyncExternalStore,
-  type ReactElement,
-} from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import type {
   HardwareCompatibilitySnapshotV1,
@@ -18,6 +13,7 @@ import {
   type NarrationLanguageV1,
 } from "./narration-language";
 import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language-registry";
+import { useHardwareCompatibilitySnapshot } from "./use-hardware-compatibility-snapshot";
 
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
@@ -115,11 +111,7 @@ export function HardwareCompatibilityControls({
   onSelectionPendingChange,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
-  const snapshot = useSyncExternalStore(
-    (listener) => coordinator.subscribe(listener),
-    () => coordinator.observe(),
-    () => coordinator.observe(),
-  );
+  const snapshot = useHardwareCompatibilitySnapshot(coordinator);
 
   useEffect(
     () => () => onSelectionPendingChange?.(false),

@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useState,
-  useSyncExternalStore,
-  type ReactElement,
-} from "react";
+import { useEffect, useId, useState, type ReactElement } from "react";
 
 import { AdaptivePreparationControls } from "./AdaptivePreparationControls";
 import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
@@ -21,6 +15,7 @@ import {
   isNarrationPlaybackRatePercentV3,
   NARRATION_PLAYBACK_RATES_V3,
 } from "./reader-settings-playback-authority-v3";
+import { useProductNarrationSnapshot } from "./use-product-narration-snapshot";
 
 export interface ProductNarrationControlsProps {
   readonly coordinator: ProductNarrationCoordinator;
@@ -135,11 +130,7 @@ export function ProductNarrationControls({
 }: ProductNarrationControlsProps): ReactElement {
   const [detailOpen, setDetailOpen] = useState(false);
   const detailId = useId();
-  const snapshot = useSyncExternalStore(
-    (listener) => coordinator.subscribe(listener),
-    () => coordinator.observe(),
-    () => coordinator.observe(),
-  );
+  const snapshot = useProductNarrationSnapshot(coordinator);
 
   useEffect(() => {
     void coordinator.checkAvailability();

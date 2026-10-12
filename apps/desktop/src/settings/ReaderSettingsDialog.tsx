@@ -4,7 +4,6 @@ import {
   useId,
   useRef,
   useState,
-  useSyncExternalStore,
   type KeyboardEvent,
   type ReactElement,
 } from "react";
@@ -31,6 +30,8 @@ import {
   OptionalChatterboxClient,
 } from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
+import { useHardwareCompatibilitySnapshot } from "../tts/use-hardware-compatibility-snapshot";
+import { useProductNarrationSnapshot } from "../tts/use-product-narration-snapshot";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -89,11 +90,7 @@ function CoordinatorNarrationStartSettings({
   coordinator: ProductNarrationCoordinator;
   disabled?: boolean;
 }>): ReactElement {
-  const snapshot = useSyncExternalStore(
-    (listener) => coordinator.subscribe(listener),
-    () => coordinator.observe(),
-    () => coordinator.observe(),
-  );
+  const snapshot = useProductNarrationSnapshot(coordinator);
   const active =
     snapshot.state !== undefined && snapshot.state.phase !== "stopped";
   return (
@@ -162,11 +159,7 @@ function OptionalChatterboxSettings({
   onRemove: () => Promise<void>;
   disabled?: boolean;
 }>): ReactElement {
-  const compatibility = useSyncExternalStore(
-    (listener) => hardwareCompatibility.subscribe(listener),
-    () => hardwareCompatibility.observe(),
-    () => hardwareCompatibility.observe(),
-  );
+  const compatibility = useHardwareCompatibilitySnapshot(hardwareCompatibility);
   const acquisition = chatterboxAcquisitionPresentation(compatibility);
   return (
     <OptionalChatterboxControls
