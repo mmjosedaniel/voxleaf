@@ -22,12 +22,13 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { StrictMode, useEffect, type ReactElement } from "react";
+import { StrictMode, useEffect, useState, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App, type ReadyPublicationContentProps } from "./App";
 import type {
   ReaderPositionRepository,
+  ReaderPositionReadResult,
   ReaderPreferencesReadResult,
 } from "./persistence/reader-position-repository";
 import {
@@ -1089,6 +1090,178 @@ describe("App preference connection characterization", () => {
 });
 
 describe("desktop reader lifecycle surface", () => {
+  it("keeps the heading and Settings available while restoration prepares, then mounts the reader before settlement", async () => {
+    const publication = createTestPublication("Preparing reader book");
+    const repository = createTestReaderPositionRepository();
+    let resolvePosition:
+      ((result: ReaderPositionReadResult) => void) | undefined;
+    vi.mocked(repository.readPosition).mockReturnValue(
+      new Promise((resolve) => {
+        resolvePosition = resolve;
+      }),
+    );
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      return <article aria-label="Preparing reader">{TEST_TEXT}</article>;
+    }
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication,
+        }))}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+    selectEpub();
+    await screen.findByText("Preparing the saved reader state.");
+    expect(
+      screen.getByRole("heading", { name: "Preparing reader book" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeEnabled();
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(
+      screen.queryByRole("article", { name: "Preparing reader" }),
+    ).toBeNull();
+    await act(async () =>
+      resolvePosition?.({
+        status: "ready",
+        state: persistedState(TEST_LOCATED_BLOCK.startLocator),
+      }),
+    );
+    await screen.findByRole("article", { name: "Preparing reader" });
+    expect(screen.queryByText("Preparing the saved reader state.")).toBeNull();
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Restoring saved reader state.",
+    );
+    act(() =>
+      readerProps?.onInitialRestorationSettled?.({
+        status: "settled",
+        locator: TEST_LOCATED_BLOCK.startLocator,
+      }),
+    );
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Reading position restored.",
+    );
+  });
+
+  it("omits the initial locator when a new book starts at the beginning", async () => {
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function BookStartReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      return <article aria-label="Book start reader">{TEST_TEXT}</article>;
+    }
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        ReadyPublicationContent={BookStartReader}
+      />,
+    );
+    selectEpub();
+    await screen.findByRole("article", { name: "Book start reader" });
+    expect(readerProps).toBeDefined();
+    expect(Object.hasOwn(readerProps!, "initialLocator")).toBe(false);
+    expect(readerProps?.restoreInitialLocator).toBe(false);
+  });
+
+  it("preserves reader DOM and local state through Settings, preferences and notice dismissal", async () => {
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "unavailable",
+    });
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function StatefulReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      const [count, setCount] = useState(0);
+      return (
+        <article aria-label="Continuous reader">
+          <button type="button" onClick={() => setCount((value) => value + 1)}>
+            Reader interaction {count}
+          </button>
+        </article>
+      );
+    }
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={StatefulReader}
+      />,
+    );
+    selectEpub();
+    const reader = await screen.findByRole("article", {
+      name: "Continuous reader",
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reader interaction 0" }),
+    );
+    const interaction = screen.getByRole("button", {
+      name: "Reader interaction 1",
+    });
+    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    const expectContinuousReader = (): void => {
+      expect(screen.getByRole("article", { name: "Continuous reader" })).toBe(
+        reader,
+      );
+      expect(screen.getByRole("button", { name: "Reader interaction 1" })).toBe(
+        interaction,
+      );
+    };
+    fireEvent.click(settingsButton);
+    expect(
+      screen.getByRole("button", { name: "Close Settings" }),
+    ).toHaveFocus();
+    expectContinuousReader();
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "large" },
+    });
+    expect(readerProps?.preferences?.textScale).toBe("large");
+    expectContinuousReader();
+    fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
+    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Settings" })).toBe(
+      settingsButton,
+    );
+    expect(settingsButton).toHaveFocus();
+    expectContinuousReader();
+    fireEvent.click(settingsButton);
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), {
+      key: "Escape",
+    });
+    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Settings" })).toBe(
+      settingsButton,
+    );
+    expect(settingsButton).toHaveFocus();
+    expectContinuousReader();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss restoration notice" }),
+    );
+    expect(screen.queryByLabelText("Reading position recovery")).toBeNull();
+    expectContinuousReader();
+    expect(repository.readPosition).toHaveBeenCalledOnce();
+  });
+
   it("keeps one effective hardware visibility subscription in StrictMode and disconnects on unmount", async () => {
     const descriptor = Object.getOwnPropertyDescriptor(
       document,
