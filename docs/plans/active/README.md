@@ -6,13 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [App conditional presentation](app-conditional-presentation.md): prepared for
-  implementation; extract the application bar, welcome/empty-content sections
-  and ready-publication presentation, with typed reader props and independent
-  behavior-preservation checks. No source implementation or runtime validation
-  has started.
+There are no active implementation ExecPlans.
 
-The preceding App preference-effects and organization/refactor plans are
+The App conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
 
 The [roadmap](../roadmap.md) retains future priorities, deferred work and product

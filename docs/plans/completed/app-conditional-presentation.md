@@ -1,6 +1,11 @@
 # App conditional presentation components
 
-Status: ready for implementation; no source changes or runtime validation yet.
+Status: complete on 2026-10-12. All five deliverables implemented and independent
+baseline, characterization, post-change, portable and full acceptance passed.
+Changes remain unstaged and uncommitted at closeout. See the
+[acceptance index](../evidence/app-conditional-presentation/README.md). Preserve
+the [original failed baseline](../evidence/app-conditional-presentation/baseline-20261012-01.md)
+as historical evidence.
 Prepared on 2026-10-12. Branch: `codex/app-conditional-presentation`, created
 from clean, up-to-date `main` at
 `3146cb8769ef8f277b75cf77731dbfd3b55baa9d`.
@@ -41,6 +46,12 @@ At the planning HEAD, App has 853 lines and its final JSX starts at line 707.
 `AppPresentation.tsx` has 208 lines and already exports `OpenBookControl`,
 `PublicationHeading`, `RestorationNotice` and the two presentation types.
 These counts and line numbers are navigation aids, not execution-time evidence.
+
+At closeout, all four presentation components and the typed reader-prop assembly
+exist. The accepted source/test unit changes four files with 471 added-plus-
+removed lines, including the new 53-line section. Three added App tests passed
+against the original production code before extraction and remained unchanged
+through final acceptance. The table below preserves the planning disposition.
 
 | Slice | Current responsibility and planned disposition |
 | --- | --- |
@@ -97,11 +108,17 @@ to completed plans. Do not reorganize the existing test suite merely to mirror
 the component files. Do not add wrappers around existing components just to
 hide their props or create standalone components for individual paragraphs.
 
-The current request authorizes only creating this plan, its navigation entries,
-the branch and a local planning commit. It does not authorize executing the
+The original planning request authorized only creating this plan, its navigation entries,
+the branch and a local planning commit. It did not authorize executing the
 source refactor, publishing the branch or opening a PR. A later implementation
-request is required; source staging/commits and remote publication follow the
-authorization in that later request, not today's documentation commit.
+request was required; source staging/commits and remote publication follow the
+authorization in that later request, not the documentation commit.
+
+The 2026-10-12 implementation request subsequently authorized the four-file
+source/test unit and plan documentation on the existing branch at preparation
+commit `27082836312fe31be3be4536233ef857a8dc91b1`. It explicitly prohibits
+staging, commits, push, PR, merge, rebase and operations that discard changes.
+Implementation remains conditional on an independent execution BASELINE PASS.
 
 ## 5. Relevant files and documentation
 
@@ -264,7 +281,10 @@ feature reviewer to this behavior-preserving campaign.
 
 ### Milestone 1: Refresh the audit and establish the baseline
 
-Status: not started. The planning review is not a runtime baseline.
+Status: complete. Renewed audit `APP-CONDITIONAL-PRESENTATION-01-AUDIT-02`
+accepted CHANGE. Independent baseline
+`APP-CONDITIONAL-PRESENTATION-01-BASELINE-20261012-02` passed all seven commands
+outside the sandbox after correcting the local EdgeDriver version.
 
 Verify the current branch, HEAD, clean target paths, empty index, pinned
 toolchain and required roles. Reinspect source, tests, ADR-0041 and existing
@@ -277,7 +297,10 @@ may not silently disappear behind a completed status.
 
 ### Milestone 2: Characterize missing composition behavior
 
-Status: not started.
+Status: complete. Three additive App tests pass against unchanged production
+under `APP-CONDITIONAL-PRESENTATION-01-CHECKPOINT-20261012-02`; first five
+commands and identity recheck PASS. Attempt 01 failed only formatting; its
+evidence remains separate and the same worker corrected two line-wrap regions.
 
 Retain existing assertions and identify actual coverage gaps using the matrix
 below. Add only necessary App-level characterization, especially Settings focus
@@ -288,7 +311,7 @@ invalid coordinator states to force unreachable branches.
 
 ### Milestone 3: Extract shell presentation
 
-Status: not started.
+Status: complete. Independent POST-CHANGE, PACKAGE and FINAL acceptance PASS.
 
 The single worker adds `ApplicationBar`, `ShellWelcome` and
 `EmptyPublicationNotice` to `AppPresentation.tsx` and replaces their inline
@@ -303,7 +326,7 @@ worker changes. Stop on a required allowlist or behavior expansion.
 
 ### Milestone 4: Extract ready publication presentation
 
-Status: not started.
+Status: complete. Independent POST-CHANGE, PACKAGE and FINAL acceptance PASS.
 
 Create `ReadyPublicationSection.tsx`, assemble the typed reader props and
 narration slot in App, and replace the nested ready JSX while keeping the keyed
@@ -317,7 +340,10 @@ inline function or passing characterization alone cannot complete this unit.
 
 ### Milestone 5: Validate independently and close the plan
 
-Status: not started.
+Status: complete. All seven post-change commands and both aggregates passed
+outside the sandbox, with matching pre/post identities and empty index.
+The director reviewed the canonical diagram, retained the unchanged architecture,
+and closed this plan with direct navigation links and concise evidence.
 
 With writing and Git idle, the validator reviews the full diff, test integrity,
 runtime import direction, DOM/mount/ref invariants and exact identities, then
@@ -431,6 +457,85 @@ The documentation-only planning commit can be reverted independently.
   sandbox: 12 required sections, five milestones, nine configured commands,
   401 Markdown documents and 1,481 local links/anchors; only the three planning
   documents changed. Evidence-retention and diff checks passed.
+- 2026-10-12: Verified the existing implementation branch at preparation commit
+  `27082836312fe31be3be4536233ef857a8dc91b1`, clean source paths and empty index.
+  Reused named auditor, worker and validator roles with their required models;
+  the worker performed read-only preparation only. No Git mutation was ordered.
+- 2026-10-12: Fresh execution Audit Packet `APP-CONDITIONAL-PRESENTATION-01`
+  returned CHANGE, medium risk, with the same four-file allowlist and 650-line
+  added-plus-removed ceiling. All five deliverables remain required. Existing
+  browser coverage already checks Settings Close/Escape focus return; proposed
+  App characterization covers composition, locator omission and reader
+  continuity without inventing impossible coordinator states.
+- 2026-10-12: Independent baseline
+  `APP-CONDITIONAL-PRESENTATION-01-BASELINE-20261012-01` ran all seven required
+  commands in local PowerShell outside the sandbox with Node `24.20.0` and
+  Corepack-selected pnpm `11.15.1`. The first six passed (646 desktop Vitest,
+  51 Node and 7 Chromium tests). Native release compilation passed, but the
+  smoke failed during WebView session creation with
+  `webdriver-session-not-created` (exit 1). Before/after source identities and
+  HEAD matched, and the index and worktree remained clean. The immutable
+  [baseline receipt](../evidence/app-conditional-presentation/baseline-20261012-01.md)
+  records every command, identity and limitation.
+- 2026-10-12: Stopped before test characterization or extraction as required by
+  Milestone 1. No native workaround, unrelated repair, retry or test weakening
+  was attempted. Keep this plan active; restore the native prerequisite and
+  obtain a new independent seven-command baseline before issuing a Work Order.
+- 2026-10-12: The user authorized investigating and resolving the native blocker,
+  renewing the baseline and completing the plan without staging or commits.
+  A disposable protocol probe reproduced HTTP 500 with `session not created`:
+  EdgeDriver `150.0.4078.83` reported support only for major 150, but installed
+  WebView2 was `155.0.4283.45`. The pinned `msedgedriver-tool` `0.2.2` at
+  revision `8c4b34f51b45f5cf08013366d703de464ab871d1` downloaded the exact
+  Microsoft-signed driver `155.0.4283.45`. Replacing the local driver, with the
+  old binary preserved in ignored evidence, made the same probe return HTTP
+  200 and create a session. No repository runtime or harness change was needed.
+- 2026-10-12: Renewed audit `APP-CONDITIONAL-PRESENTATION-01-AUDIT-02` confirmed
+  the original four-file scope, five deliverables and 650-line ceiling.
+  `APP-CONDITIONAL-PRESENTATION-01-BASELINE-20261012-02` independently passed
+  all seven original commands afresh, with 646 Vitest, 51 Node and 7 Chromium
+  tests plus the full native smoke. Source identities match attempt 01; HEAD
+  and empty index are unchanged. The director accepted this baseline and
+  froze Work Order `APP-CONDITIONAL-PRESENTATION-01-WO-01`, requiring a
+  tests-only checkpoint before production extraction.
+- 2026-10-12: Added three App characterization cases for preparation/settlement,
+  optional locator omission, reader DOM/state continuity and Settings focus.
+  Interim PACKAGE checkpoint `APP-CONDITIONAL-PRESENTATION-01-CHECKPOINT-20261012-01`
+  passed build/type/tests/lint but failed Prettier at two new line-wrap regions.
+  Correction loop 1 changed formatting only. A fresh five-command checkpoint
+  `APP-CONDITIONAL-PRESENTATION-01-CHECKPOINT-20261012-02` passed with 649 Vitest
+  and 51 Node tests against original production bytes, unchanged HEAD and
+  empty index. Both interim reports explicitly record the new section as
+  planned ABSENT; neither claims final unit acceptance. The director accepted
+  the tests-only checkpoint and authorized the remaining original Work Order.
+- 2026-10-12: The same worker completed `ApplicationBar`, `ShellWelcome` and
+  `EmptyPublicationNotice` in `AppPresentation.tsx`, created
+  `ReadyPublicationSection.tsx`, and assembled typed `readyReaderProps` plus
+  the guarded narration slot in App. The director reviewed the full source
+  diff: 471 added-plus-removed lines across four files, below the 650 ceiling.
+  Accepted characterization bytes are unchanged. The section's App contract
+  import is type-only; existing App resource/effect/ref/boundary/dialog owners
+  remain. Scoped host formatting passed. Source writing stopped for final
+  independent validation; no runtime acceptance is inferred from this review.
+- 2026-10-12: Independent
+  `APP-CONDITIONAL-PRESENTATION-01-POST-CHANGE-20261012-01` passed all seven
+  required commands, including 649 desktop Vitest, 51 Node, 7 Chromium tests
+  and the complete native smoke. Then
+  `APP-CONDITIONAL-PRESENTATION-01-PACKAGE-20261012-01` passed
+  `pnpm.cmd check:portable`, and
+  `APP-CONDITIONAL-PRESENTATION-01-FINAL-20261012-01` passed `pnpm.cmd check`.
+  Each report independently captured and rechecked the same exact four-file
+  identities and HEAD with an empty index. Full aggregate coverage included
+  209 shared, 651 EPUB and 649 desktop Vitest tests, 51 Node, 485 Python, and
+  Rust 87 normal / 88 release-locked tests; each Rust configuration retains
+  one intentional subprocess-only ignored fixture whose parent test passed.
+- 2026-10-12: The director accepted all five deliverables and the independent
+  reports, reviewed the final diff and canonical system diagram, and moved this
+  plan to completed with active/completed/documentation indexes updated. Only
+  the original failure receipt's navigation link changes to the completed path;
+  its failure findings, commands, identities and results remain unchanged.
+  No other historical plan or evidence was rewritten. Source, tests and
+  documentation remain unstaged/uncommitted; no push, PR or merge occurred.
 
 ## 11. Discoveries and decisions
 
@@ -452,6 +557,19 @@ The documentation-only planning commit can be reverted independently.
   narration controls and lifecycle effects remain separate and unchanged.
 - Review the system diagram at closure; an unchanged component/process model
   does not need a cosmetic diagram or new ADR.
+- The native baseline failure occurred before any refactor edits. A successful
+  native build does not validate packaged WebView2 behavior. The harness
+  returned failure without explicit successful teardown/ownership evidence;
+  neither cleanup success nor the underlying cause is inferred. The reviewed
+  canonical system diagram requires no update because source and architecture
+  are unchanged.
+- Later diagnosis isolated a local tool-version mismatch, not an application
+  defect. Correcting EdgeDriver and obtaining a fresh baseline preserved the
+  existing harness and all acceptance thresholds. No runtime bug-fix patch or
+  separate behavioral change review was needed. The final presentation-only
+  extraction preserves the canonical diagram's component/process model,
+  persistence, data flows, privacy and ownership; no diagram or ADR edit is
+  warranted. Independent refactor validation supplies the required review gate.
 
 ## 12. Final validation results
 
@@ -460,15 +578,16 @@ The documentation-only planning commit can be reverted independently.
 | Planning source review | Complete; read-only findings, no runtime acceptance claim. |
 | Branch setup | Complete; clean main at `3146cb8769ef8f277b75cf77731dbfd3b55baa9d`, local branch created. |
 | Planning documentation checks | PASS outside sandbox: required sections, milestones, existing commands, 1,481 local links/anchors across 401 documents, three-document scope, evidence retention and diff checks. |
-| Implementation audit and clean baseline | Not started. |
-| Characterization and required extractions | Not started. |
-| Independent post-change/browser/native acceptance | Not started. |
-| Portable and full aggregate gates | Not started. |
-| Product/architecture changes | None planned; no source code changed by plan preparation. |
+| Implementation audit and clean baseline | Renewed audit `APP-CONDITIONAL-PRESENTATION-01-AUDIT-02` CHANGE; baseline attempt 02 PASS all seven commands and identity recheck. Original BASELINE-FAIL attempt 01 preserved. |
+| Characterization and required extractions | PASS: three tests characterized original behavior; all five deliverables implemented in the four-file, 471-line unit under Work Order `APP-CONDITIONAL-PRESENTATION-01-WO-01`. |
+| Independent post-change/browser/native acceptance | `APP-CONDITIONAL-PRESENTATION-01-POST-CHANGE-20261012-01` PASS: seven commands, 649 Vitest + 51 Node, 7 Chromium and full native smoke; identity recheck PASS. |
+| Portable and full aggregate gates | `APP-CONDITIONAL-PRESENTATION-01-PACKAGE-20261012-01` and `APP-CONDITIONAL-PRESENTATION-01-FINAL-20261012-01` PASS for `pnpm.cmd check:portable` and `pnpm.cmd check`, same exact source identities and empty index. |
+| Product/architecture changes | None. Canonical system diagram reviewed; presentation organization changed while public behavior, contracts and resource ownership remain unchanged. |
+| Limitations | No new model-backed performance, exact-inference or installer-lifecycle claim. Existing bundle-size/color and pytest cache-write warnings were nonfatal; no unrelated repair. No staging, commits or publication authorized. |
 
-Replace pending implementation results with exact commands, outcomes, report
-IDs and limitations only as execution actually supplies them. Do not mark this
-plan complete merely because its document and branch exist.
+Exact host commands, source identities, results and limitations are retained in
+the [independent acceptance receipts](../evidence/app-conditional-presentation/README.md).
+Raw logs, scripts, profiles and tool backups remain in ignored local evidence.
 
 Planning checks used the one-off ignored local script
 `python tmp/evidence/app-conditional-presentation/validate-plan.py DOC-APP-CONDITIONAL-PLAN-01`,
