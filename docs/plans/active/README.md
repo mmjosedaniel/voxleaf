@@ -6,12 +6,17 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation ExecPlans in this directory as of 2026-10-12.
-The App preference-effects work and the preceding organization/refactor plans
-are archived in the [completed-plan index](../completed/README.md).
+- [App conditional presentation](app-conditional-presentation.md): prepared for
+  implementation; extract the application bar, welcome/empty-content sections
+  and ready-publication presentation, with typed reader props and independent
+  behavior-preservation checks. No source implementation or runtime validation
+  has started.
+
+The preceding App preference-effects and organization/refactor plans are
+archived in the [completed-plan index](../completed/README.md).
 
 The [roadmap](../roadmap.md) retains future priorities, deferred work and product
-limitations. An empty active-plan list does not mean those items are implemented.
+limitations; listing a plan here does not mean its implementation is complete.
 
 ## Adding and closing a plan
 

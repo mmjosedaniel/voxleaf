@@ -364,6 +364,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [`plans/active/app-conditional-presentation.md`](plans/active/app-conditional-presentation.md): prepared App presentation refactor for the application bar, welcome/empty-content sections, ready-publication composition and typed reader props; implementation and runtime validation have not started.
 - [`plans/completed/piper-runtime-pr-218.md`](plans/completed/piper-runtime-pr-218.md): completed Piper 1.8.0 compatibility refresh and bounded Spanish/English runtime validation, preserving ONNX Runtime 1.30.0 and existing voice artifacts.
 - [`plans/completed/piper-onnxruntime-pr-219.md`](plans/completed/piper-onnxruntime-pr-219.md): completed ONNX Runtime 1.30.0 compatibility refresh; its recorded Piper 1.4.2 state predates the subsequent PR #218 upgrade.
 - [`plans/completed/app-preference-effects-readability.md`](plans/completed/app-preference-effects-readability.md): completed startup hydration and narrator preference-presentation binding extraction; 28 App characterization and 16 module cases, independent baseline/checkpoint/post-change/portable/native acceptance, with unchanged App ownership and recorded failed attempts.
