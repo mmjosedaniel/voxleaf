@@ -115,7 +115,7 @@ No EPUB library, renderer, persistence library, TTS engine, process transport, a
 - `docs/README.md`
 - `docs/plans/roadmap.md`
 - `docs/plans/completed/M001-engineering-foundation.md`
-- `docs/plans/active/synchronized-reader-and-startup-buffer.md`
+- `docs/plans/completed/synchronized-reader-and-startup-buffer.md`
 - `docs/product/vision.md`
 - `docs/product/project-brief.md`
 - `docs/product/mvp.md`

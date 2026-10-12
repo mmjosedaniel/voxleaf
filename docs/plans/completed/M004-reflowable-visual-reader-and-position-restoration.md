@@ -37,7 +37,7 @@ Not implemented are:
 - local storage, save lifecycle, restoration, or persisted-state migration;
 - product-level reader accessibility and performance evidence.
 
-The older [`synchronized-reader-and-startup-buffer.md`](../active/synchronized-reader-and-startup-buffer.md) intentionally spans several roadmap milestones. This milestone-specific plan is the completed implementation authority for roadmap Milestone 4. The older plan remains context for later synchronization and audio work and must not broaden this plan's scope.
+The older [`synchronized-reader-and-startup-buffer.md`](../completed/synchronized-reader-and-startup-buffer.md) intentionally spans several roadmap milestones. This milestone-specific plan is the completed implementation authority for roadmap Milestone 4. The older plan remains context for later synchronization and audio work and must not broaden this plan's scope.
 
 ## Readiness assessment
 
@@ -112,7 +112,7 @@ Final closeout must preserve these accepted choices and their implementation evi
 - `docs/plans/roadmap.md`
 - `docs/plans/completed/M002-shared-contracts-and-test-harness.md`
 - `docs/plans/completed/M003-secure-epub-ingestion-and-document-model.md`
-- `docs/plans/active/synchronized-reader-and-startup-buffer.md`
+- `docs/plans/completed/synchronized-reader-and-startup-buffer.md`
 - `docs/product/vision.md`, `project-brief.md`, `mvp.md`, and `glossary.md`
 - `docs/architecture/system-diagram.md`, `overview.md`, and `performance-budget.md`
 - ADR-0001, ADR-0003, ADR-0005, ADR-0006, and ADR-0007

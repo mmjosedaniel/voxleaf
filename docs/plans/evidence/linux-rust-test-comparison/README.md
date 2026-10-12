@@ -2,7 +2,7 @@
 
 Date: 2026-10-10. Verdict: **BASELINE-FAIL**.
 [Independent report](LINUX-RUST-COMPARE-01.md).
-[Active follow-up](../../active/linux-rust-test-comparison.md).
+[Active follow-up](../../completed/linux-rust-test-comparison.md).
 
 ## Archived raw captures
 

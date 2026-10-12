@@ -4,27 +4,39 @@ Move finished ExecPlans here after their validation results and final decisions 
 
 Completed plans are historical evidence. Do not edit them to describe a later implementation; create a new plan or ADR instead.
 
-Use the [evidence retention policy](../../development/evidence-retention.md) for supporting summaries, identities and archived raw captures. The [PR #229 cleanup](pr-evidence-retention.md) is technically accepted; its separate Git publication handoff is pending.
+Use the [evidence retention policy](../../development/evidence-retention.md) for
+supporting summaries, identities and archived raw captures. The
+[PR #229 cleanup](pr-evidence-retention.md) is integrated in main.
+
+This index is maintained navigation. Individual plans and acceptance receipts
+remain historical: their Git/CI status and test counts describe their original
+closeout, not the current checkout. Preserve those records and link subsequent
+results here rather than rewriting them. Superseded proposals are listed
+separately below and must not be scheduled for execution.
 
 ## Completed plans
 
-- [`app-hardware-effects-readability.md`](app-hardware-effects-readability.md): hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Same coordinator ownership and behavior; unstaged, no commits.
+- [`app-preference-effects-readability.md`](app-preference-effects-readability.md): extracted startup preference hydration and the narrator presentation binding after 28 App characterization cases; 16 module cases and independent browser/native/aggregate validation passed. The later [Windows child-reaping test repair](../evidence/native-child-reaping-test-repair/README.md) records its separate correction and evidence.
+- [`piper-runtime-pr-218.md`](piper-runtime-pr-218.md): upgraded the current Piper runtime to 1.8.0 with ONNX Runtime 1.30.0, preserving both voice artifacts and recording independent bounded ES/EN host acceptance.
+- [`piper-onnxruntime-pr-219.md`](piper-onnxruntime-pr-219.md): upgraded ONNX Runtime to 1.30.0 with independent Piper ES/EN validation; Piper 1.4.2 in this historical record precedes PR #218.
 
-- [`app-readability.md`](app-readability.md): three stateless shell-presentation components and private messages, narrow readonly props, nine added integration cases and independent baseline/post-change/aggregate PASS. Preserved input identity, distinct preference handlers and publication lifecycle; no staging or commits.
+- [`app-hardware-effects-readability.md`](app-hardware-effects-readability.md): hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Same coordinator ownership and behavior.
 
-- [`tts-adapter-layout.md`](tts-adapter-layout.md): selective four-engine adapter layout, refreshed Piper and isolated local Chatterbox v4; preserved v2/v3 authorities and v3 admission. Independent three-baseline/22-gate PASS, bilingual candidate/desktop matrices, verified firewall cleanup and documentary closeout. Implementation committed for PR handoff; no package publication.
+- [`app-readability.md`](app-readability.md): three stateless shell-presentation components and private messages, narrow readonly props, nine added integration cases and independent baseline/post-change/aggregate PASS. Preserved input identity, distinct preference handlers and publication lifecycle.
 
-- [`tts-service-organization.md`](tts-service-organization.md): four independently accepted Python packaging-integrity, versioned release-authority, corpus and quality extractions; unchanged runtime/frozen authority, 457 Python tests and passing portable/native aggregate checks. All changes remain unstaged; no Git publication.
+- [`tts-adapter-layout.md`](tts-adapter-layout.md): selective four-engine adapter layout, refreshed Piper and isolated local Chatterbox v4; preserved v2/v3 authorities and v3 admission. Independent three-baseline/22-gate PASS, bilingual candidate/desktop matrices, verified firewall cleanup and documentary closeout. Local v4 acceptance does not replace the admitted v3 package.
 
-- [`desktop-source-organization.md`](desktop-source-organization.md): extracted semantic render planning and Web Audio contracts/backend, split the stylesheet with exact cascade reconstruction, and passed independent unit/model/portable/native validation. Changes remain unstaged; no Git publication.
+- [`tts-service-organization.md`](tts-service-organization.md): four independently accepted Python packaging-integrity, versioned release-authority, corpus and quality extractions; unchanged runtime/frozen authority, 457 Python tests and passing portable/native aggregate checks. Production runtime and frozen evaluation authority remain unchanged.
 
-- [`pr-evidence-retention.md`](pr-evidence-retention.md): archived 276 original evidence files, retired 224 raw captures, retained immutable summaries/identities, added the tested retention guard and passed independent host acceptance; cleanup commit/push pending.
+- [`desktop-source-organization.md`](desktop-source-organization.md): extracted semantic render planning and Web Audio contracts/backend, split the stylesheet with exact cascade reconstruction, and passed independent unit/model/portable/native validation. Publication and narration lifecycle ownership remain unchanged.
+
+- [`pr-evidence-retention.md`](pr-evidence-retention.md): archived 276 original evidence files, retired 224 raw captures, retained immutable summaries/identities, added the tested retention guard and passed independent host acceptance; integrated in main with the native test-layout work.
 
 - [`linux-rust-test-comparison.md`](linux-rust-test-comparison.md): repaired the pre-existing Linux compilation/lint blockers, passed independent paired 85/86 Rust suites and both Unix symlink cases, retained Windows 87/88 and native-startup success, and added the reviewed Ubuntu Rust CI job; remote execution was pending at original closeout; the later Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
 
-- [`native-rust-test-layout.md`](native-rust-test-layout.md): completed six stages and ten private test-file moves, extracted the existing Windows probe, preserved assertions/fixtures/frozen authority and passed independent per-unit, portable, full and native-startup validation; all changes remain unstaged and uncommitted.
+- [`native-rust-test-layout.md`](native-rust-test-layout.md): completed six stages and ten private test-file moves, extracted the existing Windows probe, preserved assertions/fixtures/frozen authority and passed independent per-unit, portable, full and native-startup validation; production behavior and test assertions preserved.
 
-- [`native-rust-module-organization.md`](native-rust-module-organization.md): completed all six stages with two diagnostic-only Rust extractions, ten independently audited SKIPs, unchanged runtime/contracts and passing Rust, WebView2, portable and full repository checks; local commits only.
+- [`native-rust-module-organization.md`](native-rust-module-organization.md): completed all six stages with two diagnostic-only Rust extractions, ten independently audited SKIPs, unchanged runtime/contracts and passing Rust, WebView2, portable and full repository checks.
 - [`development-toolchain-pr-222.md`](development-toolchain-pr-222.md): prepared 16 development dependency upgrades, deferred unsupported TypeScript 7, aligned Node requirements, and restored the benchmark's current UI interactions; local checks, browser/native benchmarks and independent review passed, with remote CI tracked in PR #222.
 - [`legacy-runtime-cleanup.md`](legacy-runtime-cleanup.md): removed inactive Chatterbox v2 migration/repair and unused V1 preference metadata, preserved v3 cache-cleanup coverage and historical authority, and passed independent host validation.
 - [`residual-code-cleanup.md`](residual-code-cleanup.md): removed unused reader styles and language options, retired the temporary narration bridge, and migrated its lifecycle tests to the public API; independent browser, package, portable, and native repository gates passed.
@@ -49,4 +61,9 @@ Use the [evidence retention policy](../../development/evidence-retention.md) for
 - [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md): implemented privacy-safe host detection, measured profile matching, compatibility UI, identity-safe recovery, exact Piper CPU fallback integration, final support decisions, and passing repository/CI closeout for roadmap Milestone 10.
 - [`M010-001-bilingual-narration-and-candidate-screening.md`](M010-001-bilingual-narration-and-candidate-screening.md): implemented explicit Spanish/English narration, admitted and integrated exact Piper, Chatterbox, and development-only Qwen language profiles, validated six packaged portfolio journeys, and passed repository/CI closeout for roadmap Milestone 10.1.
 - [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md): implemented bounded English-default narration preferences, the reader-first Settings shell, and six boundary-deferred repository-WSOLA playback rates; validated the six-arm packaged portfolio and maintainer all-rate journey; and passed required Ubuntu/Windows closeout for roadmap Milestone 10.2.
+- [`M011-package-validate-and-release-mvp.md`](M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio release validation and optional Chatterbox acquisition; records the accepted unsigned candidate and renewed Milestone 7 evidence. Public signing remains a separate external authorization.
 - [`typescript-maintainability-batch-20260803.md`](typescript-maintainability-batch-20260803.md): recovered durable scope and validation traceability for the small cross-package TypeScript/TSX maintainability batch, documented the independently found M011 cleanup correction, and closed repository plus installed-package validation.
+
+## Superseded historical plans
+
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): original broad proposal, archived byte-for-byte. Focused M004, M008, M009 and M009.1 plans own the implemented reader, restoration, buffering and synchronization evidence. Its old pending statuses are historical, not unfinished work. Incoming links point directly to this archived copy.
