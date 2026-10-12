@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProductNarrationControls } from "./ProductNarrationControls";
@@ -49,6 +55,46 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it("updates from live notifications while availability remains owned by the coordinator effect", () => {
+    let current = snapshot();
+    const listeners = new Set<() => void>();
+    const source = {
+      subscribe: vi.fn((listener: () => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      }),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      start: vi.fn(),
+      stop: vi.fn(),
+      close: vi.fn(),
+    };
+    const coordinator = source as unknown as ProductNarrationCoordinator;
+    const subject = render(
+      <ProductNarrationControls coordinator={coordinator} />,
+    );
+    expect(screen.getByRole("button", { name: "Play" })).toBeEnabled();
+    act(() => {
+      current = Object.freeze({ ...current, availability: "unavailable" });
+      listeners.forEach((listener) => listener());
+    });
+    expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "The selected local narration profile is not configured on this device.",
+      ),
+    ).toBeInTheDocument();
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(source.checkAvailability).toHaveBeenCalledOnce();
+    subject.unmount();
+    expect(listeners.size).toBe(0);
+    expect(source.start).not.toHaveBeenCalled();
+    expect(source.stop).not.toHaveBeenCalled();
+    expect(source.close).not.toHaveBeenCalled();
+  });
+
   it("exposes keyboard-operable, content-free passage actions", () => {
     const current = snapshot();
     const coordinator = {

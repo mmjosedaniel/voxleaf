@@ -1,6 +1,6 @@
 # Desktop state subscription hooks
 
-Status: planned; implementation and runtime validation have not started.
+Status: complete; implemented and independently accepted on 2026-10-12.
 Prepared on 2026-10-12. Branch: `codex/desktop-state-subscription-hooks`,
 created from clean, up-to-date `main` at
 `667f9fbdb45ec5b08f304eb9c1713ec0f94a26d1`.
@@ -111,11 +111,16 @@ snapshot cloning or aggregation, barrel exports, dependency/config changes,
 CSS/DOM/wording changes, Rust/Python/native protocol changes, generated sources,
 frozen authority, and edits to completed plans or historical evidence.
 
-The current request authorizes this plan, its navigation entries, and the local
-branch only. It does not authorize source implementation, staging, commits,
-push, or a PR. A subsequent implementation request determines those permissions;
-this plan does not grant Git mutation authority. It can be implemented as one
-unstaged source/test unit without intermediate commits.
+The 2026-10-12 implementation request authorizes implementation, validation and
+documentation on the existing branch. It explicitly forbids staging, commits,
+push and PR creation. Execution uses the current HEAD
+`44a83f4113e9cbeadee7d8a2d0e62838df70629b`, without recreating the branch or
+returning to its historical origin. The initial worktree and index were clean.
+The current audit tightens the execution allowlist to eight paths: retain
+`HardwareCompatibilityControls.test.tsx` unchanged as SKIP. The ceiling remains
+600 added-plus-removed source/test lines in one combined unit, under the
+independently audited [superseding order](../evidence/desktop-state-subscription-hooks/work-order-02.md).
+The original 500-line estimate and order are retained as historical preparation.
 
 ## 5. Relevant files and documentation
 
@@ -235,7 +240,9 @@ before production edits. Only a passing baseline permits an immutable Approved
 Work Order. Existing planning reviews are not execution baseline evidence.
 
 Validation: the baseline command group in section 8 and immutable identities.
-Status: not started.
+Status: complete. Current audit accepted; all seven host baseline gates passed
+in [BASELINE-01](../evidence/desktop-state-subscription-hooks/baseline-01.md),
+with unchanged HEAD, eight path identities and an empty index.
 
 ### Milestone 2: Add and exercise the observation hooks
 
@@ -255,7 +262,10 @@ Keep meaningful component coverage rather than testing hook names or imports.
 
 Validation: focused package test/type commands from section 8; this checkpoint
 does not establish final acceptance or permit unrelated edits.
-Status: not started.
+Status: complete. Both typed hooks and eight shared cases, one Product case
+and three Settings cases pass with all four original bridges unchanged;
+[checkpoint A](../evidence/desktop-state-subscription-hooks/checkpoint-a-01.md)
+records 661 Vitest and 51 Node tests with stable eight-path identities.
 
 ### Milestone 3: Migrate all four observation sites
 
@@ -272,7 +282,8 @@ independent units or carry an unaccepted patch into another refactor.
 
 Validation: all four sites use the intended hook; package tests and unchanged
 component behavior pass; excluded files and manifests have no changes.
-Status: not started.
+Status: complete. All four bridges migrated; final eight-path patch totals
+592 added-plus-removed lines under the revised 600-line order.
 
 ### Milestone 4: Independent acceptance
 
@@ -289,7 +300,8 @@ privacy and artifact hygiene, not just green test exits. Drift requires a new
 report and validation, not revised hashes on an old PASS.
 
 Validation: POST-CHANGE, PACKAGE and FINAL reports with exact commands/outcomes.
-Status: not started.
+Status: complete. Independent POST-CHANGE-01, PACKAGE-01 and FINAL-01 all PASS
+at unchanged HEAD with matching source identities and empty index; see section 12.
 
 ### Milestone 5: Close documentation and hand off
 
@@ -307,7 +319,9 @@ Push and PR creation require separate user authorization.
 
 Validation: documentation links, evidence guard, exact diff and Git status;
 the final response distinguishes implemented, validated and committed work.
-Status: not started.
+Status: complete. Plan archived, maintained indexes updated and no redirect
+left in active. Source reports and original work orders remain immutable.
+Final documentary receipt is retained separately in the evidence directory.
 
 ## 8. Testing and benchmark strategy
 
@@ -416,11 +430,39 @@ history rewriting.
 - 2026-10-12: updated clean `main` with `git pull --ff-only origin main`
   (already up to date), then created `codex/desktop-state-subscription-hooks`
   from `667f9fbdb45ec5b08f304eb9c1713ec0f94a26d1`. No staging or commit.
-- [ ] Milestone 1: fresh audit, approved scope and host baseline.
-- [ ] Milestone 2: typed hooks and focused tests.
-- [ ] Milestone 3: all four consumer bridges migrated.
-- [ ] Milestone 4: independent complete acceptance.
-- [ ] Milestone 5: documented results, links and archival.
+- 2026-10-12: fresh configured Sol audit accepted the combined unit, tightened
+  the allowlist to eight files and preserved the hardware test suite as SKIP.
+  Configured Astra independently passed all seven host baseline commands at
+  current HEAD `44a83f4113e9cbeadee7d8a2d0e62838df70629b`. No Git mutation is
+  authorized; Git stewardship is therefore not invoked. Source implementation
+  remains pending the frozen work order and sequential checkpoints.
+- [x] Milestone 1: fresh audit, approved scope and host baseline.
+- 2026-10-12: checkpoint A draft stopped before migration at 450 unformatted
+  changed lines. Independent audit found required formatting and migration
+  would exceed 500 without compressing readable tests or reducing coverage.
+  Director approved a new immutable 600-line order with the identical eight
+  paths, invariants, checkpoints and commands. BASELINE-01 stays unchanged;
+  no second baseline or runtime acceptance is claimed for the partial draft.
+- 2026-10-12: checkpoint A passed host build, desktop typecheck and full desktop
+  tests (57 files/661 Vitest plus 51 Node); source/test diff is 548 lines.
+  Original bridges remain byte-identical to BASELINE-01. The independent
+  identity-bound receipt is intermediate evidence, not another baseline or
+  final acceptance. Director accepted continuation to the four migrations.
+- [x] Milestone 2: typed hooks and focused tests.
+- 2026-10-12: migrated exactly four bridges, preserving their effects/actions
+  and the post-recheck imperative read. Independent post-change repeated all
+  seven baseline gates successfully. PACKAGE check:portable and FINAL check
+  passed separately on identical eight-path manifests. No source correction
+  loop or test repair was needed. Scope totals 592 changed lines across eight
+  source/test paths; excluded files, hardware tests and manifests are unchanged.
+- [x] Milestone 3: all four consumer bridges migrated.
+- [x] Milestone 4: independent complete acceptance.
+- 2026-10-12: reviewed the canonical diagram against the accepted patch;
+  architecture unchanged. Retained immutable curated reports, kept raw data in
+  ignored scratch, passed host check:evidence and git diff --check, archived
+  this plan and updated all maintained incoming links. Final documentary
+  identity/link review is retained separately from source acceptance.
+- [x] Milestone 5: documented results, links and archival.
 
 ## 11. Discoveries and decisions
 
@@ -438,20 +480,71 @@ history rewriting.
   explicit in their existing owners.
 - The canonical system diagram already represents presentation consuming
   independently owned runtime state. Internal hook modules need no new node,
-  process, dependency or persistence arrow; verify this again at acceptance.
+  process, dependency or persistence arrow. Director and independent validator
+  reviewed it against the final diff; it remains unchanged, with no ADR needed.
 
 ## 12. Final validation results
 
-Planning status only: the implementation branch exists at the recorded main
-commit. No production code, test, dependency, configuration or historical plan
-has been changed by preparation of this document.
+Implemented useProductNarrationSnapshot and useHardwareCompatibilitySnapshot,
+their shared lifecycle/server suite, and all four observation-site migrations.
+Added twelve cases: eight shared hook cases, one Product live-notification
+case and three Settings characterization cases. Existing assertions remain.
+Typed observation-only contracts preserve receiver, cached snapshot identity,
+stable source callbacks and getServerSnapshot; subscriptions stay independent
+and inside Settings children. Availability, fresh post-await hardware reads,
+actions, effects, persistence, cancellation and resource ownership stay put.
 
-Implementation baseline: NOT RUN.
-Hook and consumer tests: NOT RUN for this plan.
-Browser, portable and full implementation gates: NOT RUN for this plan.
-Performance and hardware benchmarks: NOT RUN; no improvement claim.
+All reports bind HEAD `44a83f4113e9cbeadee7d8a2d0e62838df70629b` and the exact
+eight-path manifest. BASELINE records the three new paths ABSENT. Checkpoint A
+proves the new tests with original bridges; later source reports all bind the
+same final patch. Commands ran in normal host PowerShell outside the sandbox,
+using process-local Corepack shims for pnpm 11.15.1 and Node v24.20.0.
 
-Populate this section with the actual immutable reports, commands, exit
-statuses, scope decisions and material limitations during execution. Prior
-completed-plan results and documentation checks are not acceptance evidence
-for the future hook implementation.
+| Command | Baseline | Final source acceptance |
+| --- | --- | --- |
+| `pnpm.cmd build:packages` | exit 0 | exit 0 |
+| `pnpm.cmd --filter @voxleaf/desktop typecheck` | exit 0 | exit 0 |
+| `pnpm.cmd --filter @voxleaf/desktop test` | 649 Vitest + 51 Node | 661 Vitest + 51 Node; exit 0 |
+| `pnpm.cmd format:check:typescript` | exit 0 | exit 0 |
+| `pnpm.cmd lint:typescript` | exit 0 | exit 0 |
+| `pnpm.cmd test:browser` | 7/7; exit 0 | 7/7; exit 0 |
+| `pnpm.cmd test:native-startup` | exit 0 | exit 0; zero errors/external requests |
+| `pnpm.cmd check:portable` | not required in baseline | exit 0 |
+| `pnpm.cmd check` | not required in baseline | exit 0 |
+
+The final aggregate gate includes 209 shared, 651 EPUB, 661 desktop Vitest,
+51 desktop Node, 485 Python, 13 evidence-guard, and Rust 87 default/88
+release-locked passing tests. One unchanged Rust subprocess fixture is ignored
+per configuration and exercised by its parent test. Source/type/lint/format
+and configured portable/native/Python builds pass.
+
+Immutable evidence:
+
+- [BASELINE-01](../evidence/desktop-state-subscription-hooks/baseline-01.md),
+  Report ID `STATE-SUBSCRIPTIONS-01-BASELINE-01-20261012`: PASS.
+- [Checkpoint A](../evidence/desktop-state-subscription-hooks/checkpoint-a-01.md),
+  receipt `STATE-SUBSCRIPTIONS-01-CHECKPOINT-A-01-20261012`: three commands pass;
+  intermediate evidence only, not a second baseline or final acceptance.
+- [POST-CHANGE-01](../evidence/desktop-state-subscription-hooks/post-change-01.md),
+  Report ID `STATE-SUBSCRIPTIONS-01-POST-CHANGE-01-20261012`: PASS.
+- [PACKAGE-01](../evidence/desktop-state-subscription-hooks/package-01.md),
+  Report ID `STATE-SUBSCRIPTIONS-01-PACKAGE-01-20261012`: PASS.
+- [FINAL-01](../evidence/desktop-state-subscription-hooks/final-01.md),
+  Report ID `STATE-SUBSCRIPTIONS-01-FINAL-01-20261012`: PASS.
+
+Limits: non-failing existing Vite chunk-size and color-environment warnings;
+host pytest reported a non-failing cache-write permission warning. No repair
+outside scope, dropped check or new dependency was introduced. No new GPU/model,
+private-book, installed acquisition, rendering/memory/latency benchmark or
+performance claim. Raw logs/checkers/identity captures remain ignored under
+`tmp/evidence/desktop-state-subscription-hooks/`; curated Markdown is retained
+under the evidence directory. Local raw captures are not permanent public
+artifacts. Original work-order evidence and historical plans are preserved.
+
+Documentation: host `pnpm.cmd check:evidence` and `git diff --check` exit 0.
+Closure updates the active/completed/docs indexes and retains no active-path
+redirect. A separate documentary receipt covers the final archived state;
+unaffected source gates are not rerun for Markdown-only closure.
+
+Git: existing branch retained, HEAD unchanged, empty index, changes unstaged;
+no staging, commits, push or PR performed.
