@@ -1,16 +1,121 @@
 use super::*;
 
 #[cfg(windows)]
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::os::windows::io::{AsHandle, AsRawHandle, FromRawHandle, OwnedHandle};
 
 #[cfg(windows)]
-static ASSIGNMENT_FAILURE_CHILD_ID: AtomicU32 = AtomicU32::new(0);
+static ASSIGNMENT_FAILURE_CHILD_HANDLE: Mutex<Option<OwnedHandle>> = Mutex::new(None);
+
+#[cfg(windows)]
+static ASSIGNMENT_FAILURE_READY_EVENT: Mutex<Option<OwnedHandle>> = Mutex::new(None);
+#[cfg(windows)]
+const ASSIGNMENT_FAILURE_READY_EVENT_NAME: &str = "VOXLEAF_ASSIGNMENT_FAILURE_READY_EVENT_NAME";
+#[cfg(windows)]
+const ASSIGNMENT_FAILURE_PARENT_ID: &str = "VOXLEAF_ASSIGNMENT_FAILURE_PARENT_ID";
+
+#[cfg(windows)]
+fn assignment_failure_child_command() -> Command {
+    use windows_sys::Win32::System::Threading::CreateEventW;
+
+    let mut command = Command::new(std::env::current_exe().expect("test executable should exist"));
+    let event_name = format!(
+        "Local\\VoxLeafAssignmentFailureReady-{}",
+        std::process::id()
+    );
+    let wide_name: Vec<u16> = event_name.encode_utf16().chain(Some(0)).collect();
+    let event = unsafe { CreateEventW(std::ptr::null(), 1, 0, wide_name.as_ptr()) };
+    assert!(
+        !event.is_null(),
+        "the fixture readiness event should be created"
+    );
+    let event = unsafe { OwnedHandle::from_raw_handle(event) };
+    *ASSIGNMENT_FAILURE_READY_EVENT
+        .lock()
+        .expect("the fixture readiness event lock should be available") = Some(event);
+    command
+        .args([
+            "--exact",
+            "tts_service_supervisor::tests::assignment_failure_child_fixture",
+            "--ignored",
+            "--nocapture",
+        ])
+        .env(ASSIGNMENT_FAILURE_PARENT_ID, std::process::id().to_string())
+        .env(ASSIGNMENT_FAILURE_READY_EVENT_NAME, event_name);
+    command
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "subprocess fixture selected only by the assignment-failure test"]
+fn assignment_failure_child_fixture() {
+    use windows_sys::Win32::{
+        Foundation::WAIT_OBJECT_0,
+        System::Threading::{
+            EVENT_MODIFY_STATE, INFINITE, OpenEventW, OpenProcess, PROCESS_SYNCHRONIZE, SetEvent,
+            WaitForSingleObject,
+        },
+    };
+
+    let Ok(parent_id) = std::env::var(ASSIGNMENT_FAILURE_PARENT_ID) else {
+        return;
+    };
+    let parent_id = parent_id
+        .parse()
+        .expect("the parent process ID should be valid");
+    let parent = unsafe { OpenProcess(PROCESS_SYNCHRONIZE, 0, parent_id) };
+    assert!(!parent.is_null(), "the parent process should be observable");
+    let parent = unsafe { OwnedHandle::from_raw_handle(parent) };
+    let event_name = std::env::var(ASSIGNMENT_FAILURE_READY_EVENT_NAME)
+        .expect("the fixture readiness event name should be supplied");
+    let wide_name: Vec<u16> = event_name.encode_utf16().chain(Some(0)).collect();
+    let event = unsafe { OpenEventW(EVENT_MODIFY_STATE, 0, wide_name.as_ptr()) };
+    assert!(!event.is_null(), "the fixture readiness event should open");
+    let event = unsafe { OwnedHandle::from_raw_handle(event) };
+    assert_ne!(unsafe { SetEvent(event.as_raw_handle()) }, 0);
+
+    // Ignore stdin EOF: only supervisor termination or parent death ends the fixture.
+    assert_eq!(
+        unsafe { WaitForSingleObject(parent.as_raw_handle(), INFINITE) },
+        WAIT_OBJECT_0
+    );
+}
 
 #[cfg(windows)]
 fn fail_job_assignment(
     child: &Child,
 ) -> Result<windows_sys::Win32::Foundation::HANDLE, TtsNativeFailure> {
-    ASSIGNMENT_FAILURE_CHILD_ID.store(child.id(), Ordering::SeqCst);
+    use windows_sys::Win32::{
+        Foundation::{WAIT_OBJECT_0, WAIT_TIMEOUT},
+        System::Threading::WaitForSingleObject,
+    };
+
+    let process = child
+        .as_handle()
+        .try_clone_to_owned()
+        .expect("the spawned child handle should be cloned");
+    let ready_event = ASSIGNMENT_FAILURE_READY_EVENT
+        .lock()
+        .expect("the fixture readiness event lock should be available")
+        .take()
+        .expect("the command factory should retain the fixture readiness event");
+    assert_eq!(
+        unsafe {
+            WaitForSingleObject(
+                ready_event.as_raw_handle(),
+                HANDSHAKE_TIMEOUT.as_millis() as u32,
+            )
+        },
+        WAIT_OBJECT_0,
+        "the selected helper test should report readiness before assignment fails"
+    );
+    assert_eq!(
+        unsafe { WaitForSingleObject(process.as_raw_handle(), 0) },
+        WAIT_TIMEOUT,
+        "the child should still be running before assignment fails"
+    );
+    *ASSIGNMENT_FAILURE_CHILD_HANDLE
+        .lock()
+        .expect("the observed child handle lock should be available") = Some(process);
     Err(TtsNativeFailure::ChildUnavailable)
 }
 
@@ -272,28 +377,30 @@ fn supervised_children_use_the_windows_no_console_flag() {
 #[cfg(windows)]
 #[test]
 fn failed_job_assignment_kills_and_reaps_the_spawned_child() {
-    use windows_sys::Win32::{
-        Foundation::CloseHandle,
-        System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
-    };
+    use windows_sys::Win32::{Foundation::WAIT_OBJECT_0, System::Threading::WaitForSingleObject};
 
-    ASSIGNMENT_FAILURE_CHILD_ID.store(0, Ordering::SeqCst);
-    assert!(matches!(
-        ChildProcess::spawn_with_job_assigner(
-            &ServiceChild::Fake(NORMAL_SCENARIO),
-            fail_job_assignment,
-        ),
-        Err(TtsNativeFailure::ChildUnavailable)
-    ));
-
-    let child_id = ASSIGNMENT_FAILURE_CHILD_ID.load(Ordering::SeqCst);
-    assert_ne!(child_id, 0, "the assigner should observe the spawned child");
-    let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, child_id) };
-    assert!(
-        process.is_null(),
-        "the failed assignment path must wait until the child process is reaped"
+    ASSIGNMENT_FAILURE_CHILD_HANDLE
+        .lock()
+        .expect("the observed child handle lock should be available")
+        .take();
+    let result = ChildProcess::spawn_with_job_assigner(
+        &ServiceChild::TestCommand(assignment_failure_child_command),
+        fail_job_assignment,
     );
-    if !process.is_null() {
-        unsafe { CloseHandle(process) };
-    }
+    // A spawn error bypasses the assigner, so release any unused readiness event here.
+    let _unused_ready_event = ASSIGNMENT_FAILURE_READY_EVENT
+        .lock()
+        .expect("the fixture readiness event lock should be available")
+        .take();
+    let process = ASSIGNMENT_FAILURE_CHILD_HANDLE
+        .lock()
+        .expect("the observed child handle lock should be available")
+        .take()
+        .expect("the assigner should retain the original spawned child handle");
+    assert!(matches!(result, Err(TtsNativeFailure::ChildUnavailable)));
+    assert_eq!(
+        unsafe { WaitForSingleObject(process.as_raw_handle(), 0) },
+        WAIT_OBJECT_0,
+        "the failed assignment path must return only after the original child exits"
+    );
 }

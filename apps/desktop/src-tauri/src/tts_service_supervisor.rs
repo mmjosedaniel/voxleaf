@@ -515,6 +515,8 @@ fn absolute_existing_path(key: &str, directory: bool) -> Result<PathBuf, TtsNati
 #[derive(Clone)]
 enum ServiceChild {
     Fake(&'static str),
+    #[cfg(all(test, windows))]
+    TestCommand(fn() -> Command),
     Exact(ExactRuntime),
     Unavailable,
 }
@@ -553,6 +555,8 @@ impl ServiceChild {
                 Ok(command)
             }
             Self::Exact(runtime) => runtime.command(),
+            #[cfg(all(test, windows))]
+            Self::TestCommand(command) => Ok(command()),
             Self::Unavailable => Err(TtsNativeFailure::ChildUnavailable),
         }
     }

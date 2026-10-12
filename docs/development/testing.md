@@ -59,6 +59,21 @@ successfully. The Rust commands cover both default and
 See [native Rust navigation](agentic-refactoring.md#native-rust-navigation)
 for the complete file mapping and the test-layout ExecPlan for exact evidence.
 
+The Windows failed-Job-Object-assignment regression retains an owned handle to
+the original child and checks that it is already signaled when the failed spawn
+returns. It uses a zero-timeout wait, with no subsequent retry or grace period.
+Its Windows-only test command factory starts an exact helper through the Cargo
+test harness; a named event confirms readiness before assignment failure. The
+helper waits on its parent process handle, so stdin EOF cannot conceal a missing
+supervisor kill and parent death cannot leave it orphaned. Only this subprocess
+helper is ignored in the ordinary test list; the regression runs normally and
+explicitly starts the helper. The factory seam is compiled only for tests.
+Do not use failure to reopen a PID as proof of termination: Windows can retain
+a terminated process object while handles remain open. The owned handle also
+closes on assertion failure. See the separate
+[child-reaping test repair](../plans/evidence/native-child-reaping-test-repair/README.md)
+for the diagnostic, host checks, and independent review.
+
 ## Deterministic foundation checks
 
 The Chatterbox security refresh adds explicit successor authority checks:
