@@ -2,6 +2,19 @@
 
 Documentation is organized by purpose so contributors and Codex can load only the context needed for a task.
 
+## Reading implementation status
+
+Use the [roadmap](plans/roadmap.md) and [system diagram](architecture/system-diagram.md)
+for current product boundaries, and the [active-plan index](plans/active/README.md)
+for work awaiting implementation or acceptance. The
+[completed-plan index](plans/completed/README.md) separates
+completed work from superseded historical proposals.
+
+Completed plans and validation receipts preserve the state at their original
+closeout. Statements such as "not committed" or "CI pending" in those records
+are historical; maintained indexes point to later results without rewriting
+the original evidence. Recorded test counts are not fresh test runs on HEAD.
+
 ## Current project status
 
 Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
@@ -278,8 +291,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): implemented additive Spanish/English normalization authority and synthetic corpus for M010.1; historical combinations remain closed and Spanish regressions remain passing.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
 - [`architecture/chatterbox-narration-preparation-profile-v1.md`](architecture/chatterbox-narration-preparation-profile-v1.md): implemented Chatterbox-specific packing limits that preserve bilingual normalization and whose exact-host outputs remained inside protocol v1.
-- [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): current Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
-- [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): current Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
+- [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): historical Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
+- [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): historical Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
 - [`architecture/tts-feasibility-profile-v4.md`](architecture/tts-feasibility-profile-v4.md): frozen pre-result Milestone 6.2 authority for the exact short-unit/shared-model batch experiment, conditional targeted CPU placement, playback simulation, and separate standard/scheduling/demo conclusions.
 - [`architecture/tts-feasibility-profile-v5.md`](architecture/tts-feasibility-profile-v5.md): frozen pre-result Milestone 6.2 authority for the separately loaded GPU-primary/CPU-support experiment, CPU-solo screen, concurrent comparison, RAM/commit and zero-GPU checks, and simultaneous playback bounds.
 - [`architecture/tts-feasibility-profile-v6.md`](architecture/tts-feasibility-profile-v6.md): accepted M010 Piper CPU authority and passing result, including the normalized Spanish corpus, candidate-neutral machine and quality gates, termination-backed cancellation, and explicit GPL/CC0 packaging boundary.
@@ -350,17 +363,19 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
-- [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [`plans/completed/piper-runtime-pr-218.md`](plans/completed/piper-runtime-pr-218.md): completed Piper 1.8.0 compatibility refresh and bounded Spanish/English runtime validation, preserving ONNX Runtime 1.30.0 and existing voice artifacts.
+- [`plans/completed/piper-onnxruntime-pr-219.md`](plans/completed/piper-onnxruntime-pr-219.md): completed ONNX Runtime 1.30.0 compatibility refresh; its recorded Piper 1.4.2 state predates the subsequent PR #218 upgrade.
 - [`plans/completed/app-preference-effects-readability.md`](plans/completed/app-preference-effects-readability.md): completed startup hydration and narrator preference-presentation binding extraction; 28 App characterization and 16 module cases, independent baseline/checkpoint/post-change/portable/native acceptance, with unchanged App ownership and recorded failed attempts.
-- [`plans/completed/app-hardware-effects-readability.md`](plans/completed/app-hardware-effects-readability.md): completed hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Ownership and behavior preserved; unstaged, no commits.
-- [`plans/completed/app-readability.md`](plans/completed/app-readability.md): completed three-component presentation/message extraction from `App.tsx`, nine added integration cases and independent baseline/post-change/aggregate PASS. Picker identity and all lifecycle/preference ownership preserved; unstaged, no commits.
-- [`plans/completed/tts-adapter-layout.md`](plans/completed/tts-adapter-layout.md): completed selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4; independent three-baseline/22-gate PASS, bilingual candidate/desktop acceptance, verified firewall cleanup and approved documentary closeout. Implementation committed for PR handoff; v3 remains admitted.
+- [`plans/completed/app-hardware-effects-readability.md`](plans/completed/app-hardware-effects-readability.md): completed hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Ownership and behavior preserved.
+- [`plans/completed/app-readability.md`](plans/completed/app-readability.md): completed three-component presentation/message extraction from `App.tsx`, nine added integration cases and independent baseline/post-change/aggregate PASS. Picker identity and all lifecycle/preference ownership preserved.
+- [`plans/completed/tts-adapter-layout.md`](plans/completed/tts-adapter-layout.md): completed selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4; independent three-baseline/22-gate PASS, bilingual candidate/desktop acceptance, verified firewall cleanup and approved documentary closeout. The validated local v4 candidate remains distinct from admitted v3.
 - [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
-- [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation; all changes remain unstaged.
-- [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Changes remain unstaged; no Git publication.
-- [`plans/completed/pr-evidence-retention.md`](plans/completed/pr-evidence-retention.md): technically accepted PR #229 evidence archival/cleanup, retention policy and tested CI guard; separate cleanup commit/push pending.
+- [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation.
+- [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Publication and narration lifecycle ownership remain unchanged.
+- [`plans/completed/pr-evidence-retention.md`](plans/completed/pr-evidence-retention.md): completed PR #229 evidence archival/cleanup, retention policy and tested CI guard, integrated in main with the native test-layout work.
 - [`plans/completed/linux-rust-test-comparison.md`](plans/completed/linux-rust-test-comparison.md): completed minimal Linux compatibility repair and independent 85/86-test comparison, including both Unix symlink cases; Windows 87/88 tests and native startup pass, and the reviewed Ubuntu Rust CI job subsequently passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
-- [`plans/completed/native-rust-test-layout.md`](plans/completed/native-rust-test-layout.md): completed ten private Rust test-file moves and the existing Windows-probe extraction, preserving production ownership, test assertions, fixtures and frozen authority; independent unit and aggregate host gates passed, with changes unstaged and uncommitted.
+- [`plans/completed/native-rust-test-layout.md`](plans/completed/native-rust-test-layout.md): completed ten private Rust test-file moves and the existing Windows-probe extraction, preserving production ownership, test assertions, fixtures and frozen authority; independent unit and aggregate host gates passed.
 - [`plans/completed/native-rust-module-organization.md`](plans/completed/native-rust-module-organization.md): completed native Rust organization with two independently accepted diagnostic extractions, ten evidence-backed SKIPs and passing portable/native aggregate checks; runtime behavior and Chatterbox's shared mutation boundary remain intact.
 - [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
@@ -385,8 +400,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M011-package-validate-and-release-mvp.md`](plans/completed/M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, independent release decisions, and passing PR #207 checks. Public signing stays an external future action.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
-Historical reference: [`synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md)
-is superseded by completed M009 for synchronization work. Its original path
-remains available for links in completed plans; it is not an active ExecPlan.
+Historical reference: [`synchronized-reader-and-startup-buffer.md`](plans/completed/synchronized-reader-and-startup-buffer.md)
+is archived unchanged and superseded by focused completed milestone plans.
+Incoming links point directly to its completed path.
 
 For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).

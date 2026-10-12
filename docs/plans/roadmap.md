@@ -1666,11 +1666,13 @@ preserve the completed M003/M004/M005 boundaries while proving the bounded OPF
 2.0/NCX package/navigation path and the same public publication, locator,
 reader, restoration, and narration model.
 
-[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
-is retained only as broad historical context and is superseded by completed
+[`completed/synchronized-reader-and-startup-buffer.md`](completed/synchronized-reader-and-startup-buffer.md)
+is archived unchanged as broad historical context and is superseded by completed
 M009/M009.1 for synchronization and reader stabilization. It does not
 supersede completed authority or turn the failed `v3` profile into a standard
-production selection.
+production selection. Incoming links point directly to the archived plan.
+Consult the [active-plan index](active/README.md) for work
+currently awaiting implementation or acceptance.
 
 Milestones 1 through 10.2, M008.1, and M009.1 are complete, with their evidence
 retained under [`completed/`](completed/). ADR-0037 closes v2 with no backend;

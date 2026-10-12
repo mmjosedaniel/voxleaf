@@ -114,7 +114,7 @@ This plan becomes the implementation authority for roadmap Milestone 5. It must 
 - `docs/plans/completed/M002-shared-contracts-and-test-harness.md`
 - `docs/plans/completed/M003-secure-epub-ingestion-and-document-model.md`
 - `docs/plans/completed/M004-reflowable-visual-reader-and-position-restoration.md`
-- `docs/plans/active/synchronized-reader-and-startup-buffer.md`
+- `docs/plans/completed/synchronized-reader-and-startup-buffer.md`
 - `docs/development/dependencies.md`
 - `docs/development/testing.md`
 - `docs/development/setup.md`

@@ -533,7 +533,13 @@ standard-profile or general-hardware test.
 
 The ADR-0009 native file-ingress matrix is part of `pnpm.cmd test:native-startup`; its disposable synthetic-file procedure and test-controlled cancellation timing are documented in [`testing.md`](testing.md#native-local-file-open-flow). The matrix must run natively on Windows, never uses a private book, and removes its files/profile. It does not require or authorize a Tauri plugin, command, capability, path contract, permission, or additional automation dependency.
 
-For ADR-0010, use the same release executable and follow the fixed synthetic-image procedure in [`testing.md`](testing.md#native-raster-decode-safety-probe). The manual probe continues to isolate the browser Blob/decode/CSP boundary and releases its source immediately. The automated native-startup smoke additionally opens the comprehensive synthetic EPUB, renders its admitted publication image, and verifies removal on publication close.
+For ADR-0010, use `pnpm.cmd test:native-startup` and the documented
+[native raster decode safety checks](testing.md#native-raster-decode-safety).
+The packaged smoke opens the comprehensive repository-authored synthetic EPUB,
+renders its admitted local image and verifies resource release on replacement
+and close. [ADR-0041](../architecture/decisions/ADR-0041-simplify-empty-and-ready-reader-chrome.md)
+removed the former manual raster-probe UI; the automated production-path checks
+remain the validation procedure.
 
 After the locked JavaScript and Python environments are installed, use the verified root quality surface:
 

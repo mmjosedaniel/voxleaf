@@ -103,7 +103,7 @@ Repository evidence establishes the following boundary:
 - `docs/plans/completed/M001-engineering-foundation.md`
 - `docs/plans/completed/M002-shared-contracts-and-test-harness.md`
 - `docs/plans/completed/M005-narration-text-preparation.md`
-- `docs/plans/active/synchronized-reader-and-startup-buffer.md`
+- `docs/plans/completed/synchronized-reader-and-startup-buffer.md`
 
 ### Current code and configuration
 
