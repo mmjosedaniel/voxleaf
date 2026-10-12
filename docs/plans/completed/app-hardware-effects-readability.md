@@ -1,6 +1,7 @@
 # App hardware effect and readability
 
-Status: planned; source implementation and runtime validation have not started.
+Status: complete; independent source and aggregate validation PASS. Archived
+on 2026-10-11 with implementation and documentation unstaged; no commits.
 Prepared on 2026-10-11. Branch: `codex/app-hardware-effects-readability`, created
 from clean local `main` at `c392396eb2b444f8d1f09ee24f018d6b85f98615`.
 
@@ -79,10 +80,10 @@ handler deduplication; presentation-projection changes; DOM/CSS/copy changes;
 new dependencies; public contracts; native/Python/package work; generated
 sources; frozen evidence; and edits to completed ExecPlans.
 
-The current request authorizes the plan, its navigation entries and the local
-branch only. Source implementation needs a subsequent execution request.
-Staging, commits, pushes, pull requests and publication are not authorized.
-Preserve unrelated work and leave the index empty.
+The 2026-10-11 execution request authorizes this plan's source implementation,
+tests, evidence and documentation. It requires the existing branch to be
+preserved. Staging, commits, pushes, pull requests, merge and rebase are not
+authorized. Preserve unrelated work and leave the index empty.
 
 ## 5. Relevant files and documentation
 
@@ -219,7 +220,10 @@ needed to exercise this binding.
 
 ### Milestone 1: Refresh the audit and establish the baseline
 
-Status: not started.
+Status: complete. Accepted audit `APP-HARDWARE-READABILITY-AUDIT-01` and
+independent `APP-HARDWARE-READABILITY-01-BASELINE-02` PASS. See the
+[audit and frozen order](../evidence/app-hardware-effects-readability/audit-and-work-order-01.md)
+and [baseline reports](../evidence/app-hardware-effects-readability/baseline-reports.md).
 
 Verify branch, HEAD, index, the four source paths and the exact current behavior.
 Refresh the planning audit with the explicitly requested local type/condition
@@ -233,7 +237,9 @@ code or weaken assertions. Freeze the Approved Work Order only after PASS.
 
 ### Milestone 2: Implement the binding, tests and local readability changes
 
-Status: not started.
+Status: complete under `APP-HARDWARE-READABILITY-WORK-01`; four files and
+320 added plus deleted lines against the 350-line ceiling. See the
+[Change Packet](../evidence/app-hardware-effects-readability/change-packet-01.md).
 
 Implement only the operations in section 6. Add the focused unit cases and App
 integration coverage described in section 8. Preserve all existing assertions,
@@ -246,7 +252,10 @@ and two explanatory conditions add no runtime state or public API.
 
 ### Milestone 3: Independently validate and close the plan
 
-Status: not started.
+Status: complete. Independent `APP-HARDWARE-READABILITY-01-POST-CHANGE-01`
+passed every focused and aggregate command with unchanged source identities
+and empty index. No correction loops were required. See the
+[immutable acceptance report](../evidence/app-hardware-effects-readability/post-change-01.md).
 
 With the worker idle, the validator reviews the full source diff, binding
 semantics, test integrity and type/condition equivalence, then repeats the
@@ -337,6 +346,15 @@ installed-runtime change. A rejected patch must not become another unit's base.
 
 ## 10. Progress log
 
+- [x] 2026-10-11 execution: verified existing branch
+  `codex/app-hardware-effects-readability` at current HEAD
+  `609ae1b290e1070586a9142cd0063fffd2476910`, with an empty index and clean
+  worktree. No Git mutation was necessary. The two planned binding files are
+  absent. Planning identity is historical, not the execution baseline.
+- [x] 2026-10-11 execution: started the configured Sol auditor and independent
+  Astra validator with recursive delegation prohibited; worker execution waits
+  for baseline PASS. No Git steward is needed because all Git mutations are
+  prohibited and the initial index is already empty.
 - [x] 2026-10-11: inspected current App, related tests, existing binding pattern,
   safe-refactor contracts and configured validation commands.
 - [x] 2026-10-11: retained the bounded hardware extraction recommendation from
@@ -353,9 +371,27 @@ installed-runtime change. A rejected patch must not become another unit's base.
 - [x] 2026-10-11: host authoring checks passed for 12 required sections,
   11 relative links, nine configured commands, the three documentation paths,
   whitespace, unchanged main/HEAD and an empty index.
-- [ ] Milestone 1: fresh execution audit, independent baseline and frozen order.
-- [ ] Milestone 2: binding, tests and local naming changes.
-- [ ] Milestone 3: independent acceptance, evidence and archival.
+- [x] Milestone 1: fresh execution audit, independent baseline and frozen order.
+- [x] 2026-10-11: baseline 01 passed six gates but native session creation
+  failed with stale PATH EdgeDriver 150 against WebView2 155. Baseline 02 used
+  the existing signed matching driver through the supported process-local
+  override and passed all seven commands with unchanged identities. No source
+  fix, global installation or gate weakening was needed.
+- [x] Milestone 2: binding, tests and local naming changes.
+- [x] 2026-10-11: worker delivered five additional cases and the exact requested
+  four-file change, with scoped host formatting PASS. Director found no scope
+  expansion; independent acceptance remains pending.
+- [x] Milestone 3: independent acceptance, evidence and archival.
+- [x] 2026-10-11: Astra independent post-change review and all nine required
+  host commands passed; HEAD and the four source identities remained unchanged.
+  Desktop increased from 597 to 602 Vitest cases, retaining all 51 Node cases;
+  browser 7/7 and packaged WebView2 passed. Both aggregates passed, including
+  Python 485 and Rust 87 default / 88 release-locked tests.
+- [x] 2026-10-11: director reviewed canonical diagram and architecture: the
+  helper remains inside the desktop compatibility responsibility, adds no
+  component/process/persistence/external edge, and preserves ownership. No
+  diagram change or ADR is required. Archived plan and updated navigation;
+  retained raw logs in ignored temporary evidence. No staging or commits.
 
 ## 11. Discoveries and decisions
 
@@ -371,11 +407,22 @@ installed-runtime change. A rejected patch must not become another unit's base.
   share App and its integration tests. Do not add commits merely to separate stages.
 - The planning branch starts from local main; no fetch, pull or remote mutation
   was required or performed. Implementation must verify current state again.
+- Execution used current HEAD `609ae1b290e1070586a9142cd0063fffd2476910`;
+  the earlier planning base was not reused as validation identity.
+- The first native baseline failure came from a stale PATH driver. Selecting
+  the existing matching signed driver through the runner's environment override
+  resolved session creation; all commands were repeated in baseline 02.
+- Accepted scope is 320 changed lines across four source/test files, with five
+  new cases and no correction cycles. Preference hydration, real OS suspend
+  integration, model-backed inference/performance and installer lifecycle stay
+  outside this evidence. No new CI or hardware-support claim is made.
 
 ## 12. Final validation results
 
-This section records plan preparation separately from future implementation.
-No product test, source equivalence or runtime acceptance is claimed today.
+### Historical plan preparation
+
+This subsection preserves preparation results separately from implementation.
+Preparation alone made no product-test, source-equivalence or runtime claim.
 The ignored authoring checker ran successfully from the repository root in
 normal local PowerShell outside the sandbox:
 
@@ -389,9 +436,40 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tmp/evidence/app-hardwar
 | Branch setup | PASS: `APP-HARDWARE-READABILITY-SETUP-01`, clean main base recorded above, main/HEAD unchanged, empty index |
 | Independent documentary review | PASS: refined four-path scope, local types/conditions, tests and validation gates reviewed; document only |
 | Plan sections, links, commands, authoring scope and whitespace | PASS: 12 sections, 11 links, nine commands, only the plan/two indexes changed, main/HEAD unchanged and empty index |
-| Fresh implementation baseline and post-change validation | Not run; implementation not started |
-| Browser/native and aggregate implementation gates | Not run for this plan |
+| Implementation gates at preparation time | Not run at preparation; superseded only by the fresh execution reports below |
 
-Replace pending entries only with observed outcomes and immutable report
-references. Keep the plan active until source work and required acceptance are
-actually complete.
+### Execution acceptance
+
+All commands below ran from repository root in normal local PowerShell outside
+the sandbox. Node v24.20.0 and pinned pnpm 11.15.1 were verified. The process-local
+matching EdgeDriver override is recorded in the
+[baseline reports](../evidence/app-hardware-effects-readability/baseline-reports.md).
+
+| Exact command | Baseline 02 | Post-change 01 |
+| --- | --- | --- |
+| `pnpm.cmd run build:packages` | PASS, exit 0 | PASS, exit 0 |
+| `pnpm.cmd --filter @voxleaf/desktop typecheck` | PASS, exit 0 | PASS, exit 0 |
+| `pnpm.cmd --filter @voxleaf/desktop test` | PASS, 54/597 Vitest + 51 Node | PASS, 55/602 Vitest + 51 Node |
+| `pnpm.cmd run format:check:typescript` | PASS, exit 0 | PASS, exit 0 |
+| `pnpm.cmd run lint:typescript` | PASS, exit 0 | PASS, exit 0 |
+| `pnpm.cmd test:browser` | PASS, 7/7 | PASS, 7/7 |
+| `pnpm.cmd test:native-startup` | PASS, exit 0 | PASS, exit 0; zero errors/external requests |
+| `pnpm.cmd check:portable` | Not a baseline gate | PASS, exit 0 |
+| `pnpm.cmd check` | Not a baseline gate | PASS, exit 0 |
+
+Immutable report `APP-HARDWARE-READABILITY-01-POST-CHANGE-01` binds HEAD
+`609ae1b290e1070586a9142cd0063fffd2476910` and exact four-file SHA-256,
+filter-aware blob and porcelain identities in the
+[acceptance receipt](../evidence/app-hardware-effects-readability/post-change-01.md).
+Source scope, invariants, test integrity, privacy and identity recheck all PASS.
+The initial `BASELINE-01` failure is retained separately rather than overwritten.
+
+Aggregates include shared 209, EPUB 651, desktop 602 + 51 Node, Python 485,
+and Rust 87 default / 88 release-locked tests. Existing non-failing warnings
+remain: large Vite bundle, color environment, and pytest cache write permission.
+No cache repair, gate weakening or configuration change was made.
+
+Final Git boundary: existing branch and HEAD preserved; index empty; source,
+receipts and archival/navigation changes remain unstaged. No commit, push, PR,
+merge, rebase, reset, clean or stash was performed. No source changed after
+independent acceptance. This completed plan records local acceptance only.

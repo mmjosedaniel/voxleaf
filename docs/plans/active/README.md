@@ -17,10 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`app-hardware-effects-readability.md`](app-hardware-effects-readability.md):
-  planned extraction of App's hardware visibility binding with colocated unit
-  tests, retained App integration tests, and local preference types/UI conditions.
-  Source implementation and runtime validation have not started.
+The [App hardware effects plan](../completed/app-hardware-effects-readability.md)
+is complete and archived: one hardware visibility binding, five added unit/App
+cases, private preference types and named UI conditions. Independent baseline,
+post-change and both aggregate gates passed; ownership and behavior preserved.
+Changes remain unstaged and uncommitted.
 
 The [App readability plan](../completed/app-readability.md) is complete and
 archived: three presentation components/private messages, nine added integration
