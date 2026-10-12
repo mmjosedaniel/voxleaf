@@ -336,6 +336,75 @@ class ControlledNarrationCoordinator {
 }
 
 describe("desktop reader lifecycle surface", () => {
+  it("keeps one effective hardware visibility subscription in StrictMode and disconnects on unmount", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "visibilityState",
+    );
+    let visibility: DocumentVisibilityState = "visible";
+    const addListener = vi.spyOn(document, "addEventListener");
+    const removeListener = vi.spyOn(document, "removeEventListener");
+    const ensureChecked = vi.fn(() => new Promise<never>(() => {}));
+    const check = vi.fn(() => new Promise<never>(() => {}));
+    const close = vi.fn();
+    const hardware = {
+      ensureChecked,
+      check,
+      close,
+    } as unknown as HardwareProfileCompatibilityCoordinator;
+    const dispatchVisibility = (next: DocumentVisibilityState): void => {
+      visibility = next;
+      fireEvent(document, new Event("visibilitychange"));
+    };
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => visibility,
+    });
+    try {
+      const view = render(
+        <StrictMode>
+          <App hardwareCompatibilityCoordinator={hardware} />
+        </StrictMode>,
+      );
+      const added = addListener.mock.calls.filter(
+        ([type]) => type === "visibilitychange",
+      );
+      const removed = removeListener.mock.calls.filter(
+        ([type]) => type === "visibilitychange",
+      );
+      expect(
+        added.filter(
+          ([, listener]) =>
+            !removed.some(
+              ([, removedListener]) => removedListener === listener,
+            ),
+        ),
+      ).toHaveLength(1);
+      dispatchVisibility("visible");
+      dispatchVisibility("hidden");
+      dispatchVisibility("hidden");
+      expect(check).not.toHaveBeenCalled();
+      dispatchVisibility("visible");
+      dispatchVisibility("visible");
+      expect(check).toHaveBeenCalledExactlyOnceWith("operating-system-resume");
+      expect(close).not.toHaveBeenCalled();
+      dispatchVisibility("hidden");
+      view.unmount();
+      dispatchVisibility("visible");
+      expect(check).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(close).toHaveBeenCalledOnce());
+    } finally {
+      cleanup();
+      if (descriptor === undefined) {
+        Reflect.deleteProperty(document, "visibilityState");
+      } else {
+        Object.defineProperty(document, "visibilityState", descriptor);
+      }
+      addListener.mockRestore();
+      removeListener.mockRestore();
+    }
+  });
+
   it("preserves the picker node and resets its value before opening or cancelling selection", async () => {
     const pending: Array<(result: LocalPublicationOpenResult) => void> = [];
     const flow = createTestFlow(() => {
