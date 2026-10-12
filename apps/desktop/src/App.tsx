@@ -12,12 +12,13 @@ import {
 } from "react";
 
 import {
-  OpenBookControl,
-  PublicationHeading,
-  RestorationNotice,
+  ApplicationBar,
+  EmptyPublicationNotice,
+  ShellWelcome,
   type LifecyclePresentation,
   type RestorationPresentation,
 } from "./AppPresentation";
+import { ReadyPublicationSection } from "./ReadyPublicationSection";
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
 import {
   createWebStorageReaderPositionRepository,
@@ -703,6 +704,31 @@ export function App({
             preferenceStatus: activeRestoration.result.preferenceStatus,
           };
   const ready = viewState.status === "ready";
+  const readyReaderProps: ReadyPublicationContentProps | undefined =
+    viewState.status === "ready" && readyRestoration !== undefined
+      ? {
+          publication: viewState.publication,
+          initialPreferences: readyRestoration.result.preferences,
+          preferences: readerPreferencePresentation.preferences,
+          ...(readyRestoration.result.position.mode === "book-start"
+            ? {}
+            : { initialLocator: readyRestoration.result.position.locator }),
+          restoreInitialLocator:
+            readyRestoration.result.position.mode !== "book-start",
+          onPreferencesChange: handleReaderPreferencesChange,
+          onActiveLocatorChange: handleActiveLocatorChange,
+          onNavigationIntent: handleNavigationIntent,
+          onSettledLocatorChange: handleSettledLocatorChange,
+          onInitialRestorationSettled: handleInitialRestorationSettled,
+          ...(narrationCoordinator === undefined
+            ? {}
+            : { narrationSource: narrationCoordinator }),
+        }
+      : undefined;
+  const narrationControls =
+    narrationCoordinator === undefined ? null : (
+      <ProductNarrationControls coordinator={narrationCoordinator} />
+    );
 
   return (
     <main className={ready ? "app-shell app-shell-reader" : "app-shell"}>
@@ -711,117 +737,38 @@ export function App({
         aria-labelledby="shell-title"
         aria-busy={isBusy}
       >
-        <header
-          className={`shell-header application-bar ${
-            ready ? "application-bar-reader" : "application-bar-empty"
-          }`}
-        >
-          <div className="shell-brand">
-            <h1 id="shell-title">VoxLeaf</h1>
-          </div>
-          <OpenBookControl
-            lifecycle={lifecyclePresentation}
-            restoration={restorationPresentation}
-            disabled={openDisabled}
-            onSelection={handleSelection}
-          />
-          {ready ? (
-            <div className="application-bar-actions">
-              <button
-                ref={settingsButtonRef}
-                type="button"
-                aria-haspopup="dialog"
-                aria-expanded={settingsOpen}
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </button>
-            </div>
-          ) : null}
-        </header>
-        {ready ? null : (
-          <div className="shell-welcome">
-            <p className="shell-label">Private local EPUB reader</p>
-            <p className="shell-description">
-              Choose a local EPUB to validate and open it entirely on this
-              device. VoxLeaf does not retain a filesystem path or upload the
-              book.
-            </p>
-          </div>
-        )}
+        <ApplicationBar
+          ready={ready}
+          lifecycle={lifecyclePresentation}
+          restoration={restorationPresentation}
+          openDisabled={openDisabled}
+          onSelection={handleSelection}
+          settingsOpen={settingsOpen}
+          settingsButtonRef={settingsButtonRef}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+        {ready ? null : <ShellWelcome />}
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}
             onFailure={handleRenderingFailure}
           >
-            <section
-              className="publication-summary"
-              aria-labelledby="publication-title"
-            >
-              <PublicationHeading summary={viewState.summary} />
-              {readyRestoration === undefined ? (
-                <p className="reader-restoring-state">
-                  Preparing the saved reader state.
-                </p>
-              ) : (
-                <>
-                  <RestorationNotice
-                    restoration={restorationPresentation}
-                    dismissed={
-                      dismissedRestorationSequence === readyPublicationSequence
-                    }
-                    onDismiss={() =>
-                      setDismissedRestorationSequence(
-                        viewState.publicationSequence,
-                      )
-                    }
-                  />
-                  {narrationCoordinator === undefined ? null : (
-                    <ProductNarrationControls
-                      coordinator={narrationCoordinator}
-                    />
-                  )}
-                  <ReadyPublicationContent
-                    publication={viewState.publication}
-                    initialPreferences={readyRestoration.result.preferences}
-                    preferences={readerPreferencePresentation.preferences}
-                    {...(readyRestoration.result.position.mode === "book-start"
-                      ? {}
-                      : {
-                          initialLocator:
-                            readyRestoration.result.position.locator,
-                        })}
-                    restoreInitialLocator={
-                      readyRestoration.result.position.mode !== "book-start"
-                    }
-                    onPreferencesChange={handleReaderPreferencesChange}
-                    onActiveLocatorChange={handleActiveLocatorChange}
-                    onNavigationIntent={handleNavigationIntent}
-                    onSettledLocatorChange={handleSettledLocatorChange}
-                    onInitialRestorationSettled={
-                      handleInitialRestorationSettled
-                    }
-                    {...(narrationCoordinator === undefined
-                      ? {}
-                      : { narrationSource: narrationCoordinator })}
-                  />
-                </>
-              )}
-            </section>
+            <ReadyPublicationSection
+              summary={viewState.summary}
+              restoration={restorationPresentation}
+              dismissed={
+                dismissedRestorationSequence === readyPublicationSequence
+              }
+              onDismiss={() =>
+                setDismissedRestorationSequence(viewState.publicationSequence)
+              }
+              ReadyPublicationContent={ReadyPublicationContent}
+              readerProps={readyReaderProps}
+              narrationControls={narrationControls}
+            />
           </ReaderErrorBoundary>
         ) : null}
-        {viewState.status === "empty" ? (
-          <section
-            className="empty-publication"
-            aria-labelledby="empty-publication-title"
-          >
-            <h2 id="empty-publication-title">No readable content</h2>
-            <p>
-              VoxLeaf could not find a supported readable passage. Choose
-              another book to continue.
-            </p>
-          </section>
-        ) : null}
+        {viewState.status === "empty" ? <EmptyPublicationNotice /> : null}
         <ReaderSettingsDialog
           open={ready && settingsOpen}
           onClose={closeSettings}

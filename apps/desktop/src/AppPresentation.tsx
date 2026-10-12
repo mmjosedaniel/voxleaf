@@ -1,4 +1,4 @@
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, RefObject } from "react";
 
 import type { ReaderPreferencesReadResult } from "./persistence/reader-position-repository";
 import type { ReaderBookStartReason } from "./persistence/reader-position-restore-coordinator";
@@ -115,6 +115,86 @@ function restorationNotice(
     return "Saved reader appearance settings could not be used. Default settings are active.";
   }
   return undefined;
+}
+
+interface ApplicationBarProps {
+  readonly ready: boolean;
+  readonly lifecycle: LifecyclePresentation;
+  readonly restoration: RestorationPresentation | undefined;
+  readonly openDisabled: boolean;
+  readonly onSelection: (event: ChangeEvent<HTMLInputElement>) => void;
+  readonly settingsOpen: boolean;
+  readonly settingsButtonRef: RefObject<HTMLButtonElement | null>;
+  readonly onOpenSettings: () => void;
+}
+
+export function ApplicationBar({
+  ready,
+  lifecycle,
+  restoration,
+  openDisabled,
+  onSelection,
+  settingsOpen,
+  settingsButtonRef,
+  onOpenSettings,
+}: ApplicationBarProps) {
+  return (
+    <header
+      className={`shell-header application-bar ${
+        ready ? "application-bar-reader" : "application-bar-empty"
+      }`}
+    >
+      <div className="shell-brand">
+        <h1 id="shell-title">VoxLeaf</h1>
+      </div>
+      <OpenBookControl
+        lifecycle={lifecycle}
+        restoration={restoration}
+        disabled={openDisabled}
+        onSelection={onSelection}
+      />
+      {ready ? (
+        <div className="application-bar-actions">
+          <button
+            ref={settingsButtonRef}
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+            onClick={onOpenSettings}
+          >
+            Settings
+          </button>
+        </div>
+      ) : null}
+    </header>
+  );
+}
+
+export function ShellWelcome() {
+  return (
+    <div className="shell-welcome">
+      <p className="shell-label">Private local EPUB reader</p>
+      <p className="shell-description">
+        Choose a local EPUB to validate and open it entirely on this device.
+        VoxLeaf does not retain a filesystem path or upload the book.
+      </p>
+    </div>
+  );
+}
+
+export function EmptyPublicationNotice() {
+  return (
+    <section
+      className="empty-publication"
+      aria-labelledby="empty-publication-title"
+    >
+      <h2 id="empty-publication-title">No readable content</h2>
+      <p>
+        VoxLeaf could not find a supported readable passage. Choose another book
+        to continue.
+      </p>
+    </section>
+  );
 }
 
 export function OpenBookControl({

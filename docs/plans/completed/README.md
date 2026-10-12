@@ -16,6 +16,7 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`app-conditional-presentation.md`](app-conditional-presentation.md): extracted ApplicationBar, ShellWelcome, EmptyPublicationNotice and ReadyPublicationSection, with typed reader props and three App characterization tests; independent baseline/post-change/browser/native/portable/full acceptance passed after correcting a local EdgeDriver mismatch. Public behavior and resource ownership are preserved; changes were unstaged and uncommitted at closeout.
 - [`app-preference-effects-readability.md`](app-preference-effects-readability.md): extracted startup preference hydration and the narrator presentation binding after 28 App characterization cases; 16 module cases and independent browser/native/aggregate validation passed. The later [Windows child-reaping test repair](../evidence/native-child-reaping-test-repair/README.md) records its separate correction and evidence.
 - [`piper-runtime-pr-218.md`](piper-runtime-pr-218.md): upgraded the current Piper runtime to 1.8.0 with ONNX Runtime 1.30.0, preserving both voice artifacts and recording independent bounded ES/EN host acceptance.
 - [`piper-onnxruntime-pr-219.md`](piper-onnxruntime-pr-219.md): upgraded ONNX Runtime to 1.30.0 with independent Piper ES/EN validation; Piper 1.4.2 in this historical record precedes PR #218.
