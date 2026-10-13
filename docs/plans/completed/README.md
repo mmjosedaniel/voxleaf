@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`desktop-ui-logic-readability.md`](desktop-ui-logic-readability.md): extracted pure narration messages, shared the local settings-handler sequence and semantic comparator, and named the exact Settings disabled condition. Independent baselines/post-change gates, reader benchmarks, Piper/Chatterbox ES/EN and combined portable/full/native acceptance pass. Inherited host AppData redirection was diagnosed without weakening package containment. Four units, 937 changed source/test lines; changes remain unstaged and uncommitted.
+
 - [`app-restoration-derivations.md`](app-restoration-derivations.md): extracted the shared publication-reference/sequence predicate, pending settlement transition and presentation mapper; 14 pure cases and two App characterization cases added. Independent baseline, post-change, browser/native, portable and full host acceptance pass; one fixture typing correction is separately recorded. Four source/test paths, 490 changed lines; App retains effects and resource ownership. Changes remain unstaged and uncommitted.
 
 - [`apps-organization-follow-up.md`](apps-organization-follow-up.md): native resource/TTS/reader helper extraction, intact publication lifecycle move and byte-identical image/test grouping; separately reproduced and reviewed seek-observation repair. Fresh baselines, unit acceptance, combined portable/full, browser/native, benchmark and Piper/Chatterbox Spanish/English gates pass. Qwen remains deferred; changes are unstaged and uncommitted at closeout.

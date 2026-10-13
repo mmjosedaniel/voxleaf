@@ -6,9 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Desktop UI logic readability](desktop-ui-logic-readability.md): planned pure
-  narration messages, local settings-handler and semantic-comparator reuse,
-  and a bounded Settings condition cleanup, with independent acceptance per unit.
+No implementation ExecPlan is currently active. The four-unit
+[desktop UI logic readability plan](../completed/desktop-ui-logic-readability.md)
+completed independent unit, reader benchmark, supported model/profile-switch
+and combined acceptance; its changes remain unstaged and uncommitted.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).

@@ -370,6 +370,47 @@ assertions and resource cleanup remain in force.
 
 The formatting, linting, type-checking, and production builds in `pnpm.cmd check` are deterministic validation stages, but they are not substitutes for behavior tests once product logic exists.
 
+### Desktop presentation and semantic comparison coverage
+
+`apps/desktop/src/tts/product-narration-presentation.test.ts` directly checks
+exact availability/profile messages, recovery/failure/preparation/playback
+precedence, all service-state variants and ordered failure guidance.
+`ProductNarrationControls.test.tsx` retains component actions, subscriptions,
+startup cancellation and disclosure coverage, including the absent-error guard.
+
+`apps/desktop/src/reader/SemanticDocument.test.tsx` additionally observes
+completed flat/list descendants across controlled yields, partial progress and
+order, destination entry/exit and range boundaries, absent/removed destinations,
+ref cleanup, service replacement and document/context replacement. It uses
+public callbacks and refs without replacing React memoization. These observations
+cannot independently isolate outer list-group memoization or the context branch
+when a replacement document also creates a new plan; exact static comparator
+equivalence and the unchanged `pnpm.cmd benchmark:reader` gate complement them.
+
+The existing `ReaderSettingsDialog.test.tsx` remains unchanged for the local
+`readerControlsDisabled` naming item. Source equivalence supplies the boolean
+proof; no redundant test or new helper is needed.
+
+`HardwareCompatibilityControls.test.tsx` characterizes deferred true/false
+results for profile, language and reset through supplied callbacks and coordinator
+fallbacks: pending order, retained disabled controls, success-only recovery,
+arguments/receivers and a separate deferred recheck. Exceptional rejection and
+pending-notification paths retain exact `try/finally` source equivalence; these
+tests do not claim exhaustive exception execution coverage. The original
+handlers passed the added characterization before the shared local function.
+Piper/Chatterbox Spanish and English exact-host gates passed before and after.
+
+Host validation must use actual package/model final paths in the same managed
+tree. Tool-inherited AppData redirection into Codex's MSIX LocalCache can trigger
+the native containment guard even outside the sandbox; package-identity API
+result 15700 alone does not rule this out. Use a supervised ordinary local
+PowerShell context and retain the containment checks. The generic native smoke
+requires its model-free environment; enable real model triples only for the
+model-backed arms. See the [diagnosis and execution evidence](../plans/evidence/desktop-ui-logic-readability/host-context-recovery.md).
+
+Execution evidence is retained in the
+[completed readability plan](../plans/completed/desktop-ui-logic-readability.md).
+
 ### Native local-file open flow
 
 ADR-0009 also requires native Windows WebView2 evidence because jsdom and Chromium cannot prove packaged file-input behavior. `pnpm.cmd test:native-startup` builds and launches the release executable, first proves the M007 low-level protocol probe plus the supervised model-free typed-client lifecycle with bounded binary delivery and cancellation, then creates disposable repository-authored synthetic files outside the repository to verify:

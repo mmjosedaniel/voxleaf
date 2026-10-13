@@ -1,6 +1,7 @@
 # Desktop presentation rules, action handlers, and render comparisons
 
-Status: planned; implementation and runtime acceptance have not started.
+Status: completed on 2026-10-13. All four units independently accepted;
+combined portable/full/native gates pass. Changes remain unstaged/uncommitted.
 Prepared on 2026-10-12. Implementation branch:
 `codex/desktop-ui-logic-readability`, created from clean, up-to-date `main` at
 `fc2f3ace3d07bf9c3ad1fa73503e01b8986754ec`.
@@ -34,10 +35,10 @@ No feature, performance improvement, new state owner, hook, store, singleton,
 dependency or public contract is promised. The accepted reader model, local
 TTS, privacy, bounded audio and identity-first cancellation remain in force.
 
-The current delivery authorizes this plan, its links, the branch and one local
-documentation commit. It does not authorize source implementation or later
-source commits, push or PR creation. A later execution request supplies the
-implementation authority; retain any Git limits in that request.
+The original planning delivery authorized this plan, its links, the branch and
+one local documentation commit. The 2026-10-12 execution request authorizes the
+four source units and their documentation. Staging, commits, push and PR creation
+are explicitly prohibited; accepted disjoint units remain unstaged.
 
 ## 3. Current state
 
@@ -211,7 +212,8 @@ local functions do not require a new architectural component or ADR.
 
 ### Milestone 1: Refresh scope and establish independent baselines
 
-Status: not started.
+Status: complete. Fresh execution audits and passing baselines for all units;
+the original hardware BASELINE-FAIL is retained with its diagnosed recovery.
 
 Use the existing branch. Inspect current HEAD, planning commit, index and
 worktree. Preserve unrelated work and stop on overlap with a target allowlist.
@@ -230,50 +232,77 @@ independent baseline for that exact allowlist. Freeze its bounded execution
 order only after baseline PASS. For the naming item, record that the authority
 is the user-requested small cleanup and director decision, not an auditor CHANGE.
 Relevant existing failures are BASELINE-FAIL and do not authorize repair.
-Actual results: pending.
+Actual results: fresh execution audits returned CHANGE for narration, hardware
+and comparison; Settings retained SKIP for an abstraction with the explicit
+user-authorized naming-only exception. All unit paths were initially clean;
+index remains empty. All four approved orders followed passing baselines;
+hardware's order followed its corrected second baseline. The seven frozen
+authority modules, generated sources, App and its
+helpers, coordinators, domain policies, dependencies, runners and historical
+plans remain excluded. The deferred large-method recommendations remain deferred.
 
 ### Milestone 2: Extract narration presentation and its tests
 
-Status: not started. Target: `SRC-NARRATION-PRESENTATION-01`.
+Status: complete; accepted unstaged. Target: `SRC-NARRATION-PRESENTATION-01`.
 
 Move the two existing message functions and extract the failure-guidance
 expression. Add direct precedence/profile cases, preserve the component's
 render guard and its existing integration assertions, and inspect type-only
 dependency direction. Obtain the worker Change Packet and independent
-post-change acceptance. Actual result: pending.
+post-change acceptance. Actual result: independent baseline and post-change
+PASS; see [frozen order](../evidence/desktop-ui-logic-readability/narration-order.md)
+and [immutable acceptance](../evidence/desktop-ui-logic-readability/narration-post.md).
 
 ### Milestone 3: Consolidate the three selection handlers
 
-Status: not started. Target: `SRC-HARDWARE-CONTROLS-02`.
+Status: complete; accepted unstaged.
+Target: `SRC-HARDWARE-CONTROLS-02`.
 
 Characterize missing deferred true/false outcomes before production changes.
 Introduce the local operation helper and reduce each handler to its original
 callback/fallback adapter. Keep recheck and cleanup separate. Validate the
 pending/recovery sequence, receiver preservation, unchanged error behavior and
-the four supported model/language host arms. Actual result: pending.
+the four supported model/language host arms. Actual result: common checks,
+native startup and preflight passed, but both Piper profile-switch arms timed
+out and Chatterbox Spanish reported optional-profile failure; English was not
+reached. No implementation order was issued for that failed attempt. See the
+[independent baseline receipt](../evidence/desktop-ui-logic-readability/hardware-baseline.md).
+The authorized continuation isolated inherited AppData redirection, preserved
+native containment and established a passing baseline from the corrected host
+context. See [diagnosis](../evidence/desktop-ui-logic-readability/host-context-recovery.md)
+and [fresh baseline/frozen order](../evidence/desktop-ui-logic-readability/hardware-order.md).
+The worker characterized the original handlers before refactoring. The
+200-line patch then passed all twelve commands and all four supported model
+arms independently; see [post-change acceptance](../evidence/desktop-ui-logic-readability/hardware-post.md).
 
 ### Milestone 4: Share semantic comparison with render characterization
 
-Status: not started. Target: `SRC-SEMANTIC-COMPARISON-03`.
+Status: complete; accepted unstaged. Target: `SRC-SEMANTIC-COMPARISON-03`.
 
 Characterize completed/partial block and list groups through existing public
 component seams before replacing either comparator. Add the private union,
 reuse one unchanged predicate body and connect both memo calls. Review static
 equivalence and run browser/performance checks without changing limits.
-Actual result: pending.
+Actual result: independent baseline and post-change PASS, including six
+benchmark cases before and after. The 225-line patch preserves the comparator
+body exactly. See [order/baseline](../evidence/desktop-ui-logic-readability/semantic-order.md)
+and [acceptance](../evidence/desktop-ui-logic-readability/semantic-post.md).
 
 ### Milestone 5: Name the repeated Settings condition
 
-Status: not started. Target: `SRC-SETTINGS-CONDITION-04`.
+Status: complete; accepted unstaged. Target: `SRC-SETTINGS-CONDITION-04`.
 
 Apply only the local constant and its two uses after the bounded baseline/order.
 Keep existing tests unchanged; review exact expression equivalence and run
 the applicable existing checks. Do not turn the standalone-abstraction SKIP
-into a broader Settings refactor. Actual result: pending.
+into a broader Settings refactor. Actual result: exact constant and two uses,
+13 changed lines, unchanged supporting test; independent baseline and post-change
+PASS. See [order/baseline](../evidence/desktop-ui-logic-readability/settings-order.md)
+and [acceptance](../evidence/desktop-ui-logic-readability/settings-post.md).
 
 ### Milestone 6: Complete combined acceptance and documentation
 
-Status: not started.
+Status: complete. All four units and refreshed combined acceptance pass.
 
 Allow at most two bounded correction loops per refactor order; then redesign
 the order if necessary. Do not carry a rejected patch into the next unit.
@@ -291,7 +320,17 @@ After all four requested items and all required gates pass, move this plan to
 `docs/plans/completed/`, update both indexes and `docs/README.md`, repair
 maintained incoming links and leave no active redirect. Preserve other
 historical plan bodies. Independently validate documentation after the move.
-Actual result: pending.
+Actual result: `pnpm.cmd check:portable`, `pnpm.cmd check` and
+`pnpm.cmd test:native-startup` all exit 0 on the final four-unit source.
+The [current ten-path final report](../evidence/desktop-ui-logic-readability/final-source-02.md)
+records PASS and matching identities; the earlier three-unit BLOCKED report
+remains historical. Its identity snapshots bracket the complete sequential
+command set, not each individual command; see the
+[documentation clarification](../evidence/desktop-ui-logic-readability/documentation-corrections.md).
+The testing map and maintained indexes reflect completion.
+This plan is archived without an active redirect; documentation verification
+is recorded separately in the campaign evidence. No other historical plan
+body, source authority or prior immutable receipt was edited.
 
 ## 8. Testing and benchmark strategy
 
@@ -437,6 +476,14 @@ report before acceptance or authorized staging.
 
 ## 10. Progress log
 
+- 2026-10-12 execution: confirmed existing branch
+  `codex/desktop-ui-logic-readability`, HEAD
+  `5be831c23135ca00f94b2b3374f0330de2b658ce`, empty index and clean worktree.
+  The planning commit follows the original branch base; no Git setup mutation
+  is needed or authorized. Configured auditor (Sol high), worker (Sol high)
+  and validator (Astra high) roles are exposed. The director will reuse these
+  roles and omit Git stewardship because all Git writes are forbidden.
+  Fresh narration audit started; no source edit or acceptance is claimed yet.
 - 2026-10-12: reviewed the current source inventory and completed three focused
   read-only audits. No runtime baseline or source edits were performed.
 - 2026-10-12: recorded the Settings standalone-abstraction SKIP and retained
@@ -445,15 +492,57 @@ report before acceptance or authorized staging.
   acceptance for the profile-selection handler unit; included it in section 8.
 - 2026-10-12: fast-forward-only refresh confirmed main was current; created the
   implementation branch at the HEAD recorded above and prepared plan/index links.
-- [ ] Milestone 1: execution scope, orders and independent baselines accepted.
-- [ ] Milestone 2: pure messages and tests accepted.
-- [ ] Milestone 3: shared handlers and supported host gates accepted.
-- [ ] Milestone 4: shared comparator, characterization and benchmark accepted.
-- [ ] Milestone 5: exact Settings naming cleanup accepted.
-- [ ] Milestone 6: combined checks, documentation and archival complete.
+- [x] Milestone 1: execution scope/audits and all passing baselines established;
+  original hardware failure diagnosed and recovered before its order.
+- [x] Milestone 2: pure messages and tests accepted (499-line patch; seven host
+  checks passed, 719 Vitest / 70 Node / seven browser cases; one ceiling-only
+  correction before validation). No Git mutation.
+- [x] Milestone 3: shared handlers and supported host gates accepted.
+  Fresh baseline and post-change PASS, including Piper/Chatterbox ES/EN.
+- [x] Milestone 4: shared comparator, characterization and benchmark accepted.
+- [x] Milestone 5: exact Settings naming cleanup accepted, supporting tests unchanged.
+- [x] Milestone 6: combined checks, documentation and archival complete.
+  Refreshed four-unit portable/full/native acceptance PASS with ten matching
+  identities. Testing map updated, diagram reviewed and maintained links repaired.
 
 ## 11. Discoveries and decisions
 
+- 2026-10-13 continuation: the maintainer explicitly authorizes investigation
+  and repair of the Chatterbox/profile-selection blocker before resuming B.
+  Preserve accepted A/C/D and the empty index. This adds a bounded bug-fix
+  prerequisite; its final source allowlist follows demonstrated root cause,
+  with regression evidence and independent change review for any behavioral
+  repair. Temporary content-safe probes live under ignored `tmp/evidence/`;
+  a temporary native diagnostic test may inspect the existing verifier and
+  must be removed before the final patch. Frozen package authorities, hashes,
+  thresholds and existing acceptance requirements remain unchanged.
+  Initial host inspection confirmed the installed v3 runtime manifest, all
+  13,083 manifested runtime files and six model files match their authorities.
+  A read-only WebDriver observation reproduced the integrity-error UI before
+  profile selection; the later findings below resolve that investigation.
+- Execution: the hardware baseline passed deterministic/browser/native startup
+  and preflight but failed supported profile switching before any handler edit.
+  Both Piper arms timed out; Chatterbox Spanish reported optional-profile failure
+  and English was not reached. The precise root cause was unproven at that point. No gate
+  was weakened and no unrelated runtime or machine configuration repair made.
+- Continuation: the cause was proven as inherited AppData redirection into
+  Codex's MSIX LocalCache tree. Canonical containment correctly rejected those
+  paths. The identical read-only native probe passed in a WMI-launched ordinary
+  PowerShell context with matching actual root/file paths. No production fix,
+  package reinstall or containment relaxation was needed. The temporary native
+  probe was removed. A generic-native setup error from real-model variables was
+  separately preserved and corrected with the existing model-free environment.
+  Fresh baseline and post-change reports passed all twelve commands; the
+  post-change run needed no retries. This environment-only recovery requires
+  no behavioral change review; the independent refactor gate remains in force.
+- Execution: narration's first formatted patch exceeded 500 lines; one bounded
+  test-fixture correction retained all assertions and brought it to 499 before
+  acceptance. Comparator characterization passed against the original production
+  SHA before its 225-line refactor. Settings changed 13 lines without test edits.
+- Architecture closeout review: the canonical system diagram still matches the
+  delivered changes. Pure message rules, one local predicate and a boolean name
+  do not change process/package, data-flow, persistence or trust boundaries.
+  No diagram or ADR edit is required; hardware/domain owners remain unchanged.
 - Two of the substantive recommendations need only a local function. New
   files are justified for directly testable presentation rules, not for each
   condition, handler or comparator.
@@ -472,20 +561,23 @@ report before acceptance or authorized staging.
 
 ## 12. Final validation results
 
-This preparation and its requested commit concern documentation only. Store
-their independent receipt separately; do not present it as source acceptance.
+The original planning receipt remains historical. The execution receipts above
+record fresh host commands and identities; all source changes remain unstaged.
 
 | Requirement | Current result |
 | --- | --- |
-| Fresh execution orders and source baselines | Not run. |
-| Pure narration messages and direct cases | Not implemented. |
-| Shared selection handler and characterization | Not implemented. |
-| Shared semantic comparator and render cases | Not implemented. |
-| Minor Settings naming adjustment | Not implemented. |
-| Browser, benchmark and supported exact-host gates | Not run for this plan. |
-| Combined portable/full/native checks and identity review | Not run for this plan. |
-| Testing-map update, diagram review and archival | Pending implementation. |
+| Fresh execution orders and source baselines | All four baseline PASS/orders; original hardware failure and recovery retained. |
+| Pure narration messages and direct cases | Implemented and independently accepted; 42 direct cases plus retained component suite. |
+| Shared selection handler and characterization | Implemented and accepted; 200-line patch, twelve deferred combinations plus separate recheck. |
+| Shared semantic comparator and render cases | Implemented and accepted; four public-seam cases, static equivalence, benchmark before/after. |
+| Minor Settings naming adjustment | Implemented and accepted; exact expression, two uses, test unchanged. |
+| Browser, benchmark and supported exact-host gates | Seven browser cases pass per accepted unit; six benchmark cases pass before/after C; all Piper/Chatterbox ES/EN gates pass before/after B. |
+| Combined portable/full/native checks and identity review | Fresh four-unit PASS: all three commands exit 0, ten-path/HEAD recheck PASS, index empty. |
+| Testing-map update, diagram review and archival | Map updated for all units, diagram remains applicable; completed plan and maintained links updated. |
 
-Keep the plan active while any required implementation or acceptance remains
-outstanding. Record actual failed attempts and limitations alongside later
-successes; do not rewrite historical evidence to imply a clean first pass.
+Closure retains the original failed baseline, environmental diagnosis, corrected
+baseline setup and subsequent first-attempt post-change passes. Nothing remains
+blocked in this plan. Qwen model-backed acceptance remains deferred under
+ADR-0051; no broader acquisition, hardware or latency claim is added. The
+repository is left on the existing branch and HEAD with an empty index; no
+staging, commit, push or PR is authorized or performed.
