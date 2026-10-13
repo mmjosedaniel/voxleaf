@@ -1158,6 +1158,121 @@ describe("desktop reader lifecycle surface", () => {
     );
   });
 
+  it("ignores an old publication's settlement callback while its same-book replacement is pending", async () => {
+    const first = createTestPublication("First restoration session");
+    const second = createTestPublication("Replacement restoration session");
+    expect(second).not.toBe(first);
+    expect(second.book.identity).toEqual(first.book.identity);
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "ready",
+      state: persistedState(TEST_LOCATED_BLOCK.startLocator),
+    });
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      return (
+        <article aria-label="Replacement settlement reader">Reader</article>
+      );
+    }
+    render(
+      <App
+        openFlow={createTestFlow(
+          vi
+            .fn<LocalPublicationOpenFlow["open"]>()
+            .mockResolvedValueOnce({ status: "ready", publication: first })
+            .mockResolvedValueOnce({ status: "ready", publication: second }),
+        )}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+    selectEpub("first.epub");
+    await screen.findByRole("article", {
+      name: "Replacement settlement reader",
+    });
+    expect(readerProps?.publication).toBe(first);
+    const oldCallback = readerProps?.onInitialRestorationSettled;
+    expect(oldCallback).toBeDefined();
+    selectEpub("replacement.epub");
+    await waitFor(() => expect(readerProps?.publication).toBe(second));
+    act(() =>
+      oldCallback?.({
+        status: "unavailable",
+        locator: TEST_LOCATED_BLOCK.startLocator,
+      }),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Restoring saved reader state.",
+    );
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.queryByLabelText("Reading position recovery")).toBeNull();
+    act(() =>
+      readerProps?.onInitialRestorationSettled?.({
+        status: "settled",
+        locator: TEST_LOCATED_BLOCK.startLocator,
+      }),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Reading position restored.",
+    );
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+
+  it("preserves the accepted settlement message and notice after conflicting duplicate callbacks", async () => {
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "ready",
+      state: persistedState(TEST_LOCATED_BLOCK.startLocator),
+    });
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      return <article aria-label="Duplicate settlement reader">Reader</article>;
+    }
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+    selectEpub();
+    await screen.findByRole("article", { name: "Duplicate settlement reader" });
+    const callback = readerProps?.onInitialRestorationSettled;
+    expect(callback).toBeDefined();
+    act(() =>
+      callback?.({
+        status: "unavailable",
+        locator: TEST_LOCATED_BLOCK.startLocator,
+      }),
+    );
+    for (const status of ["settled", "superseded"] as const) {
+      act(() => callback?.({ status, locator: testLocatorAt(1) }));
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "The EPUB opened, but its saved reading position could not be aligned.",
+      );
+      expect(
+        screen.getByLabelText("Reading position recovery"),
+      ).toHaveTextContent(
+        "VoxLeaf could not align the saved reading position.",
+      );
+      expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+    }
+  });
+
   it("omits the initial locator when a new book starts at the beginning", async () => {
     let readerProps: ReadyPublicationContentProps | undefined;
     function BookStartReader(props: ReadyPublicationContentProps) {
