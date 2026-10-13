@@ -167,6 +167,155 @@ async function ensureChecked(
 }
 
 describe("hardware compatibility controls", () => {
+  it.each([
+    ["profile", "selectProfile", [EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID]],
+    ["language", "selectLanguage", ["en"]],
+    ["reset", "resetLanguage", []],
+  ] as const)(
+    "orders deferred %s settings changes",
+    async (operation, method, args) => {
+      for (const callbackProvided of [false, true]) {
+        for (const accepted of [false, true]) {
+          const subject = coordinator();
+          let settle!: (value: boolean) => void;
+          const pending = new Promise<boolean>((resolve) => {
+            settle = resolve;
+          });
+          const events: string[] = [];
+          const fallback = vi
+            .spyOn(subject, method)
+            .mockImplementation(function (
+              this: HardwareProfileCompatibilityCoordinator,
+            ) {
+              expect(this).toBe(subject);
+              events.push("operation");
+              return pending;
+            });
+          const callback = vi.fn(() => {
+            events.push("operation");
+            return pending;
+          });
+          const onRecoveryEpisodeReset = vi.fn(() => {
+            events.push("recovery");
+          });
+          const onSelectionPendingChange = vi.fn((value: boolean) => {
+            events.push(`pending:${value}`);
+          });
+          const callbacks = !callbackProvided
+            ? {}
+            : operation === "profile"
+              ? { onSelectProfile: callback }
+              : operation === "language"
+                ? { onSelectLanguage: callback }
+                : { onResetNarrationSettings: callback };
+          const rendered = render(
+            <HardwareCompatibilityControls
+              coordinator={subject}
+              presentation="narration"
+              onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+              onSelectionPendingChange={onSelectionPendingChange}
+              {...callbacks}
+            />,
+          );
+          await ensureChecked(subject);
+          const radios = screen.getAllByRole("radio");
+          const reset = screen.getByRole("button", {
+            name: "Reset narration settings",
+          });
+          const trigger =
+            operation === "reset"
+              ? reset
+              : screen.getByRole("radio", {
+                  name:
+                    operation === "profile"
+                      ? "Qwen and Serena Spanish quality profile (Development)"
+                      : "English",
+                });
+          fireEvent.click(trigger);
+          expect(events).toEqual(["pending:true", "operation"]);
+          expect(screen.getAllByRole("radio")).toEqual(radios);
+          for (const control of [...radios, reset]) {
+            expect(control).toBeInTheDocument();
+            expect(control).toBeDisabled();
+          }
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "Applying narration settings. Existing settings remain available.",
+          );
+          expect(onRecoveryEpisodeReset).not.toHaveBeenCalled();
+          if (callbackProvided) {
+            expect(callback).toHaveBeenCalledExactlyOnceWith(...args);
+            expect(fallback).not.toHaveBeenCalled();
+          } else {
+            expect(fallback).toHaveBeenCalledExactlyOnceWith(...args);
+            expect(callback).not.toHaveBeenCalled();
+          }
+          await act(async () => {
+            settle(accepted);
+            await pending;
+          });
+          expect(events).toEqual(
+            accepted
+              ? ["pending:true", "operation", "recovery", "pending:false"]
+              : ["pending:true", "operation", "pending:false"],
+          );
+          expect(onSelectionPendingChange.mock.calls).toEqual([
+            [true],
+            [false],
+          ]);
+          expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(
+            accepted ? 1 : 0,
+          );
+          for (const control of [...radios, reset])
+            expect(control).toBeEnabled();
+          expect(screen.queryByRole("status")).not.toBeInTheDocument();
+          rendered.unmount();
+        }
+      }
+    },
+  );
+
+  it("keeps deferred explicit recheck outside selection pending", async () => {
+    const subject = coordinator();
+    await ensureChecked(subject);
+    let settle!: (value: ReturnType<typeof subject.observe>) => void;
+    const pending = new Promise<ReturnType<typeof subject.observe>>(
+      (resolve) => {
+        settle = resolve;
+      },
+    );
+    const check = vi.spyOn(subject, "check").mockImplementation(function (
+      this: HardwareProfileCompatibilityCoordinator,
+    ) {
+      expect(this).toBe(subject);
+      return pending;
+    });
+    const onRecoveryEpisodeReset = vi.fn();
+    const onSelectionPendingChange = vi.fn();
+    render(
+      <HardwareCompatibilityControls
+        coordinator={subject}
+        presentation="device"
+        onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+        onSelectionPendingChange={onSelectionPendingChange}
+      />,
+    );
+    const recheck = screen.getByRole("button", {
+      name: "Check compatibility again",
+    });
+    recheck.focus();
+    fireEvent.click(recheck);
+    expect(check).toHaveBeenCalledExactlyOnceWith("explicit-recheck");
+    expect(onRecoveryEpisodeReset).not.toHaveBeenCalled();
+    expect(onSelectionPendingChange).not.toHaveBeenCalled();
+    await act(async () => {
+      settle(subject.observe());
+      await pending;
+    });
+    expect(onRecoveryEpisodeReset).toHaveBeenCalledOnce();
+    expect(onSelectionPendingChange).not.toHaveBeenCalled();
+    expect(recheck).toHaveFocus();
+  });
+
   it("announces the admitted fallback and exposes only admitted selection controls", async () => {
     const subject = coordinator();
     render(
