@@ -49,7 +49,7 @@ import {
   type ReaderLocatorSettlementReason,
   type ReaderUserNavigationEvent,
 } from "./reader/ReaderPublication";
-import { createReaderLifecycle } from "./reader/reader-lifecycle";
+import { createReaderLifecycle } from "./publication/reader-lifecycle";
 import {
   DEFAULT_READER_PREFERENCES,
   updateReaderPreference,

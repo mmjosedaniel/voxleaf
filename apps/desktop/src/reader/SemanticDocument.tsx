@@ -22,7 +22,7 @@ import {
   type ScheduleLargeChapterYield,
 } from "./large-chapter-rendering";
 import type { ActiveVisualLocatorTracker } from "./active-visual-locator";
-import type { PublicationRasterImageLoadPort } from "./publication-raster-image-loader";
+import type { PublicationRasterImageLoadPort } from "./images/publication-raster-image-loader";
 import type { ReaderTargetAvailability } from "./reader-navigation";
 import type { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import {
@@ -35,7 +35,7 @@ import {
 import {
   SemanticRasterImageElement,
   type ObserveRasterImageVisibility,
-} from "./SemanticRasterImage";
+} from "./images/SemanticRasterImage";
 
 interface EffectiveTextContext {
   readonly language?: string;
