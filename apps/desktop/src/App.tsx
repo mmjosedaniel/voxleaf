@@ -16,9 +16,14 @@ import {
   EmptyPublicationNotice,
   ShellWelcome,
   type LifecyclePresentation,
-  type RestorationPresentation,
 } from "./AppPresentation";
 import { ReadyPublicationSection } from "./ReadyPublicationSection";
+import {
+  applyInitialRestorationSettlement,
+  isReaderRestorationForPublication,
+  toRestorationPresentation,
+  type ReaderRestoration,
+} from "./app-reader-restoration";
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
 import {
   createWebStorageReaderPositionRepository,
@@ -34,10 +39,7 @@ import {
   createWebStorageNarrationPlaybackPreferenceRepository,
   type NarrationPlaybackPreferenceRepository,
 } from "./persistence/narration-playback-preference";
-import {
-  ReaderPositionRestoreCoordinator,
-  type ReadyReaderOpenRestoration,
-} from "./persistence/reader-position-restore-coordinator";
+import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-restore-coordinator";
 import {
   ReaderPositionSaveCoordinator,
   type ReaderPositionSaveEnvironment,
@@ -115,25 +117,6 @@ export interface AppProps {
   ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
 }
-
-type ReaderRestorationSettlement =
-  "pending" | ReaderInitialRestorationSettlement["status"];
-
-interface LoadingReaderRestoration {
-  readonly status: "loading";
-  readonly publication: OpenedPublication;
-  readonly publicationSequence: number;
-}
-
-interface ReadyReaderRestoration {
-  readonly status: "ready";
-  readonly publication: OpenedPublication;
-  readonly publicationSequence: number;
-  readonly result: ReadyReaderOpenRestoration;
-  readonly settlement: ReaderRestorationSettlement;
-}
-
-type ReaderRestoration = LoadingReaderRestoration | ReadyReaderRestoration;
 
 function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
@@ -239,12 +222,13 @@ export function App({
     viewState.status === "ready" ? viewState.publication : undefined;
   const readyPublicationSequence =
     viewState.status === "ready" ? viewState.publicationSequence : undefined;
-  const activeRestoration =
-    readerRestoration !== undefined &&
-    readerRestoration.publication === readyPublication &&
-    readerRestoration.publicationSequence === readyPublicationSequence
-      ? readerRestoration
-      : undefined;
+  const activeRestoration = isReaderRestorationForPublication(
+    readerRestoration,
+    readyPublication,
+    readyPublicationSequence,
+  )
+    ? readerRestoration
+    : undefined;
   const readyRestoration =
     activeRestoration?.status === "ready" ? activeRestoration : undefined;
   const readyRestorationResult = readyRestoration?.result;
@@ -327,8 +311,11 @@ export function App({
           });
           setReaderRestoration((current) =>
             current?.status === "loading" &&
-            current.publication === publication &&
-            current.publicationSequence === publicationSequence
+            isReaderRestorationForPublication(
+              current,
+              publication,
+              publicationSequence,
+            )
               ? Object.freeze({
                   status: "ready",
                   publication,
@@ -585,15 +572,12 @@ export function App({
   const handleInitialRestorationSettled = useCallback(
     (settlement: ReaderInitialRestorationSettlement): void => {
       setReaderRestoration((current) =>
-        current?.status === "ready" &&
-        current.publication === readyPublication &&
-        current.publicationSequence === readyPublicationSequence &&
-        current.settlement === "pending"
-          ? Object.freeze({
-              ...current,
-              settlement: settlement.status,
-            })
-          : current,
+        applyInitialRestorationSettlement(
+          current,
+          readyPublication,
+          readyPublicationSequence,
+          settlement.status,
+        ),
       );
     },
     [readyPublication, readyPublicationSequence],
@@ -686,23 +670,7 @@ export function App({
     viewState.status === "failure"
       ? { status: "failure", reason: viewState.reason }
       : { status: viewState.status };
-  const restorationPresentation: RestorationPresentation | undefined =
-    activeRestoration === undefined
-      ? undefined
-      : activeRestoration.status === "loading"
-        ? { status: "loading" }
-        : {
-            status: "ready",
-            settlement: activeRestoration.settlement,
-            position:
-              activeRestoration.result.position.mode === "book-start"
-                ? {
-                    mode: "book-start",
-                    reason: activeRestoration.result.position.reason,
-                  }
-                : { mode: activeRestoration.result.position.mode },
-            preferenceStatus: activeRestoration.result.preferenceStatus,
-          };
+  const restorationPresentation = toRestorationPresentation(activeRestoration);
   const ready = viewState.status === "ready";
   const readyReaderProps: ReadyPublicationContentProps | undefined =
     viewState.status === "ready" && readyRestoration !== undefined

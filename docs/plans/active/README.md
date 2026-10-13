@@ -8,7 +8,7 @@ each plan's progress and validation results current.
 
 No active implementation plans.
 
-The App conditional-presentation, preference-effects and organization/refactor plans are
+The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
 
 The [roadmap](../roadmap.md) retains future priorities, deferred work and product
