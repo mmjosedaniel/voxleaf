@@ -1,6 +1,6 @@
 # App restoration derivations and settlement
 
-Status: planned; source implementation and execution validation have not started.
+Status: complete; implementation, independent host acceptance and documentation closeout complete. Changes remain unstaged and uncommitted.
 Prepared on 2026-10-12. Branch: `codex/app-restoration-derivations`, created
 from clean, up-to-date `main` at
 `db65f45989d2b9e3449b157aa43f698623fe27a6`.
@@ -42,9 +42,9 @@ without mounting React. App continues to own React state, current instances,
 effects, callbacks, subscriptions and cleanup. No new feature, hook, store,
 singleton, dependency, public contract or error policy is introduced.
 
-This delivery authorizes the plan, branch and local documentation commit.
-Source execution and subsequent source commits, push or PR creation require
-their own applicable user authorization.
+The 2026-10-12 execution request authorizes implementation, tests and plan
+documentation. All changes must remain unstaged and uncommitted; push and PR
+creation are expressly prohibited.
 
 ## 3. Current state
 
@@ -192,7 +192,7 @@ changing; review the canonical diagram and record that it remains applicable.
 
 ### Milestone 1: Refresh the audit and establish the baseline
 
-Status: not started.
+Status: complete.
 
 Use the existing implementation branch and inspect its planning commit,
 current HEAD, index and worktree. Preserve unrelated changes and stop on
@@ -209,11 +209,11 @@ roles do not delegate. Do not silently substitute an unavailable role/model.
 The independent validator runs the baseline in section 8 with exact HEAD and
 path identities. Only a passing baseline permits the director to freeze the
 Work Order. Relevant existing failures are `BASELINE-FAIL`, not regressions
-or permission for unrelated repair. Actual result: pending.
+or permission for unrelated repair. Actual result: fresh audit CHANGE and independent `APP-RESTORATION-01-BASELINE-01` PASS on execution HEAD `6102b72758497b07356d864915502d3dc443a0b5`; clean worktree and index. The four-path, 500-line ceiling was confirmed before the order was frozen.
 
 ### Milestone 2: Extract the pure rules and integrate their tests
 
-Status: not started. Target: `APP-RESTORATION-01`.
+Status: complete. Target: `APP-RESTORATION-01`.
 
 Use sequential checkpoints within one unit and baseline:
 
@@ -231,11 +231,15 @@ Use sequential checkpoints within one unit and baseline:
 These checkpoints touch the same App and test files and are not independent
 clean units. At most two bounded correction loops are allowed before
 redesigning the order. A rejected patch cannot be carried into another unit.
-Actual result: pending.
+Actual result: all three extractions and readonly types implemented; two App
+characterization tests passed against original production before extraction.
+Four source/test paths total 490 added-plus-removed lines. Independent
+`APP-RESTORATION-01-POST-CHANGE-02` passes all seven gates; one fixture typing
+correction was needed, without scope expansion.
 
 ### Milestone 3: Complete combined acceptance and documentation
 
-Status: not started.
+Status: complete.
 
 Run the package and final gates, inspect the complete diff and document actual
 outcomes and limits. Update the maintained testing map; review the system
@@ -250,7 +254,7 @@ Revalidate documentation after the move; preserve other historical plan bodies.
 Future source commits, if authorized, require separate exact-path Git Action
 Orders copied from immutable POST-CHANGE PASS evidence. A source/HEAD change
 requires revalidation, never a hash refresh on an old approval. Push and PR
-creation remain separate permissions. Actual result: pending.
+creation remain separate permissions. Actual result: independent PACKAGE-01 and FINAL-01 PASS, with unchanged source identities and an empty index. The testing map is updated, the diagram reviewed, and this plan archived with maintained indexes/links.
 
 ## 8. Testing and benchmark strategy
 
@@ -352,9 +356,28 @@ Any subsequent edit requires applicable revalidation and a new report.
   `codex/app-restoration-derivations` at the HEAD recorded above.
 - 2026-10-12: prepared the focused plan and maintained index entries. The
   branch/documentation preparation does not implement the proposed helpers.
-- [ ] Milestone 1: execution audit and independent baseline accepted.
-- [ ] Milestone 2: pure extraction, integration and tests accepted.
-- [ ] Milestone 3: combined validation, documentation and archival complete.
+- [x] Milestone 1: execution audit and independent baseline accepted.
+- [x] Milestone 2: pure extraction, integration and tests accepted.
+- [x] Milestone 3: combined validation, documentation and archival complete.
+
+- 2026-10-12: verified the existing branch at execution HEAD
+  `6102b72758497b07356d864915502d3dc443a0b5` (planning commit), with clean
+  worktree/index. Loaded the configured Sol high auditor/worker and Astra high
+  validator through explicit model/effort roles; supporting agents did not
+  delegate. Kept exactly one implementation writer; no Git mutations.
+- 2026-10-12: accepted fresh CHANGE audit and BASELINE-01 PASS before freezing
+  the order. CHARACTERIZATION-01 passed two added integration cases against
+  original production. POST-CHANGE-02 accepted all three helpers and the full
+  test matrix within 490 changed lines. Reports below bind exact file identities.
+- 2026-10-12: POST-CHANGE-01 failed only the new test fixture's TypeScript
+  discriminant inference (TS2322); the other six gates passed. Correction 01
+  added the nested literal annotation without changing assertions or production.
+  POST-CHANGE-02 reran all seven commands against the corrected identities.
+  The failed report remains immutable and separate from the accepted result.
+- 2026-10-12: updated the testing map and reviewed the canonical system diagram;
+  existing desktop reader/restoration/persistence ownership remains accurate.
+  Pure helpers add no process, storage, runtime or architectural boundary, so
+  the diagram needs no modification. Independent PACKAGE-01 and FINAL-01 pass; archival and maintained-link updates complete the documented scope.
 
 ## 11. Discoveries and decisions
 
@@ -380,12 +403,47 @@ only. Record their receipt separately; do not report them as source acceptance.
 
 | Execution requirement | Current result |
 | --- | --- |
-| Fresh execution audit and independent baseline | Not run. |
-| Identity predicate, settlement transition and presentation mapper | Not implemented. |
-| Focused helper and App integration cases | Not added/run. |
-| Type, test, format/lint, browser and native gates | Not run for this plan. |
-| Portable/full checks and immutable final report | Not run for this plan. |
-| Testing map, diagram review and archival | Pending implementation. |
+| Fresh execution audit and independent baseline | CHANGE audit; BASELINE-01 PASS. |
+| Identity predicate, settlement transition and presentation mapper | All three implemented; private readonly types moved; 490 changed lines. |
+| Focused helper and App integration cases | 14 pure cases and 2 App cases added; 677 desktop Vitest and 70 Node tests pass. |
+| Type, test, format/lint, browser and native gates | Independent POST-CHANGE-02 PASS; Chromium 7/7 and packaged WebView2 pass. |
+| Portable/full checks and immutable final report | PACKAGE-01 `check:portable` and FINAL-01 `check` PASS, unchanged exact source identities and empty index. |
+| Testing map, diagram review and archival | Testing map updated; diagram remains applicable; moved to completed and maintained indexes/links updated. |
 
-Leave the plan active until every required implementation and validation item
-is complete.
+Every required implementation and host gate is complete. The original active path is removed without a redirect; other historical plans are unchanged.
+
+Execution receipts (historical planning evidence is not runtime acceptance):
+
+- [Audit and frozen order](../evidence/app-restoration-derivations/audit-and-order.md).
+- [Independent baseline](../evidence/app-restoration-derivations/baseline-01.md).
+- [Tests-only characterization](../evidence/app-restoration-derivations/characterization-01.md).
+- [Failed first post-change check](../evidence/app-restoration-derivations/post-change-01.md).
+- [Independent post-change acceptance](../evidence/app-restoration-derivations/post-change-02.md).
+
+The baseline and post-change used local PowerShell outside the sandbox with
+repository-pinned pnpm 11.15.1 via a process-local Corepack PATH. Live EdgeDriver
+and WebView2 matched at 155.0.4283.45; no driver override or repository toolchain
+change was required. Raw captures remain ignored under
+`tmp/evidence/app-restoration-derivations/`. No new model-backed TTS or benchmark
+was prescribed for this pure extraction. The existing build chunk-size warning
+is nonfatal and does not expand this work into a bundling change.
+- [Independent package acceptance](../evidence/app-restoration-derivations/package-01.md).
+- [Independent final source acceptance](../evidence/app-restoration-derivations/final-01.md).
+
+At closeout, all changes remain unstaged and uncommitted on
+`codex/app-restoration-derivations`; HEAD remains
+`6102b72758497b07356d864915502d3dc443a0b5`. No push or pull request was made.
+The initial checkout was clean, and the final scope contains only the four
+source/test paths, this moved plan, maintained documentation/indexes and concise
+receipts. No pre-existing failure, unresolved blocker or scope expansion remains.
+The separately retained POST-CHANGE-01 fixture typing failure was corrected and
+all seven commands rerun successfully. Final source acceptance covers the same
+four identities as POST-CHANGE-02; documentation receives a separate post-move
+identity/link/structure review without changing those validated source bytes.
+
+Aggregate evidence includes 209 shared, 651 EPUB, 677 desktop Vitest, 70 desktop
+Node and 485 Python tests, plus 13 evidence-retention guard tests. Nonfatal
+warnings include the existing bundle-size warning and a denied write to the
+existing pytest cache; the Python tests still pass. No cache-permission repair,
+dependency change, model-backed TTS run or performance claim is part of this
+refactor. Exact command results and native Rust counts are in the final receipt.
