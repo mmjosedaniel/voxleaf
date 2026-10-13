@@ -6,10 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation ExecPlan is currently active. The four-unit
-[desktop UI logic readability plan](../completed/desktop-ui-logic-readability.md)
-completed independent unit, reader benchmark, supported model/profile-switch
-and combined acceptance; its changes remain unstaged and uncommitted.
+- [Native Rust function readability](native-rust-function-readability.md):
+  planned extraction of expected-state receipt, installed Chatterbox identity,
+  development-service paths and diagnostic cancellation into private functions;
+  implementation and runtime acceptance remain pending.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
