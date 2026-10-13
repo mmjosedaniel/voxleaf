@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [App restoration derivations](app-restoration-derivations.md): planned pure
+  publication/sequence matching, settlement transition and presentation
+  projection, preserving App's effect and resource ownership.
 
 The App conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
