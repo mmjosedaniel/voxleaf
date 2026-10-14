@@ -59,6 +59,28 @@ successfully. The Rust commands cover both default and
 See [native Rust navigation](agentic-refactoring.md#native-rust-navigation)
 for the complete file mapping and the test-layout ExecPlan for exact evidence.
 
+The private `cancel_when_generation_becomes_active` diagnostic helper shares
+only the pending/descendant wait-and-cancel sequence. The native startup matrix
+retains the pending scenario's required joined `Cancelled` result and the
+Windows descendant scenario's ignored join result. Static comparison checks
+the lifecycle guard is released before cancellation and active identity is
+checked before timeout. The
+[completed function-readability plan](../plans/completed/native-rust-function-readability.md)
+records independent baseline/post-change and combined installed acceptance for
+all four extractions. Process-free channel tests cover exact expected-state return,
+lifecycle update before rejection of a valid unexpected state, rejection of a
+different service identity before lifecycle mutation, timeout and disconnection.
+Non-release directory fixtures characterize canonical source/site-packages tuple
+order and missing source, site-packages, jsonschema or referencing paths without
+changing global environment variables. The installed-identity regression uses
+six fresh fixtures with authorized hashes but invalid schema, package ID/version,
+profile, service module or empty file list. It requires full verification and
+bytecode cleanup to reject each identity while preserving synthetic bytecode.
+The private helper keeps full verification's current-only hash policy separate
+from cleanup's current-or-authorized-legacy policy. Both Rust feature suites,
+native diagnostics, supported Piper/Chatterbox language journeys and isolated
+package/installed validation passed on the exact combined source manifest.
+
 The Windows failed-Job-Object-assignment regression retains an owned handle to
 the original child and checks that it is already signaled when the failed spawn
 returns. It uses a zero-timeout wait, with no subsequent retry or grace period.

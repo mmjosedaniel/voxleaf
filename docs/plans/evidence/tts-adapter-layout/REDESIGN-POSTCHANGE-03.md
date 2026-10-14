@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `96eeb727e82b4a83be71cb2553d41ffe2bf82fbd71dcf5c651538583b1c54176`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-03
 Target ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-01
 Mode: POST-CHANGE
@@ -49,7 +55,7 @@ Commands and outcomes:
 - Gate10: `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` -> exit0 PASS; command-10.log; 2026-10-11T14:52:09.1066379Z through 2026-10-11T14:52:10.1934384Z.
 - Gate11: `pnpm.cmd package:chatterbox-optional:v4:check-source` -> exit0 PASS; command-11.log; 2026-10-11T14:52:10.2002021Z through 2026-10-11T14:52:10.7361333Z.
 - Gate12: `pnpm.cmd package:chatterbox-optional:v4:check-local` -> exit0 PASS; command-12.log; 2026-10-11T14:52:10.7433243Z through 2026-10-11T14:55:08.5697848Z.
-- Gate13: `pnpm.cmd test:tts:adapter-layout:preflight --receipt C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-03\preflight-receipt.json` -> exit0 PASS; command-13.log; 2026-10-11T14:50:39.6588876Z through 2026-10-11T14:53:52.2501782Z.
+- Gate13: `pnpm.cmd test:tts:adapter-layout:preflight --receipt <REPO_ROOT>\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-03\preflight-receipt.json` -> exit0 PASS; command-13.log; 2026-10-11T14:50:39.6588876Z through 2026-10-11T14:53:52.2501782Z.
 - Gate16: `pnpm.cmd check:portable` -> exit0 PASS; command-16.log; 2026-10-11T14:55:08.5773241Z through 2026-10-11T14:56:58.0896242Z.
 - Gate17: `pnpm.cmd check` -> exit0 PASS; command-17.log; 2026-10-11T14:56:58.0980946Z through 2026-10-11T14:59:02.4480192Z.
 - Gate18: `pnpm.cmd test:native-startup` -> exit0 PASS; command-18.log; 2026-10-11T14:59:02.4564674Z through 2026-10-11T14:59:38.7936000Z.
@@ -57,7 +63,7 @@ Commands and outcomes:
 - Gate20: `pnpm.cmd inventory:release:check` -> exit0 PASS; command-20.log; 2026-10-11T14:59:39.2010053Z through 2026-10-11T14:59:40.3587264Z.
 - Gate21: `pnpm.cmd audit:release` -> exit0 PASS; command-21.log; 2026-10-11T14:59:40.3651023Z through 2026-10-11T14:59:55.8151695Z.
 - Gate14: `pnpm.cmd test:tts:adapter-layout:candidate` -> NOT RUN after required real-provider audit failure.
-- Gate15: `pnpm.cmd test:tts:adapter-layout:desktop --executable=C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe` -> NOT RUN after required real-provider audit failure.
+- Gate15: `pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe` -> NOT RUN after required real-provider audit failure.
 - Gate22: `pnpm.cmd test:chatterbox:dependency-security` -> NOT RUN after required real-provider audit failure.
 - Required real-provider proof: `node tmp/evidence/tts-adapter-layout/validation/TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-03/provider-import-proof.mjs` -> exit1 FAIL; provider-import-command.log; 2026-10-11T14:55:59.7887700Z through 2026-10-11T14:56:37.9706662Z.
 - Additional diagnostic commands: `node <this-report>/provider-import-diagnostic.mjs` and `node <this-report>/provider-import-network-diagnostic.mjs`, both exit1 at the unchanged production admission check; bounded JSON evidence retained.

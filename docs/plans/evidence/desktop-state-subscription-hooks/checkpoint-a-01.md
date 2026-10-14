@@ -1,12 +1,17 @@
 # Checkpoint A execution receipt
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `4575b474e6d9c1de2d389162837acacf6ed26578b2ba7d9513e8e63db322b15f`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Receipt ID: STATE-SUBSCRIPTIONS-01-CHECKPOINT-A-01-20261012
 Target ID: STATE-SUBSCRIPTIONS-01
 Work order: `docs/plans/evidence/desktop-state-subscription-hooks/work-order-02.md`
 Checkpoint outcome: all three approved commands passed with stable identities.
 Acceptance status: intermediate only; not a final Validation PASS, not a new baseline, and not staging or Git authority. Four consumer migrations and complete post-change/package/final acceptance remain pending.
 
-Environment: normal local PowerShell outside the sandbox in `C:/Users/mmjos/Desktop/workbeanch/voxleaf`. All command and identity acceptance calls used `sandbox_permissions=require_escalated`. PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation prepended `C:\nvm4w\nodejs\node_modules\corepack\shims` to the process-local PATH; resolved pnpm was its existing `pnpm.cmd`. No global toolchain or dependency changes.
+Environment: normal local PowerShell outside the sandbox in `<REPO_ROOT>`. All command and identity acceptance calls used `sandbox_permissions=require_escalated`. PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation prepended `C:\nvm4w\nodejs\node_modules\corepack\shims` to the process-local PATH; resolved pnpm was its existing `pnpm.cmd`. No global toolchain or dependency changes.
 
 Starting HEAD SHA: `44a83f4113e9cbeadee7d8a2d0e62838df70629b`
 Ending HEAD SHA: `44a83f4113e9cbeadee7d8a2d0e62838df70629b`

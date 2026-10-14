@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`native-rust-function-readability.md`](native-rust-function-readability.md): four private helper extractions and seven additive tests, independently accepted in three units. Combined Rust/default/release, native diagnostics, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass; original host state restored and verified. Five source/test paths, 441 changed lines; changes remain unstaged and uncommitted.
+
 - [`desktop-ui-logic-readability.md`](desktop-ui-logic-readability.md): extracted pure narration messages, shared the local settings-handler sequence and semantic comparator, and named the exact Settings disabled condition. Independent baselines/post-change gates, reader benchmarks, Piper/Chatterbox ES/EN and combined portable/full/native acceptance pass. Inherited host AppData redirection was diagnosed without weakening package containment. Four units, 937 changed source/test lines; changes remain unstaged and uncommitted.
 
 - [`app-restoration-derivations.md`](app-restoration-derivations.md): extracted the shared publication-reference/sequence predicate, pending settlement transition and presentation mapper; 14 pure cases and two App characterization cases added. Independent baseline, post-change, browser/native, portable and full host acceptance pass; one fixture typing correction is separately recorded. Four source/test paths, 490 changed lines; App retains effects and resource ownership. Changes remain unstaged and uncommitted.

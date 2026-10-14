@@ -1,5 +1,10 @@
 # Change Packet
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `851dd4d4e60562635318bf47dacdfda045cb1de0011c347d859ddf73db105276`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Target ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-01, within the same unaccepted
 TTS-ADAPTER-LAYOUT-01 atomic migration. Status: implemented and frozen for
 independent validation; no acceptance PASS is claimed.
@@ -178,7 +183,7 @@ pnpm.cmd package:chatterbox-optional:v4:check-source
 pnpm.cmd package:chatterbox-optional:v4:check-local
 pnpm.cmd test:tts:adapter-layout:preflight
 pnpm.cmd test:tts:adapter-layout:candidate
-pnpm.cmd test:tts:adapter-layout:desktop --executable=C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe
+pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe
 pnpm.cmd check:portable
 pnpm.cmd check
 pnpm.cmd test:native-startup
