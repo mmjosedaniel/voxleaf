@@ -37,29 +37,7 @@ pub fn run_host() -> Result<(), &'static str> {
     let generation = Arc::clone(&pending);
     let pending_segment = segment.clone();
     let worker = thread::spawn(move || generation.synthesize(pending_segment));
-    let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
-    loop {
-        let active = pending
-            .lifecycle
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
-            .active
-            .clone();
-        if let Some(identity) = active {
-            pending
-                .cancel(CancelScope {
-                    session_id: identity.session_id,
-                    generation_id: identity.generation_id,
-                    segment_id: identity.segment_id,
-                })
-                .map_err(TtsNativeFailure::code)?;
-            break;
-        }
-        if Instant::now() >= deadline {
-            return Err(TtsNativeFailure::TimedOut.code());
-        }
-        thread::sleep(POLL_INTERVAL);
-    }
+    cancel_when_generation_becomes_active(&pending)?;
     if worker
         .join()
         .map_err(|_| TtsNativeFailure::InternalFailure.code())?
@@ -84,30 +62,37 @@ pub fn run_host() -> Result<(), &'static str> {
         descendant.prepare().map_err(TtsNativeFailure::code)?;
         let generation = Arc::clone(&descendant);
         let worker = thread::spawn(move || generation.synthesize(segment));
-        let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
-        loop {
-            let active = descendant
-                .lifecycle
-                .lock()
-                .map_err(|_| TtsNativeFailure::InternalFailure.code())?
-                .active
-                .clone();
-            if let Some(identity) = active {
-                descendant
-                    .cancel(CancelScope {
-                        session_id: identity.session_id,
-                        generation_id: identity.generation_id,
-                        segment_id: identity.segment_id,
-                    })
-                    .map_err(TtsNativeFailure::code)?;
-                break;
-            }
-            if Instant::now() >= deadline {
-                return Err(TtsNativeFailure::TimedOut.code());
-            }
-            thread::sleep(POLL_INTERVAL);
-        }
+        cancel_when_generation_becomes_active(&descendant)?;
         let _ = worker.join();
+    }
+    Ok(())
+}
+
+fn cancel_when_generation_becomes_active(
+    supervisor: &TtsServiceSupervisor,
+) -> Result<(), &'static str> {
+    let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+    loop {
+        let active = supervisor
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            .active
+            .clone();
+        if let Some(identity) = active {
+            supervisor
+                .cancel(CancelScope {
+                    session_id: identity.session_id,
+                    generation_id: identity.generation_id,
+                    segment_id: identity.segment_id,
+                })
+                .map_err(TtsNativeFailure::code)?;
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err(TtsNativeFailure::TimedOut.code());
+        }
+        thread::sleep(POLL_INTERVAL);
     }
     Ok(())
 }

@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `84d9af040ea9d24d8b7727a75e103e7cd81a922fe464a6037e47d0d7b3296244`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-POST-CHANGE-20261011-02
 Target ID: TTS-ADAPTER-LAYOUT-01
 Mode: POST-CHANGE
@@ -66,7 +72,7 @@ Commands and outcomes:
 12. `pnpm.cmd package:chatterbox-optional:v4:check-local` -> exit0. Fresh v4 real tree/source/lock/notices/archive/member/ordered-part checks pass, unpublished/unadmitted. Raw command-12.log; exact UTC timing in corresponding command JSON.
 13. `pnpm.cmd test:tts:adapter-layout:preflight` -> exit0. Full host preflight PASS: actual installed v3+six models, current core/v4 tree and source closure, logical/canonical interpreter identities/firewall, isolated imports. Raw command-13.log; exact UTC timing in corresponding command JSON.
 14. `pnpm.cmd test:tts:adapter-layout:candidate` -> exit1. FAIL completed-identity after first Piper generation. Actual sorted protocol wire keys trigger order-sensitive JSON string comparison. Remaining candidate language/provider/restart/cancellation branches not reached. Raw command-14.log; exact UTC timing in corresponding command JSON.
-15. `pnpm.cmd test:tts:adapter-layout:desktop --executable=C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe` -> exit1. FAIL tree-closure: frozen desktop resource tree contains two legacy adapter files absent from manifest. No desktop inference/portfolio arm ran. Raw command-15.log; exact UTC timing in corresponding command JSON.
+15. `pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe` -> exit1. FAIL tree-closure: frozen desktop resource tree contains two legacy adapter files absent from manifest. No desktop inference/portfolio arm ran. Raw command-15.log; exact UTC timing in corresponding command JSON.
 16. `pnpm.cmd check:portable` -> exit1. FAIL ESLint no-undef for setTimeout/clearTimeout at runner666,672,676; subsequent aggregate stages did not execute. Raw command-16.log; exact UTC timing in corresponding command JSON.
 17. `pnpm.cmd check` -> exit1. FAIL same three ESLint diagnostics; format including Rust passed, later aggregate lint/type/test/build stages did not execute. Raw command-17.log; exact UTC timing in corresponding command JSON.
 18. `pnpm.cmd test:native-startup` -> exit1. Initial FAIL webdriver-session-not-created after successful build. Read-only underlying diagnostic confirms driver150 versus browser155; same command with signed matching override later PASS. Raw command-18.log; exact UTC timing in corresponding command JSON.
