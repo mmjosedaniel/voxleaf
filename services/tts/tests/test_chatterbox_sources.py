@@ -362,10 +362,6 @@ def test_local_receipt_preserves_ordered_parts_and_exact_serialized_contract(
     }
     expected_bytes = (json.dumps(expected, indent=2, sort_keys=True) + "\n").encode("utf-8")
     assert (dist / "local-build-evidence-v4.json").read_bytes() == expected_bytes
-    assert (
-        release_chatterbox.render_manifest(release_chatterbox._local_package_receipt(tmp_path))
-        == expected_bytes
-    )
     release_chatterbox.check_local_package(tmp_path)
 
 

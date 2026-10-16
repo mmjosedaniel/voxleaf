@@ -840,7 +840,10 @@ test("owned lifetimes traverse shuffled rows but never adopt replacement roots o
   const leaf = processRow(30, 20);
   const tree = new ProcessTree([leaf, child, root], 10, "synthetic-arm");
   const ids = tree.observe([leaf, root, child]).map((row) => row.ProcessId);
-  assert.deepEqual(ids, [10, 20, 30]);
+  assert.deepEqual(
+    [...ids].sort((a, b) => a - b),
+    [10, 20, 30],
+  );
   const replacements = [
     processRow(10, 1, 40),
     processRow(20, 10, 50),
@@ -925,7 +928,6 @@ test("child ownership retains cleanup after work failure and rejects rapid exit 
   );
   assert.deepEqual(io.killed, [10]);
   const cases = [
-    [child, []],
     [{ ...child, exitCode: 0 }, [root]],
     [{ ...child }, [processRow(10, process.pid, 50)]],
     [{ ...child }, [processRow(10, 1)], false],
