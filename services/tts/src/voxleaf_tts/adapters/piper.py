@@ -256,6 +256,31 @@ def _protocol_sample_count(source_sample_count: int) -> int:
     ) // SOURCE_SAMPLE_RATE_HZ
 
 
+def _collect_bounded_source_samples(chunks: tuple[_PiperAudioChunk, ...]) -> array.array[float]:
+    if not chunks:
+        raise EngineFailure(EngineFailureCode.FAILURE)
+    source = array.array("f")
+    maximum_source_samples = MAX_AUDIO_SAMPLE_COUNT * SOURCE_SAMPLE_RATE_HZ // SAMPLE_RATE_HZ
+    for chunk in chunks:
+        samples = chunk.audio_float_array
+        if (
+            chunk.sample_rate != SOURCE_SAMPLE_RATE_HZ
+            or chunk.sample_width != 2
+            or chunk.sample_channels != CHANNEL_COUNT
+            or type(samples.size) is not int
+            or samples.size <= 0
+            or len(samples) != samples.size
+            or len(source) + samples.size > maximum_source_samples
+        ):
+            raise EngineFailure(EngineFailureCode.FAILURE)
+        for value in samples:
+            sample = float(value)
+            if not math.isfinite(sample):
+                raise EngineFailure(EngineFailureCode.FAILURE)
+            source.append(sample)
+    return source
+
+
 def _resample_to_protocol_rate(source: array.array[float]) -> array.array[float]:
     output_count = _protocol_sample_count(len(source))
     if output_count <= 0 or output_count > MAX_AUDIO_SAMPLE_COUNT:
@@ -419,29 +444,7 @@ class PiperCpuTtsEngine:
                     include_alignments=False,
                 )
             )
-            if not chunks:
-                raise EngineFailure(EngineFailureCode.FAILURE)
-            source = array.array("f")
-            maximum_source_samples = (
-                MAX_AUDIO_SAMPLE_COUNT * SOURCE_SAMPLE_RATE_HZ // SAMPLE_RATE_HZ
-            )
-            for chunk in chunks:
-                samples = chunk.audio_float_array
-                if (
-                    chunk.sample_rate != SOURCE_SAMPLE_RATE_HZ
-                    or chunk.sample_width != 2
-                    or chunk.sample_channels != CHANNEL_COUNT
-                    or type(samples.size) is not int
-                    or samples.size <= 0
-                    or len(samples) != samples.size
-                    or len(source) + samples.size > maximum_source_samples
-                ):
-                    raise EngineFailure(EngineFailureCode.FAILURE)
-                for value in samples:
-                    sample = float(value)
-                    if not math.isfinite(sample):
-                        raise EngineFailure(EngineFailureCode.FAILURE)
-                    source.append(sample)
+            source = _collect_bounded_source_samples(chunks)
             output = _resample_to_protocol_rate(source)
             if sys.byteorder != "little":
                 output.byteswap()

@@ -1301,7 +1301,9 @@ fn extract_archive(
         {
             return Err(OptionalProfileError::VerificationFailed);
         }
-        let name = entry.name().to_owned();
+        let name = entry
+            .name()
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
         let prefix = format!("{PACKAGE_ID}/");
         let relative = name
             .strip_prefix(&prefix)
