@@ -10826,7 +10826,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:zip@8.6.0",
+      "id": "cargo:zip@9.0.4",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -10835,7 +10835,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
+        "value": "a954114b47a54df49f83d2722814e86b23d4bb1b54a1b90fb7d92b41619ddc22"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -10854,8 +10854,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/zip/8.6.0",
-      "versionOrRevision": "8.6.0"
+      "source": "https://crates.io/crates/zip/9.0.4",
+      "versionOrRevision": "9.0.4"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -14745,7 +14745,7 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "7646582545047fea31396692fa800ebcbacb12efef3b727b75a6c301d4dae1e2"
+      "sha256": "8fca515476f9841e3d87afe48264864d5d08f5ba22856b9548c33dba07586648"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox-v3/requirements.lock",

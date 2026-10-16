@@ -664,6 +664,7 @@ fn safe_extraction_rejects_archive_entries_outside_the_exact_package_root() {
         format!("{PACKAGE_ID}//outside.txt"),
         format!("{PACKAGE_ID}/C:/outside.txt"),
         format!("{PACKAGE_ID}/runtime\\outside.txt"),
+        format!("{PACKAGE_ID}\0/runtime/outside.txt"),
     ] {
         let root = TestRoot::new();
         let archive_path = root.0.join("unsafe.zip");

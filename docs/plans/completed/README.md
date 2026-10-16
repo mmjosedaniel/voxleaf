@@ -16,7 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
-- [`services-function-readability.md`](services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Current artifacts, combined checks, Piper/Chatterbox ES/EN and independent firewall restoration pass; changes remain unstaged and uncommitted.
+- [`services-function-readability-ci-repair.md`](services-function-readability-ci-repair.md): ZIP 9.0.4, compatible archive verification and builder-regenerated inventory; focused Rust, dependency audit and rebuilt native smoke pass with independent implementation approval. Hosted CI was pending at local closeout; subsequent status is recorded in PR #253.
+- [`services-function-readability.md`](services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
 
 - [`native-rust-function-readability.md`](native-rust-function-readability.md): four private helper extractions and seven additive tests, independently accepted in three units. Combined Rust/default/release, native diagnostics, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass; original host state restored and verified. Five source/test paths, 441 changed lines; changes remain unstaged and uncommitted.
 
