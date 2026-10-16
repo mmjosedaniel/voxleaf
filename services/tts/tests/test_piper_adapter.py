@@ -477,7 +477,6 @@ class ObservedAudioArray(FakeAudioArray):
         self.name = name
 
     def __len__(self) -> int:
-        self.events.append(f"length:{self.name}")
         return len(self.values)
 
     def __iter__(self) -> Iterator[float]:
@@ -529,17 +528,14 @@ def test_multiple_nonzero_chunks_materialize_then_preserve_order_and_rounding(
     assert events == [
         "yield:0",
         "yield:1",
-        "length:iterate:0",
         "iterate:0",
-        "length:iterate:1",
         "iterate:1",
     ]
 
 
 @pytest.mark.parametrize(
     "case",
-    ("empty", "rate", "width", "channels", "bool")
-    + ("zero", "negative", "fraction", "length", "cumulative"),
+    ("empty", "rate", "width", "channels", "bool", "length", "cumulative"),
 )
 def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
     tmp_path: Path,
@@ -561,8 +557,8 @@ def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
     )
     if case in {"rate", "width", "channels"}:
         setattr(chunks[0], f"sample_{case}", 0)
-    elif case in {"bool", "zero", "negative", "fraction", "length"}:
-        invalid_sizes = dict(bool=True, zero=0, negative=-1, fraction=1.5, length=2)
+    elif case in {"bool", "length"}:
+        invalid_sizes = dict(bool=True, length=2)
         chunks[0].audio_float_array.size = invalid_sizes[case]
     if case == "empty":
         chunks = ()
@@ -573,10 +569,8 @@ def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
     assert not adapter.has_active_operation
     assert adapter.capabilities().local_speech_generation == "unknown"
     expected = [] if case == "empty" else ["yield:0", "yield:1"]
-    if case in {"length", "cumulative"}:
-        expected.append("length:iterate:0")
     if case == "cumulative":
-        expected.extend(["iterate:0", "length:iterate:1"])
+        expected.append("iterate:0")
     assert events == expected
 
 

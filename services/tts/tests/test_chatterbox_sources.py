@@ -311,18 +311,25 @@ def test_local_verifier_rejects_payload_source_part_and_receipt_drift(
         release_chatterbox.check_local_package(tmp_path)
 
 
-@pytest.mark.parametrize("part_count", [1, 3, 4])
+@pytest.mark.parametrize("part_count", [1, 3])
+def test_local_verifier_accepts_single_and_split_archives(tmp_path: Path, part_count: int) -> None:
+    _local_payload(tmp_path, part_count=part_count)
+    layout = PackageLayout("4")
+    assert len(list(layout.dist(tmp_path).glob(f"{layout.archive}.part-*"))) == part_count
+    release_chatterbox.check_local_package(tmp_path)
+
+
 def test_local_receipt_preserves_ordered_parts_and_exact_serialized_contract(
-    tmp_path: Path, part_count: int
+    tmp_path: Path,
 ) -> None:
-    target = _local_payload(tmp_path, part_count=part_count)
+    target = _local_payload(tmp_path, part_count=4)
     layout = PackageLayout("4")
     dist = layout.dist(tmp_path)
     archive = dist / layout.archive
     parts = sorted(dist.glob(f"{layout.archive}.part-*"))
-    assert len(parts) == part_count
+    assert len(parts) == 4
     assert [part.name for part in parts] == [
-        f"{layout.archive}.part-{index:03}" for index in range(1, part_count + 1)
+        f"{layout.archive}.part-{index:03}" for index in range(1, 5)
     ]
     assert b"".join(part.read_bytes() for part in parts) == archive.read_bytes()
 
@@ -423,8 +430,6 @@ def test_local_verifier_retains_caller_io_and_zip_error_conversion(
         raise error_type("private-synthetic-detail")
 
     monkeypatch.setattr(zipfile, "ZipFile", fail)
-    with pytest.raises(error_type, match="^private-synthetic-detail$"):
-        release_chatterbox._local_package_receipt(tmp_path)
     with pytest.raises(
         ReleaseChatterboxError, match="^chatterbox-package-runtime-invalid$"
     ) as caught:

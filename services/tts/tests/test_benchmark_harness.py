@@ -748,7 +748,7 @@ def test_protocol_failure_cleanup_orders_independent_operations_before_sink(
         else BenchmarkFailure("crash")
     )
     assert events == ["start", "generation", "close", "stop", "failure"]
-    assert len(failures) == 1 and failures[0] is result.failure
+    assert failures == [result.failure]
     assert "private-synthetic-detail" not in repr(result)
 
 
@@ -769,7 +769,7 @@ def test_protocol_failure_cleanup_guards_absent_adapter_and_unstarted_memory(
     assert result.run is None
     assert result.failure == expected
     assert events == (["failure"] if fail_at == "factory" else ["start", "close", "failure"])
-    assert len(failures) == 1 and failures[0] is result.failure
+    assert failures == [result.failure]
 
 
 @pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
@@ -797,7 +797,7 @@ def test_protocol_failure_cleanup_retries_failed_final_cleanup_without_resetting
         if operation == "close"
         else ["start", "close", "stop", "stop", "failure"]
     )
-    assert len(failures) == 1 and failures[0] is result.failure
+    assert failures == [result.failure]
 
 
 @pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
