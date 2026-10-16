@@ -470,6 +470,116 @@ def test_invalid_output_publishes_no_retained_result(
     assert not adapter.has_active_operation
 
 
+class ObservedAudioArray(FakeAudioArray):
+    def __init__(self, values: list[float], events: list[str], name: str) -> None:
+        super().__init__(values)
+        self.events = events
+        self.name = name
+
+    def __len__(self) -> int:
+        self.events.append(f"length:{self.name}")
+        return len(self.values)
+
+    def __iter__(self) -> Iterator[float]:
+        self.events.append(self.name)
+        return super().__iter__()
+
+
+def _observe_chunks(
+    voice: FakeVoice,
+    monkeypatch: pytest.MonkeyPatch,
+    chunks: tuple[SimpleNamespace, ...],
+    events: list[str],
+) -> None:
+    def synthesize(*_args: object, **_kwargs: object) -> Iterator[SimpleNamespace]:
+        for index, chunk in enumerate(chunks):
+            events.append(f"yield:{index}")
+            yield chunk
+
+    monkeypatch.setattr(voice, "synthesize", synthesize)
+
+
+def test_multiple_nonzero_chunks_materialize_then_preserve_order_and_rounding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, _calls, voice = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    adapter.warm()
+    events: list[str] = []
+    chunks = tuple(
+        SimpleNamespace(
+            sample_rate=22_050,
+            sample_width=2,
+            sample_channels=1,
+            audio_float_array=ObservedAudioArray(values, events, f"iterate:{index}"),
+        )
+        for index, values in enumerate(([0.25] * 220, [-0.5] * 221))
+    )
+    _observe_chunks(voice, monkeypatch, chunks, events)
+    identity = adapter.begin("request:chunks", _segment())
+    completed, result = adapter.settle()
+    assert completed == identity
+    assert (result.sample_rate_hz, result.channel_count) == (24_000, 1)
+    assert result.payload == (
+        struct.pack("<f", 0.25) * 239
+        + struct.pack("<f", -0.1859375)
+        + struct.pack("<f", -0.5) * 240
+    )
+    assert events == [
+        "yield:0",
+        "yield:1",
+        "length:iterate:0",
+        "iterate:0",
+        "length:iterate:1",
+        "iterate:1",
+    ]
+
+
+@pytest.mark.parametrize(
+    "case",
+    ("empty", "rate", "width", "channels", "bool")
+    + ("zero", "negative", "fraction", "length", "cumulative"),
+)
+def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    adapter, _calls, voice = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    events: list[str] = []
+    sizes = (220_500, 220_501) if case == "cumulative" else (1, 1)
+    chunks = tuple(
+        SimpleNamespace(
+            sample_rate=22_050,
+            sample_width=2,
+            sample_channels=1,
+            audio_float_array=ObservedAudioArray([0.0] * size, events, f"iterate:{index}"),
+        )
+        for index, size in enumerate(sizes)
+    )
+    if case in {"rate", "width", "channels"}:
+        setattr(chunks[0], f"sample_{case}", 0)
+    elif case in {"bool", "zero", "negative", "fraction", "length"}:
+        invalid_sizes = dict(bool=True, zero=0, negative=-1, fraction=1.5, length=2)
+        chunks[0].audio_float_array.size = invalid_sizes[case]
+    if case == "empty":
+        chunks = ()
+    _observe_chunks(voice, monkeypatch, chunks, events)
+    with pytest.raises(EngineFailure) as failure:
+        adapter.warm()
+    assert failure.value.code is EngineFailureCode.FAILURE
+    assert not adapter.has_active_operation
+    assert adapter.capabilities().local_speech_generation == "unknown"
+    expected = [] if case == "empty" else ["yield:0", "yield:1"]
+    if case in {"length", "cumulative"}:
+        expected.append("length:iterate:0")
+    if case == "cumulative":
+        expected.extend(["iterate:0", "length:iterate:1"])
+    assert events == expected
+
+
 def test_engine_failure_is_content_free_and_cleanup_is_idempotent(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

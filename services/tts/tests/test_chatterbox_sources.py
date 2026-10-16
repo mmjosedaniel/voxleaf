@@ -6,7 +6,9 @@ import hashlib
 import json
 import shutil
 import subprocess
+import zipfile
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 
@@ -229,7 +231,7 @@ def test_v4_sync_retains_require_hashes(tmp_path: Path, monkeypatch: pytest.Monk
     assert str(tmp_path / PackageLayout("3").lock_path) in commands[1]
 
 
-def _local_payload(root: Path) -> Path:
+def _local_payload(root: Path, *, part_count: int = 1) -> Path:
     _local_root(root)
     write_local_source_manifest(root)
     source_root = root / "services/tts/src/voxleaf_tts"
@@ -266,7 +268,9 @@ def _local_payload(root: Path) -> Path:
     (target / layout.runtime_manifest).write_bytes(release_chatterbox.render_manifest(manifest))
     archive = layout.dist(root) / layout.archive
     release_chatterbox._zip_package(target, archive, package_version="4")
-    release_chatterbox.split_archive(archive)
+    release_chatterbox.split_archive(
+        archive, maximum_part_bytes=(archive.stat().st_size + part_count - 1) // part_count
+    )
     receipt = release_chatterbox._local_package_receipt(root)
     (layout.dist(root) / "local-build-evidence-v4.json").write_bytes(
         release_chatterbox.render_manifest(receipt)
@@ -305,3 +309,128 @@ def test_local_verifier_rejects_payload_source_part_and_receipt_drift(
         match="^chatterbox-package-(runtime-invalid|source-invalid|archive-failed)$",
     ):
         release_chatterbox.check_local_package(tmp_path)
+
+
+@pytest.mark.parametrize("part_count", [1, 3, 4])
+def test_local_receipt_preserves_ordered_parts_and_exact_serialized_contract(
+    tmp_path: Path, part_count: int
+) -> None:
+    target = _local_payload(tmp_path, part_count=part_count)
+    layout = PackageLayout("4")
+    dist = layout.dist(tmp_path)
+    archive = dist / layout.archive
+    parts = sorted(dist.glob(f"{layout.archive}.part-*"))
+    assert len(parts) == part_count
+    assert [part.name for part in parts] == [
+        f"{layout.archive}.part-{index:03}" for index in range(1, part_count + 1)
+    ]
+    assert b"".join(part.read_bytes() for part in parts) == archive.read_bytes()
+
+    def digest(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    files = [path for path in target.rglob("*") if path.is_file()]
+    expected = {
+        "schemaVersion": 1,
+        "packageId": "voxleaf-chatterbox-v4",
+        "packageVersion": "4",
+        "distribution": {"published": False, "admitted": False},
+        "authority": {
+            "sourceManifestSha256": digest(target / layout.source_manifest),
+            "dependencyLockSha256": digest(tmp_path / layout.lock_path),
+        },
+        "sources": [
+            {
+                "path": module,
+                "sizeBytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+            for module in sources.LOCAL_RUNTIME_MODULES
+            for payload in [(tmp_path / "services/tts/src/voxleaf_tts" / module).read_bytes()]
+        ],
+        "measurements": {
+            "archiveSha256": digest(archive),
+            "compressedBytes": archive.stat().st_size,
+            "installedBytes": sum(path.stat().st_size for path in files),
+            "fileCount": len(files),
+            "runtimeManifestSha256": digest(target / layout.runtime_manifest),
+        },
+        "parts": [
+            {"filename": part.name, "sha256": digest(part), "sizeBytes": part.stat().st_size}
+            for part in parts
+        ],
+    }
+    expected_bytes = (json.dumps(expected, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    assert (dist / "local-build-evidence-v4.json").read_bytes() == expected_bytes
+    assert (
+        release_chatterbox.render_manifest(release_chatterbox._local_package_receipt(tmp_path))
+        == expected_bytes
+    )
+    release_chatterbox.check_local_package(tmp_path)
+
+
+@pytest.mark.parametrize("mutation", ["missing", "gap", "reordered"])
+def test_local_verifier_rejects_exact_split_part_errors(tmp_path: Path, mutation: str) -> None:
+    _local_payload(tmp_path, part_count=3)
+    layout = PackageLayout("4")
+    parts = sorted(layout.dist(tmp_path).glob(f"{layout.archive}.part-*"))
+    if mutation == "missing":
+        for part in parts:
+            part.unlink()
+    elif mutation == "gap":
+        parts[1].unlink()
+    else:
+        first, last = parts[0].read_bytes(), parts[-1].read_bytes()
+        parts[0].write_bytes(last)
+        parts[-1].write_bytes(first)
+    with pytest.raises(ReleaseChatterboxError, match="^chatterbox-package-archive-failed$"):
+        release_chatterbox.check_local_package(tmp_path)
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "missing", "extra", "same-length"])
+def test_local_verifier_reaches_zip_member_errors_with_matching_parts(
+    tmp_path: Path, mutation: str
+) -> None:
+    _local_payload(tmp_path)
+    layout = PackageLayout("4")
+    archive = layout.dist(tmp_path) / layout.archive
+    with zipfile.ZipFile(archive) as opened:
+        members = [(item, opened.read(item)) for item in opened.infolist()]
+    if mutation == "missing":
+        members.pop()
+    elif mutation == "same-length":
+        item, payload = members[0]
+        assert payload
+        members[0] = (item, bytes([payload[0] ^ 1]) + payload[1:])
+    with zipfile.ZipFile(archive, "w") as opened:
+        for item, payload in members:
+            opened.writestr(item, payload)
+        if mutation == "duplicate":
+            with pytest.warns(UserWarning, match="Duplicate name"):
+                opened.writestr(*members[0])
+        elif mutation == "extra":
+            opened.writestr(f"{layout.directory}/extra-member", b"extra")
+    release_chatterbox.split_archive(archive)
+    part = archive.with_name(f"{layout.archive}.part-001")
+    assert part.read_bytes() == archive.read_bytes()
+    with pytest.raises(ReleaseChatterboxError, match="^chatterbox-package-archive-failed$"):
+        release_chatterbox.check_local_package(tmp_path)
+
+
+@pytest.mark.parametrize("error_type", [OSError, zipfile.BadZipFile])
+def test_local_verifier_retains_caller_io_and_zip_error_conversion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error_type: type[Exception]
+) -> None:
+    _local_payload(tmp_path)
+
+    def fail(_archive: Path) -> NoReturn:
+        raise error_type("private-synthetic-detail")
+
+    monkeypatch.setattr(zipfile, "ZipFile", fail)
+    with pytest.raises(error_type, match="^private-synthetic-detail$"):
+        release_chatterbox._local_package_receipt(tmp_path)
+    with pytest.raises(
+        ReleaseChatterboxError, match="^chatterbox-package-runtime-invalid$"
+    ) as caught:
+        release_chatterbox.check_local_package(tmp_path)
+    assert caught.value.__cause__ is None and caught.value.__suppress_context__

@@ -6,9 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Services function readability](services-function-readability.md): four
-  bounded Python function refactors, their characterization tests and current
-  runtime/package validation. Implementation and acceptance are pending.
+No active plans.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).

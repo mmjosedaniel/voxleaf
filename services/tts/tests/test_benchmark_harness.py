@@ -15,7 +15,11 @@ from benchmarks import harness, harness_corpus, harness_errors
 from benchmarks.contracts import (
     AdapterCapabilities,
     ArtifactSummary,
+    BenchmarkCorpus,
+    BenchmarkFailure,
     BenchmarkRunResult,
+    CorpusCase,
+    GenerationObservation,
     GenerationRequest,
     MemoryObservation,
     SummaryMetadata,
@@ -623,3 +627,181 @@ def test_v3_summary_build_and_promotion_keep_only_authority_fingerprints() -> No
         run.candidate_id,
         protocol_version=metadata.protocol_version,
     ).endswith(".summary-v3.json")
+
+
+_CLEANUP_RUNNERS: Final = ("legacy", "baseline", "screen", "full")
+
+
+def _run_cleanup_scenario(
+    runner: str,
+    *,
+    typed: bool = True,
+    fail_at: str = "generation",
+    close_fails: bool = False,
+    stop_fails: bool = False,
+    sink_fails: bool = False,
+) -> tuple[BenchmarkRunResult, list[str], list[BenchmarkFailure]]:
+    events: list[str] = []
+    failures: list[BenchmarkFailure] = []
+    failure = (
+        _HarnessFailure("generation-failed", "synthetic-request")
+        if typed
+        else RuntimeError("private-synthetic-detail")
+    )
+    clock = FakeNanosecondClock()
+    cold_count = 1 if runner == "screen" else 5
+    adapters: list[DeterministicFakeAdapter] = []
+
+    class Adapter(DeterministicFakeAdapter):
+        def close(self) -> None:
+            if adapters.index(self) == cold_count:
+                events.append("close")
+                if close_fails and (fail_at != "final-cleanup" or events.count("close") == 1):
+                    raise RuntimeError("synthetic-close-failure")
+            super().close()
+
+    class Probe(FakeMemoryProbe):
+        def start(self) -> None:
+            events.append("start")
+            if fail_at == "start":
+                raise failure
+            super().start()
+
+        def stop(self) -> MemoryObservation:
+            events.append("stop")
+            if stop_fails and (fail_at != "final-cleanup" or events.count("stop") == 1):
+                raise RuntimeError("synthetic-stop-failure")
+            return super().stop()
+
+    class Sink(harness._NullObservationSink):
+        def record_generation(self, observation: GenerationObservation) -> None:
+            del observation
+            if fail_at == "generation":
+                events.append("generation")
+                raise failure
+
+        def record_failure(self, failure: BenchmarkFailure) -> None:
+            events.append("failure")
+            failures.append(failure)
+            if sink_fails:
+                raise RuntimeError("synthetic-sink-failure")
+
+    def factory() -> DeterministicFakeAdapter:
+        if fail_at == "factory":
+            raise failure
+        adapter = Adapter(clock, sample_rate_hz=24_000)
+        adapters.append(adapter)
+        return adapter
+
+    corpora = tuple(
+        BenchmarkCorpus(
+            corpus_version="tts-bilingual-corpus-v7",
+            performance_order=("a", "b", "c", "d", "es-narrative-near-hard"),
+            sustained_sequence=("a", "b", "c", "d", "es-narrative-near-hard"),
+            cases={
+                name: CorpusCase(name, language, "Synthetic narration.", "cleanup-canary")
+                for name in ("a", "b", "c", "d", "es-narrative-near-hard")
+            },
+        )
+        for language in ("es", "en")
+    )
+    probe = Probe()
+    benchmark = BenchmarkHarness(clock=clock, memory_probe=probe, observation_sink=Sink())
+    if runner == "legacy":
+        result = benchmark.run_protocol(
+            adapter_factory=factory, corpus=corpora[0], role="compatibility"
+        )
+    elif runner == "baseline":
+        result = benchmark.run_bilingual_baseline_protocol(
+            adapter_factory=factory, corpus=corpora[1]
+        )
+    elif runner == "screen":
+        result = benchmark.run_bilingual_screen_protocol(
+            adapter_factory=factory, corpora=corpora, role="balanced"
+        )
+    elif runner == "full":
+        result = benchmark.run_bilingual_full_protocol(
+            adapter_factory=factory, corpora=corpora, role="balanced"
+        )
+    else:
+        raise AssertionError("unknown synthetic runner")
+    if fail_at == "final-cleanup":
+        assert adapters[-1].closed is True
+        assert probe._active is False
+    return result, events, failures
+
+
+@pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
+@pytest.mark.parametrize("typed", [True, False])
+@pytest.mark.parametrize("close_fails", [False, True])
+@pytest.mark.parametrize("stop_fails", [False, True])
+def test_protocol_failure_cleanup_orders_independent_operations_before_sink(
+    runner: str, typed: bool, close_fails: bool, stop_fails: bool
+) -> None:
+    result, events, failures = _run_cleanup_scenario(
+        runner, typed=typed, close_fails=close_fails, stop_fails=stop_fails
+    )
+    assert result.run is None
+    assert result.failure == (
+        BenchmarkFailure("generation-failed", "synthetic-request")
+        if typed
+        else BenchmarkFailure("crash")
+    )
+    assert events == ["start", "generation", "close", "stop", "failure"]
+    assert len(failures) == 1 and failures[0] is result.failure
+    assert "private-synthetic-detail" not in repr(result)
+
+
+@pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
+@pytest.mark.parametrize("typed", [True, False])
+@pytest.mark.parametrize("fail_at", ["factory", "start"])
+def test_protocol_failure_cleanup_guards_absent_adapter_and_unstarted_memory(
+    runner: str, typed: bool, fail_at: str
+) -> None:
+    result, events, failures = _run_cleanup_scenario(runner, typed=typed, fail_at=fail_at)
+    expected = (
+        BenchmarkFailure("generation-failed", "synthetic-request")
+        if typed
+        else BenchmarkFailure("crash")
+    )
+    if runner == "legacy" and fail_at == "start":
+        expected = BenchmarkFailure("measurement-unavailable", "memory")
+    assert result.run is None
+    assert result.failure == expected
+    assert events == (["failure"] if fail_at == "factory" else ["start", "close", "failure"])
+    assert len(failures) == 1 and failures[0] is result.failure
+
+
+@pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
+@pytest.mark.parametrize("operation", ["close", "stop"])
+def test_protocol_failure_cleanup_retries_failed_final_cleanup_without_resetting_flags(
+    runner: str, operation: str
+) -> None:
+    result, events, failures = _run_cleanup_scenario(
+        runner,
+        fail_at="final-cleanup",
+        close_fails=operation == "close",
+        stop_fails=operation == "stop",
+    )
+    expected = BenchmarkFailure("cleanup-failed", "measurement-close")
+    if operation == "stop":
+        expected = (
+            BenchmarkFailure("measurement-unavailable", "memory")
+            if runner == "legacy"
+            else BenchmarkFailure("crash")
+        )
+    assert result.run is None
+    assert result.failure == expected
+    assert events == (
+        ["start", "close", "close", "stop", "failure"]
+        if operation == "close"
+        else ["start", "close", "stop", "stop", "failure"]
+    )
+    assert len(failures) == 1 and failures[0] is result.failure
+
+
+@pytest.mark.parametrize("runner", _CLEANUP_RUNNERS)
+@pytest.mark.parametrize("typed", [True, False])
+def test_protocol_failure_sink_errors_remain_unsuppressed(runner: str, typed: bool) -> None:
+    with pytest.raises(RuntimeError, match="^synthetic-sink-failure$"):
+        _run_cleanup_scenario(runner, typed=typed, sink_fails=True)

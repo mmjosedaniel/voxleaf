@@ -21,12 +21,15 @@ import { fileURLToPath } from "node:url";
 import {
   AuditReader,
   assertAudio,
+  assertNoNetwork,
   assertWorkIdentity,
   childEnvironment,
   encodeControl,
   FrameReader,
   parseArguments,
+  ProcessTree,
   pythonAuditPolicy,
+  terminateTree,
   verifyModuleClosure,
   verifyRootBinding,
   verifyTree,
@@ -781,6 +784,166 @@ test("frame timeout always invokes tree cleanup through the owner", async () => 
     },
   );
   assert.deepEqual(cleanups, [123, 123]);
+});
+const processRow = (pid, parent, tick = pid) => ({
+  ProcessId: pid,
+  ParentProcessId: parent,
+  CreationDate: `2026-10-16T00:00:00.${String(tick).padStart(7, "0")}Z`,
+  ExecutablePath: "C:\\synthetic\\python.exe",
+});
+function cleanupIO(snapshot) {
+  let time = 0;
+  const killed = [];
+  return {
+    snapshot,
+    killed,
+    kill: (pid) => {
+      killed.push(pid);
+      return {};
+    },
+    now: () => time,
+    pause: async (ms) => {
+      time += ms;
+    },
+  };
+}
+test("network observation skips empty ownership and binds nonempty queries", () => {
+  const queries = [];
+  const query = (script) => {
+    queries.push(script);
+    return "0";
+  };
+  assertNoNetwork([], query);
+  assert.equal(queries.length, 0);
+  const owned = [processRow(10, 1, 17)];
+  assertNoNetwork(owned, query);
+  assert.equal(queries.length, 1);
+  assert.ok(
+    queries[0].startsWith("$expected=@{10='2026-10-16T00:00:00.0000017Z'};"),
+  );
+  assert.throws(
+    () => assertNoNetwork(owned, () => "1"),
+    /network-observation/u,
+  );
+  const error = new Error("synthetic-query-error");
+  const failedQuery = () => {
+    throw error;
+  };
+  assert.throws(
+    () => assertNoNetwork(owned, failedQuery),
+    (actual) => actual === error,
+  );
+});
+test("owned lifetimes traverse shuffled rows but never adopt replacement roots or parents", () => {
+  const root = processRow(10, 1);
+  const child = processRow(20, 10);
+  const leaf = processRow(30, 20);
+  const tree = new ProcessTree([leaf, child, root], 10, "synthetic-arm");
+  const ids = tree.observe([leaf, root, child]).map((row) => row.ProcessId);
+  assert.deepEqual(ids, [10, 20, 30]);
+  const replacements = [
+    processRow(10, 1, 40),
+    processRow(20, 10, 50),
+    processRow(40, 20, 60),
+  ];
+  assert.deepEqual(tree.observe(replacements), []);
+  assert.deepEqual(tree.observe([leaf]), [leaf]);
+  assert.deepEqual(tree.observe([]), []);
+  const reusedParent = new ProcessTree([root, child], 10);
+  const outside = [root, processRow(20, 1, 50), processRow(40, 20, 60)];
+  assert.deepEqual(reusedParent.observe(outside), [root]);
+  const older = [root, processRow(5, 10, 5)];
+  assert.deepEqual(new ProcessTree(older, 10).observe(older), [root]);
+});
+test("missing or ambiguous relevant creation data rejects, unrelated protected rows do not", () => {
+  const root = processRow(10, 1);
+  const tree = new ProcessTree([root, { ProcessId: 99 }], 10);
+  assert.deepEqual(tree.observe([root, { ProcessId: 99 }]), [root]);
+  for (const snapshot of [[], [{ ...root, CreationDate: null }], [root, root]])
+    assert.throws(() => new ProcessTree(snapshot, 10), /process-identity/u);
+  for (const snapshot of [
+    [{ ...root, CreationDate: null }],
+    [root, { ProcessId: 20, ParentProcessId: 10 }],
+  ])
+    assert.throws(() => tree.observe(snapshot), /process-identity/u);
+  assert.throws(() => tree.observe([processRow(20, 10)]), /process-ancestry/u);
+});
+test("cleanup ignores replacement lifetimes and never kills a reused root", async () => {
+  const root = processRow(10, 1);
+  const tree = new ProcessTree([root, processRow(20, 10)], 10);
+  const io = cleanupIO(() => [processRow(10, 1, 50), processRow(20, 1, 60)]);
+  await terminateTree({ pid: 10 }, tree, io);
+  assert.deepEqual(io.killed, []);
+  let samples = 0;
+  const changed = cleanupIO(() =>
+    ++samples === 1 ? [root] : [processRow(10, 1, 50)],
+  );
+  await terminateTree({ pid: 10 }, new ProcessTree([root], 10), changed);
+  assert.deepEqual(changed.killed, []);
+});
+test("same-identity live children and observed orphans remain cleanup failures", async () => {
+  const root = processRow(10, 1);
+  const child = processRow(20, 10);
+  for (const current of [[root, child], [child]]) {
+    const tree = new ProcessTree([root, child], 10, "synthetic-arm");
+    const io = cleanupIO(() => current);
+    await assert.rejects(
+      terminateTree({ pid: 10 }, tree, io),
+      /process-cleanup/u,
+    );
+    assert.deepEqual(io.killed, current.includes(root) ? [10] : []);
+  }
+  const exited = cleanupIO(() => [root]);
+  await assert.rejects(
+    terminateTree(
+      { pid: 10, exitCode: 0 },
+      new ProcessTree([root], 10),
+      exited,
+    ),
+    /process-cleanup/u,
+  );
+  assert.deepEqual(exited.killed, []);
+});
+test("child ownership retains cleanup after work failure and rejects rapid exit before work", async () => {
+  const root = processRow(10, process.pid);
+  const child = { pid: 10, spawnfile: root.ExecutablePath, exitCode: null };
+  let running = true;
+  const io = cleanupIO(() => (running ? [root] : []));
+  io.kill = (pid) => {
+    io.killed.push(pid);
+    running = false;
+    return {};
+  };
+  const cleanup = (value, tree) => terminateTree(value, tree, io);
+  const error = new Error("synthetic-work-failure");
+  const work = async () => {
+    throw error;
+  };
+  await assert.rejects(
+    withChild(child, work, cleanup, io.snapshot),
+    (actual) => actual === error,
+  );
+  assert.deepEqual(io.killed, [10]);
+  const cases = [
+    [child, []],
+    [{ ...child, exitCode: 0 }, [root]],
+    [{ ...child }, [processRow(10, process.pid, 50)]],
+    [{ ...child }, [processRow(10, 1)], false],
+    [{ ...child, spawnfile: "C:\\other.exe" }, [root], false],
+  ];
+  for (const [value, snapshot, exit = true] of cases) {
+    const gone = cleanupIO(() => {
+      if (exit) value.exitCode = 0;
+      return snapshot;
+    });
+    const work = () => assert.fail("exited root must not begin work");
+    const clean = (item, tree) => terminateTree(item, tree, gone);
+    await assert.rejects(
+      withChild(value, work, clean, gone.snapshot),
+      /process-identity/u,
+    );
+    assert.deepEqual(gone.killed, []);
+  }
 });
 test("PCM requires finite bounded samples and exact request/session/generation/segment identities", () => {
   const payload = Buffer.alloc(16);

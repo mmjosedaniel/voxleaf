@@ -199,28 +199,37 @@ def test_mismatched_cancel_and_immediate_duplicate_request_fail_content_free() -
 
 
 @pytest.mark.parametrize(
-    "outcome",
+    ("outcome", "expected_reason"),
     [
-        FakeEngineOutcome.FAILURE,
-        FakeEngineOutcome.TIMEOUT,
-        FakeEngineOutcome.CRASH,
-        FakeEngineOutcome.NON_FINITE,
-        FakeEngineOutcome.OVERSIZED,
+        (FakeEngineOutcome.FAILURE, "engine-failure"),
+        (FakeEngineOutcome.TIMEOUT, "engine-timeout"),
+        (FakeEngineOutcome.CRASH, "engine-failure"),
+        (FakeEngineOutcome.NON_FINITE, "format-mismatch"),
+        (FakeEngineOutcome.OVERSIZED, "format-mismatch"),
     ],
 )
 def test_failure_timeout_crash_and_invalid_waveform_publish_zero_audio(
     outcome: FakeEngineOutcome,
+    expected_reason: str,
 ) -> None:
     service, engine = make_ready(FakeTtsEngine(outcome))
     service.handle_control(load_control("valid-synthesize.json"))
     settled = service.settle_active()
 
     assert record_kinds(settled) == ["error", "state"]
+    assert control_from(settled[0])["reason"] == expected_reason
+    assert control_from(settled[0])["workIdentity"] == {
+        "requestId": "request:synthetic-1",
+        "sessionId": "session:synthetic-1",
+        "generationId": "generation:synthetic-1",
+        "segmentId": "segment:synthetic-1",
+    }
     assert all(record.kind is not FrameKind.AUDIO for record in settled)
     assert control_from(settled[-1])["state"] == "failed"
     assert engine.observe().active_count == 0
     assert engine.observe().retained_audio_units == 0
     assert engine.observe().generation_count == 1
+    assert engine.observe().cleanup_count == 1
 
     replacement, _ = make_ready()
     assert replacement.state is ServiceState.READY
