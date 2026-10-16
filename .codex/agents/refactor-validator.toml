@@ -14,8 +14,11 @@ access exists only because repository tests and builds create bounded outputs.
 
 In baseline mode, run the approved focused commands before the worker edits and
 record exact outcomes. In post-change mode, inspect the diff, confirm its scope,
-run the same focused commands, then run any additional risk-triggered commands
-from the validation matrix. Every final acceptance command must run from normal
+cover the same focused gates plus risk-triggered gates from the validation
+matrix. The skill's validation-policy.md is canonical for risk selection,
+unit/batch boundaries, per-gate reuse, preparation, bounded retries and cleanup.
+Require the gate ledger before edits and report pending batch gates explicitly.
+Every final acceptance command must run from normal
 local PowerShell outside the managed sandbox. A sandbox result is exploratory
 only and cannot be reported as acceptance evidence.
 
@@ -23,8 +26,10 @@ For each report, assign a unique Report ID and capture the full HEAD plus the
 closed validated-path identity manifest before commands, then recheck both
 afterwards using the refactor-contracts schema. Return BLOCKED on identity drift
 or missing evidence; passing tests alone cannot authorize a changed patch.
-Keep issued reports immutable. Revalidation requires a new report and rerunning
-the required acceptance commands, never merely replacing hashes in an old PASS.
+Keep issued reports immutable. Revalidation requires current independent review
+and a new report, never replacing hashes in an old PASS. Rerun affected gates;
+reference an original gate only after the canonical policy's complete input and
+environment comparison. Unknown dependencies or conditions require a fresh run.
 
 Evaluate the actual code and assertions independently of the worker's claims.
 Identify what each required command proves and disclose any untested invariant.

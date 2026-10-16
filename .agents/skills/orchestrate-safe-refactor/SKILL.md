@@ -1,6 +1,6 @@
 ---
 name: orchestrate-safe-refactor
-description: Direct a systematic, behavior-preserving VoxLeaf clean-code or readability review across TypeScript and TSX files. Use when auditing many files, reducing maintainability problems, coordinating a director with auditor, worker, validator, and Git-steward subagents, or executing a bounded refactor campaign without changing product behavior.
+description: Direct a systematic, behavior-preserving VoxLeaf clean-code or readability review across TypeScript, TSX, Python, and Rust files. Use when auditing many files, reducing maintainability problems, coordinating a director with auditor, worker, validator, and Git-steward subagents, or executing a bounded refactor campaign without changing product behavior.
 ---
 
 # Orchestrate a safe refactor
@@ -34,9 +34,11 @@ Supporting agents must not delegate. Keep the four-role concurrency limit.
    architecture, and test documentation.
 2. Read [references/refactor-contracts.md](references/refactor-contracts.md)
    completely before issuing an Audit Packet or Work Order.
-3. Use separate `SETUP` Git Action Orders to update clean `main` by fast-forward
-   and create a dedicated branch with a known HEAD. These orders may precede
-   validation. Start source work with an empty Git index. Every path proposed
+3. When branch creation is authorized, use a `SETUP` Git Action Order to create
+   it from the requested clean base with a known HEAD. If updating main is
+   required, use a separate fast-forward order first and inspect its result.
+   Setup orders may precede validation. Start source work with an empty Git
+   index. Every path proposed
    for the unit allowlist must also have no pre-existing worktree change.
    Preserve unrelated unstaged user changes outside the allowlist and stop on
    overlap.
@@ -49,10 +51,11 @@ Supporting agents must not delegate. Keep the four-role concurrency limit.
 Build the current tracked inventory with:
 
 ```powershell
-git ls-files -- "*.ts" "*.tsx"
+git ls-files -- "*.ts" "*.tsx" "*.py" "*.rs"
 ```
 
-Audit all listed paths, but do not force all paths to change. Apply these
+Restrict this inventory to the user-approved scope. Audit all selected paths,
+but do not force all paths to change. Apply these
 classes:
 
 - `generated`: record and exclude it from manual editing; inspect its generator
@@ -65,7 +68,10 @@ classes:
 
 Treat one production file, its tests, and at most two directly coupled support
 files as the normal unit. Split larger units unless separation would make the
-review misleading.
+review misleading. Group related units into a declared integration batch using
+[validation-policy.md](../validate-safe-refactor/references/validation-policy.md).
+Select risk, gate timing, input dependencies and invalidation before edits;
+record pending batch gates separately from unit acceptance.
 
 ## Run one batch
 
@@ -75,17 +81,22 @@ review misleading.
    `BLOCKED` when behavior, architecture, or product authority must change.
 3. Convert an accepted `CHANGE` packet into draft work-order terms. Name exact
    files, symbols, behavior invariants, forbidden changes, diff ceiling,
-   baseline commands, and post-change commands, but do not freeze the order.
+   baseline commands, worker fast checks, post-change commands and the gate
+   ledger, but do not freeze the order. Select language-specific checks from
+   the validation matrix; do not infer model gates from a directory name.
 4. Ask `refactor_validator` for baseline mode. Do not edit when the baseline is
    failing for a relevant reason; record `BASELINE-FAIL` separately. After a
    passing baseline, issue the immutable APPROVED WORK ORDER and include the
-   baseline report identifier and outcome.
+   baseline report identifier and outcome. Reference any declared shared
+   pre-edit baseline without pretending it was rerun for this unit.
 5. Start exactly one `clean_code_worker`. Pass only the frozen work order and
    necessary source context. Do not let the director or another agent write
    concurrently.
-6. Inspect the Change Packet and diff. Reject scope expansion before testing.
-7. Ask `refactor_validator` for post-change mode using the same baseline
-   commands plus risk-triggered gates from `$validate-safe-refactor`.
+6. Require assigned worker fast checks before expensive preparation and
+   handoff. Inspect the Change Packet and diff; reject scope expansion.
+7. Ask `refactor_validator` for post-change mode covering the baseline gates
+   plus risk-triggered gates from `$validate-safe-refactor`. Only the validator
+   may justify per-gate evidence reuse under the canonical policy.
 8. Review correctness, tests, and readability as director. Accept only when the
    Validation Report is `PASS`, its identity recheck passes, and every invariant
    is demonstrably preserved. Retain the immutable report with its Report ID.
@@ -94,8 +105,8 @@ review misleading.
    the work order instead of accumulating patches. Do not start another unit
    until the rejected patch is absent. Remove only verified worker-authored
    hunks; never discard overlapping user changes.
-10. Confirm the index is still empty and that the only changes in allowlisted
-    paths are the reviewed worker patch. Copy the HEAD, closed allowlist, and path
+10. If the user authorized a commit, confirm the index is still empty and that
+    the only changes in allowlisted paths are the reviewed worker patch. Copy the HEAD, closed allowlist, and path
     identities from the accepted POST-CHANGE report into the Git Action Order;
     do not replace them with newer hashes. Require the executor to compare the
     report, order, and live state and return BLOCKED for revalidation on drift.
@@ -105,7 +116,10 @@ review misleading.
     directly. Require
     exact-path staging, staged path and diff inspection, the approved commit
     message, and a Git Report. Review the report, confirm the index is empty
-    again, update the ExecPlan or inventory record, then continue.
+    again, update the ExecPlan or inventory record, then continue. Without
+    commit authorization, retain the accepted patch unstaged and report it;
+    continue only to disjoint units whose allowlisted paths are clean, carrying
+    the accepted patch explicitly in subsequent baseline context.
 
 Create one auditor, one worker, and one validator task per campaign batch and
 reuse those role tasks for every unit. Also create and reuse one Git-steward
@@ -144,10 +158,13 @@ normalization, content-free diagnostics, or generated-audio non-persistence.
 
 ## Close a package or campaign
 
-After a coherent package group, run the broader package gate from
-`$validate-safe-refactor`. Before a PR, run the repository-required final gate
-outside the sandbox, review the complete diff against the base branch, scan for
-private data and prohibited artifacts, update documentation only when behavior
+After a coherent package group, satisfy its declared integration gates from
+`$validate-safe-refactor`. Before final acceptance or a PR, satisfy the complete
+applicable final gate outside the sandbox. Apply the canonical policy to reuse
+or deduplicate proven identical gates, and report what actually ran. Required
+integration and host cleanup must no longer be pending. Review the complete
+diff against the base branch, scan for private data and prohibited artifacts,
+update documentation only when behavior
 or contributor workflow changed, and report skipped or blocked targets without
 portraying them as defects.
 

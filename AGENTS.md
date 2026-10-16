@@ -78,8 +78,15 @@ Before changing code or architecture:
   and at most two directly coupled support files; do not treat an arbitrary file
   boundary as a behavior boundary.
 - Keep the primary task as director, permit exactly one implementation agent to
-  write at a time, and require a baseline plus post-change validation outside
-  the sandbox before accepting a unit.
+  write at a time, and require an independent baseline plus post-change
+  validation outside the sandbox before accepting a unit.
+- Before editing, distinguish implementation units from the integration batch
+  and select gates by affected responsibilities. Follow the canonical
+  [validation policy](.agents/skills/validate-safe-refactor/references/validation-policy.md)
+  for risk, dependencies, evidence reuse, preparation, retries and cleanup.
+  Run fast checks before expensive preparation; keep high-risk unit gates and
+  final integration requirements explicit. Pending batch gates prevent final
+  acceptance, even when individual units pass.
 - Start the director with workspace-write permission. Treat custom-agent
   sandbox settings as requested defaults, not hard isolation: child agents can
   inherit or be constrained by the primary task's active permission mode.
@@ -95,8 +102,10 @@ Before changing code or architecture:
   an unavailable auditor, worker, or validator with another model.
   Bind accepted-change orders to the immutable validation Report ID, HEAD, and
   exact validated path identities. Recheck that evidence before staging and
-  commit; drift requires a new validation report, never refreshed approval
-  hashes. Git may mutate only while source writing and validation are idle.
+  commit; drift requires a new independent report, never refreshed approval
+  hashes. Only the validator may reuse an individual gate under the canonical
+  policy's complete input/environment proof. Git may mutate only while source
+  writing and validation are idle, and only within current user authorization.
 - Never manually refactor generated sources, frozen evaluation authority,
   historical evidence, or completed ExecPlans.
 - Require an ExecPlan before a significant, multi-package, or multi-stage
@@ -111,7 +120,10 @@ Behavior changes require relevant tests. As implementation is introduced, use th
 - End-to-end tests for opening a book, restoring the visible reading location, starting synchronized playback, pausing, seeking, and resuming.
 - Performance tests for startup latency, real-time factor, underruns, memory use, and cancellation latency.
 
-Never invent commands. Use only commands defined by repository configuration. Before declaring work complete, run every relevant available check and report the exact commands and outcomes.
+Never invent commands. Use only commands defined by repository configuration.
+Before declaring work complete, satisfy every relevant available check and
+report exact commands and outcomes. Distinguish executed checks from explicitly
+reused immutable evidence; uncertainty requires rerunning the affected check.
 
 Run every test and validation command from a normal local PowerShell session
 outside the managed automation sandbox. This includes unit, integration,
