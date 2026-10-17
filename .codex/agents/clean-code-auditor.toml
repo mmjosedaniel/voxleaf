@@ -1,5 +1,5 @@
 name = "clean_code_auditor"
-description = "Read-only VoxLeaf maintainability auditor that turns one cohesive TypeScript unit into an evidence-backed skip decision or bounded work order."
+description = "Read-only VoxLeaf maintainability auditor that turns one cohesive TypeScript, TSX, Python, or Rust unit into an evidence-backed skip decision or bounded work order."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
@@ -28,7 +28,9 @@ persistence semantics.
 
 Return one Audit Packet using the exact schema supplied by the orchestrator.
 Name exact files and symbols, state observable invariants, bound the permitted
-diff, select existing repository validation commands, and identify any user or
+diff, select existing repository validation commands using the canonical
+validation-policy.md and validation-matrix.md in the validate-safe-refactor
+skill, and identify any user or
 architecture decision that blocks safe action. Never fabricate a problem so
 that every audited file receives a change.
 """

@@ -358,12 +358,13 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
 - [`development/agentic-change-review.md`](development/agentic-change-review.md): independent Astra review of feature and bug-fix behavior, regression coverage, exact-patch evidence, and correction handling.
-- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol/Astra-directed audit, Sol implementation, independent Astra validation, Sol Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded TypeScript/Python/Rust refactors, independent host validation, risk-based unit/batch gates, immutable evidence reuse, preparation and retry policy, and authorized Git stewardship.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [`plans/completed/refactor-validation-efficiency.md`](plans/completed/refactor-validation-efficiency.md): validated contributor-policy and skill alignment for focused checks, immutable evidence reuse, bounded execution and explicit integration acceptance.
 - [`plans/completed/services-function-readability-ci-repair.md`](plans/completed/services-function-readability-ci-repair.md): ZIP 9.0.4 and compatible archive verification, current generated inventory, passing focused host checks and independent implementation approval; hosted CI tracked in PR #253.
 - [`plans/completed/services-function-readability.md`](plans/completed/services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
 - [`plans/completed/native-rust-function-readability.md`](plans/completed/native-rust-function-readability.md): four private native helpers and seven additive tests accepted across three units; combined Rust/default/release, native, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass, with original host state restored. Changes remain unstaged and uncommitted.

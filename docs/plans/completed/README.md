@@ -16,6 +16,7 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`refactor-validation-efficiency.md`](refactor-validation-efficiency.md): contributor policy and skills now distinguish unit/batch acceptance, select risk-based gates, require fast checks before packaging, and allow independently proven immutable evidence reuse. Policy scenarios and configuration/link checks passed; runtime behavior and CI requirements are unchanged.
 - [`services-function-readability-ci-repair.md`](services-function-readability-ci-repair.md): ZIP 9.0.4, compatible archive verification and builder-regenerated inventory; focused Rust, dependency audit and rebuilt native smoke pass with independent implementation approval. Hosted CI was pending at local closeout; subsequent status is recorded in PR #253.
 - [`services-function-readability.md`](services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
 
