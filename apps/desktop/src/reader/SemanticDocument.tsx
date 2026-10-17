@@ -259,9 +259,12 @@ interface SemanticBlockGroupElementProps {
   readonly destination: SemanticDestination;
 }
 
-function blockGroupPropsEqual(
-  previous: SemanticBlockGroupElementProps,
-  next: SemanticBlockGroupElementProps,
+type SemanticGroupElementProps =
+  SemanticBlockGroupElementProps | SemanticListItemGroupElementProps;
+
+function semanticGroupPropsEqual(
+  previous: SemanticGroupElementProps,
+  next: SemanticGroupElementProps,
 ): boolean {
   if (
     previous.group !== next.group ||
@@ -328,7 +331,7 @@ function SemanticBlockGroupElement({
 
 const MemoizedSemanticBlockGroupElement = memo(
   SemanticBlockGroupElement,
-  blockGroupPropsEqual,
+  semanticGroupPropsEqual,
 );
 
 interface SemanticListItemGroupElementProps {
@@ -337,31 +340,6 @@ interface SemanticListItemGroupElementProps {
   readonly inherited: EffectiveTextContext;
   readonly services: SemanticRenderServices;
   readonly destination: SemanticDestination;
-}
-
-function listItemGroupPropsEqual(
-  previous: SemanticListItemGroupElementProps,
-  next: SemanticListItemGroupElementProps,
-): boolean {
-  if (
-    previous.group !== next.group ||
-    previous.services !== next.services ||
-    !effectiveContextEqual(previous.inherited, next.inherited)
-  ) {
-    return false;
-  }
-  if (
-    previous.destination !== next.destination &&
-    (destinationAffectsRange(previous.destination, previous.group) ||
-      destinationAffectsRange(next.destination, next.group))
-  ) {
-    return false;
-  }
-  return (
-    previous.renderedBlockCount === next.renderedBlockCount ||
-    (previous.renderedBlockCount >= previous.group.endIndex &&
-      next.renderedBlockCount >= next.group.endIndex)
-  );
 }
 
 function SemanticListItemGroupElement({
@@ -388,7 +366,7 @@ function SemanticListItemGroupElement({
 
 const MemoizedSemanticListItemGroupElement = memo(
   SemanticListItemGroupElement,
-  listItemGroupPropsEqual,
+  semanticGroupPropsEqual,
 );
 
 function renderListItems(

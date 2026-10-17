@@ -1,11 +1,16 @@
 # Change Review Report
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `50d3cddbf67e43edc024f886e1228ca73a4f9de5df0882150e58cd07bfa87766`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 **Review ID:** LINUX-RUST-REPAIR-CI-01  
 **Task ID:** LINUX-RUST-REPAIR  
 **Verdict:** APPROVE  
 **Base commit and reviewed HEAD:** `f06c80e04da2025342b1002a548f03ca17e7cc0b`
 
-**Reviewed paths and identities:** The closed 41-path manifest is [review-input.json](/C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/linux-rust-repair/review-input.json), SHA-256:
+**Reviewed paths and identities:** The closed 41-path manifest is `tmp/linux-rust-repair/review-input.json` (local-only manifest), SHA-256:
 
 `e49b7446e23eb9ef3891994ffb93a365d5acb558767a036f23c83d0a89bdf303`
 

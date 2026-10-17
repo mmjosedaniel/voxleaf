@@ -945,6 +945,23 @@ fn resolve_file(root: &Path, value: &str) -> Result<PathBuf, OptionalProfileErro
         .map_err(|_| OptionalProfileError::VerificationFailed)
 }
 
+fn validate_installed_runtime_identity(
+    runtime: &InstalledRuntimeManifest,
+    manifest: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    if runtime.schema_version != 2
+        || runtime.package_id
+            != format!("voxleaf-chatterbox-v{}", manifest.identity.package_version)
+        || runtime.package_version != manifest.identity.package_version
+        || runtime.profile_id != PROFILE_ID
+        || runtime.service_module != "voxleaf_tts.chatterbox_service"
+        || runtime.files.is_empty()
+    {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    Ok(())
+}
+
 fn verify_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
@@ -963,19 +980,7 @@ fn verify_runtime(
     }
     let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&manifest_bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    if manifest.schema_version != 2
-        || manifest.package_id
-            != format!(
-                "voxleaf-chatterbox-v{}",
-                manifest_authority.identity.package_version
-            )
-        || manifest.package_version != manifest_authority.identity.package_version
-        || manifest.profile_id != PROFILE_ID
-        || manifest.service_module != "voxleaf_tts.chatterbox_service"
-        || manifest.files.is_empty()
-    {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
+    validate_installed_runtime_identity(&manifest, manifest_authority)?;
     let canonical_root = root
         .canonicalize()
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
@@ -1098,19 +1103,7 @@ fn runtime_manifest_for_bytecode_cleanup(
     }
     let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    if manifest.schema_version != 2
-        || manifest.package_id
-            != format!(
-                "voxleaf-chatterbox-v{}",
-                manifest_authority.identity.package_version
-            )
-        || manifest.package_version != manifest_authority.identity.package_version
-        || manifest.profile_id != PROFILE_ID
-        || manifest.service_module != "voxleaf_tts.chatterbox_service"
-        || manifest.files.is_empty()
-    {
-        return Err(OptionalProfileError::VerificationFailed);
-    }
+    validate_installed_runtime_identity(&manifest, manifest_authority)?;
     Ok(manifest)
 }
 
@@ -1308,7 +1301,9 @@ fn extract_archive(
         {
             return Err(OptionalProfileError::VerificationFailed);
         }
-        let name = entry.name().to_owned();
+        let name = entry
+            .name()
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
         let prefix = format!("{PACKAGE_ID}/");
         let relative = name
             .strip_prefix(&prefix)

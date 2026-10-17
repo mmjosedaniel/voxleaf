@@ -499,6 +499,18 @@ class BenchmarkHarness:
             raw_session_removed=True,
         )
 
+    def _cleanup_after_protocol_failure(
+        self,
+        main_adapter: BenchmarkAdapter | None,
+        memory_started: bool,
+    ) -> None:
+        if main_adapter is not None:
+            with suppress(Exception):
+                main_adapter.close()
+        if memory_started:
+            with suppress(Exception):
+                self._memory_probe.stop()
+
     def run_protocol(
         self,
         *,
@@ -691,12 +703,7 @@ class BenchmarkHarness:
                 ),
             )
         except _HarnessFailure as failure:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(
                 code=failure.code,
                 request_id=failure.request_id,
@@ -707,12 +714,7 @@ class BenchmarkHarness:
                 failure=result_failure,
             )
         except Exception:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(
@@ -898,12 +900,7 @@ class BenchmarkHarness:
                 ),
             )
         except _HarnessFailure as failure:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(
                 code=failure.code,
                 request_id=failure.request_id,
@@ -911,12 +908,7 @@ class BenchmarkHarness:
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
         except Exception:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
@@ -1082,12 +1074,7 @@ class BenchmarkHarness:
             )
             return BenchmarkRunResult(run=run, failure=cancellation_failure)
         except _HarnessFailure as failure:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(
                 code=failure.code,
                 request_id=failure.request_id,
@@ -1095,12 +1082,7 @@ class BenchmarkHarness:
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
         except Exception:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
@@ -1302,12 +1284,7 @@ class BenchmarkHarness:
                 ),
             )
         except _HarnessFailure as failure:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(
                 code=failure.code,
                 request_id=failure.request_id,
@@ -1315,12 +1292,7 @@ class BenchmarkHarness:
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
         except Exception:
-            if main_adapter is not None:
-                with suppress(Exception):
-                    main_adapter.close()
-            if memory_started:
-                with suppress(Exception):
-                    self._memory_probe.stop()
+            self._cleanup_after_protocol_failure(main_adapter, memory_started)
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)

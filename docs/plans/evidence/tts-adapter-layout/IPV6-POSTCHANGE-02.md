@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `e8097f39e7ef857b8ed736081f0d56b949c1f10233b39a6cf7440f6f137c61da`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02
 Target ID: TTS-ADAPTER-LAYOUT-01-IPV6-REDESIGN-01
 Mode: POST-CHANGE
@@ -57,9 +63,9 @@ Commands and outcomes:
 - Gate10: `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` -> exit0 PASS; command-10.log; 2026-10-11T15:58:52.3717124Z through 2026-10-11T15:58:53.4074665Z.
 - Gate11: `pnpm.cmd package:chatterbox-optional:v4:check-source` -> exit0 PASS; command-11.log; 2026-10-11T15:58:53.4135339Z through 2026-10-11T15:58:53.9340655Z.
 - Gate12: `pnpm.cmd package:chatterbox-optional:v4:check-local` -> exit0 PASS; command-12.log; 2026-10-11T15:58:53.9403459Z through 2026-10-11T16:02:04.1526749Z.
-- Gate13: `pnpm.cmd test:tts:adapter-layout:preflight --receipt C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\preflight-receipt.json` -> exit0 PASS; command-13.log; 2026-10-11T15:58:13.8533156Z through 2026-10-11T16:00:58.3871158Z.
-- Gate14: `pnpm.cmd test:tts:adapter-layout:candidate --receipt C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\candidate-receipt.json` -> exit0 PASS; command-14.log; 2026-10-11T16:07:04.1037524Z through 2026-10-11T16:11:58.7639558Z.
-- Gate15: `pnpm.cmd test:tts:adapter-layout:desktop --executable=C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe --receipt C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\desktop-receipt.json` -> exit0 PASS; command-15.log; 2026-10-11T16:12:14.9553399Z through 2026-10-11T16:32:33.7262459Z.
+- Gate13: `pnpm.cmd test:tts:adapter-layout:preflight --receipt <REPO_ROOT>\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\preflight-receipt.json` -> exit0 PASS; command-13.log; 2026-10-11T15:58:13.8533156Z through 2026-10-11T16:00:58.3871158Z.
+- Gate14: `pnpm.cmd test:tts:adapter-layout:candidate --receipt <REPO_ROOT>\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\candidate-receipt.json` -> exit0 PASS; command-14.log; 2026-10-11T16:07:04.1037524Z through 2026-10-11T16:11:58.7639558Z.
+- Gate15: `pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe --receipt <REPO_ROOT>\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-IPV6-POSTCHANGE-20261011-02\desktop-receipt.json` -> exit0 PASS; command-15.log; 2026-10-11T16:12:14.9553399Z through 2026-10-11T16:32:33.7262459Z.
 - Gate16: `pnpm.cmd check:portable` -> exit0 PASS; command-16.log; 2026-10-11T16:02:04.1599296Z through 2026-10-11T16:03:48.0315097Z.
 - Gate17: `pnpm.cmd check` -> exit0 PASS; command-17.log; 2026-10-11T16:03:48.0394549Z through 2026-10-11T16:05:50.3552032Z.
 - Gate18: `pnpm.cmd test:native-startup` -> exit0 PASS; command-18.log; 2026-10-11T16:05:50.3626635Z through 2026-10-11T16:06:27.4628975Z.

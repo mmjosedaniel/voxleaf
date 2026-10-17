@@ -297,10 +297,7 @@ class ModelFreeTtsService:
                 if error.code is EngineFailureCode.TIMEOUT
                 else ProtocolReason.ENGINE_FAILURE
             )
-            self._active_identity = None
-            self._engine.cleanup()
-            self._state = ServiceState.FAILED
-            return (self._error_record(reason, identity), self._state_record())
+            return self._fail_engine(identity, reason)
 
         if completed_identity != identity or self._active_identity != identity:
             self._engine.release_result()

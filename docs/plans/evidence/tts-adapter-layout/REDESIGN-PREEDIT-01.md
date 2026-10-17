@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `3b1e028fbd1d93cf9b988271f8632c4d643f91d3a8dc69671c7c235b129ab9c9`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-PREEDIT-20261011-01
 Target ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-01
 Mode: BASELINE
@@ -17,7 +23,7 @@ Commands and outcomes:
 2. `pnpm.cmd lint:typescript` -> exit0. eslint . completed with no diagnostics.
 3. `pnpm.cmd --filter @voxleaf/desktop test` -> exit0. 54 Vitest files, 588 tests passed; 47 Node tests passed, zero failures/cancellations/skips.
 
-Repository root C:/Users/mmjos/Desktop/workbeanch/voxleaf. Process-local PATH prepended C:/nvm4w/nodejs/node_modules/corepack/shims; pnpm --version actually returned11.15.1. Process-local PSModulePath selected C:/Windows/System32/WindowsPowerShell/v1.0/Modules. All three commands used require_escalated normal local PowerShell; no sandbox acceptance evidence, modified harness, provider import, model load, native inference or host mutation occurred. commands.json records exact outcomes and underlying tool-output chunks. These tests produced no new source changes.
+Repository root <REPO_ROOT>. Process-local PATH prepended C:/nvm4w/nodejs/node_modules/corepack/shims; pnpm --version actually returned11.15.1. Process-local PSModulePath selected C:/Windows/System32/WindowsPowerShell/v1.0/Modules. All three commands used require_escalated normal local PowerShell; no sandbox acceptance evidence, modified harness, provider import, model load, native inference or host mutation occurred. commands.json records exact outcomes and underlying tool-output chunks. These tests produced no new source changes.
 
 Diff scope: PASS. No delta in the closed35 versus the preserved report03 source manifest. Parent35 migration remains 2983/3000 additional lines at this pre-edit checkpoint; no new redesign source edits yet. Separate director coordination documents are preserved. Audit draft permits only the named3 paths, <=400 incremental lines and <=3400 whole-unit lines; this report does not accept any future patch.
 
