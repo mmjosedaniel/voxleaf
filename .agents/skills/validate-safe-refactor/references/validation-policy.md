@@ -75,6 +75,11 @@ remains pending. User authorization for any Git action remains separate.
 
 ## Revalidate changed evidence, not everything by default
 
+Before executing a gate, identify and capture the source, toolchain/library and
+environment identities its receipt needs under the proof below. Check receipt
+completeness at capture time, not only when later reuse is requested. Do not
+invent missing execution-time identities afterwards.
+
 Any HEAD, allowlist or validated-path change invalidates the old report for
 staging. The validator must independently review the current diff and issue a
 **new immutable report with current identities**. The old PASS is never edited
@@ -124,6 +129,15 @@ identity cannot be established, block the affected gate for diagnosis rather
 than retrying blindly. Reuse a completed, uninvalidated PASS only through the
 validator and the evidence rules above.
 
+For long or interactive stages, record the existing timeout or a diagnostic
+threshold, an observable progress signal and its last observation. At the
+threshold, inspect the stage and retain process identity, available exit/error
+evidence and any pending interaction. A live process alone is not progress.
+Continue monitoring only with a recorded reason and next diagnostic point;
+unresolved stalls block the gate. Do not automatically relaunch or interrupt
+valid work. Any cancellation follows existing ownership and restoration rules;
+retry budgets remain unchanged.
+
 Before a costly build or model run, perform the cheap relevant readiness checks:
 tool versions and locks, driver/browser compatibility, exact voice/model
 artifacts, available disk space, short writable scratch paths, and required
@@ -169,6 +183,14 @@ Use unique run/attempt/gate receipt names and retain failed receipts. Diagnostic
 identify the stage and sanitized exception/exit code without book text, audio,
 secrets or private data. Put raw captures in ignored tmp/evidence; retain concise
 Markdown summaries under the [evidence policy](../../../../docs/development/evidence-retention.md).
+Before handing off validation or Git work, retain the full original immutable
+report and its receipt references in the declared evidence location outside
+validated paths, and confirm the receiving agent can retrieve them. Validators
+may create these new evidence files without editing evaluated files or earlier
+reports; publication/staging still needs its own authorization. A summary or
+assumed chat inheritance is insufficient. For an access-only problem, retrieve
+the original first rather than restarting validation; missing proof or input
+drift still requires the affected checks under the reuse rules.
 
 ## Bounded failure handling
 

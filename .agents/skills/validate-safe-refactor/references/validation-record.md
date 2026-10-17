@@ -15,6 +15,7 @@ Do not paste raw logs or large file inventories into the plan.
 - Shared mutable paths grouped before baseline; approved builder/output paths:
 - Required unit gates / pending batch gates:
 - Host/tool availability and relevant environment identity:
+- Gate input/toolchain identities to capture; receipt completeness check:
 - Source writer, independent validator and Git authorization:
 
 ## Gate ledger
@@ -35,6 +36,8 @@ follow the policy's resume/observe rule before launching or recovering a gate.
 - Immutable cache/package manifest and build inputs:
 - Separate baseline/candidate mutable paths:
 - Run/attempt IDs and unique receipt paths:
+- Long/interactive stage timeout or diagnostic threshold, progress signal,
+  last observation and next diagnostic point:
 - Owned processes (PID, creation time, executable identity):
 - Host mutation journal (resource, original state, change, restoration):
 - Cleanup verification, including preserved user resources:
@@ -53,6 +56,7 @@ not applicable with the reason; do not request extra permissions speculatively.
 - Unit reports and accepted commits:
 - Batch/final gates: executed, reused, pending or blocked:
 - Current independent report and identity recheck:
+- Full original report/receipt location and receiving-agent retrieval confirmed:
 - Host restoration outcome:
 - Remaining work and measured bottleneck:
 - Next action / inventory position:
