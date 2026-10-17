@@ -11,6 +11,8 @@ Do not paste raw logs or large file inventories into the plan.
 - Batch ID / source HEAD:
 - Units, closed paths and highest affected risk:
 - Observable invariants and explicit non-goals:
+- Invariant / existing test and assertion / concrete gap or no gap:
+- Shared mutable paths grouped before baseline; approved builder/output paths:
 - Required unit gates / pending batch gates:
 - Host/tool availability and relevant environment identity:
 - Source writer, independent validator and Git authorization:
@@ -19,11 +21,13 @@ Do not paste raw logs or large file inventories into the plan.
 
 | Gate ID | Invariant / exact command / cwd | Before / per unit / final | Input manifest and environment | Invalidated by | Original receipt / current decision |
 | --- | --- | --- | --- | --- | --- |
-| Fill from existing commands | Include arguments and build prerequisites | No retrospective baseline | Include transitive inputs and discovery membership | Name concrete causes | RUN / REUSE with proof / PENDING / BLOCKED |
+| Fill from existing commands | Include arguments and build prerequisites | No retrospective baseline | Include transitive inputs and discovery membership | Name concrete causes | RUNNING / RUN / REUSE with proof / PENDING / BLOCKED |
 
 For reuse, link the original immutable receipt and record the independent
 input/environment comparison in a new report. Record exact commands actually
 executed; do not report a whole aggregate as run when only its leaves ran.
+For RUNNING entries, record active execution identity and receipt path and
+follow the policy's resume/observe rule before launching or recovering a gate.
 
 ## Preparation and recovery
 

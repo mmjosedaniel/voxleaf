@@ -16,9 +16,10 @@ Primary target: <path and symbols>
 Related context: <tests and direct collaborators>
 Concrete evidence: <specific maintainability problem or why no change is useful>
 Behavior invariants: <observable behavior that must remain unchanged>
+Coverage map: <each invariant -> existing test/assertion -> concrete gap or none>
 Allowed files: <closed list>
 Proposed edits: <bounded symbol-level operations>
-Forbidden edits: <contracts, dependencies, behavior, generated files, etc.>
+Forbidden edits: <contracts, dependencies, behavior, manual generated edits, etc.>
 Diff ceiling: <files and approximate changed lines>
 Baseline commands: <existing repository commands>
 Post-change commands: <same gates plus justified additions>
@@ -56,11 +57,16 @@ Required edits:
 1. <file, symbol, exact transformation>
 Behavior invariants:
 1. <observable invariant>
+Coverage map: <each invariant -> existing test/assertion -> concrete gap or none;
+explicit test decision for each gap, following the canonical policy>
 Forbidden changes:
 1. <explicit boundary>
 Diff ceiling: <maximum files and approximate changed lines>
 Baseline evidence: <validator report identifier and outcome>
 Worker validation: <assigned format/lint/types/focused checks; justified N/A only>
+Regeneration: none | <existing builder commands; closed allowlisted generated
+deliverables and bounded ignored gate/artifact output paths with identities per
+canonical policy; post-generation validation; no manual or frozen-authority edits>
 Acceptance commands: <closed command list>
 Gate ledger: <gate IDs, timing, dependency/environment identities, invalidation>
 Batch acceptance: <batch ID, shared pre-edit baseline, pending integration gates>
@@ -82,7 +88,9 @@ Required edit mapping: <each work-order item to its implementation>
 Invariants preserved: <how the patch preserves each invariant>
 Tests changed: none | <tests and why assertions remain equivalent>
 Deviations: none | <unfulfilled or expanded item>
-Worker checks: <exact host commands, outcomes and failed stages>
+Worker checks: <exact host commands, outcomes and failed stages; unique receipt
+references; command/cwd/tool versions,
+complete inputs/environment, before/after identities, result and phase timings>
 Remaining validation: <commands not yet run; worker checks are not acceptance>
 ```
 

@@ -72,6 +72,10 @@ review misleading. Group related units into a declared integration batch using
 [validation-policy.md](../validate-safe-refactor/references/validation-policy.md).
 Select risk, gate timing, input dependencies and invalidation before edits;
 record pending batch gates separately from unit acceptance.
+Before the first baseline, group shared planned mutable source, test and
+generated output paths under the canonical policy. Keep the unit cohesive and
+within its ceiling; preserve clean-path requirements. Later overlap blocks
+affected work for replanning with existing edits preserved.
 
 ## Run one batch
 
@@ -84,6 +88,9 @@ record pending batch gates separately from unit acceptance.
    baseline commands, worker fast checks, post-change commands and the gate
    ledger, but do not freeze the order. Select language-specific checks from
    the validation matrix; do not infer model gates from a directory name.
+   Map invariants to existing assertions and concrete gaps before adding tests;
+   name any approved regeneration commands, output paths and validation under
+   the canonical policy.
 4. Ask `refactor_validator` for baseline mode. Do not edit when the baseline is
    failing for a relevant reason; record `BASELINE-FAIL` separately. After a
    passing baseline, issue the immutable APPROVED WORK ORDER and include the

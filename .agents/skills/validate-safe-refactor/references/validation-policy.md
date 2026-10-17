@@ -25,6 +25,22 @@ Inspect callers and runtime reachability; directory names, file length and a
 "refactor" label do not establish risk. The independent validator approves the
 selection. Missing dependency knowledge requires broader coverage.
 
+Before the first baseline, inspect planned mutable source, test and generated
+output paths across units. Group shared source, test and versioned generated
+deliverable paths (including approved new tracked files) into one cohesive
+bounded unit within its ceiling; otherwise stop for a revised scope. Shared
+ignored scratch output names alone do not require grouping: isolate mutable
+outputs and capture gate/artifact identities under the rules below. This does
+not relax clean-path baselines or authorize commits. Unresolved overlap found
+after work starts blocks affected units for replanning; preserve existing work
+and never construct a retrospective baseline.
+
+Map each invariant to existing tests and assertions, then identify any concrete
+coverage gap before proposing new tests. Prefer tests at the public boundary
+over tests coupled to private helpers. Extraction alone does not require a new
+test when existing assertions cover the invariant. Preserve failure cases,
+bounds and contracts; a gap requires an explicit test decision in the order.
+
 | Risk | Typical scope | Minimum evidence |
 | --- | --- | --- |
 | Low | Pure helper, deterministic maintainer tool, or documentation/configuration | Relevant format/lint/types and focused behavior tests; documentation/configuration parsing and consistency review when no code changes |
@@ -86,6 +102,11 @@ production bytes are identical. A documentation edit may retain code evidence
 only if that documentation is not a generated/runtime/test input. It still
 needs current documentation review and a new report before staging.
 
+Complete worker fast-check receipts from local PowerShell may be reused under
+the same proof above. The validator independently reviews their inputs,
+environment and results and records the decision in a new immutable report.
+A worker receipt alone is not an independent acceptance PASS.
+
 Performance, GPU/model and exact-host evidence must satisfy their original
 host/load/driver/cache conditions and freshness requirements. Evidence from
 another host or an unrelated campaign does not qualify. Unknown or changed
@@ -93,6 +114,15 @@ conditions require a fresh run. Reusing immutable prepared artifacts is a
 separate decision from reusing a runtime measurement.
 
 ## Preparation and execution
+
+Before launching a gate or after recovering context, inspect its ledger entry.
+For RUNNING work, retain the run/attempt ID, active session/job identity, receipt
+path and, when applicable, process PID, creation time and executable identity.
+Resume or observe a verified active execution; do not duplicate or interrupt it
+to obtain another receipt. RUNNING is not passing evidence. If its state or
+identity cannot be established, block the affected gate for diagnosis rather
+than retrying blindly. Reuse a completed, uninvalidated PASS only through the
+validator and the evidence rules above.
 
 Before a costly build or model run, perform the cheap relevant readiness checks:
 tool versions and locks, driver/browser compatibility, exact voice/model
@@ -103,6 +133,16 @@ they cover the gate. Preflight is readiness evidence, never a behavior PASS.
 Run assigned format, lint, types and deterministic tests before preparing or
 rebuilding expensive packages. Record preparation and execution as separate
 phases, with start/end times, elapsed duration and the stage that failed.
+
+Generated outputs may be regenerated only by existing builder commands named
+in the approved work order, with a closed output-path list and assigned
+post-generation validation. Versioned generated deliverables, including
+approved new tracked files, belong to the unit's closed allowlist and baseline
+scope. Bounded ignored build outputs instead use declared gate/artifact evidence
+paths with content identities for acceptance and reuse; exclude them from the
+Git validated-source manifest. Never edit generated files manually or alter
+frozen authority, historical evidence or completed plans. Unexpected output
+paths block handoff for replanning; preserve unrelated work.
 
 Reuse verified immutable downloads and package payloads only against content
 manifests and full build inputs. Keep each candidate's mutable environment,
