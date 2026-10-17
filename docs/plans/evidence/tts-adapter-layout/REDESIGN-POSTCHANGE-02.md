@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `6bf52b940246f3e7c529eec83df380a9c5b62ab6455c307048c13cfa8a997db8`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-02
 Target ID: TTS-ADAPTER-LAYOUT-01-REDESIGN-01
 Mode: POST-CHANGE
@@ -36,7 +42,7 @@ The existing benchmark/ordinary-target rules do not cover the required exact cop
 
 Withheld mandatory commands:
 - pnpm.cmd test:tts:adapter-layout:candidate
-- pnpm.cmd test:tts:adapter-layout:desktop --executable=C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe
+- pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe
 - pnpm.cmd test:chatterbox:dependency-security (requires exact-v4 copied dependency imports)
 Also withheld: actual copied torch/chatterbox.mtl_tts import proof under the new production policy. No models/providers were run as a diagnostic workaround.
 The default pnpm.cmd test:native-startup was inspected and executed as its distinct model-free supervised fake-service route, with no adaptive exact-host arguments. Its PASS proves that route's IPC/cancellation/crash recovery, local file/reader/synchronization/persistence/privacy assertions; it does not validate v4 or the desktop model matrix.
@@ -69,9 +75,9 @@ Commands and outcomes:
 10. `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` -> exit0 (PASS); command-10.log; 2026-10-11T14:14:44.6879232Z through 2026-10-11T14:14:45.6431689Z.
 11. `pnpm.cmd package:chatterbox-optional:v4:check-source` -> exit0 (PASS); command-11.log; 2026-10-11T14:14:45.6494829Z through 2026-10-11T14:14:46.1640895Z.
 12. `pnpm.cmd package:chatterbox-optional:v4:check-local` -> exit0 (PASS); command-12.log; 2026-10-11T14:14:46.1710476Z through 2026-10-11T14:17:38.6327588Z.
-13. `pnpm.cmd test:tts:adapter-layout:preflight --receipt C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-02\preflight-receipt.json` -> exit1 (BLOCKED offline prerequisite); command-13.log; 2026-10-11T14:17:38.6393607Z through 2026-10-11T14:19:03.2923060Z.
+13. `pnpm.cmd test:tts:adapter-layout:preflight --receipt <REPO_ROOT>\tmp\evidence\tts-adapter-layout\validation\TTS-ADAPTER-LAYOUT-01-REDESIGN-POSTCHANGE-20261011-02\preflight-receipt.json` -> exit1 (BLOCKED offline prerequisite); command-13.log; 2026-10-11T14:17:38.6393607Z through 2026-10-11T14:19:03.2923060Z.
 14. `pnpm.cmd test:tts:adapter-layout:candidate` -> NOT RUN/BLOCKED offline prerequisite.
-15. `pnpm.cmd test:tts:adapter-layout:desktop --executable=C:/Users/mmjos/Desktop/workbeanch/voxleaf/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe` -> NOT RUN/BLOCKED offline prerequisite.
+15. `pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>/tmp/tts-adapter-layout-desktop-02/voxleaf-desktop.exe` -> NOT RUN/BLOCKED offline prerequisite.
 16. `pnpm.cmd check:portable` -> exit0 (PASS); command-16.log; 2026-10-11T14:19:03.2990011Z through 2026-10-11T14:20:19.7762104Z.
 17. `pnpm.cmd check` -> exit0 (PASS); command-17.log; 2026-10-11T14:20:19.7832609Z through 2026-10-11T14:22:24.3037743Z.
 18. `pnpm.cmd test:native-startup` -> exit0 (PASS); command-18.log; 2026-10-11T14:22:24.3108169Z through 2026-10-11T14:23:00.2048854Z.

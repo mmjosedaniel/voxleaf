@@ -62,3 +62,26 @@ Every ExecPlan must include:
 
 Not started | In progress | Complete
 ```
+
+## Validation planning for refactors
+
+Use the [canonical validation policy](skills/validate-safe-refactor/references/validation-policy.md)
+and [compact batch record](skills/validate-safe-refactor/references/validation-record.md).
+Keep the existing required sections; include the following within them:
+
+- Scope: implementation units, integration batch, risk and acceptance boundaries.
+- Testing strategy: a gate table with invariant, existing command/cwd, timing,
+  dependency/environment identities, invalidation and evidence reference.
+- Milestones: cheap host readiness and fast checks before costly preparation,
+  separate execution/cleanup, and explicit pending combined acceptance.
+- Risks: bounded retries with a hypothesis, stage diagnostics and recovery
+  verification for any host mutation. Missing evidence remains blocked.
+- Progress: concise decisions, phase durations and immutable report links, not
+  repeated logs or huge inventories. Preserve failures and their classification.
+- Final validation: commands actually run, independently justified reuse,
+  current report identities, completed cleanup and remaining limitations.
+
+A shared baseline must predate all relevant batch edits. A retrospective plan
+cannot create missing baseline evidence. Freeze final documentation before its
+report; keep identity manifests outside their own validated paths. Replanning
+does not erase earlier failed attempts or reset retry budgets.

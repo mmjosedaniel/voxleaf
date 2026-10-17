@@ -241,6 +241,9 @@ export function ReaderSettingsDialog({
     return null;
   }
 
+  const readerControlsDisabled =
+    readerPreferencesStatus === "loading" || !canPersistReaderPreferences;
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -316,10 +319,7 @@ export function ReaderSettingsDialog({
           <section aria-labelledby={`${titleId}-reading`}>
             <h3 id={`${titleId}-reading`}>Reading</h3>
             <ReaderReadingSettingsControls
-              disabled={
-                readerPreferencesStatus === "loading" ||
-                !canPersistReaderPreferences
-              }
+              disabled={readerControlsDisabled}
               preferences={readerPreferences}
               onChange={onReaderPreferenceChange}
             />
@@ -328,10 +328,7 @@ export function ReaderSettingsDialog({
           <section aria-labelledby={`${titleId}-appearance`}>
             <h3 id={`${titleId}-appearance`}>Appearance</h3>
             <ReaderAppearanceSettingsControls
-              disabled={
-                readerPreferencesStatus === "loading" ||
-                !canPersistReaderPreferences
-              }
+              disabled={readerControlsDisabled}
               preferences={readerPreferences}
               onChange={onReaderPreferenceChange}
             />

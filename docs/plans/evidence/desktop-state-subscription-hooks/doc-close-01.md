@@ -1,10 +1,15 @@
 # Validation Report
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `910bf9fa34e828eb455df0731966019f578a4abc3d5ac6b12779c6bc15662ed2`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: STATE-SUBSCRIPTIONS-01-DOC-CLOSE-01-20261012
 Target ID: STATE-SUBSCRIPTIONS-01-DOC-CLOSE
 Mode: FINAL
 Verdict: PASS
-Environment: local PowerShell outside sandbox at C:/Users/mmjos/Desktop/workbeanch/voxleaf; every acceptance/identity command used require_escalated. PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1 selected with the existing Corepack shim directory prefixed only to process-local PATH.
+Environment: local PowerShell outside sandbox at <REPO_ROOT>; every acceptance/identity command used require_escalated. PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1 selected with the existing Corepack shim directory prefixed only to process-local PATH.
 Starting HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Ending HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Validated paths: the closed thirteen-document path list below, including both sides of the plan move and eight current curated evidence files. The future doc-close-01.md receipt is explicitly excluded to avoid hashing itself.

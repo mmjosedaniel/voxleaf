@@ -131,13 +131,12 @@ export function HardwareCompatibilityControls({
       profileSupportsNarrationLanguageV1(profile.profileId, snapshot.language),
   );
 
-  const handleSelection = async (profileId: string): Promise<void> => {
+  const runNarrationSettingsChange = async (
+    operation: () => Promise<boolean>,
+  ): Promise<void> => {
     setNarrationSelectionPending(true);
     try {
-      const selected =
-        onSelectProfile === undefined
-          ? await coordinator.selectProfile(profileId)
-          : await onSelectProfile(profileId);
+      const selected = await operation();
       if (selected) {
         onRecoveryEpisodeReset?.();
       }
@@ -146,21 +145,22 @@ export function HardwareCompatibilityControls({
     }
   };
 
+  const handleSelection = async (profileId: string): Promise<void> => {
+    await runNarrationSettingsChange(() =>
+      onSelectProfile === undefined
+        ? coordinator.selectProfile(profileId)
+        : onSelectProfile(profileId),
+    );
+  };
+
   const handleLanguageSelection = async (
     language: NarrationLanguageV1,
   ): Promise<void> => {
-    setNarrationSelectionPending(true);
-    try {
-      const selected =
-        onSelectLanguage === undefined
-          ? await coordinator.selectLanguage(language)
-          : await onSelectLanguage(language);
-      if (selected) {
-        onRecoveryEpisodeReset?.();
-      }
-    } finally {
-      setNarrationSelectionPending(false);
-    }
+    await runNarrationSettingsChange(() =>
+      onSelectLanguage === undefined
+        ? coordinator.selectLanguage(language)
+        : onSelectLanguage(language),
+    );
   };
 
   const handleRecheck = async (): Promise<void> => {
@@ -169,18 +169,11 @@ export function HardwareCompatibilityControls({
   };
 
   const handleReset = async (): Promise<void> => {
-    setNarrationSelectionPending(true);
-    try {
-      const reset =
-        onResetNarrationSettings === undefined
-          ? await coordinator.resetLanguage()
-          : await onResetNarrationSettings();
-      if (reset) {
-        onRecoveryEpisodeReset?.();
-      }
-    } finally {
-      setNarrationSelectionPending(false);
-    }
+    await runNarrationSettingsChange(() =>
+      onResetNarrationSettings === undefined
+        ? coordinator.resetLanguage()
+        : onResetNarrationSettings(),
+    );
   };
 
   const dataAttributes = {

@@ -324,26 +324,131 @@ function assertFirewall(executable) {
 }
 function processes() {
   const output = powershell(
-    "$items=@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine);ConvertTo-Json -Compress -Depth 3 -InputObject $items",
+    "$items=@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,@{Name='CreationDate';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')}}});ConvertTo-Json -Compress -Depth 3 -InputObject $items",
   );
   return JSON.parse(output);
 }
-function descendantIds(snapshot, rootId) {
-  const result = new Set([rootId]);
-  let changed;
-  do {
-    changed = false;
-    for (const item of snapshot)
-      if (result.has(item.ParentProcessId) && !result.has(item.ProcessId)) {
-        result.add(item.ProcessId);
+function processKey(item) {
+  if (
+    !Number.isSafeInteger(item.ProcessId) ||
+    item.ProcessId <= 0 ||
+    !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{7}Z$/u.test(item.CreationDate)
+  )
+    return null;
+  return `${item.ProcessId}:${item.CreationDate}`;
+}
+export class ProcessTree {
+  constructor(snapshot, rootId, arm = "service", child) {
+    this.arm = arm;
+    this.rootId = rootId;
+    this.known = new Map();
+    const roots = snapshot.filter((item) => item.ProcessId === rootId);
+    if (
+      roots.length !== 1 ||
+      !processKey(roots[0]) ||
+      (child &&
+        (roots[0].ParentProcessId !== process.pid ||
+          !samePath(roots[0].ExecutablePath ?? "", child.spawnfile ?? "")))
+    )
+      this.reject("process-identity", roots);
+    this.root = processKey(roots[0]);
+    this.remember(roots[0]);
+    this.observe(snapshot);
+  }
+  remember(item) {
+    const { ProcessId, ParentProcessId, CreationDate } = item;
+    this.known.set(processKey(item), {
+      ProcessId,
+      ParentProcessId,
+      CreationDate,
+    });
+  }
+  reject(reason, rows) {
+    console.error(
+      JSON.stringify({
+        arm: this.arm,
+        rootPid: this.rootId,
+        reason,
+        processes: rows.slice(0, 8).map((item) => ({
+          pid: item.ProcessId,
+          parent: item.ParentProcessId,
+          current: item.CreationDate ?? null,
+          observed: [...this.known.values()]
+            .filter((old) => old.ProcessId === item.ProcessId)
+            .slice(-2),
+          executable: path.win32.basename(item.ExecutablePath ?? ""),
+        })),
+      }),
+    );
+    fail(reason);
+  }
+  observe(snapshot) {
+    const byPid = new Map();
+    for (const item of snapshot) {
+      if (!byPid.has(item.ProcessId)) byPid.set(item.ProcessId, []);
+      byPid.get(item.ProcessId).push(item);
+    }
+    const live = new Map();
+    const admit = (rows) => {
+      if (rows.length !== 1 || !processKey(rows[0]))
+        this.reject("process-identity", rows);
+      return rows[0];
+    };
+    for (const [key, old] of this.known) {
+      const rows = byPid.get(old.ProcessId);
+      if (rows && processKey(admit(rows)) === key)
+        live.set(old.ProcessId, rows[0]);
+    }
+    let changed;
+    do {
+      changed = false;
+      for (const item of snapshot) {
+        const parent = live.get(item.ParentProcessId);
+        if (
+          !parent ||
+          live.has(item.ProcessId) ||
+          item.ProcessId === this.rootId
+        )
+          continue;
+        admit(byPid.get(item.ProcessId));
+        if (item.CreationDate < parent.CreationDate) continue;
+        live.set(item.ProcessId, item);
+        this.remember(item);
         changed = true;
       }
-  } while (changed);
-  return result;
+    } while (changed);
+    for (const item of snapshot) {
+      if (live.has(item.ProcessId)) continue;
+      const oldParent = [...this.known.values()].find(
+        (old) =>
+          old.ProcessId === item.ParentProcessId &&
+          (!processKey(item) || old.CreationDate <= item.CreationDate),
+      );
+      const parent = byPid.get(item.ParentProcessId)?.[0];
+      if (
+        oldParent &&
+        (!parent ||
+          !processKey(parent) ||
+          !processKey(item) ||
+          item.CreationDate < parent.CreationDate)
+      )
+        this.reject("process-ancestry", [item]);
+    }
+    return [...live.values()];
+  }
 }
-function assertNoNetwork(ids) {
-  const output = powershell(
-    `$ids=@(${[...ids].join(",")});` +
+const processTrees = new WeakMap();
+const processArms = new WeakMap();
+export function assertNoNetwork(owned, query = powershell) {
+  if (!owned.length) return;
+  const bindings = owned
+    .map((item) => `${item.ProcessId}='${item.CreationDate}'`)
+    .join(";");
+  const output = query(
+    `$expected=@{${bindings}};` +
+      "$current=@(Get-CimInstance Win32_Process | Where-Object {$expected.ContainsKey([int]$_.ProcessId)});" +
+      "if (@($current | Where-Object {$null -eq $_.CreationDate}).Count) {exit 1};" +
+      "$ids=@($current | Where-Object {$_.CreationDate.ToUniversalTime().ToString('o') -eq $expected[[int]$_.ProcessId]} | ForEach-Object {$_.ProcessId});" +
       "$tcp=@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object {$ids -contains $_.OwningProcess -and " +
       "($_.State -eq 'Listen' -or $_.RemoteAddress -notin @('0.0.0.0','::','127.0.0.1','::1'))});" +
       "$udp=@(Get-NetUDPEndpoint -ErrorAction SilentlyContinue | Where-Object {$ids -contains $_.OwningProcess});" +
@@ -720,30 +825,79 @@ export function assertAudio(metadata, payload, identity) {
     if (!Number.isFinite(payload.readFloatLE(offset))) fail("audio-finite");
 }
 
-export async function terminateTree(child) {
+const processIO = {
+  snapshot: processes,
+  now: Date.now,
+  pause: delay,
+  kill: (pid) =>
+    spawnSync("taskkill.exe", ["/PID", String(pid), "/T", "/F"], {
+      windowsHide: true,
+      timeout: CLEANUP_TIMEOUT_MS,
+    }),
+};
+function childExited(child) {
+  return (
+    Number.isInteger(child.exitCode) || typeof child.signalCode === "string"
+  );
+}
+export async function terminateTree(
+  child,
+  tree = processTrees.get(child),
+  io = processIO,
+) {
   if (!child.pid) return;
-  const before = processes();
-  const ids = descendantIds(before, child.pid);
-  if (before.some((item) => item.ProcessId === child.pid)) {
-    const killed = spawnSync(
-      "taskkill.exe",
-      ["/PID", String(child.pid), "/T", "/F"],
-      { windowsHide: true, timeout: CLEANUP_TIMEOUT_MS },
-    );
+  if (!tree) fail("process-identity");
+  const live = tree.observe(io.snapshot());
+  if (
+    !childExited(child) &&
+    live.some((item) => processKey(item) === tree.root)
+  ) {
+    // Recheck immediately; numeric taskkill still cannot provide atomic handle admission.
+    const current = tree.observe(io.snapshot());
+    const killed =
+      !childExited(child) &&
+      current.some((item) => processKey(item) === tree.root)
+        ? io.kill(child.pid)
+        : {};
     if (killed.error) fail("termination");
   }
-  const deadline = Date.now() + CLEANUP_TIMEOUT_MS;
+  const deadline = io.now() + CLEANUP_TIMEOUT_MS;
+  let remaining;
   do {
-    if (!processes().some((item) => ids.has(item.ProcessId))) return;
-    await delay(250);
-  } while (Date.now() < deadline);
-  fail("process-cleanup");
+    remaining = tree.observe(io.snapshot());
+    if (!remaining.length) return;
+    await io.pause(250);
+  } while (io.now() < deadline);
+  tree.reject("process-cleanup", remaining);
 }
-export async function withChild(child, work, cleanup = terminateTree) {
+export async function withChild(
+  child,
+  work,
+  cleanup = terminateTree,
+  observe = cleanup === terminateTree ? processes : null,
+) {
+  let tree;
   try {
-    return await work(child);
+    if (observe) {
+      const arm = processArms.get(child);
+      const exited = childExited(child);
+      const snapshot = exited ? [] : observe();
+      if (exited || childExited(child)) {
+        console.error(
+          JSON.stringify({
+            arm: arm ?? "service",
+            pid: child.pid,
+            reason: "root-already-exited",
+          }),
+        );
+        fail("process-identity");
+      }
+      tree = new ProcessTree(snapshot, child.pid, arm, child);
+      processTrees.set(child, tree);
+    }
+    return await work(child, tree);
   } finally {
-    await cleanup(child);
+    await cleanup(child, tree);
   }
 }
 
@@ -1121,7 +1275,7 @@ async function candidateArm(options, root, language, service) {
       const started = Date.now();
       await prepareService(child, reader, instance);
       const prepareMs = Date.now() - started;
-      assertNoNetwork(descendantIds(processes(), child.pid));
+      assertNoNetwork(processTrees.get(child).observe(processes()));
       const message = await synthesizeMessage(instance, language, "first");
       child.stdin.write(encodeControl(message));
       await receiveState(reader, instance, "generating", GENERATION_TIMEOUT_MS);
@@ -1181,7 +1335,7 @@ async function candidateArm(options, root, language, service) {
         instance,
         workIdentity(message),
       );
-      assertNoNetwork(descendantIds(processes(), child.pid));
+      assertNoNetwork(processTrees.get(child).observe(processes()));
       send("shutdown");
       await receiveState(reader, instance, "stopped", CLEANUP_TIMEOUT_MS);
       const exited = await Promise.race([
@@ -1330,9 +1484,9 @@ async function desktop(options, installed) {
     const python = arm.profileId.startsWith("piper-")
       ? interpreters[0].canonical
       : interpreters[1].canonical;
-    const seen = new Set();
+    const seen = new Map();
     let requestedRuntimeObserved = false;
-    const observedIds = new Set();
+    let ownership;
     const observedInterpreters = new Set();
     const child = spawn(
       process.execPath,
@@ -1354,7 +1508,9 @@ async function desktop(options, installed) {
         windowsHide: true,
       },
     );
-    await withChild(child, async () => {
+    processArms.set(child, `${arm.profileId}:${arm.language}`);
+    await withChild(child, async (_, tree) => {
+      ownership = tree;
       let settled = false;
       let outcome;
       child.once("exit", (code, signal) => {
@@ -1369,13 +1525,9 @@ async function desktop(options, installed) {
       while (!settled) {
         if (Date.now() > deadline) fail("desktop-timeout");
         const snapshot = processes();
-        const ids = descendantIds(snapshot, child.pid);
-        for (const id of ids) observedIds.add(id);
-        for (const item of snapshot)
-          if (
-            ids.has(item.ProcessId) &&
-            /python(?:w)?\.exe$/iu.test(item.ExecutablePath ?? "")
-          ) {
+        const owned = tree.observe(snapshot);
+        for (const item of owned)
+          if (/python(?:w)?\.exe$/iu.test(item.ExecutablePath ?? "")) {
             const runtimeIndex = interpreters.findIndex(
               (expectedPython) =>
                 samePath(item.ExecutablePath, expectedPython.logical) ||
@@ -1393,12 +1545,15 @@ async function desktop(options, installed) {
             if (interpreters[runtimeIndex].canonical === python)
               requestedRuntimeObserved = true;
             observedInterpreters.add(item.ExecutablePath);
-            seen.add(item.ProcessId);
+            if (!seen.has(processKey(item)))
+              seen.set(
+                processKey(item),
+                new ProcessTree(snapshot, item.ProcessId, tree.arm),
+              );
           }
         // WebDriver's own loopback listeners are allowed; the model tree has none.
-        for (const pid of seen)
-          if (snapshot.some((item) => item.ProcessId === pid))
-            assertNoNetwork(descendantIds(snapshot, pid));
+        for (const pythonTree of seen.values())
+          assertNoNetwork(pythonTree.observe(snapshot));
         await delay(1_000);
       }
       if (
@@ -1408,16 +1563,16 @@ async function desktop(options, installed) {
       )
         fail("desktop-arm-result");
     });
-    const remaining = processes().filter((item) =>
-      observedIds.has(item.ProcessId),
-    );
-    if (remaining.length) fail("desktop-process-cleanup");
+    const remaining = ownership.observe(processes());
+    if (remaining.length)
+      ownership.reject("desktop-process-cleanup", remaining);
     results.push({
       profileId: arm.profileId,
       language: arm.language,
       python,
       observedInterpreters: [...observedInterpreters],
-      observedChildren: seen.size,
+      observedChildren: new Set([...seen.values()].map((item) => item.rootId))
+        .size,
       status: "passed",
     });
   }

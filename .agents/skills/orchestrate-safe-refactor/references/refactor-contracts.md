@@ -1,7 +1,9 @@
 # Refactor agent contracts
 
 Use these schemas verbatim so the director can compare agents without relying
-on conversational assumptions.
+on conversational assumptions. Gate selection, reuse, preparation and retries
+are governed by the [canonical validation policy](../../validate-safe-refactor/references/validation-policy.md);
+this document owns report identity and Git authority.
 
 ## Audit Packet
 
@@ -14,12 +16,14 @@ Primary target: <path and symbols>
 Related context: <tests and direct collaborators>
 Concrete evidence: <specific maintainability problem or why no change is useful>
 Behavior invariants: <observable behavior that must remain unchanged>
+Coverage map: <each invariant -> existing test/assertion -> concrete gap or none>
 Allowed files: <closed list>
 Proposed edits: <bounded symbol-level operations>
-Forbidden edits: <contracts, dependencies, behavior, generated files, etc.>
+Forbidden edits: <contracts, dependencies, behavior, manual generated edits, etc.>
 Diff ceiling: <files and approximate changed lines>
 Baseline commands: <existing repository commands>
-Post-change commands: <same commands plus justified additions>
+Post-change commands: <same gates plus justified additions>
+Gate ledger: <unit/batch timing, inputs, invalidation, shared baseline if any>
 Documentation impact: none | <specific document>
 Decision required: none | <exact user or architecture decision>
 ```
@@ -53,12 +57,19 @@ Required edits:
 1. <file, symbol, exact transformation>
 Behavior invariants:
 1. <observable invariant>
+Coverage map: <each invariant -> existing test/assertion -> concrete gap or none;
+explicit test decision for each gap, following the canonical policy>
 Forbidden changes:
 1. <explicit boundary>
 Diff ceiling: <maximum files and approximate changed lines>
 Baseline evidence: <validator report identifier and outcome>
-Worker validation: <optional cheap command or none>
+Worker validation: <assigned format/lint/types/focused checks; justified N/A only>
+Regeneration: none | <existing builder commands; closed allowlisted generated
+deliverables and bounded ignored gate/artifact output paths with identities per
+canonical policy; post-generation validation; no manual or frozen-authority edits>
 Acceptance commands: <closed command list>
+Gate ledger: <gate IDs, timing, dependency/environment identities, invalidation>
+Batch acceptance: <batch ID, shared pre-edit baseline, pending integration gates>
 Completion output: Change Packet only; no commit or push
 ```
 
@@ -77,7 +88,10 @@ Required edit mapping: <each work-order item to its implementation>
 Invariants preserved: <how the patch preserves each invariant>
 Tests changed: none | <tests and why assertions remain equivalent>
 Deviations: none | <unfulfilled or expanded item>
-Remaining validation: <commands not yet run>
+Worker checks: <exact host commands, outcomes and failed stages; unique receipt
+references; command/cwd/tool versions,
+complete inputs/environment, before/after identities, result and phase timings>
+Remaining validation: <commands not yet run; worker checks are not acceptance>
 ```
 
 Any undeclared deviation prevents validation from returning `PASS`.
@@ -104,7 +118,14 @@ porcelain status, worktree SHA-256, and filter-aware expected index blob ID;
 DELETED for an approved deletion, ABSENT for a planned new path in BASELINE>
 Identity recheck: PASS | FAIL | NOT-RUN, <after-command comparison and mismatches>
 Commands and outcomes:
-1. <exact command> -> <exit status and concise result>
+1. <gate ID, exact command/cwd, environment, input identity reference,
+   start/end/duration> -> <exit status and concise result>
+Reused gates: none | <original immutable Report ID/gate ID/receipt, current
+input/environment comparison and reason changed paths cannot affect the gate>
+Acceptance boundary: UNIT | BATCH | FINAL
+Pending batch gates: none | <IDs; unit PASS is not final acceptance>
+Preparation/cleanup: not-applicable | <receipt, restoration verdict, failed stage>
+Retries: none | <classification, hypothesis, changed condition, attempt count>
 Diff scope: PASS | FAIL, <reason>
 Invariant review: PASS | FAIL, <reason>
 Test-integrity review: PASS | FAIL, <reason>
@@ -131,9 +152,11 @@ test failures in the report. Keep writers and Git mutations idle throughout
 validation. Snapshots supplement that rule; they do not replace it.
 
 An issued report is immutable. A later HEAD, allowlist, or validated-file change
-invalidates its use for staging. The validator must review the new state, rerun
-the required acceptance commands, and issue a new Report ID. Neither director
-nor steward may refresh hashes in an old PASS or attach it to a different patch.
+invalidates its use for staging. The validator must review the new state and
+issue a new Report ID, rerunning affected gates. Individual passing gates may
+be referenced only with the canonical validation policy's input/environment
+proof. Missing or unknown dependencies require execution. Neither director nor
+steward may refresh hashes in an old PASS or attach it to a different patch.
 Keep identity evidence outside the validated paths to avoid self-referential
 hashes. Evidence-only documentation is staged separately under its own order;
 editing documentation already in the allowlist requires revalidation too.
@@ -157,7 +180,9 @@ Do not bundle multiple unrelated review preferences into one correction.
 
 The director (Sol or Astra) issues this only while every source writer and
 validator is idle. Read-only Git inspection does not need an order; every Git mutation does.
-A `SETUP` order may precede validation and is limited to one clean-state update
+Every mutation must be within current user authorization. A review request
+alone does not authorize branch creation or a commit. A `SETUP` order may
+precede validation and is limited to one clean-state update
 or branch action. An `ACCEPTED-CHANGE` order requires an accepted Validation
 Report. A `REMOTE-HANDOFF` order requires final validation plus explicit
 current-task user authorization.
@@ -181,7 +206,7 @@ report or exact retrievable reference; not-applicable-for-setup>
 Commit message: <exact message or none>
 Remote target: <exact remote and branch or none>
 Pull request: <exact title, base, body source, and draft state or none>
-Current user authorization: none-required | <quoted current-task authorization>
+Current user authorization: <quoted current-task authorization covering each action>
 Forbidden operations: reset, clean, restore, path checkout, stash, rebase,
 merge, cherry-pick, amend, force-push, branch/tag deletion, PR merge/close
 Completion output: Git Report only
