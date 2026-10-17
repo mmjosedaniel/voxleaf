@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `d4de83897091897e0bdfde99afb0693e9d92e55a61fada720a66785878e4cfe2`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-HOST-PREREQUISITES-20261011-03
 Target ID: TTS-ADAPTER-LAYOUT-01
 Mode: BASELINE
@@ -67,9 +73,9 @@ Privacy/artifact review: PASS, validator performed read-only host/source inspect
 Action required: none for this bounded pre-migration prerequisite check. Director may evaluate work-order readiness using this report and the unchanged deterministic baseline. During later preparation, bind fresh artifacts and actual child interpreters, set required process-local offline flags, and run every frozen post-change gate.
 
 Verified task-owned rules:
-- VoxLeaf-Adapter-Layout-Test-0 -> C:/Users/mmjos/Desktop/workbeanch/voxleaf/services/tts/release/core/dist/voxleaf-piper-core-v1/runtime/python.exe; file exists.
-- VoxLeaf-Adapter-Layout-Test-1 -> C:/Users/mmjos/AppData/Local/com.voxleaf.desktop/tts/cb/3/runtime/python.exe; file exists.
-- VoxLeaf-Adapter-Layout-Test-2 -> C:/Users/mmjos/Desktop/workbeanch/voxleaf/services/tts/release/optional/chatterbox/dist/v4/voxleaf-chatterbox-v4/runtime/python.exe; planned file is still absent, as expected before implementation.
+- VoxLeaf-Adapter-Layout-Test-0 -> <REPO_ROOT>/services/tts/release/core/dist/voxleaf-piper-core-v1/runtime/python.exe; file exists.
+- VoxLeaf-Adapter-Layout-Test-1 -> <LOCAL_APP_DATA>/com.voxleaf.desktop/tts/cb/3/runtime/python.exe; file exists.
+- VoxLeaf-Adapter-Layout-Test-2 -> <REPO_ROOT>/services/tts/release/optional/chatterbox/dist/v4/voxleaf-chatterbox-v4/runtime/python.exe; planned file is still absent, as expected before implementation.
 All have DisplayName VoxLeaf TTS Benchmark Offline, Enabled True, Direction Outbound, Action Block, Profile Any, and matching count exactly one. Each of the eight previously observed interpreter blocks remains present exactly once.
 
 Lifecycle of host preparation: Keep task-owned rules during required runtime validation. After testing, cleanup must remove only the three exact recorded task-owned Names, plus any separately recorded later additions; never remove by shared DisplayName. A frozen-copy Piper child at another path needs its own verified exact-interpreter rule before executing that arm. Existing application installation remains untouched.

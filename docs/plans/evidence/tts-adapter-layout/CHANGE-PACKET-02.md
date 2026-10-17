@@ -1,5 +1,10 @@
 # TTS-ADAPTER-LAYOUT-01 Correction Change Packet 01
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `c0e0a1d104619c2ddc6addbb9e359b45d59cd4759aba78545627bf9c63ba7b9d`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Status: corrected source frozen; writer idle; new independent acceptance pending. Correction loop 1 of 2. No acceptance tests, writing generators/builders, inference, installation, publication or Git mutations occurred during this correction.
 
 HEAD `7bbad9d5bef3a83c913ea5d7b948213a05bb0362`; branch `codex/tts-adapter-layout`.
@@ -94,7 +99,7 @@ pnpm.cmd package:chatterbox-optional:v4:check-source
 pnpm.cmd package:chatterbox-optional:v4:check-local
 pnpm.cmd test:tts:adapter-layout:preflight
 pnpm.cmd test:tts:adapter-layout:candidate
-pnpm.cmd test:tts:adapter-layout:desktop --executable=C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe
+pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe
 pnpm.cmd check:portable
 pnpm.cmd check
 pnpm.cmd test:native-startup

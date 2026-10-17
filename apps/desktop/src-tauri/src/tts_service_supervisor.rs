@@ -148,6 +148,26 @@ struct ExactRuntime {
     numba_cache_root: Option<PathBuf>,
 }
 
+#[cfg(not(feature = "release-locked-runtime"))]
+fn development_service_paths(
+    repository_root: &Path,
+) -> Result<(PathBuf, PathBuf), TtsNativeFailure> {
+    let service_source = repository_root
+        .join("services/tts/src")
+        .canonicalize()
+        .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+    let service_site_packages = repository_root
+        .join("services/tts/.venv/Lib/site-packages")
+        .canonicalize()
+        .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+    for dependency in ["jsonschema", "referencing"] {
+        if !service_site_packages.join(dependency).is_dir() {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+    }
+    Ok((service_source, service_site_packages))
+}
+
 impl ExactRuntime {
     #[cfg(not(feature = "release-locked-runtime"))]
     fn from_environment() -> Result<Self, TtsNativeFailure> {
@@ -175,19 +195,7 @@ impl ExactRuntime {
         {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
-        let service_source = repository_root
-            .join("services/tts/src")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let service_site_packages = repository_root
-            .join("services/tts/.venv/Lib/site-packages")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        for dependency in ["jsonschema", "referencing"] {
-            if !service_site_packages.join(dependency).is_dir() {
-                return Err(TtsNativeFailure::ChildUnavailable);
-            }
-        }
+        let (service_source, service_site_packages) = development_service_paths(&repository_root)?;
         Ok(Self {
             python: configured_python,
             model_root: absolute_existing_path(DEV_MODEL_ROOT_KEY, true)?,
@@ -250,19 +258,7 @@ impl ExactRuntime {
         {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
-        let service_source = repository_root
-            .join("services/tts/src")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let service_site_packages = repository_root
-            .join("services/tts/.venv/Lib/site-packages")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        for dependency in ["jsonschema", "referencing"] {
-            if !service_site_packages.join(dependency).is_dir() {
-                return Err(TtsNativeFailure::ChildUnavailable);
-            }
-        }
+        let (service_source, service_site_packages) = development_service_paths(&repository_root)?;
         Ok(Self {
             python: configured_python,
             model_root: absolute_existing_path(model_root_key, true)?,
@@ -333,19 +329,7 @@ impl ExactRuntime {
         {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
-        let service_source = repository_root
-            .join("services/tts/src")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let service_site_packages = repository_root
-            .join("services/tts/.venv/Lib/site-packages")
-            .canonicalize()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        for dependency in ["jsonschema", "referencing"] {
-            if !service_site_packages.join(dependency).is_dir() {
-                return Err(TtsNativeFailure::ChildUnavailable);
-            }
-        }
+        let (service_source, service_site_packages) = development_service_paths(&repository_root)?;
         Ok(Self {
             python: configured_python,
             model_root: absolute_existing_path(CHATTERBOX_MODEL_ROOT_KEY, true)?,
@@ -971,6 +955,19 @@ impl TtsServiceSupervisor {
         Ok(control)
     }
 
+    fn receive_expected_state(
+        &self,
+        session: &ServiceSession,
+        timeout: Duration,
+        expected_state: &str,
+    ) -> Result<Value, TtsNativeFailure> {
+        let state = self.receive_control(session, timeout, "state")?;
+        if state.get("state").and_then(Value::as_str) != Some(expected_state) {
+            return Err(TtsNativeFailure::ProtocolRejected);
+        }
+        Ok(state)
+    }
+
     fn fail_session(&self, failure: TtsNativeFailure) -> TtsNativeFailure {
         if let Ok(mut lifecycle) = self.lifecycle.lock() {
             lifecycle.active = None;
@@ -1019,16 +1016,11 @@ impl TtsServiceSupervisor {
             return Err(self.fail_session(failure));
         }
         let result = (|| {
-            let handshaking = self.receive_control(&session, HANDSHAKE_TIMEOUT, "state")?;
-            if handshaking.get("state").and_then(Value::as_str) != Some("handshaking") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            let handshaking =
+                self.receive_expected_state(&session, HANDSHAKE_TIMEOUT, "handshaking")?;
             let accepted =
                 self.receive_control(&session, HANDSHAKE_TIMEOUT, "handshakeAccepted")?;
-            let unloaded = self.receive_control(&session, HANDSHAKE_TIMEOUT, "state")?;
-            if unloaded.get("state").and_then(Value::as_str) != Some("unloaded") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            let unloaded = self.receive_expected_state(&session, HANDSHAKE_TIMEOUT, "unloaded")?;
             let capabilities = self.receive_control(&session, HANDSHAKE_TIMEOUT, "capabilities")?;
             Ok(vec![handshaking, accepted, unloaded, capabilities])
         })();
@@ -1046,21 +1038,12 @@ impl TtsServiceSupervisor {
         let result = (|| {
             let load_started = Instant::now();
             session.write_control(&service_control("load", &session.service_instance_id))?;
-            let loading = self.receive_control(&session, LOAD_TIMEOUT, "state")?;
-            if loading.get("state").and_then(Value::as_str) != Some("loading") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
-            let warming = self.receive_control(&session, LOAD_TIMEOUT, "state")?;
-            if warming.get("state").and_then(Value::as_str) != Some("warming") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            let loading = self.receive_expected_state(&session, LOAD_TIMEOUT, "loading")?;
+            let warming = self.receive_expected_state(&session, LOAD_TIMEOUT, "warming")?;
             let load_elapsed = load_started.elapsed();
             let warm_started = Instant::now();
             session.write_control(&service_control("warm", &session.service_instance_id))?;
-            let ready = self.receive_control(&session, WARM_TIMEOUT, "state")?;
-            if ready.get("state").and_then(Value::as_str) != Some("ready") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            let ready = self.receive_expected_state(&session, WARM_TIMEOUT, "ready")?;
             let capabilities = self.receive_control(&session, WARM_TIMEOUT, "capabilities")?;
             Ok(PrepareMeasurement {
                 records: vec![loading, warming, ready, capabilities],
@@ -1116,10 +1099,7 @@ impl TtsServiceSupervisor {
         let command_started = Instant::now();
         let result = (|| {
             session.write_control(&synthesize)?;
-            let generating = self.receive_control(&session, SYNTHESIS_TIMEOUT, "state")?;
-            if generating.get("state").and_then(Value::as_str) != Some("generating") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            self.receive_expected_state(&session, SYNTHESIS_TIMEOUT, "generating")?;
             let metadata = self.receive_control(&session, SYNTHESIS_TIMEOUT, "audioMetadata")?;
             if metadata.get("requestId").and_then(Value::as_str)
                 != Some(identity.request_id.as_str())
@@ -1140,10 +1120,7 @@ impl TtsServiceSupervisor {
             if !identity.matches_value(completed.get("workIdentity")) {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
-            let ready = self.receive_control(&session, SYNTHESIS_TIMEOUT, "state")?;
-            if ready.get("state").and_then(Value::as_str) != Some("ready") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            self.receive_expected_state(&session, SYNTHESIS_TIMEOUT, "ready")?;
             let still_active = self
                 .lifecycle
                 .lock()
@@ -1264,14 +1241,8 @@ impl TtsServiceSupervisor {
         }
         let result = (|| {
             session.write_control(&service_control("shutdown", &session.service_instance_id))?;
-            let stopping = self.receive_control(&session, SHUTDOWN_TIMEOUT, "state")?;
-            if stopping.get("state").and_then(Value::as_str) != Some("stopping") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
-            let stopped = self.receive_control(&session, SHUTDOWN_TIMEOUT, "state")?;
-            if stopped.get("state").and_then(Value::as_str) != Some("stopped") {
-                return Err(TtsNativeFailure::ProtocolRejected);
-            }
+            let stopping = self.receive_expected_state(&session, SHUTDOWN_TIMEOUT, "stopping")?;
+            let stopped = self.receive_expected_state(&session, SHUTDOWN_TIMEOUT, "stopped")?;
             session.wait_for_exit(SHUTDOWN_TIMEOUT)?;
             Ok(vec![stopping, stopped])
         })();

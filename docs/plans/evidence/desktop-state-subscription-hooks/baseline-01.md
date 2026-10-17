@@ -1,10 +1,15 @@
 # Validation Report
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `ebdf378755bb126b35e072eebac732dfdf252adc88af73362c5cf9dbb84d88dc`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: STATE-SUBSCRIPTIONS-01-BASELINE-01-20261012
 Target ID: STATE-SUBSCRIPTIONS-01
 Mode: BASELINE
 Verdict: PASS
-Environment: local PowerShell outside sandbox. All acceptance and identity commands executed with `sandbox_permissions=require_escalated` from `C:/Users/mmjos/Desktop/workbeanch/voxleaf`; PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation used the process-local prelude `$env:PATH = 'C:\nvm4w\nodejs\node_modules\corepack\shims;' + $env:PATH`. Resolved pnpm: `C:\nvm4w\nodejs\node_modules\corepack\shims\pnpm.cmd`. No dependency, global toolchain, source, configuration, documentation, or Git mutation occurred.
+Environment: local PowerShell outside sandbox. All acceptance and identity commands executed with `sandbox_permissions=require_escalated` from `<REPO_ROOT>`; PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation used the process-local prelude `$env:PATH = 'C:\nvm4w\nodejs\node_modules\corepack\shims;' + $env:PATH`. Resolved pnpm: `C:\nvm4w\nodejs\node_modules\corepack\shims\pnpm.cmd`. No dependency, global toolchain, source, configuration, documentation, or Git mutation occurred.
 Starting HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Ending HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Validated paths:

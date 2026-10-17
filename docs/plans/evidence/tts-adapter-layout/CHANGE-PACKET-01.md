@@ -1,5 +1,10 @@
 # TTS-ADAPTER-LAYOUT-01 Change Packet
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `c6c934f8521d090f2d54adb8315dbf0211f7e11cfa941ac33c8283a13e427f21`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Status: source and writing preparation frozen; independent acceptance pending. No staging, commit, push, PR, publication, installation or acceptance tests by the writer.
 
 HEAD `7bbad9d5bef3a83c913ea5d7b948213a05bb0362`; branch `codex/tts-adapter-layout`; approved work-order SHA256 `bf7ce6019bfe47fe6ef41d195bb33cae1406b294487c185258b6199aec58b5fb`.
@@ -99,7 +104,7 @@ pnpm.cmd package:chatterbox-optional:v4:check-source
 pnpm.cmd package:chatterbox-optional:v4:check-local
 pnpm.cmd test:tts:adapter-layout:preflight
 pnpm.cmd test:tts:adapter-layout:candidate
-pnpm.cmd test:tts:adapter-layout:desktop --executable=C:\Users\mmjos\Desktop\workbeanch\voxleaf\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe
+pnpm.cmd test:tts:adapter-layout:desktop --executable=<REPO_ROOT>\tmp\tts-adapter-layout-desktop-01\voxleaf-desktop.exe
 pnpm.cmd check:portable
 pnpm.cmd check
 pnpm.cmd test:native-startup

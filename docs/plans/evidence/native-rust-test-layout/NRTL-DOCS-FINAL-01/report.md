@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `b1d8bb642516ffc6a3de3c115e1bfd631c43e758cd6b43b479b56dccd808f070`.
+> See [publication and original retention](../../historical-privacy-cleanup/README.md).
+
 Report ID: NRTL-DOCS-FINAL-01
 Target ID: NRTL-DOCS-FINAL
 Mode: FINAL
@@ -190,7 +196,7 @@ Validated path identities:
 - docs/README.md: exact porcelain [ M docs/README.md]; worktree SHA-256 257a41cc9d83d0c9613578296c2f08bef109ce03916e691b1aab75dc7bb5931c; filter-aware expected index blob be70d42a448dab9f10beb91b92a56a1cd4c6b0b4.
 Identity recheck: PASS, all 180 documentation path statuses, SHA-256 values, expected index blobs and HEAD unchanged before/after checks; index empty before/after. Supplemental 26 native source identities match immutable NRTL-FINAL-01 exactly in status, SHA-256 and expected blob. The active plan path remains absent with exact unstaged deletion status and DELETED sentinel, not a hash of a missing file.
 Commands and outcomes:
-1. python C:/Users/mmjos/Documents/Codex/2026-10-09/copia-este-prompt-est-preparado-para/work/native-rust-test-layout/check-documentation.py -> exit 0; 266 local Markdown links and six anchors resolve; 12 required plan sections, six milestones all Complete, ten Accepted units, 22 PASS reports and 150 byte-identical original evidence files verified. No failed check.
+1. python <LOCAL_VALIDATION_TOOLS>/check-documentation.py -> exit 0; 266 local Markdown links and six anchors resolve; 12 required plan sections, six milestones all Complete, ten Accepted units, 22 PASS reports and 150 byte-identical original evidence files verified. No failed check.
 2. git diff --check -> exit 0.
 3. git diff --cached --quiet -> exit 0 before/after.
 4. git diff --quiet HEAD -- docs/plans/evidence/native-rust-module-organization docs/plans/completed docs/architecture/system-diagram.md ':(exclude)docs/plans/completed/README.md' ':(exclude)docs/plans/completed/native-rust-test-layout.md' -> exit 0; old campaign evidence, other completed plans and canonical diagram untouched.
