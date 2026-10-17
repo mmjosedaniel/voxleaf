@@ -360,6 +360,53 @@ fn installed_v3_runtime_verifies_after_transient_numba_cache_cleanup() {
 }
 
 #[test]
+fn authorized_hash_does_not_admit_invalid_runtime_identity_or_bytecode_cleanup() {
+    for (field, invalid) in [
+        ("schemaVersion", serde_json::json!(1)),
+        ("packageId", serde_json::json!("voxleaf-chatterbox-invalid")),
+        ("packageVersion", serde_json::json!("invalid")),
+        ("profileId", serde_json::json!("invalid-profile")),
+        ("serviceModule", serde_json::json!("invalid.module")),
+        ("files", serde_json::json!([])),
+    ] {
+        let root = TestRoot::new();
+        let mut authority = write_runtime(&root.0);
+        assert!(verify_runtime(&root.0, &authority).is_ok());
+        let path = root.0.join(RUNTIME_MANIFEST_NAME);
+        let mut manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).expect("manifest should exist"))
+                .expect("manifest should parse");
+        manifest[field] = invalid;
+        let bytes = serde_json::to_vec(&manifest).expect("manifest should serialize");
+        fs::write(&path, &bytes).expect("invalid manifest should be written");
+        authority
+            .runtime_artifact
+            .as_mut()
+            .expect("runtime authority should exist")
+            .runtime_manifest_sha256 = encode_sha256(Sha256::digest(&bytes));
+        assert_eq!(
+            verify_runtime(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed),
+            "invalid {field} should fail full verification"
+        );
+
+        let cache = root.0.join("runtime/Lib/site-packages/example/__pycache__");
+        fs::create_dir_all(&cache).expect("cache directory should be created");
+        let bytecode = cache.join("module.cpython-312.pyc");
+        fs::write(&bytecode, b"stale bytecode").expect("bytecode should be written");
+        assert_eq!(
+            remove_unmanifested_python_bytecode(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed),
+            "invalid {field} should fail before bytecode cleanup"
+        );
+        assert_eq!(
+            fs::read(&bytecode).expect("bytecode should remain"),
+            b"stale bytecode".to_vec()
+        );
+    }
+}
+
+#[test]
 fn installed_runtime_removes_only_unmanifested_python_cache_bytecode() {
     let root = TestRoot::new();
     let authority = write_runtime(&root.0);
@@ -617,6 +664,7 @@ fn safe_extraction_rejects_archive_entries_outside_the_exact_package_root() {
         format!("{PACKAGE_ID}//outside.txt"),
         format!("{PACKAGE_ID}/C:/outside.txt"),
         format!("{PACKAGE_ID}/runtime\\outside.txt"),
+        format!("{PACKAGE_ID}\0/runtime/outside.txt"),
     ] {
         let root = TestRoot::new();
         let archive_path = root.0.join("unsafe.zip");

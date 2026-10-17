@@ -513,6 +513,56 @@ def build_package(
     return measurement
 
 
+def _verify_local_archive_parts(
+    dist: Path,
+    archive: Path,
+    layout: PackageLayout,
+    archive_hash: str,
+) -> tuple[list[dict[str, object]], int]:
+    parts = sorted(dist.glob(f"{layout.archive}.part-*"))
+    combined = hashlib.sha256()
+    part_records: list[dict[str, object]] = []
+    total_bytes = 0
+    if not 1 <= len(parts) <= 4:
+        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    for index, part in enumerate(parts, start=1):
+        size = part.stat().st_size
+        if part.name != f"{layout.archive}.part-{index:03}" or not 0 < size <= MAXIMUM_PART_BYTES:
+            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+        with part.open("rb") as opened:
+            for block in iter(lambda: opened.read(HASH_BLOCK_BYTES), b""):
+                combined.update(block)
+        total_bytes += size
+        part_records.append({"filename": part.name, "sha256": sha256_file(part), "sizeBytes": size})
+    if combined.hexdigest() != archive_hash or total_bytes != archive.stat().st_size:
+        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    return part_records, total_bytes
+
+
+def _verify_local_archive_members(
+    target: Path,
+    archive: Path,
+    layout: PackageLayout,
+) -> dict[str, Path]:
+    files = {
+        path.relative_to(target).as_posix(): path for path in target.rglob("*") if path.is_file()
+    }
+    with zipfile.ZipFile(archive) as opened:
+        expected_names = {f"{layout.directory}/{relative}" for relative in files}
+        if set(opened.namelist()) != expected_names or len(opened.namelist()) != len(files):
+            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+        for relative, path in files.items():
+            digest = hashlib.sha256()
+            size = 0
+            with opened.open(f"{layout.directory}/{relative}") as member:
+                for block in iter(lambda: member.read(HASH_BLOCK_BYTES), b""):
+                    digest.update(block)
+                    size += len(block)
+            if size != path.stat().st_size or digest.hexdigest() != sha256_file(path):
+                raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    return files
+
+
 def _local_package_receipt(root: Path) -> dict[str, object]:
     """Measure and verify current v4 outputs without publication/execution claims."""
 
@@ -550,39 +600,8 @@ def _local_package_receipt(root: Path) -> dict[str, object]:
     verify_safe_model_load_sites(target / "runtime/Lib/site-packages")
     archive = dist / layout.archive
     archive_hash = sha256_file(archive)
-    parts = sorted(dist.glob(f"{layout.archive}.part-*"))
-    combined = hashlib.sha256()
-    part_records: list[dict[str, object]] = []
-    total_bytes = 0
-    if not 1 <= len(parts) <= 4:
-        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
-    for index, part in enumerate(parts, start=1):
-        size = part.stat().st_size
-        if part.name != f"{layout.archive}.part-{index:03}" or not 0 < size <= MAXIMUM_PART_BYTES:
-            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
-        with part.open("rb") as opened:
-            for block in iter(lambda: opened.read(HASH_BLOCK_BYTES), b""):
-                combined.update(block)
-        total_bytes += size
-        part_records.append({"filename": part.name, "sha256": sha256_file(part), "sizeBytes": size})
-    if combined.hexdigest() != archive_hash or total_bytes != archive.stat().st_size:
-        raise ReleaseChatterboxError("chatterbox-package-archive-failed")
-    files = {
-        path.relative_to(target).as_posix(): path for path in target.rglob("*") if path.is_file()
-    }
-    with zipfile.ZipFile(archive) as opened:
-        expected_names = {f"{layout.directory}/{relative}" for relative in files}
-        if set(opened.namelist()) != expected_names or len(opened.namelist()) != len(files):
-            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
-        for relative, path in files.items():
-            digest = hashlib.sha256()
-            size = 0
-            with opened.open(f"{layout.directory}/{relative}") as member:
-                for block in iter(lambda: member.read(HASH_BLOCK_BYTES), b""):
-                    digest.update(block)
-                    size += len(block)
-            if size != path.stat().st_size or digest.hexdigest() != sha256_file(path):
-                raise ReleaseChatterboxError("chatterbox-package-archive-failed")
+    part_records, total_bytes = _verify_local_archive_parts(dist, archive, layout, archive_hash)
+    files = _verify_local_archive_members(target, archive, layout)
     return {
         "schemaVersion": 1,
         "packageId": layout.directory,
