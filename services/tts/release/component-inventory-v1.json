@@ -10966,7 +10966,7 @@
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
       "auditRef": "production-node",
       "ecosystem": "node",
-      "id": "npm:@tauri-apps/api@2.12.1",
+      "id": "npm:@tauri-apps/api@2.12.2",
       "inclusion": {
         "processBoundary": "Tauri WebView renderer",
         "purpose": "Production reader/desktop renderer dependency.",
@@ -10975,7 +10975,7 @@
       "integrity": {
         "algorithm": "SHA-512",
         "lock": "pnpm-lock.yaml",
-        "value": "DeyFHa3wynpyoqTDikDEDGTJIq4LQ5USfolQGRmGIWT6JMADyxZBTDa5cAdT3tDg73rUXufPaCwN7aXBos4OnQ=="
+        "value": "cr0FYEsbSQIeEuIIoC8bwdiHW3YlziMYOZ0j3R7F6kkIHSVrrZnV6CSjv/VQvFoyuERGxFc8NMtLJDXi5wYOYg=="
       },
       "license": {
         "evidence": "pnpm production licence metadata",
@@ -10995,7 +10995,7 @@
       },
       "scope": "core",
       "source": "https://github.com/tauri-apps/tauri#readme",
-      "versionOrRevision": "2.12.1"
+      "versionOrRevision": "2.12.2"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -14757,7 +14757,7 @@
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",
-      "sha256": "62fe4936057df421e7264705be1941b60cc7a6513022a163285bae777f311701"
+      "sha256": "19715bf3e6d1a51f2f027a0930d93e370c4ff170baabccfb889577421c4cab06"
     }
   },
   "schemaVersion": 1,
