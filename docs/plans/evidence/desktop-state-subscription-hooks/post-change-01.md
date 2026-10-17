@@ -1,10 +1,15 @@
 # Validation Report
 
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `28dd52af98024eb490483ef7a6bef68f1310b038177735b5f04a89e610a1f6d9`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: STATE-SUBSCRIPTIONS-01-POST-CHANGE-01-20261012
 Target ID: STATE-SUBSCRIPTIONS-01
 Mode: POST-CHANGE
 Verdict: PASS
-Environment: local PowerShell outside sandbox, repository root C:/Users/mmjos/Desktop/workbeanch/voxleaf. Every acceptance and identity call used sandbox_permissions=require_escalated; PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation prepended C:\nvm4w\nodejs\node_modules\corepack\shims to process-local PATH, selecting the existing pinned Corepack pnpm.cmd. No global, dependency or source changes by the validator.
+Environment: local PowerShell outside sandbox, repository root <REPO_ROOT>. Every acceptance and identity call used sandbox_permissions=require_escalated; PowerShell 7.6.5, Node v24.20.0, pnpm 11.15.1. Each pnpm invocation prepended C:\nvm4w\nodejs\node_modules\corepack\shims to process-local PATH, selecting the existing pinned Corepack pnpm.cmd. No global, dependency or source changes by the validator.
 Starting HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Ending HEAD SHA: 44a83f4113e9cbeadee7d8a2d0e62838df70629b
 Validated paths: the exact eight work-order-02 paths enumerated in the manifest below; all are present. Branch codex/desktop-state-subscription-hooks.

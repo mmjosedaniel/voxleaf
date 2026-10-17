@@ -1,6 +1,6 @@
 ---
 name: validate-safe-refactor
-description: Establish a pre-change baseline and independently validate a bounded VoxLeaf TypeScript or TSX refactor. Use after an approved clean-code work order, before and after edits, when selecting focused tests, or when determining whether a readability change preserved behavior and repository safety.
+description: Establish a pre-change baseline and independently validate a bounded VoxLeaf TypeScript, TSX, Python, or Rust refactor. Use after an approved clean-code work order, before and after edits, when selecting focused tests, or when determining whether a readability change preserved behavior and repository safety.
 ---
 
 # Validate a safe refactor
@@ -12,8 +12,9 @@ update snapshots, or change Git history while validating.
 
 1. Read `AGENTS.md`. In baseline mode, read the accepted Audit Packet and draft
    work-order terms. In post-change mode, read the frozen Approved Work Order.
-2. Read [references/validation-matrix.md](references/validation-matrix.md)
-   completely.
+2. Read [references/validation-policy.md](references/validation-policy.md) and
+   [references/validation-matrix.md](references/validation-matrix.md). Approve
+   the risk, unit/batch boundary and gate ledger before implementation.
 3. Read the target diff, affected tests, and direct public contracts.
 4. Use the Validation Report schema in
    `$orchestrate-safe-refactor`'s `references/refactor-contracts.md`.
@@ -23,8 +24,10 @@ update snapshots, or change Git history while validating.
 For every mode, follow the Validation Report identity and freshness contract:
 assign a unique Report ID, record HEAD and the closed path identity manifest
 before commands, and recheck them afterwards. PASS requires unchanged identities
-and complete evidence. Return BLOCKED on drift; a later edit requires a new
-report and rerunning the required acceptance commands, not a hash-only refresh.
+and complete evidence. Return BLOCKED on drift. A later edit requires current
+independent review and a new report; rerun affected gates. Reuse an individual
+passing gate only with the canonical policy's full input/environment proof and
+original immutable receipt. Never refresh old approval hashes.
 
 ## Baseline mode
 
@@ -32,7 +35,10 @@ Confirm that the Git index contains no staged changes and that every proposed
 allowlisted path has no pre-existing worktree change before the unit starts. If
 either check fails, return `BLOCKED`; do not disturb the user's work.
 
-Run the smallest applicable package test and typecheck commands before edits.
+Run the smallest applicable format/lint/type and focused behavior checks before
+edits. Use documentation/configuration gates for documentation-only work.
+A shared expensive baseline must cover the declared batch before its first
+relevant edit; each unit still needs a focused baseline on its starting state.
 Record exact commands and outcomes. If a relevant command already fails, return
 `BASELINE-FAIL`; do not let later work claim the failure as a regression or fix
 it opportunistically.
@@ -43,12 +49,14 @@ it opportunistically.
 2. Reject manual generated-source changes, dependency changes, weakened tests,
    unrelated formatting, public-contract drift, or private/prohibited artifacts.
 3. Compare the diff against every named behavior invariant.
-4. Run the same baseline commands.
+4. Cover the same baseline gates; run affected commands and explicitly justify
+   any reused gate with original evidence and current dependency comparison.
 5. Add only the risk-triggered gates required by the validation matrix.
 6. Run final acceptance commands in normal local PowerShell outside the managed
    sandbox. Repeat any exploratory sandbox command unchanged on the host.
-7. Return `PASS` only when scope, invariants, test integrity, privacy, artifacts,
-   and all required commands pass.
+7. Return `PASS` only when scope, invariants, test integrity, privacy, artifacts
+   and all gates required at this acceptance boundary pass. List batch gates
+   still pending; a unit PASS cannot stand for final acceptance.
 
 Post-change `PASS` authorizes staging only for its recorded HEAD and exact
 validated path identities. The Git executor must compare the report, order,
@@ -60,8 +68,11 @@ hunks are removed.
 
 ## Package and final modes
 
-Use package mode after several accepted units in one package. Use final mode
-before a PR. Do not substitute a portable check for a required native Windows,
+Use package mode for the declared integration batch and final mode before
+campaign completion or a PR. Check cleanup and every pending gate. Use the
+canonical policy for aggregate deduplication, bounded retries and failure
+classification. Record phase durations without claiming unmeasured savings.
+Do not substitute a portable check for a required native Windows,
 WebView2, GPU, model, firewall, performance, or exact-host gate.
 
 When validation fails, identify the smallest correction and return control to

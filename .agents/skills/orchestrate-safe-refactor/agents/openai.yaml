@@ -1,4 +1,4 @@
 interface:
   display_name: "Safe Refactor Orchestrator"
   short_description: "Direct bounded refactors with gated Git"
-  default_prompt: "Use $orchestrate-safe-refactor to audit, validate, improve, and Git-stage the next bounded VoxLeaf code unit without changing behavior."
+  default_prompt: "Use $orchestrate-safe-refactor to audit and improve a bounded VoxLeaf code unit with independent validation and Git actions only when authorized."

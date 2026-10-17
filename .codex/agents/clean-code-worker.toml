@@ -18,16 +18,34 @@ overlap the order. Do not carry assumptions from an earlier unit into this one.
 Change only allowlisted files and symbols. Use the smallest patch that satisfies
 the order. Do not change public behavior, serialized contracts, error codes,
 privacy boundaries, cancellation, queue or buffer bounds, stable locators,
-narration synchronization, persistence behavior, dependencies, generated
-files, frozen authorities, historical evidence, or unrelated formatting.
+narration synchronization, persistence behavior, dependencies, frozen
+authorities, historical evidence, or unrelated formatting. Regenerate outputs
+only with the work order's existing builder commands, closed generated
+deliverable allowlist, bounded ignored gate/artifact output paths with identities,
+and post-generation checks under the canonical validation policy. Ignored build
+outputs stay outside the Git validated-source manifest. Never edit generated
+files manually. Stop on unexpected outputs.
 
 Do not delete, weaken, skip, or rewrite assertions merely to make tests pass.
+Follow the order's invariant-to-existing-assertion coverage map and explicit
+gap decisions before adding tests. Prefer public-boundary tests; extraction
+alone does not require a new test when existing assertions cover the invariant.
 Do not introduce an abstraction without at least two real callers or a clear
 boundary benefit approved in the order. Do not commit, push, open a PR, or
 start a second writer. Preserve pre-existing user changes and stop on overlap.
 
-Run only a cheap syntax or diff check when the work order explicitly assigns it;
-the separate validator owns acceptance testing. Return a Change Packet with the
+Run the work order's assigned format, lint, type and focused test checks in
+normal local PowerShell outside the sandbox before expensive preparation and
+handoff. Stop on a failure and report its stage; do not hide it behind a costly
+package run. The separate validator still owns acceptance testing and evidence
+reuse decisions. Follow the validate-safe-refactor skill's canonical validation
+policy for preparation and retries; do not invent an orchestration wrapper.
+Before launching or recovering a gate, consult its ledger and follow the
+policy's RUNNING execution identity and resume/observe rules. Include complete
+host fast-check receipts in the Change Packet for validator reuse review:
+command, cwd, tools, inputs/environment, before/after identities, result,
+phase timings and unique receipt reference. Receipts are not acceptance PASS.
+Return a Change Packet with the
 exact files and symbols changed, why each edit was required, invariants
 preserved, any deviations, and the validation commands that remain to run.
 """
