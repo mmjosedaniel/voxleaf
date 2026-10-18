@@ -1,7 +1,7 @@
 {
   "authority": {
-    "runtimeManifestSha256": "e3f00256070a9fe11485b009fa015430be1dec5f9bc0fadecf02492c22ba8f20",
-    "sourceManifestSha256": "4c340ca48878a1558d792901ba66a81ed1432b8de33cd1fd0c723287c29982af"
+    "runtimeManifestSha256": "b69d694f61e25d538c345ef07545222dcce738d782186769efcda766669b3ae1",
+    "sourceManifestSha256": "0899b99fec0e20384520b33b63831bcf7b25dd86886c1e664bc760ab67370b02"
   },
   "distribution": {
     "englishVoiceBundled": true,
@@ -26,16 +26,16 @@
     "Final clean-host, OS-level offline, install, repair, and uninstall evidence belongs to later M011 milestones."
   ],
   "measurements": {
-    "archiveSha256": "fbda97967d772493c03a1465baf4a1e6c59c7c04a2135b7ad1d40eea3c64a1dd",
+    "archiveSha256": "a12fba6eeae845e3976c33b8967df430e7cd23a56843eb86cf6b3979acfa60b3",
     "compressedBytes": 213352532,
     "fileCount": 2024,
     "installedBytes": 304989541
   },
   "offlineSmoke": {
     "audioPersisted": false,
-    "englishPayloadBytes": 208424,
+    "englishPayloadBytes": 218452,
     "networkProcessApisDenied": true,
-    "spanishPayloadBytes": 235172
+    "spanishPayloadBytes": 236288
   },
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",

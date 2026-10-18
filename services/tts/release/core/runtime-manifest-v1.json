@@ -1,5 +1,5 @@
 {
-  "coreLockSha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97",
+  "coreLockSha256": "b93ad74e6eddfb0734c79aefb020ce5f8417a1d8e397e5300ea30f4eb9445e78",
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
@@ -733,7 +733,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/jsonschema-4.26.0.dist-info/RECORD",
-      "sha256": "145b93507debc66da87399fb39e6e8d9590cc313f4b72a56812af1ba97e71de5",
+      "sha256": "7872c60e36ba6d9718e5fe21ab403617d33b6c5723b6935b7225cc7d2803ee1f",
       "sizeBytes": 4095
     },
     {
@@ -1093,7 +1093,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/numpy-2.5.1.dist-info/RECORD",
-      "sha256": "17881cd557bc63d03f5563867b9584b27961f3ed78260dd60176c3be4197c3b6",
+      "sha256": "a648ec096702938cf4135b30fcaf0a234778f4d7ba41de0dbd5f911c1c71ea75",
       "sizeBytes": 88011
     },
     {
@@ -5823,7 +5823,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/RECORD",
-      "sha256": "b0dce5436ab4317f5893f6da03d37480f11811bd2aae9462896e8272b82861a6",
+      "sha256": "29d31e161c6ec28a4215d298fef4c03fe2e7e4403e0053a01435110df17b8d34",
       "sizeBytes": 35517
     },
     {
@@ -9623,7 +9623,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/RECORD",
-      "sha256": "b4acf5cecf630638137018ba390d1cabac5b3657587fa2d5aae07400ba19700c",
+      "sha256": "abc4e8f136789a9311ffbccd94268d199d8dba2855e8e0ca684ba1eeea278d7f",
       "sizeBytes": 38377
     },
     {
@@ -10073,7 +10073,7 @@
     },
     {
       "path": "source-manifest-v1.json",
-      "sha256": "4c340ca48878a1558d792901ba66a81ed1432b8de33cd1fd0c723287c29982af",
+      "sha256": "0899b99fec0e20384520b33b63831bcf7b25dd86886c1e664bc760ab67370b02",
       "sizeBytes": 3655
     },
     {
