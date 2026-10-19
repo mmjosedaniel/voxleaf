@@ -137,10 +137,10 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         if component["ecosystem"] == "node"
         and component["name"] in {"@tauri-apps/api", "@zip.js/zip.js", "react", "react-dom"}
     } == {
-        "npm:@tauri-apps/api@2.12.2",
+        "npm:@tauri-apps/api@2.12.4",
         "npm:@zip.js/zip.js@2.23.0",
-        "npm:react@19.3.0",
-        "npm:react-dom@19.3.0",
+        "npm:react@19.3.1",
+        "npm:react-dom@19.3.1",
     }
     assert {
         component["id"]
