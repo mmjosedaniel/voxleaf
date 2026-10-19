@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`typescript-function-readability.md`](typescript-function-readability.md): private service-identity/navigation helpers and reused profile admission; three implemented units, two independently accepted SKIPs and seven added characterization cases. Independent unit, combined TypeScript/Python/Rust, browser/native and affected Piper/Chatterbox ES/EN gates passed; temporary firewall rule removed and prior rules preserved. Five source/test files, 260 changed lines; implementation committed as `ed5227d`. The dated TFR-04 reevaluation retains SKIP for the complete async phase split and records a distinct, unimplemented/unvalidated synchronous alternative.
+
 - [`piper-onnxruntime-pr-249.md`](piper-onnxruntime-pr-249.md): ONNX 1.31 exact runtime, pre-import 1DS suppression and pre-model Windows telemetry disable; focused checks, rebuilt package, ES/EN service/playback and firewall restoration pass with independent local approval. Published-head CI belongs to the subsequent PR handoff.
 
 - [`refactor-validation-efficiency.md`](refactor-validation-efficiency.md): contributor policy and skills now distinguish unit/batch acceptance, select risk-based gates, require fast checks before packaging, and allow independently proven immutable evidence reuse. Policy scenarios and configuration/link checks passed; runtime behavior and CI requirements are unchanged.
