@@ -698,6 +698,45 @@ describe("EPUB package document parsing", () => {
   );
 
   it.each([
+    [
+      "missing navigation and fallback",
+      {
+        manifest: `<item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml" fallback="missing"/>`,
+      },
+      "broken-reference",
+    ],
+    [
+      "missing navigation and media overlay",
+      {
+        manifest: `<item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml" media-overlay="missing"/>`,
+      },
+      "broken-reference",
+    ],
+    [
+      "unsupported navigation and missing spine idref",
+      {
+        manifest: `<item id="nav" href="nav.xhtml" media-type="application/xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+        spine: `<itemref idref="missing"/>`,
+      },
+      "unsupported-resource",
+    ],
+    [
+      "wrong-type NCX and undeclared guide target",
+      {
+        version: "2.0",
+        manifest: `<item id="ncx" href="toc.ncx" media-type="application/xml"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>`,
+        trailingSections: `<guide><reference type="text" href="fallback.xhtml"/></guide>`,
+      },
+      "unsupported-resource",
+    ],
+  ] as const)(
+    "preserves package rejection precedence for %s",
+    async (_name, options, code) => {
+      await expectFixtureError(createPackageDocument(options), {}, code);
+    },
+  );
+
+  it.each([
     ["missing spine toc", EPUB2_MANIFEST, "", "malformed-package"],
     [
       "missing toc manifest ID",

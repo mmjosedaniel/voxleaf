@@ -423,13 +423,7 @@ export class HardwareProfileCompatibilityCoordinator {
       !this.#snapshot.profiles.some(
         (profile) =>
           profile.profileId === profileId &&
-          profile.state === "compatible" &&
-          (profile.supportState === "supported" ||
-            profile.supportState === "development-only") &&
-          profileSupportsNarrationLanguageV1(
-            profileId,
-            this.#snapshot.language,
-          ),
+          admittedForLanguage(profile, this.#snapshot.language),
       ) ||
       !this.#snapshot.canPersistSelection
     ) {
