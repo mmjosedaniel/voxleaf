@@ -2,7 +2,8 @@
 
 Status: completed on 2026-10-19. TFR-01, TFR-02 and TFR-05 implemented and
 independently accepted; TFR-03 and TFR-04 accepted SKIP. Combined gates and
-independent host restoration passed. Changes remain unstaged and uncommitted.
+independent host restoration passed. Implementation committed as `ed5227d`;
+the 2026-10-19 documentary reevaluation below retains both SKIPs.
 Prepared on 2026-10-19 from clean `main` at
 `8f0d156196cd44130b0acf5816df92466c2f8972`.
 Implementation branch: `codex/typescript-function-readability`.
@@ -23,10 +24,12 @@ state notifications, cancellation, highlighting, navigation and cleanup.
 Contributors can locate the shared identity/admission rules and package navigation decision by name.
 
 This is a maintainability change, not a feature or a claimed performance gain.
-The execution request authorized implementation, validation, minimal environment
-recovery and documentary closeout, while expressly excluding staging, commits,
+At initial closeout on 2026-10-19, the request authorized implementation,
+validation, minimal environment recovery and documentary closeout, while excluding staging, commits,
 push and PR. Work remained on the existing branch at HEAD
 `2648617f86fdfd7dddc8dc81fdeabd36942f3c3c`; the index remained empty.
+Subsequent authorization committed the implementation and closeout as
+`ed5227dfebef66317b9db01ab918d4e6759ef7f5`.
 
 ## 3. Current state
 
@@ -217,16 +220,23 @@ Preserve method receivers and StrictMode/source-replacement behavior.
 
 ### Milestone 5: TFR-04 service execution phases
 
-Status: revised audit/SKIP, independently confirmed ordering concern.
+Status: SKIP retained; scope clarified by documentary reevaluation on 2026-10-19.
 
 The original proposal below is superseded by
 [TFR-04-AUDIT-20261019-02](../evidence/typescript-function-readability/TFR-04-audit-skip-02.md).
-Awaiting async phase helpers would insert a Promise reaction before final
-publication/shared catch, allowing a competing reaction or stop to change
-observable ordering. Keeping the original awaits in the dispatcher permits
-only small synchronous extractions without enough readability benefit.
-No implementation or added tests are authorized for this skipped unit.
-This is source-derived reasoning, not a reproduced product defect.
+A complete asynchronous phase extraction adds a Promise reaction before final
+publication/shared catch. A permitted injected client can register a competing
+reaction that observes the difference or invalidates the run before publication
+or catch classification. This is a constructible semantic difference derived
+from source, not an executed regression or a demonstrated native-client race.
+SKIP weighs the full phase split's readability benefit, risk and bounded scope;
+it does not establish that every behavior-preserving refactor is impossible.
+
+A distinct synchronous alternative could modestly improve clarity by moving the
+duplicated unavailable-profile failure block into one private helper while
+leaving both early returns in `#execute`. It would not separate service phases.
+This alternative is neither implemented nor validated, and this documentary
+reevaluation authorizes no source or test change. Original audits remain intact.
 
 Original proposal retained for decision context:
 
@@ -400,6 +410,12 @@ Reverting committed implementation requires a separately authorized operation.
 Newest entries first. Older pending/blocked statements record their historical
 execution state; section 12 is the final result.
 
+- 2026-10-19 documentary reevaluation: retain TFR-04 SKIP for the complete async
+  phase split, with a constructible injected-client ordering difference and no
+  executed regression/native-race claim. The smaller synchronous duplicate
+  failure-block helper remains a potentially useful, unimplemented and unvalidated
+  alternative. Original audits are preserved; this clarification changes no code.
+  Implementation and initial closeout are recorded in commit `ed5227d`.
 - 2026-10-19 closeout: all three implementation units accepted independently;
   two SKIPs retained. [Combined PACKAGE PASS](../evidence/typescript-function-readability/TFR-BATCH-PACKAGE-20261019-01.md)
   resolves the current script graphs, cross-package tests and final native smoke.
@@ -467,7 +483,7 @@ execution state; section 12 is the final result.
   HEAD/index stayed unchanged. It accepts both SKIP decisions and records
   failures, consumed retry budgets, artifact-only reuse and pending final
   firewall restoration. Historical runtime results were not reused.
-- Revised TFR-04 audit and independent validator review found that full async
+- Initial revised TFR-04 audit and independent validator review found that full async
   phase extraction changes Promise-reaction ordering before final publication
   and shared catch. Accepted SKIP; smaller synchronous extractions do not
   resolve the identified responsibility mix without added indirection. Both
@@ -583,8 +599,12 @@ execution state; section 12 is the final result.
 - The original TFR-03 proposal was the only new production file; its accepted
   SKIP leaves both proposed paths absent. Other planned helpers remain private
   in current files, and TFR-02 reuses the existing predicate.
-- TFR-04 remains unchanged: async extraction would alter Promise-reaction order;
-  preserving the original awaits leaves insufficient benefit for smaller helpers.
+- TFR-04 remains SKIP after the 2026-10-19 reevaluation: complete async phase
+  extraction changes reaction ordering for a permitted injected client, without
+  an executed regression or demonstrated native-client race. This benefit/risk/
+  scope decision does not exclude all refactors. A synchronous duplicate-failure
+  helper retaining both dispatcher returns may help, but is unimplemented and
+  unvalidated and does not perform the proposed phase separation.
 - Similar preference repositories and frozen normalizers remain separate.
 - Reuse requires independent proof, not an assumption that a refactor is safe.
   No measured reduction in execution time is claimed.
@@ -593,19 +613,20 @@ execution state; section 12 is the final result.
 
 ## 12. Final validation results
 
-Campaign complete: three implemented units, two justified SKIPs, independent
-baselines/post-change acceptance, combined repository gates and host restoration.
+Initial 2026-10-19 closeout: three implemented units, two justified SKIPs,
+independent baselines/post-change acceptance, combined repository gates and host restoration.
 No source/config/dependency changes outside the approved five changed files;
-260 added plus removed lines. No staging, commits, push or PR. Original branch
-and HEAD remain unchanged, index empty. The active path is removed, with this
-completed plan linked from the maintained documentation indexes.
+260 added plus removed lines. At that initial closeout, no staging, commits,
+push or PR had occurred; original branch/HEAD were unchanged and index empty.
+Later authorization produced implementation commit `ed5227d`. The active path
+is removed, with this completed plan linked from the maintained indexes.
 
 | Unit | Final outcome | Independent evidence |
 | --- | --- | --- |
 | TFR-01 | Private `hasForeignServiceInstance` reused at exactly five sites; operation checks retained; three public cases and stronger startup assertion; 123 lines | [POST PASS](../evidence/typescript-function-readability/TFR-01-POST-20261019-01.md) |
 | TFR-02 | `selectProfile` reuses `admittedForLanguage`; exact identity/state/persistence guards and tests unchanged; 8 lines | [Authoritative POST PASS](../evidence/typescript-function-readability/TFR-02-POST-20261019-02.md) |
 | TFR-03 | SKIP: short effects already expose cohesive subscription/reconciliation/cleanup; extraction adds an unjustified boundary; proposed files absent | [Audit](../evidence/typescript-function-readability/TFR-03-audit-skip-01.md), [independent baseline acceptance](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md) |
-| TFR-04 | SKIP: async phase helpers would insert Promise reactions before publication/shared catch; synchronous alternatives add indirection without enough benefit; unchanged | [Revised audit](../evidence/typescript-function-readability/TFR-04-audit-skip-02.md), [independent acceptance](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md) |
+| TFR-04 | SKIP retained, reevaluated 2026-10-19: complete async phases add a reaction before publication/catch; injected-client semantic difference is constructible, not an executed regression/native race. Benefit/risk/scope decision; a synchronous duplicate-failure helper is distinct, unimplemented and unvalidated | [Revised audit](../evidence/typescript-function-readability/TFR-04-audit-skip-02.md), [independent acceptance](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md) |
 | TFR-05 | Private same-file `resolvePackageNavigation`; original EPUB 2/3 decisions and final freezing; four mixed-invalid precedence cases; 129 lines | [POST PASS](../evidence/typescript-function-readability/TFR-05-POST-20261019-01.md) |
 
 [Combined PACKAGE report](../evidence/typescript-function-readability/TFR-BATCH-PACKAGE-20261019-01.md)
