@@ -59,6 +59,28 @@ successfully. The Rust commands cover both default and
 See [native Rust navigation](agentic-refactoring.md#native-rust-navigation)
 for the complete file mapping and the test-layout ExecPlan for exact evidence.
 
+The private `cancel_when_generation_becomes_active` diagnostic helper shares
+only the pending/descendant wait-and-cancel sequence. The native startup matrix
+retains the pending scenario's required joined `Cancelled` result and the
+Windows descendant scenario's ignored join result. Static comparison checks
+the lifecycle guard is released before cancellation and active identity is
+checked before timeout. The
+[completed function-readability plan](../plans/completed/native-rust-function-readability.md)
+records independent baseline/post-change and combined installed acceptance for
+all four extractions. Process-free channel tests cover exact expected-state return,
+lifecycle update before rejection of a valid unexpected state, rejection of a
+different service identity before lifecycle mutation, timeout and disconnection.
+Non-release directory fixtures characterize canonical source/site-packages tuple
+order and missing source, site-packages, jsonschema or referencing paths without
+changing global environment variables. The installed-identity regression uses
+six fresh fixtures with authorized hashes but invalid schema, package ID/version,
+profile, service module or empty file list. It requires full verification and
+bytecode cleanup to reject each identity while preserving synthetic bytecode.
+The private helper keeps full verification's current-only hash policy separate
+from cleanup's current-or-authorized-legacy policy. Both Rust feature suites,
+native diagnostics, supported Piper/Chatterbox language journeys and isolated
+package/installed validation passed on the exact combined source manifest.
+
 The Windows failed-Job-Object-assignment regression retains an owned handle to
 the original child and checks that it is already signaled when the failed spawn
 returns. It uses a zero-timeout wait, with no subsequent retry or grace period.
@@ -369,6 +391,47 @@ assertions and resource cleanup remain in force.
 - `apps/desktop/src/tts/transport-probe.test.ts` proves the low-level binary response. `process-client.test.ts` proves canonical control decoding, exact order, active/stale identity classification, one-unit ownership, finite/size gates, concurrent rejection, cancellation, late-byte zeroing, close/release, and fixed failures. The packaged lifecycle probe then exercises the same production client through real Tauri commands. None of these suites loads a model, persists audio, or logs narration text.
 
 The formatting, linting, type-checking, and production builds in `pnpm.cmd check` are deterministic validation stages, but they are not substitutes for behavior tests once product logic exists.
+
+### Desktop presentation and semantic comparison coverage
+
+`apps/desktop/src/tts/product-narration-presentation.test.ts` directly checks
+exact availability/profile messages, recovery/failure/preparation/playback
+precedence, all service-state variants and ordered failure guidance.
+`ProductNarrationControls.test.tsx` retains component actions, subscriptions,
+startup cancellation and disclosure coverage, including the absent-error guard.
+
+`apps/desktop/src/reader/SemanticDocument.test.tsx` additionally observes
+completed flat/list descendants across controlled yields, partial progress and
+order, destination entry/exit and range boundaries, absent/removed destinations,
+ref cleanup, service replacement and document/context replacement. It uses
+public callbacks and refs without replacing React memoization. These observations
+cannot independently isolate outer list-group memoization or the context branch
+when a replacement document also creates a new plan; exact static comparator
+equivalence and the unchanged `pnpm.cmd benchmark:reader` gate complement them.
+
+The existing `ReaderSettingsDialog.test.tsx` remains unchanged for the local
+`readerControlsDisabled` naming item. Source equivalence supplies the boolean
+proof; no redundant test or new helper is needed.
+
+`HardwareCompatibilityControls.test.tsx` characterizes deferred true/false
+results for profile, language and reset through supplied callbacks and coordinator
+fallbacks: pending order, retained disabled controls, success-only recovery,
+arguments/receivers and a separate deferred recheck. Exceptional rejection and
+pending-notification paths retain exact `try/finally` source equivalence; these
+tests do not claim exhaustive exception execution coverage. The original
+handlers passed the added characterization before the shared local function.
+Piper/Chatterbox Spanish and English exact-host gates passed before and after.
+
+Host validation must use actual package/model final paths in the same managed
+tree. Tool-inherited AppData redirection into Codex's MSIX LocalCache can trigger
+the native containment guard even outside the sandbox; package-identity API
+result 15700 alone does not rule this out. Use a supervised ordinary local
+PowerShell context and retain the containment checks. The generic native smoke
+requires its model-free environment; enable real model triples only for the
+model-backed arms. See the [diagnosis and execution evidence](../plans/evidence/desktop-ui-logic-readability/host-context-recovery.md).
+
+Execution evidence is retained in the
+[completed readability plan](../plans/completed/desktop-ui-logic-readability.md).
 
 ### Native local-file open flow
 

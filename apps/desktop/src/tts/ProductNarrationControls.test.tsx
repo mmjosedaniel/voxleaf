@@ -177,6 +177,7 @@ describe("product narration controls", () => {
       "false",
     );
     expect(narration).toHaveAttribute("data-narration-failure", "none");
+    expect(narration.querySelector(".product-narration-error")).toBeNull();
     const speed = screen.getByRole("combobox", { name: "Playback speed" });
     expect(speed).toBeEnabled();
     expect(speed).toHaveValue("100");

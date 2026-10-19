@@ -18,7 +18,10 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ScheduleLargeChapterYield } from "./large-chapter-rendering";
-import { SemanticDocumentContent } from "./SemanticDocument";
+import {
+  SemanticDocumentContent,
+  type SemanticDocumentContentProps,
+} from "./SemanticDocument";
 
 afterEach(cleanup);
 
@@ -55,7 +58,189 @@ function documentWith(
   });
 }
 
+function comparisonFixture(list: boolean) {
+  const paragraphs = Array.from(
+    { length: 501 },
+    (_, index) =>
+      Object.freeze({
+        kind: "paragraph",
+        children: Object.freeze([
+          Object.freeze({
+            kind: "internal-link",
+            target: Object.freeze({
+              documentId: "document:sentinel" as ContentDocumentId,
+              fragment: `sentinel-${index}` as SourceFragment,
+            }),
+            children: Object.freeze([text(`Sentinel ${index}`)]),
+          }),
+        ]),
+      }) satisfies SemanticBlock,
+  );
+  const blocks: readonly SemanticBlock[] = list
+    ? [
+        Object.freeze({
+          kind: "list",
+          ordered: true,
+          items: Object.freeze(
+            paragraphs.map((paragraph) =>
+              Object.freeze({ children: Object.freeze([paragraph]) }),
+            ),
+          ),
+        }),
+      ]
+    : paragraphs;
+  const document = documentWith(blocks, { language: "en", direction: "ltr" });
+  const pending: Array<() => void> = [];
+  const scheduleRenderYield: ScheduleLargeChapterYield = (resume) => {
+    pending.push(resume);
+    return () => {
+      const index = pending.indexOf(resume);
+      if (index !== -1) pending.splice(index, 1);
+    };
+  };
+  const targetAvailability = vi.fn(() => ({
+    status: "unavailable" as const,
+    explanation: "Synthetic destination unavailable.",
+  }));
+  const destinationRef = vi.fn();
+  const content = (overrides: Partial<SemanticDocumentContentProps> = {}) => (
+    <SemanticDocumentContent
+      document={document}
+      targetAvailability={targetAvailability}
+      scheduleRenderYield={scheduleRenderYield}
+      destinationRef={destinationRef}
+      {...overrides}
+    />
+  );
+  return {
+    paragraphs,
+    document,
+    pending,
+    targetAvailability,
+    destinationRef,
+    content,
+  };
+}
+
 describe("semantic document rendering", () => {
+  it.each([false, true])(
+    "reuses completed descendants during later yields (list=%s)",
+    (list) => {
+      const fixture = comparisonFixture(list);
+      render(fixture.content());
+      const article = screen.getByRole("article", {
+        name: "Current reading section",
+      });
+      const initialCount = list ? 249 : 250;
+      function expectRendered(count: number) {
+        expect(
+          Array.from(
+            article.querySelectorAll("p"),
+            (paragraph) =>
+              paragraph.querySelector(".semantic-internal-link > span")
+                ?.textContent,
+          ),
+        ).toEqual(
+          Array.from({ length: count }, (_, index) => `Sentinel ${index}`),
+        );
+        expect(fixture.targetAvailability).toHaveBeenCalledTimes(count);
+      }
+      expectRendered(initialCount);
+      expect(article).toHaveAttribute("aria-busy", "true");
+      expect(fixture.pending).toHaveLength(1);
+      act(() => fixture.pending.shift()!());
+      expectRendered(initialCount + 250);
+      expect(article).toHaveAttribute("aria-busy", "true");
+      expect(fixture.pending).toHaveLength(1);
+      act(() => fixture.pending.shift()!());
+      expectRendered(501);
+      expect(article).not.toHaveAttribute("aria-busy");
+      expect(fixture.pending).toHaveLength(0);
+    },
+  );
+
+  it.each([false, true])(
+    "updates affected destinations and replacement inputs (list=%s)",
+    (list) => {
+      const fixture = comparisonFixture(list);
+      const subject = render(fixture.content());
+      act(() => fixture.pending.shift()!());
+      act(() => fixture.pending.shift()!());
+      expect(fixture.targetAvailability).toHaveBeenCalledTimes(501);
+      expect(fixture.destinationRef).not.toHaveBeenCalled();
+      const article = screen.getByRole("article", {
+        name: "Current reading section",
+      });
+      const elements = article.querySelectorAll("p");
+      function moveDestination(
+        block: SemanticBlock | undefined,
+        calls: number,
+      ) {
+        fixture.targetAvailability.mockClear();
+        fixture.destinationRef.mockClear();
+        subject.rerender(
+          fixture.content(
+            block === undefined ? {} : { destinationBlock: block },
+          ),
+        );
+        expect(fixture.targetAvailability).toHaveBeenCalledTimes(calls);
+      }
+      moveDestination(fixture.paragraphs[0], list ? 1 : 250);
+      expect(fixture.destinationRef).toHaveBeenLastCalledWith(elements[0]);
+      // Paragraph 250 starts the next flat or list-item group, outside the first range.
+      moveDestination(fixture.paragraphs[250], list ? 2 : 500);
+      expect(fixture.destinationRef).toHaveBeenLastCalledWith(elements[250]);
+      moveDestination(fixture.paragraphs[249], list ? 2 : 500);
+      expect(fixture.destinationRef).toHaveBeenLastCalledWith(elements[249]);
+      const absent = Object.freeze({
+        kind: "paragraph",
+        children: Object.freeze([text("Absent")]),
+      }) satisfies SemanticBlock;
+      moveDestination(absent, list ? 1 : 250);
+      expect(fixture.destinationRef).toHaveBeenLastCalledWith(null);
+      moveDestination(Object.freeze({ ...absent }), 0);
+      expect(fixture.destinationRef).not.toHaveBeenCalled();
+      moveDestination(undefined, 0);
+      expect(fixture.destinationRef).not.toHaveBeenCalled();
+      const replacementAvailability = vi.fn(() => ({
+        status: "unavailable" as const,
+        explanation: "Replacement service unavailable.",
+      }));
+      subject.rerender(
+        fixture.content({ targetAvailability: replacementAvailability }),
+      );
+      expect(replacementAvailability).toHaveBeenCalledTimes(501);
+      expect(
+        screen.getAllByText("Replacement service unavailable."),
+      ).toHaveLength(501);
+      replacementAvailability.mockClear();
+      subject.rerender(
+        fixture.content({
+          targetAvailability: replacementAvailability,
+          document: documentWith(fixture.document.blocks, {
+            language: "en",
+            direction: "ltr",
+          }),
+        }),
+      );
+      expect(replacementAvailability).toHaveBeenCalledTimes(501);
+      replacementAvailability.mockClear();
+      subject.rerender(
+        fixture.content({
+          targetAvailability: replacementAvailability,
+          document: documentWith(fixture.document.blocks, {
+            language: "fr",
+            direction: "rtl",
+          }),
+        }),
+      );
+      expect(replacementAvailability).toHaveBeenCalledTimes(501);
+      expect(article).toHaveAttribute("lang", "fr");
+      expect(article).toHaveAttribute("dir", "rtl");
+      expect(fixture.pending).toHaveLength(0);
+    },
+  );
+
   it("renders every supported text structure in source order", () => {
     const blocks: readonly SemanticBlock[] = Object.freeze([
       ...([1, 2, 3, 4, 5, 6] as const).map(
