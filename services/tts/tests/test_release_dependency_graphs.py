@@ -164,7 +164,7 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         if component["ecosystem"] == "rust" and component["name"] in {"sha2", "digest"}
     } == {
         "cargo:sha2@0.10.9",
-        "cargo:sha2@0.11.0",
+        "cargo:sha2@0.11.1",
         "cargo:digest@0.10.7",
         "cargo:digest@0.11.3",
     }
