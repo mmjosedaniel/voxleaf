@@ -153,6 +153,17 @@ function decodeControls(input: unknown): readonly TtsProtocolControlV1[] {
   }
 }
 
+function hasForeignServiceInstance(
+  controls: readonly TtsProtocolControlV1[],
+  expectedServiceInstanceId: string | undefined,
+): boolean {
+  return controls.some(
+    (control) =>
+      "serviceInstanceId" in control &&
+      control.serviceInstanceId !== expectedServiceInstanceId,
+  );
+}
+
 function expectKinds(
   controls: readonly TtsProtocolControlV1[],
   kinds: readonly TtsProtocolControlV1["kind"][],
@@ -325,11 +336,7 @@ export class TtsProcessClient {
       accepted.kind !== "handshakeAccepted" ||
       unloaded.kind !== "state" ||
       unloaded.state !== "unloaded" ||
-      controls.some(
-        (control) =>
-          "serviceInstanceId" in control &&
-          control.serviceInstanceId !== accepted.serviceInstanceId,
-      )
+      hasForeignServiceInstance(controls, accepted.serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
@@ -354,11 +361,7 @@ export class TtsProcessClient {
       warming.state !== "warming" ||
       ready.kind !== "state" ||
       ready.state !== "ready" ||
-      controls.some(
-        (control) =>
-          "serviceInstanceId" in control &&
-          control.serviceInstanceId !== this.serviceInstanceId,
-      )
+      hasForeignServiceInstance(controls, this.serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
@@ -376,11 +379,7 @@ export class TtsProcessClient {
     if (
       state.kind !== "state" ||
       state.serviceInstanceId !== this.serviceInstanceId ||
-      controls.some(
-        (control) =>
-          "serviceInstanceId" in control &&
-          control.serviceInstanceId !== this.serviceInstanceId,
-      )
+      hasForeignServiceInstance(controls, this.serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
@@ -482,11 +481,7 @@ export class TtsProcessClient {
       cancelled.workIdentity.segmentId !== scope.segmentId ||
       stopped.kind !== "state" ||
       stopped.state !== "stopped" ||
-      controls.some(
-        (control) =>
-          "serviceInstanceId" in control &&
-          control.serviceInstanceId !== this.serviceInstanceId,
-      )
+      hasForeignServiceInstance(controls, this.serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
@@ -512,11 +507,7 @@ export class TtsProcessClient {
       stopping.state !== "stopping" ||
       stopped.kind !== "state" ||
       stopped.state !== "stopped" ||
-      controls.some(
-        (control) =>
-          "serviceInstanceId" in control &&
-          control.serviceInstanceId !== this.serviceInstanceId,
-      )
+      hasForeignServiceInstance(controls, this.serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
