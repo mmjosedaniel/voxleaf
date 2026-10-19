@@ -1,4 +1,10 @@
 # Validation Report
+
+> **Sanitized publication copy.** Personal paths are redacted; report IDs,
+> results and validation hashes retain their historical meaning.
+> Original SHA-256: `91318f776e2dd4258890b8e8746d786c3fac3f98bd42b61f31f0a8aff3680079`.
+> See [publication and original retention](../historical-privacy-cleanup/README.md).
+
 Report ID: TTS-ADAPTER-LAYOUT-01-BASELINE-20261011-01
 Target ID: TTS-ADAPTER-LAYOUT-01
 Mode: BASELINE
@@ -67,4 +73,4 @@ Privacy/artifact review: PASS, no prohibited or unrelated file entered the sourc
 Action required: none for deterministic baseline. This PASS does not authorize implementation until the separately required host prerequisites are resolved and the director freezes the work order; it does not authorize Git mutations.
 
 Evidence limits: no real-model load/audio, installed-v3 full-tree check, network/firewall enforcement, package-isolated service run, desktop lifecycle/playback/synchronization or performance claim is established by these ten commands. Existing cached Piper is verified, not freshly assembled. Fresh v4 does not exist. Host prerequisite findings are recorded separately; in particular exact packaged interpreter firewall blocks are missing and this host token is not Administrator.
-Execution detail: repository root C:/Users/mmjos/Desktop/workbeanch/voxleaf; PowerShell commands were launched with require_escalated (outside managed sandbox); process-local PATH prefixed C:/nvm4w/nodejs/node_modules/corepack/shims, selecting pnpm 11.15.1. Commands ran sequentially with no source writer active. Raw output command-01.log through command-10.log and UTC timings in commands.json.
+Execution detail: repository root <REPO_ROOT>; PowerShell commands were launched with require_escalated (outside managed sandbox); process-local PATH prefixed C:/nvm4w/nodejs/node_modules/corepack/shims, selecting pnpm 11.15.1. Commands ran sequentially with no source writer active. Raw output command-01.log through command-10.log and UTC timings in commands.json.

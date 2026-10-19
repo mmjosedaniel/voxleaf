@@ -55,7 +55,7 @@ def test_core_release_graph_is_minimal_and_exact() -> None:
     project = tomllib.loads(CORE_PROJECT.read_text(encoding="utf-8"))
     assert project["project"]["requires-python"] == ">=3.12,<3.13"
     assert project["project"]["dependencies"] == [
-        "onnxruntime==1.30.0",
+        "onnxruntime==1.31.0",
         "piper-tts==1.8.0",
         "voxleaf-tts",
     ]
@@ -137,7 +137,7 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         if component["ecosystem"] == "node"
         and component["name"] in {"@tauri-apps/api", "@zip.js/zip.js", "react", "react-dom"}
     } == {
-        "npm:@tauri-apps/api@2.12.1",
+        "npm:@tauri-apps/api@2.12.2",
         "npm:@zip.js/zip.js@2.23.0",
         "npm:react@19.3.0",
         "npm:react-dom@19.3.0",
@@ -157,7 +157,7 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         for component in components
         if component["ecosystem"] == "rust"
         and component["name"] in {"zip", "typed-path", "zlib-rs"}
-    } == {"cargo:zip@8.6.0", "cargo:typed-path@0.12.3", "cargo:zlib-rs@0.6.7"}
+    } == {"cargo:zip@9.0.4", "cargo:typed-path@0.12.3", "cargo:zlib-rs@0.6.7"}
     assert {
         component["id"]
         for component in components

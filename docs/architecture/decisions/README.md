@@ -69,6 +69,7 @@ ADR-0002-short-description.md
 - [`ADR-0053-refresh-piper-onnxruntime.md`](ADR-0053-refresh-piper-onnxruntime.md): refresh the current Piper runtime independently of immutable historical evaluation identities, validated by fresh bilingual host journeys.
 
 - [`ADR-0054-refresh-piper-engine-and-phonemizer.md`](ADR-0054-refresh-piper-engine-and-phonemizer.md): refresh the current Piper engine and embedded eSpeak-NG with new bilingual runtime evidence.
+- [`ADR-0055-onnx-131-offline-runtime.md`](ADR-0055-onnx-131-offline-runtime.md): locally validated ONNX 1.31 refresh with pre-import and pre-model telemetry controls.
 
 ## Template
 

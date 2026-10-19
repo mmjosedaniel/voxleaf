@@ -58,7 +58,7 @@ fn write_test_package(root: &Path) -> Vec<u8> {
         "packageId": PACKAGE_ID,
         "packageVersion": "1",
         "platform": "windows-x86_64",
-        "coreLockSha256": "27ea7e0701439689bbdbac8fc81867489b5ad0f0d1e0052e6cdeb938e505ff97",
+        "coreLockSha256": "7c1440bb5bbb1c80e6fc8486ea357b5734b089f6226a8528d7582cf2ed84726b",
         "payloadBytes": payload_bytes,
         "runtime": {
             "pythonPath": "runtime/python.exe",

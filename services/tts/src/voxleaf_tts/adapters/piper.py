@@ -33,7 +33,7 @@ SPANISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
 ENGLISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1"
 CANDIDATE_ID: Final = SPANISH_CANDIDATE_ID
 ENGINE_VERSION: Final = "1.8.0"
-ONNXRUNTIME_VERSION: Final = "1.30.0"
+ONNXRUNTIME_VERSION: Final = "1.31.0"
 MODEL_REVISION: Final = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
 VOICE_ID: Final = "es_ES-davefx-medium"
 SOURCE_SAMPLE_RATE_HZ: Final = 22_050
@@ -178,6 +178,8 @@ class _PiperConfigModule(Protocol):
 
 
 class _OnnxRuntimeModule(Protocol):
+    def disable_telemetry_events(self) -> None: ...
+
     def get_device(self) -> str: ...
 
     def get_available_providers(self) -> list[str]: ...
@@ -254,6 +256,31 @@ def _protocol_sample_count(source_sample_count: int) -> int:
     return (
         source_sample_count * SAMPLE_RATE_HZ + SOURCE_SAMPLE_RATE_HZ // 2
     ) // SOURCE_SAMPLE_RATE_HZ
+
+
+def _collect_bounded_source_samples(chunks: tuple[_PiperAudioChunk, ...]) -> array.array[float]:
+    if not chunks:
+        raise EngineFailure(EngineFailureCode.FAILURE)
+    source = array.array("f")
+    maximum_source_samples = MAX_AUDIO_SAMPLE_COUNT * SOURCE_SAMPLE_RATE_HZ // SAMPLE_RATE_HZ
+    for chunk in chunks:
+        samples = chunk.audio_float_array
+        if (
+            chunk.sample_rate != SOURCE_SAMPLE_RATE_HZ
+            or chunk.sample_width != 2
+            or chunk.sample_channels != CHANNEL_COUNT
+            or type(samples.size) is not int
+            or samples.size <= 0
+            or len(samples) != samples.size
+            or len(source) + samples.size > maximum_source_samples
+        ):
+            raise EngineFailure(EngineFailureCode.FAILURE)
+        for value in samples:
+            sample = float(value)
+            if not math.isfinite(sample):
+                raise EngineFailure(EngineFailureCode.FAILURE)
+            source.append(sample)
+    return source
 
 
 def _resample_to_protocol_rate(source: array.array[float]) -> array.array[float]:
@@ -368,7 +395,10 @@ class PiperCpuTtsEngine:
         try:
             self._verify_runtime()
             self._verify_artifacts()
+            # ORT 1.31 initializes telemetry during import; suppress it beforehand.
+            os.environ["ORT_DISABLE_TELEMETRY"] = "1"
             onnxruntime = cast(_OnnxRuntimeModule, self._importer("onnxruntime"))
+            onnxruntime.disable_telemetry_events()
             if (
                 onnxruntime.get_device() != "CPU"
                 or "CPUExecutionProvider" not in onnxruntime.get_available_providers()
@@ -419,29 +449,7 @@ class PiperCpuTtsEngine:
                     include_alignments=False,
                 )
             )
-            if not chunks:
-                raise EngineFailure(EngineFailureCode.FAILURE)
-            source = array.array("f")
-            maximum_source_samples = (
-                MAX_AUDIO_SAMPLE_COUNT * SOURCE_SAMPLE_RATE_HZ // SAMPLE_RATE_HZ
-            )
-            for chunk in chunks:
-                samples = chunk.audio_float_array
-                if (
-                    chunk.sample_rate != SOURCE_SAMPLE_RATE_HZ
-                    or chunk.sample_width != 2
-                    or chunk.sample_channels != CHANNEL_COUNT
-                    or type(samples.size) is not int
-                    or samples.size <= 0
-                    or len(samples) != samples.size
-                    or len(source) + samples.size > maximum_source_samples
-                ):
-                    raise EngineFailure(EngineFailureCode.FAILURE)
-                for value in samples:
-                    sample = float(value)
-                    if not math.isfinite(sample):
-                        raise EngineFailure(EngineFailureCode.FAILURE)
-                    source.append(sample)
+            source = _collect_bounded_source_samples(chunks)
             output = _resample_to_protocol_rate(source)
             if sys.byteorder != "little":
                 output.byteswap()

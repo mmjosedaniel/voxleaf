@@ -127,6 +127,157 @@ fn fixture_segment() -> Value {
         .clone()
 }
 
+fn channel_session() -> (
+    ServiceSession,
+    mpsc::SyncSender<Result<Frame, TtsNativeFailure>>,
+) {
+    let (sender, frames) = mpsc::sync_channel(1);
+    let session = ServiceSession {
+        service_instance_id: "service:synthetic-1".to_owned(),
+        input: Mutex::new(None),
+        frames: Mutex::new(frames),
+        process: Mutex::new(None),
+    };
+    (session, sender)
+}
+
+fn state_frame(service_instance_id: &str, state: &str) -> Frame {
+    Frame {
+        kind: FrameKind::Control,
+        payload: encode_control(&state_control(service_instance_id, state))
+            .expect("state should encode"),
+    }
+}
+
+#[test]
+fn expected_state_returns_original_control_and_updates_lifecycle() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, sender) = channel_session();
+    let control = state_control(&session.service_instance_id, "ready");
+    sender
+        .send(Ok(state_frame(&session.service_instance_id, "ready")))
+        .expect("frame should be queued");
+    assert_eq!(
+        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        Ok(control)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "ready");
+}
+
+#[test]
+fn unexpected_valid_state_updates_lifecycle_before_rejection() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, sender) = channel_session();
+    sender
+        .send(Ok(state_frame(&session.service_instance_id, "warming")))
+        .expect("frame should be queued");
+    assert_eq!(
+        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        Err(TtsNativeFailure::ProtocolRejected)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "warming");
+}
+
+#[test]
+fn wrong_service_identity_rejects_before_lifecycle_update() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    supervisor
+        .set_state("loading")
+        .expect("state should be seeded");
+    let (session, sender) = channel_session();
+    sender
+        .send(Ok(state_frame("service:synthetic-2", "ready")))
+        .expect("frame should be queued");
+    assert_eq!(
+        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        Err(TtsNativeFailure::ProtocolRejected)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
+}
+
+#[test]
+fn expected_state_preserves_timeout_and_disconnection_failures() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, sender) = channel_session();
+    assert_eq!(
+        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        Err(TtsNativeFailure::TimedOut)
+    );
+    drop(sender);
+    assert_eq!(
+        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        Err(TtsNativeFailure::ChildUnavailable)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "stopped");
+}
+
+#[cfg(not(feature = "release-locked-runtime"))]
+struct DevelopmentRoot(PathBuf);
+
+#[cfg(not(feature = "release-locked-runtime"))]
+impl DevelopmentRoot {
+    fn new() -> Self {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("time should be monotonic")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "voxleaf-development-paths-test-{}-{nonce}",
+            std::process::id()
+        ));
+        for path in [
+            "services/tts/src",
+            "services/tts/.venv/Lib/site-packages/jsonschema",
+            "services/tts/.venv/Lib/site-packages/referencing",
+        ] {
+            fs::create_dir_all(root.join(path)).expect("fixture directory should be created");
+        }
+        Self(root)
+    }
+}
+
+#[cfg(not(feature = "release-locked-runtime"))]
+impl Drop for DevelopmentRoot {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+#[cfg(not(feature = "release-locked-runtime"))]
+#[test]
+fn development_paths_return_canonical_source_then_site_packages() {
+    let root = DevelopmentRoot::new();
+    assert_eq!(
+        development_service_paths(&root.0),
+        Ok((
+            root.0.join("services/tts/src").canonicalize().unwrap(),
+            root.0
+                .join("services/tts/.venv/Lib/site-packages")
+                .canonicalize()
+                .unwrap(),
+        ))
+    );
+}
+
+#[cfg(not(feature = "release-locked-runtime"))]
+#[test]
+fn development_paths_reject_missing_source_site_packages_and_dependencies() {
+    for missing in [
+        "services/tts/src",
+        "services/tts/.venv/Lib/site-packages",
+        "services/tts/.venv/Lib/site-packages/jsonschema",
+        "services/tts/.venv/Lib/site-packages/referencing",
+    ] {
+        let root = DevelopmentRoot::new();
+        fs::remove_dir_all(root.0.join(missing)).expect("fixture directory should be removed");
+        assert_eq!(
+            development_service_paths(&root.0),
+            Err(TtsNativeFailure::ChildUnavailable),
+            "missing {missing} should be unavailable"
+        );
+    }
+}
+
 #[test]
 fn validates_segment_and_generates_native_owned_request_identity() {
     let identity = build_work_identity(&fixture_segment()).expect("segment should validate");
