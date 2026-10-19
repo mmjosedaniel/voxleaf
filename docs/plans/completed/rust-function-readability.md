@@ -1,6 +1,7 @@
 # Bounded Rust function readability
 
-Status: planned; production implementation and acceptance have not started.
+Status: implementation and source/package acceptance complete; independent
+documentary/campaign outcomes are recorded separately after this content freeze.
 Prepared on 2026-10-19 from clean `main` at
 `383c9c42068ee8ff1d6f3984fec8735e029a1877`.
 Implementation branch: `codex/rust-function-readability`.
@@ -23,10 +24,10 @@ codes remain identical. Contributors can test the existing CUDA capability
 thresholds without loading a driver and read diagnostic dispatch without nine
 copies of the same exit policy. No performance improvement is claimed.
 
-The current request authorizes this plan, its two index links, branch creation
-from `main`, and one local documentation commit. It does not implement the
-production changes or authorize a push or PR. A later implementation request
-must be interpreted separately, including its Git and host-mutation authority.
+The original planning request authorized this plan, its two index links, branch
+creation and documentation commit `e5577fb`. The 2026-10-19 implementation request
+now authorizes both bounded units, host validation and documentary closeout.
+All changes must remain unstaged and uncommitted; no push or PR is authorized.
 
 ## 3. Current state
 
@@ -36,10 +37,10 @@ The four helpers from the completed
 [native Rust readability plan](../completed/native-rust-function-readability.md)
 already exist and must not be proposed again.
 
-| Target | Current evidence | Planning disposition |
+| Target | Original audit evidence | Final disposition |
 | --- | --- | --- |
-| RFR-01 | `host_profile_detection/windows_probe.rs::cuda`, around lines 364-385, mixes FFI observations with deterministic major/minor validation and precision construction. Existing hardware tests inject prebuilt precision reports rather than testing that production derivation. | CHANGE: one private-to-parent pure helper and focused cases in the existing test file. |
-| RFR-02 | `diagnostics/cli.rs::dispatch_if_requested` repeats success-to-exit-code conversion in nine branches; the two argument-bearing branches bury parsing within that wrapper. | CHANGE: one terminating Boolean helper in the same module. |
+| RFR-01 | `host_profile_detection/windows_probe.rs::cuda` mixed FFI observations with deterministic major/minor validation and precision construction; existing hardware tests injected prebuilt reports. | CHANGE accepted: one private-to-parent pure helper and eight independent complete-report cases; two files, 88 added plus removed lines. |
+| RFR-02 | `diagnostics/cli.rs::dispatch_if_requested` repeated success-to-exit-code conversion in nine branches; the two argument-bearing branches buried parsing within that wrapper. | CHANGE accepted: one private terminating Boolean helper replacing nine wrappers; one file, 68 added plus removed lines. |
 | RFR-03 | `tts_protocol_contract.rs::valid_error`, around line 306, uses `expected.0`, `.1` and `.2` immediately beside the `code`, `category` and `severity` comparisons. | SKIP: named destructuring is a minor preference; the independent audit found no concrete complexity or testing obstacle to justify a separate change. |
 
 RFR-03's original suggestion was
@@ -66,10 +67,10 @@ native diagnostic invocation and process exit, despite their small diffs.
 | RFR-02 | `apps/desktop/src-tauri/src/diagnostics/cli.rs` | 100 in one file |
 | RFR-03 | None; `tts_protocol_contract.rs` and its tests are read-only context. | 0 |
 
-Planning documentation is limited to this file, `docs/plans/active/README.md`
-and `docs/README.md`. Implementation closeout may also move this plan to
-`docs/plans/completed/` and update that directory's index under a separate
-documentation validation order. Do not edit other completed plans.
+The original planning documentation covered this plan and two incoming indexes.
+`RFR-DOC-ORDER-20261019-01` authorizes its completed-path move and the three
+index updates as continuation of the independently baselined documentary unit.
+Other completed plans remain unchanged. Source scope totals three files/156 lines.
 
 Do not add modules, traits, generic command frameworks, parser abstractions,
 mock CUDA drivers, error types, dependencies, public exports, schema changes,
@@ -143,7 +144,8 @@ locators and identity-first cancellation remain inherited invariants.
 
 ### Milestone 1: Freeze implementation terms and establish baselines
 
-Status: not started. Refresh the three target dispositions on the implementation
+Status: complete; both focused baselines and the shared pre-edit native baseline
+accepted. Refresh the three target dispositions on the implementation
 HEAD. Reuse one Sol auditor, one Sol worker and one Astra validator; use a Sol
 Git steward only for separately authorized mutations. Supporting agents do not
 delegate. Keep one source writer at a time and the index empty between units.
@@ -158,7 +160,7 @@ validation cycle solely for unchanged local names.
 
 ### Milestone 2: Extract CUDA precision derivation
 
-Status: not started. Apply only RFR-01's helper and deterministic test cases.
+Status: complete; `RFR-01-POST-CHANGE-20261019-01` PASS. The approved work was to apply only RFR-01's helper and deterministic test cases.
 Run assigned worker fast checks, then independent post-change review, Rust
 gates, native smoke and exact-candidate live detection/report checks. Resolve
 all high-risk unit gates before accepting the unit. Do not start the next unit
@@ -166,14 +168,15 @@ with an unaccepted worker patch still present.
 
 ### Milestone 3: Extract diagnostic exit policy
 
-Status: not started. Apply only RFR-02. Independently compare all nine original
+Status: complete; `RFR-02-POST-CHANGE-20261019-01` PASS. The approved work was to apply only RFR-02 and independently compare all nine original
 and resulting branch predicates, argument expressions and diagnostic calls.
 Run Rust gates and native smoke before unit acceptance. Do not introduce a new
 parser/testing framework or alter model-backed diagnostic implementations.
 
 ### Milestone 4: Accept the combined batch and close documentation
 
-Status: not started. Resolve combined portable/full checks on the final source,
+Status: source integration complete under `RFR-BATCH-PACKAGE-20261019-01` PASS;
+documentation frozen for separate final review. The approved work was to resolve combined portable/full checks on the final source,
 verify any host restoration, review the complete diff and confirm all three
 dispositions. Freeze closeout documentation before its own independent report.
 Move the completed plan and update incoming/index links only after required
@@ -184,8 +187,8 @@ summary alone does not authorize staging. Push and PR remain separate actions.
 ## 8. Testing and benchmark strategy
 
 Run every acceptance command from the repository root in normal local
-PowerShell outside the managed sandbox. No production gate below was run for
-this planning task. Keep deterministic tests distinct from actual Windows/GPU
+PowerShell outside the managed sandbox. The original planning task ran no
+production gate; implementation results are recorded in section 12. Keep deterministic tests distinct from actual Windows/GPU
 observations, and retain both default and `release-locked-runtime` Rust variants.
 
 | Invariant | Existing coverage and explicit test decision |
@@ -197,8 +200,9 @@ observations, and retain both default and `release-locked-runtime` Rust variants
 | Error contract | RFR-03 changes nothing. Existing shared valid/invalid fixture checks remain intact; incomplete per-reason mutation coverage is not a reason to expand this naming task. |
 
 Use the [compact batch record](../../../.agents/skills/validate-safe-refactor/references/validation-record.md)
-for concrete receipt paths, dependency manifests and timings. All entries start
-PENDING for implementation. The validator approves final gate selection.
+for concrete receipt paths, dependency manifests and timings. Entries began
+PENDING; independent reports below resolve the source gates and retain the
+documentary review boundary. The validator approved gate selection.
 
 | Gate | Exact command / invariant | Timing | Inputs, invalidation and evidence |
 | --- | --- | --- | --- |
@@ -271,7 +275,36 @@ through separately authorized documentation changes, never private raw captures.
 
 ## 10. Progress log
 
-- 2026-10-19: reviewed current source, tests, scripts and validation policy.
+- 2026-10-19 implementation: verified clean branch at
+  `e5577fb963fd424f45ae5cc9282805493df92e62`, empty index and disjoint source
+  allowlists. Reused one Sol auditor/worker and one Astra validator; no Git
+  steward is needed because no Git mutation is authorized. Fresh audit retains
+  RFR-01/RFR-02 CHANGE and RFR-03 SKIP.
+- 2026-10-19: `RFR-01-BASELINE-20261019-01` and
+  `RFR-DOC-BASELINE-20261019-01` PASS, with immutable presentation-only path
+  erratum `RFR-BASELINE-PRESENTATION-ERRATUM-20261019-01`. Rust format/lint and
+  both test variants pass (94/93 passed, one existing ignored helper each).
+  `build:packages`, native smoke, core integrity check, release build and
+  exact-root ordinary/hostile preflight pass. The native baseline was declared
+  for both units before any source edit. Orders, reports and complete receipts
+  are retained under ignored `tmp/evidence/rust-function-readability/`.
+- 2026-10-19 preparation: preserve the failed `package:piper-core` reconstruction
+  (`piper-core-runtime-manifest-stale`). Four dependency RECORD files differ
+  only in hashes of unbundled launchers from another installation root. The
+  validator proved unchanged current core inputs and verified the existing
+  frozen payload; director revision `RFR-PREPARATION-REVISION-20261019-01`
+  selects that immutable artifact for independent candidate copies. This does
+  not claim successful reconstruction or reuse any historical runtime gate.
+- 2026-10-19 preparation: release build first failed downloading an NSIS helper;
+  its sole infrastructure retry passed after exact-URL readiness. The first
+  candidate copy had malformed relative resource paths; admission stopped before
+  process launch. Approved copy correction and its sole admission retry passed
+  on isolated `baseline-02`. Both failures and `baseline-01` remain retained.
+  Installed application/data hashes were preserved, admission metadata unchanged,
+  no owned processes remain, and the pre-existing October 15 temp root is untouched.
+- 2026-10-19: froze `RFR-01-ORDER-20261019-01` against baseline PASS. At that
+  point, combined/documentary acceptance was pending and no code was accepted.
+- 2026-10-19 initial planning: reviewed source, tests, scripts and validation policy.
   Independent audit accepted RFR-01/RFR-02 as bounded CHANGE candidates and
   recommended RFR-03 SKIP. No production baseline or edits performed.
 - 2026-10-19: created `codex/rust-function-readability` from the source HEAD
@@ -280,10 +313,35 @@ through separately authorized documentation changes, never private raw captures.
 - 2026-10-19: independent documentation review identified the missing
   `build:packages` prerequisite; it is now explicit before native preparation.
   Retain failed report `RUST-READABILITY-PLAN-POST-CHANGE-20261019-01` unchanged.
-- [ ] Milestone 1: implementation audits/orders and baselines accepted.
-- [ ] Milestone 2: RFR-01 implemented and independently accepted.
-- [ ] Milestone 3: RFR-02 implemented and independently accepted.
-- [ ] Milestone 4: combined acceptance, cleanup and documentary closeout.
+- 2026-10-19: `RFR-02-BASELINE-20261019-01` PASS on clean `cli.rs`, carrying
+  accepted RFR-01 and plan edits as explicit context. Fresh Rust checks pass;
+  shared original native baseline is referenced, not represented as a fresh run.
+  Froze `RFR-02-ORDER-20261019-01`; source scope remains one file/100 lines.
+- [x] Milestone 1: implementation audits/orders and baselines accepted.
+- 2026-10-19: RFR-01 accepted under `RFR-01-POST-CHANGE-20261019-01` after
+  current identity recheck. Two source/test files, 88 added/removed lines;
+  pure capability helper plus one eight-case table. Worker and independent
+  Rust checks pass (95/94 passed; same ignored helper), fresh native smoke,
+  full release build and exact `candidate-01` preflight pass. Existing package
+  outputs and frozen core payload were independently verified and reused;
+  no runtime gate was reused and no post-change retry occurred. User state
+  and candidate identities remain unchanged; no owned processes remain.
+  RFR-02 audit was refreshed on its still-clean file and retains its original scope.
+- [x] Milestone 2: RFR-01 implemented and independently accepted.
+- 2026-10-19: worker offline all-platform Cargo metadata discovery failed on an
+  uncached Android-only dependency. One director-approved Windows-only filter
+  correction succeeded before unchanged fast commands; no test failure/retry.
+- 2026-10-19: RFR-02 accepted under `RFR-02-POST-CHANGE-20261019-01`; nine
+  wrappers extracted without argument, predicate, callee or exit-code changes.
+  Fresh Rust and native gates pass; no runtime gate reuse or retry.
+- 2026-10-19: `RFR-BATCH-PACKAGE-20261019-01` PASS accepted all three source
+  paths/156 changed lines. Both original aggregates and final native ran freshly;
+  source identities and user resources remained unchanged. Canonical system
+  diagram reviewed and retained: component/process/data-flow ownership is identical.
+- [x] Milestone 3: RFR-02 implemented and independently accepted.
+- [x] Milestone 4: source integration/cleanup accepted; documentary closeout
+  frozen under `RFR-DOC-ORDER-20261019-01`. Its independent final result is
+  retained externally after this content freeze, without rewriting this plan.
 
 ## 11. Discoveries and decisions
 
@@ -302,10 +360,46 @@ through separately authorized documentation changes, never private raw captures.
 
 Planning baseline: `pnpm.cmd check:evidence` and `git diff --check` passed in
 normal local PowerShell; prospective plan was absent and both indexes clean.
-Planning post-change review and the requested documentation commit are pending
-at this content freeze; retain their immutable reports outside this file.
+The original planning commit is `e5577fb`; current implementation HEAD remains
+`e5577fb963fd424f45ae5cc9282805493df92e62`. Implementation and closeout changes
+remain unstaged/uncommitted with an empty index; no push or PR is authorized.
 
-Production status: NOT STARTED. No Rust, native, GPU, packaging, aggregate or
-performance PASS is claimed. At implementation closeout, replace this status
-with exact executed commands, independently justified reused receipts, current
-report identities, unit dispositions, verified restoration and remaining limits.
+Independent source reports `RFR-01-POST-CHANGE-20261019-01`,
+`RFR-02-POST-CHANGE-20261019-01` and `RFR-BATCH-PACKAGE-20261019-01` are PASS.
+Their immutable reports and complete command/input/environment/timing receipts
+remain under ignored `tmp/evidence/rust-function-readability/`. RFR-01 baseline
+native was declared shared before either edit; RFR-02 explicitly referenced it
+while freshly executing its focused baseline. Baseline Markdown path rendering
+is corrected only by `RFR-BASELINE-PRESENTATION-ERRATUM-20261019-01`.
+
+| Exact executed command | Verified outcome and timing |
+| --- | --- |
+| `pnpm.cmd format:check:rust`; `pnpm.cmd lint:rust`; `pnpm.cmd test:rust`; `git diff --check` | Fresh baseline and independent post-change checks passed for both units; lint/tests include both feature variants. Post-change tests: 95 default/94 locked passed, zero failures, one existing intentionally ignored subprocess fixture each. |
+| `pnpm.cmd build:packages` | Passed before baseline native preparation; later artifact reuse required unchanged build inputs plus complete output membership/hash proof. Both aggregate commands rebuilt their required packages. |
+| `pnpm.cmd package:piper-core` | Baseline reconstruction FAILED `piper-core-runtime-manifest-stale`; no retry and no reconstruction PASS. Approved immutable frozen-payload alternative verified complete core membership/hashes and provenance. |
+| `pnpm.cmd package:piper-core:check` | Fresh baseline integrity check passed for that verified payload; it does not establish reconstruction reproducibility. |
+| `pnpm.cmd --filter @voxleaf/desktop tauri build --config src-tauri/tauri.release.conf.json --features release-locked-runtime` | Baseline passed after its sole NSIS-download infrastructure retry; RFR-01 post-change passed freshly in 128.695 seconds without retry. Installer built but never executed. |
+| `pnpm.cmd package:windows:ordinary-chatterbox:preflight --installed-root "$rustCandidateRoot"` | Baseline passed on independent `baseline-02` after the sole approved copy/admission retry; RFR-01 fresh `candidate-01` ordinary/hostile/live-host preflight passed in 21.865 seconds. |
+| `pnpm.cmd test:native-startup` | Shared pre-edit baseline 68.329 seconds; RFR-01 post-change 38.579; RFR-02 post-change 39.216; final combined run 38.051. All passed freshly at their declared boundaries. |
+| `pnpm.cmd check:portable` | Original full command passed in 111.867 seconds; no leaf deduplication. |
+| `pnpm.cmd check` | Original full command passed in 107.307 seconds, including both Rust variants and native build; no leaf deduplication. |
+
+No runtime gate was reused in either post-change report or PACKAGE. Reuse was
+limited to independently verified package/core artifacts; candidate runtimes
+were independent regular copies. Both aggregates passed shared 209, EPUB 655,
+desktop 730 plus 76 Node tests, and Python 571; full Rust totals are above.
+
+Installed application/data integrity and runner isolation were verified. No
+installer, firewall or installed-app mutation occurred; no owned process or new
+runner temp root remains. The unrelated October 15 temp root and ignored
+`baseline-01`, `baseline-02`, `candidate-01` and evidence roots are retained.
+Final candidate membership/hashes remain unchanged after later default builds.
+
+Limits: local Windows host evidence, not CI; retained existing ignored test
+helper; core reconstruction reproducibility remains outside scope. No synthesis,
+acquisition, exhaustive nine-mode/FFI/all-hardware coverage or performance gain
+is claimed. This freeze records source/unit/batch PASS only. Independent
+documentary/campaign outcomes are recorded separately after this freeze in
+`RFR-DOC-POST-CHANGE-20261019-01` and `RFR-BATCH-FINAL-20261019-01` under the
+same evidence root; this document does not pre-assert those verdicts. No source,
+architecture, product, ADR or authority change accompanies the documentary move.

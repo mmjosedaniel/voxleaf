@@ -310,6 +310,31 @@ fn adapters_and_directml() -> (
     (ProbeValue::Known(adapters), directml)
 }
 
+pub(super) fn cuda_precisions_for_compute_capability(
+    major: i32,
+    minor: i32,
+) -> Option<PrecisionReport> {
+    if major < 2 || minor < 0 {
+        return None;
+    }
+    let float16 = if major > 5 || (major == 5 && minor >= 3) {
+        Availability::Available
+    } else {
+        Availability::Unavailable
+    };
+    let bfloat16 = if major >= 8 {
+        Availability::Available
+    } else {
+        Availability::Unavailable
+    };
+    Some(PrecisionReport {
+        float32: Availability::Available,
+        float16,
+        bfloat16,
+        int8: Availability::Unknown,
+    })
+}
+
 fn cuda() -> ProbeValue<Vec<NativeProviderDevice>> {
     let library = match CudaLibrary::load() {
         Ok(library) => library,
@@ -361,29 +386,11 @@ fn cuda() -> ProbeValue<Vec<NativeProviderDevice>> {
         {
             return ProbeValue::Unknown;
         }
-        if major < 2 || minor < 0 {
+        let Some(precisions) = cuda_precisions_for_compute_capability(major, minor) else {
             return ProbeValue::Malformed;
-        }
+        };
         let luid = u64::from_le_bytes(luid.map(|value| value as u8));
-        let float16 = if major > 5 || (major == 5 && minor >= 3) {
-            Availability::Available
-        } else {
-            Availability::Unavailable
-        };
-        let bfloat16 = if major >= 8 {
-            Availability::Available
-        } else {
-            Availability::Unavailable
-        };
-        devices.push(NativeProviderDevice {
-            luid,
-            precisions: PrecisionReport {
-                float32: Availability::Available,
-                float16,
-                bfloat16,
-                int8: Availability::Unknown,
-            },
-        });
+        devices.push(NativeProviderDevice { luid, precisions });
     }
     ProbeValue::Known(devices)
 }

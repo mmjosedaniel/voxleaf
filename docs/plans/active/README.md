@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Bounded Rust function readability](rust-function-readability.md): planned
-  CUDA precision derivation and diagnostic exit-policy extractions, with the
-  error-tuple naming proposal recorded as an audited SKIP; implementation and
-  runtime acceptance have not started.
+No active implementation plans.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
