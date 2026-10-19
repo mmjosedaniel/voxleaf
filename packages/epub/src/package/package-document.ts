@@ -1204,6 +1204,53 @@ function validateMediaOverlays(
   }
 }
 
+function resolvePackageNavigation(
+  raw: RawPackageDocument,
+  manifestById: ReadonlyMap<string, RawManifestItem>,
+): PackageNavigationItem {
+  let navigationItem: RawManifestItem | undefined;
+  let navigationKind: PackageNavigationItem["kind"];
+  if (raw.version === "3.0") {
+    const navigationItems = raw.manifest.filter((item) =>
+      item.properties.includes("nav"),
+    );
+    if (navigationItems.length !== 1) {
+      return fail("malformed-package");
+    }
+    navigationItem = navigationItems[0];
+    navigationKind = "xhtml";
+    if (
+      navigationItem === undefined ||
+      !isSupportedContentDocument(navigationItem) ||
+      navigationItem.location.kind !== "local"
+    ) {
+      return fail("unsupported-resource");
+    }
+  } else {
+    if (raw.spineTocId === undefined) {
+      return fail("malformed-package");
+    }
+    navigationItem = manifestById.get(raw.spineTocId);
+    navigationKind = "ncx";
+    if (navigationItem === undefined) {
+      return fail("broken-reference");
+    }
+    if (
+      navigationItem.location.kind !== "local" ||
+      navigationItem.mediaType !== NCX_MEDIA_TYPE ||
+      navigationItem.fallbackId !== undefined
+    ) {
+      return fail("unsupported-resource");
+    }
+  }
+
+  return {
+    kind: navigationKind,
+    resourceId: navigationItem.id,
+    path: navigationItem.location.path,
+  };
+}
+
 function buildParsedPackage(
   archive: OpenedEpubArchive,
   resolved: ResolvedPackageDocument,
@@ -1241,42 +1288,7 @@ function buildParsedPackage(
 
   validateFallbackGraph(raw.manifest, manifestById, archive);
   validateMediaOverlays(raw.manifest, manifestById);
-
-  let navigationItem: RawManifestItem | undefined;
-  let navigationKind: PackageNavigationItem["kind"];
-  if (raw.version === "3.0") {
-    const navigationItems = raw.manifest.filter((item) =>
-      item.properties.includes("nav"),
-    );
-    if (navigationItems.length !== 1) {
-      return fail("malformed-package");
-    }
-    navigationItem = navigationItems[0];
-    navigationKind = "xhtml";
-    if (
-      navigationItem === undefined ||
-      !isSupportedContentDocument(navigationItem) ||
-      navigationItem.location.kind !== "local"
-    ) {
-      return fail("unsupported-resource");
-    }
-  } else {
-    if (raw.spineTocId === undefined) {
-      return fail("malformed-package");
-    }
-    navigationItem = manifestById.get(raw.spineTocId);
-    navigationKind = "ncx";
-    if (navigationItem === undefined) {
-      return fail("broken-reference");
-    }
-    if (
-      navigationItem.location.kind !== "local" ||
-      navigationItem.mediaType !== NCX_MEDIA_TYPE ||
-      navigationItem.fallbackId !== undefined
-    ) {
-      return fail("unsupported-resource");
-    }
-  }
+  const navigation = resolvePackageNavigation(raw, manifestById);
 
   for (const reference of raw.guide) {
     archive.budget.checkpoint();
@@ -1358,11 +1370,7 @@ function buildParsedPackage(
     }),
     manifest: raw.manifest,
     spine: Object.freeze(spine),
-    navigation: Object.freeze({
-      kind: navigationKind,
-      resourceId: navigationItem.id,
-      path: navigationItem.location.path,
-    }),
+    navigation: Object.freeze(navigation),
   });
 }
 

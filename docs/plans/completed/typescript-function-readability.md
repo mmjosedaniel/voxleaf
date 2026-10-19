@@ -1,36 +1,38 @@
 # Bounded TypeScript function readability
 
-Status: planned; production implementation and acceptance have not started.
+Status: completed on 2026-10-19. TFR-01, TFR-02 and TFR-05 implemented and
+independently accepted; TFR-03 and TFR-04 accepted SKIP. Combined gates and
+independent host restoration passed. Changes remain unstaged and uncommitted.
 Prepared on 2026-10-19 from clean `main` at
 `8f0d156196cd44130b0acf5816df92466c2f8972`.
 Implementation branch: `codex/typescript-function-readability`.
 
 ## 1. Goal
 
-Implement five focused TypeScript/TSX readability improvements using meaningful
+Audit five focused TypeScript/TSX readability proposals using meaningful
 domain names, private functions and existing predicates. Reduce repeated rules
 and make orchestration readable without adding generic frameworks or changing
 behavior. This maintenance work spans desktop narration, reader synchronization
 and secure EPUB ingestion; it does not reopen completed roadmap milestones.
+Final outcome: three bounded improvements and two evidence-backed SKIPs.
 
 ## 2. User-visible outcome
 
 Readers retain the same EPUB admission, profile availability, narration startup,
 state notifications, cancellation, highlighting, navigation and cleanup.
-Contributors can locate repeated decisions and lifecycle bindings by name.
+Contributors can locate the shared identity/admission rules and package navigation decision by name.
 
 This is a maintainability change, not a feature or a claimed performance gain.
-The planning request authorizes this plan, its two index links, a branch from
-main and a local documentation commit. Source implementation and later source
-commits require the subsequent execution request's authority; push and PR
-creation remain separate actions. No production work is authorized by the
-planning commit alone.
+The execution request authorized implementation, validation, minimal environment
+recovery and documentary closeout, while expressly excluding staging, commits,
+push and PR. Work remained on the existing branch at HEAD
+`2648617f86fdfd7dddc8dc81fdeabd36942f3c3c`; the index remained empty.
 
 ## 3. Current state
 
 The review inventoried 281 tracked TypeScript/TSX files and inspected selected
 responsibilities and existing tests. It was a static review, not an exhaustive
-audit or a runtime baseline. Refresh these observations before implementation.
+audit or a runtime baseline. These initial observations were refreshed by the five retained audits before implementation.
 
 | Unit | Observed maintainability problem | Proposed bounded change |
 | --- | --- | --- |
@@ -150,7 +152,8 @@ A discovered architectural or behavior change leaves this plan's scope.
 
 ### Milestone 1: Freeze execution scope and establish readiness
 
-Status: not started.
+Status: complete. Scope, roles, environment recovery and independent shared
+baseline03 passed; historical failures remain recorded below.
 
 Confirm branch/HEAD, empty index and clean allowlisted paths; preserve unrelated
 work. Reuse one auditor, one worker and one independent validator with the
@@ -169,7 +172,7 @@ if fresh evidence removes the maintainability problem.
 
 ### Milestone 2: TFR-01 service identity predicate
 
-Status: not started.
+Status: implemented and independently accepted; TFR-01-POST-20261019-01 PASS.
 
 Extract a pure module-private `hasForeignServiceInstance` predicate accepting
 the existing decoded-control type and expected service identity. Replace exactly
@@ -182,7 +185,7 @@ the private predicate. Complete the unit gates before accepting this change.
 
 ### Milestone 3: TFR-02 profile admission predicate
 
-Status: not started.
+Status: implemented and independently accepted; TFR-02-POST-20261019-02 PASS.
 
 Keep the requested profile-ID equality and reuse `admittedForLanguage` for that
 matched profile and current language. Preserve closed-state and
@@ -193,9 +196,14 @@ Do not rename the predicate or extract another wrapper without concrete need.
 
 ### Milestone 4: TFR-03 reader narration bindings
 
-Status: not started.
+Status: audited/SKIP, accepted by the director and independent validator. The current short effects
+already expose subscription/reconciliation/cleanup order while controllers own
+domain logic. Moving them would add a module boundary without a demonstrated
+ownership or verification benefit. Missing characterization assertions are not
+defects and do not require extraction. The proposed files remain absent; the
+original candidate description below is retained as the evaluated proposal.
 
-Implement `bindParagraphLeafNarration` and `bindSegmentHighlightNarration` in
+Evaluated proposal only (not implemented): introduce `bindParagraphLeafNarration` and `bindSegmentHighlightNarration` in
 the proposed `reader/narration-bindings.ts`. Return the existing cleanup
 function where applicable, using existing source/controller contracts.
 
@@ -209,7 +217,18 @@ Preserve method receivers and StrictMode/source-replacement behavior.
 
 ### Milestone 5: TFR-04 service execution phases
 
-Status: not started.
+Status: revised audit/SKIP, independently confirmed ordering concern.
+
+The original proposal below is superseded by
+[TFR-04-AUDIT-20261019-02](../evidence/typescript-function-readability/TFR-04-audit-skip-02.md).
+Awaiting async phase helpers would insert a Promise reaction before final
+publication/shared catch, allowing a competing reaction or stop to change
+observable ordering. Keeping the original awaits in the dispatcher permits
+only small synchronous extractions without enough readability benefit.
+No implementation or added tests are authorized for this skipped unit.
+This is source-derived reasoning, not a reproduced product defect.
+
+Original proposal retained for decision context:
 
 Move only the `start-service` and `prepare-service` branch bodies into private
 phase methods accepting the captured scheduler and run token as needed.
@@ -217,8 +236,10 @@ Keep `#execute` as dispatcher and sole owner of its shared catch classification
 and final conditional publication.
 
 The startup branch currently returns from `#execute` when no profile or runtime
-configuration is available. Those returns skip the final publication: a naive
-`await` of a void helper would add an observable notification. Propagate this
+configuration is available. Those returns skip the final publication. Audit
+found that ordinary failure containment also advances `runToken`, so an extra
+notification from a naive void extraction has not been demonstrated. Preserve
+the existing control-flow boundary regardless: propagate this
 early exit explicitly, for example with a boolean named
 `serviceStartCompleted`, and return from the dispatcher when it is false.
 No new result framework or action class is needed.
@@ -231,7 +252,7 @@ error propagation to the original catch. Do not change `#prepareNarration`,
 
 ### Milestone 6: TFR-05 package navigation resolution
 
-Status: not started.
+Status: implemented and independently accepted; TFR-05-POST-20261019-01 PASS.
 
 Extract only the navigation decision into `resolvePackageNavigation`, private
 to `package-document.ts`. Reuse current raw manifest/navigation types and
@@ -247,7 +268,8 @@ or broaden the accepted EPUB profile.
 
 ### Milestone 7: Combined acceptance and documentary closeout
 
-Status: not started.
+Status: complete. Combined PACKAGE gates and independent host restoration passed.
+This plan moved to completed; final documentary binding is recorded in section 12.
 
 Resolve every unit and combined gate with independent current evidence. Review
 the complete diff for equivalence, unnecessary indirection, unrelated changes
@@ -266,17 +288,17 @@ counts are not current test evidence. Map assertions before adding tests.
 | --- | --- | --- |
 | TFR-01: response identity, ordering, cleanup and cancellation races | `process-client.test.ts`: foreign/reordered startup, invalid binary, one-active request, late-byte zeroing, completion/cancel race and failed shutdown containment. | Add focused foreign-service cases for prepare, health and ordinary cancel if still absent. Assert unchanged public rejection/containment; avoid a private-helper suite. |
 | TFR-02: admission and persistence | `hardware-profile-compatibility.test.ts`: admitted selection, rejected profile, wrong language, future preference and capacity re-probe. | No new test solely for predicate reuse when existing assertions cover both callers. |
-| TFR-03: subscriptions and synchronization | `ReaderPublication.test.tsx`: cross-chapter audible highlighting without focus theft, boundary navigation, DOM replacement, passive location and StrictMode. | Add focused binding cases for initial observation, progress routing, unsubscribe order, absent-source differences and highlighting clear only where existing assertions do not cover them. Retain component replacement/unmount coverage. |
-| TFR-04: startup, notifications, stale work and recovery | `product-narration-coordinator.test.ts`: missing configuration, admitted/unsupported language, profile replacement, containment, abort and delayed cleanup. | Characterize early-exit notification behavior and deferred startup/preparation after invalidation if missing. Observe public subscriptions/client calls, not private methods. |
+| TFR-03: subscriptions and synchronization | `ReaderPublication.test.tsx`: cross-chapter audible highlighting without focus theft, boundary navigation, DOM replacement, passive location and StrictMode. | Accepted SKIP: no extraction or new tests. Existing component replacement/unmount and synchronization coverage retained. |
+| TFR-04: startup, notifications, stale work and recovery | `product-narration-coordinator.test.ts`: missing configuration, admitted/unsupported language, profile replacement, containment, abort and delayed cleanup. | Accepted revised SKIP: preserve original awaits/publication/catch ordering; no new tests for untouched code. Audit discloses unasserted competing-reaction timing. |
 | TFR-05: secure navigation and package equivalence | `package-document.test.ts`: immutable EPUB 3 model, EPUB 2 metadata/NCX rejection table, missing-NCX guide case, fallback limits, cancellation/deadline and transactional failure. | Preserve all assertions. Add a multi-invalid-input rejection-order case only for an identified uncovered ordering risk. |
 
 ### Gate ledger
 
-Production gates are currently PENDING. Record exact original receipt IDs,
-durations and reuse decisions in the batch record during execution; no passing
-production gate is claimed here. Planning documentation evidence is reported
-separately in the planning handoff. Baseline/post below means before editing and after the
-affected unit, including high-risk gates before accepting that unit.
+Current acceptance and pending gates are recorded in section 12; original receipt
+IDs, durations and reuse decisions are in the linked immutable reports.
+Baseline/post below means before editing and after the affected implementation
+unit, including high-risk gates before accepting that unit. Accepted SKIPs do
+not require edits or additional unit runs and do not waive integration gates.
 
 | Gate / invariant | Existing command or command block, repository-root cwd | Timing | Inputs/environment and invalidation |
 | --- | --- | --- | --- |
@@ -375,12 +397,182 @@ Reverting committed implementation requires a separately authorized operation.
 
 ## 10. Progress log
 
+Newest entries first. Older pending/blocked statements record their historical
+execution state; section 12 is the final result.
+
+- 2026-10-19 closeout: all three implementation units accepted independently;
+  two SKIPs retained. [Combined PACKAGE PASS](../evidence/typescript-function-readability/TFR-BATCH-PACKAGE-20261019-01.md)
+  resolves the current script graphs, cross-package tests and final native smoke.
+  The aggregate builder changed executable bytes, so native startup ran once more
+  after all builders (38.476 s PASS); no failed-stage retry or models repeated.
+- [Independent cleanup PASS](../evidence/typescript-function-readability/TFR-CLEANUP-20261019-01.md)
+  confirms the authorized UAC removal of the exact owned rule, eight original
+  rules preserved, no task processes/new profiles/listener, and unchanged tested
+  executable/runtime identities. Active plan removed and incoming indexes updated;
+  final source diff is five files/260 changed lines with no unrelated work.
+- TFR-05 [POST-CHANGE PASS](../evidence/typescript-function-readability/TFR-05-POST-20261019-01.md):
+  private navigation resolver, four public precedence cases; 655 EPUB tests,
+  seven browser cases and native startup (50.501 s) passed. No correction loop
+  or retry; 129 changed lines remain within the approved 180-line ceiling.
+
+- TFR-05 implemented under [TFR-05-WO-20261019-01](../evidence/typescript-function-readability/TFR-05-approved-work-order-01.md)
+  after [focused baseline PASS](../evidence/typescript-function-readability/TFR-05-BASELINE-20261019-01.md).
+  Same-file navigation resolver and four mixed-invalid precedence cases total
+  129 changed lines. Six worker gates passed, including 655 EPUB tests; only
+  three declared ignored build outputs changed and public declaration bytes
+  remain identical. Director reviewed the exact diff and packet; independent
+  browser/native and combined validation are next, with all source frozen.
+- TFR-02 accepted under authoritative [POST-CHANGE report 02](../evidence/typescript-function-readability/TFR-02-POST-20261019-02.md).
+  Current native (39.113 s), lifecycle (14.734 s), Piper ES (174.284 s), Piper EN
+  (175.606 s) and Chatterbox ES/EN (622.393 s) passed without retries. All arms
+  had zero external requests/generated audio/retained audio at cleanup. Original
+  report 01 is preserved; report 02 corrects the final identity-capture ordering
+  with complete gate reuse proof, without repeating runtime measurements.
+
+- TFR-02 implemented under [TFR-02-WO-20261019-01](../evidence/typescript-function-readability/TFR-02-approved-work-order-01.md)
+  after [focused baseline PASS](../evidence/typescript-function-readability/TFR-02-BASELINE-20261019-01.md).
+  One addition/seven removals reuse the existing admission helper; tests and all
+  identity/persistence guards remain unchanged. All six worker checks passed
+  (730 Vitest plus 76 Node tests). Director reviewed the patch; independent
+  native/lifecycle/model validation is running with source frozen.
+- TFR-01 accepted after [TFR-01-POST-20261019-01 PASS](../evidence/typescript-function-readability/TFR-01-POST-20261019-01.md).
+  User-released memory was independently confirmed at 13,591/13,598/13,493 MiB
+  across three samples. The single revised recovery passed Piper ES (252.089 s),
+  Piper EN (173.666 s) and Chatterbox ES/EN (624.979 s). Native/lifecycle and fast
+  gates also passed, with explicit unchanged-evidence proof. This recovery is
+  consumed; it does not reset retry budgets. No task processes/new profiles remain;
+  the owned firewall rule is retained only until final campaign cleanup.
+
+- TFR-01 post-change host gate stopped before inference: Piper was selectable
+  but the required alternate Chatterbox profile lacked available RAM. Exact
+  requirement is 7,042 MiB; observed post-failure capacity was about 6,420 MiB,
+  with sufficient GPU memory. Native/lifecycle and independent diff/fast-gate
+  review passed. No task processes/new profiles remain; source is frozen.
+  [TFR-HOST-MEMORY-20261019-01](../evidence/typescript-function-readability/TFR-host-memory-replan-01.md)
+  records the explicitly revised single recovery path, conditional on user
+  memory release and three stable capacity samples. No blind retry, threshold
+  change or next-unit implementation is permitted while that condition is pending.
+- TFR-01 implemented under
+  [TFR-01-WO-20261019-01](../evidence/typescript-function-readability/TFR-01-approved-work-order-01.md):
+  private identity predicate at exactly five sites, three new public cases and
+  stronger startup observation; 123 changed lines in two files. Worker format,
+  lint, build, desktop types and 730 Vitest plus 76 Node tests passed. Complete
+  immutable Change Packet/receipts are in ignored
+  `tmp/evidence/typescript-function-readability/TFR-01-worker-01/`.
+  Director reviewed diff/scope; independent post-change native/model gates are
+  in progress. Unit acceptance is not yet claimed.
+- [TFR-BATCH-BASELINE-20261019-03](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md)
+  independently passed all declared pre-edit gates, including current native,
+  lifecycle, Piper ES/EN and Chatterbox ES/EN. All twelve audited identities and
+  HEAD/index stayed unchanged. It accepts both SKIP decisions and records
+  failures, consumed retry budgets, artifact-only reuse and pending final
+  firewall restoration. Historical runtime results were not reused.
+- Revised TFR-04 audit and independent validator review found that full async
+  phase extraction changes Promise-reaction ordering before final publication
+  and shared catch. Accepted SKIP; smaller synchronous extractions do not
+  resolve the identified responsibility mix without added indirection. Both
+  source/test paths remain unchanged. Original audit remains immutable.
+- TFR-PREP-04 outcome: normal package regeneration failed safely on four
+  RECORD metadata files whose generated launcher hashes differ. The auditor
+  and validator verified the retained current archive (all 2,024 entries) and
+  source authorities; the director restored its immutable payload into ignored
+  dist, preserving old artifacts. `package:piper-core:check` and the configured
+  Tauri resource build with `--no-bundle` passed. Current native/lifecycle/model
+  validation resumes; no historical runtime result is reused. See
+  [preparation recovery](../evidence/typescript-function-readability/TFR-preparation-recovery-01.md).
+- 2026-10-19 continuation: the user explicitly authorized minimal repair of the
+  Vitest dependency environment and installed Chatterbox isolation, followed by
+  completion of this plan. This revises the previous preparation boundary, not
+  the required runtime gates or retry history. Branch/HEAD and empty index were
+  reconfirmed; only this campaign's documentary changes exist. Reused auditor
+  and validator are diagnosing supported dependency relinking and exact-runtime
+  firewall ownership/restoration before any new attempt. No dependency version,
+  public contract, model selection, staging, commit, push or PR is authorized.
+- Revised bounded preparation TFR-PREP-03: the auditor found pnpm 11.15.1's
+  default optimistic-repeat-install fast path returns before installation even
+  with `--force`. Approve one locked, scripts-disabled install with
+  `--force --no-optimistic-repeat-install`, using exact Node/pnpm, to regenerate
+  ignored workspace dependency metadata. Preserve tracked manifest/lock hashes;
+  verify the regenerated Vitest target before retrying tests. Earlier failed
+  preparation attempts remain retained. Stop for diagnosis if this changed
+  condition fails; do not edit generated launchers manually.
+- TFR-PREP-03 outcome: the real locked install passed in 6.867 seconds without
+  manifest/lock changes. Three verified stale ignored desktop Vitest launchers
+  were archived byte-for-byte and removed so scripts use the root-owned binary.
+  Independent desktop (727 Vitest plus 76 Node tests), EPUB (651 tests), types,
+  format, lint and model-free preflight passed. Browser passed 7/7 on its sole
+  retry in ordinary PowerShell; retain the first pre-assertion
+  `ERR_NO_BUFFER_SPACE` result without claiming a proven root cause.
+- Host preparation: ordinary WMI-created PowerShell resolves installed
+  Chatterbox files inside the real package tree; inherited tool context did not.
+  After one OS-cancelled elevation and explicit user-requested re-prompt, a
+  task-owned exact-interpreter outbound block was created and independently
+  verified in ActiveStore. Eight existing rules were preserved. The rule is
+  retained across this bounded batch; final or blocking handoff must remove
+  only that rule and verify restoration. Journal: ignored
+  `tmp/evidence/typescript-function-readability/TFR-PREP-03/`.
+- Native baseline and model-free lifecycle passed. First Piper Spanish arm
+  timed out at availability before inference. Both auditor and validator found
+  the ignored packaged Piper resource shadows development configuration and
+  has an obsolete manifest/ONNX Runtime 1.30 payload versus current authority's
+  1.31. This is an environment/artifact-preparation failure on unchanged source;
+  no product repair or gate weakening is approved. Prepare current resources
+  only through existing builders, then revalidate native artifacts before the
+  single condition-changed model retry. All original receipts remain retained.
+- Revised artifact preparation TFR-PREP-04 authorizes the existing
+  `pnpm.cmd package:piper-core` builder (no write-manifest mode) to synchronize
+  the locked core environment and regenerate only ignored
+  `services/tts/release/core/.venv`, its `dist` payload/downloads/archive and
+  existing uv caches. Frozen source/runtime manifests, evidence and locks must
+  remain unchanged. Materialize current resources only through the existing
+  Tauri release configuration, preserving its resource mapping; verify that
+  mapping and exact generated outputs before the affected native/model gates.
+- 2026-10-19: the first independent documentary review rejected oversized
+  baseline-report formatting (1,536 accidental empty rows). Preserved the
+  original byte-for-byte in ignored local evidence with verified digest and
+  [archive provenance](../evidence/typescript-function-readability/TFR-evidence-archive-01.md).
+  The corrected baseline report retains every meaningful outcome. This is a
+  documentary correction only, not a dependency retry or production PASS.
+- 2026-10-19: independent baseline
+  [TFR-BATCH-BASELINE-20261019-02](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-02.md)
+  returned BLOCKED. Format, lint, workspace package builds and desktop types
+  passed, but desktop tests failed before discovery because a stale workspace
+  Vitest launcher targets an absent store entry. Ordinary and forced documented
+  locked installs exited zero without changing that launcher. Bounded repair
+  stopped; no unchanged test retry or source implementation was attempted.
+- 2026-10-19: three filtered model configuration preflights passed for existing
+  developer interpreters. Current native selection instead prefers verified
+  installed Chatterbox, whose interpreter has no enabled outbound block rule.
+  No supported alternate installed-root override exists. No native/model run,
+  installed-package mutation, firewall change or UAC request occurred; opening
+  elevation was unnecessary while the independent test-launcher blocker remained.
+- 2026-10-19: completed all five static audits. TFR-01, TFR-02, TFR-04 and TFR-05
+  are CHANGE candidates awaiting independent baseline; TFR-03 is SKIP. No
+  approved implementation order was issued and no worker was started. The
+  configured worker role remains available for continuation. Source/test
+  identities and HEAD are unchanged and the index remains empty.
+- 2026-10-19: execution authorized for all five units and documentary closeout,
+  with no staging, commits, push or PR. Verified existing branch
+  `codex/typescript-function-readability` at
+  `2648617f86fdfd7dddc8dc81fdeabd36942f3c3c`; initial index and worktree were
+  clean. The five closed source/test scopes are disjoint; both proposed TFR-03
+  files are absent. No source or test has been edited.
+- 2026-10-19: confirmed the exposed configured roles: reusable
+  `clean_code_auditor` and `clean_code_worker` use GPT-6.1 Sol high;
+  `refactor_validator` uses GPT-6 Astra high. Audit and validation preparation
+  are delegated without supporting-agent delegation. Git stewardship is
+  available but no Git mutation is authorized. This entry records initial
+  preparation; all five subsequent audit outcomes appear above.
+- 2026-10-19: reviewed current plan, skills, contracts, canonical validation
+  policy, product/architecture/ADR and test guidance. M005 remains complete
+  and its frozen boundary remains excluded. Host preparation found the
+  default pnpm shim did not match required 11.15.1; the baseline subsequently
+  selected exact tools per command and inspected model readiness.
 - 2026-10-19: documented the five static findings, closed unit scopes, meaningful
   naming guidance, explicit exclusions and invariant/test map.
 - 2026-10-19: created `codex/typescript-function-readability` from the stated
   clean main revision. No production edits or runtime validation performed.
-- Pending: execution audits, independent baselines, approved orders, sequential
-  implementation, unit acceptance, combined gates and documentary closeout.
+- All execution, combined-validation and restoration obligations are resolved below.
 - During execution record concise phase durations, failed-stage classifications
   and immutable report links here; keep raw logs in ignored evidence storage.
 
@@ -388,10 +580,11 @@ Reverting committed implementation requires a separately authorized operation.
 
 - One plan covers all five findings; its units retain existing ownership and
   bounded reviewability. No line-count target or general cleanup campaign exists.
-- Only TFR-03 adds a production file. The other helpers remain private in their
-  current files, and TFR-02 reuses a predicate rather than introducing one.
-- Startup early exits must propagate through the extracted method to preserve
-  notification count/order; this is an explicit characterization target.
+- The original TFR-03 proposal was the only new production file; its accepted
+  SKIP leaves both proposed paths absent. Other planned helpers remain private
+  in current files, and TFR-02 reuses the existing predicate.
+- TFR-04 remains unchanged: async extraction would alter Promise-reaction order;
+  preserving the original awaits leaves insufficient benefit for smaller helpers.
 - Similar preference repositories and frozen normalizers remain separate.
 - Reuse requires independent proof, not an assumption that a refactor is safe.
   No measured reduction in execution time is claimed.
@@ -400,12 +593,86 @@ Reverting committed implementation requires a separately authorized operation.
 
 ## 12. Final validation results
 
-Production implementation: NOT STARTED. No baseline, unit, browser, native,
-model-backed or aggregate runtime PASS is claimed by this plan.
+Campaign complete: three implemented units, two justified SKIPs, independent
+baselines/post-change acceptance, combined repository gates and host restoration.
+No source/config/dependency changes outside the approved five changed files;
+260 added plus removed lines. No staging, commits, push or PR. Original branch
+and HEAD remain unchanged, index empty. The active path is removed, with this
+completed plan linked from the maintained documentation indexes.
 
-The planning handoff reports its documentation checks and local commit
-separately; those results do not satisfy the future implementation gates.
-At execution closeout replace this pending record with actual command outcomes,
-independently justified gate reuse, current immutable report references,
-identity rechecks, phase durations, verified host cleanup and any limitations.
-Do not mark the plan complete while required gates or cleanup remain pending.
+| Unit | Final outcome | Independent evidence |
+| --- | --- | --- |
+| TFR-01 | Private `hasForeignServiceInstance` reused at exactly five sites; operation checks retained; three public cases and stronger startup assertion; 123 lines | [POST PASS](../evidence/typescript-function-readability/TFR-01-POST-20261019-01.md) |
+| TFR-02 | `selectProfile` reuses `admittedForLanguage`; exact identity/state/persistence guards and tests unchanged; 8 lines | [Authoritative POST PASS](../evidence/typescript-function-readability/TFR-02-POST-20261019-02.md) |
+| TFR-03 | SKIP: short effects already expose cohesive subscription/reconciliation/cleanup; extraction adds an unjustified boundary; proposed files absent | [Audit](../evidence/typescript-function-readability/TFR-03-audit-skip-01.md), [independent baseline acceptance](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md) |
+| TFR-04 | SKIP: async phase helpers would insert Promise reactions before publication/shared catch; synchronous alternatives add indirection without enough benefit; unchanged | [Revised audit](../evidence/typescript-function-readability/TFR-04-audit-skip-02.md), [independent acceptance](../evidence/typescript-function-readability/TFR-BATCH-BASELINE-20261019-03.md) |
+| TFR-05 | Private same-file `resolvePackageNavigation`; original EPUB 2/3 decisions and final freezing; four mixed-invalid precedence cases; 129 lines | [POST PASS](../evidence/typescript-function-readability/TFR-05-POST-20261019-01.md) |
+
+[Combined PACKAGE report](../evidence/typescript-function-readability/TFR-BATCH-PACKAGE-20261019-01.md)
+contains every command, UTC interval, duration, exact twelve-path manifest,
+input/artifact proof and aggregate mapping. [Cleanup report](../evidence/typescript-function-readability/TFR-CLEANUP-20261019-01.md)
+binds independent effective-policy/resource restoration. The final documentary
+and full-scope identity binding is [TFR-BATCH-FINAL-20261019-01](../evidence/typescript-function-readability/TFR-BATCH-FINAL-20261019-01.md).
+Raw receipts remain in ignored `tmp/evidence/typescript-function-readability/`;
+concise reports are retained beside the audits/orders, outside evaluated paths.
+
+All acceptance commands ran in normal local PowerShell outside the sandbox,
+with Node 24.18.0, pnpm 11.15.1, Rust 1.97.1 and uv 0.11.29 selected explicitly.
+Native/browser/model runs used ordinary WMI PowerShell to avoid inherited AppData
+redirection. No global tool selection or tracked dependency version changed.
+
+| Executed command group | Outcome |
+| --- | --- |
+| `pnpm.cmd format:check:typescript`; `pnpm.cmd lint:typescript`; `pnpm.cmd build:packages`; focused desktop/EPUB `typecheck` and `test` | PASS per unit; final focused EPUB 655; desktop 730 Vitest + 76 Node |
+| `pnpm.cmd typecheck:typescript`; `pnpm.cmd test:typescript` | PASS combined; shared 209, EPUB 655, desktop 730 Vitest + 76 Node; generated shared contracts checked |
+| `pnpm.cmd test:browser` | PASS, seven cases on combined source state, 13.525 s |
+| `pnpm.cmd test:native-startup` | PASS per required boundary; final smoke after all builders 38.476 s |
+| Configured portfolio preflight, three filtered preflights and section 8 lifecycle/model commands | PASS for TFR-01/02; final affected unit02 lifecycle 14.734 s, Piper ES 174.284 s, Piper EN 175.606 s, Chatterbox ES/EN 622.393 s |
+| `pnpm.cmd check:evidence`; `pnpm.cmd test:evidence` | PASS; 13 evidence tests |
+| `pnpm.cmd format:check:python`; `pnpm.cmd lint:python`; `pnpm.cmd typecheck:python`; `pnpm.cmd test:python` | PASS; mypy 171 files, pytest 571 cases |
+| `pnpm.cmd format:check:rust`; `pnpm.cmd lint:rust`; `pnpm.cmd test:rust` | PASS both default/release variants; 94/93 tests, existing child fixture invoked by parent assertion |
+| `pnpm.cmd build:python`; `pnpm.cmd build:desktop`; `pnpm.cmd --filter @voxleaf/desktop build` | PASS wheel/sdist, exact default Tauri build and portable frontend |
+| `git diff --check`; manual full diff, architecture, evidence and link review | PASS at each accepted boundary; final documentary report binds closure |
+
+The root `check` and `check:portable` aggregate commands were not executed as
+aggregates. Their current graphs were expanded and all unique required leaves
+resolved with their build dependencies, retaining Rust feature variants and
+native/portable-exclusive builds. The PACKAGE report maps each leaf; no CI or
+protected-branch requirement is waived.
+
+Reuse was validator-owned and per gate: complete worker fast-check receipts;
+unchanged native evidence for the clean TFR-05 baseline; combined browser evidence
+with identical source/runtime/frontend; and equivalent aggregate leaves. Full
+source/discovery, library, config, lock, tool, artifact and environment manifests
+were compared. Changed native executable bytes invalidated its old receipt and
+triggered a fresh final smoke. Model results retain their actual TFR-01/02 inputs;
+no new model measurement is claimed after the EPUB-only unit, whose section 8
+gates do not include G-HOST. Qwen inference remains deferred under ADR-0051.
+
+Environment recovery and limitations:
+
+- Supported locked install with `--ignore-scripts --force --no-optimistic-repeat-install`
+  restored the dependency environment; three verified stale desktop Vitest
+  launchers were archived and removed. No tracked lock/manifest changed.
+- Installed Chatterbox received one exact-interpreter temporary outbound block
+  after the user accepted UAC. It was removed after validation, and independent
+  ActiveStore verification preserved all eight original rules and host resources.
+- The normal Piper builder failed safely on generated launcher metadata. A
+  verified current immutable payload was reused only after full 2,024-entry and
+  source-authority comparison, followed by the official package check and current
+  native/model gates. Historical runtime measurements were not reused.
+- Original browser availability, Piper artifact and RAM failures remain retained.
+  User-released RAM enabled the single documented recovery; thresholds were not
+  lowered. Retry budgets were not reset; no source correction loop was needed.
+- Metadata-only capture/report corrections are recorded separately from tests;
+  immutable earlier reports were preserved. The original malformed report is
+  byte-preserved through [archive provenance](../evidence/typescript-function-readability/TFR-evidence-archive-01.md).
+- Existing pytest-cache permission and frontend bundle-size warnings were
+  non-failing; no unrelated repair was added. Results cover the bounded synthetic
+  corpus and stated host, not a new performance improvement or universal guarantee.
+
+See [preparation recovery](../evidence/typescript-function-readability/TFR-preparation-recovery-01.md)
+and [memory replan](../evidence/typescript-function-readability/TFR-host-memory-replan-01.md)
+for failed-stage details, timings, receipts and exact restoration ownership.
+The system diagram and completed M005 remain accurate and unchanged: no public
+contract, component/process boundary, normalization or persistence policy changed.
