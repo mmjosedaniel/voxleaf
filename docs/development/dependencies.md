@@ -38,11 +38,14 @@ source, model provenance, and measured installer boundary. Clean-host release
 acceptance and trusted signing remain separate unavailable evidence.
 
 The current Piper runtime refresh is defined by
-[ADR-0054](../architecture/decisions/ADR-0054-refresh-piper-engine-and-phonemizer.md),
-building on ADR-0053: `services/tts/release/core` pins Piper `1.8.0` and ONNX
-Runtime `1.30.0` for both packaged and native development execution. Their uv
+[ADR-0055](../architecture/decisions/ADR-0055-onnx-131-offline-runtime.md),
+building on ADR-0053/0054: `services/tts/release/core` pins Piper `1.8.0` and ONNX
+Runtime `1.31.0` for both packaged and native development execution. Their uv
 resolution cutoffs are respectively `2026-09-05T00:00:00Z` and
-`2026-09-11T00:00:00Z`; every other package keeps its pin and original cutoff.
+`2026-10-10T00:00:00Z`; every other package keeps its pin and original cutoff.
+The adapter forces `ORT_DISABLE_TELEMETRY=1` before importing ONNX, suppressing
+1DS initialization in the service process, then calls the public telemetry
+disable API before loading Piper to cover the published Windows ETW backend.
 The historical v6/v8 candidate projects and results still identify Piper
 `1.4.2` and ONNX Runtime `1.27.0`. They are not current-runtime acceptance evidence.
 Exact interpreter, version, CPU provider, voice hashes and offline checks remain

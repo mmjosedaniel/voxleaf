@@ -183,7 +183,7 @@ fn validate_manifest_authority(manifest: &RuntimeManifest) -> Result<(), Package
         || manifest.package_version != "1"
         || manifest.platform != "windows-x86_64"
         || manifest.core_lock_sha256
-            != "b93ad74e6eddfb0734c79aefb020ce5f8417a1d8e397e5300ea30f4eb9445e78"
+            != "7c1440bb5bbb1c80e6fc8486ea357b5734b089f6226a8528d7582cf2ed84726b"
         || manifest.runtime.python_path != "runtime/python.exe"
         || manifest.runtime.site_packages_path != "runtime/Lib/site-packages"
         || manifest.runtime.service_module != "voxleaf_tts.piper_service"

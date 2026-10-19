@@ -11427,7 +11427,7 @@
       "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
-      "id": "pypi:onnxruntime@1.30.0",
+      "id": "pypi:onnxruntime@1.31.0",
       "inclusion": {
         "processBoundary": "private local TTS child",
         "purpose": "Minimal private local-service and Piper runtime graph.",
@@ -11436,9 +11436,9 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "services/tts/release/core/uv.lock",
-        "lockedArtifact": "https://files.pythonhosted.org/packages/31/6f/48169f2e62b405bff5053cbd1d73fb5ce41ef7ecd13bb3bfcc191e689b8a/onnxruntime-1.30.0-cp312-cp312-macosx_14_0_arm64.whl",
-        "sizeBytes": 21544867,
-        "value": "001ed726c9bd5e2bc92faade7d37d889e9606a350b7d5529f0227df2e3bb57fd"
+        "lockedArtifact": "https://files.pythonhosted.org/packages/b3/bd/2ac094311163b803e3626c3937461d6900934bd56cca7601f6150ff860c3/onnxruntime-1.31.0-cp312-cp312-macosx_14_0_arm64.whl",
+        "sizeBytes": 20882054,
+        "value": "aaab9b3af536b06ca27ab5e35e3d429c97457ce76cf298af103f687e8b9975c0"
       },
       "license": {
         "evidence": "installed package licence classifier",
@@ -11457,8 +11457,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://pypi.org/project/onnxruntime/1.30.0/",
-      "versionOrRevision": "1.30.0"
+      "source": "https://pypi.org/project/onnxruntime/1.31.0/",
+      "versionOrRevision": "1.31.0"
     },
     {
       "artifactState": "packaged in the deterministic Piper core payload",
@@ -14753,7 +14753,7 @@
     },
     "piperCore": {
       "path": "services/tts/release/core/uv.lock",
-      "sha256": "b93ad74e6eddfb0734c79aefb020ce5f8417a1d8e397e5300ea30f4eb9445e78"
+      "sha256": "7c1440bb5bbb1c80e6fc8486ea357b5734b089f6226a8528d7582cf2ed84726b"
     },
     "pnpm": {
       "path": "pnpm-lock.yaml",

@@ -1,9 +1,9 @@
 {
-  "coreLockSha256": "b93ad74e6eddfb0734c79aefb020ce5f8417a1d8e397e5300ea30f4eb9445e78",
+  "coreLockSha256": "7c1440bb5bbb1c80e6fc8486ea357b5734b089f6226a8528d7582cf2ed84726b",
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
-      "sha256": "e733b4ce3a9b062f0231b594d1eb69e296d98113c655e5ad1159c7fa2a9740b9",
+      "sha256": "431b44948a98e9845b499f67e138b30db56f5103c72f75a999a927aaee7c0a3f",
       "sizeBytes": 36166
     },
     {
@@ -733,7 +733,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/jsonschema-4.26.0.dist-info/RECORD",
-      "sha256": "7872c60e36ba6d9718e5fe21ab403617d33b6c5723b6935b7225cc7d2803ee1f",
+      "sha256": "1ed77fff6103c9a573393be3a2a90c6bd1312669f5e26a8116c2d2df60b5e719",
       "sizeBytes": 4095
     },
     {
@@ -1093,7 +1093,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/numpy-2.5.1.dist-info/RECORD",
-      "sha256": "a648ec096702938cf4135b30fcaf0a234778f4d7ba41de0dbd5f911c1c71ea75",
+      "sha256": "a767fc9eb5115b409f902947ecd90843b5b8e9b32e8dacd20f988745af739f86",
       "sizeBytes": 88011
     },
     {
@@ -5817,27 +5817,27 @@
       "sizeBytes": 278
     },
     {
-      "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/METADATA",
-      "sha256": "3f79aefa7e4d6aec73c7af714b4bba9be1c69edbd8a1017e3f59b4d54dc18a68",
-      "sizeBytes": 5901
+      "path": "runtime/Lib/site-packages/onnxruntime-1.31.0.dist-info/METADATA",
+      "sha256": "491a1e0ab0a2c1b6030daf4a00826b417b57410a6f67e1a8172568863481491b",
+      "sizeBytes": 6000
     },
     {
-      "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/RECORD",
-      "sha256": "29d31e161c6ec28a4215d298fef4c03fe2e7e4403e0053a01435110df17b8d34",
+      "path": "runtime/Lib/site-packages/onnxruntime-1.31.0.dist-info/RECORD",
+      "sha256": "f34353daa02183c9b3da165aaefb953d6a49bdf6409d2d21bbe910a9f00ec5e0",
       "sizeBytes": 35517
     },
     {
-      "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/WHEEL",
+      "path": "runtime/Lib/site-packages/onnxruntime-1.31.0.dist-info/WHEEL",
       "sha256": "547199cfb31450578b25778938b82f94e190e69e750e6c850e3b6d657fa1a30f",
       "sizeBytes": 101
     },
     {
-      "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/entry_points.txt",
+      "path": "runtime/Lib/site-packages/onnxruntime-1.31.0.dist-info/entry_points.txt",
       "sha256": "eea2d2e056c65f03d98df7695401a99e693d23a9ba1f90b1127c1c0b1d489a3b",
       "sizeBytes": 77
     },
     {
-      "path": "runtime/Lib/site-packages/onnxruntime-1.30.0.dist-info/top_level.txt",
+      "path": "runtime/Lib/site-packages/onnxruntime-1.31.0.dist-info/top_level.txt",
       "sha256": "ce4fdf2447a4ad39bd0cbc57d8bc067a0a2456a3fa6e5a8f845a0c22e87436ff",
       "sizeBytes": 12
     },
@@ -5848,8 +5848,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/Privacy.md",
-      "sha256": "a1e6108942be2f56d9ea93c342462d5ec15fd0510603dae7a654f417e0d4e95f",
-      "sizeBytes": 4730
+      "sha256": "8c26e1fc8581d9553e475250fe014e3d1e5ea4ae9f1cb084a068ff8601703dc9",
+      "sizeBytes": 6635
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/ThirdPartyNotices.txt",
@@ -5858,8 +5858,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/__init__.py",
-      "sha256": "aa5d395f33d6c3417f7e296cfda89270cb12b36a9f06c884966fafb99d0e04c4",
-      "sizeBytes": 21947
+      "sha256": "147e8169d2305a810121647a239f217df349f6755008a78b8bd7abf6905c68ea",
+      "sizeBytes": 22276
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/backend/__init__.py",
@@ -5893,7 +5893,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/build_and_package_info.py",
-      "sha256": "1854d77677dac763c89d0e9022cc7c07ea57c0764788dd0659714de490f9a3e0",
+      "sha256": "d862f46052a9b45262b442b4d5450a1b9deb02b6a942de0e40695ad172a0e7e2",
       "sizeBytes": 54
     },
     {
@@ -5903,8 +5903,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime.dll",
-      "sha256": "e42c5c917207ff706530315177e39dca2539695a6a8d968a22225e34291b1f12",
-      "sizeBytes": 18446176
+      "sha256": "aa7737cc5c987286f09f6f12304fa786ea697b11b4ca7ab59a027ff4ce343a9c",
+      "sizeBytes": 19288928
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime_collect_build_info.py",
@@ -5913,18 +5913,18 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py",
-      "sha256": "412c602163a3c21ea9874280c1e5ce500feb263fb518de2050151e49c9c28c12",
-      "sizeBytes": 86370
+      "sha256": "caa5b378e0c8d02654d912d3e6cfcee18a71a62037568c350aea00a70d2c9ec3",
+      "sizeBytes": 87280
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll",
-      "sha256": "46b999f9d5cd9d284091407e9f50a262624e6a71265fc428a1dfbd42d149bd81",
+      "sha256": "029af27204cff24103c5837a0eb507e4a31ef269116f400c6b25c5457ddc9a32",
       "sizeBytes": 21856
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.pyd",
-      "sha256": "c0b7c1a5524b702863d24d6c38b3fa5ad8199b25cb5e0893ac9b5a6661979f14",
-      "sizeBytes": 19112248
+      "sha256": "f514d95a3095e85a3708ba051f8747edd8e4b968fb7b86f6e3478e1df3292d76",
+      "sizeBytes": 19998048
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/capi/onnxruntime_validation.py",
@@ -6053,8 +6053,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/matmul_nbits_quantizer.py",
-      "sha256": "350120ba9063119808d8ea26e0401261434e819331a0c2656789a558c66154de",
-      "sizeBytes": 81039
+      "sha256": "e9871f586c3b06420a97df4ab500eab8d39bf377f14d6a8853352fe600d14d13",
+      "sizeBytes": 81637
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/neural_compressor/__init__.py",
@@ -6223,8 +6223,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/quant_utils.py",
-      "sha256": "2efc449a45952aaee0ee7b3cf13bb530001f5208547d228738f4f7dec937e46d",
-      "sizeBytes": 53010
+      "sha256": "797ede135a8ebae682a22f81fbc8dd8f9f1f17dd7fbddea705c06af6796f030b",
+      "sizeBytes": 53133
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/quantize.py",
@@ -6238,8 +6238,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/shape_inference.py",
-      "sha256": "e5aebf65f6838773ba363dfd4a319e6f497fdf1854504225e2affa8f0b777749",
-      "sizeBytes": 10259
+      "sha256": "f1a3a1d25999994b6b083ce1538adf4c08dde76dd37255d0cc6ea5f28c4039bb",
+      "sizeBytes": 10765
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/quantization/static_quantize_runner.py",
@@ -6638,8 +6638,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/tools/symbolic_shape_infer.py",
-      "sha256": "0c9e5d57104c5b959e0f3f1d8d8667f11e505e71737ffbb059c2a02b17a1807a",
-      "sizeBytes": 148547
+      "sha256": "1a65506c7299cd3d6b681569351521fb62716da872fe9988e9972648606f1dd4",
+      "sizeBytes": 160376
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/tools/update_onnx_opset.py",
@@ -6688,8 +6688,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/convert_generation.py",
-      "sha256": "3f5017dbadcb3d3d9c73462c16e1c2a9798d6305a11fa1b2c161e70aa5100c9a",
-      "sizeBytes": 145093
+      "sha256": "cdb8e2b7b90e15116170afd1786870ada1bfd36c4cb07613d37775b07c7ac26a",
+      "sizeBytes": 145909
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/convert_tf_models_to_pytorch.py",
@@ -6708,13 +6708,13 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/float16.py",
-      "sha256": "006a0d0a5c4592d18abd83ff9aa71bb8e63c76e2b335a33a63c3e998ac905dfb",
-      "sizeBytes": 25190
+      "sha256": "df73dd3f25d49e53b41d867e5d2db52df4e636c06429c29f008192d14c490b98",
+      "sizeBytes": 25643
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/fusion_attention.py",
-      "sha256": "d4c237f4a261eb5ab41acee46aa1de7fea973ee0c1c329729dee44da941f2766",
-      "sizeBytes": 52125
+      "sha256": "6b9f44dbb470090d599b7d7bdbe5b1c0e9fcf30e56fd15f608ccfc55fe6db1d5",
+      "sizeBytes": 53634
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/fusion_attention_clip.py",
@@ -6773,8 +6773,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/fusion_embedlayer.py",
-      "sha256": "4714366614fde9dda0efe9bd41c4408f8983eb70e7dacd59cf6279f40ca42a9f",
-      "sizeBytes": 36674
+      "sha256": "8bd96200a8f0714e91709d8aee15d9206202fb89eb191d7a21ea6e284658b5d8",
+      "sizeBytes": 36901
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/fusion_fastgelu.py",
@@ -6973,8 +6973,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/gpt2/gpt2_helper.py",
-      "sha256": "844b5b8af29a1ffbc93982d78c5472cda113726e99084feb5ed5d8a923ada878",
-      "sizeBytes": 41331
+      "sha256": "ce8a4a6544b6ddb4b07476a630d29c01cd94dc70ce9629f1e5568ba458b2a904",
+      "sizeBytes": 41516
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/gpt2/gpt2_parity.py",
@@ -7023,13 +7023,13 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/llama/llama_inputs.py",
-      "sha256": "c7bbf17c800c034426315b630d53523a803c9eb2afdb66d39d13507d2c8ad586",
-      "sizeBytes": 20726
+      "sha256": "370b16c3d3abc2030b546b5502eb330b123a0287f5d6984e042a0195a55f237c",
+      "sizeBytes": 21011
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/llama/llama_parity.py",
-      "sha256": "315883916d93fcb9fcc8b4daad92dbb594e31349a555382905c95b98aa3fc9fb",
-      "sizeBytes": 11900
+      "sha256": "ce028f10a66c32ce5ae920da33f7e9e41f141acbf030298d2e8a8649204fee1a",
+      "sizeBytes": 11986
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/llama/llama_torch.py",
@@ -7078,8 +7078,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/phi2/inference_example.py",
-      "sha256": "e10ed58cd182beb8c86c2d5497c5bc4919dd6a2238d9c190d4be223b4bccc258",
-      "sizeBytes": 17705
+      "sha256": "3281c2dbd10d5be6734883e82aedfe1bfa0fe2a001781061c7360e6a453c23fa",
+      "sizeBytes": 17687
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/sam2/__init__.py",
@@ -7163,8 +7163,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/stable_diffusion/demo_utils.py",
-      "sha256": "9f3e50cd71f2d762795684afb7e94ac4bb7873f5457f9f0ad0e2378688993f50",
-      "sizeBytes": 29376
+      "sha256": "0e6fceeb2810fca36acbd1eb4d95af21dfddf73f677b28494f02e70d94dae776",
+      "sizeBytes": 29372
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/stable_diffusion/diffusion_models.py",
@@ -7233,8 +7233,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/t5/t5_decoder.py",
-      "sha256": "1a65137816af857d937c88d921f30db8c30bff7fba051a9eb5411702f3b114fa",
-      "sizeBytes": 17188
+      "sha256": "4d9a23fa2ab870acc7f5c02173e73e1578f65a11de48afd00e50c5cbce6d2cbb",
+      "sizeBytes": 17218
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/t5/t5_encoder.py",
@@ -7243,8 +7243,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/t5/t5_encoder_decoder_init.py",
-      "sha256": "85fee8cc5be05d213f147d7ba7cf0c4b47e93c16e796c5187ca8277029269ef5",
-      "sizeBytes": 15421
+      "sha256": "14da5b0826aa65e0d2515add2dacf3a0361462508101cec412fcc882c9adc35d",
+      "sizeBytes": 15859
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/models/t5/t5_helper.py",
@@ -7308,8 +7308,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/onnx_exporter.py",
-      "sha256": "8c5145ab48060ed0ed2e08b4ce80d9b88511ddb6bfafa27e6b66fb220a110274",
-      "sizeBytes": 25340
+      "sha256": "6c0ff807c260d8e2e806c804be7fbec7af129da2320f6d74ce91a8b63a033574",
+      "sizeBytes": 26323
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/onnx_model.py",
@@ -7398,8 +7398,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/past_helper.py",
-      "sha256": "b8346296780f033590f9908d88e8af07fa9052ba0e49266ee80d84660ea6bb4a",
-      "sizeBytes": 6955
+      "sha256": "748f37260dccb2fd575febcdf0bbbcb796b2def91079376c068dbd3a09da68c7",
+      "sizeBytes": 7696
     },
     {
       "path": "runtime/Lib/site-packages/onnxruntime/transformers/profile_result_processor.py",
@@ -9623,7 +9623,7 @@
     },
     {
       "path": "runtime/Lib/site-packages/piper_tts-1.8.0.dist-info/RECORD",
-      "sha256": "abc4e8f136789a9311ffbccd94268d199d8dba2855e8e0ca684ba1eeea278d7f",
+      "sha256": "453db566a4d744718dde794ccc0ce910b41b04c7d85dc850126322dd3d125c01",
       "sizeBytes": 38377
     },
     {
@@ -9868,8 +9868,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/adapters/piper.py",
-      "sha256": "5dd7013a1fe03a6a37d80316b7122feaa300c5e73aa141fab29f0fee4f0741ef",
-      "sizeBytes": 17997
+      "sha256": "9e95036dc53c943410588c1225636c60ecd9479b8a0931d8f25bc3ac7ec8d7e8",
+      "sizeBytes": 18239
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/engine.py",
@@ -10073,7 +10073,7 @@
     },
     {
       "path": "source-manifest-v1.json",
-      "sha256": "0899b99fec0e20384520b33b63831bcf7b25dd86886c1e664bc760ab67370b02",
+      "sha256": "e04b83230117a8def052053bc2a71df91fafa7a45dfe6180c184403fc1136044",
       "sizeBytes": 3655
     },
     {
@@ -10119,7 +10119,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 304581897,
+  "payloadBytes": 306332721,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

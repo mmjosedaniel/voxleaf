@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import struct
 import sys
 import tomllib
@@ -169,6 +170,7 @@ def _adapter(
     profile: PiperVoiceProfile | None = None,
 ) -> tuple[PiperCpuTtsEngine, dict[str, object], FakeVoice]:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.delenv("ORT_DISABLE_TELEMETRY", raising=False)
     artifact_root = tmp_path / "model"
     artifact_root.mkdir()
     selected_profile = profile or SPANISH_PROFILE
@@ -195,6 +197,7 @@ def _adapter(
     onnxruntime = ModuleType("onnxruntime")
     onnxruntime.__dict__.update(
         {
+            "disable_telemetry_events": lambda: calls.__setitem__("telemetry_api_disabled", True),
             "get_device": lambda: onnx_device,
             "get_available_providers": lambda: list(onnx_providers),
         }
@@ -208,6 +211,14 @@ def _adapter(
         "piper.voice": voice_module,
         "piper.config": config_module,
     }
+
+    def import_module(name: str) -> ModuleType:
+        if name == "onnxruntime":
+            calls["telemetry_disabled_at_import"] = os.environ.get("ORT_DISABLE_TELEMETRY")
+        elif name == "piper.voice":
+            calls["telemetry_disabled_before_piper"] = calls.get("telemetry_api_disabled", False)
+        return modules[name]
+
     selected_versions = versions or {
         "piper-tts": ENGINE_VERSION,
         "onnxruntime": ONNXRUNTIME_VERSION,
@@ -217,7 +228,7 @@ def _adapter(
         artifact_root,
         profile=selected_profile,
         artifacts=artifacts,
-        importer=modules.__getitem__,
+        importer=import_module,
         version_reader=selected_versions.__getitem__,
         distribution_root_reader=lambda _name: root,
         runtime_root=runtime_root,
@@ -225,6 +236,21 @@ def _adapter(
         python_version=(3, 12),
     )
     return adapter, calls, selected_voice
+
+
+@pytest.mark.parametrize("initial_value", [None, "0"])
+def test_load_disables_telemetry_before_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, initial_value: str | None
+) -> None:
+    adapter, calls, _ = _adapter(tmp_path, monkeypatch)
+    if initial_value is None:
+        monkeypatch.delenv("ORT_DISABLE_TELEMETRY", raising=False)
+    else:
+        monkeypatch.setenv("ORT_DISABLE_TELEMETRY", initial_value)
+    adapter.load()
+
+    assert calls["telemetry_disabled_at_import"] == "1"
+    assert calls["telemetry_disabled_before_piper"] is True
 
 
 def _segment(text: str = "Texto sintético local.") -> dict[str, object]:
@@ -245,7 +271,7 @@ def test_current_adapter_runtime_matches_the_locked_release_graph() -> None:
     assert [
         package["version"] for package in lock["package"] if package["name"] == "piper-tts"
     ] == [ENGINE_VERSION]
-    assert ONNXRUNTIME_VERSION == "1.30.0"
+    assert ONNXRUNTIME_VERSION == "1.31.0"
     assert f"onnxruntime=={ONNXRUNTIME_VERSION}" in project["project"]["dependencies"]
     assert [
         package["version"] for package in lock["package"] if package["name"] == "onnxruntime"
