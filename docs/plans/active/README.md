@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active plans.
+- [Bounded TypeScript function readability](typescript-function-readability.md):
+  five planned private-helper and reader-binding refactors with meaningful names,
+  closed scopes and independent validation; implementation has not started.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).

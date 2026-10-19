@@ -364,6 +364,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [`plans/active/typescript-function-readability.md`](plans/active/typescript-function-readability.md): planned service-identity, profile-admission, reader-binding, coordinator-phase and EPUB-navigation extractions with meaningful names and bounded independent validation; no implementation yet.
 - [`plans/completed/refactor-validation-efficiency.md`](plans/completed/refactor-validation-efficiency.md): validated contributor-policy and skill alignment for focused checks, immutable evidence reuse, bounded execution and explicit integration acceptance.
 - [`plans/completed/services-function-readability-ci-repair.md`](plans/completed/services-function-readability-ci-repair.md): ZIP 9.0.4 and compatible archive verification, current generated inventory, passing focused host checks and independent implementation approval; hosted CI tracked in PR #253.
 - [`plans/completed/services-function-readability.md`](plans/completed/services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
