@@ -38,6 +38,45 @@ fn cuda_precisions() -> PrecisionReport {
     }
 }
 
+#[cfg(windows)]
+#[test]
+fn cuda_precision_derivation_preserves_compute_capability_boundaries() {
+    let float32_only = PrecisionReport {
+        float32: Availability::Available,
+        float16: Availability::Unavailable,
+        bfloat16: Availability::Unavailable,
+        int8: Availability::Unknown,
+    };
+    let with_float16 = PrecisionReport {
+        float32: Availability::Available,
+        float16: Availability::Available,
+        bfloat16: Availability::Unavailable,
+        int8: Availability::Unknown,
+    };
+    let with_bfloat16 = PrecisionReport {
+        float32: Availability::Available,
+        float16: Availability::Available,
+        bfloat16: Availability::Available,
+        int8: Availability::Unknown,
+    };
+    for (major, minor, expected) in [
+        (1, 0, None),
+        (8, -1, None),
+        (2, 0, Some(float32_only)),
+        (5, 2, Some(float32_only)),
+        (5, 3, Some(with_float16)),
+        (6, 0, Some(with_float16)),
+        (7, 5, Some(with_float16)),
+        (8, 0, Some(with_bfloat16)),
+    ] {
+        assert_eq!(
+            windows_probe::cuda_precisions_for_compute_capability(major, minor),
+            expected,
+            "compute capability {major}.{minor}"
+        );
+    }
+}
+
 fn complete_snapshot() -> NativeHostSnapshot {
     NativeHostSnapshot {
         platform_supported: true,
