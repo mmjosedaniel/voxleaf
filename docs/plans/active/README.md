@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Reader and narration bug fixes](reader-narration-bugfixes.md): planned
+  corrections for startup cancellation, playback disposal, lazy raster
+  deadlines, and navigation after preparation runs ahead. Implementation and
+  acceptance remain pending on `codex/reader-narration-bugfixes`.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
