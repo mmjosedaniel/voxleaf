@@ -6,6 +6,8 @@ each plan's progress and validation results current.
 
 ## Current plans
 
+- [Chatterbox certifi and Pillow security refresh](chatterbox-certifi-pillow-security-refresh.md): bounded successor runtime to resolve PR #266's live dependency-audit failure; candidate preparation and validation are in progress.
+
 The [reader, narration and optional acquisition corrections](../completed/reader-narration-acquisition-bugfixes.md)
 are complete: all eight fixes, required host gates, installed B06/B07 scenarios,
 user-state restoration and temporary firewall cleanup pass with independent

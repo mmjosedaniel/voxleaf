@@ -99,10 +99,11 @@ def resolve_runtime_sources(root: Path, manifest: Mapping[str, object]) -> dict[
     modules = manifest.get("runtimeModules")
     if not isinstance(version, str):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
-    if version in {"2", "3"}:
-        if modules != list(HISTORICAL_IDENTITIES[str(version)]):
+    if version in {"2", "3", "5"}:
+        source_version: PackageVersion = "2" if version == "2" else "3"
+        if modules != list(HISTORICAL_IDENTITIES[source_version]):
             raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
-        return historical_sources(root, "2" if version == "2" else "3")
+        return historical_sources(root, source_version)
     if version != "4" or modules != list(LOCAL_RUNTIME_MODULES):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     source = root / "services/tts/src/voxleaf_tts"

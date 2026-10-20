@@ -9,6 +9,14 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "package:chatterbox-optional:v5:lock": "uv pip compile services/tts/release/profiles/chatterbox-v5/requirements.in --python-version 3.12 --python-platform windows --no-deps --generate-hashes --exclude-newer 2026-10-20T22:00:00Z --output-file services/tts/release/profiles/chatterbox-v5/requirements.lock",
+    "package:chatterbox-optional:v5:write-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-source --package-version 5",
+    "package:chatterbox-optional:v5:check-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-source --package-version 5",
+    "package:chatterbox-optional:v5": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox build --package-version 5",
+    "package:chatterbox-optional:v5:check-local": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-local --package-version 5",
+    "test:chatterbox:runtime-security": "python -I -B scripts/test-chatterbox-runtime-security.py",
+    "test:chatterbox:runtime-smoke": "python -I -B scripts/test-chatterbox-runtime-smoke.py",
+    "audit:chatterbox:v5": "uvx --python 3.12 --from pip-audit==2.10.1 pip-audit -r services/tts/release/profiles/chatterbox-v5/requirements.lock --no-deps --disable-pip --format json",
     "test:native-smoke-harness": "pnpm run build:packages && node --test apps/desktop/scripts/native-smoke.node-test.mjs",
     "test:acquisition:file-barriers": "node --test apps/desktop/scripts/acquisition-file-barrier.node-test.mjs",
     "package:windows:reader-corrections": "node apps/desktop/scripts/ordinary-chatterbox-release-host.mjs --mode journey --exercise-acquisition-corrections",
