@@ -320,6 +320,8 @@ export class HardwareProfileCompatibilityCoordinator {
   #probe: Promise<HardwareCompatibilitySnapshotV1> | undefined;
   #closed = false;
   #sequence = 0;
+  #profileSelection: HardwareProfilePreferenceReadResult | undefined;
+  #languageSelection: NarrationLanguagePreferenceReadResult | undefined;
 
   public constructor(
     dependencies: HardwareProfileCompatibilityDependencies = {},
@@ -434,8 +436,19 @@ export class HardwareProfileCompatibilityCoordinator {
     if (this.#closed || result.status !== "saved") {
       return false;
     }
+    this.#profileSelection = Object.freeze({ status: "ready", profileId });
+    const selected = this.#snapshot.profiles.find(
+      (profile) =>
+        profile.profileId === profileId &&
+        admittedForLanguage(profile, this.#snapshot.language),
+    );
+    if (selected === undefined) {
+      return false;
+    }
     this.#snapshot = Object.freeze({
       ...this.#snapshot,
+      status: statusFor(selected, this.#snapshot.profiles),
+      reason: undefined,
       activeProfileId: profileId,
       selectionSource: "preference",
       preferenceStatus: "used",
@@ -469,6 +482,7 @@ export class HardwareProfileCompatibilityCoordinator {
   }
 
   #applyLanguage(language: NarrationLanguageV1): void {
+    this.#languageSelection = Object.freeze({ status: "ready", language });
     const replacement = chooseReplacementProfile(
       this.#snapshot.profiles,
       this.#snapshot.activeProfileId,
@@ -507,14 +521,26 @@ export class HardwareProfileCompatibilityCoordinator {
   }
 
   async #runProbe(sequence: number): Promise<HardwareCompatibilitySnapshotV1> {
+    const profileSelection = this.#profileSelection;
+    const languageSelection = this.#languageSelection;
     try {
-      const [report, nativeGate, preference, languagePreference] =
+      const [report, nativeGate, readPreference, readLanguagePreference] =
         await Promise.all([
           this.#detector.detect(),
           this.#developmentGate.exactDemoAvailability(),
           this.#preferenceRepository.read(),
           this.#languagePreferenceRepository.read(),
         ]);
+      // Only choices completed during this probe supersede its captured reads.
+      // Fresh hardware facts still decide whether the resulting choice is admitted.
+      const preference =
+        this.#profileSelection !== profileSelection
+          ? (this.#profileSelection ?? readPreference)
+          : readPreference;
+      const languagePreference =
+        this.#languageSelection !== languageSelection
+          ? (this.#languageSelection ?? readLanguagePreference)
+          : readLanguagePreference;
       const language = languagePreference.language;
       const preferredProfileId = preferenceInput(preference);
       const matches = matchHardwareProfilesV1({
@@ -562,6 +588,10 @@ export class HardwareProfileCompatibilityCoordinator {
         ? this.#snapshot
         : snapshot;
     } catch {
+      const languagePreference =
+        this.#languageSelection !== languageSelection
+          ? this.#languageSelection
+          : undefined;
       const snapshot = Object.freeze({
         status: "failed",
         reason: undefined,
@@ -571,8 +601,8 @@ export class HardwareProfileCompatibilityCoordinator {
         preferenceStatus: "unavailable",
         fallbackAvailable: false,
         canPersistSelection: true,
-        language: DEFAULT_NARRATION_LANGUAGE_V2,
-        languagePreferenceStatus: "unavailable",
+        language: languagePreference?.language ?? DEFAULT_NARRATION_LANGUAGE_V2,
+        languagePreferenceStatus: languagePreference?.status ?? "unavailable",
         canPersistLanguage: true,
         languageReason: "no-profile-for-language",
       }) satisfies HardwareCompatibilitySnapshotV1;

@@ -477,6 +477,11 @@ describe("hardware compatibility controls", () => {
       ),
     );
     expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText(
+        "A development-only local narration profile is available.",
+      ),
+    ).toBeInTheDocument();
 
     const recheck = screen.getByRole("button", {
       name: "Check compatibility again",

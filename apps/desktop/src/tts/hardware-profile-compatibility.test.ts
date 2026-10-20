@@ -331,6 +331,8 @@ describe("hardware profile compatibility coordinator", () => {
       EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
     );
     expect(subject.observe()).toMatchObject({
+      status: "development-only",
+      reason: undefined,
       selectionSource: "preference",
       preferenceStatus: "used",
     });
@@ -338,6 +340,112 @@ describe("hardware profile compatibility coordinator", () => {
       subject.selectProfile("supertonic-3-onnx-cpu-f1-es-v1"),
     ).resolves.toBe(false);
     expect(preferenceRepository.write).toHaveBeenCalledOnce();
+    await expect(
+      subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
+    ).resolves.toBe(true);
+    expect(subject.observe().status).toBe("compatible");
+  });
+
+  it.each(["select", "reset"] as const)(
+    "preserves a successful language %s while an older probe settles",
+    async (action) => {
+      let finishReport!: (report: ReturnType<typeof completeReport>) => void;
+      const detector = {
+        detect: vi.fn(async () => completeReport()),
+      };
+      const language = languagePreference(action === "select" ? "en" : "es");
+      const subject = new HardwareProfileCompatibilityCoordinator(
+        dependencies({ detector, languagePreference: language }),
+      );
+      await subject.ensureChecked();
+      detector.detect.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishReport = resolve;
+          }),
+      );
+      const probe = subject.check("operating-system-resume");
+      const expectedLanguage = action === "select" ? "es" : "en";
+      expect(
+        await (action === "select"
+          ? subject.selectLanguage("es")
+          : subject.resetLanguage()),
+      ).toBe(true);
+      finishReport(completeReport());
+      await probe;
+      expect(subject.observe()).toMatchObject({
+        language: expectedLanguage,
+        status: "compatible",
+        activeProfileId:
+          expectedLanguage === "es"
+            ? PIPER_CPU_FALLBACK_PROFILE_ID
+            : PIPER_ENGLISH_CPU_PROFILE_ID,
+      });
+      expect(await language.read()).toMatchObject({
+        language: expectedLanguage,
+      });
+      subject.close();
+    },
+  );
+
+  it.each([16_384, 0])(
+    "reconciles a newer profile preference with fresh %i MiB hardware facts",
+    async (availableRam) => {
+      let finishReport!: (report: ReturnType<typeof completeReport>) => void;
+      const detector = { detect: vi.fn(async () => completeReport()) };
+      const subject = new HardwareProfileCompatibilityCoordinator(
+        dependencies({ detector }),
+      );
+      await subject.ensureChecked();
+      detector.detect.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishReport = resolve;
+          }),
+      );
+      const probe = subject.check("operating-system-resume");
+      expect(
+        await subject.selectProfile(EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID),
+      ).toBe(true);
+      finishReport(completeReport(availableRam));
+      await probe;
+      expect(subject.observe()).toMatchObject(
+        availableRam === 0
+          ? { status: "unavailable", activeProfileId: undefined }
+          : {
+              status: "development-only",
+              activeProfileId: EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+              preferenceStatus: "used",
+            },
+      );
+      subject.close();
+    },
+  );
+
+  it("preserves a newer language when the pending host probe fails", async () => {
+    let rejectReport!: (error: Error) => void;
+    const detector = { detect: vi.fn(async () => completeReport()) };
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ detector, languagePreference: languagePreference("en") }),
+    );
+    await subject.ensureChecked();
+    detector.detect.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectReport = reject;
+        }),
+    );
+    const probe = subject.check("operating-system-resume");
+    expect(await subject.selectLanguage("es")).toBe(true);
+    rejectReport(new Error("synthetic host probe failure"));
+    await probe;
+    expect(subject.observe()).toMatchObject({
+      status: "failed",
+      language: "es",
+      languagePreferenceStatus: "ready",
+      activeProfileId: undefined,
+    });
+    subject.close();
   });
 
   it("does not use a stale or future-version preference", async () => {

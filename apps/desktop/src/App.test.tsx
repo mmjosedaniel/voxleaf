@@ -50,6 +50,7 @@ import type {
   ProductNarrationSnapshot,
 } from "./tts/product-narration-coordinator";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./tts/operational-recovery";
+import { TtsProcessClient } from "./tts/process-client";
 import type {
   HardwareCompatibilitySnapshotV1,
   HardwareProfileCompatibilityCoordinator,
@@ -1090,6 +1091,78 @@ describe("App preference connection characterization", () => {
 });
 
 describe("desktop reader lifecycle surface", () => {
+  it.each([false, true])(
+    "waits for late hardware before enabling Play, including unmount=%s",
+    async (unmountBeforeCheck) => {
+      let finish!: () => void;
+      let activeProfileId: string | undefined;
+      const checked = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const hardware = {
+        ensureChecked: vi.fn(() => checked),
+        check: vi.fn(() => checked),
+        close: vi.fn(),
+        activeProfileId: () => activeProfileId,
+        activeLanguage: () => "en" as const,
+        isProfileCurrentlyAllowed: () =>
+          activeProfileId === undefined ? undefined : true,
+        isProfileStartAllowed: vi.fn(async () => true),
+      } as unknown as HardwareProfileCompatibilityCoordinator;
+      const configuration = vi
+        .spyOn(TtsProcessClient.prototype, "profileConfigurationAvailability")
+        .mockResolvedValue("available");
+      const view = render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          hardwareCompatibilityCoordinator={hardware}
+          ReadyPublicationContent={() => (
+            <article>Synthetic visual reader</article>
+          )}
+        />,
+      );
+      try {
+        selectEpub();
+        await screen.findByRole("article");
+        await act(async () => {
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        });
+        expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+        expect(document.querySelector(".product-narration")).toHaveAttribute(
+          "data-narration-availability",
+          "checking",
+        );
+        expect(configuration).not.toHaveBeenCalled();
+        if (unmountBeforeCheck) {
+          view.unmount();
+          await act(async () => {
+            await Promise.resolve();
+          });
+        }
+        activeProfileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+        await act(async () => {
+          finish();
+          await checked;
+        });
+        if (unmountBeforeCheck) {
+          expect(configuration).not.toHaveBeenCalled();
+        } else {
+          await waitFor(() =>
+            expect(screen.getByRole("button", { name: "Play" })).toBeEnabled(),
+          );
+          expect(configuration).toHaveBeenCalledWith(activeProfileId);
+        }
+      } finally {
+        finish();
+        view.unmount();
+      }
+    },
+  );
+
   it("keeps the heading and Settings available while restoration prepares, then mounts the reader before settlement", async () => {
     const publication = createTestPublication("Preparing reader book");
     const repository = createTestReaderPositionRepository();

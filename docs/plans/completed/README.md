@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`narration-state-and-optional-package-corrections.md`](narration-state-and-optional-package-corrections.md): seven corrections for optional-package ownership/retry, initial availability, concurrent preferences, session volume, preparation diagnostics and compatibility status. Focused, full repository, Chromium and WebView2 checks pass with independent Astra approval after one recovery-copy correction. Changes are unstaged/uncommitted; the final documentary receipt covers the frozen closeout.
+
 - [`reader-narration-bugfixes.md`](reader-narration-bugfixes.md): four fixes for startup cancellation, playback disposal, lazy image deadlines and navigation beyond 64 prepared segments. Permanent regressions, repository/browser/native checks and all six real-model arms pass; independent Astra approval. Host-context recovery preserved the installed Chatterbox package. Changes remain unstaged and uncommitted.
 
 - [`python-quality-validation-readability.md`](python-quality-validation-readability.md): one private scorecard-validation helper, 15 additive public submission cases and four service docstring corrections. Independent unit and combined Python/source gates pass, with 586 model-free tests and unchanged behavior. Three source/test files, 162 changed lines, unstaged/uncommitted; closing-document acceptance is recorded separately after the content freeze.

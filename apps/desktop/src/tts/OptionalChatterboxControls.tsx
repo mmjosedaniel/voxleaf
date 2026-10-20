@@ -122,7 +122,7 @@ function renderOptionalChatterboxFailure(
       return (
         <p role="status">
           Chatterbox could not finish cleaning its application-owned files.
-          Restart VoxLeaf, then check again.
+          Close any apps using those files, then try Remove Chatterbox again.
         </p>
       );
     case "tts-optional-profile-download-failed":

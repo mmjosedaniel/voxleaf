@@ -10,6 +10,92 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+#[test]
+fn reselection_preserves_busy_operation_and_worker_cancellation() {
+    for state in [
+        OptionalProfileState::Downloading,
+        OptionalProfileState::Verifying,
+        OptionalProfileState::Removing,
+    ] {
+        let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        let signal = Arc::new(AtomicBool::new(false));
+        manager.set_operation(state.clone(), 1024, None, Some(Arc::clone(&signal)));
+        let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
+        assert_eq!(selected.state, state);
+        assert_eq!(selected.downloaded_bytes, 1024);
+        assert!(Arc::ptr_eq(
+            manager
+                .operation
+                .lock()
+                .unwrap()
+                .cancellation
+                .as_ref()
+                .unwrap(),
+            &signal,
+        ));
+        if state != OptionalProfileState::Removing {
+            manager.cancel_at(&root.0).unwrap();
+            assert!(signal.load(Ordering::Acquire));
+        }
+    }
+}
+
+#[test]
+fn removal_failure_is_reported_and_can_be_retried_after_repair() {
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    fs::create_dir_all(package.parent().unwrap()).unwrap();
+    fs::write(&package, b"synthetic invalid directory").unwrap();
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.remove_at(&root.0),
+        Err(OptionalProfileError::VerificationFailed)
+    );
+    let failed = manager.snapshot_at(&root.0).unwrap();
+    assert_eq!(failed.state, OptionalProfileState::Failed);
+    assert_eq!(
+        failed.failure,
+        Some(OptionalProfileError::VerificationFailed.code())
+    );
+    fs::remove_file(&package).unwrap();
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn removal_can_retry_after_a_windows_sharing_violation() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    fs::create_dir_all(&package).unwrap();
+    let path = package.join("synthetic-locked-file.bin");
+    fs::write(&path, b"synthetic owned data").unwrap();
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&path)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.remove_at(&root.0),
+        Err(OptionalProfileError::CleanupFailed)
+    );
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    drop(lock);
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!package.exists());
+}
+
 struct TestRoot(PathBuf);
 
 impl TestRoot {
