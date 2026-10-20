@@ -6,7 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Reader, narration, and optional acquisition bug fixes](reader-narration-acquisition-bugfixes.md):
+  eight statically verified defects covering buffer capacity, long-block
+  continuation, segmentation history, unavailable chapters, repeated raster
+  reads, Chatterbox cancellation/cleanup, and asynchronous playback preparation.
+  Planning only; implementation and runtime validation have not started.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).
