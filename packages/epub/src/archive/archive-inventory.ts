@@ -548,7 +548,7 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
 
       return await readCandidateData(
         candidate,
-        this.budget,
+        operation,
         options.maximumBytes,
         options.signal,
         operation,

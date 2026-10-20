@@ -2,6 +2,17 @@
 
 ## Implementation status
 
+The completed [reader/acquisition corrections](../plans/completed/reader-narration-acquisition-bugfixes.md)
+add an explicit **Play available audio** action when capacity blocks a prepared
+target, bounded deep-paragraph starts, navigation scoped to the selected
+segmentation context, and an unavailable-chapter state that preserves the last
+valid reading position and ends old playback intent. They also address repeat
+image reads, final-verification cancellation, recoverable cleanup failure and
+Pause during rate-processor initialization. Repository, browser, native and
+installed validation pass, including Piper/Chatterbox ES/EN and installed
+verification/cleanup faults. The completed plan records independent approval,
+restoration of user data and removal of temporary firewall rules.
+
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the historical no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. M010.2 later supersedes only M008's fixed playback-rate policy with six validated boundary-deferred values from `1.00x` through `0.75x`. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's historical Qwen policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute; that constrained profile exceeded the MVP target and is not the M011 baseline Piper release family.
 
 The completed ingestion support profile in that reader includes reflowable

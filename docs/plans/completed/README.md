@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`reader-narration-acquisition-bugfixes.md`](reader-narration-acquisition-bugfixes.md): eight corrections covering capacity escape, bounded continuation, context-scoped navigation, unavailable chapters, repeat raster reads, acquisition cancellation/cleanup and asynchronous Pause. Repository/browser/native gates, four real-model arms and the installed B06/B07 journey pass. User data and host configuration are restored; independent Astra approval. Changes remain unstaged/uncommitted; the final documentary receipt covers the frozen closeout.
+
 - [`narration-state-and-optional-package-corrections.md`](narration-state-and-optional-package-corrections.md): seven corrections for optional-package ownership/retry, initial availability, concurrent preferences, session volume, preparation diagnostics and compatibility status. Focused, full repository, Chromium and WebView2 checks pass with independent Astra approval after one recovery-copy correction. Changes are unstaged/uncommitted; the final documentary receipt covers the frozen closeout.
 
 - [`reader-narration-bugfixes.md`](reader-narration-bugfixes.md): four fixes for startup cancellation, playback disposal, lazy image deadlines and navigation beyond 64 prepared segments. Permanent regressions, repository/browser/native checks and all six real-model arms pass; independent Astra approval. Host-context recovery preserved the installed Chatterbox package. Changes remain unstaged and uncommitted.

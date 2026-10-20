@@ -31,6 +31,10 @@ export interface UnavailableReaderTarget {
 export type ReaderTargetAvailability =
   AvailableReaderTarget | UnavailableReaderTarget;
 
+export type ReaderNavigationSettlement =
+  | Readonly<{ status: "settled"; locator: ReadingLocatorV1 }>
+  | Readonly<{ status: "unavailable"; reason: "chapter-too-large" }>;
+
 export interface ReaderNavigationCoordinatorOptions {
   readonly initialLocator?: ReadingLocatorV1;
   readonly preferences?: ReaderPreferencesV1;

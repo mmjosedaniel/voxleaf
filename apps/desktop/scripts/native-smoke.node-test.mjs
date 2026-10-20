@@ -11,6 +11,34 @@ import { createNativeResourceObservation } from "./native-smoke/resource-observa
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
 import { WebDriverClientError } from "./native-webdriver-client.mjs";
+import { openEpubPublication } from "@voxleaf/epub";
+import { buildMinimalEpubFixture } from "../../../packages/epub/test-support/epub-fixture.ts";
+import { chatterboxPlaybackSpeedParagraph } from "./native-smoke/narration-fixture.mjs";
+
+for (const language of ["es", "en"]) {
+  test(`Chatterbox ${language} speed fixture has sentence boundaries throughout the six-rate matrix`, async () => {
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${language}"><head><title>Synthetic</title></head><body><h1 id="chapter-one">Synthetic</h1><p>${chatterboxPlaybackSpeedParagraph(language)}</p></body></html>`,
+    });
+    const opened = await openEpubPublication(bytes);
+    assert.equal(opened.ok, true);
+    try {
+      const prepared = await opened.publication.prepareNarration({
+        startLocator: opened.publication.locators[0].startLocator,
+        profile: "narration-chatterbox-v1",
+        defaultLanguage: language,
+        maximumSegments: 8,
+      });
+      assert.ok(["batch", "complete"].includes(prepared.status));
+      assert.deepEqual(
+        prepared.segments.map((segment) => segment.boundaryReason),
+        ["heading", ...Array(7).fill("sentence")],
+      );
+    } finally {
+      await opened.publication.close();
+    }
+  });
+}
 
 function smokeAssert(condition, message) {
   if (!condition) throw new Error(message);

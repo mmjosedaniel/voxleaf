@@ -75,6 +75,7 @@ export interface NarrationPackedBlock {
 }
 
 export interface NarrationPackingOptions {
+  readonly operationWorkBudget?: import("./narration-work-controller.js").NarrationOperationWorkBudget;
   readonly maximumSegments?: number;
   readonly retainedNarrationCodePointsMaximum?: number;
   readonly retainedNarrationUtf8BytesMaximum?: number;
@@ -931,7 +932,11 @@ async function packNarrationBoundaryScanInternal(
   const signal = options.signal ?? new AbortController().signal;
   const scheduler = options.scheduler ?? DEFAULT_NARRATION_YIELD_SCHEDULER;
   const limits = resolvePackingLimits(options);
-  const work = new NarrationWorkController(signal, scheduler);
+  const work = new NarrationWorkController(
+    signal,
+    scheduler,
+    options.operationWorkBudget,
+  );
   const validated = await validateScan(scan, work);
   const context = await packingContext(scan, validated, work);
   const { prefix } = context;

@@ -9,6 +9,10 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "test:native-smoke-harness": "pnpm run build:packages && node --test apps/desktop/scripts/native-smoke.node-test.mjs",
+    "test:acquisition:file-barriers": "node --test apps/desktop/scripts/acquisition-file-barrier.node-test.mjs",
+    "package:windows:reader-corrections": "node apps/desktop/scripts/ordinary-chatterbox-release-host.mjs --mode journey --exercise-acquisition-corrections",
+    "test:chatterbox:installed-integrity": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml tts_optional_chatterbox::tests::installed_host_integrity_diagnostic -- --exact --ignored --nocapture",
     "benchmark:tts:measure": "uv run --directory services/tts --locked python -m benchmarks.cli measure",
     "benchmark:tts:preflight": "uv run --directory services/tts --locked python -m benchmarks.cli preflight",
     "benchmark:tts:cpu-fallback:assess": "uv run --directory services/tts --locked python -m benchmarks.cpu_fallback_result_cli assess",
@@ -39,6 +43,7 @@
     "package:chatterbox-optional:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition",
     "package:chatterbox-optional": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox build",
     "package:windows": "pnpm run package:piper-core && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
+    "package:windows:verified-core": "pnpm run package:piper-core:check && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
     "package:windows:check": "node apps/desktop/scripts/windows-release.mjs check --require-core",
     "package:windows:lifecycle": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-package-lifecycle.ps1",
     "package:windows:ordinary-chatterbox": "node apps/desktop/scripts/ordinary-chatterbox-release-host.mjs --mode journey",
@@ -70,6 +75,7 @@
     "test:browser": "pnpm run build:packages && pnpm --filter @voxleaf/desktop test:browser",
     "test:browser:install": "pnpm --filter @voxleaf/desktop test:browser:install",
     "test:native-startup": "pnpm --filter @voxleaf/desktop test:native-startup",
+    "test:tts:reader-corrections-host": "pnpm run build:packages && pnpm --filter @voxleaf/desktop test:tts:reader-corrections-host",
     "test:tts:exact-host": "pnpm --filter @voxleaf/desktop test:tts:exact-host",
     "test:tts:adaptive-exact-host": "pnpm --filter @voxleaf/desktop test:tts:adaptive-exact-host",
     "test:tts:resilience-exact-host": "pnpm --filter @voxleaf/desktop test:tts:resilience-exact-host",

@@ -2,6 +2,15 @@
 
 ## Status
 
+The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)
+implements the accepted behavior in [ADR-0057](decisions/ADR-0057-reader-acquisition-correctness.md).
+Its publication-owned bounded traversal checkpoint and whole-request work
+budget extend preparation accounting without retaining new text or audio.
+Typed unavailable reader settlement stops obsolete narration intent; native
+acquisition serializes cancellation with promotion. These remain within the
+existing component/process owners. Integrated host validation and independent
+review pass; component/process/persistence topology remains unchanged.
+
 Mixed implementation status. Roadmap Milestones 1 through 10.2, M008.1, and
 M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration,
 locator-linked narration preparation, M007 service, exact-development M008

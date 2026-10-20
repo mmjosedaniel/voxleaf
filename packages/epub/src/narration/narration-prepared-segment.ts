@@ -322,6 +322,9 @@ export async function prepareNarrationSourceLeaf(
   options: NarrationPreparationOptions = {},
 ): Promise<PreparedNarrationBlock> {
   try {
+    // Conservative work envelope for the existing synchronous normalizer,
+    // scanner and finalizer: includes replay, 128-point lookahead and 16x expansion.
+    options.operationWorkBudget?.charge(source.sourceTokens.length * 4_096);
     const normalized = (options.normalizationProfile ===
     "narration-bilingual-v2"
       ? normalizeBilingualNarrationSourceTokens(
