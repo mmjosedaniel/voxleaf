@@ -199,6 +199,42 @@ dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
 V3 output/environment lives in the builder's separate `dist/v3` directory.
 
+The [certifi/Pillow refresh](../plans/active/chatterbox-certifi-pillow-security-refresh.md)
+prepares an unpublished v5 candidate with certifi `2026.10.19` and Pillow
+`13.0.0`. All other 77 package versions, model bytes and frozen v3 runtime
+modules remain unchanged. The live 2026-10-20 audit rejects the current v3
+graph; historical passing dates above do not describe its current audit state.
+V5 is not admitted by the desktop yet. Its candidate audit is
+`pnpm.cmd audit:chatterbox:v5`; no advisory exception is added.
+
+Generate the candidate using `pnpm.cmd package:chatterbox-optional:v5:lock`,
+then `pnpm.cmd package:chatterbox-optional:v5:write-source`. Build and verify it
+with `pnpm.cmd package:chatterbox-optional:v5` and
+`pnpm.cmd package:chatterbox-optional:v5:check-local`. Both accept
+`--output-root <absolute-directory>` for short temporary Windows paths; each
+version has its own `vN` child below that root. Use the same root for build and
+verification. The default output paths are unchanged. A temporary drive alias
+can refer to an isolated build workspace when long paths are disabled; remove
+the alias after the command finishes. With an alias such as V:, pass the
+uniform extended form `--output-root //?/V:/build` to avoid mixed canonical
+Windows prefixes and shell backslash escaping. Never target an installed user
+runtime.
+V5 rejects `--no-sync` through both CLI and Python API: use a fresh isolated
+output root so its dependency environment is always installed from the hashed
+v5 lock. An old environment must not acquire a new security package identity.
+
+Run `test:chatterbox:runtime-security` and `test:chatterbox:runtime-smoke
+--models <isolated-model-copy> --language <es|en>` with the candidate's
+`runtime/python.exe` selected on PATH, no PYTHONPATH, offline Hugging Face and
+Transformers flags, and bytecode disabled.
+Set `NUMBA_CACHE_DIR` to an isolated cache outside the runtime, matching the
+native supervisor; Python's bytecode flag does not disable Numba's own cache.
+The security probe checks the
+removed compromised root, cyclic PDF page trees and legitimate PNG/PDF inputs.
+The smoke probe exercises synthetic ES/EN narration, finite bounded PCM and
+cancellation without writing audio. These candidate probes do not replace
+publication readback or the installed desktop acceptance gates.
+
 `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
 v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
 `pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
