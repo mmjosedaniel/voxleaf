@@ -49,7 +49,12 @@ over-limit, future-version, or explicitly reset state uses English. Quick or
 Prepared mode and its closed Prepared target are now separately persisted and
 hydrated before their controls become actionable. Reset first uses the same
 identity-safe stop/cleanup path as direct language/profile selection. Volume
-remains session-only and reader appearance keeps its existing owner.
+remains session-only and reader appearance keeps its existing owner. Here,
+session means the lifetime of the open book's narration coordinator: mute and
+volume survive chapter/passage navigation, Stop/Play, configuration changes,
+and internal player replacement. Volume is applied before replacement playback
+starts; a newly opened book begins at 100%. No default-volume preference is
+written to storage.
 
 Milestone 4 now implements the reader-first presentation subset. The ready
 application has one fixed compact app bar, compact publication and narration
@@ -111,6 +116,18 @@ prior profile, preference, identities, service ownership, and recovery episode.
 A failed selection instead leaves a stable actionable error and the safest
 valid profile state.
 
+An initial compatibility check must finish before a newly opened book is marked
+unavailable. Closing/replacing that book makes pending availability results
+ineligible. If a language/profile selection or language reset succeeds while a
+compatibility probe is pending, the probe evaluates the latest successful choice
+against its fresh hardware facts. It cannot restore an older preference or
+override a new hardware rejection. Selecting a development-only profile updates
+the device summary immediately while preserving its existing admission gates.
+
+Preparation failures remain visible after successful resource cleanup. Stop,
+reset, or a new explicit narration action clears the diagnostic; cleanup failure
+still takes precedence and retains the existing recovery/containment path.
+
 ### First-Play startup feedback
 
 The compact narration bar remains mounted from Play intent through audible
@@ -143,6 +160,11 @@ operation's incomplete staging and partial files, retains no resumable partial
 state, and never removes a verified installed package. Determinate progress is
 reserved for bounded byte transfer; verification and removal use truthful
 indeterminate phase text.
+
+Reselecting Chatterbox during download, verification, or removal preserves that
+operation and its cancellation signal. A failed removal exposes a recoverable
+failure state. After the filesystem obstruction is resolved, removal can be
+retried without restarting VoxLeaf.
 
 The Windows uninstall journey presents optional-package data separately from
 ordinary preferences/recovery state.

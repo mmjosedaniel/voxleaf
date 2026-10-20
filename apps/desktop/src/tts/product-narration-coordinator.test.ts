@@ -502,6 +502,146 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["available", "unavailable", "closed"] as const)(
+    "waits for initial compatibility before publishing %s availability",
+    async (outcome) => {
+      let finish!: () => void;
+      let profileId: string | undefined;
+      const checked = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const compatibility = {
+        ensureChecked: vi.fn(() => checked),
+        activeProfileId: () => profileId,
+        activeLanguage: () => "en" as const,
+        isProfileCurrentlyAllowed: () =>
+          profileId === undefined ? undefined : true,
+        isProfileStartAllowed: vi.fn(async () => true),
+      };
+      const { coordinator, client } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      const configuration = vi.spyOn(
+        client,
+        "profileConfigurationAvailability",
+      );
+      const checking = coordinator.checkAvailability();
+      try {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        expect(coordinator.observe().availability).toBe("checking");
+        expect(configuration).not.toHaveBeenCalled();
+        if (outcome === "closed") await coordinator.close();
+        if (outcome !== "unavailable") {
+          profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+        }
+        finish();
+        await checking;
+        expect(coordinator.observe().availability).toBe(
+          outcome === "closed" ? "checking" : outcome,
+        );
+        expect(configuration).toHaveBeenCalledTimes(
+          outcome === "available" ? 1 : 0,
+        );
+        expect(client.startedProfiles).toEqual([]);
+      } finally {
+        finish();
+        await checking;
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each([
+    [0, "playing"],
+    [35, "playing"],
+    [0, "paused"],
+    [35, "paused"],
+  ] as const)(
+    "preserves %i percent volume across %s navigation and Stop/Play",
+    async (volume, intent) => {
+      const { coordinator, backend } = createHarness();
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        coordinator.setVolumePercent(volume);
+        if (intent === "paused") coordinator.pause();
+        await coordinator.beginExternalNavigation("chapter-navigation");
+        coordinator.settleExternalNavigation(END_LOCATOR);
+        await settleUntil(() => !coordinator.observe().navigation.settling);
+        if (intent === "paused") {
+          expect(coordinator.observe().state?.phase).toBe("paused");
+          coordinator.setVolumePercent(65);
+          expect(coordinator.observe().state?.volumePercent).toBe(65);
+          coordinator.setVolumePercent(volume);
+          coordinator.resume();
+        }
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(coordinator.observe().state?.volumePercent).toBe(volume);
+        expect(backend.active?.request.volumePercent).toBe(volume);
+        await coordinator.stop();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(backend.active?.request.volumePercent).toBe(volume);
+      } finally {
+        await coordinator.close();
+      }
+      const replacement = createHarness();
+      await replacement.coordinator.checkAvailability();
+      replacement.coordinator.start();
+      await settleUntil(
+        () => replacement.coordinator.observe().state?.phase === "playing",
+      );
+      expect(replacement.backend.active?.request.volumePercent).toBe(100);
+      await replacement.coordinator.close();
+    },
+  );
+
+  it("does not let an obsolete availability result replace the selected profile", async () => {
+    let profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    let language: "en" | "es" = "en";
+    let finish!: (allowed: boolean) => void;
+    const allowed = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { coordinator } = createHarness({
+      profileCompatibility: {
+        activeProfileId: () => profileId,
+        activeLanguage: () => language,
+        isProfileCurrentlyAllowed: () => (language === "en" ? undefined : true),
+        isProfileStartAllowed: allowed,
+      },
+    });
+    const first = coordinator.checkAvailability();
+    try {
+      await settleUntil(() => allowed.mock.calls.length === 1);
+      profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+      language = "es";
+      await coordinator.refreshSelectedProfile();
+      finish(false);
+      await first;
+      await coordinator.setSelection({ kind: "quick" });
+      expect(coordinator.observe()).toMatchObject({
+        availability: "available",
+        profileId,
+        language: "es",
+      });
+    } finally {
+      finish(false);
+      await first;
+      await coordinator.close();
+    }
+  });
+
   it("joins concurrent close callers until backend disposal completes once", async () => {
     const { coordinator, backend } = createHarness();
     let finish!: () => void;
@@ -1708,7 +1848,7 @@ describe("product narration coordinator", () => {
   });
 
   it("publishes only a fixed failure when narration preparation is rejected", async () => {
-    const { coordinator } = createHarness({
+    const { coordinator, client } = createHarness({
       result: Object.freeze({
         status: "resource-limit-exceeded",
         error: decodeOperationalErrorV1({
@@ -1731,6 +1871,18 @@ describe("product narration coordinator", () => {
     expect(JSON.stringify(coordinator.observe())).not.toContain(
       "Private synthetic narration",
     );
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(client.observe().state).toBe("stopped");
+    expect(coordinator.observe()).toMatchObject({
+      failure: "narration-preparation-failed",
+      preparationFailure: "resource-limit-exceeded",
+      state: { phase: "failed", readyMs: 0 },
+      metrics: { retainedAudioUnitCount: 0 },
+    });
+    await coordinator.stop();
+    expect(coordinator.observe().failure).toBeUndefined();
+    expect(coordinator.observe().preparationFailure).toBeUndefined();
+    expect(coordinator.observe().state).toBeUndefined();
     await coordinator.close();
   });
 
@@ -1787,6 +1939,64 @@ describe("product narration coordinator", () => {
       generationId: "generation:product-test-3",
     });
     await coordinator.close();
+  });
+
+  it("clears a retained preparation failure on a new explicit start", async () => {
+    const prepareNarration = vi
+      .fn<OpenedPublication["prepareNarration"]>()
+      .mockRejectedValueOnce(new Error("content-free-preparation-rejection"))
+      .mockResolvedValueOnce(completeResult());
+    const { coordinator, client } = createHarness({ prepareNarration });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(
+        () => coordinator.observe().failure === "narration-preparation-failed",
+      );
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      expect(client.observe().state).toBe("stopped");
+      expect(coordinator.observe().failure).toBe(
+        "narration-preparation-failed",
+      );
+
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(coordinator.observe().failure).toBeUndefined();
+      expect(coordinator.observe().preparationFailure).toBeUndefined();
+      expect(prepareNarration).toHaveBeenCalledTimes(2);
+      expect(client.synthesized).toHaveLength(1);
+    } finally {
+      await coordinator.close();
+    }
+  });
+
+  it("prioritizes failed cleanup over a preparation diagnostic", async () => {
+    const { coordinator, client } = createHarness({
+      prepareNarration: vi
+        .fn<OpenedPublication["prepareNarration"]>()
+        .mockRejectedValue(new Error("content-free-preparation-rejection")),
+    });
+    const shutdown = vi
+      .spyOn(client, "shutdown")
+      .mockRejectedValue(new Error("content-free-shutdown-rejection"));
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(
+        () => coordinator.observe().recovery.failureCode === "cleanup-failed",
+      );
+      expect(coordinator.observe()).toMatchObject({
+        failure: "tts-service-failed",
+        availability: "unavailable",
+        recovery: { canRecover: false, failureCode: "cleanup-failed" },
+        metrics: { retainedAudioUnitCount: 0 },
+      });
+      coordinator.start();
+      expect(client.startedProfiles).toHaveLength(1);
+    } finally {
+      shutdown.mockRestore();
+      await coordinator.close();
+    }
   });
 
   it("contains a warm failure before exposing one explicit identity-safe restart", async () => {

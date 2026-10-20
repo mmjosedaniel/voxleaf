@@ -1727,10 +1727,38 @@ impl OptionalChatterboxManager {
             ));
         }
         let current = self.snapshot_at(root)?;
-        if current.state == OptionalProfileState::Installed {
+        if matches!(
+            current.state,
+            OptionalProfileState::Installed
+                | OptionalProfileState::Downloading
+                | OptionalProfileState::Verifying
+                | OptionalProfileState::Removing
+        ) {
             return Ok(current);
         }
-        self.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        // Verification above can overlap another command. Recheck admission
+        // while replacing the operation so an active worker keeps its flag.
+        let mut operation = self
+            .operation
+            .lock()
+            .map_err(|_| OptionalProfileError::Busy)?;
+        if let Some(
+            state @ (OptionalProfileState::Downloading
+            | OptionalProfileState::Verifying
+            | OptionalProfileState::Removing),
+        ) = &operation.state
+        {
+            return Ok(snapshot_from(
+                &manifest,
+                state.clone(),
+                operation.downloaded_bytes,
+                operation.failure,
+            ));
+        }
+        *operation = Operation {
+            state: Some(OptionalProfileState::Confirming),
+            ..Operation::default()
+        };
         Ok(snapshot_from(
             &manifest,
             OptionalProfileState::Confirming,
@@ -1946,7 +1974,7 @@ impl OptionalChatterboxManager {
         manifest: &OptionalPackageManifest,
     ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         {
-            let operation = self
+            let mut operation = self
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
@@ -1961,9 +1989,12 @@ impl OptionalChatterboxManager {
             ) {
                 return Err(OptionalProfileError::Busy);
             }
+            *operation = Operation {
+                state: Some(OptionalProfileState::Removing),
+                ..Operation::default()
+            };
         }
-        self.set_operation(OptionalProfileState::Removing, 0, None, None);
-        with_installed_runtime_lock(|| {
+        let result = with_installed_runtime_lock(|| {
             let package = package_root(root);
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
@@ -1975,7 +2006,11 @@ impl OptionalChatterboxManager {
             clean_staging(root)?;
             invalidate_verified_runtime_receipt();
             Ok(())
-        })?;
+        });
+        if let Err(error) = result {
+            self.set_operation(OptionalProfileState::Failed, 0, Some(error.code()), None);
+            return Err(error);
+        }
         self.clear_operation();
         Ok(snapshot_from(
             manifest,

@@ -18,6 +18,7 @@ import {
   type AdaptiveBufferStartMode,
   type AdaptiveBufferWorkIdentity,
 } from "./adaptive-buffer-scheduler";
+import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 import {
   AdaptivePreparationEstimator,
   createAdaptivePreparationUiState,
@@ -175,6 +176,8 @@ export interface ProductNarrationClock {
 }
 
 export interface ProductNarrationProfileCompatibility {
+  /** Settle the initial host/preference probe without starting a model. */
+  ensureChecked?(): Promise<unknown>;
   activeProfileId?(): string | undefined;
   activeLanguage?(): NarrationLanguageV1;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
@@ -370,6 +373,7 @@ export class ProductNarrationCoordinator {
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
+  #availabilityRevision = 0;
   #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
   #language = DEFAULT_NARRATION_LANGUAGE_V2;
   #selection: AdaptiveBufferStartMode = DEFAULT_NARRATION_START_PREFERENCE_V1;
@@ -395,6 +399,8 @@ export class ProductNarrationCoordinator {
   #identity: AdaptiveBufferWorkIdentity | undefined;
   #scheduler: AdaptiveBufferScheduler | undefined;
   #player: AdaptivePcmPlayer | undefined;
+  #volumePercent: number =
+    ADAPTIVE_BUFFER_AUTHORITY_V1.playback.defaultVolumePercent;
   #playerAudibleUnsubscribe: (() => void) | undefined;
   #operation: Promise<void> | undefined;
   #stopOperation: Promise<void> | undefined;
@@ -493,46 +499,51 @@ export class ProductNarrationCoordinator {
     if (this.#closed || this.#availability !== "checking") {
       return;
     }
+    const revision = ++this.#availabilityRevision;
     await Promise.all([
       this.#hydrateStartPreference(),
       this.#hydratePlaybackPreference(),
+      this.#profileCompatibility?.ensureChecked?.(),
     ]);
-    if (this.#closed) {
+    if (this.#closed || revision !== this.#availabilityRevision) {
       return;
     }
     let availability: TtsExactDemoAvailability;
+    let profileId = this.#profileId;
+    let language = this.#language;
     if (this.#profileCompatibility === undefined) {
       availability = await this.#client.exactDemoAvailability();
     } else {
-      this.#language =
+      language =
         this.#profileCompatibility.activeLanguage?.() ??
         DEFAULT_NARRATION_LANGUAGE_V2;
-      const profileId = this.#profileCompatibility.activeProfileId?.();
-      if (profileId === undefined) {
-        this.#availability = "unavailable";
-        this.#publish();
-        return;
+      const selectedProfileId = this.#profileCompatibility.activeProfileId?.();
+      if (selectedProfileId === undefined) {
+        availability = "unavailable";
+      } else {
+        profileId = selectedProfileId;
+        const current =
+          this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
+        const allowed =
+          current ??
+          (await this.#profileCompatibility.isProfileStartAllowed(
+            profileId,
+            "application-start",
+            language,
+          ));
+        availability =
+          allowed &&
+          (await this.#client.profileConfigurationAvailability(profileId)) ===
+            "available"
+            ? "available"
+            : "unavailable";
       }
-      const current =
-        this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
-      const allowed =
-        current ??
-        (await this.#profileCompatibility.isProfileStartAllowed(
-          profileId,
-          "application-start",
-          this.#language,
-        ));
-      this.#profileId = profileId;
-      availability =
-        allowed &&
-        (await this.#client.profileConfigurationAvailability(profileId)) ===
-          "available"
-          ? "available"
-          : "unavailable";
     }
-    if (this.#closed) {
+    if (this.#closed || revision !== this.#availabilityRevision) {
       return;
     }
+    this.#profileId = profileId;
+    this.#language = language;
     this.#availability = availability;
     this.#publish();
   }
@@ -948,6 +959,7 @@ export class ProductNarrationCoordinator {
       this.#playbackRatePercent,
     );
     this.#player = this.#createPlayer(this.#scheduler);
+    this.#player.setVolumePercent(this.#volumePercent);
     this.#playerAudibleUnsubscribe = this.#player.subscribeAudibleProgress(
       (observation) => {
         if (
@@ -1031,8 +1043,34 @@ export class ProductNarrationCoordinator {
   }
 
   public setVolumePercent(volumePercent: number): void {
+    if (this.#closed) {
+      return;
+    }
     try {
+      if (this.#player === undefined) {
+        const bounds = ADAPTIVE_BUFFER_AUTHORITY_V1.playback;
+        if (
+          !Number.isInteger(volumePercent) ||
+          volumePercent < bounds.minimumVolumePercent ||
+          volumePercent > bounds.maximumVolumePercent
+        ) {
+          return;
+        }
+      }
       this.#player?.setVolumePercent(volumePercent);
+      this.#volumePercent = volumePercent;
+      if (this.#terminalState !== undefined) {
+        this.#terminalState = Object.freeze({
+          ...this.#terminalState,
+          volumePercent,
+        });
+      }
+      if (this.#pausedNavigationState !== undefined) {
+        this.#pausedNavigationState = Object.freeze({
+          ...this.#pausedNavigationState,
+          volumePercent,
+        });
+      }
       this.#publish();
     } catch {
       this.#fail(
@@ -1048,6 +1086,11 @@ export class ProductNarrationCoordinator {
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
     this.#pausedNavigationState = undefined;
+    if (this.#failure === "narration-preparation-failed") {
+      this.#failure = undefined;
+      this.#preparationFailure = undefined;
+      this.#terminalState = undefined;
+    }
     await this.#stopActiveRun();
   }
 
@@ -1184,11 +1227,18 @@ export class ProductNarrationCoordinator {
       this.#publish();
       return;
     }
+    // Successful teardown releases ownership, not the explanation of why it
+    // happened. Explicit Stop/reset or a new start dismisses preparation errors.
+    this.#terminalState =
+      this.#failure === "narration-preparation-failed"
+        ? this.#stateFromActiveOwners()
+        : undefined;
+    if (this.#failure !== "narration-preparation-failed") {
+      this.#failure = undefined;
+      this.#preparationFailure = undefined;
+    }
     this.#scheduler = undefined;
     this.#player = undefined;
-    this.#terminalState = undefined;
-    this.#failure = undefined;
-    this.#preparationFailure = undefined;
     this.#publish();
   }
 

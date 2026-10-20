@@ -291,6 +291,47 @@ describe("optional Chatterbox controls", () => {
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 
+  it("explains cleanup recovery and retries removal without restarting", async () => {
+    let removalAttempts = 0;
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "remove_optional_chatterbox") {
+        removalAttempts += 1;
+        return removalAttempts === 1
+          ? Promise.reject("tts-optional-profile-cleanup-failed")
+          : snapshot("absent");
+      }
+      return snapshot("installed");
+    });
+    const client = new OptionalChatterboxClient(invoke);
+    const onRemove = vi.fn(async () => {
+      await client.remove();
+    });
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={onRemove}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Chatterbox" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Close any apps using those files, then try Remove Chatterbox again.",
+    );
+    expect(screen.queryByText(/Restart VoxLeaf/)).not.toBeInTheDocument();
+    const retry = screen.getByRole("button", { name: "Remove Chatterbox" });
+    await waitFor(() => expect(retry).toBeEnabled());
+    fireEvent.click(retry);
+    expect(
+      await screen.findByRole("button", { name: "Review Chatterbox download" }),
+    ).toBeEnabled();
+    expect(onRemove).toHaveBeenCalledTimes(2);
+    expect(client.observe().state).toBe("absent");
+  });
+
   it("polls and exposes native progress while the download command remains active", async () => {
     let downloadStarted = false;
     const invoke = vi.fn((command: string): Promise<unknown> => {
