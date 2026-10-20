@@ -120,8 +120,11 @@ retain identity-first invalidation and prior play-intent behavior. Publication
 prose is not turned into a button and DOM paths, quotations, page numbers, and
 rendered geometry are not persisted.
 
-The production path now implements this boundary. It retains at most 64 recent
-stable prepared source ranges for previous/next movement, waits for active
+The production path now implements this boundary. It retains at most 64 stable
+prepared source ranges anchored to the audible range, preserving current/next
+and recent history before distant lookahead. Audible advancement replenishes
+the window from existing bounded FIFO and prepared-batch metadata, without
+retaining a second history. It waits for active
 synthesis containment before explicit reader placement, and exposes fixed
 previous, next, and visible-passage actions. Active quick/prepared selection
 cannot change, and the exact voice/model profile is not mutable, while a

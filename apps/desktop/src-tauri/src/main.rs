@@ -45,6 +45,7 @@ fn main() {
             tts_optional_chatterbox::cancel_optional_chatterbox,
             tts_optional_chatterbox::remove_optional_chatterbox,
             tts_service_supervisor::start_tts_service,
+            tts_service_supervisor::tts_service_lifecycle_observation,
             tts_service_supervisor::prepare_tts_service,
             tts_service_supervisor::health_tts_service,
             tts_service_supervisor::synthesize_tts_segment,

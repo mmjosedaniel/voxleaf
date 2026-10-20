@@ -225,6 +225,24 @@ eligible outside the service.
 
 ### Timeout and cleanup limits
 
+The renderer's native `shutdown_tts_service` command accepts an optional
+`serviceInstanceId` to contain only the expected instance, including a late
+start response. Busy startup can be interrupted through the captured session
+without waiting for its operation mutex. Incoming controls and failure cleanup
+must still match the captured session before changing shared lifecycle state.
+This does not add a Python wire message or change protocol v1.
+
+The read-only native `tts_service_lifecycle_observation` command returns
+`{ schemaVersion: 1, serviceInstanceId: string | null, state: string }` under
+the session/lifecycle locks. The exact-host harness uses this content-free
+observation to distinguish a real loading/warming phase from a merely pending
+renderer invocation. It does not acquire the operation mutex or query the child.
+
+Permanent player disposal joins backend closure and PCM release. Stop's final
+cleanup has one monotonic deadline; successive waits cannot renew it. Concurrent
+close callers await the same disposal completion. See
+[ADR-0056](decisions/ADR-0056-bound-reader-narration-lifecycle-operations.md).
+
 | Boundary                         | Inclusive maximum |
 | -------------------------------- | ----------------: |
 | Handshake                        |          5,000 ms |

@@ -75,6 +75,7 @@ export interface ArchiveInventory {
 export interface ArchiveEntryReadOptions {
   readonly maximumBytes?: number;
   readonly signal?: AbortSignal;
+  readonly resourceOperation?: boolean;
 }
 
 interface CandidateEntry {
@@ -387,6 +388,7 @@ async function readCandidateData(
   budget: EpubProcessingBudget,
   maximumBytes = budget.policy.maxEntryUncompressedBytes,
   signal?: AbortSignal,
+  operation = budget,
 ): Promise<Uint8Array> {
   const { inventoryEntry, source } = candidate;
   if (source.directory || inventoryEntry.kind !== "file") {
@@ -397,6 +399,7 @@ async function readCandidateData(
     inventoryEntry.compressedSize,
     inventoryEntry.uncompressedSize,
     maximumBytes,
+    () => operation.checkpoint(),
   );
   const writer = new BoundedArchiveEntryWriter(
     inventoryEntry.uncompressedSize,
@@ -404,7 +407,7 @@ async function readCandidateData(
   );
 
   try {
-    await source.getData(writer, createRuntimeOptions(budget, signal));
+    await source.getData(writer, createRuntimeOptions(operation, signal));
     readBudget.complete();
     return writer.takeData();
   } catch (error: unknown) {
@@ -532,8 +535,12 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
     }
 
     this.#readInProgress = true;
+    let operation = this.budget;
     try {
-      checkpointOperation(this.budget, options.signal);
+      if (options.resourceOperation === true) {
+        operation = this.budget.createResourceOperation(options.signal);
+      }
+      checkpointOperation(operation, options.signal);
       const candidate = this.#entriesByPath.get(String(path));
       if (candidate === undefined || candidate.inventoryEntry.kind !== "file") {
         return fail("invalid-container");
@@ -544,9 +551,10 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
         this.budget,
         options.maximumBytes,
         options.signal,
+        operation,
       );
     } catch (error: unknown) {
-      throw mapArchiveError(error, this.budget, options.signal);
+      throw mapArchiveError(error, operation, options.signal);
     } finally {
       this.#readInProgress = false;
     }

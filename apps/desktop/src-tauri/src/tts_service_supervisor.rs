@@ -830,6 +830,22 @@ impl Default for TtsServiceSupervisor {
 }
 
 impl TtsServiceSupervisor {
+    fn lifecycle_observation(&self) -> Result<Value, TtsNativeFailure> {
+        let session = self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let lifecycle = self
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        Ok(json!({
+            "schemaVersion": 1,
+            "serviceInstanceId": session.as_ref().map(|session| &session.service_instance_id),
+            "state": lifecycle.state,
+        }))
+    }
+
     fn new(scenario: &'static str) -> Self {
         Self::with_child(ServiceChild::Fake(scenario))
     }
@@ -945,6 +961,16 @@ impl TtsServiceSupervisor {
         {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
+        let current = self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if current
+            .as_ref()
+            .is_none_or(|active| active.service_instance_id != session.service_instance_id)
+        {
+            return Err(TtsNativeFailure::Cancelled);
+        }
         if expected_kind == "state" {
             let state = control
                 .get("state")
@@ -968,27 +994,37 @@ impl TtsServiceSupervisor {
         Ok(state)
     }
 
-    fn fail_session(&self, failure: TtsNativeFailure) -> TtsNativeFailure {
+    fn fail_session(&self, failed: &ServiceSession, failure: TtsNativeFailure) -> TtsNativeFailure {
+        let Ok(mut session) = self.session.lock() else {
+            return TtsNativeFailure::InternalFailure;
+        };
+        if session
+            .as_ref()
+            .is_none_or(|active| active.service_instance_id != failed.service_instance_id)
+        {
+            return TtsNativeFailure::Cancelled;
+        }
         if let Ok(mut lifecycle) = self.lifecycle.lock() {
             lifecycle.active = None;
             lifecycle.state = "failed".to_owned();
         }
-        if let Ok(mut session) = self.session.lock()
-            && let Some(active) = session.take()
+        if let Some(active) = session.as_ref()
+            && let Err(error) = active.terminate()
         {
-            let _ = active.terminate();
+            return error;
         }
+        session.take();
         failure
     }
 
     pub fn start(&self) -> Result<Vec<Value>, TtsNativeFailure> {
         let _operation = self.acquire_operation()?;
-        if self
+        // Publish the spawned child under the same lock used by interruption.
+        let mut slot = self
             .session
             .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)?
-            .is_some()
-        {
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if slot.is_some() {
             return Err(TtsNativeFailure::InvalidState);
         }
         let service_instance_id = format!(
@@ -1002,10 +1038,8 @@ impl TtsServiceSupervisor {
             .clone();
         let session = ServiceSession::spawn(&child_configuration, service_instance_id.clone())?;
         self.set_state("starting")?;
-        *self
-            .session
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)? = Some(session.clone());
+        *slot = Some(session.clone());
+        drop(slot);
         let handshake = json!({
             "schemaVersion": 1,
             "protocolVersion": 1,
@@ -1013,7 +1047,7 @@ impl TtsServiceSupervisor {
             "serviceInstanceId": service_instance_id,
         });
         if let Err(failure) = session.write_control(&handshake) {
-            return Err(self.fail_session(failure));
+            return Err(self.fail_session(&session, failure));
         }
         let result = (|| {
             let handshaking =
@@ -1024,7 +1058,7 @@ impl TtsServiceSupervisor {
             let capabilities = self.receive_control(&session, HANDSHAKE_TIMEOUT, "capabilities")?;
             Ok(vec![handshaking, accepted, unloaded, capabilities])
         })();
-        result.map_err(|failure| self.fail_session(failure))
+        result.map_err(|failure| self.fail_session(&session, failure))
     }
 
     pub fn prepare(&self) -> Result<Vec<Value>, TtsNativeFailure> {
@@ -1051,7 +1085,7 @@ impl TtsServiceSupervisor {
                 warm_elapsed: warm_started.elapsed(),
             })
         })();
-        result.map_err(|failure| self.fail_session(failure))
+        result.map_err(|failure| self.fail_session(&session, failure))
     }
 
     pub fn health(&self) -> Result<Vec<Value>, TtsNativeFailure> {
@@ -1063,7 +1097,7 @@ impl TtsServiceSupervisor {
             let capabilities = self.receive_control(&session, HEALTH_TIMEOUT, "capabilities")?;
             Ok(vec![state, capabilities])
         })();
-        result.map_err(|failure| self.fail_session(failure))
+        result.map_err(|failure| self.fail_session(&session, failure))
     }
 
     pub fn synthesize(&self, segment: Value) -> Result<Vec<u8>, TtsNativeFailure> {
@@ -1153,7 +1187,7 @@ impl TtsServiceSupervisor {
             if cancelled || failure == TtsNativeFailure::Cancelled {
                 TtsNativeFailure::Cancelled
             } else {
-                self.fail_session(failure)
+                self.fail_session(&session, failure)
             }
         })
     }
@@ -1180,7 +1214,11 @@ impl TtsServiceSupervisor {
 
     pub fn cancel(&self, scope: CancelScope) -> Result<Vec<Value>, TtsNativeFailure> {
         validate_scope(&scope)?;
-        let session = self.active_session()?;
+        let mut slot = self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let session = slot.as_ref().ok_or(TtsNativeFailure::InvalidState)?.clone();
         let identity = {
             let mut lifecycle = self
                 .lifecycle
@@ -1210,10 +1248,7 @@ impl TtsServiceSupervisor {
         });
         let _ = session.write_control(&cancel);
         session.terminate()?;
-        *self
-            .session
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)? = None;
+        slot.take();
         self.set_state("stopped")?;
         Ok(vec![
             state_control(&session.service_instance_id, "cancelling"),
@@ -1229,8 +1264,45 @@ impl TtsServiceSupervisor {
     }
 
     pub fn shutdown(&self) -> Result<Vec<Value>, TtsNativeFailure> {
-        let _operation = self.acquire_operation()?;
+        self.shutdown_instance(None)
+    }
+
+    fn shutdown_instance(&self, expected: Option<&str>) -> Result<Vec<Value>, TtsNativeFailure> {
+        let operation = match self.acquire_operation() {
+            Ok(guard) => Some(guard),
+            Err(TtsNativeFailure::Busy) => None,
+            Err(error) => return Err(error),
+        };
+        if operation.is_none() {
+            let mut slot = self
+                .session
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let session = slot.as_ref().ok_or(TtsNativeFailure::InvalidState)?;
+            if expected.is_some_and(|id| id != session.service_instance_id) {
+                return Err(TtsNativeFailure::Cancelled);
+            }
+            let id = session.service_instance_id.clone();
+            {
+                let mut lifecycle = self
+                    .lifecycle
+                    .lock()
+                    .map_err(|_| TtsNativeFailure::InternalFailure)?;
+                lifecycle.active = None;
+                lifecycle.state = "stopping".to_owned();
+            }
+            session.terminate()?;
+            slot.take();
+            self.set_state("stopped")?;
+            return Ok(vec![
+                state_control(&id, "stopping"),
+                state_control(&id, "stopped"),
+            ]);
+        }
         let session = self.active_session()?;
+        if expected.is_some_and(|id| id != session.service_instance_id) {
+            return Err(TtsNativeFailure::Cancelled);
+        }
         {
             let mut lifecycle = self
                 .lifecycle
@@ -1246,21 +1318,29 @@ impl TtsServiceSupervisor {
             session.wait_for_exit(SHUTDOWN_TIMEOUT)?;
             Ok(vec![stopping, stopped])
         })();
-        *self
+        let records = result.map_err(|failure| self.fail_session(&session, failure))?;
+        let mut slot = self
             .session
             .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)? = None;
-        result.map_err(|failure| self.fail_session(failure))
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if slot
+            .as_ref()
+            .is_some_and(|active| Arc::ptr_eq(active, &session))
+        {
+            slot.take();
+        }
+        Ok(records)
     }
 
     pub fn force_stop(&self) {
+        let Ok(mut session) = self.session.lock() else {
+            return;
+        };
         if let Ok(mut lifecycle) = self.lifecycle.lock() {
             lifecycle.active = None;
             lifecycle.state = "stopped".to_owned();
         }
-        if let Ok(mut session) = self.session.lock()
-            && let Some(active) = session.take()
-        {
+        if let Some(active) = session.take() {
             let _ = active.terminate();
         }
     }
@@ -1392,6 +1472,14 @@ pub async fn tts_profile_configuration_available(profile_id: String) -> Result<b
 }
 
 #[tauri::command]
+pub async fn tts_service_lifecycle_observation(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<Value, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.lifecycle_observation()).await
+}
+
+#[tauri::command]
 pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
     profile_id: Option<String>,
@@ -1446,9 +1534,10 @@ pub async fn cancel_tts_generation(
 #[tauri::command]
 pub async fn shutdown_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+    service_instance_id: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
-    blocking(move || supervisor.shutdown()).await
+    blocking(move || supervisor.shutdown_instance(service_instance_id.as_deref())).await
 }
 
 pub fn run_exact_host() -> Result<(), &'static str> {

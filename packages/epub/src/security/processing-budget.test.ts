@@ -4,6 +4,38 @@ import { EpubArchiveError } from "../archive/archive-error.js";
 import { createEpubProcessingBudget } from "./processing-budget.js";
 
 describe("EPUB processing budget", () => {
+  it("gives each resource its own exact deadline while preserving lifetime byte maxima", () => {
+    let now = 0;
+    const budget = createEpubProcessingBudget({
+      clock: { now: () => now },
+      policy: { maxTotalUncompressedBytes: 8 },
+    });
+    now = 40_000;
+    const first = budget.createResourceOperation();
+    const read = budget.beginArchiveEntryRead(4, 4, 4, () =>
+      first.checkpoint(),
+    );
+    now += 30_000;
+    read.observe(4);
+    read.complete();
+    now += 1;
+    expect(() => first.checkpoint()).toThrowError(
+      expect.objectContaining({ code: "cancelled" }),
+    );
+    const second = budget.createResourceOperation();
+    const next = budget.beginArchiveEntryRead(5, 5, 5, () =>
+      second.checkpoint(),
+    );
+    next.observe(4);
+    expect(() => next.observe(1)).toThrowError(
+      expect.objectContaining({ code: "resource-limit-exceeded" }),
+    );
+    expect(budget.getSnapshot().observedUncompressedBytes).toBe(8);
+    expect(() => budget.checkpoint()).toThrowError(
+      expect.objectContaining({ code: "cancelled" }),
+    );
+  });
+
   it("allows exact declared maxima and rejects the first excess", () => {
     const budget = createEpubProcessingBudget({
       policy: {

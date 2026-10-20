@@ -1,5 +1,21 @@
 use super::*;
 
+#[test]
+fn lifecycle_observation_reports_captured_identity_during_busy_preparation() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, _sender) = channel_session();
+    let identity = session.service_instance_id.clone();
+    *supervisor.session.lock().unwrap() = Some(Arc::new(session));
+    supervisor.set_state("warming").unwrap();
+    let _busy = supervisor.operation.lock().unwrap();
+    assert_eq!(
+        supervisor.lifecycle_observation().unwrap(),
+        json!({
+            "schemaVersion": 1, "serviceInstanceId": identity, "state": "warming",
+        })
+    );
+}
+
 #[cfg(windows)]
 use std::os::windows::io::{AsHandle, AsRawHandle, FromRawHandle, OwnedHandle};
 
@@ -150,9 +166,58 @@ fn state_frame(service_instance_id: &str, state: &str) -> Frame {
 }
 
 #[test]
+fn shutdown_interrupts_preparation_without_acquiring_its_operation_guard() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, _sender) = channel_session();
+    *supervisor.session.lock().unwrap() = Some(Arc::new(session));
+    supervisor.set_state("loading").unwrap();
+    let _preparing = supervisor.acquire_operation().unwrap();
+    let result = supervisor.shutdown();
+    assert!(
+        result.is_ok(),
+        "shutdown must contain a loading session, got {result:?}"
+    );
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "stopped");
+}
+
+#[test]
+fn late_old_control_cannot_change_a_replacement_session() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (old, sender) = channel_session();
+    let (mut replacement, _replacement_sender) = channel_session();
+    replacement.service_instance_id = "service:replacement".to_owned();
+    *supervisor.session.lock().unwrap() = Some(Arc::new(replacement));
+    supervisor.set_state("loading").unwrap();
+    sender
+        .send(Ok(state_frame(&old.service_instance_id, "ready")))
+        .unwrap();
+    assert_eq!(
+        supervisor.receive_control(&old, Duration::ZERO, "state"),
+        Err(TtsNativeFailure::Cancelled)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
+    assert_eq!(
+        supervisor.fail_session(&old, TtsNativeFailure::TimedOut),
+        TtsNativeFailure::Cancelled
+    );
+    assert_eq!(
+        supervisor.shutdown_instance(Some(&old.service_instance_id)),
+        Err(TtsNativeFailure::Cancelled)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
+    assert_eq!(
+        supervisor.active_session().unwrap().service_instance_id,
+        "service:replacement"
+    );
+}
+
+#[test]
 fn expected_state_returns_original_control_and_updates_lifecycle() {
     let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
     let (session, sender) = channel_session();
+    let session = Arc::new(session);
+    *supervisor.session.lock().unwrap() = Some(session.clone());
     let control = state_control(&session.service_instance_id, "ready");
     sender
         .send(Ok(state_frame(&session.service_instance_id, "ready")))
@@ -168,6 +233,8 @@ fn expected_state_returns_original_control_and_updates_lifecycle() {
 fn unexpected_valid_state_updates_lifecycle_before_rejection() {
     let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
     let (session, sender) = channel_session();
+    let session = Arc::new(session);
+    *supervisor.session.lock().unwrap() = Some(session.clone());
     sender
         .send(Ok(state_frame(&session.service_instance_id, "warming")))
         .expect("frame should be queued");

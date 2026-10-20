@@ -616,6 +616,13 @@ export class AdaptiveBufferScheduler {
     });
   }
 
+  /** Borrow source ranges from the already bounded FIFO; retain no second history. */
+  public forEachBufferedSourceRange(
+    visit: (range: LocatorRangeV1) => void,
+  ): void {
+    for (const unit of this.#audioUnits) visit(unit.sourceRange);
+  }
+
   public selectPlaybackRatePercent(
     playbackRatePercent: NarrationPlaybackRatePercentV3,
   ): NarrationPlaybackRateStateV3 {

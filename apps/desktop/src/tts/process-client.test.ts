@@ -12,6 +12,60 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 const mockedInvoke = vi.mocked(invoke);
+
+it("rejects a late preparation result after shutdown without reviving readiness", async () => {
+  let finish!: (value: unknown) => void;
+  mockedInvoke.mockReset();
+  mockedInvoke.mockResolvedValueOnce(startControls());
+  const client = new TtsProcessClient();
+  await client.start();
+  mockedInvoke.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const preparing = client.prepare();
+  const rejected = expect(preparing).rejects.toMatchObject({
+    code: "tts-service-cancelled",
+  });
+  mockedInvoke.mockResolvedValueOnce(shutdownControls());
+  await client.shutdown();
+  finish(prepareControls());
+  await rejected;
+  expect(client.observe().state).toBe("stopped");
+});
+
+it("contains a child whose start response arrives after shutdown was requested", async () => {
+  let finish!: (value: unknown) => void;
+  mockedInvoke.mockReset();
+  mockedInvoke.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const client = new TtsProcessClient();
+  const starting = client.start();
+  const rejected = expect(starting).rejects.toMatchObject({
+    code: "tts-service-cancelled",
+  });
+  mockedInvoke
+    .mockRejectedValueOnce("tts-service-invalid-state")
+    .mockResolvedValue(shutdownControls());
+  const stopping = client.shutdown();
+  finish(startControls());
+  await stopping;
+  await rejected;
+  expect(mockedInvoke).toHaveBeenCalledWith(
+    "shutdown_tts_service",
+    expect.anything(),
+  );
+  expect(client.observe()).toMatchObject({
+    state: "stopped",
+    serviceInstanceId: undefined,
+  });
+});
 const SERVICE_INSTANCE_ID = "service:synthetic-client-1";
 
 function state(value: string) {
@@ -293,7 +347,7 @@ describe("typed native TTS process client", () => {
     );
     expect(client.observe()).toEqual({
       serviceInstanceId: undefined,
-      state: "stopped",
+      state: "failed",
       hasActiveGeneration: false,
       retainedAudioUnits: 0,
     });
@@ -406,10 +460,9 @@ describe("typed native TTS process client", () => {
     expect(mockedInvoke).toHaveBeenCalledWith("cancel_tts_generation", {
       scope: scope(),
     });
-    expect(mockedInvoke).not.toHaveBeenCalledWith(
-      "shutdown_tts_service",
-      undefined,
-    );
+    expect(mockedInvoke).not.toHaveBeenCalledWith("shutdown_tts_service", {
+      serviceInstanceId: SERVICE_INSTANCE_ID,
+    });
   });
 
   it("refuses restart after a foreign cancellation acknowledgement and discards late audio", async () => {
@@ -483,10 +536,9 @@ describe("typed native TTS process client", () => {
       .catch((error: unknown) => error);
     await Promise.resolve();
     await Promise.resolve();
-    expect(mockedInvoke).toHaveBeenCalledWith(
-      "shutdown_tts_service",
-      undefined,
-    );
+    expect(mockedInvoke).toHaveBeenCalledWith("shutdown_tts_service", {
+      serviceInstanceId: SERVICE_INSTANCE_ID,
+    });
     await expect(client.start()).rejects.toEqual(
       expect.objectContaining({ code: "tts-service-invalid-state" }),
     );
@@ -535,12 +587,11 @@ describe("typed native TTS process client", () => {
       }
       void client.synthesize(segment());
       await expect(client.cancel(scope())).rejects.toBe(cancellationError);
-      expect(mockedInvoke).toHaveBeenCalledWith(
-        "shutdown_tts_service",
-        undefined,
-      );
+      expect(mockedInvoke).toHaveBeenCalledWith("shutdown_tts_service", {
+        serviceInstanceId: SERVICE_INSTANCE_ID,
+      });
       expect(client.observe()).toEqual(
-        expect.objectContaining({ state: "cancelling" }),
+        expect.objectContaining({ state: "stopping" }),
       );
       const calls = mockedInvoke.mock.calls.length;
       await expect(client.start()).rejects.toEqual(

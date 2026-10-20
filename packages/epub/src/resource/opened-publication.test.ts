@@ -71,6 +71,122 @@ afterEach(() => {
 });
 
 describe("bounded local publication resources", () => {
+  it.each([30_000, 30_001])(
+    "enforces a lazy read's own deadline through the archive at %i ms",
+    async (elapsed) => {
+      let idleAt = 0;
+      let resourceClockReads = 0;
+      let readingResource = false;
+      const archive = await openEpubArchive(
+        await createArchive(IMAGE_ENTRIES),
+        {
+          clock: {
+            now: () =>
+              idleAt +
+              (readingResource && ++resourceClockReads >= 3 ? elapsed : 0),
+          },
+        },
+      );
+      const publication = createOpenedPublication(
+        archive,
+        createPackageDocument(),
+        publicationValues(),
+      );
+      try {
+        idleAt = 90_000;
+        readingResource = true;
+        if (elapsed === 30_000) {
+          await expect(publication.readResource(imageId(2))).resolves.toEqual(
+            PNG,
+          );
+        } else {
+          await expectResourceError(
+            () => publication.readResource(imageId(2)),
+            "cancelled",
+          );
+          expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
+            20,
+          );
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each([99, 100])(
+    "keeps cumulative lazy-read accounting at archive maximum %i after idle time",
+    async (maximum) => {
+      let now = 0;
+      const archive = await openEpubArchive(
+        await createArchive(IMAGE_ENTRIES),
+        {
+          clock: { now: () => now },
+          policy: { maxTotalUncompressedBytes: maximum },
+        },
+      );
+      const publication = createOpenedPublication(
+        archive,
+        createPackageDocument(),
+        publicationValues(),
+      );
+      try {
+        for (let index = 0; index < 9; index += 1) {
+          now += 30_001;
+          await expect(publication.readResource(imageId(2))).resolves.toEqual(
+            PNG,
+          );
+        }
+        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(92);
+        now += 30_001;
+        if (maximum === 100) {
+          await expect(publication.readResource(imageId(2))).resolves.toEqual(
+            PNG,
+          );
+          expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
+            100,
+          );
+        } else {
+          await expectResourceError(
+            () => publication.readResource(imageId(2)),
+            "resource-limit-exceeded",
+          );
+          expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
+            92,
+          );
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it("reads rasters after idle time without resetting aggregate decompression accounting", async () => {
+    let now = 0;
+    const archive = await openEpubArchive(await createArchive(IMAGE_ENTRIES), {
+      clock: { now: () => now },
+    });
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument(),
+      publicationValues(),
+    );
+    try {
+      const initial = archive.budget.getSnapshot().observedUncompressedBytes;
+      for (let read = 1; read <= 3; read += 1) {
+        now += 30_001;
+        await expect(publication.readResource(imageId(2))).resolves.toEqual(
+          PNG,
+        );
+        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
+          initial + read * PNG.length,
+        );
+      }
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("exposes only immutable opaque raster descriptors and reads supported signatures lazily", async () => {
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");

@@ -219,6 +219,10 @@ class FakeAudioBufferSource {
     this.connected = true;
   }
 
+  public disconnect(): void {
+    this.connected = false;
+  }
+
   public start(): void {
     this.started = true;
   }
@@ -240,6 +244,9 @@ class FakeAudioContext {
     connected: false,
     connect: () => {
       this.gain.connected = true;
+    },
+    disconnect: () => {
+      this.gain.connected = false;
     },
   };
   readonly buffers: FakeAudioBuffer[] = [];
@@ -418,6 +425,74 @@ function runCleanupTurns(turns: Array<() => void>): void {
 }
 
 describe("adaptive PCM playback", () => {
+  it("waits for asynchronous backend disposal and closes it only once", async () => {
+    const clock = createManualClock(0);
+    const scheduler = readyScheduler(clock, [segment(1)], true);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    let finish!: () => void;
+    const close = vi.spyOn(backend, "close").mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    player.close();
+    player.close();
+    let settled = false;
+    const cleanup = player.waitForCleanup().then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(close).toHaveBeenCalledTimes(1);
+    finish();
+    await cleanup;
+    expect(settled).toBe(true);
+  });
+
+  it("reports a failed backend close through cleanup instead of declaring release", async () => {
+    const clock = createManualClock(0);
+    const scheduler = readyScheduler(clock, [segment(1)], true);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    vi.spyOn(backend, "close").mockImplementation(() =>
+      Promise.reject(new PcmPlaybackError("playback-failure")),
+    );
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    player.close();
+    await expect(player.waitForCleanup()).rejects.toMatchObject({
+      code: "playback-failure",
+    });
+  });
+
+  it("settles pending WSOLA preparation before backend close resolves", async () => {
+    const context = new FakeAudioContext();
+    const node = new FakeWsolaNode();
+    let finish!: (value: { node: AudioWorkletNode; close(): void }) => void;
+    const closed = vi.fn();
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const preparing = backend.preparePlaybackRate(75);
+    let settled = false;
+    const closing = backend.close().then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    finish({ node: node as unknown as AudioWorkletNode, close: closed });
+    await preparing;
+    await closing;
+    await backend.close();
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(context.closeCount).toBe(1);
+    expect(node.connectCount).toBe(0);
+  });
+
   it("waits by semantic transition without allocating or consuming audio", () => {
     const clock = createManualClock(0);
     const segments = [segment(1, 300), segment(2)];
