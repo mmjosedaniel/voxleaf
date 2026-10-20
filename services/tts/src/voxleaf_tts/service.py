@@ -1,4 +1,4 @@
-"""Model-free local TTS protocol state machine and standard-stream service loop."""
+"""Local TTS protocol state machine and standard-stream service loop."""
 
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def _control(message: Mapping[str, object]) -> Frame:
 
 
 class ModelFreeTtsService:
-    """One-active/no-queue protocol owner around a deterministic fake engine."""
+    """One-active/no-queue protocol owner with an injected engine and fake default."""
 
     def __init__(self, engine: TtsEngine | None = None) -> None:
         self._engine = engine or FakeTtsEngine()
@@ -280,7 +280,7 @@ class ModelFreeTtsService:
         )
 
     def settle_active(self) -> tuple[Frame, ...]:
-        """Settle the active fake operation, suppressing all stale completion."""
+        """Settle the active engine operation, suppressing all stale completion."""
 
         identity = self._active_identity
         if identity is None or self._state is not ServiceState.GENERATING:
@@ -379,7 +379,7 @@ def run_service(
     writer: BinaryIO,
     engine: TtsEngine | None = None,
 ) -> int:
-    """Run the bounded fake service until shutdown, clean EOF, or rejection."""
+    """Run the bounded service loop until shutdown, clean EOF, or rejection."""
 
     service = ModelFreeTtsService(engine)
     try:

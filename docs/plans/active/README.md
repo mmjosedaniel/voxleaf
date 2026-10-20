@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Python scorecard validation readability and service documentation](python-quality-validation-readability.md): planned extraction of one private sample-validation helper, bounded submission tests, and four service docstring corrections; implementation not started.
+No active implementation plans.
 
 The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
 archived in the [completed-plan index](../completed/README.md).

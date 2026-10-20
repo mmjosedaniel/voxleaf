@@ -1,8 +1,17 @@
 # Python scorecard validation readability and service documentation
 
-Status: implementation not started. The planning branch is
-`codex/python-quality-validation-readability`, created from local `main` at
-`c182d155596ba36e360508e4ca5587e041dcf3db` on 2026-10-19.
+Status: implementation and combined source acceptance complete; archived on
+2026-10-19 (America/Bogota). Closing documentation is frozen for separate
+independent final validation; its outcome is recorded separately after this
+freeze, not claimed here.
+
+The branch is `codex/python-quality-validation-readability`, created during
+planning from local `main` at `c182d155596ba36e360508e4ca5587e041dcf3db` on
+2026-10-19. Implementation acceptance uses HEAD
+`330a2f2eee99149d1ec442e4e05081d4f0f4da0d`. Implementation and closeout changes
+remain unstaged and uncommitted; no Git mutations were authorized or performed
+in these execution phases. Report IDs use 20261020 UTC, corresponding to
+2026-10-19 in America/Bogota for the recorded work.
 
 ## Goal
 
@@ -20,7 +29,8 @@ that the protocol service accepts an injected engine with a fake default.
 
 ## Current state
 
-The read-only review used the source HEAD above. In
+The following original source review is historical, using planning source HEAD
+`c182d155596ba36e360508e4ca5587e041dcf3db`. In that reviewed version of
 `services/tts/benchmarks/quality.py`, `submit_scorecard` reads session metadata,
 admits the evaluator, reads the template, validates and projects the submitted
 samples, checks for an existing completed file, writes JSON and counts completed
@@ -36,8 +46,10 @@ does not repeat them.
 `FakeTtsEngine` as its default. Piper, Chatterbox and Qwen entrypoints inject
 their engines through `run_service`. The module, `ModelFreeTtsService`,
 `settle_active` and `run_service` docstrings still imply a fake-only service.
-The structural service audit was SKIP; only the requested prose correction is
-included here. Refresh line locations against the execution checkout.
+The structural service audit was SKIP; only the requested prose correction was
+included. The accepted implementation now separates validation into the private
+helper and corrects these four descriptions; the results below supersede the
+original implementation status without changing this review's rationale.
 
 ## Scope and non-goals
 
@@ -129,7 +141,10 @@ session remains separate from ordinary memory-only playback.
 
 ### 1. Confirm scope and correct service descriptions
 
-Status: not started. Recheck the branch/HEAD, empty index and clean unit paths.
+Status: complete. Independent DOC baseline and post-change reports passed;
+four single-line docstring replacements total eight added/deleted lines. The
+following execution requirements were satisfied. Recheck the branch/HEAD,
+empty index and clean unit paths.
 Reuse one auditor, worker and independent validator across this batch, following
 their configured roles; allow only one source writer at a time. Refresh the
 accepted audit and classify the actual diff before issuing work orders.
@@ -142,8 +157,11 @@ Obtain independent post-change approval; add no tests for prose alone.
 
 ### 2. Extract sample validation and characterize concrete gaps
 
-Status: not started. Establish PQR-SAMPLES' Python baseline before editing its
-two files; PQR-DOC's accepted change is explicit starting-state context.
+Status: complete. Independent SAMPLES baseline and post-change reports passed;
+one private helper and 15 additive public-boundary cases total 154 changed
+lines. The model-free suite grew from 571 to 586 passing cases. The following
+execution requirements were satisfied. Establish PQR-SAMPLES' Python baseline
+before editing its two files; PQR-DOC's accepted change is explicit starting-state context.
 The draft order becomes immutable only after the baseline passes.
 
 Move the existing count check and loop into the private helper and call it at
@@ -156,17 +174,22 @@ acceptance. Stop if implementation needs another production file or behavior.
 
 ### 3. Validate the combined result and close the plan
 
-Status: not started. Review the combined three-file source/test diff and satisfy
-the gate ledger. With the docstring unit completed first and no later source
+Status: combined source batch accepted; plan archived and closing documentation
+frozen for separate final validation. PACKAGE resolved source P1-P4/D1/D2;
+closing-document D1/D2 and independent final review follow this freeze.
+The following requirements govern that distinct closeout. Review the combined
+three-file source/test diff and satisfy the gate ledger. With the docstring
+unit completed first and no later source
 edits, PQR-SAMPLES' post-change Python checks may supply final combined evidence
 when the validator records their complete coverage and identities.
 
 Record actual outcomes, durations, limitations and immutable report references.
 Archive this plan only after acceptance, update incoming links and indexes, and
 validate the frozen closing documentation. Keep source writing and validation
-idle during any separately authorized Git action. The present request authorizes
-the planning branch and a commit of the plan/links, not implementation commits,
-push, PR creation or publication.
+idle during any separately authorized Git action. The original planning request
+authorized the planning branch and a commit of the plan/links. That historical
+authorization does not authorize implementation or closeout Git mutations;
+the execution orders prohibit staging, commit, push and PR creation.
 
 ## Testing and benchmark strategy
 
@@ -187,12 +210,12 @@ the managed sandbox. Use pinned pnpm 11.15.1 and the locked Python environment.
 
 | Gate | Invariant / existing command | Timing | Inputs and invalidation | Evidence |
 | --- | --- | --- | --- | --- |
-| P1 | Python formatting: `pnpm.cmd format:check:python` | PQR-SAMPLES baseline/post; combined final coverage | Full discovered Python tree, Ruff/config/lock/tool versions; changed consumed bytes, membership or environment invalidate | Pending execution |
-| P2 | Static correctness: `pnpm.cmd lint:python` | Same as P1 | Same complete discovery and tool/config proof as P1 | Pending execution |
-| P3 | Types: `pnpm.cmd typecheck:python` | Same as P1 | Source, tests, imports, stubs, mypy/config/lock/tool versions | Pending execution |
-| P4 | Public behavior: `pnpm.cmd test:python` | Same as P1; full model-free suite covers the combined Python package | Tests, fixtures, imports, scripts, discovery membership and host/toolchain; changes invalidate | Pending execution |
-| D1 | Exact scope and whitespace: `git diff --check`; independent link/docstring/command review | Baseline/post of each applicable unit and final frozen documentation | HEAD, complete approved diff and consumed documentation; path/content/HEAD drift requires a fresh report | Pending execution |
-| D2 | Retention guard: `pnpm.cmd check:evidence` | Documentation baseline/post and after authorized staging | Git index, guard and configuration; index changes require recheck | Planning baseline passed; execution pending |
+| P1 | Python formatting: `pnpm.cmd format:check:python` | PQR-SAMPLES baseline/post; combined final coverage | Full discovered Python tree, Ruff/config/lock/tool versions; changed consumed bytes, membership or environment invalidate | Independent baseline/post PASS; PACKAGE reused post evidence below |
+| P2 | Static correctness: `pnpm.cmd lint:python` | Same as P1 | Same complete discovery and tool/config proof as P1 | Independent baseline/post PASS; PACKAGE reused post evidence below |
+| P3 | Types: `pnpm.cmd typecheck:python` | Same as P1 | Source, tests, imports, stubs, mypy/config/lock/tool versions | Independent baseline/post PASS; PACKAGE reused post evidence below |
+| P4 | Public behavior: `pnpm.cmd test:python` | Same as P1; full model-free suite covers the combined Python package | Tests, fixtures, imports, scripts, discovery membership and host/toolchain; changes invalidate | Independent baseline 571/post 586 PASS; PACKAGE reused post evidence below |
+| D1 | Exact scope and whitespace: `git diff --check`; independent link/docstring/command review | Baseline/post of each applicable unit and final frozen documentation | HEAD, complete approved diff and consumed documentation; path/content/HEAD drift requires a fresh report | Unit/source PACKAGE and closeout baseline PASS; frozen-doc final review separate |
+| D2 | Retention guard: `pnpm.cmd check:evidence` | Documentation baseline/post and after authorized staging | Git index, guard and configuration; index changes require recheck | DOC/source PACKAGE and closeout baseline PASS; frozen-doc final review separate |
 
 This is a deterministic maintainer/documentation batch, not a product-runtime
 or distribution campaign. Its final gates are P1-P4 plus D1-D2 and independent
@@ -236,6 +259,21 @@ work and do not reset, clean or rewrite history.
 - Planning documentation baseline: `PY-QUALITY-PLAN-BASELINE-20261020-01` passed
   `pnpm.cmd check:evidence`, `git diff --check` and current-link/readiness review
   outside the sandbox. The report's date uses UTC; this is not a Python baseline.
+- 2026-10-19 (America/Bogota): Accepted independent PQR-DOC baseline/post;
+  four docstrings changed, executable service code unchanged.
+- 2026-10-19 (America/Bogota): Accepted independent PQR-SAMPLES baseline/post;
+  one helper and 15 additive tests, 154 changed lines. All prior assertions
+  retained; formatting, lint, types and 586 model-free tests passed.
+- 2026-10-19 (America/Bogota): Accepted combined source PACKAGE, 162 changed
+  lines across three files. Validator reused only its independent post P1-P4
+  after complete input/environment comparison; fresh package D1/D2 passed.
+- 2026-10-19 (America/Bogota): Closing-document baseline passed D1/D2 and 248
+  local-link checks. Archived this plan and updated navigation after source
+  acceptance. Closing documentation is frozen for separate final review.
+
+- 2026-10-19: `PQR-CLOSEOUT-POST-CHANGE-20261020-01` failed only the exact
+  cache-warning code summary. Corrected baseline/post codes separately;
+  final documentary acceptance remains separate after this refreeze.
 
 ## Discoveries and decisions
 
@@ -249,12 +287,81 @@ work and do not reset, clean or rewrite history.
 
 ## Final validation results
 
-Implementation baseline, worker edits, post-change acceptance and final combined
-validation: **not started**. No current Python/runtime PASS is claimed.
+The source batch is independently accepted at HEAD
+`330a2f2eee99149d1ec442e4e05081d4f0f4da0d`. PQR-DOC changed eight lines;
+PQR-SAMPLES changed 154 (production 35 additions/28 deletions, tests 91
+additions/no deletions); combined scope is 162 lines across three files.
+There are four docstring corrections, one private helper and 15 additive
+public submission cases. Source behavior and all existing assertions are
+preserved. No source correction or infrastructure retry was required.
 
-Planning validation is separate: its baseline report above is retained under
-`tmp/evidence/python-quality-validation-planning/`. The immutable planning
-POST-CHANGE report is issued after these three documentation files are frozen
-and must be consumed before the authorized planning commit. It does not accept
-the future implementation. Replace this implementation status with actual
-results only when executing and closing the plan.
+Immutable independent reports are retained in the declared ignored evidence
+directory; these links identify existing local reports, not public artifacts:
+
+| Report | Verdict and executed evidence |
+| --- | --- |
+| [PQR-DOC-BASELINE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PQR-DOC-BASELINE-20261020-01.md) | PASS; D1 0.0406745 s, D2 0.4543046 s; clean file and empty index |
+| [PQR-DOC-POST-CHANGE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PQR-DOC-POST-CHANGE-20261020-01.md) | PASS; D1 0.0317014 s, D2 0.4284681 s; exact four-docstring review |
+| [PQR-SAMPLES-BASELINE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PQR-SAMPLES-BASELINE-20261020-01.md) | PASS; P1-P4/D1 executed; 571 tests; identity/tool preparation 14.1285737 s |
+| [PQR-SAMPLES-POST-CHANGE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PQR-SAMPLES-POST-CHANGE-20261020-01.md) | PASS; P1-P4/D1 independently executed; 586 tests; preparation 1.7420643 s |
+| [PY-QUALITY-READABILITY-PACKAGE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PY-QUALITY-READABILITY-PACKAGE-20261020-01.md) | PASS; fresh D1 0.0341606 s/D2 0.4464328 s; P1-P4 explicitly reused from independent SAMPLES post |
+| [PQR-CLOSEOUT-BASELINE-20261020-01](../../../tmp/evidence/python-quality-validation-readability/PQR-CLOSEOUT-BASELINE-20261020-01.md) | PASS before documentation edits; D1 0.0334559 s/D2 0.428655 s; 248 local links valid in 0.0831982 s |
+
+All commands ran from repository root in normal local PowerShell outside the
+managed sandbox. The host used PowerShell 7.6.5, Corepack pnpm 11.15.1, Node
+v24.20.0, uv 0.11.29, locked Python 3.12.10, Ruff 0.16.10, mypy 2.3.0 and
+pytest 9.1.1. D1 is `git diff --check`; D2 is `pnpm.cmd check:evidence`.
+The Python command durations below are elapsed command seconds, distinct from
+pytest's own reported durations:
+
+| Gate / exact command | Independent SAMPLES baseline | Independent SAMPLES post |
+| --- | --- | --- |
+| P1 / `pnpm.cmd format:check:python` | 0.3935732 s; 174 files already formatted | 0.3870767 s; 174 files already formatted |
+| P2 / `pnpm.cmd lint:python` | 0.3972132 s; all checks passed | 0.3945646 s; all checks passed |
+| P3 / `pnpm.cmd typecheck:python` | 0.6935306 s; 171 files, no issues | 0.6532466 s; 171 files, no issues |
+| P4 / `pnpm.cmd test:python` | 24.8729049 s; 571 passed | 24.2473316 s; 586 passed |
+| D1 / `git diff --check` | 0.0319188 s; no diagnostics | 0.0332506 s; no diagnostics |
+
+Both Python test runs reported one pre-existing `PytestCacheWarning` for denied
+cache access at `services/tts/.pytest_cache/v/cache/nodeids`: baseline
+`WinError 5`, post `Errno 13`. All tests passed;
+no cache or permission repair was performed. The post suite's own duration
+was 23.51 s; the baseline suite's was 24.13 s. These observations do not establish
+a performance improvement.
+
+PACKAGE reused the independent SAMPLES post P1-P4, with its original adjacent
+`.P1.json` through `.P4.json` receipts and `.before.json`/`.after.json` inputs.
+The validator proved identical HEAD, branch, status, full index/diff, 1303
+tracked/nonignored discovered input names and content hashes, tool executable
+hashes/versions, relevant environment and 2276 non-cache venv file identities.
+Those package-wide gates already covered all three current Python files.
+Only ignored evidence receipts changed between those reports; no consumed
+source or dependency changed. PACKAGE did not reexecute P1-P4. Worker receipts
+were not reused for independent unit or package acceptance.
+
+Accepted source identities (porcelain status ` M` for each path; empty index):
+
+| Path | Worktree SHA-256 | Filter-aware expected index blob |
+| --- | --- | --- |
+| `services/tts/src/voxleaf_tts/service.py` | `F8A10D5420F21D8F12F3ACD7EB1D925D18452AFDFA182A344D35E2BF9F5F8F70` | `1cdc2734ee05f33d309f4f642fc91a6b6c3e20ad` |
+| `services/tts/benchmarks/quality.py` | `949FC7089646B645048E927B4958DB2F474F96725659161C66457B38EAD46D0E` | `a8ba243a60bc714cb123c6c730bec36c063af581` |
+| `services/tts/tests/test_benchmark_quality.py` | `4267D01B87D96A86DC6DEC0D077125885E5C35598B3099FB10873EE4B513FA19` | `d9deb7777dcb6c62c9e1fa02d0d70b50c7870bf5` |
+
+The canonical system diagram and service owner map still match the unchanged
+component/process/import/persistence boundaries; no diagram or ADR edit is
+needed. No runtime/native/GPU/model/build, installed-journey, firewall or
+aggregate `check`/`check:portable` result is claimed for this bounded batch.
+There was no expensive preparation or host reconfiguration; only ordinary
+ignored caches and synthetic temporary test outputs, with no owned resource
+requiring restoration. Raw captures and full identity receipts remain ignored.
+
+Source P1-P4/D1/D2 are resolved by the reports above. Closing-document acceptance
+is separate: final D1/D2, local-link/claim review and current source-identity
+review follow this content freeze. The final documentary/campaign outcome is
+recorded separately afterward under
+`tmp/evidence/python-quality-validation-readability/`; this plan does not claim
+that future report's verdict and must not be edited after it is issued.
+
+Historical planning evidence remains under
+`tmp/evidence/python-quality-validation-planning/`; its baseline report ID in
+the progress log concerns planning only and is not implementation acceptance.

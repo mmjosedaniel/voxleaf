@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`python-quality-validation-readability.md`](python-quality-validation-readability.md): one private scorecard-validation helper, 15 additive public submission cases and four service docstring corrections. Independent unit and combined Python/source gates pass, with 586 model-free tests and unchanged behavior. Three source/test files, 162 changed lines, unstaged/uncommitted; closing-document acceptance is recorded separately after the content freeze.
+
 - [`rust-function-readability.md`](rust-function-readability.md): CUDA precision derivation with eight complete-report cases and nine diagnostic exit wrappers extracted; error-tuple naming remains an audited SKIP. Independent unit, live admission and combined portable/full/native source gates pass; user state preserved. Three source/test files, 156 changed lines; changes remain unstaged/uncommitted and independent documentary/campaign outcomes are recorded separately after the content freeze.
 
 - [`typescript-function-readability.md`](typescript-function-readability.md): private service-identity/navigation helpers and reused profile admission; three implemented units, two independently accepted SKIPs and seven added characterization cases. Independent unit, combined TypeScript/Python/Rust, browser/native and affected Piper/Chatterbox ES/EN gates passed; temporary firewall rule removed and prior rules preserved. Five source/test files, 260 changed lines; implementation committed as `ed5227d`. The dated TFR-04 reevaluation retains SKIP for the complete async phase split and records a distinct, unimplemented/unvalidated synchronous alternative.
