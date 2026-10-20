@@ -265,7 +265,10 @@ export class EpubProcessingBudget {
     );
   }
 
-  /** Fresh deadline/abort scope only; archive byte and ratio accounting stays here. */
+  /**
+   * One lazy read owns its deadline, observed bytes and ratio accounting.
+   * Archive-wide declared admission and initial ingestion remain on this owner.
+   */
   public createResourceOperation(signal?: AbortSignal): EpubProcessingBudget {
     const signals = [this.signal, signal].filter(
       (value): value is AbortSignal => value !== undefined,

@@ -81,6 +81,10 @@ const narrationSettingsActions = createNarrationSettingsActions(
 );
 
 export interface ReadyPublicationContentProps {
+  readonly onNavigationSettlement?: (
+    settlement: import("./reader/reader-navigation").ReaderNavigationSettlement,
+    reason: ReaderLocatorSettlementReason,
+  ) => void;
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly preferences?: ReaderPreferencesV1;
@@ -569,6 +573,14 @@ export function App({
     },
     [narrationCoordinator, positionSaveCoordinator],
   );
+  const handleNavigationSettlement = useCallback(
+    (
+      settlement: import("./reader/reader-navigation").ReaderNavigationSettlement,
+    ): void => {
+      narrationCoordinator?.settleReaderPlacement(settlement);
+    },
+    [narrationCoordinator],
+  );
   const handleInitialRestorationSettled = useCallback(
     (settlement: ReaderInitialRestorationSettlement): void => {
       setReaderRestoration((current) =>
@@ -687,6 +699,7 @@ export function App({
           onActiveLocatorChange: handleActiveLocatorChange,
           onNavigationIntent: handleNavigationIntent,
           onSettledLocatorChange: handleSettledLocatorChange,
+          onNavigationSettlement: handleNavigationSettlement,
           onInitialRestorationSettled: handleInitialRestorationSettled,
           ...(narrationCoordinator === undefined
             ? {}

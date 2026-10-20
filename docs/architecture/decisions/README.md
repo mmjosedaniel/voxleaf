@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0057: Reader and acquisition correctness](ADR-0057-reader-acquisition-correctness.md): implemented candidate; integrated acceptance pending. Adds traversal v2, capacity escape, unavailable placement, repeat-read accounting and cancellation/commit semantics.
+
 - [ADR-0056: Bound reader and narration lifecycle operations](ADR-0056-bound-reader-narration-lifecycle-operations.md): implemented candidate; acceptance pending.
 
 Use an ADR for a durable decision that future contributors or Codex might otherwise reverse.

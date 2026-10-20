@@ -17,6 +17,7 @@ export interface AdaptivePreparationControlsProps {
   readonly onStart: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
+  readonly onPlayAvailableAudio?: () => void;
   readonly onStop: () => void;
   readonly onVolumeChange: (volumePercent: number) => void;
   readonly startDisabled?: boolean;
@@ -36,6 +37,9 @@ function estimateText(estimatedWaitMs: number | undefined): string {
 function primaryStatus(state: AdaptivePreparationUiState): string {
   const ready = formatPreparationDuration(state.readyMs);
   const target = preparationTargetLabel(state.targetMs);
+  if (state.canPlayAvailableAudio) {
+    return `Preparation reached its memory capacity — ${ready} of ${target} ready. Play the available audio to continue.`;
+  }
   switch (state.phase) {
     case "buffering":
       return `Playback paused while VoxLeaf generates more audio — ${ready} of 1 minute ready. ${estimateText(state.estimatedWaitMs)}`;
@@ -65,6 +69,7 @@ export function AdaptivePreparationControls({
   onStart,
   onPause,
   onResume,
+  onPlayAvailableAudio,
   onStop,
   onVolumeChange,
   startDisabled = false,
@@ -150,6 +155,15 @@ export function AdaptivePreparationControls({
               aria-label="Narration playback controls"
               role="group"
             >
+              {state.canPlayAvailableAudio && onPlayAvailableAudio ? (
+                <button
+                  type="button"
+                  data-narration-action="play-available"
+                  onClick={onPlayAvailableAudio}
+                >
+                  Play available audio
+                </button>
+              ) : null}
               <button
                 type="button"
                 data-narration-action="pause"

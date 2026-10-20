@@ -116,6 +116,14 @@ test("arguments resolve the ordinary package defaults without PATH lookup", () =
     /installed-root/,
   );
   const journey = parseArguments(["--mode", "journey"], environment);
+  assert.equal(journey.exerciseAcquisitionCorrections, false);
+  assert.equal(
+    parseArguments(
+      ["--mode", "journey", "--exercise-acquisition-corrections"],
+      environment,
+    ).exerciseAcquisitionCorrections,
+    true,
+  );
   assert.equal(journey.installedRoot, path.join(root, "VoxLeaf"));
   assert.match(journey.installer, /VoxLeaf_0\.1\.0_x64-setup\.exe$/);
   assert.equal(

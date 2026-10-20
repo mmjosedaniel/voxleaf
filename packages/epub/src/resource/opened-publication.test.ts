@@ -71,6 +71,218 @@ afterEach(() => {
 });
 
 describe("bounded local publication resources", () => {
+  it("B05 permits repeated lazy reads beyond historical traffic while keeping archive admission bounded", async () => {
+    const archive = await openEpubArchive(await createArchive(IMAGE_ENTRIES), {
+      policy: { maxTotalUncompressedBytes: 100 },
+    });
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument(),
+      publicationValues(),
+    );
+    try {
+      for (let index = 0; index < 40; index += 1) {
+        await expect(publication.readResource(imageId(2))).resolves.toEqual(
+          PNG,
+        );
+      }
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it.each([
+    ["narration-piper-v2", "en"],
+    ["narration-piper-v2", "es"],
+    ["narration-chatterbox-v1", "en"],
+    ["narration-chatterbox-v1", "es"],
+  ] as const)(
+    "B02 continues a long legal paragraph and reconstructs a cold deep start with %s/%s",
+    async (profile, defaultLanguage) => {
+      const source = "Synthetic 😀 e\u0301 text & ordinary words. ".repeat(550);
+      const values = narrationTextPublicationValues(
+        [source],
+        async () => undefined,
+        true,
+      );
+      const archive = await openEpubArchive(await createArchive({}));
+      const publication = createOpenedPublication(
+        archive,
+        createPackageDocument([]),
+        values,
+      );
+      const start = requiredLocatedBlock(
+        values.locatorIndex.blocks[0],
+      ).startLocator;
+      try {
+        const cold = await publication.prepareNarration({
+          startLocator: { ...start, textOffsetCodePoints: 18_001 },
+          profile,
+          defaultLanguage,
+          maximumSegments: 1,
+        });
+        expect(["batch", "complete"]).toContain(cold.status);
+        if (cold.status !== "batch" && cold.status !== "complete") return;
+        expect(cold.measurements.sourceCodePointsInspected).toBeGreaterThan(
+          16_384,
+        );
+        expect(cold.measurements.sourceCodePointsInspected).toBeLessThanOrEqual(
+          4 * Array.from(source).length + 16_384,
+        );
+        expect(cold.measurements.workUnitsCharged).toBeGreaterThan(
+          cold.measurements.sourceCodePointsInspected,
+        );
+        const signatures: string[] = [];
+        let containing: unknown;
+        let cursor = start;
+        let end = 0;
+        for (let request = 0; request < 600; request += 1) {
+          const result = await publication.prepareNarration({
+            startLocator: cursor,
+            profile,
+            defaultLanguage,
+            maximumSegments: 8,
+          });
+          expect(["batch", "complete"]).toContain(result.status);
+          if (result.status !== "batch" && result.status !== "complete") break;
+          expect(
+            result.measurements.sourceCodePointsInspected,
+          ).toBeLessThanOrEqual(16_384);
+          for (const segment of result.segments) {
+            expect(
+              segment.sourceRange.start.textOffsetCodePoints,
+            ).toBeGreaterThanOrEqual(end);
+            end = segment.sourceRange.end.textOffsetCodePoints;
+            signatures.push(JSON.stringify(segment));
+            if (
+              segment.sourceRange.start.textOffsetCodePoints <= 18_001 &&
+              end > 18_001
+            )
+              containing = segment;
+          }
+          if (result.status === "complete") break;
+          cursor = result.continuation;
+        }
+        expect(end).toBe(Array.from(source).length);
+        expect(cold.segments[0]).toEqual(containing);
+        cursor = start;
+        const other: string[] = [];
+        for (let request = 0; request < 600; request += 1) {
+          const result = await publication.prepareNarration({
+            startLocator: cursor,
+            profile,
+            defaultLanguage,
+            maximumSegments: 16,
+          });
+          expect(["batch", "complete"]).toContain(result.status);
+          if (result.status !== "batch" && result.status !== "complete") break;
+          other.push(
+            ...result.segments.map((segment) => JSON.stringify(segment)),
+          );
+          if (result.status === "complete") break;
+          cursor = result.continuation;
+        }
+        expect(other).toEqual(signatures);
+      } finally {
+        await publication.close();
+      }
+    },
+    30_000,
+  );
+
+  it("B02 charges a preceding block prefix once during cold reconstruction and warm continuation", async () => {
+    const source = "Synthetic 😀 e\u0301 text & ordinary words. ".repeat(550);
+    const measured = [];
+    for (const prefixLength of [0, 1_000]) {
+      const values = narrationTextPublicationValues(
+        [...Array.from({ length: prefixLength }, () => ""), source],
+        async () => undefined,
+        true,
+      );
+      const archive = await openEpubArchive(await createArchive({}));
+      const publication = createOpenedPublication(
+        archive,
+        createPackageDocument([]),
+        values,
+      );
+      try {
+        const start = requiredLocatedBlock(
+          values.locatorIndex.blocks[prefixLength],
+        ).startLocator;
+        const cold = await publication.prepareNarration({
+          startLocator: { ...start, textOffsetCodePoints: 18_001 },
+          profile: "narration-piper-v2",
+          defaultLanguage: "en",
+          maximumSegments: 1,
+        });
+        expect(cold.status).toBe("batch");
+        if (cold.status !== "batch") return;
+        const warm = await publication.prepareNarration({
+          startLocator: cold.continuation,
+          profile: "narration-piper-v2",
+          defaultLanguage: "en",
+          maximumSegments: 1,
+        });
+        expect(warm.status).toBe("batch");
+        if (warm.status !== "batch") return;
+        measured.push({
+          cold: cold.measurements.workUnitsCharged ?? 0,
+          warm: warm.measurements.workUnitsCharged ?? 0,
+        });
+      } finally {
+        await publication.close();
+      }
+    }
+    // The difference isolates prefix traversal and the once-per-request allowance
+    // derivation. It must not grow with the number of source windows.
+    expect(measured[1]!.cold - measured[0]!.cold).toBeLessThanOrEqual(4_000);
+    expect(measured[1]!.warm - measured[0]!.warm).toBeLessThanOrEqual(2_000);
+  });
+
+  it.each(["abort", "close"] as const)(
+    "B02 cancels cold reconstruction at a cooperative yield through %s",
+    async (action) => {
+      const deferred = createDeferredYieldScheduler();
+      const values = narrationTextPublicationValues(
+        ["Synthetic words. ".repeat(1_300)],
+        deferred.scheduler,
+      );
+      const archive = await openEpubArchive(await createArchive({}));
+      const publication = createOpenedPublication(
+        archive,
+        createPackageDocument([]),
+        values,
+      );
+      const start = requiredLocatedBlock(
+        values.locatorIndex.blocks[0],
+      ).startLocator;
+      const abort = new AbortController();
+      const pending = publication.prepareNarration({
+        startLocator: { ...start, textOffsetCodePoints: 18_000 },
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+        maximumSegments: 1,
+        signal: abort.signal,
+      });
+      await deferred.started;
+      const closing = action === "close" ? publication.close() : undefined;
+      if (action === "abort") abort.abort();
+      deferred.release();
+      expect((await pending).status).toBe("cancelled");
+      if (action === "abort") {
+        const retry = await publication.prepareNarration({
+          startLocator: { ...start, textOffsetCodePoints: 18_000 },
+          profile: "narration-piper-v2",
+          defaultLanguage: "en",
+          maximumSegments: 1,
+        });
+        expect(retry.status).toBe("batch");
+      }
+      await closing;
+      await publication.close();
+    },
+  );
+
   it.each([30_000, 30_001])(
     "enforces a lazy read's own deadline through the archive at %i ms",
     async (elapsed) => {
@@ -115,7 +327,7 @@ describe("bounded local publication resources", () => {
   );
 
   it.each([99, 100])(
-    "keeps cumulative lazy-read accounting at archive maximum %i after idle time",
+    "keeps archive admission at %i while each lazy read has independent accounting",
     async (maximum) => {
       let now = 0;
       const archive = await openEpubArchive(
@@ -137,31 +349,19 @@ describe("bounded local publication resources", () => {
             PNG,
           );
         }
-        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(92);
+        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
         now += 30_001;
-        if (maximum === 100) {
-          await expect(publication.readResource(imageId(2))).resolves.toEqual(
-            PNG,
-          );
-          expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
-            100,
-          );
-        } else {
-          await expectResourceError(
-            () => publication.readResource(imageId(2)),
-            "resource-limit-exceeded",
-          );
-          expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
-            92,
-          );
-        }
+        await expect(publication.readResource(imageId(2))).resolves.toEqual(
+          PNG,
+        );
+        expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
       } finally {
         await publication.close();
       }
     },
   );
 
-  it("reads rasters after idle time without resetting aggregate decompression accounting", async () => {
+  it("reads rasters after idle time without changing initial ingestion accounting", async () => {
     let now = 0;
     const archive = await openEpubArchive(await createArchive(IMAGE_ENTRIES), {
       clock: { now: () => now },
@@ -179,7 +379,7 @@ describe("bounded local publication resources", () => {
           PNG,
         );
         expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
-          initial + read * PNG.length,
+          initial,
         );
       }
     } finally {
@@ -450,7 +650,7 @@ describe("bounded local publication resources", () => {
       });
       await expect(publication.readResource(imageId(2))).resolves.toEqual(PNG);
       expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
-        before + PNG.byteLength,
+        before,
       );
 
       deferred.release();
@@ -1399,6 +1599,7 @@ function narrationPublicationValues(
 function narrationTextPublicationValues(
   texts: readonly string[],
   narrationYieldScheduler: NarrationYieldScheduler,
+  nested = false,
 ) {
   const base = publicationValues();
   const spine = base.book.spine[0];
@@ -1409,12 +1610,31 @@ function narrationTextPublicationValues(
     texts.map((text, index) => {
       const block = Object.freeze({
         kind: "paragraph" as const,
-        children: Object.freeze([
-          Object.freeze({
-            kind: "text" as const,
-            text: text as SensitivePublicationText,
-          }),
-        ]),
+        children: Object.freeze(
+          nested
+            ? [
+                {
+                  kind: "strong" as const,
+                  children: [
+                    {
+                      kind: "emphasis" as const,
+                      children: [
+                        {
+                          kind: "text" as const,
+                          text: text as SensitivePublicationText,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ]
+            : [
+                Object.freeze({
+                  kind: "text" as const,
+                  text: text as SensitivePublicationText,
+                }),
+              ],
+        ),
       });
       return Object.freeze({
         documentId: "document:0" as ContentDocumentId,

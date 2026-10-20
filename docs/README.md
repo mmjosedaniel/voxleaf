@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [reader, narration and optional-acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md)
+complete eight fixes with permanent regressions, repository/browser/native
+checks, all four Piper/Chatterbox ES/EN arms and installed cancellation/cleanup
+scenarios. Independent review approves the implementation; original user data
+and host configuration are restored. Changes remain unstaged and uncommitted.
+
 Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
 production completion and unresolved runtime investigation are deferred to a
 future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).

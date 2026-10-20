@@ -70,6 +70,33 @@ function handlers() {
 }
 
 describe("adaptive preparation controls", () => {
+  it("B01 exposes the explicit capacity action with truthful loaded and requested duration", () => {
+    const onPlayAvailableAudio = vi.fn();
+    const state = createAdaptivePreparationUiState({
+      mode: { kind: "prepared", targetMs: 600_000 },
+      scheduler: observation({
+        targetBufferMs: 600_000,
+        canPlayAvailableAudio: true,
+        nextAction: { kind: "none", reason: "backpressure" },
+      }),
+    });
+    render(
+      <AdaptivePreparationControls
+        selection={{ kind: "prepared", targetMs: 600_000 }}
+        state={state}
+        onPlayAvailableAudio={onPlayAvailableAudio}
+        {...handlers()}
+      />,
+    );
+    expect(
+      screen.getByText(/5 seconds of 10 minutes ready/),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play available audio" }),
+    );
+    expect(onPlayAvailableAudio).toHaveBeenCalledOnce();
+  });
+
   it("offers native keyboard-operable quick and explicit prepared choices", () => {
     const callbacks = handlers();
     const { rerender } = render(

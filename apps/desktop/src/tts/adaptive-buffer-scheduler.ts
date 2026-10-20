@@ -139,6 +139,7 @@ export type AdaptiveBufferSchedulerIdleReason =
 export type AdaptiveBufferCompletionOutcome = "accepted" | "invalid" | "stale";
 
 export interface AdaptiveBufferSchedulerObservation {
+  readonly canPlayAvailableAudio?: boolean;
   readonly observedAtMs: number;
   readonly serviceState: AdaptiveBufferServiceState;
   readonly playbackState: AdaptiveBufferPlaybackState;
@@ -381,6 +382,7 @@ export class AdaptiveBufferScheduler {
       discardedAudioUnitCount: this.#discardedAudioUnits.length,
       resourceSnapshot: Object.freeze({ ...this.#resources }),
       nextAction: this.#nextAction(),
+      canPlayAvailableAudio: this.#canPlayAvailableAudio(),
     });
   }
 
@@ -717,6 +719,15 @@ export class AdaptiveBufferScheduler {
     this.#playbackState = "paused";
   }
 
+  public playAvailableAudio(): boolean {
+    if (!this.#canPlayAvailableAudio()) {
+      return false;
+    }
+    this.#playbackState = "playing";
+    this.#initialPlaybackStarted = true;
+    return true;
+  }
+
   public resumePlayback(): void {
     if (this.#playbackState !== "paused") {
       throw new AdaptiveBufferSchedulerError("invalid-state");
@@ -814,6 +825,18 @@ export class AdaptiveBufferScheduler {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
     return new AdaptiveBufferScheduler(this.#clock, identity, mode);
+  }
+
+  #canPlayAvailableAudio(): boolean {
+    const action = this.#nextAction();
+    return (
+      (this.#playbackState === "preparing" ||
+        this.#playbackState === "buffering") &&
+      this.#playableSampleFrames() > 0 &&
+      action.kind === "none" &&
+      action.reason === "backpressure" &&
+      !this.#canReserveServiceUnit()
+    );
   }
 
   #nextAction(): AdaptiveBufferSchedulerAction {

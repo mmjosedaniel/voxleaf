@@ -142,6 +142,10 @@ function NavigationNodeElement({
 }
 
 export interface ReaderPublicationContentProps {
+  readonly onNavigationSettlement?: (
+    settlement: import("./reader-navigation").ReaderNavigationSettlement,
+    reason: ReaderLocatorSettlementReason,
+  ) => void;
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly preferences?: ReaderPreferencesV1;
@@ -187,6 +191,7 @@ export function ReaderPublicationContent({
   onActiveLocatorChange,
   onNavigationIntent,
   onSettledLocatorChange,
+  onNavigationSettlement,
   onInitialRestorationSettled,
   domRangeMapper,
   visualLocatorEnvironment,
@@ -201,6 +206,31 @@ export function ReaderPublicationContent({
         preferences: initialPreferences,
       }),
   );
+  const notifySettlement = useCallback(
+    (
+      reason: ReaderLocatorSettlementReason,
+      locator = coordinator.state.activeLocator,
+    ): void => {
+      if (coordinator.state.contentStatus === "chapter-too-large") {
+        onNavigationSettlement?.(
+          { status: "unavailable", reason: "chapter-too-large" },
+          reason,
+        );
+        return;
+      }
+      onNavigationSettlement?.({ status: "settled", locator }, reason);
+      onSettledLocatorChange?.(locator, reason);
+    },
+    [coordinator, onNavigationSettlement, onSettledLocatorChange],
+  );
+  useEffect(() => {
+    if (
+      coordinator.state.navigationRevision === 0 &&
+      coordinator.state.contentStatus === "chapter-too-large"
+    ) {
+      notifySettlement("reflow");
+    }
+  }, [coordinator, notifySettlement]);
   const rasterImageLoader = useMemo(
     () => new PublicationRasterImageLoader(publication),
     [publication],
@@ -270,7 +300,7 @@ export function ReaderPublicationContent({
           currentLocator: () => coordinator.state.activeLocator,
           onRestored: (result) => {
             if (result.reason === "preference") {
-              onSettledLocatorChange?.(result.locator, "reflow");
+              notifySettlement("reflow", result.locator);
             } else if (result.reason === "restoration") {
               setPendingInitialSettlement(
                 Object.freeze({
@@ -359,6 +389,9 @@ export function ReaderPublicationContent({
           handledNavigationRevision.current =
             coordinator.state.navigationRevision;
         }
+        if (coordinator.state.contentStatus === "chapter-too-large") {
+          notifySettlement("narration-boundary");
+        }
       },
       settleLocator: (locator: ReadingLocatorV1) => {
         visualLocatorTracker.setCurrentLocator(locator);
@@ -371,6 +404,7 @@ export function ReaderPublicationContent({
   }, [
     completeInitialRestoration,
     coordinator,
+    notifySettlement,
     reflowRestorer,
     segmentHighlightController,
     visualLocatorTracker,
@@ -429,13 +463,13 @@ export function ReaderPublicationContent({
       const reason = pendingNavigationReason.current;
       pendingNavigationReason.current = undefined;
       if (reason !== undefined) {
-        onSettledLocatorChange?.(coordinator.state.activeLocator, reason);
+        notifySettlement(reason);
       }
     }
     const resume = resumeProgrammaticNavigationRef.current;
     resumeProgrammaticNavigationRef.current = undefined;
     resume?.();
-  }, [coordinator, onSettledLocatorChange, visualLocatorTracker]);
+  }, [coordinator, notifySettlement, visualLocatorTracker]);
   const focusDestination = useCallback(
     (destination: HTMLElement): void => {
       destination.scrollIntoView?.({ block: "start" });
@@ -500,7 +534,7 @@ export function ReaderPublicationContent({
           pendingPositionSaveRevision.current = undefined;
           pendingNavigationReason.current = undefined;
           finishProgrammaticNavigation();
-          onSettledLocatorChange?.(coordinator.state.activeLocator, reason);
+          notifySettlement(reason);
         } else if (handledNavigationRevision.current !== nextRevision) {
           pendingPositionSaveRevision.current = nextRevision;
         }
@@ -522,7 +556,7 @@ export function ReaderPublicationContent({
       completeInitialRestoration,
       finishProgrammaticNavigation,
       onNavigationIntent,
-      onSettledLocatorChange,
+      notifySettlement,
       reflowRestorer,
       visualLocatorTracker,
     ],

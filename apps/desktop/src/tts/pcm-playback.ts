@@ -168,6 +168,7 @@ export class AdaptivePcmPlayer {
   #completedTransitionPauseMs = 0;
   #playbackRatePreparation: Promise<void> | undefined;
   #playbackRatePreparationToken = 0;
+  #pausedBeforeRateStart = false;
 
   public constructor(
     scheduler: AdaptiveBufferScheduler,
@@ -225,6 +226,10 @@ export class AdaptivePcmPlayer {
       this.#refreshProgress();
     } else if (this.#transitionPause !== undefined) {
       this.#freezeTransitionPause();
+    } else if (this.#playbackRatePreparation !== undefined) {
+      // No audible unit exists yet. Retain this intent even after preparation
+      // resolves, so Resume can start the queued unit exactly once.
+      this.#pausedBeforeRateStart = true;
     } else {
       throw new PcmPlaybackError("invalid-state");
     }
@@ -236,11 +241,14 @@ export class AdaptivePcmPlayer {
     this.#expectActive();
     if (
       this.#scheduler.observe().playbackState !== "paused" ||
-      (this.#handle === undefined && this.#transitionPause === undefined)
+      (this.#handle === undefined &&
+        this.#transitionPause === undefined &&
+        !this.#pausedBeforeRateStart)
     ) {
       throw new PcmPlaybackError("invalid-state");
     }
     this.#scheduler.resumePlayback();
+    this.#pausedBeforeRateStart = false;
     if (this.#handle !== undefined) {
       this.#handle.resume();
     } else if (this.#transitionPause !== undefined) {
@@ -458,8 +466,8 @@ export class AdaptivePcmPlayer {
       return this.#invalidationTransition ?? "shutdown";
     }
     this.#terminalState = terminalState;
-    this.#playbackRatePreparationToken += 1;
-    this.#playbackRatePreparation = undefined;
+    this.#pausedBeforeRateStart = false;
+    this.#releasePlaybackRatePreparation();
     this.#cancelPendingTransitionPause();
     const transition = this.#scheduler.invalidate();
     this.#invalidationTransition = transition;

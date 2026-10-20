@@ -11,6 +11,248 @@ use std::{
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[test]
+#[ignore = "explicit read-only Windows host diagnostic; requires an installed package"]
+#[cfg(windows)]
+fn installed_host_integrity_diagnostic() {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetCurrentPackageFullName(length: *mut u32, name: *mut u16) -> i32;
+    }
+    let mut length = 0;
+    // A packaged launcher can merge its private MSIX view into LOCALAPPDATA.
+    // The installed-host gate must inspect the ordinary user's actual tree.
+    assert_eq!(
+        unsafe { GetCurrentPackageFullName(&mut length, std::ptr::null_mut()) },
+        15700,
+        "run from an unpackaged local PowerShell session"
+    );
+    let root = PathBuf::from(std::env::var_os("LOCALAPPDATA").expect("LOCALAPPDATA"))
+        .join("com.voxleaf.desktop/tts");
+    let authority = exact_manifest().expect("authority");
+    let package = package_root(&root);
+    eprintln!("installed-integrity:canonical-root");
+    let canonical = canonical_contained_directory(&root, &package).expect("canonical-root");
+    eprintln!("installed-integrity:tree-stamp");
+    runtime_tree_stamp(&package, &canonical).expect("tree-stamp");
+    eprintln!("installed-integrity:bytecode-authority");
+    runtime_manifest_for_bytecode_cleanup(&package, &authority).expect("bytecode-authority");
+    eprintln!("installed-integrity:verify-runtime");
+    verify_runtime(&package, &authority).expect("verify-runtime");
+    eprintln!("installed-integrity:passed");
+}
+
+type DownloadHook = Box<dyn FnOnce(&Path, &AtomicBool) -> Result<(), OptionalProfileError>>;
+thread_local! {
+    static HASH_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static BEFORE_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static AFTER_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static DOWNLOAD_HOOK: std::cell::RefCell<Option<DownloadHook>> = const { std::cell::RefCell::new(None) };
+    static CLEANUP_LOCK: std::cell::RefCell<Option<File>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn run_hash_hook() {
+    let hook = HASH_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+pub(super) fn run_before_commit_hook() {
+    let hook = BEFORE_COMMIT_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+pub(super) fn run_after_commit_hook() {
+    let hook = AFTER_COMMIT_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+#[test]
+fn b06_cancellation_and_commit_have_one_winner() {
+    for cancel_before in [true, false] {
+        let root = TestRoot::new();
+        let staging = staging_root(&root.0).join("operation/package");
+        let authority = write_runtime(&staging);
+        let manager = Arc::new(OptionalChatterboxManager::default());
+        let cancellation = Arc::new(AtomicBool::new(false));
+        manager.set_operation(
+            OptionalProfileState::Verifying,
+            0,
+            None,
+            Some(Arc::clone(&cancellation)),
+        );
+        let callback_manager = Arc::clone(&manager);
+        let callback_root = root.0.clone();
+        let hook: Box<dyn FnOnce()> = Box::new(move || {
+            let outcome = callback_manager.cancel_at(&callback_root).unwrap();
+            assert_eq!(
+                outcome.state,
+                if cancel_before {
+                    OptionalProfileState::Verifying
+                } else {
+                    OptionalProfileState::Installed
+                }
+            );
+            assert_eq!(
+                callback_manager.remove_at(&callback_root),
+                Err(OptionalProfileError::Busy)
+            );
+        });
+        if cancel_before {
+            BEFORE_COMMIT_HOOK.with(|slot| *slot.borrow_mut() = Some(hook));
+        } else {
+            AFTER_COMMIT_HOOK.with(|slot| *slot.borrow_mut() = Some(hook));
+        }
+        let result = with_installed_runtime_lock(|| {
+            promote(
+                &root.0,
+                &staging,
+                &authority,
+                Some((&manager, &cancellation)),
+            )
+        });
+        assert_eq!(
+            result,
+            if cancel_before {
+                Err(OptionalProfileError::Cancelled)
+            } else {
+                Ok(())
+            }
+        );
+        assert_eq!(package_root(&root.0).exists(), !cancel_before);
+        assert_eq!(cancellation.load(Ordering::Acquire), cancel_before);
+    }
+}
+
+#[test]
+fn b06_cancel_does_not_wait_for_installed_runtime_lock() {
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation/package");
+    let authority = write_runtime(&staging);
+    let manager = OptionalChatterboxManager::default();
+    let cancellation = Arc::new(AtomicBool::new(false));
+    manager.set_operation(
+        OptionalProfileState::Verifying,
+        0,
+        None,
+        Some(Arc::clone(&cancellation)),
+    );
+    with_installed_runtime_lock(|| {
+        let snapshot = manager.cancel_at(&root.0)?;
+        assert_eq!(snapshot.state, OptionalProfileState::Verifying);
+        assert!(cancellation.load(Ordering::Acquire));
+        // This is the same post-lock entry used by the acquisition worker.
+        assert_eq!(
+            promote(
+                &root.0,
+                &staging,
+                &authority,
+                Some((&manager, &cancellation))
+            ),
+            Err(OptionalProfileError::Cancelled)
+        );
+        Ok(())
+    })
+    .unwrap();
+    assert!(!package_root(&root.0).exists());
+}
+
+pub(super) fn run_download_hook(
+    destination: &Path,
+    cancelled: &AtomicBool,
+) -> Option<Result<(), OptionalProfileError>> {
+    let hook = DOWNLOAD_HOOK.with(|slot| slot.borrow_mut().take());
+    hook.map(|hook| hook(destination, cancelled))
+}
+
+#[test]
+fn b06_cancellation_accepted_during_final_hashing_prevents_promotion() {
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation/package");
+    let authority = write_runtime(&staging);
+    let installed = package_root(&root.0);
+    fs::create_dir_all(&installed).unwrap();
+    fs::write(installed.join("previous-marker"), b"previous installation").unwrap();
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    let cancellation = Arc::new(AtomicBool::new(false));
+    manager.set_operation(
+        OptionalProfileState::Verifying,
+        0,
+        None,
+        Some(Arc::clone(&cancellation)),
+    );
+    let cancelling_manager = Arc::clone(&manager);
+    let cancelling_root = root.0.clone();
+    HASH_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            assert_eq!(
+                cancelling_manager
+                    .cancel_at(&cancelling_root)
+                    .unwrap()
+                    .state,
+                OptionalProfileState::Verifying
+            );
+        }))
+    });
+    let result = with_installed_runtime_lock(|| {
+        promote(
+            &root.0,
+            &staging,
+            &authority,
+            Some((&manager, &cancellation)),
+        )
+    });
+    assert!(cancellation.load(Ordering::Acquire));
+    assert_eq!(result, Err(OptionalProfileError::Cancelled));
+    assert_eq!(
+        fs::read(installed.join("previous-marker")).unwrap(),
+        b"previous installation"
+    );
+    assert!(staging.exists());
+}
+
+#[cfg(windows)]
+#[test]
+fn b07_cancelled_worker_settles_even_when_staging_cleanup_fails() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(|destination, cancelled| {
+            fs::write(destination, b"synthetic partial transfer").unwrap();
+            let lock = fs::OpenOptions::new()
+                .read(true)
+                .share_mode(0)
+                .open(destination)
+                .unwrap();
+            CLEANUP_LOCK.with(|slot| *slot.borrow_mut() = Some(lock));
+            cancelled.store(true, Ordering::Release);
+            Err(OptionalProfileError::Cancelled)
+        }))
+    });
+    let result = manager.download_at(&root.0);
+    CLEANUP_LOCK.with(|slot| *slot.borrow_mut() = None);
+    assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+    let snapshot = manager.snapshot_at(&root.0).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Failed);
+    assert_eq!(
+        snapshot.failure,
+        Some(OptionalProfileError::CleanupFailed.code())
+    );
+    assert!(manager.operation.lock().unwrap().cancellation.is_none());
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!staging_root(&root.0).exists());
+}
+
+#[test]
 fn reselection_preserves_busy_operation_and_worker_cancellation() {
     for state in [
         OptionalProfileState::Downloading,
@@ -39,6 +281,83 @@ fn reselection_preserves_busy_operation_and_worker_cancellation() {
             assert!(signal.load(Ordering::Acquire));
         }
     }
+}
+
+#[test]
+fn b07_confirmation_cancel_reserves_cleanup_against_concurrent_commands() {
+    let root = TestRoot::new();
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    let worker = with_installed_runtime_lock(|| {
+        let cancelling = Arc::clone(&manager);
+        let cancelling_root = root.0.clone();
+        let worker = thread::spawn(move || cancelling.cancel_at(&cancelling_root));
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        loop {
+            if manager.operation.lock().unwrap().state == Some(OptionalProfileState::Removing) {
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline);
+            thread::yield_now();
+        }
+        assert_eq!(
+            manager.snapshot_at(&root.0)?.state,
+            OptionalProfileState::Removing
+        );
+        assert_eq!(
+            manager.select_at(&root.0)?.state,
+            OptionalProfileState::Removing
+        );
+        assert_eq!(
+            manager.download_at(&root.0),
+            Err(OptionalProfileError::Invalid)
+        );
+        assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
+        Ok(worker)
+    })
+    .unwrap();
+    assert_eq!(
+        worker.join().unwrap().unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!manager.operation.lock().unwrap().worker_active);
+}
+
+#[cfg(windows)]
+#[test]
+fn b07_confirmation_cleanup_failure_settles_and_can_be_retried() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation");
+    fs::create_dir_all(&staging).unwrap();
+    let file = staging.join("synthetic.partial");
+    fs::write(&file, b"partial").unwrap();
+    let locked = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(file)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    assert_eq!(
+        manager.cancel_at(&root.0),
+        Err(OptionalProfileError::CleanupFailed)
+    );
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    assert!(!manager.operation.lock().unwrap().worker_active);
+    drop(locked);
+    assert_eq!(
+        manager.select_at(&root.0).unwrap().state,
+        OptionalProfileState::Confirming
+    );
+    assert_eq!(
+        manager.cancel_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!staging_root(&root.0).exists());
 }
 
 #[test]
@@ -407,7 +726,7 @@ fn promotion_replaces_only_the_versioned_package_after_complete_verification() {
     fs::create_dir_all(&previous).expect("previous package should be created");
     fs::write(previous.join("stale.txt"), b"stale").expect("stale fixture should be written");
 
-    promote(&root.0, &staging, &authority).expect("verified package should promote");
+    promote(&root.0, &staging, &authority, None).expect("verified package should promote");
 
     assert!(!staging.exists());
     assert!(!previous.join("stale.txt").exists());

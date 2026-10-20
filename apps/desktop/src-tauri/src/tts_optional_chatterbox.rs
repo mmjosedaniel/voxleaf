@@ -389,6 +389,7 @@ fn host_is_admitted(manifest: &OptionalPackageManifest) -> bool {
 
 #[derive(Default)]
 struct Operation {
+    worker_active: bool,
     state: Option<OptionalProfileState>,
     downloaded_bytes: u64,
     failure: Option<&'static str>,
@@ -648,6 +649,8 @@ fn copy_buffer() -> Vec<u8> {
 }
 
 fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
+    #[cfg(test)]
+    tests::run_hash_hook();
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
     let mut buffer = copy_buffer();
@@ -666,6 +669,8 @@ fn sha256_file_cancelled(
     path: &Path,
     cancelled: &AtomicBool,
 ) -> Result<String, OptionalProfileError> {
+    #[cfg(test)]
+    tests::run_hash_hook();
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
     let mut buffer = copy_buffer();
@@ -779,8 +784,10 @@ fn collect_files(
     directory: &Path,
     canonical_root: &Path,
     files: &mut HashSet<String>,
+    cancellation: Option<&AtomicBool>,
 ) -> Result<(), OptionalProfileError> {
     for entry in fs::read_dir(directory).map_err(|_| OptionalProfileError::VerificationFailed)? {
+        check_acquisition_cancellation(cancellation)?;
         let entry = entry.map_err(|_| OptionalProfileError::VerificationFailed)?;
         let path = entry.path();
         let metadata =
@@ -795,7 +802,7 @@ fn collect_files(
             return Err(OptionalProfileError::VerificationFailed);
         }
         if metadata.is_dir() {
-            collect_files(root, &path, canonical_root, files)?;
+            collect_files(root, &path, canonical_root, files, cancellation)?;
         } else if metadata.is_file() {
             let relative = path
                 .strip_prefix(root)
@@ -966,6 +973,34 @@ fn verify_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
 ) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    verify_runtime_cancellable(root, manifest_authority, None)
+}
+
+fn check_acquisition_cancellation(
+    cancellation: Option<&AtomicBool>,
+) -> Result<(), OptionalProfileError> {
+    if cancellation.is_some_and(|signal| signal.load(Ordering::Acquire)) {
+        return Err(OptionalProfileError::Cancelled);
+    }
+    Ok(())
+}
+
+fn verification_hash(
+    path: &Path,
+    cancellation: Option<&AtomicBool>,
+) -> Result<String, OptionalProfileError> {
+    match cancellation {
+        Some(signal) => sha256_file_cancelled(path, signal),
+        None => sha256_file(path),
+    }
+}
+
+fn verify_runtime_cancellable(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+    cancellation: Option<&AtomicBool>,
+) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    check_acquisition_cancellation(cancellation)?;
     let manifest_name = runtime_manifest_name(manifest_authority);
     let runtime_authority = manifest_authority
         .runtime_artifact
@@ -993,9 +1028,10 @@ fn verify_runtime(
         return Err(OptionalProfileError::VerificationFailed);
     }
     let mut actual = HashSet::new();
-    collect_files(root, root, &canonical_root, &mut actual)?;
+    collect_files(root, root, &canonical_root, &mut actual, cancellation)?;
     actual.remove(&manifest_name);
     for artifact in &manifest_authority.model_artifacts {
+        check_acquisition_cancellation(cancellation)?;
         let relative = format!("models/{}", artifact.filename);
         let model = root.join(&relative);
         let metadata =
@@ -1003,7 +1039,7 @@ fn verify_runtime(
         if !metadata.is_file()
             || is_symlink_or_reparse_point(&metadata)
             || metadata.len() != artifact.download_bytes
-            || sha256_file(&model)? != artifact.sha256
+            || verification_hash(&model, cancellation)? != artifact.sha256
             || !actual.remove(&relative)
         {
             return Err(OptionalProfileError::VerificationFailed);
@@ -1013,6 +1049,7 @@ fn verify_runtime(
         return Err(OptionalProfileError::VerificationFailed);
     }
     for record in &manifest.files {
+        check_acquisition_cancellation(cancellation)?;
         let path = root.join(safe_relative_path(&record.path)?);
         let metadata =
             fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
@@ -1020,7 +1057,7 @@ fn verify_runtime(
             || is_symlink_or_reparse_point(&metadata)
             || metadata.len() != record.size_bytes
             || !validate_sha256(&record.sha256)
-            || sha256_file(&path)? != record.sha256
+            || verification_hash(&path, cancellation)? != record.sha256
         {
             return Err(OptionalProfileError::VerificationFailed);
         }
@@ -1359,7 +1396,10 @@ fn promote(
     root: &Path,
     staging: &Path,
     manifest: &OptionalPackageManifest,
+    acquisition: Option<(&OptionalChatterboxManager, &AtomicBool)>,
 ) -> Result<(), OptionalProfileError> {
+    let cancellation = acquisition.map(|(_, signal)| signal);
+    check_acquisition_cancellation(cancellation)?;
     canonical_contained_directory(root, staging)?;
     let destination = package_root(root);
     let parent = destination.parent().ok_or(OptionalProfileError::Invalid)?;
@@ -1369,7 +1409,21 @@ fn promote(
     }
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
     canonical_contained_directory(root, parent)?;
-    verify_runtime(staging, manifest)?;
+    verify_runtime_cancellable(staging, manifest, cancellation)?;
+    #[cfg(test)]
+    tests::run_before_commit_hook();
+    // No hash or long verification holds this mutex. It serializes accepted
+    // cancellation with the two renames and publication of the installed state.
+    let mut operation = match acquisition {
+        Some((manager, _)) => Some(
+            manager
+                .operation
+                .lock()
+                .map_err(|_| OptionalProfileError::Busy)?,
+        ),
+        None => None,
+    };
+    check_acquisition_cancellation(cancellation)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
     invalidate_verified_runtime_receipt();
@@ -1386,6 +1440,14 @@ fn promote(
         }
         return Err(OptionalProfileError::CleanupFailed);
     }
+    if let Some(operation) = operation.as_mut() {
+        operation.state = Some(OptionalProfileState::Installed);
+        operation.cancellation = None;
+        operation.worker_active = true;
+    }
+    drop(operation);
+    #[cfg(test)]
+    tests::run_after_commit_hook();
     if moved_previous {
         fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
     }
@@ -1459,6 +1521,10 @@ fn download_artifact(
     cancelled: &AtomicBool,
     on_progress: impl Fn(u64),
 ) -> Result<(), OptionalProfileError> {
+    #[cfg(test)]
+    if let Some(result) = tests::run_download_hook(destination, cancelled) {
+        return result;
+    }
     let initial =
         reqwest::Url::parse(artifact.url()).map_err(|_| OptionalProfileError::DownloadFailed)?;
     if !redirect_allowed(source, &initial, 0, maximum_redirects) {
@@ -1637,6 +1703,7 @@ impl OptionalChatterboxManager {
     ) {
         if let Ok(mut operation) = self.operation.lock() {
             *operation = Operation {
+                worker_active: cancellation.is_some(),
                 state: Some(state),
                 downloaded_bytes,
                 failure,
@@ -1745,6 +1812,7 @@ impl OptionalChatterboxManager {
         if let Some(
             state @ (OptionalProfileState::Downloading
             | OptionalProfileState::Verifying
+            | OptionalProfileState::Installed
             | OptionalProfileState::Removing),
         ) = &operation.state
         {
@@ -1792,6 +1860,7 @@ impl OptionalChatterboxManager {
         operation.downloaded_bytes = 0;
         operation.failure = None;
         operation.cancellation = Some(Arc::clone(&cancellation));
+        operation.worker_active = true;
         drop(operation);
 
         let result = (|| {
@@ -1894,7 +1963,9 @@ impl OptionalChatterboxManager {
                 )
                 .map_err(|_| OptionalProfileError::VerificationFailed)?;
             }
-            with_installed_runtime_lock(|| promote(root, &extracted, &manifest))?;
+            with_installed_runtime_lock(|| {
+                promote(root, &extracted, &manifest, Some((self, &cancellation)))
+            })?;
             clean_staging(root)?;
             Ok(())
         })();
@@ -1909,17 +1980,15 @@ impl OptionalChatterboxManager {
                 ))
             }
             Err(OptionalProfileError::Cancelled) => {
-                clean_staging(root)?;
+                if let Err(error) = clean_staging(root) {
+                    self.set_operation(OptionalProfileState::Failed, 0, Some(error.code()), None);
+                    return Err(error);
+                }
                 self.clear_operation();
-                Ok(snapshot_from(
-                    &manifest,
-                    OptionalProfileState::Absent,
-                    0,
-                    None,
-                ))
+                self.snapshot_with_manifest(root, &manifest)
             }
             Err(error) => {
-                let _ = clean_staging(root);
+                let error = clean_staging(root).err().unwrap_or(error);
                 self.set_operation(OptionalProfileState::Failed, 0, Some(error.code()), None);
                 Err(error)
             }
@@ -1929,28 +1998,35 @@ impl OptionalChatterboxManager {
     fn cancel_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
         let state = {
-            let operation = self
+            let mut operation = self
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
-            let state = operation
-                .state
-                .clone()
-                .ok_or(OptionalProfileError::Invalid)?;
+            let Some(state) = operation.state.clone() else {
+                drop(operation);
+                return self.snapshot_at(root);
+            };
             if let Some(cancellation) = &operation.cancellation {
                 cancellation.store(true, Ordering::Release);
+            }
+            // Claim cleanup before releasing command admission. A concurrent
+            // Download must not acquire the Confirming operation being cancelled.
+            if state == OptionalProfileState::Confirming {
+                operation.state = Some(OptionalProfileState::Removing);
+                operation.worker_active = true;
             }
             state
         };
         if state == OptionalProfileState::Confirming {
-            with_installed_runtime_lock(|| clean_staging(root))?;
+            if let Err(error) = with_installed_runtime_lock(|| clean_staging(root)) {
+                self.set_operation(OptionalProfileState::Failed, 0, Some(error.code()), None);
+                return Err(error);
+            }
             self.clear_operation();
-            return Ok(snapshot_from(
-                &manifest,
-                OptionalProfileState::Absent,
-                0,
-                None,
-            ));
+            return self.snapshot_with_manifest(root, &manifest);
+        }
+        if state == OptionalProfileState::Installed {
+            return Ok(snapshot_from(&manifest, state, 0, None));
         }
         if !matches!(
             state,
@@ -1978,15 +2054,17 @@ impl OptionalChatterboxManager {
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
-            if matches!(
-                operation.state,
-                Some(
-                    OptionalProfileState::Confirming
-                        | OptionalProfileState::Downloading
-                        | OptionalProfileState::Verifying
-                        | OptionalProfileState::Removing
+            if operation.worker_active
+                || matches!(
+                    operation.state,
+                    Some(
+                        OptionalProfileState::Confirming
+                            | OptionalProfileState::Downloading
+                            | OptionalProfileState::Verifying
+                            | OptionalProfileState::Removing
+                    )
                 )
-            ) {
+            {
                 return Err(OptionalProfileError::Busy);
             }
             *operation = Operation {

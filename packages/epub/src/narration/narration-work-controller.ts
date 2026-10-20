@@ -12,6 +12,28 @@ function fail(): never {
   throw new EpubArchiveError("internal-failure");
 }
 
+/** Shared for a whole public traversal; never reset at a window boundary. */
+export class NarrationOperationWorkBudget {
+  #charged = 0;
+
+  public constructor(public readonly maximum: number) {
+    if (!Number.isSafeInteger(maximum) || maximum < 0) fail();
+  }
+
+  public get charged(): number {
+    return this.#charged;
+  }
+
+  public charge(units = 1): void {
+    if (!Number.isSafeInteger(units) || units < 0) fail();
+    const next = addSafe(this.#charged, units);
+    if (next > this.maximum) {
+      throw new EpubArchiveError("resource-limit-exceeded");
+    }
+    this.#charged = next;
+  }
+}
+
 function addSafe(left: number, right: number): number {
   const result = left + right;
   return Number.isSafeInteger(result) ? result : fail();
@@ -27,15 +49,21 @@ function addSafe(left: number, right: number): number {
 export class NarrationWorkController {
   readonly #scheduler: NarrationYieldScheduler;
   readonly #signal: AbortSignal;
+  readonly #operation: NarrationOperationWorkBudget | undefined;
   #checkpointCount = 0;
   #sinceCheckpoint = 0;
   #sinceYield = 0;
   #workUnitCount = 0;
   #yieldCount = 0;
 
-  public constructor(signal: AbortSignal, scheduler: NarrationYieldScheduler) {
+  public constructor(
+    signal: AbortSignal,
+    scheduler: NarrationYieldScheduler,
+    operation?: NarrationOperationWorkBudget,
+  ) {
     this.#signal = signal;
     this.#scheduler = scheduler;
+    this.#operation = operation;
     this.assertActive();
   }
 
@@ -52,6 +80,7 @@ export class NarrationWorkController {
   }
 
   public async observe(): Promise<void> {
+    this.#operation?.charge();
     this.#workUnitCount = addSafe(this.#workUnitCount, 1);
     this.#sinceCheckpoint = addSafe(this.#sinceCheckpoint, 1);
     this.#sinceYield = addSafe(this.#sinceYield, 1);

@@ -1619,6 +1619,121 @@ describe("navigable publication reader", () => {
     ).toBeInTheDocument();
   });
 
+  it("B04 stops automatic audible follow into an unavailable chapter and recovers without restarting", async () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const highlightEnvironment = new ManualSegmentHighlightEnvironment();
+    const settled = vi.fn();
+    const outcome = vi.fn((result: { status: string }) => {
+      if (result.status === "unavailable") narrationSource.stop();
+    });
+    render(
+      <ReaderPublicationContent
+        publication={createPublication({
+          continuationDocument: {
+            ...CONTINUATION_DOCUMENT,
+            blocks: [
+              CONTINUATION_HEADING,
+              ...Array.from({ length: 10_000 }, () => ({
+                kind: "paragraph" as const,
+                children: [text("Synthetic oversized content")],
+              })),
+            ],
+          },
+        })}
+        narrationSource={narrationSource}
+        segmentHighlightEnvironment={highlightEnvironment}
+        onNavigationIntent={async () => undefined}
+        onSettledLocatorChange={settled}
+        onNavigationSettlement={outcome}
+      />,
+    );
+    act(() =>
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0),
+    );
+    expect(highlightEnvironment.highlighted?.toString()).toBe("Opening");
+    act(() =>
+      narrationSource.start(
+        entireLocatedBlockRange(CONTINUATION_LOCATED_BLOCK),
+        1,
+      ),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Reading section unavailable" }),
+    ).toBeInTheDocument();
+    expect(outcome).toHaveBeenCalledWith(
+      { status: "unavailable", reason: "chapter-too-large" },
+      "narration-boundary",
+    );
+    expect(settled).not.toHaveBeenCalled();
+    expect(highlightEnvironment.highlighted).toBeUndefined();
+    expect(narrationSource.observe().state?.phase).toBe("stopped");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
+    });
+    expect(outcome).toHaveBeenLastCalledWith(
+      {
+        status: "settled",
+        locator: expect.objectContaining({ schemaVersion: 1 }),
+      },
+      "chapter-navigation",
+    );
+    expect(narrationSource.observe().state?.phase).toBe("stopped");
+    expect(narrationSource.startLocators).toEqual([]);
+  });
+
+  it("B04 never reports the previous locator as successful placement of an unavailable chapter", async () => {
+    const oversizedContinuation: SemanticDocument = {
+      ...CONTINUATION_DOCUMENT,
+      blocks: [
+        CONTINUATION_HEADING,
+        ...Array.from({ length: 10_000 }, () => ({
+          kind: "paragraph" as const,
+          children: [text("Synthetic oversized content")],
+        })),
+      ],
+    };
+    const settled = vi.fn();
+    const outcome = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication({
+          continuationDocument: oversizedContinuation,
+        })}
+        onNavigationIntent={async () => undefined}
+        onSettledLocatorChange={settled}
+        onNavigationSettlement={outcome}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+    });
+    expect(
+      screen.getByRole("heading", { name: "Reading section unavailable" }),
+    ).toBeInTheDocument();
+    expect(settled).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        schemaVersion: 1,
+        textOffsetCodePoints: expect.any(Number),
+      }),
+      "chapter-navigation",
+    );
+    expect(outcome).toHaveBeenCalledWith(
+      { status: "unavailable", reason: "chapter-too-large" },
+      "chapter-navigation",
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
+    });
+    expect(outcome).toHaveBeenLastCalledWith(
+      {
+        status: "settled",
+        locator: expect.objectContaining({ schemaVersion: 1 }),
+      },
+      "chapter-navigation",
+    );
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
+
   it("shows a focusable fixed fallback for an oversized chapter and keeps recovery navigation available", () => {
     const oversizedParagraph = Object.freeze({
       kind: "paragraph",

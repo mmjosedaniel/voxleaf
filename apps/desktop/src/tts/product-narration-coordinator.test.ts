@@ -3,6 +3,7 @@ import type {
   OpenedPublication,
   PreparedNarrationSegment,
 } from "@voxleaf/epub";
+import { openEpubPublication } from "@voxleaf/epub";
 import {
   createIndex,
   decodeLocatorRangeV1,
@@ -1573,6 +1574,160 @@ describe("product narration coordinator", () => {
       expect.objectContaining({ startLocator: replacement }),
     );
     await coordinator.close();
+  });
+
+  it("B01 starts the capacity-bound FIFO without replacing the generation", async () => {
+    let sequence = 0;
+    const { coordinator, client, backend, intervals } = createHarness({
+      prepareNarration: async () => {
+        const offset = sequence++ * 12;
+        const range = sourceRange(offset, offset + 12);
+        return batchSegments([preparedSegment("Synthetic.", range)], range.end);
+      },
+    });
+    client.synthesisSampleFrames = 48_000;
+    await coordinator.checkAvailability();
+    await coordinator.setSelection({ kind: "prepared", targetMs: 600_000 });
+    coordinator.start();
+    try {
+      for (
+        let turn = 0;
+        turn < 100 &&
+        coordinator.observe().metrics.acceptedAudioUnitCount < 256;
+        turn += 1
+      ) {
+        for (let tick = 0; tick < 100; tick += 1) await Promise.resolve();
+        intervals.forEach((tick) => tick());
+      }
+      expect(coordinator.observe().state?.canPlayAvailableAudio).toBe(true);
+      const generation = client.synthesized[0]?.generationId;
+      expect(coordinator.playAvailableAudio()).toBe(true);
+      expect(backend.active).toBeDefined();
+      expect(client.cancelled).toHaveLength(0);
+      expect(
+        client.synthesized.every((item) => item.generationId === generation),
+      ).toBe(true);
+      coordinator.pause();
+      expect(coordinator.playAvailableAudio()).toBe(false);
+    } finally {
+      await coordinator.close();
+    }
+  });
+
+  it.each(["playing", "paused"] as const)(
+    "B04 terminates %s intent after unavailable placement and requires explicit restart after recovery",
+    async (intent) => {
+      const { coordinator, client } = createHarness();
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      if (intent === "paused") coordinator.pause();
+      await coordinator.beginExternalNavigation("chapter-navigation");
+      coordinator.settleReaderPlacement({
+        status: "unavailable",
+        reason: "chapter-too-large",
+      });
+      coordinator.settleReaderPlacement({
+        status: "unavailable",
+        reason: "chapter-too-large",
+      });
+      expect(coordinator.observe().navigation).toMatchObject({
+        playIntent: "inactive",
+        settling: false,
+        canStart: false,
+      });
+      const calls = client.synthesized.length;
+      coordinator.start();
+      coordinator.startAtVisibleLocator();
+      expect(coordinator.startAtLocator(START_LOCATOR)).toBe(false);
+      for (let tick = 0; tick < 30; tick += 1) await Promise.resolve();
+      expect(client.synthesized).toHaveLength(calls);
+      coordinator.settleReaderPlacement({
+        status: "settled",
+        locator: END_LOCATOR,
+      });
+      coordinator.settleExternalNavigation(END_LOCATOR);
+      expect(coordinator.observe().navigation).toMatchObject({
+        canStart: true,
+        playIntent: "inactive",
+      });
+      expect(client.synthesized).toHaveLength(calls);
+      coordinator.start();
+      await settleUntil(() => client.synthesized.length > calls);
+      await coordinator.close();
+    },
+  );
+
+  it("B03 discards incompatible overlapping boundaries after profile replacement", async () => {
+    let profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    const { buildMinimalEpubFixture } = await vi.importActual<{
+      buildMinimalEpubFixture(options: {
+        chapterDocument: string;
+      }): Promise<Uint8Array>;
+    }>("../../../../packages/epub/test-support/epub-fixture.ts");
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"The quiet reader follows the path through the garden and remembers each ordinary detail. ".repeat(12)}</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic publication failed");
+    const ranges = async (
+      profile: "narration-piper-v2" | "narration-chatterbox-v1",
+    ) => {
+      const prepared = await opened.publication.prepareNarration({
+        startLocator: opened.publication.locators[0]!.startLocator,
+        profile,
+        defaultLanguage: "en",
+        maximumSegments: 16,
+      });
+      if (prepared.status !== "batch" && prepared.status !== "complete")
+        throw new Error("synthetic preparation failed");
+      return prepared.segments.map(({ sourceRange: range }) =>
+        sourceRange(
+          range.start.textOffsetCodePoints,
+          range.end.textOffsetCodePoints,
+        ),
+      );
+    };
+    const oldRanges = await ranges("narration-piper-v2");
+    const newRanges = await ranges("narration-chatterbox-v1");
+    await opened.publication.close();
+    expect(oldRanges[0]!.end.textOffsetCodePoints).toBeLessThan(
+      newRanges[0]!.end.textOffsetCodePoints,
+    );
+    const { coordinator } = createHarness({
+      profileCompatibility: {
+        activeProfileId: () => profileId,
+        activeLanguage: () => "en",
+        isProfileCurrentlyAllowed: () => true,
+        isProfileStartAllowed: async () => true,
+      },
+      prepareNarration: async () =>
+        completeSegments(
+          (profileId.startsWith("piper-") ? oldRanges : newRanges).map(
+            (range) => preparedSegment("Synthetic ordinary prose.", range),
+          ),
+        ),
+    });
+    const requests: ProductNarrationNavigationRequest[] = [];
+    coordinator.subscribeNavigationRequests((request) =>
+      requests.push(request),
+    );
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      await coordinator.stopForConfigurationChange();
+      profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+      await coordinator.refreshSelectedProfile();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      coordinator.goToNextBoundary();
+      await settleUntil(() => requests.length > 0);
+      expect(requests[0]?.locator).toEqual(newRanges[1]!.start);
+    } finally {
+      await coordinator.close();
+    }
   });
 
   it("moves by bounded stable prepared-segment boundaries after containment", async () => {

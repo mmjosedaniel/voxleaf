@@ -304,6 +304,8 @@ class ControlledNarrationCoordinator {
 
   public settleExternalNavigation(): void {}
 
+  public readonly settleReaderPlacement = vi.fn();
+
   public preserveActiveLocator(): void {}
 
   public startAtVisibleLocator(): void {}
@@ -2144,6 +2146,67 @@ describe("desktop reader lifecycle surface", () => {
         "The EPUB opened successfully.",
       ),
     );
+  });
+
+  it("B04 forwards unavailable placement without saving an old locator as a destination", async () => {
+    const publication = createTestPublication("Unavailable chapter book");
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    const repository = createTestReaderPositionRepository();
+    const narration = new ControlledNarrationCoordinator();
+    let readerProps: ReadyPublicationContentProps | undefined;
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      useEffect(() => {
+        props.onInitialRestorationSettled?.({
+          status: "settled",
+          locator: props.publication.locators[0]!.startLocator,
+        });
+      }, [props]);
+      return <div>Controlled unavailable chapter</div>;
+    }
+    render(
+      <App
+        openFlow={flow}
+        readerPositionRepository={repository}
+        createNarrationCoordinator={() =>
+          narration as unknown as ProductNarrationCoordinator
+        }
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+    selectEpub("synthetic-unavailable.epub");
+    await screen.findByRole("heading", { name: "Unavailable chapter book" });
+    const priorWrites = vi.mocked(repository.writePosition).mock.calls.length;
+    act(() =>
+      readerProps?.onNavigationSettlement?.(
+        {
+          status: "unavailable",
+          reason: "chapter-too-large",
+        },
+        "chapter-navigation",
+      ),
+    );
+    expect(narration.settleReaderPlacement).toHaveBeenLastCalledWith({
+      status: "unavailable",
+      reason: "chapter-too-large",
+    });
+    expect(repository.writePosition).toHaveBeenCalledTimes(priorWrites);
+    act(() =>
+      readerProps?.onNavigationSettlement?.(
+        {
+          status: "settled",
+          locator: testLocatorAt(4),
+        },
+        "chapter-navigation",
+      ),
+    );
+    expect(narration.settleReaderPlacement).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: testLocatorAt(4),
+    });
+    expect(repository.writePosition).toHaveBeenCalledTimes(priorWrites);
   });
 
   it("persists heard boundaries without letting active visual movement advance them", async () => {

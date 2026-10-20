@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -20,6 +21,7 @@ import {
   WebDriverClient,
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
+import { createAcquisitionFileBarrier } from "./acquisition-file-barrier.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, "../../..");
@@ -59,6 +61,8 @@ const OBSERVABLE_STAGES = new Set([
   "journey-optional-snapshot",
   "journey-download-cancel",
   "journey-download-retry",
+  "journey-cleanup-failure",
+  "journey-verification-cancel",
   "journey-chatterbox-es",
   "journey-chatterbox-en",
   "journey-restart",
@@ -159,6 +163,9 @@ export function parseArguments(arguments_, environment = process.env) {
   }
   return Object.freeze({
     mode,
+    exerciseAcquisitionCorrections: arguments_.includes(
+      "--exercise-acquisition-corrections",
+    ),
     installedRoot: path.resolve(installedRoot),
     installer: installer === undefined ? undefined : path.resolve(installer),
     receipt: path.resolve(receipt),
@@ -549,6 +556,152 @@ async function invoke(client, command, payload = undefined) {
   );
 }
 
+async function waitForOptionalState(
+  client,
+  expected,
+  timeout = STARTUP_TIMEOUT_MS,
+) {
+  let snapshot;
+  await waitFor(
+    async () => {
+      snapshot = await invoke(client, "optional_chatterbox_snapshot");
+      if (snapshot?.state === "failed" && expected !== "failed") {
+        fail(`acquisition-${snapshot.failure}`);
+      }
+      return snapshot?.state === expected;
+    },
+    timeout,
+    `optional-${expected}`,
+  );
+  return snapshot;
+}
+
+async function startAcquisition(client) {
+  const confirmation = await invoke(client, "select_optional_chatterbox", {
+    profileId: PROFILE_ID,
+  });
+  if (confirmation?.state !== "confirming") fail("corrections-consent");
+  await client.execute(
+    `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
+  );
+}
+
+async function assertAbsent(file, code) {
+  try {
+    await lstat(file);
+  } catch (error) {
+    if (isMissing(error)) return;
+    throw error;
+  }
+  fail(code);
+}
+
+// Real OS file handles exercise the ordinary installed binary. There are no
+// injected native commands, altered artifacts, or development runtime overlays.
+async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
+  const staging = path.join(dataRoot, "tts", "staging", PROFILE_ID);
+  const operation = path.join(staging, "operation");
+  stages.mark("journey-cleanup-failure");
+  await startAcquisition(client);
+  await waitForOptionalState(client, "downloading");
+  await waitFor(
+    async () => {
+      try {
+        return (await lstat(path.join(operation, "downloads"))).isDirectory();
+      } catch (error) {
+        if (isMissing(error)) return false;
+        throw error;
+      }
+    },
+    STARTUP_TIMEOUT_MS,
+    "cleanup-barrier-directory",
+  );
+  const cleanup = createAcquisitionFileBarrier(
+    "cleanup",
+    path.join(operation, "cancellation-cleanup-probe.lock"),
+  );
+  let failed;
+  try {
+    await cleanup.waitFor("ready");
+    await invoke(client, "cancel_optional_chatterbox", {
+      profileId: PROFILE_ID,
+    });
+    failed = await waitForOptionalState(client, "failed");
+    if (failed.failure !== "tts-optional-profile-cleanup-failed")
+      fail("cleanup-failure-code");
+    // Selection must be admitted after the worker has terminated.
+    const retry = await invoke(client, "select_optional_chatterbox", {
+      profileId: PROFILE_ID,
+    });
+    if (retry?.state !== "confirming") fail("cleanup-retry-busy");
+  } finally {
+    await cleanup.close();
+  }
+  await invoke(client, "cancel_optional_chatterbox", { profileId: PROFILE_ID });
+  await waitForOptionalState(client, "absent");
+  await assertAbsent(staging, "cleanup-retry-staging-retained");
+
+  stages.mark("journey-verification-cancel");
+  await startAcquisition(client);
+  const lastModel = path.join(
+    operation,
+    "package",
+    "models",
+    "Cangjie5_TC.json",
+  );
+  await waitFor(
+    async () => {
+      const snapshot = await invoke(client, "optional_chatterbox_snapshot");
+      if (snapshot?.state === "failed")
+        fail(`verification-download-${snapshot.failure}`);
+      if (snapshot?.state === "installed")
+        fail("verification-barrier-window-missed");
+      try {
+        return (await lstat(lastModel)).isFile();
+      } catch (error) {
+        if (isMissing(error)) return false;
+        throw error;
+      }
+    },
+    ACQUISITION_TIMEOUT_MS,
+    "verification-model-staged",
+  );
+  const verification = createAcquisitionFileBarrier("verification", lastModel);
+  let cancelLatencyMs;
+  try {
+    await verification.waitFor("ready");
+    await verification.waitFor("reached");
+    await waitForOptionalState(client, "verifying");
+    const started = performance.now();
+    const cancelled = await invoke(client, "cancel_optional_chatterbox", {
+      profileId: PROFILE_ID,
+    });
+    cancelLatencyMs = Math.round(performance.now() - started);
+    if (cancelled?.state !== "verifying" || cancelLatencyMs > 5_000)
+      fail("verification-cancel-not-responsive");
+    const removal = await client.execute(
+      `return globalThis.__TAURI_INTERNALS__.invoke("remove_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).then(() => "unexpected-success", error => error);`,
+    );
+    if (removal !== "tts-optional-profile-busy")
+      fail("verification-removal-not-busy");
+  } finally {
+    await verification.close();
+  }
+  await waitForOptionalState(client, "absent");
+  await assertAbsent(staging, "verification-staging-retained");
+  await assertAbsent(
+    path.join(dataRoot, "tts", "cb", "3"),
+    "cancelled-package-installed",
+  );
+  return {
+    cleanupFailure: failed.failure,
+    retryAdmitted: true,
+    verificationCancelLatencyMs: cancelLatencyMs,
+    cancelledBeforeCommit: true,
+    stagingRemoved: true,
+  };
+}
+
 export function isRetriableHostGateError(error) {
   return (
     error instanceof WebDriverClientError &&
@@ -750,6 +903,7 @@ export async function runJourney(options, environment = process.env) {
   let session;
   let applicationInstalled = false;
   let journeyReceipt;
+  let corrections;
   try {
     stages.mark("journey-install");
     await runInstaller(options.installer, releaseEnv);
@@ -781,6 +935,13 @@ export async function runJourney(options, environment = process.env) {
       "optional_chatterbox_snapshot",
     );
     if (initial?.state !== "absent") fail("initial-optional-state");
+    if (options.exerciseAcquisitionCorrections) {
+      corrections = await exerciseAcquisitionCorrections(
+        session.client,
+        dataBackup.root,
+        stages,
+      );
+    }
     const confirming = await invoke(
       session.client,
       "select_optional_chatterbox",
@@ -823,13 +984,21 @@ export async function runJourney(options, environment = process.env) {
     await session.client.execute(
       `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
     );
-    await waitFor(
-      async () =>
-        (await invoke(session.client, "optional_chatterbox_snapshot"))
-          ?.state === "installed",
+    await waitForOptionalState(
+      session.client,
+      "installed",
       ACQUISITION_TIMEOUT_MS,
-      "acquisition",
     );
+    if (corrections !== undefined) {
+      const lateCancel = await invoke(
+        session.client,
+        "cancel_optional_chatterbox",
+        { profileId: PROFILE_ID },
+      );
+      if (lateCancel?.state !== "installed")
+        fail("late-cancellation-lost-installation");
+      corrections.lateCancellationPreservesInstallation = true;
+    }
     await session.close();
     session = undefined;
     stages.mark("journey-chatterbox-es");
@@ -890,12 +1059,10 @@ export async function runJourney(options, environment = process.env) {
     await session.client.execute(
       `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
     );
-    await waitFor(
-      async () =>
-        (await invoke(session.client, "optional_chatterbox_snapshot"))
-          ?.state === "installed",
+    await waitForOptionalState(
+      session.client,
+      "installed",
       ACQUISITION_TIMEOUT_MS,
-      "reinstall-acquisition",
     );
     journeyReceipt = await createJourneyReceipt({
       installer: options.installer,
@@ -906,6 +1073,42 @@ export async function runJourney(options, environment = process.env) {
     stages.mark("journey-uninstall");
     await runUninstaller(options.installedRoot, releaseEnv);
     applicationInstalled = false;
+  } catch (error) {
+    // Only fixed paths inside the isolated test root are inspected. Preserve
+    // content-free failure evidence before the finally block restores user data.
+    const paths = [
+      "tts/cb/3",
+      "tts/cb/.previous",
+      `tts/staging/${PROFILE_ID}`,
+      `tts/staging/${PROFILE_ID}/operation/package`,
+      `tts/staging/${PROFILE_ID}/operation/runtime.zip`,
+      `tts/staging/${PROFILE_ID}/operation/downloads/runtime`,
+    ];
+    const managedPaths = await Promise.all(
+      paths.map(async (relative) => {
+        try {
+          const metadata = await lstat(path.join(dataBackup.root, relative));
+          return {
+            path: relative,
+            exists: true,
+            directory: metadata.isDirectory(),
+            symbolicLink: metadata.isSymbolicLink(),
+            bytes: metadata.size,
+          };
+        } catch (inspectionError) {
+          return {
+            path: relative,
+            exists: isMissing(inspectionError) ? false : null,
+          };
+        }
+      }),
+    );
+    await writeFile(
+      `${options.receipt}.failure.json`,
+      `${JSON.stringify({ corrections, managedPaths }, null, 2)}\n`,
+      "utf8",
+    );
+    throw error;
   } finally {
     try {
       await session?.close();
@@ -925,6 +1128,13 @@ export async function runJourney(options, environment = process.env) {
     `${JSON.stringify(journeyReceipt, null, 2)}\n`,
     "utf8",
   );
+  if (corrections !== undefined) {
+    await writeFile(
+      `${options.receipt}.corrections.json`,
+      `${JSON.stringify({ ...corrections, artifact: journeyReceipt.artifact }, null, 2)}\n`,
+      "utf8",
+    );
+  }
   return journeyReceipt;
 }
 

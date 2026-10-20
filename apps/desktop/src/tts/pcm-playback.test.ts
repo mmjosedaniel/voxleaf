@@ -425,6 +425,149 @@ function runCleanupTurns(turns: Array<() => void>): void {
 }
 
 describe("adaptive PCM playback", () => {
+  it.each(["stop", "close", "invalidateForSeek"] as const)(
+    "B08 ignores late rate preparation success and failure after %s",
+    async (invalidate) => {
+      for (const rejectPreparation of [false, true]) {
+        const clock = createManualClock(0);
+        const first = segment(1);
+        const scheduler = readyScheduler(clock, [first], true);
+        scheduler.selectPlaybackRatePercent(75);
+        const unit = synthesize(scheduler, first, 15_000);
+        const backend = new ManualPcmPlaybackBackend(clock);
+        let settle!: () => void;
+        vi.spyOn(backend, "preparePlaybackRate").mockImplementation(
+          () =>
+            new Promise<void>((resolve, reject) => {
+              settle = () =>
+                rejectPreparation
+                  ? reject(new Error("synthetic preparation failure"))
+                  : resolve();
+            }),
+        );
+        const player = new AdaptivePcmPlayer(scheduler, backend);
+        const audible = vi.fn();
+        player.subscribeAudibleProgress(audible);
+        player.synchronize();
+        player.pause();
+        player[invalidate]();
+        settle();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(player.synchronize().state).toBe("stopped");
+        expect(backend.startedSequences).toEqual([]);
+        expect(audible).not.toHaveBeenCalled();
+        expect(backend.releasePreparationCount).toBe(1);
+        player.close();
+        await player.waitForCleanup();
+        expect(unit.releaseCount).toBe(1);
+      }
+    },
+  );
+
+  it("B08 reports a genuine preparation failure while paused and releases audio", async () => {
+    const clock = createManualClock(0);
+    const first = segment(1);
+    const scheduler = readyScheduler(clock, [first], true);
+    scheduler.selectPlaybackRatePercent(75);
+    const unit = synthesize(scheduler, first, 15_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    let rejectPreparation!: (error: Error) => void;
+    vi.spyOn(backend, "preparePlaybackRate").mockImplementation(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectPreparation = reject;
+        }),
+    );
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    player.synchronize();
+    player.pause();
+    rejectPreparation(new Error("synthetic preparation failure"));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(player.synchronize().state).toBe("failed");
+    expect(() => player.resume()).toThrow(PcmPlaybackError);
+    expect(backend.startedSequences).toEqual([]);
+    player.close();
+    await player.waitForCleanup();
+    expect(unit.releaseCount).toBe(1);
+  });
+
+  it("B08 preserves paused intent across rapid rates and Resume before preparation settles", async () => {
+    const clock = createManualClock(0);
+    const first = segment(1);
+    const scheduler = readyScheduler(clock, [first], true);
+    scheduler.selectPlaybackRatePercent(75);
+    synthesize(scheduler, first, 15_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    let finish!: () => void;
+    vi.spyOn(backend, "preparePlaybackRate").mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = () => {
+            backend.ratePrepared = true;
+            resolve();
+          };
+        }),
+    );
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    player.synchronize();
+    player.pause();
+    player.setPlaybackRatePercent(85);
+    player.setPlaybackRatePercent(80);
+    player.resume();
+    expect(backend.startedSequences).toEqual([]);
+    player.pause();
+    finish();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(player.synchronize().state).toBe("paused");
+    player.setPlaybackRatePercent(100);
+    expect(backend.startedSequences).toEqual([]);
+    player.resume();
+    expect(backend.startedRates).toEqual([1]);
+    player.close();
+    await player.waitForCleanup();
+  });
+
+  it("B08 accepts Pause while rate preparation is pending and starts only after Resume", async () => {
+    const clock = createManualClock(0);
+    const first = segment(1);
+    const scheduler = readyScheduler(clock, [first], true);
+    scheduler.selectPlaybackRatePercent(75);
+    const unit = synthesize(scheduler, first, 15_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    let finish!: () => void;
+    vi.spyOn(backend, "preparePlaybackRate").mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = () => {
+            backend.ratePrepared = true;
+            resolve();
+          };
+        }),
+    );
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    try {
+      player.synchronize();
+      expect(backend.startedSequences).toEqual([]);
+      expect(player.pause()).toMatchObject({ state: "paused" });
+      finish();
+      await Promise.resolve();
+      await Promise.resolve();
+      player.synchronize();
+      expect(backend.startedSequences).toEqual([]);
+      expect(unit.releaseCount).toBe(0);
+      player.resume();
+      player.synchronize();
+      expect(backend.startedSequences).toEqual([0]);
+    } finally {
+      player.close();
+      finish?.();
+      await player.waitForCleanup();
+    }
+  });
+
   it("waits for asynchronous backend disposal and closes it only once", async () => {
     const clock = createManualClock(0);
     const scheduler = readyScheduler(clock, [segment(1)], true);
