@@ -312,6 +312,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     signal: AbortSignal,
   ): Promise<Uint8Array> {
     const bytes = await this.#archive.readEntry(binding.path, {
+      resourceOperation: true,
       maximumBytes: this.#archive.budget.policy.maxRasterImageBytes,
       signal,
     });

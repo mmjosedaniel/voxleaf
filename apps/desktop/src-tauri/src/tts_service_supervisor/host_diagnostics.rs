@@ -11,6 +11,58 @@ use crate::tts_service_fake_child::DESCENDANT_SCENARIO;
 use crate::tts_service_fake_child::{CRASH_SCENARIO, PENDING_SCENARIO};
 
 pub fn run_host() -> Result<(), &'static str> {
+    for (scenario, phase) in [
+        (crate::tts_service_fake_child::LOADING_SCENARIO, "loading"),
+        (crate::tts_service_fake_child::WARMING_SCENARIO, "warming"),
+    ] {
+        let supervisor = Arc::new(TtsServiceSupervisor::new(scenario));
+        supervisor.start().map_err(TtsNativeFailure::code)?;
+        let preparing = Arc::clone(&supervisor);
+        let worker = thread::spawn(move || preparing.prepare());
+        let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+        while supervisor
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            .state
+            != phase
+        {
+            if Instant::now() >= deadline {
+                supervisor.force_stop();
+                let _ = worker.join();
+                return Err(TtsNativeFailure::TimedOut.code());
+            }
+            thread::sleep(POLL_INTERVAL);
+        }
+        let started = Instant::now();
+        supervisor.shutdown().map_err(TtsNativeFailure::code)?;
+        if started.elapsed() > super::TERMINATION_TIMEOUT {
+            return Err(TtsNativeFailure::TimedOut.code());
+        }
+        if worker
+            .join()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            != Err(TtsNativeFailure::Cancelled)
+        {
+            return Err(TtsNativeFailure::ProtocolRejected.code());
+        }
+        if supervisor
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            .is_some()
+        {
+            return Err(TtsNativeFailure::InvalidState.code());
+        }
+        *supervisor
+            .child_configuration
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())? =
+            super::ServiceChild::Fake(NORMAL_SCENARIO);
+        supervisor.start().map_err(TtsNativeFailure::code)?;
+        supervisor.prepare().map_err(TtsNativeFailure::code)?;
+        supervisor.shutdown().map_err(TtsNativeFailure::code)?;
+    }
     let segment: Value = serde_json::from_str::<Value>(include_str!(
         "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
     ))

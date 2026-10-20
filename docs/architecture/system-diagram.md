@@ -12,6 +12,14 @@ authority, see the [roadmap](../plans/roadmap.md) and
 
 ## Status legend
 
+The candidate lifecycle corrections in ADR-0056 preserve this component map.
+The existing shutdown command gains an optional expected service-instance ID;
+one read-only native lifecycle observation supplies captured identity/phase
+for the host cancellation harness without querying the child.
+busy native interruption, awaited player disposal, per-read raster deadlines
+and audible-anchored navigation remain within their existing owners. Acceptance
+is tracked in the active reader/narration bug-fix plan.
+
 The Piper runtime refreshes in ADR-0053/ADR-0054 bind packaged and native
 development Piper execution to the current core release lock. Historical candidate locks
 remain evaluation evidence; the one-process local inference topology is unchanged.

@@ -168,6 +168,7 @@ export type ReaderRasterFixtureCase =
 
 export interface ReaderRasterEpubFixtureOptions {
   readonly imageCase?: ReaderRasterFixtureCase;
+  readonly delayedViewport?: boolean;
 }
 
 /** Returns caller-owned bytes for one repository-authored static 1x1 PNG. */
@@ -902,7 +903,7 @@ export async function buildReaderRasterEpubFixture(
 
   return buildMinimalEpubFixture({
     packageDocument,
-    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Raster</title></head><body><h1 id="reader-raster">Raster fixture</h1><p><img src="${imageSource}" alt="Synthetic reader image"/></p></body></html>`,
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Raster</title></head><body><h1 id="reader-raster">Raster fixture</h1>${options.delayedViewport === true ? Array.from({ length: 40 }, (_, index) => `<p id="before-image-${index}">Synthetic reading passage ${index} before the local image.</p>`).join("") : ""}<p><img src="${imageSource}" alt="Synthetic reader image"/></p></body></html>`,
     additionalEntries,
   });
 }

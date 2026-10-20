@@ -150,6 +150,7 @@ export class AdaptivePcmPlayer {
     (observation: AdaptivePcmAudibleProgressObservation) => void
   >();
   readonly #cleanupWaiters = new Set<() => void>();
+  #backendCleanup: Promise<void> | undefined;
   #handle: PcmPlaybackHandle | undefined;
   #activeUnit: ActiveAudibleUnit | undefined;
   #lastProgressObservationAtMs: number | undefined;
@@ -298,7 +299,15 @@ export class AdaptivePcmPlayer {
       this.#terminalState === undefined
         ? this.#invalidate("stopped")
         : (this.#invalidationTransition ?? "shutdown");
-    this.#backend.close();
+    if (this.#backendCleanup === undefined) {
+      try {
+        this.#backendCleanup = Promise.resolve(this.#backend.close());
+      } catch (error) {
+        this.#backendCleanup = Promise.reject(error);
+      }
+      // Cleanup is observed by waitForCleanup, including asynchronous failure.
+      void this.#backendCleanup.catch(() => undefined);
+    }
     this.#audibleProgressListeners.clear();
     return transition;
   }
@@ -317,11 +326,14 @@ export class AdaptivePcmPlayer {
       observation.discardedAudioUnitCount === 0 &&
       !this.#cleanupScheduled
     ) {
-      return Promise.resolve();
+      return this.#backendCleanup ?? Promise.resolve();
     }
-    return new Promise((resolve) => {
+    const released = new Promise<void>((resolve) => {
       this.#cleanupWaiters.add(resolve);
     });
+    return this.#backendCleanup === undefined
+      ? released
+      : Promise.all([released, this.#backendCleanup]).then(() => undefined);
   }
 
   #startCurrentUnit(): void {

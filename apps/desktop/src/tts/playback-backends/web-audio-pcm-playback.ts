@@ -34,6 +34,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   #wsola: IncrementalWsolaV3Node | undefined;
   #wsolaPreparation: Promise<void> | undefined;
   #wsolaPreparationToken = 0;
+  #closeOperation: Promise<void> | undefined;
 
   public constructor(
     createAudioContext: AudioContextFactory = () =>
@@ -51,6 +52,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   public async preparePlaybackRate(
     playbackRatePercent: NarrationPlaybackRatePercentV3,
   ): Promise<void> {
+    if (this.#closeOperation !== undefined)
+      throw new PcmPlaybackError("invalid-state");
     if (playbackRatePercent === 100 || this.#wsola !== undefined) {
       return;
     }
@@ -88,7 +91,6 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       return;
     }
     this.#wsolaPreparationToken += 1;
-    this.#wsolaPreparation = undefined;
     this.#wsola?.close();
     this.#wsola = undefined;
   }
@@ -113,6 +115,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   }
 
   #ensureAudioGraph(): AudioContext {
+    if (this.#closeOperation !== undefined)
+      throw new PcmPlaybackError("invalid-state");
     const context = this.#context ?? this.#createAudioContext();
     this.#context = context;
     const gain = this.#gain ?? context.createGain();
@@ -196,6 +200,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
           stopped = true;
           source.onended = null;
           source.stop();
+          source.disconnect();
+          source.buffer = null;
         }
       },
       setVolumePercent(volumePercent) {
@@ -203,6 +209,9 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       },
       complete() {
         stopped = true;
+        source.onended = null;
+        source.disconnect();
+        source.buffer = null;
       },
     };
     source.onended = () => {
@@ -328,18 +337,24 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     return handle;
   }
 
-  public close(): void {
+  public close(): Promise<void> {
+    if (this.#closeOperation !== undefined) return this.#closeOperation;
     this.#active?.stop();
     this.#active = undefined;
     const context = this.#context;
     this.#context = undefined;
+    this.#gain?.disconnect();
     this.#gain = undefined;
     this.#wsolaPreparationToken += 1;
-    this.#wsolaPreparation = undefined;
+    const preparation = this.#wsolaPreparation;
     this.#wsola?.close();
     this.#wsola = undefined;
-    if (context !== undefined) {
-      void context.close();
-    }
+    this.#closeOperation = Promise.all([
+      context?.close(),
+      // A cancelled addModule may reject when its context closes. Either
+      // settlement has released the pending node; context close must succeed.
+      preparation?.catch(() => undefined),
+    ]).then(() => undefined);
+    return this.#closeOperation;
   }
 }

@@ -16,6 +16,106 @@ function smokeAssert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+test("startup cancellation observes native loading with Tauri's read-only invoke", async () => {
+  const source = await readFile(
+    new URL("./native-smoke/tts-scenarios.mjs", import.meta.url),
+    "utf8",
+  );
+  const instrumentation = source.match(
+    /await driver\.execute\(`\s*(const observations = [\s\S]*?)`\);/,
+  )[1];
+  let clock = 0;
+  let phase = "idle";
+  let native = { schemaVersion: 1, serviceInstanceId: null, state: "stopped" };
+  let finishPreparation;
+  const internals = {};
+  Object.defineProperty(internals, "invoke", {
+    value: async (command) => {
+      if (command === "tts_service_lifecycle_observation") return { ...native };
+      if (command === "start_tts_service") {
+        native = {
+          ...native,
+          serviceInstanceId: "service:test",
+          state: "unloaded",
+        };
+        return [
+          {
+            kind: "handshakeAccepted",
+            serviceInstanceId: native.serviceInstanceId,
+          },
+        ];
+      }
+      if (command === "prepare_tts_service") {
+        native.state = "loading";
+        return new Promise((resolve) => {
+          finishPreparation = resolve;
+        });
+      }
+      if (command === "shutdown_tts_service") {
+        clock += 40;
+        native = { ...native, serviceInstanceId: null, state: "stopped" };
+        finishPreparation([]);
+        return [];
+      }
+      throw new Error("Unexpected native command");
+    },
+  });
+  const context = {
+    __TAURI_INTERNALS__: internals,
+    AudioContext: class {},
+    performance: { now: () => clock },
+    document: {
+      querySelector: () => ({
+        textContent: "Cancel start",
+        getAttribute: (name) =>
+          name === "data-narration-phase" ? phase : native.state,
+      }),
+    },
+  };
+  const execute = (body) =>
+    runInNewContext(`(function() { ${body} })()`, context);
+  execute(instrumentation);
+  const driver = {
+    execute,
+    findElement: async (selector) => selector,
+    sendKeys: async (selector) => {
+      if (selector.includes('"play"')) {
+        phase = "starting";
+        await internals.invoke("start_tts_service");
+        void internals.invoke("prepare_tts_service");
+      } else {
+        assert.equal(
+          native.state,
+          "loading",
+          "cancel must reach actual native loading",
+        );
+        await internals.invoke("shutdown_tts_service");
+        phase = "idle";
+      }
+    },
+  };
+  const subject = createNativeTtsScenarios({
+    assert: smokeAssert,
+    now: () => clock,
+    STARTUP_TIMEOUT_MS: 500,
+    WEBDRIVER_SPACE: " ",
+    waitForCondition: async (_driver, script, timeout) => {
+      const deadline = clock + timeout;
+      while (clock <= deadline) {
+        if (await execute(script)) return;
+        clock += 100;
+      }
+      throw new Error(`Native observation missed: ${native.state}`);
+    },
+  });
+  const result = await subject.cancelAdaptiveStartup(driver, () => {});
+  assert.equal(result.startupNativePhase, "loading");
+  assert.equal(result.startupShutdownMs, 40);
+  assert.equal(result.startupCancellationMs, 40);
+  assert.equal(native.state, "stopped");
+  assert.equal(native.serviceInstanceId, null);
+});
+
 const resources = (overrides = {}) =>
   createNativeResourceObservation({
     assert: smokeAssert,

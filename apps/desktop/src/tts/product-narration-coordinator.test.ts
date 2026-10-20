@@ -43,7 +43,7 @@ import type {
   TtsGenerationScope,
   TtsProcessClientObservation,
 } from "./process-client";
-import { TtsProcessClientError } from "./process-client";
+import { TtsProcessClient, TtsProcessClientError } from "./process-client";
 
 class ManualClock implements ProductNarrationClock {
   public nowMs = 0;
@@ -411,6 +411,7 @@ function createHarness(
     readonly profileCompatibility?: ProductNarrationProfileCompatibility;
     readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
     readonly playbackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
+    readonly serviceClient?: ProductNarrationServiceClient;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -428,7 +429,7 @@ function createHarness(
   const publication = createPublication(prepareNarration);
   const intervals: Array<() => void> = [];
   const dependencies: ProductNarrationCoordinatorDependencies = {
-    client,
+    client: options.serviceClient ?? client,
     clock,
     createIdentifier: (kind, sequence) =>
       `${kind}:product-test-${String(sequence)}`,
@@ -501,6 +502,273 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("joins concurrent close callers until backend disposal completes once", async () => {
+    const { coordinator, backend } = createHarness();
+    let finish!: () => void;
+    const close = vi.spyOn(backend, "close").mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => backend.active !== undefined);
+    let completions = 0;
+    const first = coordinator.close().then(() => {
+      completions += 1;
+    });
+    const second = coordinator.close().then(() => {
+      completions += 1;
+    });
+    try {
+      await Promise.resolve();
+      expect(completions).toBe(0);
+    } finally {
+      finish();
+      await Promise.all([first, second]);
+    }
+    expect(completions).toBe(2);
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([5_000, 5_001])(
+    "shares the final cleanup deadline across operation and backend settlement at %i ms",
+    async (elapsed) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      const { coordinator, backend, client, clock } = createHarness();
+      Object.defineProperty(clock, "nowMs", { get: () => Date.now() });
+      let finishPreparation!: () => void;
+      let finishBackend!: () => void;
+      vi.spyOn(client, "prepare").mockImplementation(async () => {
+        client.state = "loading";
+        await new Promise<void>((resolve) => {
+          finishPreparation = resolve;
+        });
+        throw new TtsProcessClientError("tts-service-cancelled");
+      });
+      vi.spyOn(backend, "close").mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishBackend = resolve;
+          }),
+      );
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.state === "loading");
+        const stopped = coordinator.stop();
+        await settleUntil(() => client.state === "stopped");
+        await vi.advanceTimersByTimeAsync(4_000);
+        finishPreparation();
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(elapsed - 4_000);
+        finishBackend();
+        await stopped;
+        expect(coordinator.observe().recovery.phase).toBe(
+          elapsed === 5_000 ? "operational" : "contained",
+        );
+      } finally {
+        finishPreparation?.();
+        finishBackend?.();
+        await coordinator.close();
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("permits explicit restart after the typed client's completed-synthesis cancellation race", async () => {
+    const serviceInstanceId = "service:coordinator-race";
+    const state = (value: string) => ({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      kind: "state",
+      serviceInstanceId,
+      state: value,
+    });
+    const capabilities = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      kind: "capabilities",
+      serviceInstanceId,
+      report: {
+        schemaVersion: 1,
+        capabilities: {
+          localSpeechGeneration: "unknown",
+          streamingGeneration: "unsupported",
+          generationCancellation: "unsupported",
+          hardwareAcceleration: "unknown",
+          cpuFallback: "unsupported",
+        },
+      },
+      cancellationContainment: "identity-invalidation-then-worker-termination",
+    };
+    let finishSynthesis!: (value: ArrayBuffer) => void;
+    let starts = 0;
+    let syntheses = 0;
+    const invoke = vi.fn(async (command: string): Promise<unknown> => {
+      if (
+        command === "tts_profile_configuration_available" ||
+        command === "exact_tts_demo_available"
+      )
+        return true;
+      if (command === "start_tts_service") {
+        starts += 1;
+        return [
+          state("handshaking"),
+          {
+            schemaVersion: 1,
+            protocolVersion: 1,
+            kind: "handshakeAccepted",
+            serviceInstanceId,
+          },
+          state("unloaded"),
+          capabilities,
+        ];
+      }
+      if (command === "prepare_tts_service")
+        return [
+          state("loading"),
+          state("warming"),
+          state("ready"),
+          capabilities,
+        ];
+      if (command === "synthesize_tts_segment") {
+        syntheses += 1;
+        if (syntheses === 1)
+          return new Promise<ArrayBuffer>((resolve) => {
+            finishSynthesis = resolve;
+          });
+        return new Float32Array(360_000).buffer;
+      }
+      if (command === "cancel_tts_generation")
+        throw "tts-service-invalid-state";
+      if (command === "shutdown_tts_service")
+        return [state("stopping"), state("stopped")];
+      throw new Error("unexpected synthetic command");
+    });
+    const client = new TtsProcessClient(
+      async <T>(command: string) => (await invoke(command)) as T,
+    );
+    const { coordinator, backend } = createHarness({ serviceClient: client });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => syntheses === 1);
+    const stopped = coordinator.stop();
+    await settleUntil(() => client.observe().state === "stopped");
+    const staleAudio = new Float32Array(24_000).fill(0.25);
+    finishSynthesis(staleAudio.buffer);
+    await stopped;
+    expect(staleAudio.every((value) => value === 0)).toBe(true);
+    expect(coordinator.observe().recovery.phase).toBe("operational");
+    coordinator.start();
+    await settleUntil(() => backend.active !== undefined);
+    expect(starts).toBe(2);
+    await coordinator.close();
+  });
+  it("interrupts pending preparation before waiting for its completion", async () => {
+    const { coordinator, client } = createHarness();
+    let rejectPreparation!: (reason: unknown) => void;
+    vi.spyOn(client, "prepare").mockImplementation(async () => {
+      client.state = "loading";
+      await new Promise((_, reject) => {
+        rejectPreparation = reject;
+      });
+      return client.observe();
+    });
+    const shutdown = client.shutdown.bind(client);
+    vi.spyOn(client, "shutdown").mockImplementation(async () => {
+      rejectPreparation(new TtsProcessClientError("tts-service-cancelled"));
+      await shutdown();
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => client.state === "loading");
+    const stopped = coordinator.stop();
+    try {
+      expect(client.shutdownCount).toBe(1);
+    } finally {
+      rejectPreparation(new TtsProcessClientError("tts-service-cancelled"));
+      await stopped;
+      await coordinator.close();
+    }
+  });
+
+  it("closes the discarded playback backend on Stop", async () => {
+    const { coordinator, backend } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => backend.active !== undefined);
+    await coordinator.stop();
+    expect(backend.closed).toBe(true);
+    await coordinator.close();
+  });
+
+  it.each(
+    [63, 64, 65, 112].flatMap((count) =>
+      ["prepared", "quick"].map((mode) => ({ count, mode })),
+    ),
+  )(
+    "keeps the audible successor navigable with $count segments in $mode mode",
+    async ({ count, mode }) => {
+      const ranges = Array.from({ length: count }, (_, index) =>
+        sourceRange(index * 12, (index + 1) * 12),
+      );
+      const { coordinator, client, backend, intervals } = createHarness({
+        prepareNarration: async ({ startLocator }) => {
+          const index =
+            decodeReadingLocatorV1(startLocator).textOffsetCodePoints / 12;
+          const entries = ranges
+            .slice(index, index + 8)
+            .map((range) => preparedSegment("Synthetic passage.", range));
+          return index + entries.length === count
+            ? completeSegments(entries)
+            : batchSegments(entries, ranges[index + entries.length]!.start);
+        },
+      });
+      client.synthesisSampleFrames = mode === "prepared" ? 144_000 : 14_400;
+      await coordinator.checkAvailability();
+      if (mode === "prepared")
+        await coordinator.setSelection({ kind: "prepared", targetMs: 600_000 });
+      coordinator.start();
+      // Yield macrotasks as well as microtasks: the pump is deliberately bounded.
+      await vi.waitFor(() =>
+        expect(
+          coordinator.observe().metrics.acceptedAudioUnitCount,
+        ).toBeGreaterThanOrEqual(Math.min(count, 100)),
+      );
+      await settleUntil(() => backend.active !== undefined);
+      const requests: ProductNarrationNavigationRequest[] = [];
+      coordinator.subscribeNavigationRequests((request) =>
+        requests.push(request),
+      );
+      try {
+        const advance = count > 100 ? 70 : 0;
+        for (let index = 0; index < advance; index += 1) {
+          backend.finish();
+          intervals[0]?.();
+          await settleUntil(() => backend.active !== undefined);
+        }
+        if (advance > 0) coordinator.pause();
+        expect(coordinator.observe().navigation.canGoNext).toBe(true);
+        coordinator.goToNextBoundary();
+        await vi.waitFor(() => expect(requests).toHaveLength(1));
+        expect(requests[0]!.locator).toEqual(ranges[advance + 1]!.start);
+        if (advance > 0) {
+          coordinator.settleExternalNavigation(requests[0]!.locator);
+          await settleUntil(() => !coordinator.observe().navigation.settling);
+          expect(coordinator.observe().navigation.playIntent).toBe("paused");
+          coordinator.goToPreviousBoundary();
+          await vi.waitFor(() => expect(requests).toHaveLength(2));
+          expect(requests[1]!.locator).toEqual(ranges[advance]!.start);
+        }
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
   it("separates buffered generated units by semantic boundary and reports only intentional time", async () => {
     const firstRange = sourceRange(0, 12);
     const secondRange = sourceRange(12, 24);

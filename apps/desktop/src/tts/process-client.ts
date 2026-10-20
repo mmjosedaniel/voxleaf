@@ -262,6 +262,8 @@ export class TtsProcessClient {
   private state: TtsServiceStateV1 = "stopped";
   private active: TtsGenerationScope | undefined;
   private invalidation = 0;
+  private starting: Promise<TtsProcessClientObservation> | undefined;
+  private stopping: Promise<void> | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
     this.invokePort = invokePort;
@@ -314,42 +316,81 @@ export class TtsProcessClient {
     profileId?: string,
     language?: NarrationLanguageV1,
   ): Promise<TtsProcessClientObservation> {
-    if (!["stopped", "failed"].includes(this.state)) {
+    if (
+      this.stopping !== undefined ||
+      this.starting !== undefined ||
+      !["stopped", "failed"].includes(this.state)
+    ) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
-    const controls = await this.invokeControls(
-      "start_tts_service",
-      profileId === undefined ? undefined : { profileId, language },
-    );
-    expectKinds(controls, [
-      "state",
-      "handshakeAccepted",
-      "state",
-      "capabilities",
-    ]);
-    const accepted = controls[1]!;
-    const handshaking = controls[0]!;
-    const unloaded = controls[2]!;
-    if (
-      handshaking.kind !== "state" ||
-      handshaking.state !== "handshaking" ||
-      accepted.kind !== "handshakeAccepted" ||
-      unloaded.kind !== "state" ||
-      unloaded.state !== "unloaded" ||
-      hasForeignServiceInstance(controls, accepted.serviceInstanceId)
-    ) {
-      throw new TtsProcessClientError("tts-service-invalid-response");
+    const token = this.invalidation;
+    this.state = "starting";
+    const operation = this.startService(token, profileId, language);
+    this.starting = operation;
+    try {
+      return await operation;
+    } finally {
+      if (this.starting === operation) this.starting = undefined;
     }
-    this.serviceInstanceId = accepted.serviceInstanceId;
-    this.state = "unloaded";
-    return this.observe();
+  }
+
+  private async startService(
+    token: number,
+    profileId?: string,
+    language?: NarrationLanguageV1,
+  ): Promise<TtsProcessClientObservation> {
+    try {
+      const controls = await this.invokeControls(
+        "start_tts_service",
+        profileId === undefined ? undefined : { profileId, language },
+      );
+      expectKinds(controls, [
+        "state",
+        "handshakeAccepted",
+        "state",
+        "capabilities",
+      ]);
+      const accepted = controls[1]!;
+      const handshaking = controls[0]!;
+      const unloaded = controls[2]!;
+      if (
+        handshaking.kind !== "state" ||
+        handshaking.state !== "handshaking" ||
+        accepted.kind !== "handshakeAccepted" ||
+        unloaded.kind !== "state" ||
+        unloaded.state !== "unloaded" ||
+        hasForeignServiceInstance(controls, accepted.serviceInstanceId)
+      ) {
+        throw new TtsProcessClientError("tts-service-invalid-response");
+      }
+      this.serviceInstanceId = accepted.serviceInstanceId;
+      if (token !== this.invalidation) {
+        throw new TtsProcessClientError("tts-service-cancelled");
+      }
+      this.state = "unloaded";
+      return this.observe();
+    } catch (error) {
+      if (token !== this.invalidation)
+        throw new TtsProcessClientError("tts-service-cancelled");
+      this.state = "failed";
+      throw error;
+    }
   }
 
   public async prepare(): Promise<TtsProcessClientObservation> {
     if (this.state !== "unloaded") {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
-    const controls = await this.invokeControls("prepare_tts_service");
+    const token = this.invalidation;
+    const controls = await this.invokeControls("prepare_tts_service").catch(
+      (error: unknown) => {
+        if (token !== this.invalidation)
+          throw new TtsProcessClientError("tts-service-cancelled");
+        throw error;
+      },
+    );
+    if (token !== this.invalidation)
+      throw new TtsProcessClientError("tts-service-cancelled");
     expectKinds(controls, ["state", "state", "state", "capabilities"]);
     const loading = controls[0]!;
     const warming = controls[1]!;
@@ -373,7 +414,10 @@ export class TtsProcessClient {
     if (this.serviceInstanceId === undefined) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
+    const token = this.invalidation;
     const controls = await this.invokeControls("health_tts_service");
+    if (token !== this.invalidation)
+      throw new TtsProcessClientError("tts-service-cancelled");
     expectKinds(controls, ["state", "capabilities"]);
     const state = controls[0]!;
     if (
@@ -490,15 +534,75 @@ export class TtsProcessClient {
   }
 
   public async shutdown(): Promise<void> {
+    if (this.stopping !== undefined) return this.stopping;
     this.invalidation += 1;
     this.active = undefined;
     this.sink.release();
+    const operation = this.stopService();
+    this.stopping = operation;
+    try {
+      await operation;
+    } finally {
+      if (this.stopping === operation) this.stopping = undefined;
+    }
+  }
+
+  private async stopService(): Promise<void> {
+    const starting = this.starting;
+    if (starting !== undefined) {
+      this.state = "stopping";
+      // Interrupt an already spawned child. A not-yet-dispatched start may
+      // still return later; retain it and then contain its exact identity.
+      let interrupted: readonly TtsProtocolControlV1[] | undefined;
+      try {
+        interrupted = await this.invokeControls("shutdown_tts_service");
+      } catch (error) {
+        if (
+          !(error instanceof TtsProcessClientError) ||
+          !["tts-service-invalid-state", "tts-service-cancelled"].includes(
+            error.code,
+          )
+        )
+          throw error;
+      }
+      await starting.catch(() => undefined);
+      if (interrupted !== undefined && this.serviceInstanceId === undefined) {
+        expectKinds(interrupted, ["state", "state"]);
+        const first = interrupted[0]!;
+        const last = interrupted[1]!;
+        if (
+          first.kind !== "state" ||
+          first.state !== "stopping" ||
+          last.kind !== "state" ||
+          last.state !== "stopped" ||
+          first.serviceInstanceId !== last.serviceInstanceId
+        )
+          throw new TtsProcessClientError("tts-service-invalid-response");
+      }
+      if (
+        interrupted !== undefined &&
+        this.serviceInstanceId !== undefined &&
+        !hasForeignServiceInstance(interrupted, this.serviceInstanceId)
+      ) {
+        this.validateShutdown(interrupted);
+        this.serviceInstanceId = undefined;
+      }
+    }
     if (this.serviceInstanceId === undefined || this.state === "stopped") {
       this.state = "stopped";
       this.serviceInstanceId = undefined;
       return;
     }
-    const controls = await this.invokeControls("shutdown_tts_service");
+    this.state = "stopping";
+    const controls = await this.invokeControls("shutdown_tts_service", {
+      serviceInstanceId: this.serviceInstanceId,
+    });
+    this.validateShutdown(controls);
+    this.state = "stopped";
+    this.serviceInstanceId = undefined;
+  }
+
+  private validateShutdown(controls: readonly TtsProtocolControlV1[]): void {
     expectKinds(controls, ["state", "state"]);
     const stopping = controls[0]!;
     const stopped = controls[1]!;
@@ -511,8 +615,6 @@ export class TtsProcessClient {
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
-    this.state = "stopped";
-    this.serviceInstanceId = undefined;
   }
 
   private async invokeControls(

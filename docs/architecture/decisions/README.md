@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0056: Bound reader and narration lifecycle operations](ADR-0056-bound-reader-narration-lifecycle-operations.md): implemented candidate; acceptance pending.
+
 Use an ADR for a durable decision that future contributors or Codex might otherwise reverse.
 
 ## Naming

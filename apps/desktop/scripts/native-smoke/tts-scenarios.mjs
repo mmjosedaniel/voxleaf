@@ -40,6 +40,72 @@ export function createNativeTtsScenarios({
   delay = wait,
   now = () => Date.now(),
 }) {
+  async function cancelAdaptiveStartup(driver, setStage) {
+    setStage(
+      "adaptive exact-host Cancel start during native model preparation",
+    );
+    const before = await driver.execute(
+      `return globalThis.__TAURI_INTERNALS__.invoke("tts_service_lifecycle_observation");`,
+    );
+    assert(
+      before?.schemaVersion === 1 &&
+        before.state === "stopped" &&
+        before.serviceInstanceId === null,
+      "Native startup cancellation requires an unowned service.",
+    );
+    const play = await driver.findElement('[data-narration-action="play"]');
+    await driver.sendKeys(play, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `return globalThis.__TAURI_INTERNALS__.invoke("tts_service_lifecycle_observation").then((state) => {
+        const matched = state.schemaVersion === 1 && typeof state.serviceInstanceId === "string" && ["loading", "warming"].includes(state.state);
+        if (matched) globalThis.__voxleafNarrationLifecycle.startupState = state;
+        return matched;
+      });`,
+      STARTUP_TIMEOUT_MS,
+    );
+    const observed = await driver.execute(
+      `return globalThis.__voxleafNarrationLifecycle.startupState;`,
+    );
+    const stillPreparing = await driver.execute(
+      `return globalThis.__TAURI_INTERNALS__.invoke("tts_service_lifecycle_observation").then((state) =>
+        state.serviceInstanceId === globalThis.__voxleafNarrationLifecycle.startupState.serviceInstanceId &&
+        ["loading", "warming"].includes(state.state) &&
+        document.querySelector('[data-narration-action="stop"]')?.textContent === "Cancel start");`,
+    );
+    assert(
+      stillPreparing === true,
+      "Native startup cancellation phase was not observed.",
+    );
+    const cancelStart = await driver.findElement(
+      '[data-narration-action="stop"]',
+    );
+    const cancelAt = now();
+    await driver.sendKeys(cancelStart, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `return globalThis.__TAURI_INTERNALS__.invoke("tts_service_lifecycle_observation").then((state) =>
+        state.state === "stopped" && state.serviceInstanceId === null);`,
+      Math.max(1, 2_000 - (now() - cancelAt)),
+    );
+    const startupShutdownMs = now() - cancelAt;
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration"); return owner?.getAttribute("data-narration-phase") === "idle" && owner?.getAttribute("data-narration-service-state") === "stopped";`,
+      Math.max(1, 5_000 - (now() - cancelAt)),
+    );
+    const startupCancellationMs = now() - cancelAt;
+    assert(
+      startupShutdownMs <= 2_000 && startupCancellationMs <= 5_000,
+      "Native startup cancellation exceeded final cleanup bound.",
+    );
+    return {
+      startupCancellationMs,
+      startupNativePhase: observed.state,
+      startupShutdownMs,
+    };
+  }
+
   async function installAdaptiveSynchronizationInstrumentation(driver) {
     const installed = await driver.execute(
       `const registry = CSS.highlights;
@@ -973,6 +1039,16 @@ export function createNativeTtsScenarios({
     );
 
     setStage("adaptive exact-host synchronization instrumentation");
+    await driver.execute(`
+      const observations = { createdContexts: 0, closedContexts: 0, startupState: null };
+      globalThis.__voxleafNarrationLifecycle = observations;
+      const OriginalContext = globalThis.AudioContext;
+      globalThis.AudioContext = class extends OriginalContext {
+        constructor(options) { super(options); observations.createdContexts += 1; }
+        async close() { await super.close(); observations.closedContexts += 1; }
+      };
+      return true;
+    `);
     await driver.setWindowRect(800, 480);
     await driver.executeCdp("Emulation.setEmulatedMedia", {
       media: "",
@@ -1191,7 +1267,15 @@ export function createNativeTtsScenarios({
     let cleanupResourceReleaseMs;
     let resourceSamples;
     let generatedAudioFiles;
+    let startupCancellationMs = null;
+    let startupNativePhase = null;
+    let startupShutdownMs = null;
+    let audioContextLifecycle;
     try {
+      if (ADAPTIVE_TTS_PROFILE_ID === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+        ({ startupCancellationMs, startupNativePhase, startupShutdownMs } =
+          await cancelAdaptiveStartup(driver, setStage));
+      }
       setStage("adaptive exact-host keyboard leaf quick start");
       const quickCommandAtMs = now();
       await runWebDriverElementInteractionWithRetry({
@@ -2036,6 +2120,15 @@ export function createNativeTtsScenarios({
         ],
       ]);
       setStage("adaptive exact-host bounded resource cleanup");
+      audioContextLifecycle = await driver.execute(
+        `const owner = globalThis.__voxleafNarrationLifecycle; return { createdContexts: owner.createdContexts, closedContexts: owner.closedContexts };`,
+      );
+      assert(
+        audioContextLifecycle.createdContexts > 0 &&
+          audioContextLifecycle.createdContexts ===
+            audioContextLifecycle.closedContexts,
+        "Native audio context lifecycle cleanup failed.",
+      );
       const cleanupResources = await waitForAdaptiveResourceCleanup(
         rootProcessId,
         baselineWorkingSetBytes,
@@ -2167,6 +2260,10 @@ export function createNativeTtsScenarios({
         prepared: preparedObservation,
         warmPreparedRtf,
         cancellationMs,
+        startupCancellationMs,
+        startupNativePhase,
+        startupShutdownMs,
+        audioContextLifecycle,
         processTreeWorkingSetBytes: {
           baseline: baselineWorkingSetBytes,
           quick: quickResourceWorkingSetBytes,
@@ -2266,6 +2363,9 @@ export function createNativeTtsScenarios({
         `ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
           profileId,
           state: optionalState,
+          failure: await driver.execute(
+            `return globalThis.__TAURI_INTERNALS__.invoke("optional_chatterbox_snapshot").then((snapshot) => snapshot.failure ?? null);`,
+          ),
         })}`,
       );
       assert(
@@ -2624,6 +2724,7 @@ export function createNativeTtsScenarios({
   }
 
   return {
+    cancelAdaptiveStartup,
     paragraphLeafActivationDelivered,
     waitForAdaptivePlaying,
     runAdaptiveTtsExactHostMatrix,

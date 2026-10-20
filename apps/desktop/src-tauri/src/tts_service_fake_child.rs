@@ -18,6 +18,8 @@ pub const NORMAL_SCENARIO: &str = "normal";
 pub const PENDING_SCENARIO: &str = "pending";
 pub const CRASH_SCENARIO: &str = "crash";
 pub const DESCENDANT_SCENARIO: &str = "descendant";
+pub const LOADING_SCENARIO: &str = "loading";
+pub const WARMING_SCENARIO: &str = "warming";
 
 const SYNTHETIC_SAMPLE_COUNT: usize = 4_800;
 const SYNTHETIC_AUDIO_BYTES: usize = SYNTHETIC_SAMPLE_COUNT * size_of::<f32>();
@@ -29,6 +31,8 @@ enum Scenario {
     Pending,
     Crash,
     Descendant,
+    Loading,
+    Warming,
 }
 
 impl Scenario {
@@ -38,6 +42,8 @@ impl Scenario {
             PENDING_SCENARIO => Ok(Self::Pending),
             CRASH_SCENARIO => Ok(Self::Crash),
             DESCENDANT_SCENARIO => Ok(Self::Descendant),
+            LOADING_SCENARIO => Ok(Self::Loading),
+            WARMING_SCENARIO => Ok(Self::Warming),
             _ => Err(TtsNativeFailure::InvalidInput),
         }
     }
@@ -257,12 +263,25 @@ fn run_child_with(
         match control_kind(&message)? {
             "load" => {
                 write_control(writer, &state_message(&service_instance_id, "loading"))?;
+                if scenario == Scenario::Loading {
+                    writer
+                        .flush()
+                        .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+                    loop {
+                        thread::sleep(Duration::from_secs(1));
+                    }
+                }
                 write_control(writer, &state_message(&service_instance_id, "warming"))?;
                 writer
                     .flush()
                     .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
             }
             "warm" => {
+                if scenario == Scenario::Warming {
+                    loop {
+                        thread::sleep(Duration::from_secs(1));
+                    }
+                }
                 write_control(writer, &state_message(&service_instance_id, "ready"))?;
                 write_control(writer, &capabilities_message(&service_instance_id))?;
                 writer
@@ -283,7 +302,7 @@ fn run_child_with(
                     .flush()
                     .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
                 match scenario {
-                    Scenario::Normal => {
+                    Scenario::Normal | Scenario::Loading | Scenario::Warming => {
                         thread::sleep(SYNTHETIC_GENERATION_DELAY);
                         write_generation(writer, &service_instance_id, &identity)?;
                     }

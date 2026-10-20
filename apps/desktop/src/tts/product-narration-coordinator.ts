@@ -402,6 +402,7 @@ export class ProductNarrationCoordinator {
   #recoveryOperation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
+  #closeOperation: Promise<void> | undefined;
   #runToken = 0;
   #nextSequence = 0;
   #activeScope: TtsGenerationScope | undefined;
@@ -442,7 +443,7 @@ export class ProductNarrationCoordinator {
       dependencies.clock ??
       Object.freeze({
         get nowMs() {
-          return Date.now();
+          return Math.floor(performance.now());
         },
       });
     this.#createPlayer =
@@ -956,6 +957,12 @@ export class ProductNarrationCoordinator {
           if (observation.kind === "segment-started") {
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
+            this.#rememberBoundary(observation.sourceRange);
+            this.#scheduler?.forEachBufferedSourceRange((range) =>
+              this.#rememberBoundary(range),
+            );
+            for (const entry of this.#prepared.values())
+              this.#rememberBoundary(entry.contract.sourceRange);
             this.#visibleLocator = observation.sourceRange.start;
             this.#latestHeardLocator = observation.sourceRange.start;
             this.#publish();
@@ -1081,11 +1088,15 @@ export class ProductNarrationCoordinator {
     }
     const operation = this.#operation;
     const scope = this.#activeScope;
+    const cleanupDeadline =
+      this.#clock.nowMs +
+      HARDWARE_PROFILE_AUTHORITY_V1.cleanup.finalCleanupMaximumMs;
     const stopToken = ++this.#runToken;
     this.#identity = undefined;
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
-    const transition = this.#player.stop();
+    const player = this.#player;
+    const transition = player.close();
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
@@ -1094,16 +1105,59 @@ export class ProductNarrationCoordinator {
     this.#activeScope = undefined;
     this.#audibleRange = undefined;
     this.#publish();
+    let cleanupFailed = false;
     try {
       if (transition === "cancel" && scope !== undefined) {
-        await this.#client.cancel(scope);
-        await operation?.catch(() => undefined);
+        await this.#withinCleanupDeadline(
+          this.#client.cancel(scope),
+          Math.min(
+            cleanupDeadline,
+            this.#clock.nowMs +
+              HARDWARE_PROFILE_AUTHORITY_V1.cleanup
+                .processTreeTerminationMaximumMs,
+          ),
+        );
       } else {
-        await operation?.catch(() => undefined);
-        await this.#client.shutdown();
+        await this.#withinCleanupDeadline(
+          this.#client.shutdown(),
+          cleanupDeadline,
+        );
+      }
+    } catch (error) {
+      // The typed client deliberately preserves this cancellation error after
+      // validated shutdown when native synthesis completed first.
+      const completionRace =
+        error instanceof TtsProcessClientError &&
+        error.code === "tts-service-invalid-state";
+      cleanupFailed = !completionRace;
+      try {
+        await this.#withinCleanupDeadline(
+          this.#client.shutdown(),
+          cleanupDeadline,
+        );
+      } catch {
+        cleanupFailed = true;
+      }
+    }
+    try {
+      await this.#withinCleanupDeadline(
+        Promise.all([
+          operation?.catch(() => undefined) ?? Promise.resolve(),
+          player.waitForCleanup(),
+        ]),
+        cleanupDeadline,
+      );
+      const service = this.#client.observe();
+      if (
+        service.state !== "stopped" ||
+        service.serviceInstanceId !== undefined ||
+        service.hasActiveGeneration ||
+        service.retainedAudioUnits !== 0
+      ) {
+        cleanupFailed = true;
       }
     } catch {
-      // Eligibility was invalidated before native containment was attempted.
+      cleanupFailed = true;
     }
     if (this.#operation === operation) {
       this.#operation = undefined;
@@ -1116,6 +1170,20 @@ export class ProductNarrationCoordinator {
     } catch {
       // A failed operation may already have settled the service boundary.
     }
+    if (cleanupFailed) {
+      this.#failure = "tts-service-failed";
+      this.#availability = "unavailable";
+      this.#terminalState = this.#stateFromActiveOwners();
+      if (this.#recovery.observe().phase === "operational") {
+        this.#recovery.detectFailure("cleanup-failed", this.#profileId);
+        this.#recovery.markIdentityInvalidated();
+        this.#recovery.markPlaybackAndPreparationReleased();
+        this.#recovery.markServiceContained();
+        this.#recovery.markCleanupFailed("cleanup-failed");
+      }
+      this.#publish();
+      return;
+    }
     this.#scheduler = undefined;
     this.#player = undefined;
     this.#terminalState = undefined;
@@ -1124,17 +1192,17 @@ export class ProductNarrationCoordinator {
     this.#publish();
   }
 
-  public async close(): Promise<void> {
-    if (this.#closed) {
-      return;
-    }
+  public close(): Promise<void> {
+    if (this.#closeOperation !== undefined) return this.#closeOperation;
     this.#closed = true;
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
-    await this.stop();
-    this.#listeners.clear();
-    this.#audibleProgressListeners.clear();
-    this.#navigationListeners.clear();
+    this.#closeOperation = this.stop().then(() => {
+      this.#listeners.clear();
+      this.#audibleProgressListeners.clear();
+      this.#navigationListeners.clear();
+    });
+    return this.#closeOperation;
   }
 
   #beginNavigation(
@@ -1273,10 +1341,14 @@ export class ProductNarrationCoordinator {
       compareLocatorPosition(left.start, right.start),
     );
     if (this.#knownBoundaries.length > NAVIGATION_BOUNDARY_LIMIT) {
-      this.#knownBoundaries.splice(
-        0,
-        this.#knownBoundaries.length - NAVIGATION_BOUNDARY_LIMIT,
-      );
+      const current = this.#currentBoundaryIndex();
+      // Keep current/next and a bounded recent past. Distant preparation can
+      // be borrowed again from the FIFO when the audible range advances.
+      if (current !== undefined && current > NAVIGATION_BOUNDARY_LIMIT / 2) {
+        this.#knownBoundaries.shift();
+      } else {
+        this.#knownBoundaries.pop();
+      }
     }
   }
 
@@ -1368,6 +1440,7 @@ export class ProductNarrationCoordinator {
             }
             return;
           }
+          if (runToken !== this.#runToken) return;
           scheduler.beginServiceStart();
           this.#publish();
           this.#profileId = profileId;
@@ -1774,6 +1847,22 @@ export class ProductNarrationCoordinator {
         globalThis.clearTimeout(timeout);
       }
     }
+  }
+
+  async #withinCleanupDeadline<T>(
+    operation: Promise<T>,
+    deadline: number,
+  ): Promise<T> {
+    const remaining = deadline - this.#clock.nowMs;
+    // Inclusive authority: exact deadline is admitted, maximum plus one fails.
+    const result = await this.#within(
+      operation,
+      Math.max(0, remaining) + 1,
+      "cleanup-failed",
+    );
+    if (this.#clock.nowMs > deadline)
+      throw new ProductNarrationRecoveryError("cleanup-failed");
+    return result;
   }
 
   #failPreparation(runToken: number): void {

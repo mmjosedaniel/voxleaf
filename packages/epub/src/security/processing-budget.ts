@@ -186,8 +186,9 @@ export class EpubProcessingBudget {
     compressedSize: number,
     declaredUncompressedSize: number,
     maximumOutputBytes = this.policy.maxEntryUncompressedBytes,
+    checkpoint: () => void = () => this.checkpoint(),
   ): ArchiveEntryReadBudget {
-    this.checkpoint();
+    checkpoint();
     assertSafeNonnegativeInteger(compressedSize);
     assertSafeNonnegativeInteger(declaredUncompressedSize);
     assertSafeNonnegativeInteger(maximumOutputBytes);
@@ -210,9 +211,9 @@ export class EpubProcessingBudget {
     let completed = false;
 
     return new ScopedArchiveEntryReadBudget(
-      () => this.checkpoint(),
+      checkpoint,
       (byteLength) => {
-        this.checkpoint();
+        checkpoint();
         assertSafeNonnegativeInteger(byteLength);
         if (completed) {
           return fail("internal-failure");
@@ -249,7 +250,7 @@ export class EpubProcessingBudget {
         this.#observedUncompressedBytes = nextTotalObserved;
       },
       () => {
-        this.checkpoint();
+        checkpoint();
         if (completed || observedBytes !== declaredUncompressedSize) {
           return fail("internal-failure");
         }
@@ -262,6 +263,18 @@ export class EpubProcessingBudget {
       },
       () => observedBytes,
     );
+  }
+
+  /** Fresh deadline/abort scope only; archive byte and ratio accounting stays here. */
+  public createResourceOperation(signal?: AbortSignal): EpubProcessingBudget {
+    const signals = [this.signal, signal].filter(
+      (value): value is AbortSignal => value !== undefined,
+    );
+    return new EpubProcessingBudget({
+      policy: this.policy,
+      clock: this.#clock,
+      ...(signals.length === 0 ? {} : { signal: AbortSignal.any(signals) }),
+    });
   }
 
   public observeDecodedPublicationText(byteLength: number): void {
