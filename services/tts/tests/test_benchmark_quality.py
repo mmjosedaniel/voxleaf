@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import cast
 
@@ -523,6 +524,96 @@ def test_pure_quality_scores_preserve_missing_dimension_and_raw_errors(
     if fault == "missing-dimension":
         assert cast(QualitySessionError, caught.value).code == "missing-dimension"
         assert str(caught.value) == "tts-benchmark-quality:missing-dimension"
+
+
+@pytest.fixture
+def submission_session(tmp_path: Path) -> tuple[Path, dict[str, object]]:
+    _, cards = _synthetic_scorecards()
+    card = cards[0]
+    session = tmp_path / "quality-v2" / ("c" * 32)
+    (session / "scorecards").mkdir(parents=True)
+    (session / "session.json").write_text(
+        json.dumps({"state": "ready", "evaluatorIds": ["evaluator-01"]}), encoding="utf-8"
+    )
+    (session / "scorecards" / "evaluator-01.template.json").write_text(
+        json.dumps(card), encoding="utf-8"
+    )
+    return session, card
+
+
+def test_scorecard_submission_projects_without_mutating_input(
+    tmp_path: Path, submission_session: tuple[Path, dict[str, object]]
+) -> None:
+    session, card = submission_session
+    expected = deepcopy(card)
+    card["ignored"] = {"nested": [1, 5, "not-applicable"]}
+    for sample in cast(list[dict[str, object]], card["samples"]):
+        sample["ignored"] = {"nested": [True, False]}
+        sample["scores"] = dict(reversed(list(cast(dict[str, object], sample["scores"]).items())))
+    original = deepcopy(card)
+    template_path = session / "scorecards" / "evaluator-01.template.json"
+    template_bytes = template_path.read_bytes()
+    (session / "scorecards" / "evaluator-02.completed.json").write_bytes(b"{}\n")
+    assert submit_scorecard("c" * 32, card, raw_root=tmp_path) == {
+        "status": "pass",
+        "sessionId": "c" * 32,
+        "evaluatorId": "evaluator-01",
+        "completedEvaluators": 2,
+    }
+    saved = session / "scorecards" / "evaluator-01.completed.json"
+    assert saved.read_bytes() == (
+        json.dumps(expected, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    assert json.loads(saved.read_bytes()) == expected
+    assert card == original
+    assert template_path.read_bytes() == template_bytes
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("sample", None),
+        ("sampleId", "different-sample"),
+        ("caseId", "different-case"),
+        ("scores", None),
+        ("scores", {}),
+        ("scores", {**dict.fromkeys(DIMENSIONS, 4), "extra": 4}),
+        ("meaningChangingDefect", 1),
+        *[("score", value) for value in (True, False, 0, 6, 1.0, None)],
+    ],
+)
+def test_scorecard_submission_rejects_malformed_samples_without_output(
+    tmp_path: Path,
+    submission_session: tuple[Path, dict[str, object]],
+    field: str,
+    value: object,
+) -> None:
+    session, card = submission_session
+    samples = cast(list[object], card["samples"])
+    sample = cast(dict[str, object], samples[0])
+    if field == "sample":
+        samples[0] = value
+    elif field == "score":
+        cast(dict[str, object], sample["scores"])[DIMENSIONS[0]] = value
+    else:
+        sample[field] = value
+    with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:invalid-scorecard$"):
+        submit_scorecard("c" * 32, card, raw_root=tmp_path)
+    assert not tuple((session / "scorecards").glob("*.completed.json"))
+    assert not tuple((session / "scorecards").glob("*.tmp"))
+
+
+def test_invalid_scorecard_precedes_existing_completed_file(
+    tmp_path: Path, submission_session: tuple[Path, dict[str, object]]
+) -> None:
+    session, card = submission_session
+    saved = session / "scorecards" / "evaluator-01.completed.json"
+    previous_bytes = b'{"previous": "synthetic-completed-card"}\n'
+    saved.write_bytes(previous_bytes)
+    cast(list[dict[str, object]], card["samples"])[0]["caseId"] = "different-case"
+    with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:invalid-scorecard$"):
+        submit_scorecard("c" * 32, card, raw_root=tmp_path)
+    assert saved.read_bytes() == previous_bytes
 
 
 def test_scorecard_rejects_actual_reordering(tmp_path: Path) -> None:

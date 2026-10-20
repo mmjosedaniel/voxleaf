@@ -440,6 +440,40 @@ def finalize_session(
     }
 
 
+def _sanitize_scorecard_samples(
+    samples: list[object], template_samples: list[object]
+) -> list[dict[str, object]]:
+    if len(samples) != len(template_samples):
+        raise QualitySessionError("invalid-scorecard")
+    sanitized_samples: list[dict[str, object]] = []
+    for submitted_sample, expected_sample in zip(samples, template_samples, strict=True):
+        if not isinstance(submitted_sample, dict) or not isinstance(expected_sample, dict):
+            raise QualitySessionError("invalid-scorecard")
+        sample = cast(dict[str, object], submitted_sample)
+        expected = cast(dict[str, object], expected_sample)
+        scores = sample.get("scores")
+        if (
+            sample.get("sampleId") != expected.get("sampleId")
+            or sample.get("caseId") != expected.get("caseId")
+            or not isinstance(scores, dict)
+            or set(scores) != set(DIMENSIONS)
+            or not isinstance(sample.get("meaningChangingDefect"), bool)
+        ):
+            raise QualitySessionError("invalid-scorecard")
+        sanitized_samples.append(
+            {
+                "sampleId": sample["sampleId"],
+                "caseId": sample["caseId"],
+                "scores": {
+                    dimension: _score(cast(dict[str, object], scores)[dimension])
+                    for dimension in DIMENSIONS
+                },
+                "meaningChangingDefect": sample["meaningChangingDefect"],
+            }
+        )
+    return sanitized_samples
+
+
 def submit_scorecard(
     session_id: str,
     value: object,
@@ -467,34 +501,7 @@ def submit_scorecard(
     )
     template_samples = cast(list[object], template.get("samples"))
     samples = cast(list[object], card["samples"])
-    if len(samples) != len(template_samples):
-        raise QualitySessionError("invalid-scorecard")
-    sanitized: list[dict[str, object]] = []
-    for raw, expected_raw in zip(samples, template_samples, strict=True):
-        if not isinstance(raw, dict) or not isinstance(expected_raw, dict):
-            raise QualitySessionError("invalid-scorecard")
-        sample = cast(dict[str, object], raw)
-        expected = cast(dict[str, object], expected_raw)
-        scores = sample.get("scores")
-        if (
-            sample.get("sampleId") != expected.get("sampleId")
-            or sample.get("caseId") != expected.get("caseId")
-            or not isinstance(scores, dict)
-            or set(scores) != set(DIMENSIONS)
-            or not isinstance(sample.get("meaningChangingDefect"), bool)
-        ):
-            raise QualitySessionError("invalid-scorecard")
-        sanitized.append(
-            {
-                "sampleId": sample["sampleId"],
-                "caseId": sample["caseId"],
-                "scores": {
-                    dimension: _score(cast(dict[str, object], scores)[dimension])
-                    for dimension in DIMENSIONS
-                },
-                "meaningChangingDefect": sample["meaningChangingDefect"],
-            }
-        )
+    sanitized = _sanitize_scorecard_samples(samples, template_samples)
     target = session / "scorecards" / f"{evaluator_id}.completed.json"
     if target.exists():
         raise QualitySessionError("scorecard-state")
