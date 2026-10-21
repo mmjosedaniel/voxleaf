@@ -42,6 +42,18 @@ test("resolves one absolute installed executable without accepting ambiguous pat
     ),
     "C:\\fallback\\voxleaf-desktop.exe",
   );
+  assert.equal(
+    resolveNativeSmokeExecutable(
+      [
+        "--adaptive-tts-exact-host",
+        "--executable",
+        "C:\\Users\\tester\\AppData\\Local\\VoxLeaf\\voxleaf-desktop.exe",
+      ],
+      "C:\\fallback\\voxleaf-desktop.exe",
+      "win32",
+    ),
+    "C:\\Users\\tester\\AppData\\Local\\VoxLeaf\\voxleaf-desktop.exe",
+  );
   assert.throws(
     () =>
       resolveNativeSmokeExecutable(
@@ -57,6 +69,34 @@ test("resolves one absolute installed executable without accepting ambiguous pat
         [
           "--executable=C:\\one\\voxleaf-desktop.exe",
           "--executable=C:\\two\\voxleaf-desktop.exe",
+        ],
+        "C:\\fallback\\voxleaf-desktop.exe",
+        "win32",
+      ),
+    /provided more than once/u,
+  );
+  for (const arguments_ of [
+    ["--executable"],
+    ["--executable", "--adaptive-tts-exact-host"],
+    ["--executable", "relative.exe"],
+  ]) {
+    assert.throws(
+      () =>
+        resolveNativeSmokeExecutable(
+          arguments_,
+          "C:\\fallback\\voxleaf-desktop.exe",
+          "win32",
+        ),
+      /must be an absolute path/u,
+    );
+  }
+  assert.throws(
+    () =>
+      resolveNativeSmokeExecutable(
+        [
+          "--executable=C:\\one\\voxleaf-desktop.exe",
+          "--executable",
+          "C:\\two\\voxleaf-desktop.exe",
         ],
         "C:\\fallback\\voxleaf-desktop.exe",
         "win32",

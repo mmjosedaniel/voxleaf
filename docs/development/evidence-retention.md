@@ -6,6 +6,17 @@ invariants, and material limitations. Preserve failed baselines and later
 successful repairs as distinct outcomes. Do not rewrite accepted receipts or
 completed plans to describe later work.
 
+Public summaries must omit conversation excerpts, personal availability or
+network ownership, private account identifiers, and local-data inventory values or
+digests. Record restoration outcomes and receipt IDs publicly; retain the
+underlying host-specific evidence privately. Source and distributable-artifact
+identities remain public when needed to reproduce or verify the result.
+An explicitly authorized privacy redaction may remove personal details from
+a completed plan without changing its technical requirements or historical
+outcomes. Mark the redaction, preserve the original locally, and do not link
+readers to the unredacted version as an evidence shortcut. A new commit does
+not remove information from earlier Git history.
+
 Keep raw logs, command captures, before/after dumps, temporary scripts and
 screenshots in ignored `tmp/evidence/<run>/`, or in CI artifacts. Before retiring
 an existing capture, verify a byte-preserving archive and record its SHA-256,

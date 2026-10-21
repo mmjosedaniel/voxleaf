@@ -136,6 +136,7 @@ export type ProductNarrationAudibleProgressObservation =
 export type ProductNarrationPlayIntent = "inactive" | "paused" | "playing";
 
 export interface ProductNarrationNavigationSnapshot {
+  readonly canStart?: boolean;
   readonly playIntent: ProductNarrationPlayIntent;
   readonly settling: boolean;
   readonly canGoPrevious: boolean;
@@ -372,6 +373,7 @@ export class ProductNarrationCoordinator {
   readonly #recovery = new OperationalRecoveryController();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
+  #segmentationContext: string | undefined;
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #availabilityRevision = 0;
   #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
@@ -392,6 +394,7 @@ export class ProductNarrationCoordinator {
   #latestHeardLocator: ReadingLocatorV1;
   #audibleRange: LocatorRangeV1 | undefined;
   #playIntent: ProductNarrationPlayIntent = "inactive";
+  #readerPlacementAvailable = true;
   #pendingNavigation: PendingNavigation | undefined;
   #navigationRevision = 0;
   #pausedNavigationState: AdaptivePreparationUiState | undefined;
@@ -553,12 +556,25 @@ export class ProductNarrationCoordinator {
       return;
     }
     const profileId = this.#profileCompatibility?.activeProfileId?.();
+    const language =
+      this.#profileCompatibility?.activeLanguage?.() ??
+      DEFAULT_NARRATION_LANGUAGE_V2;
+    const context = this.#preparationContext(
+      profileId ?? this.#profileId,
+      language,
+    );
+    if (
+      this.#segmentationContext !== context &&
+      this.#scheduler !== undefined
+    ) {
+      await this.stopForConfigurationChange();
+      if (this.#closed) return;
+    }
     if (profileId !== undefined) {
       this.#profileId = profileId;
     }
-    this.#language =
-      this.#profileCompatibility?.activeLanguage?.() ??
-      DEFAULT_NARRATION_LANGUAGE_V2;
+    this.#language = language;
+    this.#selectSegmentationContext(this.#profileId, language);
     this.#availability = "checking";
     this.#publish();
     await this.checkAvailability();
@@ -753,6 +769,22 @@ export class ProductNarrationCoordinator {
     await pending.stop;
   }
 
+  public settleReaderPlacement(
+    settlement: import("../reader/reader-navigation").ReaderNavigationSettlement,
+  ): void {
+    if (this.#closed) return;
+    this.#readerPlacementAvailable = settlement.status === "settled";
+    if (!this.#readerPlacementAvailable) {
+      this.#navigationRevision += 1;
+      this.#pendingNavigation = undefined;
+      this.#pausedNavigationState = undefined;
+      this.#audibleRange = undefined;
+      this.#playIntent = "inactive";
+      if (this.#scheduler !== undefined) void this.stop();
+    }
+    this.#publish();
+  }
+
   public settleExternalNavigation(locator: ReadingLocatorV1): void {
     if (this.#closed) {
       return;
@@ -778,6 +810,7 @@ export class ProductNarrationCoordinator {
   public startAtVisibleLocator(): void {
     if (
       this.#closed ||
+      !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
       this.#recovery.observe().phase !== "operational"
     ) {
@@ -796,6 +829,7 @@ export class ProductNarrationCoordinator {
   public startAtLocator(locator: ReadingLocatorV1): boolean {
     if (
       this.#closed ||
+      !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
       this.#recovery.observe().phase !== "operational" ||
       this.#pendingNavigation !== undefined ||
@@ -859,6 +893,7 @@ export class ProductNarrationCoordinator {
   public start(): void {
     if (
       this.#closed ||
+      !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
       this.#scheduler !== undefined ||
       this.#recovery.observe().phase !== "operational"
@@ -871,6 +906,7 @@ export class ProductNarrationCoordinator {
   public recover(): void {
     if (
       this.#closed ||
+      !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
       this.#scheduler !== undefined ||
       !this.#recovery.observe().canRecover ||
@@ -996,6 +1032,20 @@ export class ProductNarrationCoordinator {
     }, TICK_INTERVAL_MS);
     this.#publish();
     this.#requestPump(runToken);
+  }
+
+  public playAvailableAudio(): boolean {
+    if (
+      this.#closed ||
+      this.#playIntent !== "playing" ||
+      this.#pendingNavigation !== undefined ||
+      this.#player === undefined ||
+      this.#scheduler?.playAvailableAudio() !== true
+    ) {
+      return false;
+    }
+    this.#tick(this.#runToken);
+    return true;
   }
 
   public pause(): void {
@@ -1365,6 +1415,23 @@ export class ProductNarrationCoordinator {
     });
   }
 
+  #preparationContext(profileId: string, language: string): string {
+    const profile = isPiperProfile(profileId)
+      ? "narration-piper-v2"
+      : isChatterboxProfile(profileId)
+        ? "narration-chatterbox-v1"
+        : "narration-bilingual-v2";
+    return `${profile}:${language}`;
+  }
+
+  #selectSegmentationContext(profileId: string, language: string): void {
+    const context = this.#preparationContext(profileId, language);
+    if (this.#segmentationContext === context) return;
+    this.#segmentationContext = context;
+    this.#knownBoundaries.length = 0;
+    this.#audibleRange = undefined;
+  }
+
   #currentBoundaryIndex(): number | undefined {
     if (this.#audibleRange !== undefined) {
       const exact = this.#knownBoundaries.findIndex((candidate) =>
@@ -1495,6 +1562,7 @@ export class ProductNarrationCoordinator {
           this.#publish();
           this.#profileId = profileId;
           this.#language = language;
+          this.#selectSegmentationContext(profileId, language);
           await this.#client.start(profileId, language);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
@@ -2028,6 +2096,7 @@ export class ProductNarrationCoordinator {
         discardedAudioUnitCount: scheduler?.discardedAudioUnitCount ?? 0,
       }),
       navigation: Object.freeze({
+        canStart: this.#readerPlacementAvailable,
         playIntent: this.#playIntent,
         settling: this.#pendingNavigation !== undefined,
         canGoPrevious: navigationActive && currentBoundaryIndex > 0,

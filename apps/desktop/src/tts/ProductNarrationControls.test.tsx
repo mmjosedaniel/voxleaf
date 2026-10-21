@@ -55,6 +55,79 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it("B01 keeps one capacity action across details and dispatches only eligible clicks", () => {
+    let current: ProductNarrationSnapshot = Object.freeze({
+      ...snapshot(),
+      selection: Object.freeze({ kind: "prepared", targetMs: 600_000 }),
+      state: Object.freeze({
+        mode: Object.freeze({ kind: "prepared", targetMs: 600_000 }),
+        phase: "preparing",
+        readyMs: 5_000,
+        targetMs: 600_000,
+        progressValueMs: 5_000,
+        estimatedWaitMs: undefined,
+        lowBuffer: false,
+        allRemainingAudioReady: false,
+        resourceCeilingReached: true,
+        pauseContinuesPreparation: false,
+        canPlayAvailableAudio: true,
+        canPause: false,
+        canResume: false,
+        canStop: true,
+        volumePercent: 100,
+        playbackRate: 1,
+        selectedPlaybackRatePercent: 100,
+        activePlaybackRatePercent: null,
+        pendingPlaybackRatePercent: null,
+      }),
+    });
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      start: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => undefined),
+      playAvailableAudio: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+    const subject = render(
+      <ProductNarrationControls coordinator={coordinator} />,
+    );
+    const action = { name: "Play available audio" };
+    expect(screen.getAllByRole("button", action)).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", action));
+    expect(coordinator.playAvailableAudio).toHaveBeenCalledTimes(1);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show narration details" }),
+    );
+    expect(screen.getAllByRole("button", action)).toHaveLength(1);
+    expect(coordinator.playAvailableAudio).toHaveBeenCalledTimes(1);
+    expect(coordinator.start).not.toHaveBeenCalled();
+    expect(coordinator.pause).not.toHaveBeenCalled();
+    expect(coordinator.resume).not.toHaveBeenCalled();
+    expect(coordinator.stop).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", action));
+    expect(coordinator.playAvailableAudio).toHaveBeenCalledTimes(2);
+    current = Object.freeze({
+      ...current,
+      state: Object.freeze({ ...current.state!, canPlayAvailableAudio: false }),
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.queryByRole("button", action)).not.toBeInTheDocument();
+    current = Object.freeze({
+      ...current,
+      state: Object.freeze({ ...current.state!, canPlayAvailableAudio: true }),
+      recovery: Object.freeze({
+        ...current.recovery,
+        phase: "recovery-available",
+      }),
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.queryByRole("button", action)).not.toBeInTheDocument();
+    expect(coordinator.playAvailableAudio).toHaveBeenCalledTimes(2);
+  });
+
   it("updates from live notifications while availability remains owned by the coordinator effect", () => {
     let current = snapshot();
     const listeners = new Set<() => void>();

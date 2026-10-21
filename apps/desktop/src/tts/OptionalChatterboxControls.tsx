@@ -9,6 +9,7 @@ import {
   OptionalChatterboxClient,
   type OptionalChatterboxSnapshot,
 } from "./optional-chatterbox-client";
+import { exportDownloadDiagnostic } from "./optional-download-diagnostic";
 
 export interface OptionalChatterboxControlsProps {
   readonly client: OptionalChatterboxClient;
@@ -37,9 +38,9 @@ const CANCELLATION_SCOPE_COPY =
   "Cancelling download or verification removes only this operation's incomplete staging and partial files. It cannot resume later and never removes a verified installed package.";
 
 const CHATTERBOX_DISCLOSURE = Object.freeze({
-  transfer: "8,239,933,601 bytes (8.24 GB / 7.67 GiB)",
-  installed: "8,236,377,725 bytes (8.24 GB / 7.67 GiB)",
-  temporary: "13,270,915,278 bytes (13.27 GB / 12.36 GiB)",
+  transfer: "8,240,055,749 bytes (8.24 GB / 7.67 GiB)",
+  installed: "8,236,500,113 bytes (8.24 GB / 7.67 GiB)",
+  temporary: "13,271,159,574 bytes (13.27 GB / 12.36 GiB)",
   preflight: "20,000,000,000 bytes (20 GB / 18.63 GiB)",
 });
 
@@ -67,7 +68,7 @@ function ChatterboxDisclosure(): ReactElement {
         fixed countdown or a made-up percentage for that work.
       </p>
       <p>
-        Historical v2 observations, not current v3 measurements or guarantees:
+        Historical v2 observations, not current v5 measurements or guarantees:
         Quick audible start was 39.966 seconds (Spanish) and 33.905 seconds
         (English); direct cold runs were 29.61 and 82.34 seconds; working-set
         peaks were 4,861,247,488 and 4,896,034,816 bytes; VRAM peaks were 3,711
@@ -129,7 +130,7 @@ function renderOptionalChatterboxFailure(
       return (
         <p role="status">
           The Chatterbox download did not complete. Piper remains available.
-          Check your connection, then try again.
+          Export the last download error for details, then try again when ready.
         </p>
       );
     case "tts-optional-profile-unavailable":
@@ -210,6 +211,8 @@ export function OptionalChatterboxControls({
   );
   const [pending, setPending] = useState(false);
   const [downloadRequested, setDownloadRequested] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState("");
   const storageFootprintBytes = snapshot.installedBytes;
 
   useEffect(() => {
@@ -241,6 +244,24 @@ export function OptionalChatterboxControls({
     });
   };
 
+  const exportError = async (): Promise<void> => {
+    setExporting(true);
+    setExportStatus("");
+    try {
+      const report = await client.readDownloadDiagnostic();
+      if (report === undefined) {
+        setExportStatus("No download error has been recorded in this session.");
+      } else {
+        exportDownloadDiagnostic(report);
+        setExportStatus("Diagnostic download requested.");
+      }
+    } catch {
+      setExportStatus("Could not export the download error. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section
       className="optional-chatterbox-controls"
@@ -248,6 +269,21 @@ export function OptionalChatterboxControls({
       data-optional-profile-state={snapshot.state}
     >
       <h4 id="optional-chatterbox-heading">Chatterbox quality voice</h4>
+      <details>
+        <summary>Download troubleshooting</summary>
+        <p>
+          The last download error is kept only until VoxLeaf closes. Exporting
+          saves a technical report on this computer; it is not sent anywhere.
+        </p>
+        <button
+          type="button"
+          disabled={exporting}
+          onClick={() => void exportError()}
+        >
+          Export last download error
+        </button>
+        {exportStatus ? <p role="status">{exportStatus}</p> : null}
+      </details>
       <StatusCopy
         snapshot={snapshot}
         downloadRequested={downloadRequested}

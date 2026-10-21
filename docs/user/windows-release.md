@@ -123,9 +123,9 @@ On a passing computer, Settings will present Chatterbox as the generally more
 natural and expressive quality option compared with Piper, while noting that
 voice preference varies. Before network access, the confirmation must disclose:
 
-- `8,239,933,601` download bytes (about 8.24 GB/7.67 GiB);
-- an installed total of `8,236,377,725` bytes (about 8.24 GB/7.67 GiB);
-- a peak temporary requirement of `13,270,915,278` bytes (about 13.27 GB/
+- `8,240,055,749` download bytes (about 8.24 GB/7.67 GiB);
+- an installed total of `8,236,500,113` bytes (about 8.24 GB/7.67 GiB);
+- a peak temporary requirement of `13,271,159,574` bytes (about 13.27 GB/
   12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
 - 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
   and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
@@ -134,9 +134,9 @@ voice preference varies. Before network access, the confirmation must disclose:
 - licence, offline, cancellation, activation, removal, and reacquisition
   consequences.
 
-The security-refreshed runtime uses package v3. Retained v2 data is not executed
-or migrated into v3. If only older data remains, Settings offers removal;
-acquiring v3 requires explicit consent. Observation, failed downloads and
+The security-refreshed runtime uses package v5. Retained v2/v3 data is not executed
+or migrated into v5. If only older data remains, Settings offers removal;
+acquiring v5 requires explicit consent. Observation, failed downloads and
 cancellation preserve retained data. Explicit Remove Chatterbox removes the
 owned current and retained package roots; unrelated versions and reader data
 remain outside that operation. Disk usage can include both retained and current
@@ -148,7 +148,7 @@ Quick command-to-audible at `49.269` seconds in Spanish and `37.773` seconds in
 English. Historical v2 process-tree working-set peaks were
 `4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
 `3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
-countdown or guarantee for every compatible computer, and are not new v3
+countdown or guarantee for every compatible computer, and are not new v5
 measurements. The historical hardware gate is retained after representative
 v3 memory checks; current artifact evidence records successor observations.
 
@@ -168,6 +168,28 @@ hostile development/Python variables and a misleading `PATH`, and proves that
 the absolute private `runtime/python.exe` and application-owned module/model
 roots are used. Windows/WebView2 and the NVIDIA driver/hardware gate above remain
 real prerequisites.
+
+#### Exporting a download error
+
+In Settings, expand **Download troubleshooting** under **Chatterbox quality
+voice**, then select **Export last download error**. This requests a local
+`voxleaf-download-error.json` download. VoxLeaf sends nothing automatically.
+The browser/Windows download UI determines where the exported file is saved.
+
+VoxLeaf keeps only the latest artifact-transfer or verification failure in
+memory. Retrying, checking status, or failed cleanup does not erase its original
+cause; a later download failure replaces it. Closing VoxLeaf discards it. A
+successful transfer, intentional cancellation, or preflight rejection does not
+create a new error report. If none exists, Settings says so.
+
+The report contains fixed categories, artifact source/index, application/package
+version, elapsed time, byte counts, HTTP status and numeric OS error where
+available. It excludes URLs, filesystem paths, free-form error messages, HTTP
+bodies/headers, book text, audio and credentials. No log file is written until
+you explicitly export. An export problem does not alter the acquisition state.
+
+This diagnostic improves troubleshooting; it does not imply that intermittent
+connectivity or complete acquisition has been validated.
 
 ## Repair or replace a version
 

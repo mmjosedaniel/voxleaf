@@ -424,7 +424,18 @@ run the M010.1 service-only bilingual matrix:
 pnpm.cmd test:tts:bilingual-profiles-exact-host
 ```
 
-The command builds the release application and runs six arms sequentially:
+For the reader/acquisition correction candidate, the narrower registered command
+`pnpm run test:tts:reader-corrections-host` builds the native application and
+exercises only Piper ES/EN and Chatterbox ES/EN sequentially. Set their complete
+environment groups above and `HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1`,
+verify interpreter-bound outbound block rules, and keep other GPU/model tests
+idle. It adds saved 0.75x startup with deterministically deferred WebView2
+worklet initialization, Pause, delayed resolution, Resume and context cleanup
+before the existing speed/navigation/cancellation matrix. The controlled hold
+is explicitly included in its timing; it is not a model-latency benchmark.
+This command does not replace the ordinary installed acquisition journey.
+
+The broader bilingual command above includes these six arms:
 Piper davefx/Spanish, Piper joe/English, Chatterbox/Spanish,
 Chatterbox/English, Qwen Serena/Spanish, and Qwen Aiden/English. Each arm
 proves load/warmup, bounded generation, busy rejection, identity-first
@@ -938,6 +949,37 @@ The detailed storage, blinding, bounds, and privacy rules are documented in
 the [benchmark README](../../benchmarks/tts/README.md#disposable-blinded-quality-session).
 
 ## Continuous integration
+
+For ordinary installed-host checks, launch PowerShell from Windows Explorer
+or the Start menu. An escalated child of an MSIX-packaged automation app can
+still inherit its virtualized `LOCALAPPDATA` view. That can legitimately fail
+the optional package's canonical containment checks even when a separate
+hash inventory appears valid. Do not bypass verification or replace user
+data to work around that environment. The read-only
+`pnpm run test:chatterbox:installed-integrity` diagnostic requires an existing
+installed Chatterbox package and rejects packaged process identity.
+
+When validating desktop-only corrections against the frozen Piper release,
+`pnpm run package:windows:verified-core` first verifies the existing core tree,
+archive, measurements and authority hashes, then invokes the same Windows
+release builder. It fails if that exact core is missing or invalid. The normal
+`package:windows` command still rebuilds the core and rejects any difference
+from its frozen manifest, including docstrings and environment-specific wheel
+`RECORD` entries. Do not regenerate frozen authorities merely to make a
+desktop validation pass; record which packaging route and artifact identities
+were used.
+
+`pnpm run package:windows:reader-corrections -- --receipt <absolute-ignored-path>`
+opts the ordinary installed journey into B06/B07 file-handle scenarios.
+It requires an absent ordinary install directory, preserves application data
+through the existing backup/restore lifecycle, and uses the normal installer
+and public native commands. The host creates a temporary delete-sharing denial
+to verify terminal cleanup failure and safe retry; a Windows oplock then holds
+the final package verification read while cancellation is requested. The
+separate `.corrections.json` receipt also checks late cancellation preserves
+installation. `pnpm run test:acquisition:file-barriers` verifies both host
+barriers on Windows. Preserve existing installer registrations and shortcuts
+around a journey when they belong to the user's previous installation.
 
 The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. All three jobs install package dependencies from committed lockfiles. The added `Ubuntu Rust foundation` job installs Linux prerequisites and pinned Rust, then runs `pnpm format:check:rust`, `pnpm lint:rust`, and `pnpm test:rust` with bounded build concurrency. Its local comparative evidence passes; remote execution remains pending. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
 

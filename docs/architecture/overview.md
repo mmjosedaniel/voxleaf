@@ -1,6 +1,29 @@
 # Architecture overview
 
+The optional Chatterbox downloader owns one structured, content-free failure
+record in native process memory, independently of its operation state. A
+read-only IPC command exposes a copy for explicit local JSON export from
+Settings. No automatic log persistence or network telemetry is added. Its
+retention and privacy boundary are defined in [ADR-0059](decisions/ADR-0059-optional-download-diagnostics.md).
+
 ## Status
+
+The completed [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
+implements v5 admission under [ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+Its published runtime passes the production audit, installed B06/B07, four
+bilingual reader/speed arms, integrity and installer policies. Original user
+state and firewall are restored; independent acceptance and fresh PR CI pass
+for integration commit `194846a`. Retained v2/v3 are cleanup-only;
+no component, local inference flow or audio persistence boundary changes.
+
+The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)
+implements the accepted behavior in [ADR-0057](decisions/ADR-0057-reader-acquisition-correctness.md).
+Its publication-owned bounded traversal checkpoint and whole-request work
+budget extend preparation accounting without retaining new text or audio.
+Typed unavailable reader settlement stops obsolete narration intent; native
+acquisition serializes cancellation with promotion. These remain within the
+existing component/process owners. Integrated host validation and independent
+review pass; component/process/persistence topology remains unchanged.
 
 Mixed implementation status. Roadmap Milestones 1 through 10.2, M008.1, and
 M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration,

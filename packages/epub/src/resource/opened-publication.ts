@@ -26,6 +26,7 @@ import {
   narrationPreparationFailure,
   prepareNarrationBatch,
   type NarrationPreparationResourceObserver,
+  type NarrationPreparationCheckpoint,
   validateNarrationPreparationRequest,
 } from "../narration/narration-preparation.js";
 import {
@@ -124,6 +125,9 @@ class OpenedPublicationHandle implements OpenedPublication {
   readonly #narrationYieldScheduler: NarrationYieldScheduler;
   readonly #targetIndex: PublicationTargetIndex;
   readonly #closeController = new AbortController();
+  readonly #narrationCheckpoint: NarrationPreparationCheckpoint = {
+    source: {},
+  };
   #activeNarrationPreparation: Promise<void> | undefined;
   #activeRead: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
@@ -270,7 +274,13 @@ class OpenedPublicationHandle implements OpenedPublication {
         }),
         this.#narrationYieldScheduler,
         this.#narrationResourceObserver,
+        this.#narrationCheckpoint,
       );
+      if (result.status !== "batch" && result.status !== "complete") {
+        delete this.#narrationCheckpoint.continuation;
+        delete this.#narrationCheckpoint.source.leaf;
+        delete this.#narrationCheckpoint.source.structural;
+      }
       if (
         (this.#closed || linkedSignal.signal.aborted) &&
         result.status !== "cancelled"
@@ -279,6 +289,11 @@ class OpenedPublicationHandle implements OpenedPublication {
       }
       return result;
     } finally {
+      if (this.#closed || linkedSignal.signal.aborted) {
+        delete this.#narrationCheckpoint.continuation;
+        delete this.#narrationCheckpoint.source.leaf;
+        delete this.#narrationCheckpoint.source.structural;
+      }
       disposeLinkedAbortSignal(linkedSignal);
       if (this.#activeNarrationPreparation === active) {
         this.#activeNarrationPreparation = undefined;
@@ -294,6 +309,9 @@ class OpenedPublicationHandle implements OpenedPublication {
 
     this.#closed = true;
     this.#closeController.abort();
+    delete this.#narrationCheckpoint.continuation;
+    delete this.#narrationCheckpoint.source.leaf;
+    delete this.#narrationCheckpoint.source.structural;
     const activeNarrationPreparation = this.#activeNarrationPreparation;
     const activeRead = this.#activeRead;
     this.#closePromise = (async () => {

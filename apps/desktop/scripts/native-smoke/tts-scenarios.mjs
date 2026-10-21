@@ -22,6 +22,7 @@ export function createNativeTtsScenarios({
   ADAPTIVE_TTS_PROFILE_ID,
   CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXERCISE_PLAYBACK_SPEEDS,
+  EXERCISE_READER_CORRECTIONS,
   EXPECTED_UNAVAILABLE_PROFILE_REASON,
   INTERACTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
@@ -171,6 +172,17 @@ export function createNativeTtsScenarios({
        "h1, h2, h3, h4, h5, h6, p, blockquote, li";
      const containingElement = (node) =>
        node instanceof Element ? node : node?.parentElement;
+     const containerPath = (container, leaf) => {
+       const indexes = [];
+       for (let node = container; node !== leaf; node = node.parentNode) {
+         const parent = node?.parentNode;
+         if (parent === null || parent === undefined) return undefined;
+         const index = Array.prototype.indexOf.call(parent.childNodes, node);
+         if (index < 0) return undefined;
+         indexes.push(index);
+       }
+       return indexes.reverse().join(".") || "root";
+     };
      const rangeDetails = (highlight) => {
        const range = Array.from(highlight)[0];
        if (!(range instanceof Range) || range.collapsed) {
@@ -201,14 +213,19 @@ export function createNativeTtsScenarios({
        if (startIndex < 0 || endIndex < 0) {
          return undefined;
        }
+       const startPath = containerPath(range.startContainer, startLeaf);
+       const endPath = containerPath(range.endContainer, endLeaf);
+       if (startPath === undefined || endPath === undefined) return undefined;
        return {
          article,
          documentId,
          key:
            String(documentId) + ":" +
            String(startIndex) + ":" +
+           startPath + ":" +
            String(range.startOffset) + ":" +
            String(endIndex) + ":" +
+           endPath + ":" +
            String(range.endOffset),
          range,
        };
@@ -1018,6 +1035,9 @@ export function createNativeTtsScenarios({
     setStage,
   ) {
     const temporaryDirectory = path.dirname(fixturePath);
+    if (EXERCISE_READER_CORRECTIONS) {
+      await runSavedRatePauseCorrection(driver, fixturePath, setStage);
+    }
     setStage("adaptive exact-host synthetic publication injection");
     await injectNativeFile(driver, fixturePath);
     await waitForCondition(
@@ -2339,6 +2359,129 @@ export function createNativeTtsScenarios({
         externalRequests: 0,
       })}`,
     );
+  }
+
+  async function runSavedRatePauseCorrection(driver, fixturePath, setStage) {
+    setStage("reader corrections saved 0.75x with deferred WebView2 worklet");
+    await driver.execute(`
+      localStorage.setItem("voxleaf.narration.playback-preference",
+        JSON.stringify({ schemaVersion: 1, playbackRatePercent: 75 }));
+      const Original = globalThis.AudioContext;
+      const observation = { pending: false, resolved: false, created: 0, closed: 0 };
+      globalThis.__voxleafRateCorrection = observation;
+      globalThis.AudioContext = class extends Original {
+        constructor(options) {
+          super(options);
+          observation.created += 1;
+          const originalAdd = this.audioWorklet.addModule.bind(this.audioWorklet);
+          this.audioWorklet.addModule = async (...args) => {
+            observation.pending = true;
+            await new Promise(resolve => { observation.release = resolve; });
+            await originalAdd(...args);
+            observation.resolved = true;
+          };
+        }
+        async close() { await super.close(); observation.closed += 1; }
+      };
+      observation.restore = () => { globalThis.AudioContext = Original; };
+      return true;
+    `);
+    try {
+      await injectNativeFile(driver, fixturePath);
+      await waitForCondition(
+        driver,
+        `
+        const owner = document.querySelector(".product-narration");
+        return owner?.getAttribute("data-narration-availability") === "available" &&
+          owner.getAttribute("data-narration-selected-rate-percent") === "75";
+      `,
+        STARTUP_TIMEOUT_MS,
+      );
+      const startedAt = now();
+      await driver.click(
+        await driver.findElement('[data-narration-action="play"]'),
+      );
+      await waitForCondition(
+        driver,
+        `
+        return globalThis.__voxleafRateCorrection.pending === true &&
+          document.querySelector('[data-narration-action="pause"]')?.disabled === false;
+      `,
+        4 * STARTUP_TIMEOUT_MS,
+      );
+      await driver.click(
+        await driver.findElement('[data-narration-action="pause"]'),
+      );
+      await waitForCondition(
+        driver,
+        `
+        return document.querySelector(".product-narration")?.getAttribute("data-narration-phase") === "paused";
+      `,
+      );
+      const paused = await driver.execute(`
+        const owner = document.querySelector(".product-narration");
+        globalThis.__voxleafRateCorrection.release();
+        return {
+          commandToAudibleMs: owner.getAttribute("data-narration-command-to-audible-ms"),
+          audible: CSS.highlights?.has("voxleaf-narration-active") === true
+        };
+      `);
+      await waitForCondition(
+        driver,
+        `return globalThis.__voxleafRateCorrection.resolved === true;`,
+      );
+      await delay(300);
+      const remainedPaused = await driver.execute(`
+        return document.querySelector(".product-narration")?.getAttribute("data-narration-phase") === "paused" &&
+          CSS.highlights?.has("voxleaf-narration-active") !== true;
+      `);
+      assert(
+        remainedPaused && paused.audible === false,
+        "Native synchronized narration proof failed.",
+      );
+      await driver.click(
+        await driver.findElement('[data-narration-action="resume"]'),
+      );
+      await waitForCondition(
+        driver,
+        `return CSS.highlights?.has("voxleaf-narration-active") === true;`,
+        STARTUP_TIMEOUT_MS,
+      );
+      const audibleAtMs = now() - startedAt;
+      const stopAt = now();
+      await driver.click(
+        await driver.findElement('[data-narration-action="stop"]'),
+      );
+      await waitForCondition(
+        driver,
+        `
+        const owner = document.querySelector(".product-narration");
+        const observation = globalThis.__voxleafRateCorrection;
+        return owner?.getAttribute("data-narration-phase") === "idle" &&
+          observation.created === observation.closed;
+      `,
+        STARTUP_TIMEOUT_MS,
+      );
+      console.error(
+        `READER_RATE_CORRECTION ${JSON.stringify({
+          profileId: ADAPTIVE_TTS_PROFILE_ID,
+          language: ADAPTIVE_TTS_LANGUAGE,
+          savedRatePercent: 75,
+          pausedBeforeSound: true,
+          remainedPaused: true,
+          commandToAudibleIncludingControlledHoldMs: audibleAtMs,
+          stopAndContextCleanupMs: now() - stopAt,
+        })}`,
+      );
+    } finally {
+      await driver.execute(`
+        globalThis.__voxleafRateCorrection?.release?.();
+        globalThis.__voxleafRateCorrection?.restore?.();
+        localStorage.setItem("voxleaf.narration.playback-preference",
+          JSON.stringify({ schemaVersion: 1, playbackRatePercent: 100 }));
+        return true;
+      `);
+    }
   }
 
   async function selectAdaptiveTtsProfile(

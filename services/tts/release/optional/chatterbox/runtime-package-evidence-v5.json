@@ -1,0 +1,38 @@
+{
+  "authority": {
+    "dependencyLockSha256": "b46f7291150378ee5f3b12812174ddabe34be03558e57b49b516629159df0217",
+    "preparationReview": "CB-V5-PREP-R2-20261020-ASTRA-230616Z",
+    "publication": "publication-v5.json",
+    "runtimeBuildCommitSha": "702f80b5b688193e10ef58f9a5cbebb3a42a4090",
+    "sourceManifestSha256": "b0891559238fbbbf65d22123ef9cdc9a1825ac3aacab3383d766b93c4ad77254"
+  },
+  "distribution": {
+    "prerelease": true,
+    "published": true,
+    "publishedAt": "2026-10-20T23:35:15Z",
+    "releaseId": 418976062,
+    "runtimeReleaseTag": "chatterbox-runtime-v5"
+  },
+  "measurementProvenance": {
+    "coldStartSeconds": "historical-v2-profile-policy-not-new-v5-measurement",
+    "hardwareGate": "unchanged-ADR-0052-profile-policy-requires-installed-validation",
+    "installedAcceptance": "tracked-separately-in-security-refresh-ExecPlan",
+    "runtimeIdentityAndSizes": "reviewed-local-build-evidence-v5-and-publication-readback"
+  },
+  "measurements": {
+    "acquisition": {
+      "coldStartSeconds": 83,
+      "downloadBytes": 8240055749,
+      "installedBytes": 8236500113,
+      "minimumFreeBytes": 20000000000,
+      "temporaryBytes": 13271159574
+    },
+    "archiveSha256": "ed198de45e0cf105ff9822f560188f8f019a3f414c2c633e517be6ec2a5f8b15",
+    "fileCount": 13083,
+    "reproducibility": "one-exact-reviewed-assembly-no-cross-environment-claim",
+    "runtimeArchiveBytes": 5031103825,
+    "runtimeInstalledBytes": 5027548189,
+    "runtimeManifestSha256": "cffe626cc14fa259b2deaf9da7b7662bd51f5627d0ac7784d9ceea3fb9169418"
+  },
+  "schemaVersion": 5
+}

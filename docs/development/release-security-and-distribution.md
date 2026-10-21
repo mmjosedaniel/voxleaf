@@ -2,22 +2,50 @@
 
 ## Purpose
 
+### Optional-download error diagnostics
+
+The native manager retains one bounded report in memory under ADR-0059.
+`optional_chatterbox_download_diagnostic` is read-only and returns `null` or a
+version-1 report. It is available in the installed release as well as development.
+Existing operation failure codes remain unchanged. The renderer's closed
+decoder excludes unknown fields before the user initiates JSON export.
+Report fields and retention are documented in the Windows user guide.
+Tests must verify that source strings/URLs/paths never enter the report, that
+cleanup preserves its cause, and that export does not run automatically.
+Bounded installed acquisition probes are not full B06/B07 acceptance evidence.
+
 ### Current Chatterbox security successor
 
-The bounded security refresh under ADR-0052 selects package v3 and its
+The current development candidate follows [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md):
+the published `chatterbox-runtime-v5` refresh changes only certifi to 2026.10.19
+and Pillow to 13.0.0. Its complete production audit passes on 2026-10-21.
+Acquisition selects v5 with 8,240,055,749 download, 8,236,500,113 installed and
+13,271,159,574 peak staging bytes. V2/v3 are cleanup-only; the existing limits,
+hardware gates, model identities and frozen runtime modules are unchanged.
+Generated authority comprises `publication-v5.json`,
+`optional-package-manifest-v5.json` and `runtime-package-evidence-v5.json`.
+Installed B06/B07, all four bilingual reader/speed arms, runtime integrity and
+six installer policies pass on the exact diagnostics installer. Original user
+state and firewall are restored. Independent acceptance and fresh PR CI pass
+for integration commit `194846a`, recorded in the
+[completed plan](../plans/completed/chatterbox-certifi-pillow-security-refresh.md).
+
+### Historical v3 acceptance checkpoint
+
+The bounded security refresh under ADR-0052 selected package v3 and its
 `chatterbox-runtime-v3` prerelease. Transformers 5.17.0, Tokenizers 0.23.1 and
 urllib3 2.8.0 replace three pins; the other 76 and all six model identities
-remain fixed. Full production advisory audit passes with the four existing
+remained fixed. The production advisory audit passed at that checkpoint with the four existing
 URL-package blind spots explicitly retained. V3 includes a complete runtime
 closure and the upstream Tokenizers licence; it has no v2 repair overlay.
 
 Its exact download/installed/staging values are 8,239,933,601 / 8,236,377,725 /
-13,270,915,278 bytes. Native admission is v3-only. Old `cb/2` and historical
+13,270,915,278 bytes. Native admission was v3-only. Old `cb/2` and historical
 profile `/2` roots remain observable for explicit guarded removal, not execution
 or migration. Hardware thresholds stay unchanged; historical profile timings
 and VRAM observations are identified separately from new representative probes.
 
-Current generated authority is `optional-package-manifest-v3.json` plus runtime
+That generated authority is `optional-package-manifest-v3.json` plus runtime
 evidence v4. The refreshed installer/journey identities belong to Windows
 package evidence v3 and ordinary journey evidence v2. The rebuilt installed
 journey passed acquisition/cancellation, Chatterbox ES/EN, restart, removal,

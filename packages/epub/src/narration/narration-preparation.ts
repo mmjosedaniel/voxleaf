@@ -23,6 +23,10 @@ import {
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import {
+  NarrationOperationWorkBudget,
+  NarrationWorkController,
+} from "./narration-work-controller.js";
+import {
   NARRATION_V1_BATCH_POLICY,
   NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
@@ -37,6 +41,7 @@ import {
   type NarrationSourceWindowFailure,
   type NarrationSourceWindowLeafEvent,
   type NarrationYieldScheduler,
+  type NarrationSourceTraversalCheckpoint,
 } from "./narration-source-window.js";
 import type {
   NarrationSourceToken,
@@ -59,6 +64,14 @@ interface ValidatedNarrationPreparationRequest {
 interface MutablePreparationMeasurements {
   checkpointCount: number;
   sourceCodePointsInspected: number;
+  sourceInspectionMaximum: number;
+  readonly work: NarrationOperationWorkBudget;
+}
+
+export interface NarrationPreparationCheckpoint {
+  context?: string;
+  continuation?: ReadingLocatorV1;
+  readonly source: NarrationSourceTraversalCheckpoint;
 }
 
 interface MutableCandidateBatch {
@@ -489,6 +502,8 @@ function batchMeasurements(
   }
   return Object.freeze({
     sourceCodePointsInspected: indexFrom(operation.sourceCodePointsInspected),
+    workUnitsCharged: indexFrom(operation.work.charged),
+    traversalPolicyVersion: 2,
     narrationCodePoints: indexFrom(narrationCodePoints),
     narrationUtf8Bytes: indexFrom(narrationUtf8Bytes),
     segmentCount: indexFrom(segments.length),
@@ -550,10 +565,7 @@ function observeSourceWindow(
     operation.checkpointCount,
     checkpointCount,
   );
-  if (
-    operation.sourceCodePointsInspected >
-    NARRATION_V1_SOURCE_WINDOW_POLICY.sourceCodePointsInspectedHardMaximum
-  ) {
+  if (operation.sourceCodePointsInspected > operation.sourceInspectionMaximum) {
     return fail("resource-limit-exceeded");
   }
 }
@@ -567,6 +579,7 @@ export async function prepareNarrationBatch(
   request: ValidatedNarrationPreparationRequest,
   scheduler: NarrationYieldScheduler,
   resourceObserver?: NarrationPreparationResourceObserver,
+  checkpoint: NarrationPreparationCheckpoint = { source: {} },
 ): Promise<NarrationPreparationResult> {
   try {
     const signal = request.signal ?? new AbortController().signal;
@@ -577,7 +590,19 @@ export async function prepareNarrationBatch(
     );
     const targetBlock = resolution.locatedBlock;
     const canonicalLocator = resolution.locator;
+    const context = `${request.profile}:${request.defaultLanguage}`;
+    const warm =
+      checkpoint.context === context &&
+      checkpoint.continuation !== undefined &&
+      sameLocatorPosition(checkpoint.continuation, canonicalLocator);
+    if (!warm) {
+      delete checkpoint.source.leaf;
+      delete checkpoint.source.structural;
+    }
+    delete checkpoint.continuation;
+    checkpoint.context = context;
     let cursor =
+      !warm &&
       (targetBlock.block.kind === "heading" ||
         targetBlock.block.kind === "paragraph") &&
       canonicalLocator.textOffsetCodePoints > 0 &&
@@ -590,10 +615,26 @@ export async function prepareNarrationBatch(
       narrationUtf8Bytes: 0,
       sentenceCount: 0,
     };
+    let sourcePositions = 0;
+    const derivation = new NarrationWorkController(signal, scheduler);
+    for (const block of locatorIndex.blocks) {
+      await derivation.observe();
+      sourcePositions = addSafe(sourcePositions, block.textLengthCodePoints);
+    }
+    const sourceInspectionMaximum = addSafe(
+      4 * sourcePositions,
+      NARRATION_V1_SOURCE_WINDOW_POLICY.sourceCodePointsInspectedHardMaximum,
+    );
     const operation: MutablePreparationMeasurements = {
-      checkpointCount: 0,
+      checkpointCount: derivation.checkpointCount,
       sourceCodePointsInspected: 0,
+      sourceInspectionMaximum,
+      work: new NarrationOperationWorkBudget(
+        1_048_576 *
+          addSafe(sourceInspectionMaximum, locatorIndex.blocks.length),
+      ),
     };
+    operation.work.charge(derivation.workUnitCount);
     let sourceComplete = false;
     const segmentPolicy = narrationSegmentPolicy(request.profile);
 
@@ -602,6 +643,8 @@ export async function prepareNarrationBatch(
         locatorIndex,
         Object.freeze({ startLocator: cursor, signal }),
         scheduler,
+        checkpoint.source,
+        operation.work,
       );
       if (window.status !== "window" && window.status !== "complete") {
         return mapSourceWindowFailure(window);
@@ -678,6 +721,7 @@ export async function prepareNarrationBatch(
               segmentPolicy,
               signal,
               scheduler,
+              operationWorkBudget: operation.work,
             }),
           );
           operation.checkpointCount = addSafe(
@@ -771,6 +815,7 @@ export async function prepareNarrationBatch(
         continuation: finalSegment.sourceRange.end,
         measurements,
       });
+      checkpoint.continuation = finalSegment.sourceRange.end;
       const retained = retainedCandidateMeasurements(candidates);
       observeResourceSnapshot(resourceObserver, {
         activeRequestCount: 1,

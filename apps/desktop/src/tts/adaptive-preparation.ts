@@ -255,6 +255,7 @@ export type AdaptivePreparationUiPhase =
   | "stopped";
 
 export interface AdaptivePreparationUiState {
+  readonly canPlayAvailableAudio?: boolean;
   readonly mode: AdaptiveBufferStartMode;
   readonly phase: AdaptivePreparationUiPhase;
   readonly readyMs: number;
@@ -366,6 +367,7 @@ export function createAdaptivePreparationUiState(
     pauseContinuesPreparation,
     canPause: phase === "playing" || phase === "intentional-wait",
     canResume: phase === "paused",
+    canPlayAvailableAudio: input.scheduler.canPlayAvailableAudio === true,
     canStop: !["complete", "failed", "stopped"].includes(phase),
     volumePercent,
     playbackRate: input.scheduler.playbackRateState.selectedRatePercent / 100,

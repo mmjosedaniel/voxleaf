@@ -31,6 +31,7 @@ import {
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
   NarrationWorkController,
+  type NarrationOperationWorkBudget,
   type NarrationYieldScheduler,
 } from "./narration-work-controller.js";
 
@@ -135,27 +136,50 @@ interface VisitBlockTask {
   readonly textContext: NarrationSourceTextContext;
 }
 
-interface EmitBoundaryTask {
-  readonly kind: "emit-boundary";
-  readonly event: NarrationSourceBoundaryEvent;
+interface VisitContainerTask {
+  readonly kind: "visit-container";
+  readonly locatedBlock: PublicationLocatedBlock;
+  readonly block: Extract<SemanticBlock, { kind: "block-quote" | "list" }>;
+  readonly depth: number;
+  readonly structuralContext: NarrationSourceStructuralContext;
+  readonly textContext: NarrationSourceTextContext;
+  childIndex: number;
+  itemIndex: number;
+  itemStarted: boolean;
 }
 
-type TraversalTask = EmitBoundaryTask | VisitBlockTask;
+type TraversalTask = VisitContainerTask | VisitBlockTask;
 
 interface VisitInlineTask {
-  readonly kind: "visit-inline";
-  readonly inline: SemanticInline;
+  readonly kind: "visit-children";
+  readonly children: readonly SemanticInline[];
+  index: number;
   readonly depth: number;
   readonly textContext: NarrationSourceTextContext;
 }
 
 interface VisitTextTask {
   readonly kind: "visit-text";
-  readonly iterator: Iterator<string>;
+  readonly text: string;
+  utf16Offset: number;
   readonly textContext: NarrationSourceTextContext;
 }
 
 type InlineTask = VisitInlineTask | VisitTextTask;
+
+/** One metadata-only rewind point, never source tokens or copied prose. */
+export interface NarrationSourceTraversalCheckpoint {
+  structural?: {
+    readonly locatedBlock: PublicationLocatedBlock;
+    readonly locatedIndex: number;
+    readonly tasks: readonly TraversalTask[];
+  };
+  leaf?: {
+    readonly locatedBlock: PublicationLocatedBlock;
+    readonly offset: number;
+    readonly tasks: readonly InlineTask[];
+  };
+}
 
 const EMPTY_INLINE_CONTAINERS = Object.freeze(
   [] as NarrationSourceInlineContainerKind[],
@@ -299,27 +323,86 @@ interface MutableWindowState {
   stopped: boolean;
 }
 
-function pushBlockChildren(
+async function visitContainer(
+  task: VisitContainerTask,
   tasks: TraversalTask[],
-  children: readonly SemanticBlock[],
-  depth: number,
-  structuralContext: NarrationSourceStructuralContext,
-  textContext: NarrationSourceTextContext,
-): void {
-  const childDepth = addSafe(depth, 1);
-  assertDepth(childDepth);
-  for (let index = children.length - 1; index >= 0; index -= 1) {
-    const block = children[index];
-    if (block === undefined) {
-      return fail("internal-failure");
+  state: MutableWindowState,
+  work: NarrationWorkController,
+): Promise<void> {
+  const { block, locatedBlock } = task;
+  let children: readonly SemanticBlock[];
+  let structuralContext = task.structuralContext;
+  if (block.kind === "list") {
+    const item = block.items[task.itemIndex];
+    if (item === undefined) {
+      if (state.started) {
+        await retainEvent(
+          state,
+          boundaryEvent("list-end", locatedBlock, structuralContext, {
+            ordered: block.ordered,
+          }),
+          work,
+        );
+      }
+      return;
     }
-    tasks.push({
-      kind: "visit-block",
-      block,
-      depth: childDepth,
+    structuralContext = withListItem(
       structuralContext,
-      textContext,
+      block.ordered,
+      task.itemIndex,
+    );
+    if (!task.itemStarted) {
+      task.itemStarted = true;
+      if (state.started) {
+        await retainEvent(
+          state,
+          boundaryEvent("list-item-start", locatedBlock, structuralContext, {
+            ordered: block.ordered,
+            itemIndex: task.itemIndex,
+          }),
+          work,
+        );
+      }
+    }
+    children = item.children;
+  } else {
+    children = block.children;
+  }
+  const child = children[task.childIndex];
+  if (child !== undefined) {
+    task.childIndex += 1;
+    const depth = addSafe(task.depth, 1);
+    assertDepth(depth);
+    tasks.push(task, {
+      kind: "visit-block",
+      block: child,
+      depth,
+      structuralContext,
+      textContext: task.textContext,
     });
+    return;
+  }
+  if (block.kind === "list") {
+    if (state.started) {
+      await retainEvent(
+        state,
+        boundaryEvent("list-item-end", locatedBlock, structuralContext, {
+          ordered: block.ordered,
+          itemIndex: task.itemIndex,
+        }),
+        work,
+      );
+    }
+    task.itemIndex += 1;
+    task.childIndex = 0;
+    task.itemStarted = false;
+    tasks.push(task);
+  } else if (state.started) {
+    await retainEvent(
+      state,
+      boundaryEvent("block-quote-end", locatedBlock, structuralContext),
+      work,
+    );
   }
 }
 
@@ -331,18 +414,13 @@ function pushInlineChildren(
 ): void {
   const childDepth = addSafe(depth, 1);
   assertDepth(childDepth);
-  for (let index = children.length - 1; index >= 0; index -= 1) {
-    const inline = children[index];
-    if (inline === undefined) {
-      return fail("internal-failure");
-    }
-    tasks.push({
-      kind: "visit-inline",
-      inline,
-      depth: childDepth,
-      textContext,
-    });
-  }
+  tasks.push({
+    kind: "visit-children",
+    children,
+    index: 0,
+    depth: childDepth,
+    textContext,
+  });
 }
 
 async function retainEvent(
@@ -410,6 +488,7 @@ async function projectLeafWindow(
   startOffset: number,
   state: MutableWindowState,
   work: NarrationWorkController,
+  checkpoint?: NarrationSourceTraversalCheckpoint,
 ): Promise<void> {
   const block = locatedBlock.block;
   if (block.kind !== "heading" && block.kind !== "paragraph") {
@@ -427,12 +506,35 @@ async function projectLeafWindow(
   }
 
   const leafTextContext = effectiveTextContext(block, inheritedTextContext);
+  const saved = checkpoint?.leaf;
+  const reusable =
+    saved !== undefined &&
+    saved.locatedBlock === locatedBlock &&
+    saved.offset <= startOffset;
   const tasks: InlineTask[] = [];
   const tokens: NarrationSourceToken[] = [];
-  let offset = 0;
-  pushInlineChildren(tasks, block.children, 0, leafTextContext);
+  let offset = reusable ? saved.offset : 0;
+  if (reusable) {
+    for (const task of saved.tasks) {
+      await work.observe();
+      tasks.push({ ...task });
+    }
+  } else {
+    pushInlineChildren(tasks, block.children, 0, leafTextContext);
+  }
+  let checkpointed = false;
 
   while (tasks.length > 0 && !state.stopped) {
+    if (checkpoint !== undefined && !checkpointed && offset === startOffset) {
+      if (tasks.length > 129) return fail("resource-limit-exceeded");
+      const copied: InlineTask[] = [];
+      for (const task of tasks) {
+        await work.observe();
+        copied.push({ ...task });
+      }
+      checkpoint.leaf = { locatedBlock, offset, tasks: copied };
+      checkpointed = true;
+    }
     const task = tasks.pop();
     if (task === undefined) {
       return fail("internal-failure");
@@ -440,10 +542,12 @@ async function projectLeafWindow(
     await work.observe();
 
     if (task.kind === "visit-text") {
-      const next = task.iterator.next();
-      if (next.done === true) {
+      const codePoint = task.text.codePointAt(task.utf16Offset);
+      if (codePoint === undefined) {
         continue;
       }
+      const next = String.fromCodePoint(codePoint);
+      task.utf16Offset += next.length;
       tasks.push(task);
       observeSourcePosition(state);
       if (offset >= startOffset) {
@@ -454,7 +558,7 @@ async function projectLeafWindow(
             locatedBlock,
             Object.freeze({
               kind: "text",
-              text: next.value as SensitivePublicationText,
+              text: next as SensitivePublicationText,
               textContext: task.textContext,
             }),
             offset,
@@ -465,7 +569,10 @@ async function projectLeafWindow(
       continue;
     }
 
-    const { inline } = task;
+    const inline = task.children[task.index];
+    if (inline === undefined) continue;
+    task.index += 1;
+    tasks.push(task);
     switch (inline.kind) {
       case "code":
       case "emphasis":
@@ -522,7 +629,8 @@ async function projectLeafWindow(
         const current = effectiveTextContext(inline, task.textContext);
         tasks.push({
           kind: "visit-text",
-          iterator: String(inline.text)[Symbol.iterator](),
+          text: String(inline.text),
+          utf16Offset: 0,
           textContext: current,
         });
         break;
@@ -642,9 +750,11 @@ async function runSourceWindow(
   locatorIndex: PublicationLocatorIndex,
   request: NarrationSourceWindowRequest,
   scheduler: NarrationYieldScheduler,
+  checkpoint?: NarrationSourceTraversalCheckpoint,
+  operation?: NarrationOperationWorkBudget,
 ): Promise<NarrationSourceWindowBatch | NarrationSourceWindowComplete> {
   const signal = request.signal ?? new AbortController().signal;
-  const work = new NarrationWorkController(signal, scheduler);
+  const work = new NarrationWorkController(signal, scheduler, operation);
   const resolution = resolvePublicationLocator(
     locatorIndex,
     request.startLocator,
@@ -662,6 +772,22 @@ async function runSourceWindow(
     stopped: false,
   };
   const tasks: TraversalTask[] = [];
+  const saved = checkpoint?.structural;
+  const savedLocator = saved?.locatedBlock.startLocator;
+  const targetLocator = state.targetBlock.startLocator;
+  if (
+    saved !== undefined &&
+    savedLocator !== undefined &&
+    (savedLocator.spineItemIndex < targetLocator.spineItemIndex ||
+      (savedLocator.spineItemIndex === targetLocator.spineItemIndex &&
+        savedLocator.anchor.anchorIndex <= targetLocator.anchor.anchorIndex))
+  ) {
+    state.locatedIndex = saved.locatedIndex;
+    for (const task of saved.tasks) {
+      await work.observe();
+      tasks.push({ ...task });
+    }
+  }
 
   while (
     !state.stopped &&
@@ -687,10 +813,8 @@ async function runSourceWindow(
     }
     await work.observe();
 
-    if (task.kind === "emit-boundary") {
-      if (state.started) {
-        await retainEvent(state, task.event, work);
-      }
+    if (task.kind === "visit-container") {
+      await visitContainer(task, tasks, state, work);
       continue;
     }
 
@@ -699,10 +823,25 @@ async function runSourceWindow(
     if (locatedBlock === undefined || locatedBlock.block !== task.block) {
       return fail("internal-failure");
     }
-    state.locatedIndex = addSafe(state.locatedIndex, 1);
     if (locatedBlock === state.targetBlock) {
+      if (checkpoint !== undefined) {
+        if (tasks.length + 1 > 129) return fail("resource-limit-exceeded");
+        const copied: TraversalTask[] = [];
+        for (const pending of tasks) {
+          await work.observe();
+          copied.push({ ...pending });
+        }
+        await work.observe();
+        copied.push({ ...task });
+        checkpoint.structural = {
+          locatedBlock,
+          locatedIndex: state.locatedIndex,
+          tasks: copied,
+        };
+      }
       state.started = true;
     }
+    state.locatedIndex = addSafe(state.locatedIndex, 1);
     const { block } = locatedBlock;
 
     switch (block.kind) {
@@ -721,20 +860,16 @@ async function runSourceWindow(
           await retainEvent(state, start, work);
         }
         tasks.push({
-          kind: "emit-boundary",
-          event: boundaryEvent(
-            "block-quote-end",
-            locatedBlock,
-            structuralContext,
-          ),
-        });
-        pushBlockChildren(
-          tasks,
-          block.children,
-          task.depth,
+          kind: "visit-container",
+          locatedBlock,
+          block,
+          depth: task.depth,
           structuralContext,
           textContext,
-        );
+          childIndex: 0,
+          itemIndex: 0,
+          itemStarted: false,
+        });
         break;
       }
       case "heading":
@@ -747,6 +882,7 @@ async function runSourceWindow(
             locatedBlock === state.targetBlock ? state.targetOffset : 0,
             state,
             work,
+            state.encounteredSource ? undefined : checkpoint,
           );
         }
         break;
@@ -765,54 +901,16 @@ async function runSourceWindow(
           await retainEvent(state, start, work);
         }
         tasks.push({
-          kind: "emit-boundary",
-          event: boundaryEvent(
-            "list-end",
-            locatedBlock,
-            task.structuralContext,
-            { ordered: block.ordered },
-          ),
+          kind: "visit-container",
+          locatedBlock,
+          block,
+          depth: task.depth,
+          structuralContext: task.structuralContext,
+          textContext,
+          childIndex: 0,
+          itemIndex: 0,
+          itemStarted: false,
         });
-        for (
-          let itemIndex = block.items.length - 1;
-          itemIndex >= 0;
-          itemIndex -= 1
-        ) {
-          const item = block.items[itemIndex];
-          if (item === undefined) {
-            return fail("internal-failure");
-          }
-          const structuralContext = withListItem(
-            task.structuralContext,
-            block.ordered,
-            itemIndex,
-          );
-          tasks.push({
-            kind: "emit-boundary",
-            event: boundaryEvent(
-              "list-item-end",
-              locatedBlock,
-              structuralContext,
-              { ordered: block.ordered, itemIndex },
-            ),
-          });
-          pushBlockChildren(
-            tasks,
-            item.children,
-            task.depth,
-            structuralContext,
-            textContext,
-          );
-          tasks.push({
-            kind: "emit-boundary",
-            event: boundaryEvent(
-              "list-item-start",
-              locatedBlock,
-              structuralContext,
-              { ordered: block.ordered, itemIndex },
-            ),
-          });
-        }
         break;
       }
       default:
@@ -869,9 +967,17 @@ export async function prepareNarrationSourceWindow(
   locatorIndex: PublicationLocatorIndex,
   request: NarrationSourceWindowRequest,
   scheduler: NarrationYieldScheduler = DEFAULT_NARRATION_YIELD_SCHEDULER,
+  checkpoint?: NarrationSourceTraversalCheckpoint,
+  operation?: NarrationOperationWorkBudget,
 ): Promise<NarrationSourceWindowResult> {
   try {
-    return await runSourceWindow(locatorIndex, request, scheduler);
+    return await runSourceWindow(
+      locatorIndex,
+      request,
+      scheduler,
+      checkpoint,
+      operation,
+    );
   } catch (error: unknown) {
     return mapFailure(error);
   }

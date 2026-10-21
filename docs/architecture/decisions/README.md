@@ -1,6 +1,12 @@
 # Architecture decision records
 
-- [ADR-0056: Bound reader and narration lifecycle operations](ADR-0056-bound-reader-narration-lifecycle-operations.md): implemented candidate; acceptance pending.
+- [ADR-0059: Last optional-download error in memory](ADR-0059-optional-download-diagnostics.md): accepted bounded report and explicit JSON export; installed probe and review passed in the [completed plan](../../plans/completed/optional-download-diagnostics.md). The subsequent v5 refresh also passed full acquisition.
+
+- [ADR-0058: Admit the certifi and Pillow Chatterbox v5 refresh](ADR-0058-admit-certifi-pillow-chatterbox-v5.md): accepted published runtime; installed acquisition, bilingual reader/speed, integrity, lifecycle, independent review and fresh PR CI pass. V2/v3 are retained for explicit removal only.
+
+- [ADR-0057: Reader and acquisition correctness](ADR-0057-reader-acquisition-correctness.md): implemented and independently accepted. Adds traversal v2, capacity escape, unavailable placement, repeat-read accounting and cancellation/commit semantics.
+
+- [ADR-0056: Bound reader and narration lifecycle operations](ADR-0056-bound-reader-narration-lifecycle-operations.md): implemented and independently accepted in the completed reader/narration bug-fix plan.
 
 Use an ADR for a durable decision that future contributors or Codex might otherwise reverse.
 

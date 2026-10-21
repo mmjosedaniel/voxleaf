@@ -17,15 +17,37 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [reader, narration and optional-acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md)
+complete eight fixes with permanent regressions, repository/browser/native
+checks, all four Piper/Chatterbox ES/EN arms and installed cancellation/cleanup
+scenarios. Independent review approves the implementation; original user data
+and host configuration are restored. The fixes are committed on PR #266;
+the subsequent security refresh is tracked below.
+
 Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
 production completion and unresolved runtime investigation are deferred to a
 future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
 Existing development-only integration, tests and historical evidence are retained.
 
-The [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
+The completed [certifi/Pillow refresh](plans/completed/chatterbox-certifi-pillow-security-refresh.md)
+publishes the reviewed Chatterbox v5 runtime and implements admission
+under [ADR-0058](architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+The complete production audit passes on 2026-10-21. Installed B06/B07, four
+Piper/Chatterbox ES/EN reader/speed arms, runtime integrity and six installer
+policies pass, with original user state restored. Repository, browser and
+native checks also pass; temporary firewall rules are removed. Independent
+acceptance and fresh PR #266 CI pass for integration commit `194846a`.
+V2/v3 data remains cleanup-only.
+
+The [optional-download diagnostic improvement](plans/completed/optional-download-diagnostics.md)
+adds one content-free error report in process memory and explicit JSON export.
+Its bounded installed probe and independent review passed; the subsequent
+v5 refresh also completed full acquisition and B06/B07.
+
+The historical [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
 integrates the separately published v3 prerelease after the 2026-10-06 audit
 exposed advisories in v2. The production v3 dependency audit and the rebuilt
-installed journey now pass, including Chatterbox/Piper in both languages,
+installed journey passed at that checkpoint, including Chatterbox/Piper in both languages,
 removal and reinstallation. A reproduced completion/cancellation race is
 contained in the shared process client without changing the coordinator.
 Independent review approved the integration, and all three integration CI gates
@@ -146,14 +168,14 @@ targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
 download. Milestone 4A implements the fail-closed native lifecycle and
 Settings controls. Milestone 4B now implements the split acquisition while its
-v3 manifest is downloadable only after the renderer and native live compatibility
+current v5 candidate manifest is downloadable only after the renderer and native live compatibility
 gates pass: six allowlisted model-data files
 are acquired directly from the official
 `ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
 Each file remains bounded and SHA-256 verified; no model-repository code may
-execute. The reviewed Chatterbox runtime is reproducibly built, split into
+execute. The reviewed Chatterbox runtime is built from the hashed lock, split into
 three bounded assets, and published under the immutable
-[`chatterbox-runtime-v3`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v3)
+[`chatterbox-runtime-v5`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v5)
 prerelease. The optional path requires explicit consent, bounded
 download, exact verification, atomic installation, separate activation,
 offline operation, and application-owned removal. The ordinary manifest exposes
@@ -280,7 +302,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): implemented authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries; final evidence is recorded in the completed M003.1 ExecPlan.
 - [`architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md`](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md): accept support claims based on published requirements and representative compatible-host evidence rather than exhaustive per-computer testing.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
-- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json): generated security-refreshed v3 package and publication identities. Earlier runtime evidence v2/v3 remains historical; runtime evidence alone does not establish installer acceptance or signing.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json): generated certifi/Pillow v5 artifact and publication identities. Earlier runtime evidence v2/v3/v4 remains historical; runtime evidence alone does not establish installer acceptance or signing.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.

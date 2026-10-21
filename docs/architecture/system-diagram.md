@@ -12,23 +12,34 @@ authority, see the [roadmap](../plans/roadmap.md) and
 
 ## Status legend
 
-The candidate lifecycle corrections in ADR-0056 preserve this component map.
+The optional-download diagnostic addition in ADR-0059 stays inside the native
+acquisition manager and Settings. One report crosses read-only IPC; only an
+explicit export writes a user-owned JSON file through the WebView download UI.
+There is no new service, automatic persistence or external telemetry. The
+bounded installed probe and review passed in the
+[completed diagnostics plan](../plans/completed/optional-download-diagnostics.md);
+the subsequent v5 refresh also passed full acquisition and B06/B07.
+
+The accepted lifecycle corrections in ADR-0056 preserve this component map.
 The existing shutdown command gains an optional expected service-instance ID;
 one read-only native lifecycle observation supplies captured identity/phase
 for the host cancellation harness without querying the child.
 busy native interruption, awaited player disposal, per-read raster deadlines
 and audible-anchored navigation remain within their existing owners. Acceptance
-is tracked in the active reader/narration bug-fix plan.
+is recorded in the completed reader/narration bug-fix plan.
 
 The Piper runtime refreshes in ADR-0053/ADR-0054 bind packaged and native
 development Piper execution to the current core release lock. Historical candidate locks
 remain evaluation evidence; the one-process local inference topology is unchanged.
 
-The security refresh in ADR-0052 changes the active optional package to v3;
-the process topology and local inference boundary are unchanged. Retained v2
-roots are cleanup-only, with no migration or execution fallback. Historical
-M011 checkpoints below retain their original artifact identities; current
-v3 installed acceptance is recorded in the security refresh plan.
+The certifi/Pillow refresh in ADR-0058 changes the active optional
+package to v5. Its exact prerelease is published and its production audit
+passes. Installed acquisition, bilingual reader/speed, integrity and lifecycle
+gates pass, together with independent acceptance and fresh PR CI for integration
+commit `194846a`, as recorded in the completed security refresh plan.
+The process topology and local inference boundary are unchanged. Retained
+v2/v3 roots are cleanup-only, with no migration or execution fallback.
+Historical M011 and ADR-0052 checkpoints below retain their original identities.
 
 | Status               | Meaning                                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------- |

@@ -159,6 +159,78 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it.each([60_000, 120_000, 300_000, 600_000] as const)(
+    "B01 preserves the %i target and permits capacity escape at startup and refill",
+    (targetMs) => {
+      const scheduler = makeReadyScheduler(createManualClock(0), {
+        kind: "prepared",
+        targetMs,
+      });
+      expect(scheduler.playAvailableAudio()).toBe(false);
+      for (let index = 1; index <= 256; index += 1) {
+        const prepared = segment(index);
+        prepare(scheduler, [prepared]);
+        expect(scheduler.playAvailableAudio()).toBe(false);
+        synthesize(scheduler, ownedUnit(prepared.segmentId, 100));
+      }
+      expect(scheduler.playAvailableAudio()).toBe(true);
+      scheduler.consumeSampleFrames(256 * 2_400);
+      expect(scheduler.observe().playbackState).toBe("buffering");
+      expect(scheduler.playAvailableAudio()).toBe(false);
+      for (let index = 257; index <= 512; index += 1) {
+        const prepared = segment(index);
+        prepare(scheduler, [prepared]);
+        synthesize(scheduler, ownedUnit(prepared.segmentId, 100));
+      }
+      expect(scheduler.observe().canPlayAvailableAudio).toBe(true);
+      expect(scheduler.playAvailableAudio()).toBe(true);
+      expect(scheduler.observe().targetBufferMs).toBe(targetMs);
+      scheduler.invalidate();
+      expect(scheduler.playAvailableAudio()).toBe(false);
+      scheduler.releaseDiscardedAudioUnits(256);
+      assertWithinAuthority(scheduler.observe());
+    },
+  );
+
+  it("B01 offers an explicit escape when 256 short units cannot reach the requested target", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0), {
+      kind: "prepared",
+      targetMs: 600_000,
+    });
+    for (let index = 1; index <= 256; index += 1) {
+      const prepared = segment(index);
+      prepare(scheduler, [prepared]);
+      synthesize(scheduler, ownedUnit(prepared.segmentId, 2_000));
+    }
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "preparing",
+      effectiveListeningDurationMs: 512_000,
+      targetBufferMs: 600_000,
+      retainedAudioUnitCount: 256,
+      nextAction: { kind: "none", reason: "backpressure" },
+      canPlayAvailableAudio: true,
+    });
+    expect(scheduler.playAvailableAudio()).toBe(true);
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "playing",
+      targetBufferMs: 600_000,
+      retainedAudioUnitCount: 256,
+      canPlayAvailableAudio: false,
+    });
+    expect(scheduler.playAvailableAudio()).toBe(false);
+    scheduler.consumeSampleFrames(48_000);
+    expect(scheduler.observe()).toMatchObject({
+      retainedAudioUnitCount: 255,
+      nextAction: { kind: "prepare-narration" },
+    });
+    const next = segment(257);
+    prepare(scheduler, [next]);
+    synthesize(scheduler, ownedUnit(next.segmentId, 2_000));
+    assertWithinAuthority(scheduler.observe());
+    scheduler.pausePlayback();
+    expect(scheduler.playAvailableAudio()).toBe(false);
+  });
+
   it("uses effective listening lead while retaining source-frame authority", () => {
     const scheduler = makeReadyScheduler(
       createManualClock(0),

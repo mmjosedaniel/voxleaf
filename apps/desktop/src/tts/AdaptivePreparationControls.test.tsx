@@ -70,6 +70,27 @@ function handlers() {
 }
 
 describe("adaptive preparation controls", () => {
+  it("B01 reports capacity with truthful loaded and requested duration", () => {
+    const state = createAdaptivePreparationUiState({
+      mode: { kind: "prepared", targetMs: 600_000 },
+      scheduler: observation({
+        targetBufferMs: 600_000,
+        canPlayAvailableAudio: true,
+        nextAction: { kind: "none", reason: "backpressure" },
+      }),
+    });
+    render(
+      <AdaptivePreparationControls
+        selection={{ kind: "prepared", targetMs: 600_000 }}
+        state={state}
+        {...handlers()}
+      />,
+    );
+    expect(
+      screen.getByText(/5 seconds of 10 minutes ready/),
+    ).toBeInTheDocument();
+  });
+
   it("offers native keyboard-operable quick and explicit prepared choices", () => {
     const callbacks = handlers();
     const { rerender } = render(

@@ -74,13 +74,28 @@ test("keeps prepared navigation and closes real Chromium audio contexts through 
         preparedTargetMs: 600_000,
       }),
     );
-    const observations = { created: 0, closed: 0, service: 0 };
+    const observations = {
+      created: 0,
+      closed: 0,
+      service: 0,
+      preparing: false,
+      release: () => {},
+    };
     Object.assign(globalThis, { __rnb: observations });
     const Original = globalThis.AudioContext;
     globalThis.AudioContext = class extends Original {
       constructor(options?: AudioContextOptions) {
         super(options);
         observations.created += 1;
+        const addModule = this.audioWorklet.addModule.bind(this.audioWorklet);
+        this.audioWorklet.addModule = async (...args) => {
+          observations.preparing = true;
+          await new Promise<void>((resolve) => {
+            observations.release = resolve;
+          });
+          await addModule(...args);
+          observations.preparing = false;
+        };
       }
       override async close() {
         await super.close();
@@ -142,7 +157,7 @@ test("keeps prepared navigation and closes real Chromium audio contexts through 
                 capabilities(),
               ];
             case "synthesize_tts_segment":
-              return new ArrayBuffer(144_000 * 4);
+              return new ArrayBuffer(24_000 * 4);
             case "shutdown_tts_service":
               return [state("stopping"), state("stopped")];
             default:
@@ -153,7 +168,7 @@ test("keeps prepared navigation and closes real Chromium audio contexts through 
     });
   }, report);
   await page.goto("/");
-  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 120 }, (_, i) => `<p id="passage-${i}">Synthetic passage number ${i}.</p>`).join("")}</body></html>`;
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 320 }, (_, i) => `<p id="passage-${i}">Synthetic passage number ${i}.</p>`).join("")}</body></html>`;
   await page.getByLabel("Open a book").setInputFiles({
     name: "synthetic-prepared.epub",
     mimeType: "application/epub+zip",
@@ -171,12 +186,43 @@ test("keeps prepared navigation and closes real Chromium audio contexts through 
         Number(await narration.getAttribute("data-narration-accepted-units")),
       )
       .toBeGreaterThan(64);
+    await expect(
+      page.locator('[data-narration-action="play-available"]'),
+    ).toBeEnabled();
+    await page.locator('[data-narration-action="play-available"]').click();
+    if (rate === "75") {
+      await expect
+        .poll(() =>
+          page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+        )
+        .toBe(true);
+      await page.locator('[data-narration-action="pause"]').click();
+      await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").release());
+      await expect
+        .poll(() =>
+          page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+        )
+        .toBe(false);
+      await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+      await page.locator('[data-narration-action="resume"]').click();
+    }
     await expect(narration).toHaveAttribute("data-narration-phase", "playing");
     await expect(
       page.locator('[data-narration-action="next-passage"]'),
     ).toBeEnabled();
     if (rate === "75") {
       await page.locator('[data-narration-action="next-passage"]').click();
+      await expect(
+        page.locator('[data-narration-action="play-available"]'),
+      ).toBeEnabled();
+      await page.locator('[data-narration-action="play-available"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+        )
+        .toBe(true);
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").release());
       await expect(narration).toHaveAttribute(
         "data-narration-phase",
         "playing",

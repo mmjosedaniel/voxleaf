@@ -58,7 +58,10 @@ from .packaging.chatterbox_authority import (
 )
 from .packaging.chatterbox_authority import successor_runtime_evidence as successor_runtime_evidence
 from .packaging.chatterbox_authority import successor_source_manifest as successor_source_manifest
-from .packaging.chatterbox_authority import write_local_source_manifest
+from .packaging.chatterbox_authority import (
+    write_local_source_manifest,
+    write_security_source_manifest,
+)
 from .packaging.chatterbox_authority import write_successor_authority as write_successor_authority
 from .packaging.chatterbox_authority import (
     write_successor_source_manifest as write_successor_source_manifest,
@@ -88,6 +91,10 @@ from .packaging.chatterbox_integrity import repository_root as repository_root
 from .packaging.chatterbox_integrity import safe_relative_path as safe_relative_path
 from .packaging.chatterbox_integrity import sha256_file as sha256_file
 from .packaging.chatterbox_integrity import verify_package_tree as verify_package_tree
+from .packaging.chatterbox_security_authority import (
+    check_security_authority,
+    write_security_authority,
+)
 from .packaging.chatterbox_sources import resolve_runtime_sources
 
 DOWNLOAD_TIMEOUT_SECONDS: Final = 120
@@ -309,7 +316,7 @@ def _copy_notices(
 ) -> None:
     layout = PackageLayout(package_version)
     notices = staging / "notices"
-    if package_version in {"3", "4"}:
+    if package_version in {"3", "4", "5"}:
         _copy_successor_license(root, notices, environment)
     _copy_file(root / "LICENSE", notices / "VOXLEAF-MIT.txt")
     _copy_file(
@@ -426,7 +433,7 @@ def _synchronise_environment(
         str(environment / "Scripts/python.exe"),
         str(lock),
     ]
-    if package_version in {"3", "4"}:
+    if package_version in {"3", "4", "5"}:
         sync_command.append("--require-hashes")
     try:
         subprocess.run(["uv", "venv", "--python", "3.12", str(environment)], check=True, cwd=root)
@@ -440,8 +447,13 @@ def _synchronise_environment(
 
 
 def build_package(
-    *, synchronise: bool = True, package_version: PackageVersion = "2"
+    *,
+    synchronise: bool = True,
+    package_version: PackageVersion = "2",
+    output_root: Path | None = None,
 ) -> PackageMeasurement:
+    if package_version == "5" and not synchronise:
+        raise ReleaseChatterboxError("chatterbox-package-security-sync-required")
     root = repository_root()
     layout = PackageLayout(package_version)
     source = load_source_manifest(root, package_version=package_version)
@@ -455,7 +467,7 @@ def build_package(
         raise ReleaseChatterboxError("chatterbox-package-lock-invalid")
     # Resolve the complete source closure before sync, download or output mutation.
     sources = resolve_runtime_sources(root, source)
-    dist = layout.dist(root)
+    dist = layout.dist(root, output_root)
     dist.mkdir(parents=True, exist_ok=True)
     environment = dist / "environment"
     if synchronise:
@@ -506,9 +518,13 @@ def build_package(
         runtime_manifest_sha256=sha256_file(runtime_manifest),
         parts=parts,
     )
-    if package_version == "4":
-        (dist / "local-build-evidence-v4.json").write_bytes(
-            render_manifest(_local_package_receipt(root))
+    if package_version in {"4", "5"}:
+        (dist / f"local-build-evidence-v{package_version}.json").write_bytes(
+            render_manifest(
+                _local_package_receipt(
+                    root, package_version=package_version, output_root=output_root
+                )
+            )
         )
     return measurement
 
@@ -563,21 +579,25 @@ def _verify_local_archive_members(
     return files
 
 
-def _local_package_receipt(root: Path) -> dict[str, object]:
-    """Measure and verify current v4 outputs without publication/execution claims."""
+def _local_package_receipt(
+    root: Path, *, package_version: PackageVersion = "4", output_root: Path | None = None
+) -> dict[str, object]:
+    """Measure local v4/v5 outputs without publication/execution claims."""
 
-    layout = PackageLayout("4")
-    dist = layout.dist(root)
+    if package_version not in {"4", "5"}:
+        raise ReleaseChatterboxError("chatterbox-package-version-invalid")
+    layout = PackageLayout(package_version)
+    dist = layout.dist(root, output_root)
     target = dist / layout.directory
-    source = load_source_manifest(root, package_version="4")
+    source = load_source_manifest(root, package_version=package_version)
     sources = resolve_runtime_sources(root, source)
     runtime = _load_json(target / layout.runtime_manifest, "chatterbox-package-runtime-invalid")
-    expected_runtime = build_runtime_manifest(target, package_version="4")
+    expected_runtime = build_runtime_manifest(target, package_version=package_version)
     if runtime != expected_runtime or (target / layout.runtime_manifest).read_bytes() != (
         render_manifest(expected_runtime)
     ):
         raise ReleaseChatterboxError("chatterbox-package-runtime-invalid")
-    verify_package_tree(target, runtime, package_version="4")
+    verify_package_tree(target, runtime, package_version=package_version)
     module_root = target / "runtime/Lib/site-packages/voxleaf_tts"
     if {
         path.relative_to(module_root).as_posix()
@@ -605,7 +625,7 @@ def _local_package_receipt(root: Path) -> dict[str, object]:
     return {
         "schemaVersion": 1,
         "packageId": layout.directory,
-        "packageVersion": "4",
+        "packageVersion": package_version,
         "distribution": {"published": False, "admitted": False},
         "authority": {
             "sourceManifestSha256": sha256_file(recipe),
@@ -630,11 +650,21 @@ def _local_package_receipt(root: Path) -> dict[str, object]:
     }
 
 
-def check_local_package(root: Path | None = None) -> None:
+def check_local_package(
+    root: Path | None = None,
+    *,
+    package_version: PackageVersion = "4",
+    output_root: Path | None = None,
+) -> None:
     base = root or repository_root()
-    receipt = PackageLayout("4").dist(base) / "local-build-evidence-v4.json"
+    receipt = (
+        PackageLayout(package_version).dist(base, output_root)
+        / f"local-build-evidence-v{package_version}.json"
+    )
     try:
-        if receipt.read_bytes() != render_manifest(_local_package_receipt(base)):
+        if receipt.read_bytes() != render_manifest(
+            _local_package_receipt(base, package_version=package_version, output_root=output_root)
+        ):
             raise ReleaseChatterboxError("chatterbox-package-runtime-invalid")
     except (OSError, zipfile.BadZipFile):
         raise ReleaseChatterboxError("chatterbox-package-runtime-invalid") from None
@@ -677,37 +707,49 @@ def main(arguments: list[str] | None = None) -> int:
     )
     parser.add_argument("--no-sync", action="store_true")
     parser.add_argument("--publication", type=Path)
-    parser.add_argument("--package-version", choices=("2", "3", "4"), default="2")
+    parser.add_argument("--output-root", type=Path)
+    parser.add_argument("--package-version", choices=("2", "3", "4", "5"), default="2")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     version = cast(PackageVersion, args.package_version)
+    if args.output_root is not None and args.command not in {"build", "check-local"}:
+        parser.error("--output-root requires build or check-local")
     if args.command == "check-local":
-        if version != "4":
-            parser.error("check-local requires --package-version 4")
-        check_local_package()
-        print("chatterbox-optional-v4-local:current-unpublished-unadmitted")
+        if version not in {"4", "5"}:
+            parser.error("check-local requires --package-version 4 or 5")
+        check_local_package(package_version=version, output_root=args.output_root)
+        print(f"chatterbox-optional-v{version}-local:current-unpublished-unadmitted")
         return 0
     if version == "4" and args.command in {
         "check-acquisition",
         "write-acquisition",
         "reconcile-evidence",
     }:
-        parser.error("version 4 is local-only and has no acquisition authority")
+        parser.error(f"version {version} is local-only and has no acquisition authority")
+    if version == "5" and args.command == "check-acquisition":
+        check_security_authority()
+        print("chatterbox-v5-acquisition:current")
+        return 0
     if version == "3" and args.command == "check-acquisition":
         check_successor_authority()
         print("chatterbox-v3-acquisition:current")
         return 0
     if args.command == "write-acquisition":
-        if version != "3" or args.publication is None:
-            parser.error("write-acquisition requires version 3 and --publication")
-        write_successor_authority(args.publication)
-        print("chatterbox-v3-acquisition:written")
+        if version not in {"3", "5"} or args.publication is None:
+            parser.error("write-acquisition requires version 3 or 5 and --publication")
+        if version == "5":
+            write_security_authority(args.publication)
+        else:
+            write_successor_authority(args.publication)
+        print(f"chatterbox-v{version}-acquisition:written")
         return 0
-    if version == "3" and args.command == "reconcile-evidence":
+    if version in {"3", "5"} and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
-        if version not in {"3", "4"}:
-            parser.error("write-source requires --package-version 3 or 4")
-        if version == "4":
+        if version not in {"3", "4", "5"}:
+            parser.error("write-source requires --package-version 3, 4 or 5")
+        if version == "5":
+            write_security_source_manifest()
+        elif version == "4":
             write_local_source_manifest()
         else:
             write_successor_source_manifest()
@@ -727,7 +769,15 @@ def main(arguments: list[str] | None = None) -> int:
         reconcile_runtime_evidence()
         print("chatterbox-runtime-evidence:reconciled")
         return 0
-    print(measurement_json(build_package(synchronise=not args.no_sync, package_version=version)))
+    print(
+        measurement_json(
+            build_package(
+                synchronise=not args.no_sync,
+                package_version=version,
+                output_root=args.output_root,
+            )
+        )
+    )
     return 0
 
 

@@ -13,7 +13,11 @@ import {
 } from "./optional-chatterbox-client";
 import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 function snapshot(
   state: "absent" | "confirming" | "downloading" | "failed" | "installed",
@@ -42,6 +46,121 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("reads the last download error only after an explicit export request", async () => {
+    const invoke = vi.fn(async (command: string) =>
+      command === "optional_chatterbox_download_diagnostic"
+        ? null
+        : snapshot("absent"),
+    );
+    render(
+      <OptionalChatterboxControls
+        client={new OptionalChatterboxClient(invoke)}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+    fireEvent.click(screen.getByText("Download troubleshooting"));
+    const button = await screen.findByRole("button", {
+      name: "Export last download error",
+    });
+    expect(invoke).not.toHaveBeenCalledWith(
+      "optional_chatterbox_download_diagnostic",
+    );
+    fireEvent.click(button);
+    expect(
+      await screen.findByText(
+        "No download error has been recorded in this session.",
+      ),
+    ).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith(
+      "optional_chatterbox_download_diagnostic",
+    );
+  });
+
+  it("exports a local report only on click and leaves acquisition state unchanged", async () => {
+    const report = {
+      schemaVersion: 1,
+      appVersion: "0.1.0",
+      packageVersion: "5",
+      source: "github-release",
+      artifactIndex: 1,
+      stage: "request",
+      kind: "timeout",
+      elapsedMs: 30_000,
+      receivedBytes: 0,
+      expectedBytes: 1_900_000_000,
+      httpStatus: null,
+      contentLength: null,
+      osError: null,
+    };
+    const create = vi.fn(() => "blob:diagnostic");
+    vi.stubGlobal(
+      "URL",
+      class extends URL {
+        static override createObjectURL = create;
+        static override revokeObjectURL = vi.fn();
+      },
+    );
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+    const client = new OptionalChatterboxClient(
+      vi.fn(async (command) =>
+        command === "optional_chatterbox_download_diagnostic"
+          ? report
+          : snapshot("absent"),
+      ),
+    );
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+    await screen.findByRole("button", { name: "Review Chatterbox download" });
+    expect(create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Download troubleshooting"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Export last download error" }),
+    );
+    await screen.findByText("Diagnostic download requested.");
+    expect(create).toHaveBeenCalledOnce();
+    expect(click).toHaveBeenCalledOnce();
+    expect((click.mock.instances[0] as HTMLAnchorElement).download).toBe(
+      "voxleaf-download-error.json",
+    );
+    expect(client.observe().state).toBe("absent");
+  });
+
+  it("contains report-read failures without changing the download state", async () => {
+    const client = new OptionalChatterboxClient(async (command) => {
+      if (command === "optional_chatterbox_download_diagnostic")
+        throw new Error("unavailable");
+      return snapshot("absent");
+    });
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+    await screen.findByRole("button", { name: "Review Chatterbox download" });
+    fireEvent.click(screen.getByText("Download troubleshooting"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Export last download error" }),
+    );
+    await screen.findByText("Could not export the download error. Try again.");
+    expect(client.observe().state).toBe("absent");
+    expect(
+      screen.getByRole("button", { name: "Export last download error" }),
+    ).toBeEnabled();
+  });
+
   it("lets an absent compatible package reach explicit download confirmation", async () => {
     const invoke = vi.fn(async (command: string) =>
       snapshot(
@@ -134,17 +253,17 @@ describe("optional Chatterbox controls", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/24.00 GiB RAM total/)).toBeInTheDocument();
     expect(
-      screen.getByText(/13,270,915,278 bytes \(13.27 GB \/ 12.36 GiB\)/),
+      screen.getByText(/13,271,159,574 bytes \(13.27 GB \/ 12.36 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,236,377,725 bytes \(8.24 GB \/ 7.67 GiB\)/),
+      screen.getByText(/8,236,500,113 bytes \(8.24 GB \/ 7.67 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,239,933,601 bytes \(8.24 GB \/ 7.67 GiB\)/),
+      screen.getByText(/8,240,055,749 bytes \(8.24 GB \/ 7.67 GiB\)/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Historical v2 observations, not current v3 measurements/,
+        /Historical v2 observations, not current v5 measurements/,
       ),
     ).toBeInTheDocument();
     expect(

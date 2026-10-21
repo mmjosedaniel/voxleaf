@@ -19,6 +19,10 @@ import {
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeResourceObservation } from "./native-smoke/resource-observation.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
+import {
+  syntheticNarrationSentences,
+  chatterboxPlaybackSpeedParagraph,
+} from "./native-smoke/narration-fixture.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
@@ -46,6 +50,9 @@ const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
 );
 const EXERCISE_PLAYBACK_SPEEDS = process.argv.includes(
   "--exercise-playback-speeds",
+);
+const EXERCISE_READER_CORRECTIONS = process.argv.includes(
+  "--exercise-reader-corrections",
 );
 const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
 const ADAPTIVE_TTS_LANGUAGE_ARGUMENT = "--tts-language=";
@@ -351,6 +358,7 @@ const {
   ADAPTIVE_TTS_PROFILE_ID,
   CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXERCISE_PLAYBACK_SPEEDS,
+  EXERCISE_READER_CORRECTIONS,
   EXPECTED_UNAVAILABLE_PROFILE_REASON,
   INTERACTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
@@ -984,9 +992,8 @@ async function run() {
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
     const fixtureLanguage = ADAPTIVE_TTS_LANGUAGE;
     const isEnglishFixture = fixtureLanguage === "en";
-    const boundedSyntheticSentence = isEnglishFixture
-      ? "This synthetic narration describes a quiet library and private local reading. Each sentence validates natural transitions, bounded memory, and order."
-      : "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local privada. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const boundedSyntheticSentence =
+      syntheticNarrationSentences(fixtureLanguage);
     const piperExpansionRegressionSentence = isEnglishFixture
       ? "Series 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 and 25%."
       : "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
@@ -1001,7 +1008,9 @@ async function run() {
               isEnglishFixture ? "Part" : "Parte"
             } ${String(index + 1)}.`,
         ).join(" ")}`
-      : boundedSyntheticSentence;
+      : ADAPTIVE_TTS_PROFILE_ID === CHATTERBOX_BILINGUAL_PROFILE_ID
+        ? chatterboxPlaybackSpeedParagraph(fixtureLanguage)
+        : boundedSyntheticSentence;
     const chapterParagraphs = (chapter) =>
       Array.from(
         { length: 96 },

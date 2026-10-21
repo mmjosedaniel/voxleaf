@@ -93,6 +93,9 @@ Function un.IsSafeOwnedTree
 FunctionEnd
 
 Function un.OptionalChatterboxDataExists
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\5"
+  Call un.ExactDirectoryExists
+  StrCmp $R0 "1" optional_data_exists
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\3"
   Call un.ExactDirectoryExists
   StrCmp $R0 "1" optional_data_exists
@@ -201,6 +204,23 @@ FunctionEnd
 
 !macro NSIS_HOOK_POSTUNINSTALL
   StrCmp $RemoveChatterboxData "1" 0 chatterbox_data_done
+  ; cb/5: product identity, tts, cb, and the exact root must all be real dirs.
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v3
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v3
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v3
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\5"
+  Call un.IsSafeOwnedTree
+  StrCmp $R0 "1" 0 chatterbox_retained_v3
+  RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\5"
+  RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+
+  chatterbox_retained_v3:
   ; cb/3: product identity, tts, cb, and the exact root must all be real dirs.
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
   Call un.IsSafeOwnedDirectory

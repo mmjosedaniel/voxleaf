@@ -65,6 +65,9 @@ export interface NarrationPreparationStart {
 }
 
 export interface NarrationPreparationBatchMeasurements {
+  /** Conservative charged work, including bounded synchronous stage envelopes. */
+  readonly workUnitsCharged?: Index;
+  readonly traversalPolicyVersion?: 2;
   readonly sourceCodePointsInspected: Index;
   readonly narrationCodePoints: Index;
   readonly narrationUtf8Bytes: Index;

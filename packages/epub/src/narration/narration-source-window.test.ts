@@ -21,10 +21,83 @@ import {
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 import {
   prepareNarrationSourceWindow,
+  type NarrationSourceTraversalCheckpoint,
   type NarrationSourceWindowLeafEvent,
 } from "./narration-source-window.js";
 
 describe("bounded narration source windows", () => {
+  it("B02 resumes bounded structural frames across quote/list windows with identical context and boundaries", async () => {
+    const long = paragraph("Synthetic 😀 text. ".repeat(600));
+    const fixture = createFlatFixture([
+      {
+        kind: "block-quote",
+        language: "es",
+        direction: "rtl",
+        children: [
+          {
+            kind: "list",
+            ordered: true,
+            items: [
+              {
+                children: [
+                  ...Array.from({ length: 1_000 }, () => paragraph("")),
+                  long,
+                ],
+              },
+              { children: [paragraph("Final synthetic item.")] },
+            ],
+          },
+        ],
+      },
+    ]);
+    const target = fixture.index.blocks.find((entry) => entry.block === long);
+    let cursor = requiredBlock(target).startLocator;
+    const checkpoint: NarrationSourceTraversalCheckpoint = {};
+    for (let window = 0; window < 5; window += 1) {
+      const resumed = await prepareNarrationSourceWindow(
+        fixture.index,
+        { startLocator: cursor },
+        async () => undefined,
+        checkpoint,
+      );
+      const cold = await prepareNarrationSourceWindow(
+        fixture.index,
+        { startLocator: cursor },
+        async () => undefined,
+      );
+      expect(["window", "complete"]).toContain(resumed.status);
+      if (
+        (resumed.status !== "window" && resumed.status !== "complete") ||
+        (cold.status !== "window" && cold.status !== "complete")
+      )
+        throw new Error("expected source windows");
+      expect(resumed.events).toEqual(cold.events);
+      expect(resumed.start).toEqual(cold.start);
+      expect(resumed.status).toBe(cold.status);
+      expect(checkpoint.structural?.tasks.length).toBeLessThanOrEqual(3);
+      expect(firstLeaf(resumed.events)).toMatchObject({
+        structuralContext: {
+          quoteDepth: 1,
+          listPath: [{ ordered: true, itemIndex: 0 }],
+        },
+        textContext: { language: "es", direction: "rtl" },
+      });
+      if (window > 0)
+        expect(resumed.measurements.workUnitCount).toBeLessThan(
+          cold.measurements.workUnitCount,
+        );
+      if (resumed.status === "complete") {
+        expect(resumed.events.at(-1)).toMatchObject({
+          kind: "boundary",
+          boundary: "block-quote-end",
+        });
+        return;
+      }
+      cursor = resumed.continuation;
+    }
+    throw new Error("expected bounded completion");
+  });
+
   it("uses the accepted narration-v1 source and work limits", () => {
     const accepted = NARRATION_PREPARATION_PROFILE_V1.limits;
     expect(NARRATION_V1_SOURCE_WINDOW_POLICY).toMatchObject({

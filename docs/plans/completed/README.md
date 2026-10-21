@@ -16,6 +16,12 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [`chatterbox-certifi-pillow-security-refresh.md`](chatterbox-certifi-pillow-security-refresh.md): published v5 with certifi 2026.10.19 and Pillow 13.0.0, exact native admission and cleanup-only older packages. Complete B06/B07, four installed reader/speed arms, integrity, six installer policies, repository/browser/native gates and fresh PR #266 CI pass with independent approval. Original user state and firewall are restored; integration commit `194846a` is published. The plan records the diagnostic addition and two regression-tested harness corrections.
+
+- [`optional-download-diagnostics.md`](optional-download-diagnostics.md): one bounded error in process memory, explicit Settings JSON export and a real installed transfer/cancellation/restart probe; host checks and independent review pass, with user state restored. The subsequent [v5 refresh](chatterbox-certifi-pillow-security-refresh.md) also passed complete acquisition and B06/B07.
+
+- [`reader-narration-acquisition-bugfixes.md`](reader-narration-acquisition-bugfixes.md): eight corrections covering capacity escape, bounded continuation, context-scoped navigation, unavailable chapters, repeat raster reads, acquisition cancellation/cleanup and asynchronous Pause. Repository/browser/native gates, four real-model arms and the installed B06/B07 journey pass. User data and host configuration are restored; independent Astra approval. Committed on PR #266; the subsequent v5 security refresh has separate acceptance evidence.
+
 - [`narration-state-and-optional-package-corrections.md`](narration-state-and-optional-package-corrections.md): seven corrections for optional-package ownership/retry, initial availability, concurrent preferences, session volume, preparation diagnostics and compatibility status. Focused, full repository, Chromium and WebView2 checks pass with independent Astra approval after one recovery-copy correction. Changes are unstaged/uncommitted; the final documentary receipt covers the frozen closeout.
 
 - [`reader-narration-bugfixes.md`](reader-narration-bugfixes.md): four fixes for startup cancellation, playback disposal, lazy image deadlines and navigation beyond 64 prepared segments. Permanent regressions, repository/browser/native checks and all six real-model arms pass; independent Astra approval. Host-context recovery preserved the installed Chatterbox package. Changes remain unstaged and uncommitted.

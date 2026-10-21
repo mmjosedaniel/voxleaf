@@ -183,7 +183,10 @@ export function ProductNarrationControls({
             <button
               type="button"
               data-narration-action="play"
-              disabled={snapshot.availability !== "available"}
+              disabled={
+                snapshot.availability !== "available" ||
+                snapshot.navigation.canStart === false
+              }
               onClick={() => coordinator.start()}
             >
               Play
@@ -205,6 +208,15 @@ export function ProductNarrationControls({
               onClick={() => coordinator.resume()}
             >
               Resume
+            </button>
+          ) : null}
+          {operational && state?.canPlayAvailableAudio ? (
+            <button
+              type="button"
+              data-narration-action="play-available"
+              onClick={() => coordinator.playAvailableAudio()}
+            >
+              Play available audio
             </button>
           ) : null}
           {showStop ? (
@@ -245,7 +257,9 @@ export function ProductNarrationControls({
               !snapshot.canPersistStartPreference
             }
             startDisabled={
-              snapshot.availability !== "available" || !operational
+              snapshot.availability !== "available" ||
+              snapshot.navigation.canStart === false ||
+              !operational
             }
             showPlaybackControls={false}
             showSelectionControls={false}
@@ -294,6 +308,7 @@ export function ProductNarrationControls({
               data-narration-action="visible-passage"
               disabled={
                 snapshot.availability !== "available" ||
+                snapshot.navigation.canStart === false ||
                 !operational ||
                 snapshot.navigation.settling
               }

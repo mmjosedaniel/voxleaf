@@ -181,7 +181,7 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
   assert.equal(unsigned.lifecycle.localReleaseGatesPassed, false);
   assert.equal(unsigned.payload.chatterboxRuntimeOrWeightsBundled, false);
   assert.equal(unsigned.optionalChatterbox.releaseLockedRuntime, true);
-  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_239_933_601);
+  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_240_055_749);
   assert.equal(
     unsigned.optionalChatterbox.representativeCompatibleHostJourney,
     "not-run",

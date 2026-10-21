@@ -36,6 +36,9 @@ function estimateText(estimatedWaitMs: number | undefined): string {
 function primaryStatus(state: AdaptivePreparationUiState): string {
   const ready = formatPreparationDuration(state.readyMs);
   const target = preparationTargetLabel(state.targetMs);
+  if (state.canPlayAvailableAudio) {
+    return `Preparation reached its memory capacity — ${ready} of ${target} ready. Play the available audio to continue.`;
+  }
   switch (state.phase) {
     case "buffering":
       return `Playback paused while VoxLeaf generates more audio — ${ready} of 1 minute ready. ${estimateText(state.estimatedWaitMs)}`;

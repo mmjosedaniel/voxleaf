@@ -159,6 +159,8 @@ def load_source_manifest(
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "4" and manifest != local_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
+    if package_version == "5" and manifest != security_source_manifest(base):
+        raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     return manifest
 
 
@@ -188,6 +190,29 @@ def write_successor_source_manifest(root: Path | None = None) -> Path:
     base = root or repository_root()
     target = base / ("services/tts/release/optional/chatterbox/source-manifest-v3.json")
     target.write_bytes(render_manifest(successor_source_manifest(base)))
+    return target
+
+
+def security_source_manifest(root: Path | None = None) -> dict[str, object]:
+    """Keep the published v3 runtime/model closure with the independent v5 lock."""
+
+    base = root or repository_root()
+    layout = PackageLayout("5")
+    manifest = copy.deepcopy(load_source_manifest(base, package_version="3"))
+    manifest["packageId"] = layout.directory
+    manifest["packageVersion"] = layout.version
+    manifest["chatterboxLock"] = {
+        "path": layout.lock_path,
+        "sha256": sha256_file(base / layout.lock_path),
+    }
+    cast(dict[str, object], manifest["runtimeRelease"])["tag"] = "chatterbox-runtime-v5"
+    return manifest
+
+
+def write_security_source_manifest(root: Path | None = None) -> Path:
+    base = root or repository_root()
+    target = base / "services/tts/release/optional/chatterbox/source-manifest-v5.json"
+    target.write_bytes(render_manifest(security_source_manifest(base)))
     return target
 
 

@@ -203,8 +203,13 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
     } == {"Qwen development profiles"}
     assert inventory["lockIdentities"]["piperCore"]["sha256"] == _sha256(CORE_LOCK)
     assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(
-        RELEASE_ROOT / "profiles" / "chatterbox-v3" / "requirements.lock"
+        RELEASE_ROOT / "profiles" / "chatterbox-v5" / "requirements.lock"
     )
+    assert {
+        component["integrity"]["lock"]
+        for component in components
+        if component["scope"] == "optional" and component["ecosystem"] == "python"
+    } == {inventory["lockIdentities"]["chatterboxOptional"]["path"]}
 
 
 def test_python_licence_evidence_contains_only_exact_release_components() -> None:
@@ -228,15 +233,17 @@ def _sha256(path: Path) -> str:
 
 
 def test_active_successor_graph_is_security_refreshed_and_exact() -> None:
-    successor = RELEASE_ROOT / "profiles" / "chatterbox-v3"
+    successor = RELEASE_ROOT / "profiles" / "chatterbox-v5"
     requirements = (successor / "requirements.in").read_text()
     assert "transformers==5.17.0" in requirements
     assert "tokenizers==0.23.1" in requirements
     assert "urllib3==2.8.0" in requirements
+    assert "certifi==2026.10.19" in requirements
+    assert "pillow==13.0.0" in requirements
     assert len(_requirement_blocks(successor / "requirements.lock")) == 79
     policy = json.loads(AUDIT_POLICY.read_text())
     graph = next(graph for graph in policy["pythonGraphs"] if graph["id"] == "chatterbox-optional")
-    expected = "services/tts/release/profiles/chatterbox-v3/requirements.lock"
+    expected = "services/tts/release/profiles/chatterbox-v5/requirements.lock"
     assert graph["lock"] == expected
     assert graph["requirements"] == expected
     inventory = json.loads(COMPONENT_INVENTORY.read_text())
@@ -249,5 +256,7 @@ def test_active_successor_graph_is_security_refreshed_and_exact() -> None:
         "transformers": "5.17.0",
         "tokenizers": "0.23.1",
         "urllib3": "2.8.0",
+        "certifi": "2026.10.19",
+        "pillow": "13.0.0",
     }.items():
         assert components[name]["versionOrRevision"] == version
