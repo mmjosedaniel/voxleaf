@@ -17,262 +17,56 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [reader, narration and optional-acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md)
-complete eight fixes with permanent regressions, repository/browser/native
-checks, all four Piper/Chatterbox ES/EN arms and installed cancellation/cleanup
-scenarios. Independent review approves the implementation; original user data
-and host configuration are restored. The fixes are committed on PR #266;
-the subsequent security refresh is tracked below.
+VoxLeaf is pre-alpha. The unsigned Windows x64 local/portfolio MVP includes
+local EPUB reading, stable-locator restoration, synchronized narration and
+bounded memory-only playback. Piper Spanish/English is the CPU core;
+Chatterbox Spanish/English is an optional download available only after its
+published live compatibility gate passes. Trusted public signing remains
+pending external authorization. Qwen remains development-only and its
+production completion/investigation is deferred under
+[ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
 
-Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
-production completion and unresolved runtime investigation are deferred to a
-future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
-Existing development-only integration, tests and historical evidence are retained.
+Current executable identity is separate from stable profile names and historical
+evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
+Chatterbox uses **v5**, reusing frozen v3 service modules with the refreshed
+lock. V2/v3 installations are cleanup-only and the local v4 adapter-layout
+candidate remains unpublished/unadmitted. See the
+[current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
 
-The completed [certifi/Pillow refresh](plans/completed/chatterbox-certifi-pillow-security-refresh.md)
-publishes the reviewed Chatterbox v5 runtime and implements admission
-under [ADR-0058](architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
-The complete production audit passes on 2026-10-21. Installed B06/B07, four
-Piper/Chatterbox ES/EN reader/speed arms, runtime integrity and six installer
-policies pass, with original user state restored. Repository, browser and
-native checks also pass; temporary firewall rules are removed. Independent
-acceptance and fresh PR #266 CI pass for integration commit `194846a`.
-V2/v3 data remains cleanup-only.
+| Contributor task | Maintained entry point | Retained evidence or decision |
+| --- | --- | --- |
+| Set up the workspace and select current commands | [Development setup](development/setup.md) | [Dependency inventory](development/dependencies.md) |
+| Select checks for an implementation change | [Testing strategy](development/testing.md) | [Evidence retention](development/evidence-retention.md) |
+| Understand runtime/maintainer boundaries and historical v2/v3/v4 tools | [TTS service organization](development/tts-service-organization.md) | [Adapter-layout campaign](plans/completed/tts-adapter-layout.md) |
+| Understand product support and local distribution | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
+| Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
 
-The [optional-download diagnostic improvement](plans/completed/optional-download-diagnostics.md)
-adds one content-free error report in process memory and explicit JSON export.
-Its bounded installed probe and independent review passed; the subsequent
-v5 refresh also completed full acquisition and B06/B07.
+Recent accepted work is recorded at its original checkpoint:
 
-The historical [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
-integrates the separately published v3 prerelease after the 2026-10-06 audit
-exposed advisories in v2. The production v3 dependency audit and the rebuilt
-installed journey passed at that checkpoint, including Chatterbox/Piper in both languages,
-removal and reinstallation. A reproduced completion/cancellation race is
-contained in the shared process client without changing the coordinator.
-Independent review approved the integration, and all three integration CI gates
-passed; the completed plan records their exact evidence. Historical v2 assets
-and evidence are retained, and no new installer is published.
+- [Reader, narration and acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md):
+  eight fixes, permanent regressions and repository/browser/native/installed
+  acceptance, including Piper/Chatterbox ES/EN and cancellation/cleanup faults.
+- [Certifi/Pillow refresh](plans/completed/chatterbox-certifi-pillow-security-refresh.md):
+  separately published v5, native admission, production audit, installed B06/B07,
+  bilingual reader/speed, integrity and installer policies; independent review
+  and PR #266 CI passed for integration commit `194846a` on 2026-10-21.
+- [Optional-download diagnostics](plans/completed/optional-download-diagnostics.md):
+  one content-free failure report in memory and explicit local JSON export.
 
-Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
-the constrained one-GPU narration demo; M008.1 adds bounded semantic
-transitions between already-buffered units; M009 and M009.1 add synchronized
-highlighting, heard checkpoints, stable reader chrome, paragraph leaves, and
-passive-scroll isolation. M010 runtime integration,
-deterministic/exact-host validation, content-safe packaged private-book
-confirmation, and required Ubuntu/Windows closeout checks pass. M010
-freezes and implements the separate privacy-safe
-host report, immutable measured registry, fail-closed matching, bounded
-profile preference, compatibility UI, immediate pre-start checks, and the
-desktop-local identity-safe recovery controller. Operational failure replaces
-work identity before bounded teardown, verifies zero service/audio ownership,
-and only then exposes one explicit restart from the latest heard checkpoint.
-Protocol rejection, cancellation timeout, cleanup failure, and repeated
-recovery remain contained; diagnostics retain at most eight content-free
-entries and no automatic retry exists. Milestone 5 selects exact
-Piper/davefx as the supported speed-focused CPU fallback after every v6 gate
-passed. Exact Qwen/Serena remains `development-only`. Milestone 6 adds Piper
-to the executable registry, exact local service, native selector, and
-user-controlled profile setting. Piper product narration automatically uses
-the locator-safe, spoken-expansion-aware
-[`narration-piper-v2`](architecture/piper-narration-preparation-profile-v2.md)
-preparation profile so ordinary prose and compact numbers, currencies,
-acronyms, Roman numerals, ordinals, and letter sequences are bounded before
-inference. The corrective packaged Piper resilience arm passes. Qwen's
-offline service lifecycle passes. Corrective ADR-0022 retains its generic
-`7,196`-MiB total-VRAM requirement but uses the measured `5,996`-MiB peak plus
-a frozen `512`-MiB reserve for currently available VRAM only while the exact
-profile remains native-gated and `development-only`. The packaged application
-now offers and executes Qwen on the exact host. Its broader matrix later stops
-at the depletion synchronization assertion, so no supported, real-time, or
-complete-resilience claim is added.
-The historical M010
-[`tts-support-matrix-v1`](architecture/tts-support-matrix-v1.md) makes
-Piper/davefx the sole supported and automatically recommendable profile when
-compatible and configured, keeps Qwen/Serena development-only, and records
-that automatic engine failover remains disabled. M011 now owns the implemented
-verified Piper core payload and still owns its installer plus optional-model
-distribution. M010.1's completed v2 overlay is
-described below.
+These records include restoration and cleanup outcomes, limitations and exact
+artifact identities. Their passing results are not fresh validation of HEAD.
+The earlier [v3 security refresh](plans/completed/chatterbox-security-dependency-refresh.md)
+retains the v2 advisory failure, v3 repair and then-passing acceptance; v5
+supersedes that runtime admission without rewriting the evidence.
 
-M010.1 is complete. Milestones 1 through 5 freeze and execute the
-bilingual authority, evaluation, and maintainer decisions. Milestone 6 now
-implements the exact language/profile registry, host and runtime gates,
-selection UI, native supervision, and local adapters. Piper davefx/Spanish and
-joe/English are supported CPU profiles; Chatterbox is supported for Spanish
-and English; Qwen Serena/Spanish and Aiden/English remain development-only
-constrained-buffer profiles. Protocol v1 and one-child ownership remain
-unchanged, and the sequential six-arm exact-host service matrix passes. MOSS
-remains deferred without rejection. Milestone 7's six packaged synthetic EPUB
-arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
-cleanup evidence pass. Pull request #159 passed the required Ubuntu and
-Windows checks and merged the closeout.
-
-M010.2 is complete. The reader/settings/playback authority was frozen before
-results, then neither v1 backend passed every frozen gate. ADR-0034 retains that
-historical `1.00x` result. Milestone 3 changes only bounded narration
-preferences: the current app now preserves valid Spanish/English state,
-defaults missing/invalid/reset state to English, and persists Quick/Prepared
-startup. ADR-0035 authorizes and ADR-0036 freezes
-a separate fee-free v2 comparison for six rates ending at `0.75x`; ADR-0037
-records that both packaged passers failed under local-inference contention,
-removes every experiment, and retains `1.00x`. ADR-0038 authorizes a new
-boundary-deferred v3 with no TTS/queue invalidation, a 1,000 ms p95 first
-activation ceiling, a 200 MiB additional-process-RAM ceiling, and `1.00x`
-bypass. ADR-0039 and the immutable v3 architecture/executable authority now
-freeze the exact two candidates, selected/pending/active transition, 250 ms
-recurring handoff, lifecycle, resource, licence/CSP, listening, and lineage
-rules. Milestone 2D selected the repository-owned incremental WSOLA v3
-backend after complete Chromium, packaged WebView2, exact Piper-contention,
-privacy, lifecycle, and bilingual-listening passes. ADR-0040 records the
-selection; no dependency or CSP expansion remains. Milestone 5 now connects
-that exact backend to the bounded player with six boundary-deferred rates,
-effective-listening-duration scheduling, and a separate content-free playback
-preference while source PCM remains the progress and memory authority.
-Milestone 4 implements
-the fixed compact app bar, compact publication/narration chrome, sole reader
-viewport, collapsible contents overlay, and accessible Settings drawer/sheet
-without changing domain ownership. Milestone 3 implements the additive
-bilingual authority v2: valid saved Spanish or
-English survives upgrade, missing/invalid/reset state defaults to English,
-Quick/Prepared startup is separately bounded and persisted, controls hydrate
-before use, and reset follows identity-first cleanup.
-The sequential packaged closeout exposes the same six-rate presentation for
-all profiles and exercises Piper Spanish/English at all six rates while also
-running Chatterbox Spanish/English and development-only Qwen Serena/Aiden. It
-reports zero external requests, persisted audio, stale playback, or retained
-cleanup units. Renewed maintainer listening confirms correct slowdown across
-the admitted range, and pull request #170 passes the required Ubuntu and
-Windows checks.
-
-M011's renewed Milestone 7 record accepts a local/portfolio MVP GO; its
-detailed
-[`packaging and release ExecPlan`](plans/completed/M011-package-validate-and-release-mvp.md)
-is archived after PR #207 passed Windows native foundation, Ubuntu portable
-foundation, and Production dependency graphs on the exact implementation-and-
-evidence head.
-Milestone 1 freezes
-[`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
-accepts
-[ADR-0042](architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
-before dependency or package results. The renewed Milestone 7 record applies
-[ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md)
-and
-[`mvp-release-authority-v2`](architecture/mvp-release-authority-v2.md), which
-replace only the exhaustive per-computer interpretation of the independent
-claim gates. Support now uses published requirements plus representative
-compatible-host evidence; every v1 security, integrity, privacy, cancellation,
-and lifecycle control remains in force. The proportional
-[`release security and distribution boundary`](development/release-security-and-distribution.md)
-targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
-core and Chatterbox Spanish/English as a separately gated optional GPU quality
-download. Milestone 4A implements the fail-closed native lifecycle and
-Settings controls. Milestone 4B now implements the split acquisition while its
-current v5 candidate manifest is downloadable only after the renderer and native live compatibility
-gates pass: six allowlisted model-data files
-are acquired directly from the official
-`ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
-Each file remains bounded and SHA-256 verified; no model-repository code may
-execute. The reviewed Chatterbox runtime is built from the hashed lock, split into
-three bounded assets, and published under the immutable
-[`chatterbox-runtime-v5`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v5)
-prerelease. The optional path requires explicit consent, bounded
-download, exact verification, atomic installation, separate activation,
-offline operation, and application-owned removal. The ordinary manifest exposes
-Download only to a compatible current host; that does not revoke Chatterbox
-runtime support on a host that fails the gate. Qwen stays development-only and
-outside the first distributable product.
-ADR-0044 corrects only current Chatterbox product admission: the measured
-`3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
-while the evaluated nominal 8-GB class remains recommended and disclosed.
-ADR-0045's distinct unsigned local validation installer is preserved as
-historical evidence. Milestone 6B retired it as a competing product surface
-after the ordinary release-locked journey passed on the representative host.
-ADR-0046 records the next installed-package findings: the immutable runtime-v2
-parts omitted two generated VoxLeaf service modules and the historical
-installed root produced a failing 261-character Python path. The validation
-build now migrates only the exact legacy manifest to the shorter `cb/2` root,
-applies the hash-frozen two-file correction locally, and fully verifies the
-corrected package without another optional-payload download. Its first-use
-clarification permits repair of only allowlisted generated cache data and keeps
-one successful complete-verification receipt only in native process memory;
-within-process reuse is guarded by tree metadata and is not claimed to resist
-malicious same-user tampering (ADR-0046 defines this MVP limitation); every new
-application process verifies the full authority again. Direct
-content-safe model/service probes and the exact installed Spanish and English
-WebView2 arms now pass after conventionalizing only canonical verbatim paths at
-the child-process boundary. The installed bilingual and packaged lifecycle
-results are representative support evidence under authority v2. Public signing
-remains externally pending.
-M011 Milestone 6A is complete for implementation and development-host evidence.
-It keeps Settings visibly populated during profile transitions, distinguishes
-truthful first-Play startup phases, makes optional-
-package removal discoverable, explains that acquisition cancellation deletes
-only incomplete staging, and separates optional-package retention from ordinary
-preferences in the uninstall journey. ADR-0047's defaults are implemented:
-interactive Chatterbox removal is selected when exact optional data exists,
-preference/recovery removal is not selected, and silent uninstall preserves
-both unless an explicit bounded option is supplied. Focused desktop regressions
-and the six-outcome packaged lifecycle matrix pass for both local product
-identities on the development host. Authority v2 accepts those results for
-conditional Chatterbox support, ordinary compatibility-gated availability, and
-the separate public-signing boundary. Completed Milestone 6B reconciles the
-exact package size, discloses Chatterbox's generally more natural/expressive but
-subjective quality and resource costs, compiles repository-development
-fallbacks out of the release, and passes its ordinary installed journey under
-poisoned development environment inputs without uninstalling Python, Rust,
-Node.js, Cargo, or other tools from the representative computer.
-Pre-release Milestone 3.1 is complete.
-[ADR-0048](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
-and its
-[`completed ExecPlan`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
-admit a bounded reflowable OPF 2.0/NCX profile alongside the unchanged EPUB 3
-profile. Current EPUB evidence passes 35 files/653 tests; the completed
-downstream evidence passes desktop 53 files/536 tests plus 18 Node,
-Playwright 7-test, and packaged-native matrices prove package, navigation,
-semantic/resource/locator, reader/restoration, narration, privacy, and
-cancellation behavior. This is not full EPUB 2 conformance; M011 Milestone 7
-consumes the completed result.
-Milestone 5 packages version `0.1.0` as a release-only current-user Windows x64
-NSIS installer containing the exact verified bilingual Piper core. The current
-unsigned local artifact identity is recorded in the generated package evidence
-after each rebuild; it is not a public-release identity.
-Renewed Milestone 7 binds the current `181,596,357`-byte installer, SHA-256
-`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`,
-to passing exact-artifact install, first-start, repair, uninstall-choice, and
-ordinary compatible-host Chatterbox journey evidence outside the sandbox.
-Defender was not run and SmartScreen was not observed for that exact hash. The
-renewed record says **GO** for Piper portfolio readiness. Piper is a CPU path
-with no GPU requirement, and the maintainer also confirmed that VoxLeaf worked
-on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU.
-This is representative functionality evidence, not a promise of identical
-performance on every Windows computer. Milestone 2
-closes the exact 15-entry core and 79-package optional locks, automated
-audits, bounded update intake, and the component inventory. Milestone 3 adds
-the deterministic bilingual Piper core, complete notices/source fulfillment,
-offline smoke evidence, and native fixed-manifest verification. Chatterbox is
-also **GO when the published Windows/CUDA/VRAM/RAM/CPU gate passes**, backed by
-the Spanish and English representative-host results. The ordinary optional
-manifest exposes Chatterbox Download only after the current host passes its
-published live compatibility gate.
-Signed-public readiness is a separate **pending external authorization** state
-because no trusted signing identity is available. The unsigned package is a
-local/portfolio MVP, not a trusted general-public installer. The 2026-08-03
-Milestone 7 record remains a historical preliminary snapshot; the renewed
-decision and PR #207's required checks close M011 at the unsigned local/
-portfolio level.
-
-The basic MVP code, logic, and security audit reviewed all 825 tracked items in
-its worktree inventory. Standard Codex Security scan
-`6db53928-14cd-4825-bd80-2680f7d5eac1` covered that 825/825 inventory and
-recorded zero reportable findings; it was a static source review and does not
-replace runtime, dependency/advisory, package, fuzzing, penetration, or external
-security testing. The accompanying manual review closed two bounded lifecycle
-gaps: failed narration preparation now completes active shutdown before
-availability recovery restarts, and a Windows Job Object assignment failure now
-terminates and reaps the just-spawned TTS child.
-
-Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
+For the implemented reader, preparation, buffering, synchronization, profile
+and playback milestones, use the roadmap and completed index rather than a
+second milestone narrative here. Those records preserve rejected Qwen
+standard/batch/dual-worker experiments, failed playback v1/v2 comparisons,
+the selected WSOLA v3 backend and subsequent release decisions. M011 retains
+its preliminary and renewed GO records, historical installer hashes and
+signing limitations. The static security scan and its limits remain in the
+[release security guide](development/release-security-and-distribution.md).
 
 ## Product
 
@@ -384,20 +178,22 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 ## Plans
 
+- [Documentation consistency and historical tooling](plans/completed/documentation-consistency-and-historical-tooling.md): completed current-version/tooling reconciliation and maintained-index cleanup; documentary validation and protected-history preservation recorded separately from runtime acceptance.
+
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
 - [`plans/completed/narration-state-and-optional-package-corrections.md`](plans/completed/narration-state-and-optional-package-corrections.md): accepted package-operation, availability, preference, volume, preparation-error and compatibility-status corrections; 169 focused tests and full repository/Chromium/WebView2 checks pass with independent Astra approval.
 - [`plans/completed/reader-narration-bugfixes.md`](plans/completed/reader-narration-bugfixes.md): accepted fixes and permanent regressions for four startup-cancellation, playback-disposal, lazy-image and prepared-navigation defects; repository, browser/native and all six real-model arms pass with independent Astra approval.
-- [`plans/completed/python-quality-validation-readability.md`](plans/completed/python-quality-validation-readability.md): private scorecard-validation helper, 15 additive public-boundary cases and four service docstring corrections; independent unit and combined Python/source gates pass. Three source/test files, 162 changed lines, unstaged/uncommitted; closing-document acceptance is recorded separately after the content freeze.
-- [`plans/completed/rust-function-readability.md`](plans/completed/rust-function-readability.md): CUDA precision derivation and nine diagnostic exit wrappers independently accepted, with error-tuple naming retained as an audited SKIP. Combined portable/full/native source gates and host preservation pass; three source/test files, 156 changed lines, unstaged/uncommitted. Independent documentary/campaign outcomes are recorded separately after the content freeze.
+- [`plans/completed/python-quality-validation-readability.md`](plans/completed/python-quality-validation-readability.md): private scorecard-validation helper, 15 additive public-boundary cases and four service docstring corrections; independent unit and combined Python/source gates pass. Three source/test files, 162 changed lines; closing-document acceptance is recorded separately after the content freeze.
+- [`plans/completed/rust-function-readability.md`](plans/completed/rust-function-readability.md): CUDA precision derivation and nine diagnostic exit wrappers independently accepted, with error-tuple naming retained as an audited SKIP. Combined portable/full/native source gates and host preservation pass; three source/test files, 156 changed lines. Independent documentary/campaign outcomes are recorded separately after the content freeze.
 - [`plans/completed/typescript-function-readability.md`](plans/completed/typescript-function-readability.md): three bounded readability improvements and two independently accepted SKIPs; unit/combined gates and host restoration passed. Five source/test files, 260 changed lines; implementation committed as `ed5227d`. TFR-04's dated reevaluation distinguishes complete async phase extraction from a smaller unimplemented synchronous alternative.
 - [`plans/completed/refactor-validation-efficiency.md`](plans/completed/refactor-validation-efficiency.md): validated contributor-policy and skill alignment for focused checks, immutable evidence reuse, bounded execution and explicit integration acceptance.
 - [`plans/completed/services-function-readability-ci-repair.md`](plans/completed/services-function-readability-ci-repair.md): ZIP 9.0.4 and compatible archive verification, current generated inventory, passing focused host checks and independent implementation approval; hosted CI tracked in PR #253.
 - [`plans/completed/services-function-readability.md`](plans/completed/services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
-- [`plans/completed/native-rust-function-readability.md`](plans/completed/native-rust-function-readability.md): four private native helpers and seven additive tests accepted across three units; combined Rust/default/release, native, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass, with original host state restored. Changes remain unstaged and uncommitted.
-- [`plans/completed/desktop-ui-logic-readability.md`](plans/completed/desktop-ui-logic-readability.md): all four readability units are independently accepted, including reader benchmarks, Piper/Chatterbox Spanish/English profile switching and combined portable/full/native acceptance. Changes remain unstaged and uncommitted.
-- [`plans/completed/app-restoration-derivations.md`](plans/completed/app-restoration-derivations.md): completed App restoration identity, settlement and presentation extraction with 14 pure cases and two App characterization cases; independent baseline, post-change, browser/native, portable and full host acceptance pass. Effects and resource ownership are preserved; changes remain unstaged and uncommitted.
-- [`plans/completed/apps-organization-follow-up.md`](plans/completed/apps-organization-follow-up.md): native helper extraction, publication lifecycle move and image grouping independently accepted, including the separately reviewed seek-observation repair. Combined portable/full, browser/native, reader benchmark and four Piper/Chatterbox host arms pass; changes remain unstaged and uncommitted.
+- [`plans/completed/native-rust-function-readability.md`](plans/completed/native-rust-function-readability.md): four private native helpers and seven additive tests accepted across three units; combined Rust/default/release, native, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass, with original host state restored.
+- [`plans/completed/desktop-ui-logic-readability.md`](plans/completed/desktop-ui-logic-readability.md): all four readability units are independently accepted, including reader benchmarks, Piper/Chatterbox Spanish/English profile switching and combined portable/full/native acceptance.
+- [`plans/completed/app-restoration-derivations.md`](plans/completed/app-restoration-derivations.md): completed App restoration identity, settlement and presentation extraction with 14 pure cases and two App characterization cases; independent baseline, post-change, browser/native, portable and full host acceptance pass. Effects and resource ownership are preserved.
+- [`plans/completed/apps-organization-follow-up.md`](plans/completed/apps-organization-follow-up.md): native helper extraction, publication lifecycle move and image grouping independently accepted, including the separately reviewed seek-observation repair. Combined portable/full, browser/native, reader benchmark and four Piper/Chatterbox host arms pass.
 - [`plans/completed/desktop-state-subscription-hooks.md`](plans/completed/desktop-state-subscription-hooks.md): completed narration and hardware observation hooks at all four controls/Settings sites, with twelve added lifecycle/characterization cases and independent baseline, browser/native, portable and full acceptance; coordinator ownership and behavior preserved.
 - [`plans/completed/app-conditional-presentation.md`](plans/completed/app-conditional-presentation.md): completed four-component App presentation extraction and typed reader-prop assembly; three characterization tests and independent browser/native/portable/full checks pass. The local EdgeDriver mismatch was corrected, original failure evidence retained, and public behavior/resource ownership preserved.
 - [`plans/completed/piper-runtime-pr-218.md`](plans/completed/piper-runtime-pr-218.md): completed Piper 1.8.0 compatibility refresh and bounded Spanish/English runtime validation, preserving ONNX Runtime 1.30.0 and existing voice artifacts.
@@ -406,7 +202,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/app-preference-effects-readability.md`](plans/completed/app-preference-effects-readability.md): completed startup hydration and narrator preference-presentation binding extraction; 28 App characterization and 16 module cases, independent baseline/checkpoint/post-change/portable/native acceptance, with unchanged App ownership and recorded failed attempts.
 - [`plans/completed/app-hardware-effects-readability.md`](plans/completed/app-hardware-effects-readability.md): completed hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Ownership and behavior preserved.
 - [`plans/completed/app-readability.md`](plans/completed/app-readability.md): completed three-component presentation/message extraction from `App.tsx`, nine added integration cases and independent baseline/post-change/aggregate PASS. Picker identity and all lifecycle/preference ownership preserved.
-- [`plans/completed/tts-adapter-layout.md`](plans/completed/tts-adapter-layout.md): completed selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4; independent three-baseline/22-gate PASS, bilingual candidate/desktop acceptance, verified firewall cleanup and approved documentary closeout. The validated local v4 candidate remains distinct from admitted v3.
+- [`plans/completed/tts-adapter-layout.md`](plans/completed/tts-adapter-layout.md): completed selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4; independent three-baseline/22-gate PASS, bilingual candidate/desktop acceptance, verified firewall cleanup and approved documentary closeout. The campaign preserved then-admitted v3; current v5 admission is recorded in ADR-0058. Local v4 remains unpublished/unadmitted.
 - [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
 - [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation.
 - [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Publication and narration lifecycle ownership remain unchanged.

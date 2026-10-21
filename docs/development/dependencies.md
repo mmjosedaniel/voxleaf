@@ -26,16 +26,12 @@ with the license, notice, corresponding-source or written-offer, and model
 provenance obligations frozen in
 [`tts-feasibility-profile-v6.md`](../architecture/tts-feasibility-profile-v6.md).
 
-M010 Milestone 6 adds no manifest or lockfile edge. Service-owned
-`PiperTtsEngine` imports Piper and ONNX Runtime only from that exact isolated
-interpreter after the native supervisor verifies the candidate lock and local
-voice root. The adapter also verifies runtime versions, artifact hashes,
-CPU-only provider use, and offline controls before synthesis. This makes the
-admitted profile executable for local validation; it does not move Piper into
-`services/tts/uv.lock` or bundle an engine or voice through development setup.
-M011's release graph now fulfills the Piper GPL/CC0 notices, exact corresponding
-source, model provenance, and measured installer boundary. Clean-host release
-acceptance and trusted signing remain separate unavailable evidence.
+M010 originally used that isolated interpreter for local Piper integration;
+the [completed M010 plan](../plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md)
+retains the candidate-lock checks and evidence. Current execution instead uses
+the release core described below. M011 fulfills the Piper GPL/CC0 notices,
+corresponding sources and model provenance, with representative-host
+local/portfolio acceptance. Trusted public signing remains externally pending.
 
 The current Piper runtime refresh is defined by
 [ADR-0055](../architecture/decisions/ADR-0055-onnx-131-offline-runtime.md),
@@ -51,12 +47,11 @@ The historical v6/v8 candidate projects and results still identify Piper
 Exact interpreter, version, CPU provider, voice hashes and offline checks remain
 mandatory; no general version range is accepted by the production adapter.
 
-M010 Milestone 7 adds no dependency, manifest, lockfile, runtime capability,
-or distribution edge. The final
+M010 Milestone 7 added no dependency or distribution edge. Its historical
 [`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) confirms
-the exact isolated Piper and Qwen projects remain the only admitted runtime
-graphs, records their licenses and offline boundaries, and keeps Piper
-distribution conditional on M011 compliance work.
+then-admitted isolated Piper and Qwen graphs, licences and offline boundaries.
+Use the [current matrix](../architecture/tts-support-matrix-v2.md) for the
+subsequent bilingual support and release decisions.
 
 M010.1 Milestone 1 adds two evaluation-only isolated projects without changing
 the base Python or shipped application graphs:
@@ -190,11 +185,12 @@ URL-package blind spots remain explicit. Published v2 assets remain unchanged
 and installed v2 roots are cleanup-only. Installed v3 acceptance is tracked in
 the plan and [ADR-0052](../architecture/decisions/ADR-0052-admit-security-refreshed-chatterbox-v3.md).
 
-Successor maintainer commands are explicit:
+Historical v3 maintainer commands remain explicit:
 `pnpm.cmd package:chatterbox-optional:v3:write-source`,
 `pnpm.cmd package:chatterbox-optional:v3:check-source` and
-`pnpm.cmd package:chatterbox-optional:v3`. Default v2 commands and authorities
-retain their prior behavior. Build from a short Windows checkout path: nested
+`pnpm.cmd package:chatterbox-optional:v3`. Unversioned aliases retain the CLI's
+v2 default; these historical commands do not select current v5. Build from a
+short Windows checkout path: nested
 dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
 V3 output/environment lives in the builder's separate `dist/v3` directory.
@@ -247,11 +243,14 @@ and `runtime-package-evidence-v5.json`. Run
 `pnpm.cmd package:chatterbox-optional:v5:check-acquisition` to verify them.
 Drafts, mismatched or incomplete assets cannot generate desktop admission.
 
-`pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
+The historical `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
 v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
 `pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
 requires the actual GitHub publication readback with exact commit, tag, three
-names, sizes, digests and URLs. It cannot replace already published assets.
+names, sizes, digests and URLs. It cannot replace already published assets or
+establish current v5 admission. The separate local v4 builder keeps the v3 lock
+and remains unpublished/unadmitted; see the
+[historical tooling guide](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
 Capture current licences from the actual core and v5 interpreters with the existing
 `scripts/release_inventory.py --capture-python-licenses --python <core-python>
 --python <v5-python>` interface, then run `pnpm.cmd inventory:release` and its check.

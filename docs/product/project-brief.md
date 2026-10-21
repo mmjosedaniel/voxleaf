@@ -102,9 +102,11 @@ Milestone 4B now implements acquisition of only six allowlisted model-data files
 official `ResembleAI/chatterbox` Hugging Face repository at one full frozen
 revision, verifies each size and SHA-256, and executes no model-repository code.
 The reviewed Chatterbox runtime remains a distinct release input with a
-reproducible three-part identity. The exact three parts are published under
-`chatterbox-runtime-v2`. Representative compatible-host acquisition and
-bilingual operation now pass; the ordinary manifest offers optional installation
+three-part identity. M011 originally published `chatterbox-runtime-v2`;
+[ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
+selects the separately published v5 runtime, with v2/v3 cleanup-only.
+Representative compatible-host acquisition and bilingual operation passed at
+their recorded checkpoints; the ordinary manifest offers optional installation
 only after renderer and native live compatibility gates pass. M011 Milestone 6B
 retired the separate validation identity, reconciled exact size authority,
 explains Chatterbox's generally more natural/expressive but subjective voice and

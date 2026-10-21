@@ -2,126 +2,50 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop,
-isolated Python service, quality commands, browser/native smokes, secure EPUB
-reader, bounded restoration, locator-linked narration preparation, and
-segment-level synchronized reader projection are initialized and validated
-within their documented boundaries. Completed M007 provides protocol v1,
-native supervision, typed one-unit ownership, and the exact development-only
-Qwen/Serena adapter. Completed M008 connects the active visual locator to
-bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio
-playback, and accessible quick/prepared controls. Completed M009 adds exact
-segment transitions, focus-safe highlight/follow, synchronized user
-navigation, heard-position persistence, exact-host packaged evidence, and
-repository/CI closeout.
+The workspace implements the local EPUB reader, bounded restoration and
+narration preparation, native TTS supervision, synchronized memory-only audio,
+and reader/settings/playback controls. Current product support is Piper
+Spanish/English on CPU and Chatterbox Spanish/English on compatible Windows
+hosts. Qwen remains explicitly gated development-only; its production work is
+deferred. Use the [support matrix](../architecture/tts-support-matrix-v2.md)
+and [roadmap](../plans/roadmap.md) for support and milestone decisions.
 
-M010 is complete. It adds privacy-safe native Windows detection, an immutable
-measured registry, deterministic profile matching,
-bounded profile-ID preference reuse, compact compatibility UI, pre-start
-enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback,
-and one profile-aware service tree. Piper automatically selects its
-locator-safe, spoken-expansion-aware narration preparation profile; its
-exact-host service, corrective ordinary-prose/compact-form arms, valid
-zero-sentence-boundary fragment handling, and content-safe packaged
-private-book confirmation pass. Qwen/Serena remains development-only: its
-offline service lifecycle passes, and the packaged host now offers it when
-total dedicated VRAM is at least `7,196` MiB and currently available dedicated
-VRAM is at least `6,508` MiB. Its broader packaged matrix still stops at the
-depletion synchronization assertion. Quick mode is the default;
-prepared playback initially selects one minute; refill remains one minute; low
-water is 10 seconds; the adaptive low-buffer wait remains disabled; playback
-is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target.
-M008.1 now schedules the separate bounded semantic transition pause between
-already-buffered generated units; it adds no silent audio or startup timer.
-The final
-[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) makes
-Piper/davefx the sole supported and automatically recommendable compatible
-profile, retains Qwen/Serena as development-only, and keeps automatic failover
-disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
-archived. M010.1 implements explicit Spanish/English narration and bounded
-candidate screening; its local six-arm packaged portfolio validation and
-required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
-archived. M010.2 Milestones 3-5 implement bounded English-default language,
-Quick/Prepared start, and six-rate playback preferences with valid
-Spanish/English preservation, pre-action hydration, and identity-first reset.
-The reader-first Settings shell and repository-owned boundary-deferred WSOLA
-playback are implemented. Milestone 2 selected no v1 pitch-preserving backend;
-ADR-0035 authorized and ADR-0036 froze the six-value
-fee-free v2 authority. ADR-0037 records that no candidate survived the
-inference-contention gate, so the dependency and prospective CSP delta were
-removed. ADR-0038 authorizes a separate boundary-deferred v3; ADR-0039 and the
-immutable v3 architecture/executable authority now freeze its exact candidates,
-state transition, 250 ms recurring handoff, resource, cleanup, and lineage
-gates. Milestone 2D has now selected the repository-owned incremental WSOLA v3
-backend after the complete frozen machine and bilingual-listening matrix. It
-adds no dependency or CSP expansion. Milestone 6's sequential packaged
-portfolio and full local repository checks pass. Maintainer all-rate
-confirmation and pull request #170's required Ubuntu/Windows checks also pass,
-and M010.2 is archived.
-M011 Milestone 3 implements the deterministic licence-complete Piper core
-payload. Milestone 4 adds the optional-Chatterbox acquisition lifecycle and
-source-package checks; the exact runtime parts are published, and the ordinary
-build exposes Download only after its live compatibility gate passes twice.
-Milestone 5 implements the unsigned local installer and
-external-credential signing command; Milestone 6A implements lifecycle feedback
-and bounded uninstall choices. Under ADR-0049 and release authority v2,
-renewed Milestone 7 accepts Piper local/portfolio GO, Chatterbox runtime support
-on systems that pass its published host gate, and the optional package on a
-compatible host. The ordinary
-Chatterbox manifest is compatibility-gated and the release is compiled without
-development-runtime fallbacks. Signed public publication remains pending external
-authorization. PR #207's required checks pass and M011 is archived.
+Current Piper execution uses the release core with Piper 1.8.0 and ONNX Runtime
+1.31.0. Ordinary installed Chatterbox uses v5; older v2/v3 roots are cleanup-only
+and local v4 is unadmitted. Stable profile IDs and model-directory names may
+contain older version labels; they are not selectors for executable dependency
+versions. The [dependency inventory](dependencies.md) separates current locks
+from frozen evaluation environments. Development configuration below remains
+distinct from the ordinary release, which excludes development fallbacks.
 
-M009.1 keeps passive viewport inspection separate from the active narration
-locator. Scrolling does not cancel or restart narration; explicit leaf,
-visible-passage, passage-boundary, and chapter actions remain narration seeks.
-Its fixed reader viewport, compact narration, truthful loaded-duration text,
-bounded paragraph leaf, private-EPUB correction, exact-host matrix, and local
-repository/package validation pass. Pull request #142 passed the required
-Ubuntu and Windows checks and merged; M009.1 is archived and M010 is unblocked.
+Quick playback starts when approximately 15 seconds of playable audio is ready,
+not after a fixed wall-clock delay. Prepared playback is explicit and initially
+selects one minute; refill is one minute and low water is 10 seconds. The
+30-minute buffer ceiling is not a startup target or uninterrupted-playback
+promise. The throughput-oriented adaptive wait remains disabled. Separate
+semantic transition pauses apply between eligible already-buffered units.
+M010.2 provides six boundary-deferred playback rates from 1.00x to 0.75x.
+Passive scrolling does not seek; explicit navigation invalidates obsolete work.
 
-The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
-startup, throughput, zero-failure, and mid-generation cancellation gates.
-ADR-0015 now supersedes ADR-0014's scheduling and buffering details and permits
-only a bounded one-GPU adaptive development demo with that exact local
-profile; it adds no production dependency and does not approve continuous
-playback. The constrained development inference, transport, narration
-dispatch, audio playback, and segment-level synchronization path is implemented
-and exact-host validated. Measured matching does not promote the development
-profile: supported Piper fallback and explicit identity-safe recovery are now
-implemented. The unsigned local Piper portfolio installer also exists; only a
-trusted general-public channel remains pending external signing authorization.
-The content-free `benchmarks/tts/selection-v3.md` record retains that failed
-standard result and separately identifies the constrained demo input.
+The unsigned Windows x64 local/portfolio installer contains the verified Piper
+core; optional Chatterbox Download requires both renderer and native live gates.
+Trusted public signing remains pending external authorization. See the
+[Windows package instructions](#build-the-m011-windows-package) below and
+[release security boundary](release-security-and-distribution.md).
 
-Milestone 6.2 is complete. Its `v4` authority is frozen and Milestone 2 adds the
-reviewed `benchmark:tts:batch` disposable-pilot and official commands,
-`benchmark:tts:batch:derive` safe-summary/cleanup command, and model-free
-one/two-unit, ordering, invalidation, resource, playback, schema, and
-derivation mechanics. Milestones 3 and 4 ran the full-GPU and admitted
-targeted-CPU paths and committed their content-safe results. Both reached the
-exact `shared-gpu-memory` stop before usable media; the CPU arm reproduced the
-same measured VRAM/shared-memory boundary. Milestone 5 quality review is not
-admitted. The results contain no reviewable audio or throughput evidence and
-change no production behavior.
+Historical implementation results, including failed standard Qwen, batch and
+dual-worker trials, remain in the [completed-plan index](../plans/completed/README.md),
+[Qwen selection v3](../../benchmarks/tts/selection-v3.md),
+[batch selection v4](../../benchmarks/tts/selection-v4.md) and
+[dual-worker selection v5](../../benchmarks/tts/selection-v5.md).
+The [M010.2 plan](../plans/completed/M010-002-reader-settings-and-playback-controls.md)
+retains rejected playback v1/v2 comparisons and the accepted WSOLA v3 result.
+These are dated evidence, not current setup prerequisites or new host validation.
 
-The same completed ExecPlan froze and executed a separate result-blind `v5`
-authority after `selection-v4`. CPU solo measured aggregate RTF 2.999, GPU solo
-measured RTF 1.467, and the official concurrent arm stopped at
-`resource-limit`. A later low-application-load diagnostic completed at
-aggregate RTF 1.429 but substantially slowed the GPU worker. Accepted
-`selection-v5` rejects CPU-only and dual-worker scheduling. M008 implements one
-GPU worker with quick-start or explicit prepared playback, bounded generation
-during playback-only pause, truthful frontier buffering, and an approximately
-30-minute in-memory ceiling only for the exact development host. Completed
-M007 supplies the constrained service boundary; M008 Milestone 5 supplies its
-application coordinator and audible player connection.
-
-Use [`troubleshooting.md`](troubleshooting.md) for the content-safe exact-demo
-failure and recovery procedure. Do not work around an unavailable control,
-slow preparation, or buffering by enabling the fake child, removing outbound
-blocking, persisting audio, starting a second model worker, or adding automatic
-retry.
+Use [troubleshooting](troubleshooting.md) for content-safe failure and recovery.
+Do not enable a fake child, remove required development outbound blocks, persist
+ordinary audio, start a second model worker or add automatic retry to work
+around unavailable controls or buffering.
 
 ## Prerequisite version matrix
 
@@ -197,7 +121,9 @@ supersedes that limitation for its exact isolated WSL Ubuntu 24.04.3 snapshots:
 both comparison arms pass 85 default/86 release-locked tests, including both
 Unix symlink tests. Windows separately passes 87/88 tests and native startup.
 The `Ubuntu portable foundation` job still runs only `pnpm check:portable`;
-the added `Ubuntu Rust foundation` job is configured but has not run remotely.
+the separate `Ubuntu Rust foundation` job subsequently passed on source HEAD
+`5401f899e3ffabfc8f3e79873bc0b5fa45b11155`, as recorded in that comparison.
+This historical result is not a current CI run.
 
 For bounded Linux Rust checks, use an isolated Linux working directory with
 Node 24.18.0 from `.nvmrc`, pnpm 11.15.1, and Rust 1.97.1. From the repository
@@ -647,21 +573,31 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-Milestone 4 has a compatibility-gated optional-package manifest. This command
-checks only the tracked source manifest: it performs no model download, archive
-build, installation, acquisition, or narration.
+The current optional package is v5 under
+[ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+These explicit commands check tracked source and acquisition authority; they
+perform no model download, archive build, installation or narration:
 
 ```powershell
-pnpm.cmd package:chatterbox-optional:check-source
+pnpm.cmd package:chatterbox-optional:v5:check-source
+pnpm.cmd package:chatterbox-optional:v5:check-acquisition
 ```
 
-The `package:chatterbox-optional` builder is a release-maintainer operation,
-not an end-user setup step. It requires an explicitly supplied, absolute,
-ignored exact-model root, enough controlled build capacity, and the final
-licence/provenance review. It creates all runtime, archive, and model output
-only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
-not update the checked-in ordinary acquisition manifest. Do not run it merely to
-use the application or to enable the optional profile.
+The `package:chatterbox-optional:v5` builder is a release-maintainer operation,
+not an end-user setup step. It assembles runtime-only output under ignored
+`services/tts/release/optional/chatterbox/dist/v5` by default, requires controlled
+build capacity and licence/provenance review, and always synchronizes the hashed
+lock. It rejects `--no-sync` and does not copy model weights or update the
+ordinary acquisition manifest. Follow the explicit
+[v5 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
+for authorized package work; do not build merely to enable the optional profile.
+
+Unversioned `package:chatterbox-optional` aliases intentionally retain the v2
+default. Explicit `:v3` checks reproduce historical authority; neither is v5
+acceptance. Local `:v4` commands and `test:tts:adapter-layout:*` belong to the
+[historical adapter-layout campaign](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
+They remain available with their original semantics and do not admit v4 or
+validate the current installed runtime.
 
 ### Historical local Chatterbox acquisition validation installer
 
@@ -981,6 +917,6 @@ installation. `pnpm run test:acquisition:file-barriers` verifies both host
 barriers on Windows. Preserve existing installer registrations and shortcuts
 around a journey when they belong to the user's previous installation.
 
-The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. All three jobs install package dependencies from committed lockfiles. The added `Ubuntu Rust foundation` job installs Linux prerequisites and pinned Rust, then runs `pnpm format:check:rust`, `pnpm lint:rust`, and `pnpm test:rust` with bounded build concurrency. Its local comparative evidence passes; remote execution remains pending. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
+The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. All three jobs install package dependencies from committed lockfiles. The added `Ubuntu Rust foundation` job installs Linux prerequisites and pinned Rust, then runs `pnpm format:check:rust`, `pnpm lint:rust`, and `pnpm test:rust` with bounded build concurrency. Its local comparison and subsequent remote pass are recorded at the historical checkpoint above; neither establishes fresh CI acceptance. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
 
 Dependency ownership, direct package purposes, production alternatives, and transitive-lock review rules are documented in [`dependencies.md`](dependencies.md).

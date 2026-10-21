@@ -98,38 +98,31 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-The Chatterbox security refresh adds explicit successor authority checks:
-`pnpm.cmd package:chatterbox-optional:v3:check-source` and
-`pnpm.cmd package:chatterbox-optional:v3:check-acquisition`. Default v2 commands
-remain historical regression gates. Generate successor authority only with
-`pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication
-../../tmp/chatterbox-security-refresh/published-v3.json`; the path is relative
-to the service directory selected by that pnpm script and contains a real
-GitHub publication readback, not invented acceptance evidence.
+Current Chatterbox authority checks explicitly select v5:
+`pnpm.cmd package:chatterbox-optional:v5:check-source` and
+`pnpm.cmd package:chatterbox-optional:v5:check-acquisition`.
+They check source/acquisition authority, not installed runtime execution.
+Use the [v5 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
+for authorized authority generation from actual publication readback.
+Unversioned aliases still select v2; explicit v3 checks remain historical
+regression gates. The local v4 builder and v3/v4 adapter-layout harness are
+[historical campaign tooling](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling),
+not current v5 acceptance.
 
-Current security integration acceptance runs the full foundation check,
+Current runtime/security integration acceptance runs the full foundation check,
 `pnpm.cmd audit:release`, inventory check and the existing Windows package,
 check, lifecycle, ordinary preflight/journey/evidence commands outside sandbox.
 The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
-Qwen inference. New generated outputs are
-`ordinary-chatterbox-journey-evidence-v2.json` and
-`windows-package-evidence-v3.json`; historical receipts remain unchanged.
-Native regressions cover each retained v2 root independently, both together,
-available/withheld states, non-migration, cancellation, exact removal, unrelated
-root preservation and busy guards. Unix-only symlink branches do not run on
-Windows, and the Ubuntu portable job does not run Rust. That historical local
-security-refresh record did not claim execution of those branches; the later
-Linux Rust comparison below supplies their execution evidence.
-
-The same follow-up reproduced a native-completion/cancellation interleaving in
-the real process client with a simulated invoke boundary. Focused client tests
-now verify validated shutdown on that exact invalid-state rejection, original
-error propagation, late-audio zeroing, and restart refusal while shutdown is
-pending, fails or returns malformed/wrong-service controls. Normal cancellation,
-other errors and invalid scopes retain their behavior. The coordinator and
-harness assertions/deadlines are unchanged. Independent initial/post-change
-evidence and the rebuilt plain/installed routes are recorded in the
-[security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md).
+Qwen inference. The completed
+[v5 refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
+records installed B06/B07, bilingual reader/speed, integrity, lifecycle and
+independent acceptance at its exact integration commit. Native admission uses
+v5; retained v2/v3 roots are cleanup-only under ADR-0058.
+The earlier [v3 security refresh](../plans/completed/chatterbox-security-dependency-refresh.md)
+retains its original audit failure, repair, completion/cancellation regression
+and installed evidence. Those results do not validate v5 bytes. Unix-only
+symlink branches need Linux Rust evidence; neither Windows tests nor the
+Ubuntu portable job execute them.
 
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
@@ -141,7 +134,10 @@ existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
 prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
 `--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
 `pnpm test:rust` in distinct steps. Lint and tests cover both default and
-`release-locked-runtime`. This new job has not been executed remotely.
+`release-locked-runtime`. Remote execution was pending at the original
+comparison closeout; the retained comparison index records the later pass on
+source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`. This is historical
+evidence, not a fresh CI result for current HEAD.
 
 The independently accepted
 [Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
@@ -1152,9 +1148,11 @@ v2, Piper is local/portfolio GO, Chatterbox runtime and the optional package are
 GO on a compatible host within their separate scopes, and ordinary Download is
 GO only after both live gates pass. Signed public publication remains pending
 external authorization.
-The dependency/audit, standalone Piper-core, optional runtime-package,
-acquisition-controller, public runtime identity, and local Windows package
-evidence below is current. Representative compatible-host evidence supports
+The milestone results below retain their original artifact identities. Current
+Piper versions and v5 Chatterbox admission are described in the
+[support matrix](../architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions)
+and [current authority checks](#deterministic-foundation-checks).
+Representative compatible-host evidence supports
 the requirements-defined classes; signed public publication remains separate.
 Its completed
 [`ExecPlan`](../plans/completed/M011-package-validate-and-release-mvp.md)
@@ -1185,7 +1183,7 @@ prior-package preservation, fixed profile mapping, and content-free errors.
 The native verifier embeds the trusted manifest and accepts only the fixed
 install-relative `resources/tts/voxleaf-piper-core-v1` root.
 
-Milestones 4A-4B add these safe authority/build commands:
+Milestones 4A-4B added these historical v2 authority/build commands:
 
 ```powershell
 pnpm.cmd package:chatterbox-optional:check-source
@@ -1193,19 +1191,22 @@ pnpm.cmd package:chatterbox-optional:check-acquisition
 pnpm.cmd package:chatterbox-optional
 ```
 
-The two checks validate the versioned source and v2 acquisition manifests
+These unversioned aliases still select v2. The two checks validate its source
+and acquisition manifests
 without networking, reading model bytes, creating a runtime, or enabling an
 end-user download. The build command is maintainer-only and writes ignored
 runtime/ZIP/part outputs; `--no-sync` is used only after the exact environment
-has already been synchronized. `test_release_chatterbox.py` and
+has already been synchronized. This historical option must not be carried
+over to v5, which rejects `--no-sync`. `test_release_chatterbox.py` and
 `tts_optional_chatterbox` native tests cover historical and current authority, mutable source
 rejection, safe model-load sites, deterministic splitting, closed redirects,
 wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
 extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
 absence of profile mutation before explicit activation. Two outside-sandbox
 builds produced identical v2 hashes/sizes. An authorized maintainer published
-the exact resulting parts under `chatterbox-runtime-v2`; the ordinary manifest
-is available only behind its current live compatibility gate.
+the exact resulting parts under `chatterbox-runtime-v2` at that checkpoint.
+Current ordinary acquisition instead selects v5 behind the unchanged live gate;
+the v2 reproducibility result is not a v5 reproducibility claim.
 
 Milestone 5 adds these Windows-only commands:
 

@@ -1,7 +1,7 @@
 # Documentation consistency and historical tooling
 
 Created: 2026-10-21.
-Status: planned; implementation has not started and is not authorized by the planning request.
+Status: complete; all three authorized documentation stages accepted on 2026-10-21.
 Planning base: `d9b2ea051d1caa5041bec5cce912bb535ae9e5af` (`main`).
 Planning branch: `codex/documentation-consistency-and-historical-tooling`.
 
@@ -13,9 +13,11 @@ historical evaluation and campaign tooling. Preserve reproducible historical
 evidence and the behavior of every existing command.
 
 This is cross-milestone documentation maintenance, not a new product milestone
-or a source-code refactor. The current authorization covers this ExecPlan,
-its active-index entry, a dedicated local branch and one planning commit.
-Implementation, push and pull-request creation require later authorization.
+or a source-code refactor. The original planning authorization covered this
+ExecPlan, its active-index entry, a dedicated local branch and one planning
+commit. The subsequent 2026-10-21 execution request authorizes all three
+documentation stages and closeout, while requiring changes to remain unstaged
+and uncommitted. It does not authorize a new branch, push or pull request.
 
 ## User-visible outcome
 
@@ -26,6 +28,12 @@ Maintained indexes route readers to current work and dated historical results.
 Reader, narration, acquisition and playback behavior stay unchanged.
 
 ## Current state
+
+Execution base: `5b93ced7db3c3b382ae670a173a619bcdaf61d0e`, the planning
+commit, on `codex/documentation-consistency-and-historical-tooling`.
+Initial local PowerShell inspection found an empty index and clean worktree;
+there are no commits or differences after the planning commit to reconcile.
+The planning observations and earlier test results below remain historical.
 
 The audit and verification used the planning base above. The checkout was clean
 before plan creation. Recheck HEAD, the worktree and relevant consumers before
@@ -95,6 +103,24 @@ Excluded work:
 
 ## Relevant files and documentation
 
+### Bounded allowlist extensions recorded before editing
+
+The execution review confirmed these additional editorial inconsistencies.
+ADR-0058, the v5 source/acquisition manifests and native
+`tts_optional_chatterbox.rs` bind the current runtime to v5. Add only the
+following paths/sections to the edit allowlist:
+
+| Path and section | Evidence and bounded correction |
+| --- | --- |
+| `docs/architecture/system-diagram.md`: Component and trust-boundary map; Evidence and decision authority | The runtime-origin node still says v3 and the current runtime-evidence link selects v3. Change only that label and current evidence link to v5; retain graph nodes, edges, historical M011 checkpoints and all architecture. |
+| `docs/architecture/overview.md`: Status, M011 distribution paragraphs | The text calls runtime evidence v3 current and the ordinary manifest v2 despite the v5 status paragraph. Identify the v2 sizes/publication as the original M011 checkpoint and link current v5 authority; preserve all historical numbers and topology. |
+| `docs/product/mvp.md`: Implementation status, M011 runtime publication paragraph | Present-tense publication names v2. Identify that publication as historical and point to ADR-0058 for current v5; change no requirements or support gates. |
+| `docs/product/project-brief.md`: Status and purpose, M011 runtime publication paragraph | The same v2 publication is presented as current. Distinguish the M011 checkpoint from current v5 via ADR-0058; change no product direction. |
+
+Roadmap: SKIP. Its opening explicitly identifies milestone descriptions as
+historical implementation/evidence status; retained v2 M011 checkpoints need
+no rewrite. No additional document, runtime or CI edit is authorized here.
+
 Read the [documentation index](../../README.md),
 [plan format](../../../.agents/PLANS.md),
 [evidence retention policy](../../development/evidence-retention.md),
@@ -153,7 +179,7 @@ change, record it separately and apply the existing feature/bug review policy.
 
 ### Milestone 1: Correct confirmed documentation inconsistencies
 
-Status: not started.
+Status: complete. D01-D05 revalidated and corrected; see execution results below.
 
 Recheck D01-D05 against the execution HEAD and search consumers before editing.
 Correct the six maintained guides/matrix listed first in the allowlist. Mark
@@ -168,7 +194,7 @@ unchanged. No historical command is advertised as current release acceptance.
 
 ### Milestone 2: Simplify navigation and maintained summaries
 
-Status: not started; depends on Milestone 1's terminology.
+Status: complete. Maintained summaries and navigation reconciled; history retained.
 
 Address D06-D07 in maintained indexes and the in-scope guides. Remove transient
 Git state from current summaries, or date it when the checkpoint matters.
@@ -185,7 +211,7 @@ justified; there is no file-count or line-reduction target.
 
 ### Milestone 3: Verify consistency and close the documentation batch
 
-Status: not started; depends on Milestones 1 and 2.
+Status: complete. Current documentary checks pass; no runtime acceptance is claimed.
 
 Review the complete diff, changed Markdown links and command examples. Compare
 version claims against current manifests, native admission and ADRs. Confirm
@@ -214,8 +240,8 @@ automation sandbox. Use the repository's configured pnpm version, currently
 | Gate | Command or review, from repository root unless stated | Timing and expected result |
 | --- | --- | --- |
 | Scope and protected paths | `git status --short`; `git diff --name-status`; inspect the full diff against the recorded baseline | Before and after each milestone; only allowlisted Markdown paths change. Include untracked files in review. |
-| Whitespace | `git diff --check`; for an authorized commit, `git diff --cached --check` | Before acceptance and after final staging; exit 0. |
-| Evidence retention | `pnpm.cmd check:evidence` | At planning closeout and final implementation closeout; exit 0. It reads the Git index, so run after the exact paths are staged when a commit is authorized. It is not a semantic documentation check. |
+| Whitespace | `git diff --check`; for an authorized commit, `git diff --cached --check` | Before acceptance; exit 0. Staging is not authorized for execution. |
+| Evidence retention | `pnpm.cmd check:evidence` | At planning closeout and final implementation closeout; exit 0. It reads the Git index. Execution authorization requires no staging: run it against the unchanged index and inspect unstaged/new files separately. It is not a semantic documentation check. |
 | Link integrity | Inspect changed relative file links and any changed fragment targets | Before acceptance; each target exists and each fragment resolves. No new repository link-check command is assumed. |
 | Commands and identities | Compare examples with actual package scripts/CLI arguments; compare version claims with the listed manifests, native code and ADRs | Milestones 1 and 3; no fabricated command, changed default or unsupported runtime claim. Do not execute builders to verify their names. |
 | Historical preservation | Review path/content diffs against the execution baseline and search incoming references/authority consumers | Milestones 2 and 3; frozen files, generated files and completed evidence retain their bytes; retained history remains reachable. |
@@ -244,8 +270,61 @@ stash operations. No host or user-data mutation needs rollback in this batch.
   scope. Created the planning branch from clean `main` at the stated base.
   Implementation remains unstarted; the current request permits only the plan,
   active-index registration and local planning commit.
+- 2026-10-21: the subsequent user request explicitly authorized all three
+  documentation stages, execution-state recording and completed-plan closeout.
+  Verified the existing branch and execution base above in local PowerShell.
+  No inherited changes exist. Rechecked scripts/CLI defaults, native v5
+  admission, current Piper pins, stable profile IDs and frozen-source consumers.
+  Recorded the four bounded allowlist extensions above before editing them.
+
+- 2026-10-21: Milestone 1 completed. Local PowerShell `git status --short`,
+  `git diff --name-status` and `git diff --check` show only allowlisted Markdown
+  edits and no whitespace errors. `pnpm.cmd check:evidence` passes with
+  configured pnpm 11.15.1 selected through existing Corepack shims. The index
+  remains unchanged; this guard does not review unstaged prose.
+- 2026-10-21: Milestone 2 completed. Reduced repeated introductory history,
+  retained direct history/evidence routes, cleaned transient maintained-index
+  summaries and distinguished the adapter campaign's then-admitted v3 from v5.
+  Proceeding to current documentary validation; no historical suite is reused.
+
+- 2026-10-21: Milestone 3 completed after current local documentation checks,
+  raw-byte preservation, command/version review and full diff inspection.
+  Moved this plan to completed and updated both plan indexes plus the
+  documentation index. Final location/link and unstaged-file checks pass.
 
 ## Discoveries and decisions
+
+Execution dispositions:
+
+- D01-D05: corrected current v5 admission, Piper 1.8.0/ONNX Runtime 1.31.0,
+  stable IDs, generic v2 defaults, historical v3 checks and local v4 tooling.
+  The optional builder CLI accepts no model-root argument and builds runtime
+  only; setup's old model-root/model-copy requirement was removed after source
+  inspection. No command or argument was changed.
+- D06: removed transient unstaged/uncommitted wording only from maintained
+  indexes. Historical plans retain their original Git state and test counts.
+  Setup/testing remote-CI-pending prose now identifies the original checkpoint
+  and the subsequent pass recorded by the Linux repair evidence index; no new
+  CI run is inferred from that historical result.
+- D07: replaced the documentation-index and setup introductory milestone
+  narratives with current entry points and retained source links. The roadmap
+  and completed M010/M010.1/M010.2/M011 plans retain the detailed history;
+  selection-v3/v4/v5 retain rejected Qwen alternatives; the release security
+  guide retains the static-scan limitations. Testing now routes the v3 security
+  repair narrative to its completed plan while distinguishing v5 acceptance.
+- SKIP broader guide/plan consolidation: unique commands, prerequisites,
+  historical failures, audit caveats and tooling policy remain in place.
+  No historical file, authority, receipt or pre-existing completed plan moves.
+- SKIP normalization/segmentation changes: M005 is complete in the roadmap;
+  its package-only boundary and glossary terms remain unchanged. Only obsolete
+  playback/profile implementation status was corrected.
+- D08: SKIP workflow edits. Both workflows retain main/agent push filters,
+  main-target pull requests and manual dispatch. No CI acceptance is claimed.
+- The diagram change is only a stale version label and evidence link; all
+  nodes, edges, ownership, requirements and support gates are preserved.
+- No runtime defect requiring implementation was identified in this review.
+
+Original planning decisions retained:
 
 - Generic Chatterbox aliases and the adapter-layout harness are intentional
   historical tooling. Correct their presentation; preserve their semantics
@@ -273,9 +352,76 @@ managed automation sandbox:
 - Full content and scope review: only this plan and its active-index entry
   changed; no implementation or protected historical files changed.
 
-Commit preparation must also confirm the exact two staged paths and repeat
+The original planning-only commit instructions required confirming the exact
+two staged paths and repeating
 `git diff --cached --check` and `pnpm.cmd check:evidence` against that index.
 Application suites were not rerun for this planning-only change.
 
-Implementation acceptance: pending. All three milestones remain not started.
-The creation or commit of this plan does not mark any recommendation implemented.
+### Execution acceptance on 2026-10-21
+
+All three documentation stages are complete. This subsequent authorization and
+validation do not change the planning-only context above. Execution remained on
+`codex/documentation-consistency-and-historical-tooling` at
+`5b93ced7db3c3b382ae670a173a619bcdaf61d0e` with no staged changes, commit,
+push, PR, branch reconstruction or host/runtime mutation.
+
+All acceptance commands and inspections ran through local PowerShell outside
+the managed sandbox, from the repository root. Selected the existing Corepack
+shims with the process-local command
+`$env:PATH = 'C:\nvm4w\nodejs\node_modules\corepack\shims;' + $env:PATH`;
+`pnpm.cmd --version` returned `11.15.1`. The inherited pnpm location was the
+bundled fallback; it was not used for acceptance and no repository metadata
+changed. Node reported `v24.20.0`, within `engines.node` but different from the
+`.nvmrc` reference; this documentary guard does not establish application
+acceptance with that toolchain.
+
+| Executed command or inspection | Current result |
+| --- | --- |
+| `git status --short` | Exit 0 before work, after stages and at closeout; initially clean, finally only the allowlisted documentation edits and plan relocation. |
+| `git diff --name-status` | Exit 0; only allowed tracked Markdown paths. The new completed plan is inspected separately because it is untracked. |
+| `git diff --check` | Exit 0 after corrections and at closeout. |
+| `pnpm.cmd check:evidence` | Exit 0 with pnpm 11.15.1; evidence retention check passed. The index remains unchanged. |
+| `git diff 5b93ced7db3c3b382ae670a173a619bcdaf61d0e -- <reviewed-paths>` | Full tracked diff reviewed in bounded groups, including historical material replaced by references; no unrelated changes. The relocated plan is separately compared with its baseline content. |
+| `git diff --cached --name-status`; `git rev-parse HEAD`; `git branch --show-current` | Empty staged diff; unchanged execution HEAD and requested branch. |
+| Read-only inline Python inspection via PowerShell | Final pass after relocation: 516 local links, 17 fragments and 205 affected incoming links (16 fragments) resolve. Scope and documented pnpm.cmd aliases match package manifests. The untracked plan's whitespace and final newline also pass. |
+| Raw-byte preservation inspection | All 1,330 tracked files outside the allowlist match the execution base's Git blob identities, computed from raw file bytes without clean filters. This includes code, scripts, tests, aliases/defaults, locks, generated files, frozen authorities, prior completed plans, receipts and both CI workflows. |
+| `git cat-file -e <commit>:services/tts/src/voxleaf_tts/chatterbox_adapter.py` for frozen commits `814fd2f70bd3588d31022207eb976c0ff93712a3` and `998c7b24cda7e969e9ed0344f348506bf38af3b0` | Exit 0 for both historical source blobs; retained history remains accessible. |
+
+Static command review checked `release_chatterbox.py` package-version default
+2, explicit 3/4/5 arguments, v5 no-sync rejection, output-root constraints and
+publication readback; it also checked the adapter-layout runner's modes and
+contained overrides. No builder was executed to discover command names.
+Version review matched the core source manifest/uv lock and Piper adapter,
+native package version 5/cleanup roots, frozen-module resolver and ADR-0053,
+0054, 0055 and 0058. V8/V11/V12 authority consumers still hash their retained
+historical inputs. The system diagram's graph topology is unchanged.
+
+Two post-relocation inspections stopped because the auxiliary command extractor
+misclassified prose about package-manager versions, locations and aliases as
+script names. Restricting extraction to shell command lines and inline-code
+invocations resolved those false positives. Package scripts and application
+code were unchanged; these were inspection-tool failures, not runtime failures.
+
+The retained M011 plan and release security guide still contain the installer
+hash and static-scan ID formerly repeated in the documentation-index summary.
+Rejected Qwen and playback comparisons remain reachable through retained
+selection records, the roadmap and completed-plan index. No authority hash or
+historical result was regenerated or reinterpreted.
+
+Limitations: `check:evidence` reads the index and is not semantic validation of
+unstaged prose or the new completed plan. Separate content, links, whitespace
+and scope inspection covers those files. Application lint/type/build suites,
+GPU/model tests, installers, network audits and CI were not run for this
+Markdown-only batch, as required by the proportional strategy. No historical
+suite is reused as current acceptance. D08 remains a separate decision, trusted
+public signing remains external, and this batch introduces no new support or
+runtime claim. No required documentation validation remains blocked.
+
+Final document inventory: `docs/README.md`; the four maintained development
+guides (`setup.md`, `testing.md`, `dependencies.md`, `tts-service-organization.md`);
+`docs/product/glossary.md`, `mvp.md` and `project-brief.md`;
+`docs/architecture/tts-support-matrix-v2.md`, `overview.md` and
+`system-diagram.md`; both plan indexes; and this plan moved from `active/` to
+`completed/`. These are 14 logical documents; Git reports the unstaged move as
+a tracked deletion plus one untracked completed plan. All other files retain
+their bytes. No blanket consolidation or file-count target was applied.

@@ -6,19 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Documentation consistency and historical tooling](documentation-consistency-and-historical-tooling.md):
-  planned documentation corrections, clearer current/historical tooling guidance
-  and index cleanup. Planning only; implementation has not started.
+No active ExecPlans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
-
-The [reader, narration and optional acquisition corrections](../completed/reader-narration-acquisition-bugfixes.md)
-are complete: all eight fixes, required host gates, installed B06/B07 scenarios,
-user-state restoration and temporary firewall cleanup pass with independent
-approval. Their evidence and final decisions are in the completed plan.
-
-The App restoration-derivations, conditional-presentation, preference-effects and organization/refactor plans are
-archived in the [completed-plan index](../completed/README.md).
 
 The [roadmap](../roadmap.md) retains future priorities, deferred work and product
 limitations; listing a plan here does not mean its implementation is complete.

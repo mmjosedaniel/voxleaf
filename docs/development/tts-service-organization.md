@@ -26,8 +26,9 @@ the filtered Piper runtime and explicitly assembled Chatterbox runtime.
 | `src/voxleaf_tts/packaging/core_integrity.py` | Piper hash/path/JSON primitives, canonical error, manifest construction/serialization and exact tree verification |
 | `src/voxleaf_tts/release_chatterbox.py` | Optional-runtime acquisition/copying, licences, safe-loader AST admission, synchronization, staging, ZIP/splitting, measurements and CLI |
 | `src/voxleaf_tts/packaging/chatterbox_integrity.py` | Versioned package layout, canonical error, root resolution, hash/path/JSON rules and runtime manifests/tree verification |
-| `src/voxleaf_tts/packaging/chatterbox_authority.py` | Versioned source/acquisition/publication/evidence validation and explicit authority writers; historical v2 and current v3 remain distinct |
-| `src/voxleaf_tts/packaging/chatterbox_sources.py` | Closed raw-Git v2/v3 source provenance shared by historical copying and authority validation; explicit ten-module current v4 closure |
+| `src/voxleaf_tts/packaging/chatterbox_authority.py` | Versioned source manifests and historical v2/v3 acquisition/publication/evidence validation and writers |
+| `src/voxleaf_tts/packaging/chatterbox_security_authority.py` | Current v5 publication readback, acquisition authority and runtime evidence validation/writing |
+| `src/voxleaf_tts/packaging/chatterbox_sources.py` | Closed raw-Git v2/v3 source provenance, including v5 reuse of frozen v3 modules; separate ten-module local v4 closure |
 | `benchmarks/harness.py` | Adapter/clock/memory/observation ownership, request/chunk validation, cancellation and the four historical protocol runners |
 | `benchmarks/harness_corpus.py` | Legacy and bilingual corpus loading, admission and ordered projection |
 | `benchmarks/harness_errors.py` | One shared harness failure type and raising helper |
@@ -55,7 +56,8 @@ Chatterbox retains explicit `runtimeModules` lists. Historical v2 copies seven
 verified raw Git blobs at `814fd2f70bd3588d31022207eb976c0ff93712a3`; v3 copies
 nine at `998c7b24cda7e969e9ed0344f348506bf38af3b0`, including the generated
 modules. The resolver verifies every size and SHA-256 before synchronization or
-output mutation. Maintainer historical builds and v3 acquisition checks require
+output mutation. V5 deliberately reuses those nine frozen v3 modules with the
+refreshed v5 dependency lock. These builds and v3/v5 acquisition checks require
 these commits in local full history. They do not fetch automatically or fall
 back to current source. Packaged inference does not require Git. V2's original
 archive and later generated-module correction remain separate authorities.
@@ -65,8 +67,11 @@ model revision, the safe loader and exact licence closure. Its environment,
 staging, runtime, archive and parts live under isolated `dist/v4`. Neither v4
 nor maintainer helpers enter historical runtime lists. The local receipt binds
 actual source, recipe, runtime, archive and part bytes and marks the result
-unpublished and unadmitted. Native acquisition and installed runtime discovery
-remain on v3. Do not infer identical rollback behavior across builders.
+unpublished and unadmitted. Current native acquisition and installed runtime
+discovery admit only v5 at `cb/5` under
+[ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+Retained v2/v3 installations are cleanup-only; they are not execution fallbacks.
+Do not infer identical rollback behavior across builders.
 
 ## Benchmark and test boundaries
 
@@ -104,6 +109,25 @@ pnpm.cmd typecheck:python
 pnpm.cmd test:python
 pnpm.cmd build:python
 pnpm.cmd package:piper-core:check
+pnpm.cmd package:chatterbox-optional:v5:check-source
+pnpm.cmd package:chatterbox-optional:v5:check-acquisition
+pnpm.cmd check:portable
+pnpm.cmd check
+```
+
+These are current development and authority checks. For intentional runtime
+assembly, use the explicit v5 maintainer workflow in
+[dependency guidance](dependencies.md#m011-release-dependency-boundary).
+V5 always synchronizes its hashed lock and rejects `--no-sync`.
+
+### Historical v2/v3 checks and local v4 campaign tooling
+
+The unversioned aliases intentionally select v2; explicit v3 aliases retain
+that historical authority. Neither selects the admitted v5 package. The v4
+builder and adapter-layout runner belong to the completed
+[adapter-layout campaign](../plans/completed/tts-adapter-layout.md):
+
+```powershell
 pnpm.cmd package:chatterbox-optional:check-source
 pnpm.cmd package:chatterbox-optional:check-acquisition
 pnpm.cmd package:chatterbox-optional:v3:check-source
@@ -115,8 +139,6 @@ pnpm.cmd package:chatterbox-optional:v4:check-local
 pnpm.cmd test:tts:adapter-layout:preflight
 pnpm.cmd test:tts:adapter-layout:candidate
 pnpm.cmd test:tts:adapter-layout:desktop
-pnpm.cmd check:portable
-pnpm.cmd check
 ```
 
 Use the repository-pinned package manager. On the recorded host, an existing
@@ -125,8 +147,9 @@ pnpm version failed the repository engine check; no dependency/config change
 was needed. See the [baseline receipt](../plans/evidence/tts-service-organization/PY-CORE-baseline.md).
 
 `build:python` builds the maintainer distribution. `package:piper-core:check`
-verifies existing cached directory/archive bytes; the four Chatterbox checks
-validate source/acquisition authority. None proves a newly assembled runtime.
+verifies existing cached directory/archive bytes; the Chatterbox source and
+acquisition checks validate only their selected version's authority. None
+proves a newly assembled runtime or installed desktop acceptance.
 Deterministic copied-tree and complete-manifest tests establish the extraction
 boundaries; wheel inspection separately establishes helper inclusion/imports.
 Full payload rebuilding, model performance and hardware claims require their
@@ -137,7 +160,10 @@ and [evidence retention policy](evidence-retention.md).
 absolute contained overrides `--piper-root`, `--chatterbox-root`,
 `--chatterbox-model-root`, `--executable`, and `--receipt`. Defaults select the
 copied core, isolated local v4, installed v3 models, current release executable
-and ignored task receipts. Preflight binds exact trees, model bytes, isolated
+and ignored task receipts. These historical defaults are not a v5 acceptance
+route; the current desktop will not execute retained v3. Reproduction requires
+the campaign's matching executable and authorities, not just current HEAD.
+Preflight binds exact trees, model bytes, isolated
 imports and enabled exact-interpreter outbound firewall blocks. On Windows,
 candidate and desktop children select the native Windows PowerShell module
 directory through their own environment for host observations and smoke runs.
@@ -146,7 +172,7 @@ bounded PCM, malformed-input rejection, cancellation by identity invalidation
 and tree termination, fresh restart/shutdown and filesystem/network observations.
 Only synthetic text is used; audio stays in memory. Desktop reuses the existing
 four selected portfolio arms and native smoke assertions with an explicit
-verified executable, refreshed packaged Piper and admitted installed v3. It
+verified campaign executable, refreshed packaged Piper and then-admitted installed v3. It
 does not install or uninstall. Use a frozen executable/resources copy through
 `--executable` during acceptance, since aggregate builds can replace `target`.
 These commands produce evidence only when actually run against their recorded
