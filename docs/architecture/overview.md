@@ -191,7 +191,7 @@ complete notices, and exact corresponding-source archives. Native discovery
 accepts only the fixed install-relative root after exact manifest/file/hash
 verification. Milestone 4A implements the native-owned optional-profile
 lifecycle and its source-package checker. Milestone 4B implements exact
-multi-artifact acquisition. The ordinary v2 manifest is `downloadable` only
+multi-artifact acquisition. The ordinary manifest is `downloadable` only
 after the two live compatibility gates pass; the retired validation-only overlay
 remains historical evidence. The core
 topology is deliberately smaller than
@@ -211,19 +211,24 @@ Milestone 4B acquires those six model-data files only from full revision
 `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18` of the official
 `ResembleAI/chatterbox` Hugging Face repository. It may not resolve mutable
 revisions, download arbitrary repository contents, execute Hub code, or rely on
-Hub scanning instead of local verification. The 79-package reviewed runtime is
+Hub scanning instead of local verification. At the original M011 checkpoint,
+the 79-package reviewed runtime was
 a separate deterministic 5,022,941,463-byte archive split into three bounded
 assets with reproducible SHA-256 evidence. Together with the model files, the
-implementation measures 8,231,893,387 download bytes, 8,228,503,309 installed
+implementation measured 8,231,893,387 download bytes, 8,228,503,309 installed
 bytes, and a 13,254,834,850-byte peak staging calculation, with
-20,000,000,000 minimum free bytes. Runtime evidence v3 is current; v2 remains
-historical with its prior installed total corrected by 37,504 bytes.
+20,000,000,000 minimum free bytes. Runtime evidence v3 recorded that checkpoint;
+v2 retained its prior installed total corrected by 37,504 bytes. Current v5
+identities and sizes are in
+[ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md) and
+[runtime evidence v5](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json).
+The historical measurements do not describe the current package.
 Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
-owned removal. The exact runtime assets are published under
-`chatterbox-runtime-v2`. Its representative installed Spanish/English,
+owned removal. The original runtime assets were published under
+`chatterbox-runtime-v2`. That checkpoint's representative installed Spanish/English,
 offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
 manifest is `downloadable` only after renderer presentation and a native
 pre-network recheck of the live gate. The release-locked runtime compiles

@@ -1,11 +1,16 @@
 # Glossary
 
+These terms describe the implemented boundaries. The
+[support matrix](../architecture/tts-support-matrix-v2.md) and
+[roadmap](../plans/roadmap.md) own current profile support and milestone status;
+historical development-demo evidence does not limit every term to that demo.
+
 ## Audio buffer
 
 The bounded in-memory FIFO of complete generated audio units waiting to be
-played. M008 implements it for the exact-development demo outside React state;
-played and invalidated originals are released, and generated audio is not
-persisted. It is not yet a supported production queue.
+played. It lives outside React state; played and invalidated originals are
+released, and generated audio is not persisted. The same bounded path serves
+supported Piper, compatible-host Chatterbox and gated development-only Qwen.
 
 ## Initial audio lead
 
@@ -23,13 +28,13 @@ rendered geometry, or periodic playback position.
 
 ## Quick start
 
-The implemented exact-development playback mode that starts as soon as
+The playback mode that starts as soon as
 approximately 15 seconds of playable audio is ready, or a complete shorter
 remaining range is ready. It adds no fixed wall-clock delay.
 
 ## Prepared playback
 
-The implemented exact-development explicit mode that waits for a selected 1-,
+The explicit playback mode that waits for a selected 1-,
 2-, 5-, or 10-minute playable-audio preparation target before starting. It
 shows content-free progress and an estimate and is not the default quick-start
 behavior.
@@ -80,7 +85,7 @@ The ordered list of publication documents defining the book's default reading or
 
 ## Generation queue
 
-The bounded scheduling of local TTS requests. The exact-development runtime
+The bounded scheduling of local TTS requests. The local service
 permits one active synthesis and zero service-queued synthesis; later prepared
 segments remain in the bounded desktop-owned preparation batch rather than an
 unbounded inference queue.
@@ -112,10 +117,9 @@ highlighting and heard progress.
 ## Reading session
 
 The runtime identity joining the active book, position, narrator settings, and
-generation state. The exact-development coordinator implements ephemeral
-session and generation identities so stale work can be discarded. M009
-connects the visual/audible projection and heard checkpoint for that
-constrained path. A supported production profile remains later work.
+generation state. The coordinator uses ephemeral session and generation
+identities so stale work can be discarded. The visual/audible projection and
+heard checkpoint use that same identity-bound path for the selected profile.
 
 ## Reading locator
 
@@ -136,17 +140,17 @@ Dividing narration text at meaningful structural and lexical boundaries such as 
 ## TTS request
 
 A session- and generation-bound request sent to the local TTS process. M007
-implements the closed request contract and M008 dispatches one request at a
-time for the exact-development demo. It is not the same as a prepared
+implements the closed request contract and the coordinator dispatches one
+request at a time. It is not the same as a prepared
 narration segment because process identity and adapter requirements belong to
 the service boundary.
 
 ## Audio frame
 
 A bounded ordered unit of generated audio metadata and payload produced for a
-narration segment. M007 validates and hands off complete units, and M008
-buffers and plays them for the exact-development demo. A supported production
-profile is not selected.
+narration segment. The local protocol validates and hands off complete units;
+the desktop buffers and plays them within the same memory and ownership bounds
+for the selected profile.
 
 ## Stale audio
 
