@@ -4,6 +4,13 @@ Created: 2026-10-20. Completed: 2026-10-21. V5 is published; production
 integration, installed gates, repository/browser/native checks, host restoration,
 independent acceptance and fresh PR CI pass. PR #266 remains open.
 
+Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
+The private evidence archive
+retains the operational chronology. Original requirements remain unchanged.
+Failures and pending states below belong to their historical checkpoints;
+the final acceptance section records their resolution. No tests were rerun
+for this editorial consolidation.
+
 ## Goal
 
 Resolve PR #266's production dependency audit failure by replacing vulnerable
@@ -232,13 +239,10 @@ the persistent Codex Security artifact collection under the job names below.
   2026-10-21 00:49:57 UTC; cancellation measurements were 242/244/297/298 ms.
   The preservation receipt confirms unchanged original data and installation,
   restored registry, shortcuts and startup value, with no leftover installation.
-  Network-only comparisons across two connections returned six successful HEAD
-  responses on one and one timeout/two successes on the other. The B06 retry
-  was not started. These HEAD checks do not establish a full acquisition pass.
-  All three temporary offline firewall rules were subsequently removed and
-  their absence verified; `pnpm run check:evidence` and `git diff --check`
-  passed on the ordinary host. Review continued before one final
-  installed-acquisition retry without more HEAD probes.
+  Network-only HEAD comparisons across two connections found six successes
+  on one and one timeout/two successes on the other; they did not establish acquisition.
+  All three temporary offline firewall rules were removed and absence verified;
+  ordinary-host `check:evidence`/`git diff --check` passed before later retries.
 - Review `CB-V5-INTEGRATION-R1-ASTRA-20261021T010551Z` is BLOCKED on the
   incomplete acquisition journey and identified one P2 inventory defect:
   all 79 Chatterbox component lock references still named v3. The generator
@@ -272,26 +276,17 @@ the persistent Codex Security artifact collection under the job names below.
   snapshot contains no remaining managed acquisition paths.
   `v5-journey-r6-preservation.json` verifies unchanged original data and
   installation, restored registry, shortcuts and startup value, with no
-  leftover installation. The user accepted removal of both temporary TTS
-  firewall rules; removal succeeded at 01:25:13 UTC. No further download
-  attempts are planned in this run. Final revision review uses the immutable
-  `candidate-integration-r2` snapshot; its report is retained separately.
+  leftover installation. Both temporary TTS rules were removed at 01:25:13 UTC.
+  Revision review used immutable `candidate-integration-r2`; the separate
+  report and failed journey remain retained. Later continuations are below.
 
-- Preparation review `CB-V5-PREP-R2-20261020-ASTRA-230616Z` approved the exact
-  1,331-file snapshot and three-part artifact, with no findings. The preparation
-  commit is `702f80b5b688193e10ef58f9a5cbebb3a42a4090`. This approval does not
-  establish production admission or installed acceptance.
-- Publication approval covered the three reviewed assets as the
-  `chatterbox-runtime-v5` prerelease against that commit, preserving historical
-  releases and excluding a public installer. The first SSH and HTTPS attempts
-  failed before upload; a subsequent HTTPS push reached the exact commit.
-- Integration may change only the versioned authority generator and its tests,
-  release CLI/package scripts, native admission/removal and tests, production
-  audit/inventory/license selectors and generators, release/installed harnesses
-  and tests, Tauri/NSIS resources, current dependency/release/architecture docs,
-  this plan/index and an additive ADR. Historical authority and completed plans
-  remain immutable. Generate v5 acquisition files only from verified publication
-  metadata; no invented publication timestamp or installed receipt is permitted.
+- Publication required explicit authorization for only the three reviewed v5
+  assets against `702f80b5b688193e10ef58f9a5cbebb3a42a4090`, preserving historical
+  releases and excluding an installer. Initial SSH/HTTPS pushes failed before
+  upload; the successful HTTPS push reached that exact commit.
+  Preparation approval covered a 1,331-file snapshot, not production admission.
+  Integration generated authority only from verified readback and retained
+  historical source/runtime/model bytes and authorities.
 
 - Prior local B01–B08 approval does not make the current live release audit pass.
 - V3 lock changes alone would falsify installed remediation. V4 already exists
@@ -301,116 +296,54 @@ the persistent Codex Security artifact collection under the job names below.
 - Published assets and historical authorities remain immutable. Any successor
   adoption must include old-root cleanup tests, accurate bytes and fresh readback.
 
-## Final validation results
+## Historical validation failures and native-path correction
 
-Overall remediation is not complete. Baseline `pnpm run audit:release`: exit 1,
-ordinary host identity 15700, 2026-10-20 22:00:37–22:01:08 UTC. Candidate portable
-checks, 595 Python regressions, v3/v4 compatibility, v5 source authority,
-candidate audit, real-library security probes, ES/EN and final full package
-integrity now pass. Persistent Codex Security artifacts retain exact logs,
-input hashes and host metadata under their job names above. Preparation review
-and publication are complete; production audit and focused authority checks
-pass. Full integrated, browser, native startup and adapted local packaging
-checks, installed lifecycle/restoration and installed four-arm ES/EN pass;
-complete acquisition and final independent review remain pending. The original
-B01–B08 acceptance remains historical and
-does not substitute for these successor-runtime gates.
+Baseline `pnpm run audit:release` failed, exit 1, on ordinary host 15700 at
+2026-10-20 22:00:37–22:01:08 UTC. Preparation, publication and intermediate
+integrated gates above did not establish complete installed acceptance.
+The separately approved [download diagnostics improvement](optional-download-diagnostics.md)
+observed 1,770,496 bytes before cancellation; its bounded probe neither
+completed B06/B07 nor diagnosed the old intermittent error.
 
-The subsequent user-authorized [download diagnostics improvement](../completed/optional-download-diagnostics.md)
-is complete and independently approved: one error in memory, manual JSON export
-and an installed probe that observed 1,770,496 bytes before cancellation, with
-verified user-state restoration. That bounded result does not complete B06/B07
-or diagnose the earlier intermittent failure; this security-integration plan
-remains open with the same complete-acquisition acceptance requirements.
-
-## Resumed installed validation
-
-B06/B07 validation resumed after the bounded diagnostics probe. `v5-installed-journey-r8` uses the independently
-reviewed diagnostics installer, SHA-256
-`c8580509978288d207d086c7a97e51899bf625747ffebe2fc4bc85a67e18ea30`,
-with the existing full `package:windows:reader-corrections` command and explicit
-external receipt. The three complete acquisitions remain required; the bounded
-probe does not replace them. The ordinary-host preflight verified the candidate,
-392 relevant source identities against the disposable execution copy, sufficient
-disk space, an empty index and no conflicting application or recovery state.
-
-Two task-specific outbound firewall rules isolate only the installed Piper and
-Chatterbox executables. The preservation wrapper records the original data and
-installation fingerprints, registry, shortcuts and startup value before the
-journey and restores them in its finalization path. Fresh normal-host
-`pnpm run inventory:release:check` and `pnpm run audit:release` passed in
-`v5-b06b07-audit-r8`; the seven informational Rust notices and four Python URL
-blind spots remain disclosed.
-
-The ordinary-host R8 journey ran on 2026-10-21 from 03:34:21 to 03:55:10 UTC
-and exited 1. Its failure receipt preserves passing B06/B07 assertions:
-cleanup failure remained terminal, retry was admitted, verification cancellation
-took 5 ms, cancellation preceded installation, staging was removed, and late
-cancellation preserved the completed installation. Chatterbox ES and EN passed
-offline, followed by restart/discovery and optional-package removal. The later
-Piper ES arm failed before audible output with `tts-service-failed` and
-`model-load-failed`. Piper EN and the third complete acquisition were not reached;
-there is no successful receipt for the complete integrated journey.
-
-The focused ordinary-host `v5-piper-r9` diagnostic exited 0 at 03:58:55 UTC.
-It verified all 2,031 freshly installed resource hashes and generated synthetic
-Piper audio in memory under both the minimal builder environment and the
-ordinary installed-child environment. Direct model loading also passed. These
-controls do not reproduce the failed native application path, so the cause of
-the R8 failure remains unknown. No product source change followed this failure.
-
-## Cleanup checkpoint
-
-At the cleanup checkpoint, R8 and R9
-preservation receipts verify unchanged original user data and installation
-state, with registry, shortcuts and startup value restored. Both temporary
-firewall rules were removed at 04:00:52 UTC. The normal-host
-`v5-pause-r8-r9-safety` check exited 0 at 04:04:01 UTC: zero task firewall rules,
-zero active task processes, no outstanding data/installation backup moves,
-original data present, and the installation root absent as it was before the
-tests. HEAD remains `702f80b5b688193e10ef58f9a5cbebb3a42a4090`, with an empty
-index; no commits or pushes were made during this continuation. No R10 test was
-started, and no download or test remains running.
-
-Persistent local evidence is retained under `artifacts/b06b07-20261020`, including
-the R8 failure/log and preservation receipts, R9 diagnostic/log and preservation
-receipts, firewall removal receipt, and pause safety receipt. Resume first with
-a focused installed native Piper reproduction without reacquiring Chatterbox.
-Then resolve the demonstrated cause, complete the remaining integrated journey,
-and obtain independent review of the exact final patch and evidence. This plan
-remains open; the passing B06/B07 assertions do not establish full acceptance.
-
-## Resumed native-path investigation
-
-On 2026-10-21 the user resumed the task. Normal-host R10 preflight confirmed
-the same installer and 392 execution-source identities. The isolated Piper
-reproduction repeated the failure and restored all original user state. A
-normal-host process-tree observation exposed a harness defect: the ordinary
-journey passes `--executable <installed-path>`, while
-`resolveNativeSmokeExecutable` recognizes only `--executable=<installed-path>`.
-The native smoke process therefore launched the disposable repository binary.
-The R8 Chatterbox narration results and R10 Piper failure do not establish
-installed-executable acceptance. The acquisition corrections use the ordinary
-session's explicit executable and retain their narrower B06/B07 observations.
-
-Correct the parser to accept both explicit forms, rejecting missing, relative
-or duplicate values instead of falling back. Add a host-run regression before
-the fix, then repeat the focused installed Piper arm and the complete journey
-with verified process identity. This changes the test harness only; the
-reviewed installer and product runtime remain unchanged. Do not rebuild or
-redownload a runtime to address this argument-selection defect.
-
-`v5-native-path-red` reproduced the wrong fallback on the normal host (16 passes,
-one expected failure). `v5-native-path-green` passed TypeScript formatting/lint
-and the complete desktop suite after the parser correction. `v5-piper-r11`
-then passed the focused installed Piper ES matrix at 14:25:50 UTC: first audible
-output in 4,988 ms, cancellation in 230 ms, zero underruns, external requests
-or persisted audio. The process observer verified the actual installed path
-and SHA-256 `7734f9a955d7d8207d420487b9feed9bbdfa252f92d5898c367dbfc075ade5b4`.
-The preservation receipt confirms unchanged original data/installation and
-restored registry, shortcuts and startup value. The complete corrected journey
-is recorded separately as `v5-installed-journey-r12`; its result and final
-independent review remain required.
+- The resumed R8 journey used diagnostics installer SHA-256
+  `c8580509978288d207d086c7a97e51899bf625747ffebe2fc4bc85a67e18ea30`.
+  Ordinary-host preflight matched 392 execution-source identities, candidate,
+  disk, empty index and absence of conflicting app/recovery state.
+  `v5-b06b07-audit-r8` passed `inventory:release:check` and `audit:release`,
+  with seven informational Rust notices/four Python URL blind spots unchanged.
+- `v5-installed-journey-r8` ran at 03:34:21–03:55:10 UTC on 2026-10-21, exit 1.
+  Its narrower B06/B07 assertions passed: terminal cleanup failure, admitted
+  retry, verification cancellation in 5 ms before commit, removed staging and
+  preserved installation after late cancellation. Chatterbox ES/EN,
+  restart/discovery and removal ran, but Piper ES failed before sound with
+  `tts-service-failed`/`model-load-failed`; Piper EN and acquisition three
+  were not reached. R8 was not a complete integrated pass.
+- `v5-piper-r9` passed at 03:58:55 UTC: all 2,031 resource hashes, in-memory
+  synthetic Piper audio under minimal/ordinary-child environments and direct
+  model loading. It did not reproduce the native application failure.
+  R8/R9 preserved original data/installation, registry, shortcuts and startup.
+  At the cleanup checkpoint, both firewall rules were removed (04:00:52 UTC);
+  `v5-pause-r8-r9-safety` passed at 04:04:01 UTC: zero rules/processes/backup
+  moves, original data present and installation absent as initially.
+  HEAD was `702f80b5b688193e10ef58f9a5cbebb3a42a4090`, empty index, no
+  commits/pushes or active jobs. Local `artifacts/b06b07-20261020` retains receipts.
+- R10 resumed on 2026-10-21 with the same installer/392 inputs, reproduced the
+  failure and restored user state. Process observation found a harness error:
+  the journey supplied `--executable <path>`, but
+  `resolveNativeSmokeExecutable` accepted only `--executable=<path>`,
+  silently choosing the disposable binary. R8 Chatterbox/R10 Piper narration
+  therefore did not prove installed-executable behavior. Acquisition retained
+  its explicit-executable, narrower B06/B07 observations.
+- The parser now accepts both explicit forms and rejects missing, relative
+  or duplicate arguments. `v5-native-path-red` reproduced fallback (16 passes,
+  one expected failure); `v5-native-path-green` passed TS format/lint and
+  the full desktop suite. Product/runtime/installer bytes were unchanged.
+  `v5-piper-r11` passed installed Piper ES at 14:25:50 UTC: audible 4,988 ms,
+  cancellation 230 ms, zero underruns/external requests/persisted audio.
+  The observer verified installed path and SHA-256
+  `7734f9a955d7d8207d420487b9feed9bbdfa252f92d5898c367dbfc075ade5b4`;
+  preservation verified unchanged data/installation and restored registry,
+  shortcuts and startup value. R12 below completed the corrected full journey.
 
 ### Corrected complete acquisition result
 
@@ -434,8 +367,8 @@ older installer. Changed diagnostic controls and artifact bytes prevent reuse
 as current-installer acceptance. R13 therefore runs the existing generic native
 scenario, four reader/speed arms with both exercise flags, before/after runtime
 integrity and six installer lifecycle policies against the diagnostics installer.
-It uses the verified local test runtime without further acquisition. Final
-host cleanup, repository/browser checks and exact-patch review remain pending.
+It used the verified local test runtime without further acquisition; later
+sections record repository checks, cleanup and exact-patch acceptance.
 
 R13's installed integrity check passed in 222.57 seconds, but the generic native
 smoke was incorrectly applied to the release-locked installer. Its unprofiled
@@ -497,9 +430,8 @@ bounded cleanup and no stale playback. Measured values on this host:
 | Piper EN | 5,537 | 288 | 5,645 | 5,729 |
 
 These are host observations, not startup guarantees or fixed waits. The R17
-post-playback installed integrity test passed in 146.23 seconds. Installer
-lifecycle, final preservation and the enclosing job result are recorded below
-when complete; individual passing arms do not imply those remaining gates passed.
+post-playback installed integrity test passed in 146.23 seconds; enclosing
+lifecycle and preservation evidence follows.
 
 R17 completed with exit 0 at 15:50:56 UTC (ordinary host 15700; started
 15:21:18 UTC). Its runner invokes the existing `native-startup-smoke.mjs`
@@ -517,8 +449,7 @@ The executable observer passes for every observed installed process. Final
 preservation verifies unchanged original data by aggregate SHA-256 comparison,
 with installation, registry, shortcuts and startup value restored and no
 leftover installation. R17 uses the verified local runtime without downloads.
-The R18 repository/browser/default-development-native suite runs separately;
-firewall removal and final host-state verification remain required before
+R18 and final host cleanup were separate requirements, completed below before
 acceptance.
 
 ### Final combined repository gates
@@ -546,31 +477,18 @@ passed in `v5-integration-r3-snapshot-audit` on the same day. Their seven
 informational Rust notices and four direct-URL Python audit blind spots remain
 disclosed; no advisory suppression or audit-policy weakening was added.
 
-### Host-cleanup handoff
+### Host cleanup
 
-Both firewall-removal attempts on 2026-10-21 (`v5-r10-firewall-remove` and
-`v5-r10-firewall-remove-r2`) exited 1 after Windows closed the UAC request
-without elevation. No removal receipt was produced. The two exact test rules
+Two removal attempts (`v5-r10-firewall-remove` and `-r2`) exited 1 after
+Windows closed UAC without elevation; they produced no removal receipt.
+The third authorized attempt removed only
 `VoxLeaf.B06B07.20261021.R10.Chatterbox` and
-`VoxLeaf.B06B07.20261021.R10.InstalledPiper` therefore remain pending removal.
-Do not infer removal from the successful playback or user-data restoration.
-No download, narration, lifecycle or repository test remains running.
-
-Resume by launching the existing bounded removal helper when the user can
-accept Windows UAC, then verify its receipt and run
-`v5-final-host-restoration`. The prepared `v5-final-review-r19` requires both
-R18 and that restoration gate to pass before checking the final documents and
-capturing the acceptance snapshot. Final independent approval, authorized
-commit/push, fresh PR #266 CI and completed-plan move remain outstanding.
-
-The user returned and accepted the third UAC request. Removal succeeded at
-16:02:38 UTC. `v5-final-host-restoration` then passed at 16:03:15 UTC on ordinary
-host 15700: zero temporary rules, zero task processes, zero outstanding backup
-moves, original data present and the installation absent as before. Both R12
-and R17 preservation receipts match the unchanged original fingerprint. The
-index is empty and `git diff --check` passes. The earlier UAC handoff is now
-resolved; only final independent acceptance and the authorized Git/CI closeout
-remain. No public installer was published and no merge is authorized.
+`VoxLeaf.B06B07.20261021.R10.InstalledPiper` at 16:02:38 UTC.
+`v5-final-host-restoration` passed at 16:03:15 UTC on ordinary host 15700:
+zero temporary rules/task processes/outstanding backup moves, original data
+present and installation absent as initially. R12/R17 matched the original
+fingerprint; the index was empty and `git diff --check` passed.
+The historical cleanup blocker was resolved before final acceptance.
 
 ## Final acceptance and outcome
 

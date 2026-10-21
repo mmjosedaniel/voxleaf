@@ -17,7 +17,6 @@ export interface AdaptivePreparationControlsProps {
   readonly onStart: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
-  readonly onPlayAvailableAudio?: () => void;
   readonly onStop: () => void;
   readonly onVolumeChange: (volumePercent: number) => void;
   readonly startDisabled?: boolean;
@@ -69,7 +68,6 @@ export function AdaptivePreparationControls({
   onStart,
   onPause,
   onResume,
-  onPlayAvailableAudio,
   onStop,
   onVolumeChange,
   startDisabled = false,
@@ -155,15 +153,6 @@ export function AdaptivePreparationControls({
               aria-label="Narration playback controls"
               role="group"
             >
-              {state.canPlayAvailableAudio && onPlayAvailableAudio ? (
-                <button
-                  type="button"
-                  data-narration-action="play-available"
-                  onClick={onPlayAvailableAudio}
-                >
-                  Play available audio
-                </button>
-              ) : null}
               <button
                 type="button"
                 data-narration-action="pause"

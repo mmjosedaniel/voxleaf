@@ -5,6 +5,11 @@ Status: complete; all eight corrections, required host gates, restoration and in
 Execution branch: `codex/reader-narration-acquisition-bugfixes`.
 Planning base: `f683a6eae77a7bac60a8f58f7e0af014bde27815`.
 
+Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
+The private evidence archive
+preserves the complete operational history. Requirements below are unchanged;
+all validation results describe their original checkpoint, not a new run.
+
 ## Goal
 
 Correct the eight defects identified by the source-only audit and subsequent
@@ -541,242 +546,70 @@ cancel before that boundary by cleaning only operation-owned staging. A later
 regression must retain the failed result and trigger new validation/review;
 do not erase it or renew approval by replacing hashes.
 
-## Progress log (historical; final closeout below supersedes pending states)
+## Progress log (historical)
 
-- The strict core rebuild in `pnpm run package:windows` rejects
-  `piper-core-runtime-manifest-stale` before installing anything. Read-only
-  comparison finds four wheel `RECORD` changes and documentation-only
-  `voxleaf_tts/service.py` changes; no task production Python edit exists.
-  `pnpm run package:piper-core:check` passes the existing frozen tree, archive
-  and evidence. Use the additive `package:windows:verified-core` route to
-  verify that exact approved core before invoking the unchanged Windows
-  builder. Preserve the failed log and every frozen authority; do not rewrite
-  manifests, replace dependencies, or claim a fresh core rebuild succeeded.
-- R3 ordinary-host four-arm gate now passes (`r3-final-audio.log`, exit 0),
-  with explicit interpreter outbound blocks and unpackaged host identity.
-  Piper ES/EN and Chatterbox ES/EN respectively start in
-  5,229 / 4,669 / 32,650 / 32,411 ms, cancel in 239 / 224 / 299 / 298 ms,
-  and close all 6 / 5 / 5 / 5 created AudioContexts. Every arm records zero
-  underruns, external requests, generated audio files and retained/discarded
-  cleanup units. Chatterbox startup cancellation also passes in 197 / 218 ms.
-  The fixed sentence-boundary fixture retains the original speed thresholds;
-  real preparation fails before the correction (`r3-speed-fixture-red-c.log`)
-  and all 22 harness tests pass afterward (`r3-speed-fixture-green.log`).
-  Repository checks and all nine browser tests plus native WebView2 pass again.
-  Installed B06/B07 evidence, restoration and final review remain pending.
-- R3 ordinary-host audio resolves installed Chatterbox selection and both
-  Piper arms pass, but the speed harness rejects Chatterbox's normal 600 ms
-  paragraph pauses by subtracting a fixed 300 ms sentence pause. The runtime
-  policy explicitly defines paragraph=600 and heading=750; the logged matrix
-  has no playback failure. Add a real EPUB-preparation regression for the
-  measurement fixture before extending its first paragraph to keep all six
-  speed changes on known sentence boundaries. Preserve the 250 ms overhead
-  threshold and the failed R3 log. Additional support allowlist:
-  `apps/desktop/scripts/native-smoke/narration-fixture.mjs`,
-  `native-smoke.node-test.mjs`, and existing startup harness/script registration.
+Execution on 2026-10-20 began on `codex/reader-narration-acquisition-bugfixes`
+at `4e3f3616a3c9601bc2364913819cf0609a1c0230`, with an empty worktree/index
+and the planning commit verified as an ancestor. The source-only audit had
+not run tests; execution subsequently reproduced all eight defects.
 
-- Continuation host diagnosis: the native integrity diagnostic passes against
-  the actual installed package (209.52 seconds, exit 0). The rejected run
-  inherited Codex's MSIX package identity and merged redirected files into
-  `LOCALAPPDATA`; canonical containment correctly rejected that mixed tree.
-  The verifier and installed package are unchanged. Subsequent acceptance
-  commands run in an Explorer-launched hidden local PowerShell, with
-  `GetCurrentPackageFullName == APPMODEL_ERROR_NO_PACKAGE` (15700) recorded.
-  Earlier escalated launches were still virtualized and are superseded by
-  these new runs, not treated as ordinary installed-host acceptance.
-  The actual ordinary installation directory is absent; its stale uninstall
-  registration and existing application data must be preserved.
-  Continuation support allowlist additionally includes
-  `apps/desktop/scripts/acquisition-file-barrier.{mjs,ps1,node-test.mjs}`.
-  Both real Windows handle tests pass: a blocking read barrier and a
-  delete-sharing denial. The installed journey opts into these host-only
-  B06/B07 scenarios and writes a separate receipt bound to the artifacts.
-- 2026-10-20 resumed by explicit user instruction: investigate native
-  Chatterbox rejection, complete installed B06/B07 journeys while preserving
-  existing data, renew validation/review, and make no commits.
-  Initial branch/HEAD/index and 39 modified plus three new files match R2.
-  Initial continuation allowlist: native optional-package tests and bounded
-  diagnostic support if needed, ordinary installed host harness/tests,
-  root/desktop script registration, this plan and maintained setup/ADR docs.
-  Add read-only native verification evidence before changing verification.
-  Installation experiments must retain an exact restoration path for the
-  existing application, registration and local data.
-- Review corrections: `review-r2-red.log` reproduces B02's repeated structural
-  prefix (6,000 additional work units for 1,000 preceding blocks, exceeding
-  the 4,000 assertion). `review-r2-desktop-red.log` reproduces B04's missing
-  automatic-follow unavailable notification. Both commands exit 1 on the
-  respective new regression before the correction.
-- B02 now resumes indexed ancestor-container frames rather than restarting
-  structural traversal or retaining all siblings. The checkpoint includes both
-  structural and first-leaf inline positions; incompatible/cancelled/failed
-  work and close clear both. Quote/list context and boundary equivalence are
-  tested across windows, including 1,000 preceding siblings.
-- B04 automatic audible following now publishes unavailable settlement.
-  Regression proves highlight removal, stopped intent, preserved successful
-  placement callback and valid-chapter recovery without automatic restart.
-- Corrected candidate host gates: `review-r2-check` (exit 0, full repository),
-  `review-r2-browser` (exit 0, all nine cases), `review-r2-native` (exit 0),
-  and `review-r2-package-check` (exit 0, package readiness only). Their input
-  manifests bind the source/test/configuration files used at execution.
-- Independent report `reader-narration-acquisition-bugfixes-r1-astra-20261020-01`:
-  BLOCKED, immutable manifest SHA-256
+- Milestone 0 red baselines: `pnpm --filter @voxleaf/desktop test`, exit 1,
+  B01/B03/B04/B08 fail and 767 pass; `pnpm --filter @voxleaf/epub test`,
+  exit 1, B02 Piper/Chatterbox and B05 fail with 661 passing tests;
+  `pnpm run test:rust`, exit 101, B06/B07 fail with 101 passing and one
+  ignored subprocess fixture. Rust short-circuited before release-feature
+  tests. B04's incorrect locator-field assertion was corrected before its
+  genuine failing reproduction. Logs: `m0-{desktop-r2,epub,rust}.log` under
+  local/ignored `tmp/reader-acquisition-evidence/`.
+- Test-only native hash/transport hooks exercised actual promotion under its
+  mutation lock and a cancelled worker with a Windows sharing violation.
+  These baseline cases required neither network nor model files.
+  ADR-0057 records the B01/B02/B04 policy decisions.
+- Staged desktop results were provisional: B01 passed startup/refill across
+  four targets, FIFO release, paused/invalidation guards and same-generation
+  coordinator cases (`m1-desktop.log`, exit 1 only for B03/B04/B08; 774 pass).
+  B03 then passed the real settings stop-before-switch path; its red baseline
+  observed stale offset 12 instead of 24 (`m3-baseline-desktop.log`).
+  `m3-desktop.log` had 775 passes with B04/B08 pending; `m4-desktop.log`
+  had 778 passes with only B08 pending. B08's `m8-desktop.log` passed deferred
+  success/rejection, Pause/Resume, rapid rates and late Stop/close/seek cleanup.
+- B02's cold/warm Piper/Chatterbox ES/EN matrix passed containing-segment
+  equality, batch-size 8/16 independence, Unicode and abort/close cases;
+  `m2-epub-matrix.log` exited 1 only for pending B05 (667 passes).
+  B05's `pnpm --filter @voxleaf/epub test` then passed 33 files/668 tests
+  (`m5-epub.log`), preserving security, delayed-read and lifecycle defenses
+  without image caching or higher limits.
+- `m6-rust.log` exited 101 only for B07 (104 passes/one ignored), while final
+  hashing cancellation, commit outcomes and cancellation during the runtime
+  lock passed. `m7-rust.log` then passed both configurations: 105 ordinary/
+  104 release-locked, one ignored each, including cleanup retry after lock release.
+- Independent R1 `reader-narration-acquisition-bugfixes-r1-astra-20261020-01`
+  was BLOCKED; 1,320 paths and HEAD matched before/after review, manifest SHA-256
   `69a5db2a2120573943e3cfc93364bc45a5bff04cde32dc195d8254916ebbf0f9`.
-  Before/after identities matched 1,320 paths and HEAD. Findings: automatic
-  audible following bypasses unavailable settlement (B04); per-window
-  structural traversal still rescans prior blocks (B02). Missing final
-  audio/installed and browser input-identity evidence also prevents acceptance.
-- Correction allowlist: existing B02 source/preparation/work-controller files,
-  opened-publication tests; ReaderPublication and its tests; current ADR/plan.
-  Add bounded structural cursor state and a measured multi-block regression,
-  plus unavailable settlement on the automatic audible-following route.
-  The earlier native/audio binary remains attributable only to r1; affected
-  integrated gates must be renewed for the corrected candidate.
+  It found B02 structural prefix rescans and B04 automatic-follow settlement
+  bypass, plus missing final audio/installed and browser identity evidence.
+  `review-r2-red.log` reproduced 6,000 additional work units for 1,000 blocks
+  against a 4,000 assertion; `review-r2-desktop-red.log` reproduced B04.
+  Both exited 1 before correction. Indexed ancestor/inline checkpoints and
+  automatic unavailable settlement corrected these findings, with quote/list,
+  window equivalence, highlight removal and valid-chapter recovery regressions.
+- Host tools: PowerShell, Node 24.20.0, Cargo 1.97.1, uv 0.11.29. The inherited
+  pnpm 11.25.0 was replaced per job by the pinned 11.15.1 Corepack shim.
+  `pnpm run build:packages` passed before production edits. Later execution
+  distinguished ordinary host identity 15700 from inherited MSIX virtualization.
 
-- Milestone 8 host: desktop suite passes (`m8-desktop.log`, exit 0), including
-  deferred success/rejection, Pause/Resume, rapid rates and late completion
-  after Stop/close/seek. Integration acceptance is still pending.
-- Milestone 9 allowlist: all previous task-owned paths, browser
-  `reader-narration-bugfixes.smoke.spec.ts` and `large-chapter.smoke.spec.ts`,
-  `App.test.tsx`, `packages/epub/src/narration/narration-work-controller.test.ts`,
-  native smoke orchestrator and `native-smoke/tts-scenarios.mjs`,
-  native smoke tests, package scripts for a Piper/Chatterbox-only entry,
-  current docs indexes/product/architecture descriptions and ADR-0057.
-  Historical evidence/authorities/completed plans remain excluded.
-
-- Milestone 7: `pnpm run test:rust` passes both configurations (ordinary
-  105 passed / one ignored; release-locked 104 passed / one ignored), exit 0,
-  `m7-rust.log`. Cleanup failure releases worker ownership and cancellation;
-  removal retry succeeds after the deterministic Windows lock is released.
-- Milestone 8 allowlist: `apps/desktop/src/tts/pcm-playback.ts` and
-  `.test.ts`, directly coupled `pcm-playback-backend.ts` if required,
-  active plan and ADR-0057.
-
-- Milestone 6 host regression: `pnpm run test:rust`, exit 101 only for
-  pending B07; 104 pass / one ignored. Final-hash cancellation, before/after
-  commit outcomes and cancellation while the installed-runtime lock is held
-  pass (`m6-rust.log`). Release-feature execution remains pending.
-- Milestone 7 allowlist: `apps/desktop/src-tauri/src/tts_optional_chatterbox.rs`
-  and `tts_optional_chatterbox/tests.rs`, this plan and ADR-0057.
-
-- Milestone 5 host result: `pnpm --filter @voxleaf/epub test`, exit 0,
-  33 files / 668 tests pass (`m5-epub.log`). Existing security, lifecycle,
-  delayed-read, bounds and resource isolation cases run with the new reread
-  regression. No image cache or production limit change.
-- Milestone 6 allowlist: `apps/desktop/src-tauri/src/tts_optional_chatterbox.rs`
-  and `tts_optional_chatterbox/tests.rs`, active plan and ADR-0057.
-
-- Milestone 4: `pnpm --filter @voxleaf/desktop test` passes 778 cases;
-  only B08 remains red (exit 1, `m4-desktop.log`). Unavailable placement
-  notifies a typed failure, never calls the successful-position callback,
-  ends playing/paused intent and prevents starts until a valid placement.
-- Milestone 5 allowlist: `packages/epub/src/archive/archive-inventory.ts`
-  and `.test.ts`; `packages/epub/src/security/processing-budget.ts` and
-  `.test.ts`; `packages/epub/src/resource/opened-publication.test.ts`;
-  active plan and ADR-0057.
-
-- Milestone 3 focused suite: B03 passes, with 775 desktop tests passing and
-  only pending B04/B08 failures (`m3-desktop.log`, exit 1).
-- Milestone 4 allowlist: `apps/desktop/src/reader/reader-navigation.ts`,
-  `ReaderPublication.tsx`, `ReaderPublication.test.tsx`;
-  `apps/desktop/src/App.tsx`, `App.test.tsx`;
-  `apps/desktop/src/tts/product-narration-coordinator.ts`, its test,
-  `ProductNarrationControls.tsx`, its test; active plan and ADR-0057.
-
-- Milestone 2 host matrix passes cold deep/continuous warm preparation,
-  complete containing-segment equality and batch-size 8/16 independence for
-  Piper/Chatterbox ES/EN with astral/combining text; abort/close during cold
-  reconstruction also pass. `pnpm --filter @voxleaf/epub test` has 667 passing
-  tests and only the pending B05 failure (exit 1).
-  `m2-epub-matrix.log` records this provisional result. Accounting now reports
-  numeric traversal policy version and conservative charged work separately
-  from actual inspected source positions. Final integrated/reviewer acceptance
-  remains pending.
-- B03 baseline refined to include the real settings stop-before-switch path;
-  `m3-baseline-desktop.log` still reproduces the stale offset 12 instead of 24.
-  Milestone 3 allowlist: `apps/desktop/src/tts/product-narration-coordinator.ts`
-  and `.test.ts`, active plan and ADR-0057.
-
-- Milestone 1 host suite: `pnpm --filter @voxleaf/desktop test`, exit 1
-  solely for the still-pending B03/B04/B08 red regressions; 774 tests pass.
-  B01's four-target startup/refill, FIFO capacity release, paused/invalidation
-  guards, controls and same-generation coordinator cases pass.
-  Log: `tmp/reader-acquisition-evidence/m1-desktop.log`.
-- Milestone 2 allowlist: `packages/epub/src/narration/` files
-  `narration-source-window.ts`, `narration-preparation.ts`,
-  `narration-work-controller.ts`, `narration-policy.ts`,
-  `narration-prepared-segment.ts`, `narration-segment-packer.ts` and their
-  directly corresponding tests; `packages/epub/src/resource/opened-publication.ts`
-  and `.test.ts`; `packages/epub/src/document/narration-model.ts`;
-  `packages/epub/src/narration/narration-resource-bounds.test.ts`;
-  active plan and ADR-0057. No locator/shared serialized schema changes.
-
-- Milestone 0 host reproductions against production without fixes:
-  `pnpm --filter @voxleaf/desktop test`, exit 1, 4 expected failures
-  (B01/B03/B04/B08), 767 passing tests; EPUB command
-  `pnpm --filter @voxleaf/epub test`, exit 1, B02 fails for Piper and
-  Chatterbox and B05 fails, 661 passing tests; `pnpm run test:rust`,
-  exit 101, B06/B07 fail, 101 pass and one subprocess fixture is ignored.
-  The Rust aggregate short-circuited before release-feature tests.
-  Local logs: `tmp/reader-acquisition-evidence/m0-{desktop-r2,epub,rust}.log`.
-  B04's first assertion used an incorrect locator field and was corrected
-  before its real failing reproduction. These are expected red baselines,
-  not accepted implementation results. ADR-0057 records B01/B02/B04 decisions.
-- Milestone 1 allowlist: scheduler and its test; `adaptive-preparation.ts`
-  and its test; `AdaptivePreparationControls.tsx` and its test;
-  `ProductNarrationControls.tsx` and its test;
-  `product-narration-coordinator.ts` and its test; the active plan and ADR-0057.
-  All desktop paths above are under `apps/desktop/src/tts/`.
-
-- 2026-10-20 execution: branch and HEAD verified as
-  `codex/reader-narration-acquisition-bugfixes` /
-  `4e3f3616a3c9601bc2364913819cf0609a1c0230`. The planning commit is
-  an ancestor (exit 0); initial index and worktree are empty.
-  Live `/root/change_review` confirmed `change_reviewer`, GPT-6 Astra high.
-  Availability is not patch approval.
-- Milestone 0 edit allowlist: this plan;
-  `apps/desktop/src/tts/adaptive-buffer-scheduler.test.ts`;
-  `apps/desktop/src/tts/product-narration-coordinator.test.ts`;
-  `apps/desktop/src/tts/pcm-playback.test.ts`;
-  `apps/desktop/src/reader/ReaderPublication.test.tsx`;
-  `packages/epub/src/resource/opened-publication.test.ts`;
-  `apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs`;
-  a new additive decision document after the B02 accounting analysis.
-  Production remains unchanged during baseline reproductions.
-- Baseline instrumentation allowlist addition:
-  `apps/desktop/src-tauri/src/tts_optional_chatterbox.rs`, exclusively
-  `#[cfg(test)]` calls to thread-local test hooks at hashing/transport boundaries.
-  Ordinary/release production behavior is unchanged and no fix is applied.
-  B06 exercises actual promotion under its mutation lock; B07 exercises the
-  actual download worker with a deterministic cancelled transport and Windows
-  sharing violation. Neither baseline requires network or model files.
-- Host readiness: normal PowerShell, Node `24.20.0`, Cargo `1.97.1`,
-  uv `0.11.29`. The inherited pnpm is `11.25.0`; prepend
-  `C:\nvm4w\nodejs\node_modules\corepack\shims` to PATH for the pinned
-  `11.15.1`. From repository root, `pnpm run build:packages` passed
-  (exit 0) outside the sandbox against unchanged production HEAD.
-
-- 2026-10-20: Completed source-only audit and a second control-flow verification
-  of B01-B08. No tests inspected/executed and no production files modified.
-- 2026-10-20: Confirmed clean `main` at
-  `f683a6eae77a7bac60a8f58f7e0af014bde27815`; compared its tree with the audit
-  base. Read plan, command, architecture, product, and review authorities.
-- 2026-10-20: Created this execution plan and its active index entry for the
-  requested dedicated branch and local planning commit. Implementation,
-  regression baseline, host validation, and independent change review remain
-  unstarted.
-
-| Milestone | State | Accepted evidence |
+| Milestone | Final state | Accepted evidence |
 | --- | --- | --- |
-| 0: execution baseline and decisions | Complete | Authorization, current identities, failing regressions, frozen decisions |
+| 0: baseline/decisions | Complete | Attributed red regressions and frozen decisions |
 | 1: B01 | Complete | Capacity escape and preserved admission/intent |
-| 2: B02 | Complete | Cold/warm continuation, stable ranges, complete work/bounds proof |
+| 2: B02 | Complete | Cold/warm continuation, stable ranges, work/bounds proof |
 | 3: B03 | Complete | Context invalidation and bounded valid navigation |
-| 4: B04 | Complete | Typed failure settlement, playback and persistence outcomes |
+| 4: B04 | Complete | Typed failure settlement, playback and persistence |
 | 5: B05 | Complete | Repeat reads plus unchanged security/lifecycle defenses |
 | 6: B06 | Complete | Cancellation/commit linearization and installed-tree preservation |
-| 7: B07 | Complete | Terminal failure, safe retry/removal, contained cleanup |
-| 8: B08 | Complete | Pause/resume across async preparation and stale cleanup |
-| 9: integrated acceptance | Complete | Combined, four real-model arms, installed acquisition, data/host restoration and independent R5 approval |
+| 7: B07 | Complete | Terminal failure and safe retry/removal |
+| 8: B08 | Complete | Pause/resume through async preparation and stale cleanup |
+| 9: integrated acceptance | Complete | Four real-model arms, installed acquisition, restoration and R5 approval |
 
 ## Discoveries and decisions
 
@@ -787,9 +620,8 @@ do not erase it or renew approval by replacing hashes.
    subsequent reproductions, measurements, and acceptance evidence.
 3. B01 is P2: it blocks a preparation but Stop can recover control. The planned
    remedy exposes an explicit capacity escape without weakening admission.
-4. B02 has a real tension between stable cold-start segmentation and the
-   current per-request inspection limit. Milestone 0 must resolve it openly;
-   concealing rescans from accounting is not a solution.
+4. B02's stable cold-start segmentation required an explicit additive traversal
+   authority. Milestone 0 resolved it in ADR-0057; rescans remain accounted.
 5. B05 is a lifetime work-accounting defect, not evidence of leaked image RAM.
 6. B06 needs a defined cancellation/commit race outcome. B07 applies only when
    cleanup fails and requires terminal state even on that error path.
@@ -799,7 +631,7 @@ do not erase it or renew approval by replacing hashes.
    specifies `change_reviewer` as GPT-6 Astra high; configured availability is
    not proof that a live reviewer has approved anything.
 9. Existing command definitions were read to avoid invented validation commands.
-   Reading them does not establish test coverage or authorize execution now.
+   Reading them alone did not establish test coverage or authorize execution.
 
 ## R3 ordinary-host validation (cleanup and review subsequently closed below)
 
@@ -919,97 +751,58 @@ Chatterbox EN's measured seek restart is 79,329 ms and chapter restart is
   is complete. Independent R3 review
   `reader-narration-acquisition-bugfixes-r3-astra-20261020-01` is **BLOCKED**
   solely by this incomplete host cleanup; it identifies no new actionable code
-  defects. Its [immutable report](../../../tmp/reader-acquisition-evidence/review-r3-report.md)
+  defects. Its local-only immutable report, ID
+  `reader-narration-acquisition-bugfixes-r3-astra-20261020-01`
+  (`review-r3-report.md`),
   confirms all 1,324 source identities and 380 evidence artifacts at
   2026-10-20 20:56:28 UTC. Remove only
   `VoxLeaf.ReaderCorrections.20261020.Chatterbox` and
   `VoxLeaf.ReaderCorrections.20261020.Piper`, verify their absence and absence
   of test processes in an ordinary host session, then obtain a new independent
   report. The expired UAC attempt is not an active administrator prompt.
-  This plan remains active; no conditional approval or completion is claimed.
+  R3 was blocked at that checkpoint; the final closeout below records resolution.
 
 ## R2 validation results (historical)
 
-Implementation candidate, not accepted as complete. The R2 commands below
-were escalated outside the managed sandbox, but inherited MSIX virtualization.
-They are historical observations, superseded for acceptance by the ordinary
-host continuation results. Node v24.20.0 and pinned pnpm 11.15.1 were used:
+R2 was a provisional candidate. Its escalated commands inherited MSIX
+virtualization and did not establish ordinary-host acceptance; the R3
+continuation supersedes them. Node 24.20.0/pnpm 11.15.1 were used at the
+execution HEAD above, with unstaged changes and no Git mutations.
 
-- All eight original failure paths were reproduced before their production fixes.
-- `pnpm run check`: exit 0 (`review-r2-check.log`).
-  Includes evidence checks/13 evidence tests, all configured format/lint/type
-  checks, tests, and package/frontend/Tauri/Python builds.
-- EPUB: 34 files / 672 tests pass, including the four-profile/language cold/warm
-  nested-inline matrix, multi-block structural continuation and shared work
-  maximum-plus-one.
-- Desktop: 59 files / 786 tests plus 77 script tests pass.
-  B03 now uses actual unequal Piper/Chatterbox segmentation of synthetic prose;
-  B04 additionally proves App settlement does not save an obsolete destination.
-- Shared contracts: 209 tests pass. Rust: 107 ordinary and 106 release-locked
-  tests pass, each with one intentional subprocess fixture ignored, including
-  final-hash cancellation, commit barriers, Windows sharing-violation cleanup
-  and confirmation-cleanup command races. Python: 586 tests pass.
-- `pnpm run test:browser`: exit 0, all nine tests pass
-  (`review-r2-browser.log`), including a 256-unit capacity
-  escape and deferred real AudioWorklet completion while paused, resume, seek,
-  repeat Stop and AudioContext disposal. The synthetic service is not model proof.
-- `pnpm run test:native-startup`: exit 0 (`review-r2-native.log`).
-  WebView2, native process/cancellation/recovery, file ingress, reader geometry,
-  persistence, local image decode and synchronization smoke pass without
-  errors or external requests. This does not replace installed acquisition.
-- Check warnings: pytest cannot write its node-id cache, and Vite reports a
-  bundle larger than 500 kB. No test/type/lint/build failure remains.
-- Earlier combined attempts found a missing Node URL import and a cross-project
-  static test import. Both were corrected; the current combined gate above
-  supersedes those failures without deleting their logs.
-- `pnpm run package:windows:check`: exit 0 (`review-r2-package-check.log`).
-  This validates package inputs/readiness, not an installed candidate journey.
-- `pnpm run package:windows:ordinary-chatterbox:preflight`:
-  exit 1, `preflight-artifact/resource-missing`
-  (`m9-acquisition-preflight.log`). An existing user installation occupies the
-  ordinary journey root. The journey requires that root to be absent and the
-  current ordinary package resources to be present. It has not been run or
-  substituted by a generic smoke; existing installation/data remain untouched.
-- `pnpm run test:tts:reader-corrections-host`: exit 1 overall
-  (`review-r2-audio.log`), with both Piper arms passing and both Chatterbox
-  arms failing at profile selection with `installed-package-invalid`, before
-  audio generation. This is a repeated unresolved native acceptance failure,
-  not evidence of a model inference failure or a complete four-arm pass.
-  The four-arm registered harness excludes Qwen and adds saved 0.75x,
-  controlled pending initialization, Pause/Resume and context-release evidence.
-  Piper ES/EN respectively: command-to-audible 5,199/5,311 ms, initial
-  playable lead 21,598/18,539 ms, cancellation 199/387 ms, zero underruns,
-  zero buffering seconds per playback minute, zero external requests and
-  zero generated audio files. All 6/5 created AudioContexts closed; cleanup
-  retained/discarded units were zero. Both exercised the six rates, prepared
-  targets, navigation/restart, pause/resume and stale-playback checks.
-- Read-only Chatterbox diagnostics found matching runtime-manifest identity,
-  all 13,089 file sizes/hashes, the case-sensitive inventory and no reparse
-  entries in the installed package. These checks do not explain or supersede
-  the native verifier's rejection; that prerequisite remains unresolved.
-  Existing installation/data were not replaced or removed. The ordinary
-  installed journey and its verification/cleanup fault scenarios are BLOCKED;
-  unit-level native fault regressions do not substitute for that journey.
-- Canonical system diagram reviewed: component/process/persistence topology
-  remains accurate. ADR-0057 documents the additive internal ownership policy;
-  no diagram node or dependency change is warranted.
-- Independent review R1 is BLOCKED; its two concrete findings were corrected
-  and their affected gates renewed above. The final immutable review is
-  requested as `reader-narration-acquisition-bugfixes-r2-astra-20261020-01`;
-  its verdict, findings, identities and evidence will be recorded in the
-  [local review receipt](../../../tmp/reader-acquisition-evidence/review-r2-report.md),
-  outside its own reviewed manifest. No approval is claimed.
-- R2 commands ran from escalated PowerShell in the repository root, but did
-  not prove an unpackaged process identity.
-  Logs are local/ignored in `tmp/reader-acquisition-evidence/`; new integrated
-  runs additionally capture complete source SHA-256 inputs, HEAD, tool versions,
-  command, timestamps and exit status in their `*-inputs.json`/`*-meta.json`.
-- Branch/HEAD remain `codex/reader-narration-acquisition-bugfixes` /
-  `4e3f3616a3c9601bc2364913819cf0609a1c0230`. Changes remain unstaged/uncommitted.
-  No branch, commit, push, PR or publication operation was performed.
-
-Keep this plan active until every mandatory host scenario and independent
-review passes. No missing measurement is treated as a zero or a success.
+- `pnpm run check` passed (`review-r2-check.log`): evidence/13 evidence tests,
+  format/lint/types/builds, 209 shared, 672 EPUB (34 files), 786 desktop (59
+  files), 77 desktop script, 586 Python, 107 ordinary/106 release-locked Rust
+  tests, one ignored fixture per Rust mode. Coverage included nested-inline/
+  structural cold/warm traversal, maximum-plus-one work, unequal segmentation
+  and App's obsolete-position-save rejection. Earlier missing Node URL and
+  cross-project static imports were corrected; failed logs remain retained.
+- `pnpm run test:browser` passed all nine cases (`review-r2-browser.log`),
+  including 256-unit capacity and deferred AudioWorklet Pause/Resume/seek/
+  repeat Stop/disposal. Synthetic service behavior is not model proof.
+  `pnpm run test:native-startup` passed (`review-r2-native.log`): WebView2,
+  cancellation/recovery, ingress, geometry, persistence, images and sync, with
+  no errors/external requests. Pytest cache and Vite bundle warnings were nonfatal.
+- `pnpm run package:windows:check` passed (`review-r2-package-check.log`);
+  readiness alone did not validate an installed journey.
+  `package:windows:ordinary-chatterbox:preflight` failed, exit 1,
+  `preflight-artifact/resource-missing` (`m9-acquisition-preflight.log`):
+  occupied ordinary root/missing current resources. Existing data was preserved.
+- `pnpm run test:tts:reader-corrections-host` exited 1 (`review-r2-audio.log`).
+  Piper ES/EN passed: audible 5,199/5,311 ms, playable lead 21,598/18,539 ms,
+  cancellation 199/387 ms, AudioContexts 6/6 and 5/5 closed. Both exercised six
+  rates, prepared targets, navigation/restart and Pause/Resume, with zero
+  underruns, buffering, external requests, audio files and retained/discarded
+  cleanup units. Chatterbox failed selection with `installed-package-invalid`
+  before inference; this was neither a model failure nor a four-arm pass.
+- Read-only diagnostics matched the runtime manifest, all 13,089 file
+  sizes/hashes, case-sensitive inventory and no reparse entries. They did not
+  explain the native rejection or replace installed acquisition/fault evidence.
+- Independent R2 was requested as
+  `reader-narration-acquisition-bugfixes-r2-astra-20261020-01`; its receipt is
+  **local-only**, `review-r2-report.md`, and no approval was claimed at that
+  checkpoint. R1's findings had been corrected and affected gates renewed.
+  Logs and `*-inputs.json`/`*-meta.json` retained command, HEAD, SHA-256 source
+  inputs, tools, times and exits under `tmp/reader-acquisition-evidence/`.
 
 ## Final closeout — 2026-10-20
 
@@ -1023,7 +816,7 @@ startup registration retain the verified restoration recorded above.
 
 Independent report `reader-narration-acquisition-bugfixes-r5-astra-20261020-01`
 is **APPROVE**, with no actionable findings and no required evidence pending.
-Its [immutable receipt](../../../tmp/reader-acquisition-evidence/review-r5-report.md)
+Its local-only immutable receipt (`review-r5-report.md`), bound to that report ID,
 verifies the complete 1,324-path R4 candidate and all 380 R3 evidence artifacts
 at 21:43:05 UTC. R3/R4 BLOCKED reports remain historical and unchanged.
 The first installed cleanup failure remains an observed, non-reproduced event
@@ -1033,7 +826,7 @@ Runtime results are reused by exact source identity for the documentary
 closeout, not represented as newly executed tests. `pnpm run check:evidence`
 and `git diff --check` are renewed after this move and maintained-link updates.
 The final exact documentary review is retained outside its own source manifest
-as [R6 receipt](../../../tmp/reader-acquisition-evidence/review-r6-report.md),
+as a local-only immutable receipt (`review-r6-report.md`),
 ID `reader-narration-acquisition-bugfixes-r6-astra-20261020-01`; acceptance of
 that final patch depends on its recorded verdict and identity recheck.
 The canonical system diagram remains accurate because no major component,

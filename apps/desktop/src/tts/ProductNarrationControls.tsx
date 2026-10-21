@@ -272,7 +272,6 @@ export function ProductNarrationControls({
             onStart={() => coordinator.start()}
             onPause={() => coordinator.pause()}
             onResume={() => coordinator.resume()}
-            onPlayAvailableAudio={() => coordinator.playAvailableAudio()}
             onStop={() => void coordinator.stop()}
             onVolumeChange={(volumePercent) =>
               coordinator.setVolumePercent(volumePercent)

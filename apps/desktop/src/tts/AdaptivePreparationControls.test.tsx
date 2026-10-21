@@ -70,8 +70,7 @@ function handlers() {
 }
 
 describe("adaptive preparation controls", () => {
-  it("B01 exposes the explicit capacity action with truthful loaded and requested duration", () => {
-    const onPlayAvailableAudio = vi.fn();
+  it("B01 reports capacity with truthful loaded and requested duration", () => {
     const state = createAdaptivePreparationUiState({
       mode: { kind: "prepared", targetMs: 600_000 },
       scheduler: observation({
@@ -84,17 +83,12 @@ describe("adaptive preparation controls", () => {
       <AdaptivePreparationControls
         selection={{ kind: "prepared", targetMs: 600_000 }}
         state={state}
-        onPlayAvailableAudio={onPlayAvailableAudio}
         {...handlers()}
       />,
     );
     expect(
       screen.getByText(/5 seconds of 10 minutes ready/),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Play available audio" }),
-    );
-    expect(onPlayAvailableAudio).toHaveBeenCalledOnce();
   });
 
   it("offers native keyboard-operable quick and explicit prepared choices", () => {

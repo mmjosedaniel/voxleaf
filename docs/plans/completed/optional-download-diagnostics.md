@@ -1,5 +1,12 @@
 # Optional download diagnostics and bounded installed probe
 
+Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
+The private evidence archive
+preserves the original chronology. Requirements and final probe evidence remain
+intact; validation below is historical. The parent security refresh subsequently
+completed its separate B06/B07 requirements, as recorded in its
+[completed plan](chatterbox-certifi-pillow-security-refresh.md).
+
 ## Goal
 
 Preserve the last Chatterbox artifact-download failure in process memory and
@@ -81,24 +88,17 @@ user data/installation/registry/shortcuts after the installed probe. Any
 unexpected process or occupied backup path stops mutation. Exported diagnostic
 test files and temporary staging are task-owned and removed after verification.
 
-## Progress log
+## Progress log (historical)
 
-- 2026-10-20: Read the current native error mapping, renderer contract and
-  installed preservation workflow. The change is authorized; implementation,
-  host validation and independent acceptance are pending.
-- 2026-10-20: Implemented one typed native report, nullable read-only IPC,
-  validated manual JSON export and its Settings control. Documented retention,
-  privacy and export in ADR-0059, the Windows user guide, product requirements,
-  architecture overview/system diagram and the release development guide.
-- 2026-10-20: Host Rust checks passed (110 default and 109 release-locked tests;
-  two existing ignored host tests in each configuration), plus both Clippy gates.
-  TypeScript types/lint and the desktop suite passed (801 Vitest and 83 Node
-  tests). Nine real-browser tests, all format checks and evidence checks passed.
-  Initial test-double and harness initialization failures were fixed and rerun.
-- 2026-10-20: Added the explicit `package:windows:download-probe` harness mode.
-  It exercises a real native error, manual Settings export, bounded ordinary
-  acquisition/cancellation and process restart. It cannot be combined with full
-  acquisition corrections and does not issue a B06/B07 acceptance receipt.
+On 2026-10-20, implemented one typed native report, nullable read-only IPC,
+validated manual JSON export and its Settings control. ADR-0059, user/product/
+architecture/development documentation recorded retention, privacy and export.
+The explicit `package:windows:download-probe` mode exercises real native error,
+manual export, bounded acquisition/cancellation and restart. It cannot combine
+with full acquisition corrections or issue a B06/B07 acceptance receipt.
+Host checks and corrected test-double/harness failures are detailed below.
+The native results were 110 default/109 release-locked tests, two existing
+ignored host tests in each configuration, plus both Clippy gates.
 
 ## Discoveries and decisions
 
@@ -169,4 +169,6 @@ diagram; those references now point to this completed, scoped outcome.
 This scoped ExecPlan is complete. The installed probe covers the release IPC,
 manual export, cancellation and restart boundaries directly; it is not full
 acquisition or GPU narration acceptance. The parent security-refresh plan's
-B06/B07 blockers remain unchanged. No commit, push or publication was performed.
+B06/B07 blockers were unchanged at this scoped closeout; its subsequent complete
+acceptance is recorded in the linked parent plan. No commit, push or publication
+was performed during this diagnostics task.
