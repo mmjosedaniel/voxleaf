@@ -11,6 +11,122 @@ use std::{
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[test]
+fn download_diagnostic_distinguishes_http_and_length_failures() {
+    let slot = Mutex::new(None);
+    let mut attempt = DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 100);
+    assert_eq!(
+        attempt.response(reqwest::StatusCode::TOO_MANY_REQUESTS, Some(20)),
+        Err(OptionalProfileError::DownloadFailed)
+    );
+    let first = slot.lock().unwrap().unwrap();
+    assert_eq!(first.kind, DownloadFailureKind::HttpStatus);
+    assert_eq!(first.http_status, Some(429));
+    assert_eq!(
+        attempt.response(reqwest::StatusCode::OK, Some(u64::MAX)),
+        Err(OptionalProfileError::DownloadFailed)
+    );
+    let second = slot.lock().unwrap().unwrap();
+    assert_eq!(second.kind, DownloadFailureKind::ContentLength);
+    assert_eq!(
+        serde_json::to_value(second).unwrap()["contentLength"],
+        u64::MAX.to_string()
+    );
+    attempt
+        .response(reqwest::StatusCode::OK, Some(100))
+        .unwrap();
+    assert_eq!(*slot.lock().unwrap(), Some(second));
+}
+
+#[test]
+fn download_diagnostic_is_one_memory_only_record_independent_of_cleanup() {
+    let manager = OptionalChatterboxManager::default();
+    assert!(manager.last_download_error.lock().unwrap().is_none());
+    let mut attempt = DownloadAttempt::new(
+        &manager.last_download_error,
+        DownloadSource::HuggingFace,
+        2,
+        100,
+    );
+    attempt.received(17);
+    let private = std::io::Error::new(
+        std::io::ErrorKind::TimedOut,
+        "C:/private/book.epub https://host/?token=secret",
+    );
+    attempt.fail(DownloadStage::Read, DownloadFailureKind::Io, Some(&private));
+    let first = manager.last_download_error.lock().unwrap().unwrap();
+    assert_eq!(first.kind, DownloadFailureKind::Timeout);
+    assert_eq!(first.received_bytes, 17);
+    let json = serde_json::to_string(&first).unwrap();
+    for forbidden in ["private", "secret", "https://", "epub"] {
+        assert!(!json.contains(forbidden));
+    }
+    assert!(json.len() < 1_024);
+    manager.set_operation(
+        OptionalProfileState::Failed,
+        0,
+        Some(OptionalProfileError::CleanupFailed.code()),
+        None,
+    );
+    manager.clear_operation();
+    assert_eq!(*manager.last_download_error.lock().unwrap(), Some(first));
+    attempt.fail(
+        DownloadStage::Write,
+        DownloadFailureKind::Io,
+        Some(&std::io::Error::from_raw_os_error(5)),
+    );
+    let second = manager.last_download_error.lock().unwrap().unwrap();
+    assert_eq!(second.os_error, Some(5));
+    assert_eq!(second.stage, DownloadStage::Write);
+    assert!(
+        OptionalChatterboxManager::default()
+            .last_download_error
+            .lock()
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[test]
+fn download_diagnostic_records_real_rejection_but_not_cancellation() {
+    let root = TestRoot::new();
+    let slot = Mutex::new(None);
+    let mut part = runtime_artifact("0".repeat(64)).parts.remove(0);
+    part.url = "https://unapproved.example/private?secret=token".to_owned();
+    let cancelled = AtomicBool::new(false);
+    assert_eq!(
+        download_artifact(
+            &part,
+            DownloadSource::GithubRelease,
+            2,
+            &root.0.join("part"),
+            &cancelled,
+            |_| {},
+            DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 10)
+        ),
+        Err(OptionalProfileError::DownloadFailed)
+    );
+    let rejection = slot.lock().unwrap().unwrap();
+    assert_eq!(rejection.kind, DownloadFailureKind::RedirectRejected);
+    DOWNLOAD_HOOK.with(|hook| {
+        *hook.borrow_mut() = Some(Box::new(|_, _| Err(OptionalProfileError::Cancelled)))
+    });
+    assert_eq!(
+        download_artifact(
+            &part,
+            DownloadSource::GithubRelease,
+            2,
+            &root.0.join("part"),
+            &cancelled,
+            |_| {},
+            DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 10)
+        ),
+        Err(OptionalProfileError::Cancelled)
+    );
+    assert_eq!(*slot.lock().unwrap(), Some(rejection));
+    assert_eq!(fs::read_dir(&root.0).unwrap().count(), 0);
+}
+
+#[test]
 #[ignore = "explicit read-only Windows host diagnostic; requires an installed package"]
 #[cfg(windows)]
 fn installed_host_integrity_diagnostic() {
@@ -443,8 +559,8 @@ fn runtime_artifact(runtime_manifest_sha256: String) -> RuntimeArtifact {
         archive_sha256: "0".repeat(64),
         installed_bytes: 1_024,
         parts: vec![RuntimePart {
-            filename: "voxleaf-chatterbox-runtime-v3.zip.part-001".to_owned(),
-            url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v3/voxleaf-chatterbox-runtime-v3.zip.part-001".to_owned(),
+            filename: "voxleaf-chatterbox-runtime-v5.zip.part-001".to_owned(),
+            url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v5/voxleaf-chatterbox-runtime-v5.zip.part-001".to_owned(),
             sha256: "1".repeat(64),
             download_bytes: 10,
         }],
@@ -735,7 +851,7 @@ fn promotion_replaces_only_the_versioned_package_after_complete_verification() {
 }
 
 #[test]
-fn installed_v3_runtime_verifies_after_transient_numba_cache_cleanup() {
+fn installed_v5_runtime_verifies_after_transient_numba_cache_cleanup() {
     let root = TestRoot::new();
     let installed = package_root(&root.0);
     let authority = write_runtime(&installed);
@@ -915,6 +1031,7 @@ fn installed_package_root_rejects_a_symlink_outside_the_managed_root() {
     assert!(outside.0.join("runtime/python.exe").exists());
     for relative in [
         "cb/2",
+        "cb/3",
         "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
     ] {
         let managed = TestRoot::new();
@@ -936,8 +1053,9 @@ fn removal_rejects_an_active_download_without_touching_staging() {
     fs::create_dir_all(&staging).expect("staging fixture should be created");
     fs::write(staging.join("partial.bin"), b"partial").expect("staging fixture should be written");
     let retained = retained_package_root(&root.0);
+    let retained_v3 = retained_v3_package_root(&root.0);
     let legacy = legacy_package_root(&root.0);
-    for directory in [&retained, &legacy] {
+    for directory in [&retained, &retained_v3, &legacy] {
         fs::create_dir_all(directory).unwrap();
         fs::write(directory.join("keep.bin"), b"historical").unwrap();
     }
@@ -951,7 +1069,7 @@ fn removal_rejects_an_active_download_without_touching_staging() {
 
     assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
     assert!(staging.join("partial.bin").exists());
-    for directory in [&retained, &legacy] {
+    for directory in [&retained, &retained_v3, &legacy] {
         assert_eq!(fs::read(directory.join("keep.bin")).unwrap(), b"historical");
     }
 }
@@ -1302,16 +1420,16 @@ fn ordinary_selection_requires_confirmation_without_creating_staging() {
         .select_at(&root.0)
         .expect("selection should reach consent");
     assert_eq!(selected.state, OptionalProfileState::Confirming);
-    assert_eq!(selected.download_bytes, Some(8_239_933_601));
+    assert_eq!(selected.download_bytes, Some(8_240_055_749));
     assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
     assert!(!staging_root(&root.0).exists());
     assert!(!profile_root(&root.0).exists());
 }
 #[test]
 fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
-    let manifest = exact_manifest().expect("v3 authority valid");
-    assert_eq!(manifest.identity.package_version, "3");
-    assert_eq!(manifest.layout.installed, "cb/3");
+    let manifest = exact_manifest().expect("v5 authority valid");
+    assert_eq!(manifest.identity.package_version, "5");
+    assert_eq!(manifest.layout.installed, "cb/5");
     assert!(manifest.runtime_correction.is_none());
     let runtime = manifest.runtime_artifact.as_ref().unwrap();
     assert_eq!(
@@ -1320,13 +1438,13 @@ fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
             .iter()
             .map(|part| part.download_bytes)
             .sum::<u64>(),
-        5_030_981_677
+        5_031_103_825
     );
-    assert_eq!(runtime.installed_bytes, 5_027_425_801);
+    assert_eq!(runtime.installed_bytes, 5_027_548_189);
     let measurements = manifest.measurements.as_ref().unwrap();
-    assert_eq!(measurements.download_bytes, 8_239_933_601);
-    assert_eq!(measurements.installed_bytes, 8_236_377_725);
-    assert_eq!(measurements.temporary_bytes, 13_270_915_278);
+    assert_eq!(measurements.download_bytes, 8_240_055_749);
+    assert_eq!(measurements.installed_bytes, 8_236_500_113);
+    assert_eq!(measurements.temporary_bytes, 13_271_159_574);
     let mut changed = manifest.clone();
     changed.runtime_correction = serde_json::from_slice::<OptionalPackageManifest>(include_bytes!(
         "../../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
@@ -1337,21 +1455,25 @@ fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
         validate_manifest(&changed),
         Err(OptionalProfileError::Invalid)
     );
-    changed = manifest;
-    changed.identity.package_version = "2".to_owned();
-    assert_eq!(
-        validate_manifest(&changed),
-        Err(OptionalProfileError::Invalid)
-    );
+    for version in ["2", "3", "4"] {
+        changed = manifest.clone();
+        changed.identity.package_version = version.to_owned();
+        assert_eq!(
+            validate_manifest(&changed),
+            Err(OptionalProfileError::Invalid)
+        );
+    }
 }
 
 #[test]
-fn retained_v2_is_cleanup_only_and_survives_observation_and_cancellation() {
+fn retained_v2_and_v3_are_cleanup_only_and_survive_observation_and_cancellation() {
     for roots in [
         vec!["cb/2"],
+        vec!["cb/3"],
         vec!["profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2"],
         vec![
             "cb/2",
+            "cb/3",
             "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
         ],
     ] {
@@ -1402,13 +1524,16 @@ fn retained_v2_is_cleanup_only_and_survives_observation_and_cancellation() {
 }
 
 #[test]
-fn valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots() {
+fn valid_v5_wins_over_retained_versions_and_withheld_removal_cleans_only_owned_roots() {
     let root = TestRoot::new();
     let active = package_root(&root.0);
     let authority = write_runtime(&active);
     let retained = retained_package_root(&root.0);
-    fs::create_dir_all(&retained).unwrap();
-    fs::write(retained.join("keep.bin"), b"retained").unwrap();
+    let retained_v3 = retained_v3_package_root(&root.0);
+    for directory in [&retained, &retained_v3] {
+        fs::create_dir_all(directory).unwrap();
+        fs::write(directory.join("keep.bin"), b"retained").unwrap();
+    }
     let manager = OptionalChatterboxManager::default();
     assert_eq!(
         manager
@@ -1418,6 +1543,7 @@ fn valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots(
         OptionalProfileState::Installed
     );
     assert_eq!(fs::read(retained.join("keep.bin")).unwrap(), b"retained");
+    assert_eq!(fs::read(retained_v3.join("keep.bin")).unwrap(), b"retained");
     let mut withheld = authority;
     withheld.availability = "withheld".to_owned();
     let unavailable = manager.snapshot_with_manifest(&root.0, &withheld).unwrap();
@@ -1436,4 +1562,5 @@ fn valid_v3_wins_over_retained_v2_and_withheld_removal_still_cleans_owned_roots(
     );
     assert!(!active.exists());
     assert!(!retained.exists());
+    assert!(!retained_v3.exists());
 }

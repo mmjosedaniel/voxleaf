@@ -28,20 +28,26 @@ const FIXED_INVARIANT_CODES = new Set([
   "highlight-url-preserved",
 ]);
 
-const EXECUTABLE_ARGUMENT = "--executable=";
+const EXECUTABLE_ARGUMENT = "--executable";
 
 export function resolveNativeSmokeExecutable(
   arguments_,
   fallback,
   platform = process.platform,
 ) {
-  const values = arguments_.filter((argument) =>
-    argument.startsWith(EXECUTABLE_ARGUMENT),
-  );
+  const values = [];
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument === EXECUTABLE_ARGUMENT) {
+      values.push(arguments_[index + 1]);
+    } else if (argument.startsWith(`${EXECUTABLE_ARGUMENT}=`)) {
+      values.push(argument.slice(EXECUTABLE_ARGUMENT.length + 1));
+    }
+  }
   if (values.length > 1) {
     throw new TypeError("Native smoke executable was provided more than once.");
   }
-  const selected = values[0]?.slice(EXECUTABLE_ARGUMENT.length) ?? fallback;
+  const selected = values.length === 0 ? fallback : values[0];
   const pathImplementation = platform === "win32" ? path.win32 : path.posix;
   if (!selected || !pathImplementation.isAbsolute(selected)) {
     throw new TypeError("Native smoke executable must be an absolute path.");

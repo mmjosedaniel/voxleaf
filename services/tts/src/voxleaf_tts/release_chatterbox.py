@@ -91,6 +91,10 @@ from .packaging.chatterbox_integrity import repository_root as repository_root
 from .packaging.chatterbox_integrity import safe_relative_path as safe_relative_path
 from .packaging.chatterbox_integrity import sha256_file as sha256_file
 from .packaging.chatterbox_integrity import verify_package_tree as verify_package_tree
+from .packaging.chatterbox_security_authority import (
+    check_security_authority,
+    write_security_authority,
+)
 from .packaging.chatterbox_sources import resolve_runtime_sources
 
 DOWNLOAD_TIMEOUT_SECONDS: Final = 120
@@ -715,23 +719,30 @@ def main(arguments: list[str] | None = None) -> int:
         check_local_package(package_version=version, output_root=args.output_root)
         print(f"chatterbox-optional-v{version}-local:current-unpublished-unadmitted")
         return 0
-    if version in {"4", "5"} and args.command in {
+    if version == "4" and args.command in {
         "check-acquisition",
         "write-acquisition",
         "reconcile-evidence",
     }:
         parser.error(f"version {version} is local-only and has no acquisition authority")
+    if version == "5" and args.command == "check-acquisition":
+        check_security_authority()
+        print("chatterbox-v5-acquisition:current")
+        return 0
     if version == "3" and args.command == "check-acquisition":
         check_successor_authority()
         print("chatterbox-v3-acquisition:current")
         return 0
     if args.command == "write-acquisition":
-        if version != "3" or args.publication is None:
-            parser.error("write-acquisition requires version 3 and --publication")
-        write_successor_authority(args.publication)
-        print("chatterbox-v3-acquisition:written")
+        if version not in {"3", "5"} or args.publication is None:
+            parser.error("write-acquisition requires version 3 or 5 and --publication")
+        if version == "5":
+            write_security_authority(args.publication)
+        else:
+            write_successor_authority(args.publication)
+        print(f"chatterbox-v{version}-acquisition:written")
         return 0
-    if version == "3" and args.command == "reconcile-evidence":
+    if version in {"3", "5"} and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
         if version not in {"3", "4", "5"}:

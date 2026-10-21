@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import {
+  decodeDownloadDiagnostic,
+  type OptionalDownloadDiagnostic,
+} from "./optional-download-diagnostic";
+
 export const CHATTERBOX_OPTIONAL_PROFILE_ID =
   "chatterbox-multilingual-v3-cuda-bf16-default-v4" as const;
 
@@ -202,6 +207,14 @@ export class OptionalChatterboxClient {
 
   public observe(): OptionalChatterboxSnapshot {
     return this.#snapshot;
+  }
+
+  public async readDownloadDiagnostic(): Promise<
+    OptionalDownloadDiagnostic | undefined
+  > {
+    return decodeDownloadDiagnostic(
+      await this.#invoke("optional_chatterbox_download_diagnostic"),
+    );
   }
 
   public subscribe(listener: () => void): () => void {

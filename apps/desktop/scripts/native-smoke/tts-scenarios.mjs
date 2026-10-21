@@ -172,6 +172,17 @@ export function createNativeTtsScenarios({
        "h1, h2, h3, h4, h5, h6, p, blockquote, li";
      const containingElement = (node) =>
        node instanceof Element ? node : node?.parentElement;
+     const containerPath = (container, leaf) => {
+       const indexes = [];
+       for (let node = container; node !== leaf; node = node.parentNode) {
+         const parent = node?.parentNode;
+         if (parent === null || parent === undefined) return undefined;
+         const index = Array.prototype.indexOf.call(parent.childNodes, node);
+         if (index < 0) return undefined;
+         indexes.push(index);
+       }
+       return indexes.reverse().join(".") || "root";
+     };
      const rangeDetails = (highlight) => {
        const range = Array.from(highlight)[0];
        if (!(range instanceof Range) || range.collapsed) {
@@ -202,14 +213,19 @@ export function createNativeTtsScenarios({
        if (startIndex < 0 || endIndex < 0) {
          return undefined;
        }
+       const startPath = containerPath(range.startContainer, startLeaf);
+       const endPath = containerPath(range.endContainer, endLeaf);
+       if (startPath === undefined || endPath === undefined) return undefined;
        return {
          article,
          documentId,
          key:
            String(documentId) + ":" +
            String(startIndex) + ":" +
+           startPath + ":" +
            String(range.startOffset) + ":" +
            String(endIndex) + ":" +
+           endPath + ":" +
            String(range.endOffset),
          range,
        };

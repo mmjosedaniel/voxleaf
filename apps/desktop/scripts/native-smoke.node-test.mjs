@@ -6,6 +6,7 @@ import process from "node:process";
 import test from "node:test";
 import { URL } from "node:url";
 import { runInNewContext } from "node:vm";
+import { JSDOM } from "jsdom";
 
 import { createNativeResourceObservation } from "./native-smoke/resource-observation.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
@@ -424,6 +425,92 @@ test("leaf polling contains only classified timeouts", async () => {
     if (code === "webdriver-condition-timeout")
       assert.equal(await result, false);
     else await assert.rejects(result, (failure) => failure === error);
+  }
+});
+
+test("highlight identity distinguishes containers and detects replay after DOM replacement", async () => {
+  const source = await readFile(
+    new URL("./native-smoke/tts-scenarios.mjs", import.meta.url),
+    "utf8",
+  );
+  const script = source.match(
+    /async function installAdaptiveSynchronizationInstrumentation\(driver\) \{[\s\S]*?driver\.execute\(\s*`([\s\S]*?)`/u,
+  )[1];
+  const dom = new JSDOM(
+    '<div data-reader-scroll-owner="true"><article class="semantic-document"><p>Alpha <em>Beta</em> Gamma</p></article></div><div class="product-narration"></div>',
+    { runScripts: "outside-only" },
+  );
+  const { window } = dom;
+  let frame;
+  window.CSS = { highlights: new Map() };
+  window.Highlight = Set;
+  window.requestAnimationFrame = (callback) => {
+    frame = callback;
+    return 1;
+  };
+  window.cancelAnimationFrame = () => {};
+  window.Range.prototype.getBoundingClientRect = () => ({
+    top: 30,
+    bottom: 40,
+  });
+  window.document.querySelector(
+    "[data-reader-scroll-owner]",
+  ).getBoundingClientRect = () => ({ top: 0, bottom: 200, height: 200 });
+  try {
+    window.eval(`(function() { ${script} })()`);
+    const state = window.__voxleafAdaptiveSynchronizationInstrumentation;
+    const paragraph = window.document.querySelector("p");
+    const observe = (start, end) => {
+      const range = window.document.createRange();
+      range.setStart(start, 1);
+      range.setEnd(end, 1);
+      assert.equal(range.collapsed, false);
+      window.CSS.highlights.set("voxleaf-narration-active", new Set([range]));
+      frame();
+      return state.currentKey;
+    };
+    const first = observe(
+      paragraph.firstChild,
+      paragraph.querySelector("em").firstChild,
+    );
+    assert.equal(
+      observe(paragraph.firstChild, paragraph.querySelector("em").firstChild),
+      first,
+    );
+    state.forbiddenKeys.set(first, false);
+    const extended = observe(paragraph.firstChild, paragraph.lastChild);
+    assert.notEqual(
+      extended,
+      first,
+      "end containers must distinguish passages",
+    );
+    const next = observe(
+      paragraph.querySelector("em").firstChild,
+      paragraph.lastChild,
+    );
+    assert.notEqual(
+      next,
+      extended,
+      "start containers must distinguish passages",
+    );
+    assert.notEqual(
+      next,
+      first,
+      "equal node offsets must not alias distinct passages",
+    );
+    assert.equal(state.forbiddenKeys.get(first), true);
+    assert.equal(state.stalePlaybackObserved, false);
+    paragraph.innerHTML = "Alpha <em>Beta</em> Gamma";
+    assert.equal(
+      observe(paragraph.firstChild, paragraph.querySelector("em").firstChild),
+      first,
+      "recreating nodes must not disguise replay of the same passage",
+    );
+    assert.equal(state.stalePlaybackObserved, true);
+    assert.equal(state.rangeValid, true);
+    state.stop();
+  } finally {
+    window.close();
   }
 });
 

@@ -208,6 +208,11 @@ accepted for the local/portfolio MVP. Chatterbox is supported behind its live
 host gate, while its ordinary Download channel is enabled only after that gate
 passes in Settings and native code repeats it before network access.
 
+Optional-package troubleshooting retains only the most recent artifact download
+error in process memory. Settings permits explicit local JSON export of bounded
+technical metadata; no automatic report persistence or telemetry is required.
+Closing the application clears it. EPUB contents and audio are excluded.
+
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
 private-publication validation. M009.1 reproduced and repaired the

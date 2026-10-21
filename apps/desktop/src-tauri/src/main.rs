@@ -40,6 +40,7 @@ fn main() {
             tts_service_supervisor::release_locked_runtime_enabled,
             tts_service_supervisor::tts_profile_configuration_available,
             tts_optional_chatterbox::optional_chatterbox_snapshot,
+            tts_optional_chatterbox::optional_chatterbox_download_diagnostic,
             tts_optional_chatterbox::select_optional_chatterbox,
             tts_optional_chatterbox::download_optional_chatterbox,
             tts_optional_chatterbox::cancel_optional_chatterbox,

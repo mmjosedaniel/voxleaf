@@ -22,6 +22,7 @@ import {
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
 import { createAcquisitionFileBarrier } from "./acquisition-file-barrier.mjs";
+import { exerciseOptionalDownloadProbe } from "./optional-download-probe.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, "../../..");
@@ -94,9 +95,9 @@ const DEVELOPMENT_ENVIRONMENT_KEYS = Object.freeze([
 ]);
 const REQUIRED_RESOURCES = Object.freeze([
   "resources/tts/voxleaf-piper-core-v1/runtime-manifest-v1.json",
-  "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
-  "resources/release/optional/chatterbox/runtime-package-evidence-v4.json",
-  "resources/release/optional/chatterbox/source-manifest-v3.json",
+  "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
+  "resources/release/optional/chatterbox/runtime-package-evidence-v5.json",
+  "resources/release/optional/chatterbox/source-manifest-v5.json",
   "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
 ]);
 const FORBIDDEN_ARTIFACT_PATHS = Object.freeze([
@@ -150,11 +151,17 @@ export function parseArguments(arguments_, environment = process.env) {
     (userProfile === undefined
       ? undefined
       : path.join(userProfile, ".cargo", "bin", "msedgedriver.exe"));
-  if (!new Set(["preflight", "journey"]).has(mode)) fail("mode");
+  if (!new Set(["preflight", "journey", "download-probe"]).has(mode))
+    fail("mode");
+  if (
+    mode === "download-probe" &&
+    arguments_.includes("--exercise-acquisition-corrections")
+  )
+    fail("probe-cannot-run-full-corrections");
   if (!isAbsoluteWindowsPath(installedRoot)) fail("installed-root");
-  if (mode === "journey" && !isAbsoluteWindowsPath(installer))
+  if (mode !== "preflight" && !isAbsoluteWindowsPath(installer))
     fail("installer");
-  if (mode === "journey" && !isAbsoluteWindowsPath(receipt)) fail("receipt");
+  if (mode !== "preflight" && !isAbsoluteWindowsPath(receipt)) fail("receipt");
   for (const [name, value] of [
     ["tauri-driver", tauriDriver],
     ["edge-driver", edgeDriver],
@@ -262,7 +269,7 @@ export async function validateOrdinaryArtifact(installedRoot) {
   );
   const manifestPath = path.join(
     installedRoot,
-    "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+    "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
   );
   for (const resource of REQUIRED_RESOURCES) {
     await existingFile(path.join(installedRoot, resource), "resource-missing");
@@ -270,14 +277,14 @@ export async function validateOrdinaryArtifact(installedRoot) {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   if (
     manifest?.availability !== "downloadable" ||
-    manifest?.identity?.packageVersion !== "3" ||
-    manifest?.layout?.installed !== "cb/3" ||
-    manifest?.runtime?.releaseTag !== "chatterbox-runtime-v3" ||
+    manifest?.identity?.packageVersion !== "5" ||
+    manifest?.layout?.installed !== "cb/5" ||
+    manifest?.runtime?.releaseTag !== "chatterbox-runtime-v5" ||
     manifest?.runtimeCorrection !== undefined ||
     manifest?.withholdingReason !== undefined ||
-    manifest?.measurements?.downloadBytes !== 8_239_933_601 ||
-    manifest?.measurements?.installedBytes !== 8_236_377_725 ||
-    manifest?.measurements?.temporaryBytes !== 13_270_915_278 ||
+    manifest?.measurements?.downloadBytes !== 8_240_055_749 ||
+    manifest?.measurements?.installedBytes !== 8_236_500_113 ||
+    manifest?.measurements?.temporaryBytes !== 13_271_159_574 ||
     manifest?.measurements?.minimumFreeBytes !== 20_000_000_000
   ) {
     fail("ordinary-manifest-authority");
@@ -690,7 +697,7 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
   await waitForOptionalState(client, "absent");
   await assertAbsent(staging, "verification-staging-retained");
   await assertAbsent(
-    path.join(dataRoot, "tts", "cb", "3"),
+    path.join(dataRoot, "tts", "cb", "5"),
     "cancelled-package-installed",
   );
   return {
@@ -935,6 +942,39 @@ export async function runJourney(options, environment = process.env) {
       "optional_chatterbox_snapshot",
     );
     if (initial?.state !== "absent") fail("initial-optional-state");
+    if (options.mode === "download-probe") {
+      const probe = await exerciseOptionalDownloadProbe({
+        client: session.client,
+        dataRoot: dataBackup.root,
+        profileId: PROFILE_ID,
+        repositoryRoot,
+        invoke,
+      });
+      await assertAbsent(
+        path.join(dataBackup.root, "tts", "staging", PROFILE_ID),
+        "probe-staging-retained",
+      );
+      await session.close();
+      session = await createOrdinarySession({
+        executable: artifact.executable,
+        environment: releaseEnv,
+      });
+      const restarted = await invoke(
+        session.client,
+        "optional_chatterbox_download_diagnostic",
+      );
+      if (restarted !== null) fail("probe-diagnostic-persisted");
+      return {
+        kind: "bounded-download-probe",
+        artifact: {
+          installerSha256: await sha256(options.installer),
+          installedBinarySha256: await sha256(artifact.executable),
+          packageVersion: artifact.manifest.identity.packageVersion,
+        },
+        ...probe,
+        clearedOnRestart: true,
+      };
+    }
     if (options.exerciseAcquisitionCorrections) {
       corrections = await exerciseAcquisitionCorrections(
         session.client,
@@ -1077,7 +1117,7 @@ export async function runJourney(options, environment = process.env) {
     // Only fixed paths inside the isolated test root are inspected. Preserve
     // content-free failure evidence before the finally block restores user data.
     const paths = [
-      "tts/cb/3",
+      "tts/cb/5",
       "tts/cb/.previous",
       `tts/staging/${PROFILE_ID}`,
       `tts/staging/${PROFILE_ID}/operation/package`,
@@ -1174,7 +1214,19 @@ async function main(arguments_) {
     process.stdout.write("ordinary-chatterbox-release-host:preflight-passed\n");
     return;
   }
-  await runJourney(options);
+  const result = await runJourney(options);
+  if (options.mode === "download-probe") {
+    await writeFile(
+      options.receipt,
+      `${JSON.stringify(result, null, 2)}\n`,
+      "utf8",
+    );
+    if (!result.passed) fail("bounded-transfer-failed-see-receipt");
+    process.stdout.write(
+      "ordinary-chatterbox-release-host:download-probe-passed\n",
+    );
+    return;
+  }
   process.stdout.write("ordinary-chatterbox-release-host:journey-passed\n");
 }
 

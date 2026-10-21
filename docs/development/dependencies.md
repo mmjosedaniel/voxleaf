@@ -184,7 +184,7 @@ blind spots. Version `5.10.4` was rejected despite its empty advisory result:
 its custom-generation implementation still downloaded executable code before
 checking trust. The chosen upstream version includes that ordering repair;
 the real-library security probe tests it and tokenizer template containment.
-Native admission and the production audit/inventory now select v3. The complete
+That accepted checkpoint selected v3 for native admission and audit/inventory. The complete
 production audit passed on 2026-10-06 before updating its recorded date; four
 URL-package blind spots remain explicit. Published v2 assets remain unchanged
 and installed v2 roots are cleanup-only. Installed v3 acceptance is tracked in
@@ -200,12 +200,14 @@ validation uses an isolated short mirror of the exact reviewed source inputs.
 V3 output/environment lives in the builder's separate `dist/v3` directory.
 
 The [certifi/Pillow refresh](../plans/active/chatterbox-certifi-pillow-security-refresh.md)
-prepares an unpublished v5 candidate with certifi `2026.10.19` and Pillow
+uses the separately published v5 runtime with certifi `2026.10.19` and Pillow
 `13.0.0`. All other 77 package versions, model bytes and frozen v3 runtime
-modules remain unchanged. The live 2026-10-20 audit rejects the current v3
+modules remain unchanged. The live 2026-10-20 audit rejects the old v3
 graph; historical passing dates above do not describe its current audit state.
-V5 is not admitted by the desktop yet. Its candidate audit is
-`pnpm.cmd audit:chatterbox:v5`; no advisory exception is added.
+The candidate desktop, production audit, inventory and monitoring select v5;
+installed acceptance and final independent review remain pending. The complete
+`pnpm.cmd audit:release` passed on 2026-10-20 before advancing the policy date.
+Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
 Generate the candidate using `pnpm.cmd package:chatterbox-optional:v5:lock`,
 then `pnpm.cmd package:chatterbox-optional:v5:write-source`. Build and verify it
@@ -235,14 +237,23 @@ The smoke probe exercises synthetic ES/EN narration, finite bounded PCM and
 cancellation without writing audio. These candidate probes do not replace
 publication readback or the installed desktop acceptance gates.
 
+V5 authority is generated with
+`pnpm.cmd package:chatterbox-optional:v5:write-acquisition --publication <receipt>`
+from the actual GitHub REST publication readback. It validates the fixed release
+ID, preparation commit, tag, non-draft prerelease status and all three uploaded
+assets before producing `publication-v5.json`, `optional-package-manifest-v5.json`
+and `runtime-package-evidence-v5.json`. Run
+`pnpm.cmd package:chatterbox-optional:v5:check-acquisition` to verify them.
+Drafts, mismatched or incomplete assets cannot generate desktop admission.
+
 `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
 v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
 `pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
 requires the actual GitHub publication readback with exact commit, tag, three
 names, sizes, digests and URLs. It cannot replace already published assets.
-Capture licences from the actual core and v3 interpreters with the existing
+Capture current licences from the actual core and v5 interpreters with the existing
 `scripts/release_inventory.py --capture-python-licenses --python <core-python>
---python <v3-python>` interface, then run `pnpm.cmd inventory:release` and its check.
+--python <v5-python>` interface, then run `pnpm.cmd inventory:release` and its check.
 
 Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
 package's `runtime/python.exe`, without `PYTHONPATH`, and with

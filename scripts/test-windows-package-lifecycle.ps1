@@ -55,6 +55,7 @@ Assert-ExactChildPath $temporaryRoot $sentinelDirectory "windows-release-lifecyc
 $sentinel = Join-Path $sentinelDirectory "synthetic-public-domain.epub"
 
 $optionalRoots = @(
+  (Join-Path $dataRoot "tts\cb\5"),
   (Join-Path $dataRoot "tts\cb\3"),
   (Join-Path $dataRoot "tts\cb\2"),
   (Join-Path $dataRoot "tts\profiles\$profileId\2"),
@@ -72,7 +73,8 @@ $optionalMarkers = @(
   (Join-Path $optionalRoots[1] "optional-1.marker"),
   (Join-Path $optionalRoots[2] "optional-2.marker"),
   (Join-Path $optionalRoots[3] "optional-3.marker"),
-  (Join-Path $optionalRoots[4] "optional-4.marker")
+  (Join-Path $optionalRoots[4] "optional-4.marker"),
+  (Join-Path $optionalRoots[5] "optional-5.marker")
 )
 $preferenceMarker = Join-Path $preferenceRoot "preferences.marker"
 $unrelatedMarkers = @(

@@ -20,8 +20,65 @@ import {
   waitForStableInstallRootAbsence,
 } from "./ordinary-chatterbox-release-host.mjs";
 import { WebDriverClientError } from "./native-webdriver-client.mjs";
+import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
+
+test("bounded download probe cancels at its first MiB without completing acquisition", async () => {
+  let settle;
+  const commands = [];
+  globalThis.__TAURI_INTERNALS__ = {
+    async invoke(command) {
+      commands.push(command);
+      if (command === "select_optional_chatterbox")
+        return { state: "confirming" };
+      if (command === "download_optional_chatterbox")
+        return await new Promise((resolve) => {
+          settle = resolve;
+        });
+      if (command === "optional_chatterbox_snapshot")
+        return {
+          downloadedBytes: 1_048_576,
+          state: "downloading",
+          failure: null,
+        };
+      if (command === "cancel_optional_chatterbox") {
+        settle({ state: "absent" });
+        return { state: "absent" };
+      }
+      throw new Error("unexpected command");
+    },
+  };
+  try {
+    const result = await boundedDownloadInPage("synthetic-profile");
+    assert.equal(result.cancellationRequested, true);
+    assert.equal(result.peakBytes, 1_048_576);
+    assert.equal(result.state, "absent");
+    assert.equal(
+      commands.filter((command) => command === "download_optional_chatterbox")
+        .length,
+      1,
+    );
+  } finally {
+    delete globalThis.__TAURI_INTERNALS__;
+  }
+});
+
+test("bounded mode cannot accidentally request the full acquisition corrections", () => {
+  const environment = { LOCALAPPDATA: root, USERPROFILE: root };
+  assert.equal(
+    parseArguments(["--mode", "download-probe"], environment).mode,
+    "download-probe",
+  );
+  assert.throws(
+    () =>
+      parseArguments(
+        ["--mode", "download-probe", "--exercise-acquisition-corrections"],
+        environment,
+      ),
+    /probe-cannot-run-full-corrections/,
+  );
+});
 
 async function createArtifact({ availability = "downloadable" } = {}) {
   const installed = path.join(
@@ -45,14 +102,14 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/source-manifest-v3.json",
+      "resources/release/optional/chatterbox/source-manifest-v5.json",
     ),
     "{}",
   );
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/runtime-package-evidence-v4.json",
+      "resources/release/optional/chatterbox/runtime-package-evidence-v5.json",
     ),
     "{}",
   );
@@ -66,17 +123,17 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
     ),
     JSON.stringify({
       availability,
-      identity: { packageVersion: "3" },
-      layout: { installed: "cb/3" },
-      runtime: { releaseTag: "chatterbox-runtime-v3" },
+      identity: { packageVersion: "5" },
+      layout: { installed: "cb/5" },
+      runtime: { releaseTag: "chatterbox-runtime-v5" },
       measurements: {
-        downloadBytes: 8_239_933_601,
-        installedBytes: 8_236_377_725,
-        temporaryBytes: 13_270_915_278,
+        downloadBytes: 8_240_055_749,
+        installedBytes: 8_236_500_113,
+        temporaryBytes: 13_271_159_574,
         minimumFreeBytes: 20_000_000_000,
       },
     }),
@@ -84,15 +141,17 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   return installed;
 }
 
-test("ordinary artifact rejects a v2 identity or a legacy correction in v3", async () => {
+test("ordinary artifact rejects a v2 identity or a legacy correction in v5", async () => {
   for (const mutate of [
     (manifest) => (manifest.identity.packageVersion = "2"),
+    (manifest) => (manifest.identity.packageVersion = "3"),
+    (manifest) => (manifest.identity.packageVersion = "4"),
     (manifest) => (manifest.runtimeCorrection = {}),
   ]) {
     const installed = await createArtifact();
     const manifestPath = path.join(
       installed,
-      "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+      "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
     );
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     mutate(manifest);

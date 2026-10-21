@@ -23,10 +23,15 @@ use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
 use zip::ZipArchive;
 
+mod download_diagnostic;
+use download_diagnostic::{
+    DownloadAttempt, DownloadDiagnostic, DownloadFailureKind, DownloadStage,
+};
+
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
-const PACKAGE_ID: &str = "voxleaf-chatterbox-v3";
-const PACKAGE_VERSION: &str = "3";
-const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v3.json";
+const PACKAGE_ID: &str = "voxleaf-chatterbox-v5";
+const PACKAGE_VERSION: &str = "5";
+const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v5.json";
 const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
@@ -46,7 +51,7 @@ const MODEL_CARD_SOURCE: &str =
 const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v3.json"
+    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
@@ -399,6 +404,7 @@ struct Operation {
 #[derive(Default)]
 pub(crate) struct OptionalChatterboxManager {
     operation: Mutex<Operation>,
+    last_download_error: Mutex<Option<DownloadDiagnostic>>,
 }
 
 fn exact_manifest() -> Result<OptionalPackageManifest, OptionalProfileError> {
@@ -467,7 +473,7 @@ fn validate_manifest_version(
             != if version == "2" {
                 "services/tts/release/profiles/chatterbox/requirements.lock"
             } else {
-                "services/tts/release/profiles/chatterbox-v3/requirements.lock"
+                "services/tts/release/profiles/chatterbox-v5/requirements.lock"
             }
         || !validate_sha256(&runtime.dependency_lock.sha256)
         || limits.maximum_concurrency != 1
@@ -481,7 +487,7 @@ fn validate_manifest_version(
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
         || !match (version, &manifest.runtime_correction) {
-            ("3", None) => true,
+            ("5", None) => true,
             ("2", Some(correction)) => validate_runtime_correction(correction),
             _ => false,
         }
@@ -704,8 +710,14 @@ fn retained_package_root(root: &Path) -> PathBuf {
     profile_root(root).join("2")
 }
 
+fn retained_v3_package_root(root: &Path) -> PathBuf {
+    profile_root(root).join("3")
+}
+
 fn retained_package_exists(root: &Path) -> bool {
-    retained_package_root(root).exists() || legacy_package_root(root).exists()
+    retained_v3_package_root(root).exists()
+        || retained_package_root(root).exists()
+        || legacy_package_root(root).exists()
 }
 
 fn runtime_manifest_name(manifest: &OptionalPackageManifest) -> String {
@@ -1520,15 +1532,25 @@ fn download_artifact(
     destination: &Path,
     cancelled: &AtomicBool,
     on_progress: impl Fn(u64),
+    mut diagnostic: DownloadAttempt<'_>,
 ) -> Result<(), OptionalProfileError> {
     #[cfg(test)]
     if let Some(result) = tests::run_download_hook(destination, cancelled) {
         return result;
     }
-    let initial =
-        reqwest::Url::parse(artifact.url()).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    let initial = reqwest::Url::parse(artifact.url()).map_err(|error| {
+        diagnostic.fail(
+            DownloadStage::Request,
+            DownloadFailureKind::InvalidUrl,
+            Some(&error),
+        )
+    })?;
     if !redirect_allowed(source, &initial, 0, maximum_redirects) {
-        return Err(OptionalProfileError::DownloadFailed);
+        return Err(diagnostic.fail(
+            DownloadStage::Request,
+            DownloadFailureKind::RedirectRejected,
+            None,
+        ));
     }
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::custom(move |attempt| {
@@ -1545,58 +1567,80 @@ fn download_artifact(
         }))
         .no_proxy()
         .build()
-        .map_err(|_| OptionalProfileError::DownloadFailed)?;
+        .map_err(|error| {
+            diagnostic.fail(
+                DownloadStage::Request,
+                DownloadFailureKind::Request,
+                Some(&error),
+            )
+        })?;
     let mut response = client
         .get(artifact.url())
         .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2")
         .send()
-        .map_err(|_| OptionalProfileError::DownloadFailed)?;
-    if !response.status().is_success()
-        || response.content_length() != Some(artifact.download_bytes())
-    {
-        return Err(OptionalProfileError::DownloadFailed);
-    }
+        .map_err(|error| {
+            diagnostic.fail(
+                DownloadStage::Request,
+                DownloadFailureKind::Request,
+                Some(&error),
+            )
+        })?;
+    diagnostic.response(response.status(), response.content_length())?;
     let filename = destination
         .file_name()
         .and_then(|value| value.to_str())
-        .ok_or(OptionalProfileError::DownloadFailed)?;
+        .ok_or_else(|| diagnostic.fail(DownloadStage::CreateFile, DownloadFailureKind::Io, None))?;
     let partial = destination.with_file_name(format!(".{filename}.partial"));
     let _ = fs::remove_file(&partial);
-    let mut output = File::create(&partial).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    let mut output = File::create(&partial).map_err(|error| {
+        diagnostic.fail(
+            DownloadStage::CreateFile,
+            DownloadFailureKind::Io,
+            Some(&error),
+        )
+    })?;
     let mut buffer = copy_buffer();
     let mut downloaded = 0_u64;
     loop {
         if cancelled.load(Ordering::Acquire) {
             return Err(OptionalProfileError::Cancelled);
         }
-        let read = response
-            .read(&mut buffer)
-            .map_err(|_| OptionalProfileError::DownloadFailed)?;
+        let read = response.read(&mut buffer).map_err(|error| {
+            diagnostic.fail(DownloadStage::Read, DownloadFailureKind::Io, Some(&error))
+        })?;
         if read == 0 {
             break;
         }
         downloaded = downloaded
             .checked_add(read as u64)
             .filter(|value| *value <= artifact.download_bytes())
-            .ok_or(OptionalProfileError::DownloadFailed)?;
-        output
-            .write_all(&buffer[..read])
-            .map_err(|_| OptionalProfileError::DownloadFailed)?;
+            .ok_or_else(|| {
+                diagnostic.fail(DownloadStage::Read, DownloadFailureKind::SizeLimit, None)
+            })?;
+        diagnostic.received(downloaded);
+        output.write_all(&buffer[..read]).map_err(|error| {
+            diagnostic.fail(DownloadStage::Write, DownloadFailureKind::Io, Some(&error))
+        })?;
         on_progress(downloaded);
     }
-    output
-        .flush()
-        .map_err(|_| OptionalProfileError::DownloadFailed)?;
+    output.flush().map_err(|error| {
+        diagnostic.fail(DownloadStage::Flush, DownloadFailureKind::Io, Some(&error))
+    })?;
     drop(output);
     if downloaded != artifact.download_bytes() {
         let _ = fs::remove_file(&partial);
-        return Err(OptionalProfileError::VerificationFailed);
+        return Err(diagnostic.fail(DownloadStage::Verify, DownloadFailureKind::Incomplete, None));
     }
     if let Err(error) = verify_downloaded_artifact(artifact, &partial, cancelled) {
         let _ = fs::remove_file(&partial);
+        if error != OptionalProfileError::Cancelled {
+            diagnostic.fail(DownloadStage::Verify, DownloadFailureKind::Integrity, None);
+        }
         return Err(error);
     }
-    fs::rename(&partial, destination).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    fs::rename(&partial, destination).map_err(|error| {
+        diagnostic.fail(DownloadStage::Rename, DownloadFailureKind::Io, Some(&error))
+    })?;
     Ok(())
 }
 
@@ -1879,7 +1923,7 @@ impl OptionalChatterboxManager {
                 .and_then(|_| fs::create_dir_all(&model_downloads))
                 .map_err(|_| OptionalProfileError::CleanupFailed)?;
             let mut downloaded_base = 0_u64;
-            for part in &runtime_artifact.parts {
+            for (index, part) in runtime_artifact.parts.iter().enumerate() {
                 if cancellation.load(Ordering::Acquire) {
                     return Err(OptionalProfileError::Cancelled);
                 }
@@ -1898,10 +1942,16 @@ impl OptionalChatterboxManager {
                             Some(Arc::clone(&cancellation)),
                         );
                     },
+                    DownloadAttempt::new(
+                        &self.last_download_error,
+                        DownloadSource::GithubRelease,
+                        (index + 1) as u8,
+                        part.download_bytes(),
+                    ),
                 )?;
                 downloaded_base += part.download_bytes;
             }
-            for model in &manifest.model_artifacts {
+            for (index, model) in manifest.model_artifacts.iter().enumerate() {
                 if cancellation.load(Ordering::Acquire) {
                     return Err(OptionalProfileError::Cancelled);
                 }
@@ -1920,6 +1970,12 @@ impl OptionalChatterboxManager {
                             Some(Arc::clone(&cancellation)),
                         );
                     },
+                    DownloadAttempt::new(
+                        &self.last_download_error,
+                        DownloadSource::HuggingFace,
+                        (index + 1) as u8,
+                        model.download_bytes(),
+                    ),
                 )?;
                 downloaded_base += model.download_bytes;
             }
@@ -2076,6 +2132,7 @@ impl OptionalChatterboxManager {
             let package = package_root(root);
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
+            remove_contained_directory(root, &retained_v3_package_root(root))?;
             remove_contained_directory(root, &retained_package_root(root))?;
             let legacy = legacy_package_root(root);
             remove_contained_directory(root, &legacy)?;
@@ -2148,6 +2205,17 @@ fn download_at_if_host_admitted(
         return Err(OptionalProfileError::IncompatibleHost);
     }
     manager.download_at(root)
+}
+
+#[tauri::command]
+pub fn optional_chatterbox_download_diagnostic(
+    manager: State<'_, Arc<OptionalChatterboxManager>>,
+) -> Result<Option<DownloadDiagnostic>, &'static str> {
+    manager
+        .last_download_error
+        .lock()
+        .map(|last| *last)
+        .map_err(|_| OptionalProfileError::Unavailable.code())
 }
 
 #[tauri::command]
