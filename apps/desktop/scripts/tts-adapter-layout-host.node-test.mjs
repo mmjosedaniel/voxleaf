@@ -956,12 +956,20 @@ test("PCM requires finite bounded samples and exact request/session/generation/s
       /audio-identity-bound/u,
     );
   }
-  const oversized = metadata();
-  oversized.frame.sampleCountSamples = 480_001;
-  assert.throws(
-    () => assertAudio(oversized, payload, identity),
-    /audio-identity-bound/u,
-  );
+  for (const sampleCount of [480_000, 480_001]) {
+    const coherent = metadata();
+    coherent.frame.sampleCountSamples = sampleCount;
+    coherent.payloadBytes = sampleCount * 4;
+    const samples = Buffer.alloc(coherent.payloadBytes);
+    if (sampleCount === 480_000) {
+      assertAudio(coherent, samples, identity);
+    } else {
+      assert.throws(
+        () => assertAudio(coherent, samples, identity),
+        /audio-identity-bound/u,
+      );
+    }
+  }
   const nonFinite = Buffer.from(payload);
   nonFinite.writeFloatLE(Number.NaN, 0);
   assert.throws(

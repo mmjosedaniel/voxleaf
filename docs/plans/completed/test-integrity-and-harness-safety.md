@@ -18,9 +18,12 @@ only inside disposable roots, and boundary tests reject the defect they name.
 Temporary test files are removed on success and failure. Reader behavior, TTS
 support decisions, protocol values and historical benchmark results stay intact.
 
-The current delivery is the plan, its indexes, a local branch and one planning
-commit. Implementation and runtime acceptance have not started. The user's
-instruction not to execute tests remains active during this planning task.
+Execution was authorized on 2026-10-21, including all required tests outside
+the sandbox. Changes must remain unstaged and uncommitted. Implementation is
+complete. The user subsequently explicitly authorized uninstalling and
+reinstalling VoxLeaf on this account to execute G7. Preserve and verify original
+application data, run the unchanged lifecycle command with its no-installation
+precondition satisfied, and reinstall the current package after the matrix.
 
 ## Current state
 
@@ -40,7 +43,8 @@ instruction not to execute tests remains active during this planning task.
   successor-publication tests and other frozen versions remain historical
   regression coverage. This plan does not promote, rebuild or republish them.
 - No tests, builds, linters, type checks, benchmarks, installers or model runs
-  were executed to establish these findings. No source fix has been applied.
+  were executed to establish the original planning findings. The execution
+  progress and fresh results below supersede that planning-only status.
 
 ## Scope and non-goals
 
@@ -319,7 +323,9 @@ behavior-preserving refactor, if later needed, must use its own approved workflo
 
 ### Milestone 1 - Refresh evidence and establish safe execution readiness
 
-Status: pending execution.
+Status: complete; safe baselines recorded. The initially blocked G7 prerequisite
+was resolved by the user's explicit uninstall/reinstall authorization and verified
+recovery preparation; real G7 subsequently passed.
 
 Confirm the branch, clean index, exact HEAD and target-path identities. Re-read
 all named tests and callers; reconcile drift before editing. Record current
@@ -339,7 +345,8 @@ do not use a real-root publication writer for an intentional rejection mutation.
 
 ### Milestone 2 - Complete safety and isolation units
 
-Status: pending execution.
+Status: complete; isolated checks, real U1 lifecycle acceptance, final
+reinstallation and original-data verification passed.
 
 | Unit | Cases and closed source scope | Acceptance boundary |
 | --- | --- | --- |
@@ -349,13 +356,15 @@ Status: pending execution.
 
 Run fast deterministic checks before the actual installer gate. A passed mocked
 test cannot close U1's real lifecycle acceptance. The existing lifecycle command
-requires no pre-existing program installation; do not uninstall a user's current
-installation to satisfy that precondition. Use an appropriate disposable Windows
-user/host if necessary. Record unresolved host readiness as pending acceptance.
+requires no pre-existing program installation. Without explicit user authority,
+preserve an existing installation and use an appropriate disposable Windows
+account/host. This execution received explicit uninstall/reinstall authority,
+verified a separate recovery copy, ran G7, reinstalled and verified original data.
+Unresolved host readiness in any future run remains pending acceptance.
 
 ### Milestone 3 - Strengthen assertion and boundary units
 
-Status: pending execution.
+Status: implemented; affected focused and final combined checks passed.
 
 | Unit | Cases and closed source scope |
 | --- | --- |
@@ -374,7 +383,7 @@ and retain no mutated source in the accepted patch.
 
 ### Milestone 4 - Remove or replace only demonstrated weak coverage
 
-Status: pending execution.
+Status: implemented; coverage ledger and passing checks recorded below. No SKIP.
 
 | Unit | Cases and closed source scope |
 | --- | --- |
@@ -392,7 +401,8 @@ separate from the U1 filesystem behavior repair for review and attribution.
 
 ### Milestone 5 - Integrate, independently review and close
 
-Status: pending execution.
+Status: complete. G1-G8, host restoration/cleanup and independent review
+TEST-INTEGRITY-R4-20261021-ASTRA pass; no acceptance work remains.
 
 Run the declared combined gates once the relevant units are stable, without
 duplicating equivalent passing executions absent a changed input. Update
@@ -412,7 +422,7 @@ All execution evidence must come from normal local PowerShell outside the
 managed sandbox. Root commands below use repository root as cwd unless a package
 is explicitly selected. Commands are taken from current package configuration;
 the benchmark grep is a filter on an existing configured Playwright script.
-Every implementation gate is currently **NOT RUN**.
+Current execution results are recorded below; historical receipts are not reused.
 
 | Gate | Invariant / existing command | Timing and affected cases |
 | --- | --- | --- |
@@ -491,7 +501,78 @@ document/link/Git diff review and is exempt from runtime change review.
   isolated writer setup. No implementation acceptance was requested or granted.
 - Planning structure/link review: all 12 required sections and 11 case decisions
   present; 194 local link targets exist. Unstaged Git whitespace review passed.
-- Implementation milestones 1-5: not started; runtime acceptance pending.
+- 2026-10-21 execution: confirmed the requested branch and exact starting HEAD
+  `9a5374f99adb0a836bd4f5bb05feca835938ac71`, clean index and worktree. User
+  explicitly lifted the no-tests restriction and prohibited staging/commit/push.
+- Confirmed `change_reviewer` (GPT-6 Astra high) by an actual availability-only
+  delegation. One implementation worker owns U1-U15; the coordinator owns docs
+  and host execution. No source edits occurred during baseline collection.
+- Baseline G1/G2/G3/G5/G6 passed in normal local PowerShell. Initial commands
+  stopped before checks because PATH selected pnpm 11.25.0; selecting the existing
+  process-local Corepack shim restored pinned 11.15.1 without modifying locks.
+  The first Rust wrapper waited after child exit; a replacement wrapper lost its
+  exit code. Reassessment selected direct command invocation and repeated only
+  Rust tests and the filtered benchmark, obtaining explicit zero exit codes.
+  Incomplete wrapper attempts remain retained, not accepted or silently replaced.
+- G7 read-only readiness found an existing user installation and application
+  data. The lifecycle command is pending a suitable account/host; no installer,
+  uninstaller, backup, deletion or restoration was invoked against user data.
+- Local raw evidence and full tracked-input SHA-256 snapshots are under ignored
+  `tmp/test-integrity/`. Baseline receipts: `baseline-20261021T214044Z`
+  (G1/G2/G3 and Rust format/lint), and
+  `baseline-continuation-20261021T214439Z` (Rust tests and G6). Earlier directories
+  preserve the tool-selection and wrapper failures. Final evidence will identify
+  exact commands, timing, dependencies and cleanup.
+- U2 was the first Python edit. Its first G4 passed format, lint, mypy and 613
+  tests. During that run only the two PowerShell harness paths changed; all
+  Python sources/tests, authorities, dependencies and fixtures retained their
+  input hashes. This is U2 post-change evidence and the remaining Python units'
+  baseline, not a retrospective pre-change baseline for C02.
+- U1-U15 are implemented. The two Qwen changes share U4; C11's Windows-release
+  cleanup shares U1. The ten Windows PowerShell regression cases passed with
+  real synthetic moves/removals, including failed/ambiguous backup, reparse,
+  initially absent data, later failure, cleanup/quarantine and restoration.
+- Focused lint found missing explicit Node `Buffer`/`process` imports; fixed.
+  Python mypy found three non-exported probe references; module-qualified
+  monkeypatch targets fixed those without production changes. The latter edit
+  required one formatter correction. Final G8 reran all affected checks and
+  passed; earlier failed receipts remain under `post-nonpython`, `post-python`
+  and `post-python-20261021T215134Z`.
+- C11 diagnostic copies ran each Node file both successfully and with a synthetic
+  assertion failure. Expected child exits were 0/1; each owned root was absent
+  afterward and its independent sibling survived. Copies and diagnostic roots
+  were removed. Two roots created by the pre-C11 baseline were separately
+  attributed by the exact run interval and verified synthetic byte inventory,
+  then removed. Older unrelated temporary folders were left alone.
+- `package:windows:check` passed. No installer preparation is useful on this
+  unsuitable account, so no installer/uninstaller was launched. Final
+  `check:portable` and `check` passed with source writing paused. No model,
+  Chatterbox download, full performance benchmark or publication was performed.
+- Reviewed the canonical diagram, architecture boundaries, roadmap and completed
+  M005: only maintainer harness ownership and test discrimination changed. No
+  system-diagram, ADR, public contract, threshold, corpus, lock, generated
+  manifest, historical authority or completed-plan change is needed.
+
+### Case and coverage ledger
+
+| Case / units | Implemented change and retained or replacement coverage |
+| --- | --- |
+| C01 / U1 | Same guarded companion used by harness and twelve isolated Windows regressions. Backup attempt alone cannot authorize deletion; ambiguous copies preserve both originals and report the recovery path. Verified backup restores only into absence. Atomic directory transitions, extended-path reparse checks and real lifecycle pass. |
+| C02 / U2 | Every affected writer has explicit `tmp_path`; two invalid receipt cases preserve the entire output tree, and valid control verifies both canonical writes and a historical sentinel. Read-only historical authority unchanged. |
+| C03 / U4, U5 | Test-owned BF16 and voice-style object sentinels replace captured-value expectations. Other load/generation assertions remain. |
+| C04 / U6 | Invalid UTF-8 now occurs inside a closed XML root. UTF-32 and valid encoding controls remain. |
+| C05 / U4, U7 | Coherent zero PCM at 480,000 samples succeeds; 480,001 fails without retained Qwen output. Separately named mismatched-length, NaN, dimension and identity checks remain. |
+| C06 / U8 | Matching scorecard asserts aggregates; distinct ID and swapped-language cases retain ten unique samples, five per language and correct raw digest, and reject through the real consumer. |
+| C07 / U10 | Removed only `makes stable segmentation independent of later batch slicing` and `groupSegments`. Unchanged public `narration-preparation-matrix.test.ts` (1/4) and `opened-publication.test.ts` (8/16) preserve full segment/range comparisons; G2 passes. |
+| C08 / U11, U12 | Four misleading source labels became two actual injected outcomes. Exact commit/path, separate Git-read failure, separate v4/v5 literal hashes and real authority-drift rejection remain. Removed only the two named local deepcopy tests and their unused `copy` imports. |
+| C09 / U13-U15 | Rust count/timeout self-comparisons became literal historical pins; removed only `count_within_limit`/`within_timeout`, retaining framing/audio checks and the frozen block. Removed browser `selectedCapacityFor` plus three assertions; title, 250/10,000/80,000 pins, journeys and real capacity tests remain. V12 constructor smoke test became one eligible and three single-reason real preflight cases. |
+| C10 / U9 | Individually valid components exercise resolved 2,048-byte acceptance and 2,049-byte rejection; independent archive-path tests remain. |
+| C11 / U1, U3 | Awaited teardown immediately follows each owned root creation. Success and injected assertion-failure copies proved cleanup and sibling preservation. |
+
+No units were skipped. Net collection changes are explained by those named
+replacements: EPUB 672 to 671; Python 613 at isolated U2 baseline and 616 after
+the remaining units; desktop Vitest stays
+802 and Node grows from 84 to 96. Counts are not an acceptance metric.
 
 ## Discoveries and decisions
 
@@ -505,25 +586,131 @@ document/link/Git diff review and is exempt from runtime change review.
    authorities and their actual hash/tamper tests remain separate.
 5. C09 preserves useful literal pins, converts self-comparisons to honest historical
    value pins, and replaces a constructor smoke test with actual consumer coverage.
-6. The no-tests instruction prevents current runtime validation. Listing commands
-   in this plan is not execution evidence or permission to run them now.
+6. The planning no-tests instruction was lifted by the execution request on
+   2026-10-21. All acceptance commands must still run outside the sandbox.
 7. No production architecture change is planned. Revisit the system diagram at
    completion; preserve completed M005 and other historical plans.
 
 ## Final validation results
 
-Planning artifact only. Documentary review checked the twelve required sections,
-eleven case decisions, current configured commands and 194 existing local link
-targets. The independent static review's two C02 corrections are incorporated.
-The unstaged whitespace check passed. Final staged scope/whitespace review is
-required immediately before the authorized planning commit. Runtime change-review
-exemption applies because this delivery changes documentation only.
+All implementation units and required G1-G8 checks pass, including real G7 and
+verified host restoration/cleanup. Independent report
+**TEST-INTEGRITY-R4-20261021-ASTRA** returned **APPROVE** with no findings.
+All C01-C11/U1-U15 acceptance criteria are complete.
+Earlier R1/R2 reports remain immutable historical BLOCKED reports for missing G7.
 
-Implementation tests, lint/type/build gates, benchmarks, Windows lifecycle,
-independent behavioral review, host restoration and final integration: **NOT RUN /
-NOT STARTED**. No implementation acceptance or performance improvement is claimed.
+Commands ran from `C:\Users\mmjos\Desktop\workbeanch\voxleaf` in normal local
+PowerShell outside the sandbox. Acceptance used Windows PowerShell 5.1, Node
+24.20.0, pinned pnpm 11.15.1 through the process-local Corepack shim, uv 0.11.29,
+Python 3.12.10, Rust/Cargo 1.97.1 and Windows build 26200. Recovery-copy cleanup
+used normal local PowerShell 7 for long-path deletion. No sandbox result counts
+as acceptance. Phase directories under ignored `tmp/test-integrity/` retain exact
+commands, UTC times, duration, exit code, environment, logs and input manifests.
 
-At execution closeout replace these pending entries with exact attributed gate
-receipts, the current independent Review ID/verdict, cleanup evidence, approved
-scope differences and any remaining limitations. Keep the plan active while any
-required acceptance remains pending.
+| Gate | Final evidence and result |
+| --- | --- |
+| G1 | All configured TypeScript format/lint/type commands pass in both fresh final G8 runs. |
+| G2 | Build, EPUB tests/types pass; 34 EPUB files / 671 tests retain real batch invariance. |
+| G3 | `atomic-move-20261021T224628Z`: format check exit 0, 5.970 seconds; `pnpm.cmd --filter @voxleaf/desktop test` exit 0, 23.470 seconds. 60 Vitest files / 802 tests plus 96 Node tests; all twelve Windows lifecycle cases execute, none skipped. Both final G8 runs refresh these results. |
+| G4 | All four Python commands pass in final G8: 616 tests, mypy 174 files. The isolated U2 baseline had 613 tests. Existing pytest cache-write warnings remain warnings, not failed tests. |
+| G5 | Both Clippy/test variants and formatting pass in final `check`: 110 default / 109 release-locked tests, two existing ignores per variant (`installed_host_integrity_diagnostic`, `assignment_failure_child_fixture`). |
+| G6 | Explicitly reused same-session `post-nonpython/11.log`: configured exact-title Chromium filter, one test, exit 0 in 3.413 seconds. Consumed benchmark/source/fixture/config/lock identities are unchanged. No full-performance claim. |
+| G7 | `real-g7-20261021T224714Z`: `pnpm.cmd package:windows:check` exit 0, 0.441 seconds; `pnpm.cmd package:windows:lifecycle` exit 0, 154.893 seconds. Install, first start, repair, all six uninstall policies, unrelated sentinels and original-data restoration pass. |
+| G8 | Fresh final `integration-20261021T224935Z`: `pnpm.cmd check:portable` exit 0 in 124.050 seconds; `pnpm.cmd check` exit 0 in 191.720 seconds. Shared 209, EPUB 671, desktop 802 + Node 96, Python 616, native gates and builds pass. |
+
+The earlier `integration/` results (86.513/130.136 seconds, Node 94) predate the
+atomic-rename correction and are retained only as intermediate evidence.
+G8's shared constituents were executed again, not inferred from old green logs.
+G6 reuse is explicit; its executable inputs were not changed by C01. Vite's
+existing large-chunk advisory remains; no threshold or dependency was weakened.
+
+### Authorized real-host continuation and discovered correction
+
+The user explicitly authorized uninstalling and reinstalling this account's
+VoxLeaf installation. This lifted the initial host prerequisite restriction,
+while preserving original data remained mandatory. No Git mutation was added
+to that authorization.
+
+The old default installer was a prior implementation. Both cheap readiness
+checks passed. Preparation used the exact configured Tauri invocation from
+`build-windows-release.ps1`:
+`pnpm.cmd --filter @voxleaf/desktop tauri build --config src-tauri/tauri.release.conf.json --features release-locked-runtime`.
+It passed in 182.913 seconds. Calling this existing package command directly
+avoided the wrapper's unconditional overwrite of frozen
+`windows-package-evidence-v3.json`; no historical release receipt changed.
+Core validation passed via `pnpm.cmd package:piper-core:check` in 22.304 seconds.
+Preparation receipts are under `lifecycle-package/`.
+
+The selected local installer is 203,942,538 bytes, SHA-256
+`294e5c86d5a66855b2a88b74b4b03d9c736b67fd2ffd11ac0acf1733c3030342`.
+The core runtime-manifest SHA-256 remains
+`0da4a9c3fe15abae39c260de79f3b75c08afbca5b1ab9cac9b868bdf77b87b77`.
+`real-lifecycle/artifacts-rerun.json` binds G7 to that package, core, harness,
+companion and regression identities. This is unsigned local validation, not
+installer publication, clean-machine certification or interactive release QA.
+The lifecycle receipt retains its existing clean-host/manual-validation flags.
+
+An independent private recovery copy was verified before uninstall. The first
+backup diagnostic encountered PowerShell's long-path `Get-FileHash` limitation;
+extended-path SHA-256 reads completed verification before any uninstall.
+Default silent uninstall preserved the original data root.
+
+The first real G7 attempt (`real-g7/`) failed with exit 1 in 4.248 seconds:
+`Move-Item` returned while source and backup remained populated. The new ownership
+guard rejected that ambiguous result, withheld deletion and reported the backup.
+No installer or fixture removal ran. Both partial trees were retained inside the
+owned recovery area, and original data was restored from the verified full copy
+without merging ambiguous trees. Full membership and byte identities matched.
+
+The bounded C01 correction uses guarded same-parent `System.IO.Directory.Move`
+for backup, quarantine and restoration, without a recursive copy fallback.
+A new real preservation regression initially exposed long-path provider traversal
+failure; the companion now uses literal extended-path .NET attribute/enumeration
+operations and rejects reparse points before descent. Root and nested-junction
+regressions preserve external targets. Hidden/read-only entries and long
+descendants retain bytes, membership and attributes through backup/restoration.
+The first failed `atomic-move/` receipt and formatting correction remain recorded;
+the unchanged regression passes on the final correction. No production reader,
+TTS, parsing, public contract, installer option or architecture changed.
+
+### Restoration, cleanup and independent review
+
+After passing G7, the selected current installer was installed again for the
+user. Original-data membership and per-file bytes match the pre-operation
+inventory; installed core identity matches the verified package. Private
+inventories stayed outside the repository and are absent from public evidence.
+`real-lifecycle/host-restoration-summary.json` records matching aggregate
+identities, installed artifact identities and the unchanged baseline temporary
+roots. `Install.json` and `Cleanup.json` record successful final reinstall and
+removal of the owned recovery copy, including the preserved partial trees.
+No new lifecycle backup, quarantine or sentinel remains; an unrelated pre-existing
+temporary root was preserved. VoxLeaf is installed and left closed.
+
+All synthetic regression/diagnostic roots were removed and independent sentinels
+preserved. Raw content-safe gate receipts remain under ignored
+`tmp/test-integrity/`. No books, generated audio, weights, secrets or private
+inventories enter the patch. Historical authorities, locks and completed plans
+remain unchanged. The canonical system diagram and completed M005 boundary
+still match the unchanged product architecture.
+
+Reports **TEST-INTEGRITY-R1-20261021-ASTRA** and
+**TEST-INTEGRITY-R2-20261021-ASTRA** had no actionable findings and were BLOCKED
+only by missing real G7. Their reports/manifests remain immutable under
+`review-r1/` and `review-r2/`. **TEST-INTEGRITY-R3-20261021-ASTRA** reviewed all
+78 paths and returned **CHANGES_REQUESTED** solely for one P3 documentation
+inconsistency in current milestone statuses/instructions, with no runtime findings.
+Those instructions now reflect the explicit authorization and completed G7.
+The immutable report is `review-r3/report.md`.
+**TEST-INTEGRITY-R4-20261021-ASTRA** approved the corrected 78-path snapshot at
+`2026-10-21T23:02:06.1331663Z`; no findings remain. Its manifest SHA-256 is
+`37ae3eb66c89aa7beca5fd5e3a9cb82cabb2a68be10cde45f37a557e724822da`, and the
+report is `review-r4/report.md`. Executable inputs and accepted host evidence
+remain unchanged. This closeout moves the plan and updates maintained navigation
+only; its separate documentary review is retained beside the final manifest.
+Reports remain outside their own reviewed-path manifests.
+
+No staging, commit, push, PR or merge was performed. Branch and HEAD remain
+`codex/test-integrity-and-harness-safety` at
+`9a5374f99adb0a836bd4f5bb05feca835938ac71`, with an empty index. The plan was
+moved to completed after all required gates, restoration and independent review
+passed. Current product/release limitations remain in their canonical documents.

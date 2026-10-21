@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 from collections.abc import Mapping
@@ -508,13 +507,3 @@ def test_v4_authority_drift_fails_closed(tmp_path: Path) -> None:
     profile_path.write_text(json.dumps(profile), encoding="utf-8")
     with pytest.raises(V4AuthorityError, match="authority-drift"):
         load_frozen_v4_authority(repository)
-
-
-def test_v4_fixture_mutations_do_not_change_the_authority() -> None:
-    original = _summary_fixture()
-    mutated = copy.deepcopy(original)
-    cast(dict[str, object], mutated["conclusions"])["standardViability"] = _conclusion(
-        "fail", "warm-first-audio"
-    )
-    assert original != mutated
-    assert _sha256("benchmarks/tts/profile-v4.json") == PROFILE_SHA256

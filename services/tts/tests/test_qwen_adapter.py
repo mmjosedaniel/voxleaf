@@ -40,6 +40,7 @@ from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CANDIDATE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v8.json"
+BFLOAT16_SENTINEL: Final = object()
 CANDIDATE_LOCK: Final = (
     REPOSITORY_ROOT
     / "services"
@@ -190,7 +191,7 @@ def _adapter(
     torch.__dict__.update(
         {
             "__version__": TORCH_VERSION,
-            "bfloat16": object(),
+            "bfloat16": BFLOAT16_SENTINEL,
             "cuda": SimpleNamespace(
                 is_available=lambda: cuda_available,
                 is_bf16_supported=lambda: bf16_available,
@@ -292,7 +293,7 @@ def test_exact_load_warm_and_complete_generation_use_frozen_identity(
     adapter.load()
     assert calls["load"] == {
         "device_map": "cuda:0",
-        "dtype": calls["load"]["dtype"],  # type: ignore[index]
+        "dtype": BFLOAT16_SENTINEL,
         "attn_implementation": "sdpa",
         "local_files_only": True,
     }
@@ -465,8 +466,9 @@ def test_rejects_unavailable_cuda_or_bfloat16(
         lambda: FakeSamples([]),
         lambda: FakeSamples([0.0], shape=(1, 1)),
         lambda: FakeSamples([float("nan")]),
-        lambda: FakeSamples([0.0], shape=(480_001,)),
+        lambda: FakeSamples([0.0], shape=(2,)),
     ],
+    ids=["empty", "wrong-dimension", "non-finite", "inconsistent-length"],
 )
 def test_invalid_output_publishes_no_retained_result(
     tmp_path: Path,
@@ -482,6 +484,35 @@ def test_invalid_output_publishes_no_retained_result(
         adapter.warm()
     assert failure.value.code is EngineFailureCode.FAILURE
     assert not adapter.has_active_operation
+
+
+@pytest.mark.parametrize("sample_count", [480_000, 480_001])
+def test_coherent_audio_at_and_above_the_protocol_ceiling(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    sample_count: int,
+) -> None:
+    adapter, _calls, model = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    adapter.warm()
+    waveform = FakeSamples([0.0] * sample_count)
+    assert waveform.shape == (sample_count,)
+    assert waveform.size == len(waveform) == sample_count
+    assert len(waveform.tobytes(order="C")) == sample_count * 4
+    model._waveform = waveform
+    identity = adapter.begin("request:boundary", _segment())
+    if sample_count == 480_000:
+        completed_identity, result = adapter.settle()
+        assert completed_identity == identity
+        assert result.payload == b"\0" * (sample_count * 4)
+        adapter.release_result()
+    else:
+        with pytest.raises(EngineFailure) as failure:
+            adapter.settle()
+        assert failure.value.code is EngineFailureCode.FAILURE
+    assert not adapter.has_active_operation
+    assert adapter._retained_result is None
+    adapter.cleanup()
 
 
 def test_engine_failure_is_content_free_and_cleanup_is_idempotent(

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 import sys
@@ -646,14 +645,6 @@ def test_v5_authority_drift_fails_closed(tmp_path: Path) -> None:
     profile_path.write_text(json.dumps(profile), encoding="utf-8")
     with pytest.raises(V5AuthorityError, match="authority-drift"):
         load_frozen_v5_authority(repository)
-
-
-def test_v5_fixture_mutations_do_not_change_frozen_authority() -> None:
-    original = _summary_fixture()
-    mutated = copy.deepcopy(original)
-    cast(dict[str, object], mutated["aggregates"])["aggregateRtf"] = 2
-    assert original != mutated
-    assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
 
 
 def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary(

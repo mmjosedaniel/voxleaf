@@ -31,16 +31,6 @@ fn audio_dimensions_are_valid(
         && payload_bytes <= MAX_AUDIO_PAYLOAD_BYTES
 }
 
-#[cfg(test)]
-fn count_within_limit(value: usize, maximum: usize) -> bool {
-    value <= maximum
-}
-
-#[cfg(test)]
-fn within_timeout(elapsed_ms: u64, timeout_ms: u64) -> bool {
-    elapsed_ms <= timeout_ms
-}
-
 fn frame_bytes(kind: FrameKind, payload: &[u8]) -> Vec<u8> {
     let mut bytes = Vec::new();
     write_frame(&mut bytes, kind, payload).expect("frame should encode");
@@ -213,7 +203,7 @@ fn exposes_only_fixed_content_free_failure_codes() {
 }
 
 #[test]
-fn freezes_exact_and_maximum_plus_one_authority_dimensions() {
+fn pins_historical_authority_values_and_audio_dimensions() {
     assert!(dimensions_within_limit(
         MAX_IDENTIFIER_CODE_POINTS,
         MAX_IDENTIFIER_UTF8_BYTES,
@@ -283,35 +273,34 @@ fn freezes_exact_and_maximum_plus_one_authority_dimensions() {
         MAX_AUDIO_PAYLOAD_BYTES,
     ));
 
-    for maximum in [
-        MAX_AUDIO_RECORDS,
-        MAX_ACTIVE_REQUESTS,
-        MAX_QUEUED_REQUESTS,
-        MAX_PENDING_CONTROL_WRITES,
-        MAX_PENDING_AUDIO_WRITES,
-        MAX_NATIVE_RETAINED_AUDIO_UNITS,
-        MAX_RENDERER_RETAINED_AUDIO_UNITS,
-        MAX_AUTOMATIC_SYNTHESIS_RETRIES,
-        MAX_AUTOMATIC_RESTARTS,
-        MAX_RETAINED_STDERR_BYTES,
+    // These are historical authority values, independent of runtime enforcement.
+    for (actual, frozen) in [
+        (MAX_AUDIO_RECORDS, 1),
+        (MAX_ACTIVE_REQUESTS, 1),
+        (MAX_QUEUED_REQUESTS, 0),
+        (MAX_PENDING_CONTROL_WRITES, 1),
+        (MAX_PENDING_AUDIO_WRITES, 1),
+        (MAX_NATIVE_RETAINED_AUDIO_UNITS, 1),
+        (MAX_RENDERER_RETAINED_AUDIO_UNITS, 1),
+        (MAX_AUTOMATIC_SYNTHESIS_RETRIES, 0),
+        (MAX_AUTOMATIC_RESTARTS, 0),
+        (MAX_RETAINED_STDERR_BYTES, 0),
     ] {
-        assert!(count_within_limit(maximum, maximum));
-        assert!(!count_within_limit(maximum + 1, maximum));
+        assert_eq!(actual, frozen);
     }
 
-    for timeout in [
-        HANDSHAKE_TIMEOUT_MS,
-        LOAD_TIMEOUT_MS,
-        WARM_TIMEOUT_MS,
-        SYNTHESIS_TIMEOUT_MS,
-        HEALTH_TIMEOUT_MS,
-        INVALIDATION_TIMEOUT_MS,
-        TERMINATION_TIMEOUT_MS,
-        SHUTDOWN_TIMEOUT_MS,
-        CLEANUP_TIMEOUT_MS,
+    for (actual, frozen) in [
+        (HANDSHAKE_TIMEOUT_MS, 5_000),
+        (LOAD_TIMEOUT_MS, 120_000),
+        (WARM_TIMEOUT_MS, 120_000),
+        (SYNTHESIS_TIMEOUT_MS, 120_000),
+        (HEALTH_TIMEOUT_MS, 2_000),
+        (INVALIDATION_TIMEOUT_MS, 500),
+        (TERMINATION_TIMEOUT_MS, 2_000),
+        (SHUTDOWN_TIMEOUT_MS, 5_000),
+        (CLEANUP_TIMEOUT_MS, 5_000),
     ] {
-        assert!(within_timeout(timeout, timeout));
-        assert!(!within_timeout(timeout + 1, timeout));
+        assert_eq!(actual, frozen);
     }
 }
 

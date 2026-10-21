@@ -69,12 +69,12 @@ def test_historical_sources_read_exact_commit_paths_before_copy(
     } == {module: frozen_sources[module] for module in expected}
 
 
-@pytest.mark.parametrize("failure", ["missing-history", "wrong-commit", "missing-path", "bytes"])
+@pytest.mark.parametrize("failure", ["blob-read-failure", "byte-mismatch"])
 def test_historical_failures_never_mutate_staging_or_fall_back_to_live_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, frozen_sources: dict[str, bytes], failure: str
 ) -> None:
     def read(_root: Path, _commit: str, _module: str) -> bytes:
-        if failure in {"missing-history", "missing-path"}:
+        if failure == "blob-read-failure":
             raise ReleaseChatterboxError("chatterbox-package-source-invalid")
         return b"wrong historical bytes"
 

@@ -22,6 +22,46 @@ summaries and reviewed identities in Git, and raw logs/captures in ignored
 sandbox. Both commands also start the existing `check` and `check:portable`
 CI gates. The tests use isolated temporary Git repositories.
 
+## Test integrity and lifecycle data ownership
+
+The completed [test-integrity plan](../plans/completed/test-integrity-and-harness-safety.md)
+records stronger boundary fixtures and acceptance of the Windows lifecycle repair.
+The lifecycle harness delegates data backup, ownership, removal, quarantine and
+restoration to `scripts/windows-package-lifecycle-data.ps1`. An attempted backup
+does not grant deletion authority. The disposable data root becomes owned only
+after the original is absent or a verified backup leaves its path absent. An
+ambiguous backup preserves both locations; restoration requires an absent target.
+Backup, quarantine and restoration use same-parent directory renames without a
+recursive copy fallback. Literal extended-path traversal rejects reparse points
+at the root or any descendant before following them, including long paths.
+
+`windows-release.node-test.mjs`, included in the configured desktop test command,
+exercises that same companion through bounded Windows child PowerShell processes
+and synthetic temporary roots. Faults cover backup, verification, reparse points,
+cleanup and restoration. Real rename coverage preserves hidden/read-only entries
+and long descendants; a nested-junction case preserves its external target.
+These regressions never launch an installer or use the
+real application-data root. They are explicitly skipped outside Windows and do
+not replace `package:windows:lifecycle` on an appropriate Windows account. A
+pre-existing user installation blocks that real gate. Removing it for validation
+requires explicit user authorization, verified data recovery and reinstallation
+afterward. Temporary Node fixture roots use awaited teardown.
+
+Successor-publication tests always pass an explicit temporary repository root.
+Invalid receipts preserve output sentinel bytes; a valid receipt must reach both
+canonical authority writes. Never run a rejection counterfactual with the default
+repository destination. Model-free adapter tests use independent object sentinels
+and coherent PCM at the exact sample ceiling and one sample above it. XML and
+resolved-path tests isolate the malformed encoding and total-path conditions.
+
+Historical authority hash and tamper checks remain useful. Probe count/timeout
+literal pins describe frozen values, not runtime enforcement. The filtered reader
+benchmark retains its literal capacity pins; actual rejection coverage belongs
+to `large-chapter-rendering.test.ts`. Narration batch independence is exercised by
+the public preparation integration tests, not local slicing of one packed array.
+V12 preflight tests invoke the real consumer with isolated host/environment seams;
+they do not run a GPU probe, firewall command, model or child interpreter.
+
 ## Native Rust unit-test layout
 
 The ten native owners with unit-test suites keep production in `<owner>.rs`
@@ -37,7 +77,7 @@ the `::tests::` namespace in this relocation. Relative include spellings change
 with source depth, but resolved fixture paths and bytes must remain identical.
 
 `tts_protocol_probe.rs` deliberately retains its entire test-only
-`frozen_authority` block unchanged. Its executable tests and four test-only
+`frozen_authority` block unchanged. Its executable tests and test-only
 helpers live in `tts_protocol_probe/tests.rs`. Keep the probe independent from
 production protocol framing. `hardware_profile_authority.rs` is already a
 separate test-only module and remains unchanged.

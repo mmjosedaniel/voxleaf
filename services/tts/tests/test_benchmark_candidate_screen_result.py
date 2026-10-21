@@ -6,11 +6,13 @@ import hashlib
 from pathlib import Path
 from typing import Final, cast
 
+import pytest
 from jsonschema import Draft202012Validator
 
 from benchmarks.candidate_screen_result import (
     CHATTERBOX_SPEC,
     MOSS_SPEC,
+    CandidateScreenResultError,
     _validate_private_review,
     build_content_safe_summary,
 )
@@ -116,7 +118,8 @@ def test_chatterbox_summary_preserves_advisory_performance() -> None:
     assert "experimental-torch-dependency-override" in cast(list[str], summary["limitations"])
 
 
-def test_private_scorecard_must_match_the_blinded_sample_map(tmp_path: Path) -> None:
+@pytest.fixture
+def private_review(tmp_path: Path) -> tuple[Path, dict[str, object], dict[str, object]]:
     raw_path = tmp_path / "machine.raw.json"
     raw_path.write_text("{}\n", encoding="utf-8")
     samples = [
@@ -158,6 +161,13 @@ def test_private_scorecard_must_match_the_blinded_sample_map(tmp_path: Path) -> 
             for sample in samples
         ],
     }
+    return raw_path, private_map, scorecard
+
+
+def test_matching_private_scorecard_aggregates_the_blinded_samples(
+    private_review: tuple[Path, dict[str, object], dict[str, object]],
+) -> None:
+    raw_path, private_map, scorecard = private_review
     aggregate = _validate_private_review(
         MOSS_SPEC,
         raw_path=raw_path,
@@ -167,3 +177,36 @@ def test_private_scorecard_must_match_the_blinded_sample_map(tmp_path: Path) -> 
     assert aggregate["sampleCount"] == 10
     assert aggregate["meaningChangingDefects"] == 0
     assert aggregate["wrongLanguageOutputs"] == 0
+    assert aggregate["dimensionMeans"] == {
+        dimension: 5.0
+        for dimension in (
+            "intelligibility",
+            "naturalness",
+            "prosody",
+            "pronunciation",
+            "language-stability",
+            "overall-usefulness",
+        )
+    }
+
+
+@pytest.mark.parametrize("mismatch", ["sample-id", "sample-language"])
+def test_private_scorecard_rejects_disagreement_with_the_blinded_sample_map(
+    private_review: tuple[Path, dict[str, object], dict[str, object]], mismatch: str
+) -> None:
+    raw_path, private_map, scorecard = private_review
+    samples = cast(list[dict[str, object]], scorecard["samples"])
+    if mismatch == "sample-id":
+        samples[0]["sampleId"] = f"{10:032x}"
+    else:
+        samples[0]["language"], samples[5]["language"] = (
+            samples[5]["language"],
+            samples[0]["language"],
+        )
+    assert len(samples) == len({sample["sampleId"] for sample in samples}) == 10
+    assert [sample["language"] for sample in samples].count("es") == 5
+    assert [sample["language"] for sample in samples].count("en") == 5
+    with pytest.raises(CandidateScreenResultError, match="^tts-candidate-screen-result:quality$"):
+        _validate_private_review(
+            MOSS_SPEC, raw_path=raw_path, private_map=private_map, scorecard=scorecard
+        )

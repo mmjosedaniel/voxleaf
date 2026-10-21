@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Test integrity and lifecycle harness safety](test-integrity-and-harness-safety.md): all eleven corrections accepted, including atomic lifecycle data ownership, long-path/reparse protection and twelve Windows fault/preservation cases; G1-G8, real installer policies, verified user-data restoration/reinstallation and independent Astra review pass. Changes remain uncommitted.
+
 - [Documentation consistency and historical tooling](documentation-consistency-and-historical-tooling.md): current Piper/v5 guidance separated from stable IDs, historical v2/v3 authority and local v4 tooling; maintained navigation and summaries reconciled. Documentation checks pass against planning commit 5b93ced with protected bytes preserved; no runtime or CI change.
 
 - [`chatterbox-certifi-pillow-security-refresh.md`](chatterbox-certifi-pillow-security-refresh.md): published v5 with certifi 2026.10.19 and Pillow 13.0.0, exact native admission and cleanup-only older packages. Complete B06/B07, four installed reader/speed arms, integrity, six installer policies, repository/browser/native gates and fresh PR #266 CI pass with independent approval. Original user state and firewall are restored; integration commit `194846a` is published. The plan records the diagnostic addition and two regression-tested harness corrections.
