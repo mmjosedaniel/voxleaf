@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -254,7 +255,7 @@ test(
   { skip: process.platform !== "win32" },
   async (t) => {
     const temporary = await mkdtemp(
-      path.join(os.tmpdir(), "voxleaf-lifecycle-rename-test-"),
+      path.join(await realpath(os.tmpdir()), "voxleaf-lifecycle-rename-test-"),
     );
     t.after(async () => await rm(temporary, { recursive: true, force: true }));
     const data = path.join(temporary, "data");
@@ -459,7 +460,7 @@ for (const [
     { skip: process.platform !== "win32" },
     async (t) => {
       const temporary = await mkdtemp(
-        path.join(os.tmpdir(), "voxleaf-lifecycle-data-test-"),
+        path.join(await realpath(os.tmpdir()), "voxleaf-lifecycle-data-test-"),
       );
       t.after(
         async () => await rm(temporary, { recursive: true, force: true }),

@@ -38,7 +38,11 @@ at the root or any descendant before following them, including long paths.
 `windows-release.node-test.mjs`, included in the configured desktop test command,
 exercises that same companion through bounded Windows child PowerShell processes
 and synthetic temporary roots. Faults cover backup, verification, reparse points,
-cleanup and restoration. Real rename coverage preserves hidden/read-only entries
+cleanup and restoration. Canonicalize the temporary parent before creating these
+fixtures: Windows short-name aliases in `TEMP`/`TMP` must not prevent fault-injection
+path comparisons from matching the companion's normalized paths. Validate changes
+to this setup with both ordinary and short-name temporary parents.
+Real rename coverage preserves hidden/read-only entries
 and long descendants; a nested-junction case preserves its external target.
 These regressions never launch an installer or use the
 real application-data root. They are explicitly skipped outside Windows and do
