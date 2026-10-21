@@ -6,8 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation or acceptance plans. Completed work is listed in the
-[completed-plan index](../completed/README.md).
+- [Documentation consistency and historical tooling](documentation-consistency-and-historical-tooling.md):
+  planned documentation corrections, clearer current/historical tooling guidance
+  and index cleanup. Planning only; implementation has not started.
+
+Completed work is listed in the [completed-plan index](../completed/README.md).
 
 The [reader, narration and optional acquisition corrections](../completed/reader-narration-acquisition-bugfixes.md)
 are complete: all eight fixes, required host gates, installed B06/B07 scenarios,
