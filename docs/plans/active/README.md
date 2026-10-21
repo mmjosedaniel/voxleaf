@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active ExecPlans.
+- [Test integrity and lifecycle harness safety](test-integrity-and-harness-safety.md): planned corrections for eleven verified test-review findings, including safe lifecycle data ownership, isolated writers, discriminating fixtures and selective redundancy removal; implementation and host acceptance are pending.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
