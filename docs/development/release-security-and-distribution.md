@@ -26,8 +26,9 @@ Generated authority comprises `publication-v5.json`,
 `optional-package-manifest-v5.json` and `runtime-package-evidence-v5.json`.
 Installed B06/B07, all four bilingual reader/speed arms, runtime integrity and
 six installer policies pass on the exact diagnostics installer. Original user
-state is restored. Final independent acceptance and PR validation remain
-tracked in the [active plan](../plans/active/chatterbox-certifi-pillow-security-refresh.md).
+state and firewall are restored. Independent acceptance and fresh PR CI pass
+for integration commit `194846a`, recorded in the
+[completed plan](../plans/completed/chatterbox-certifi-pillow-security-refresh.md).
 
 ### Historical v3 acceptance checkpoint
 

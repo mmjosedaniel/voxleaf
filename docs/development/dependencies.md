@@ -199,14 +199,15 @@ dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
 V3 output/environment lives in the builder's separate `dist/v3` directory.
 
-The [certifi/Pillow refresh](../plans/active/chatterbox-certifi-pillow-security-refresh.md)
+The completed [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 uses the separately published v5 runtime with certifi `2026.10.19` and Pillow
 `13.0.0`. All other 77 package versions, model bytes and frozen v3 runtime
 modules remain unchanged. The live 2026-10-20 audit rejects the old v3
 graph; historical passing dates above do not describe its current audit state.
-The candidate desktop, production audit, inventory and monitoring select v5;
-installed acceptance and final independent review remain pending. The complete
-`pnpm.cmd audit:release` passed on 2026-10-20 before advancing the policy date.
+The desktop, production audit, inventory and monitoring select v5. Installed
+acceptance, independent review and fresh PR CI pass for integration commit
+`194846a`. The complete `pnpm.cmd audit:release` passed again on 2026-10-21;
+the production graph and inventory also pass in GitHub Actions.
 Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
 Generate the candidate using `pnpm.cmd package:chatterbox-optional:v5:lock`,

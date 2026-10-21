@@ -1,8 +1,8 @@
 # Chatterbox certifi and Pillow security refresh
 
-Created: 2026-10-20. Status: v5 published; production integration, installed
-gates, repository/browser/native checks and final host restoration pass.
-Independent acceptance and PR validation remain pending.
+Created: 2026-10-20. Completed: 2026-10-21. V5 is published; production
+integration, installed gates, repository/browser/native checks, host restoration,
+independent acceptance and fresh PR CI pass. PR #266 remains open.
 
 ## Goal
 
@@ -97,7 +97,7 @@ and explicit publication authorization before uploading.
    acquisition authority from publication readback, admit only the successor,
    retain old versions as cleanup-only, update audit/inventory/disclosures.
    Run ordinary installed B06/B07, ES/EN, lifecycle and restoration gates.
-5. **Independent review and PR update — in progress.** Complete required checks,
+5. **Independent review and PR update — complete.** Complete required checks,
    skill bypass/regression review and exact-patch change review; commit/push the
    authorized update, confirm fresh CI and close this plan only after acceptance.
 
@@ -571,3 +571,38 @@ and R17 preservation receipts match the unchanged original fingerprint. The
 index is empty and `git diff --check` passes. The earlier UAC handoff is now
 resolved; only final independent acceptance and the authorized Git/CI closeout
 remain. No public installer was published and no merge is authorized.
+
+## Final acceptance and outcome
+
+Independent review `CB-V5-INTEGRATION-R5-FINAL-ASTRA-20261021T160903Z` returned
+**APPROVE**, with no actionable findings or remaining local acceptance gaps.
+Its before/after check matched all 1,343 reviewed paths, statuses, SHA-256 and
+filter-aware Git blobs. Manifest SHA-256 is
+`f12467b7c15450a86bcd692b4f88969567dee0e1e55ef5346359edb6ef1753c0`;
+diff SHA-256 is
+`f5fe4c69034716038f5cc1514b2631d481ba2062374253cb8f42323967f1a14d`.
+The immutable report and content-safe receipts are retained outside the repo
+under `artifacts/b06b07-20261021` in the task's persistent evidence store.
+
+The exact 48-path reviewed integration was staged with matching Git blobs,
+rechecked and committed as `194846add1770388edb725425f1a5b685796de30`, then
+pushed normally to PR #266. GitHub readback confirmed the same head. Fresh CI
+for that commit passes all four jobs: Windows native foundation, Ubuntu
+portable foundation, Ubuntu Rust foundation and production dependency graphs.
+The successful runs are [Foundation checks 39632594632](https://github.com/mmjosedaniel/voxleaf/actions/runs/39632594632)
+and [Release dependency audit 39632594985](https://github.com/mmjosedaniel/voxleaf/actions/runs/39632594985),
+observed complete on 2026-10-21 after the push. The PR title and description
+include the final reader, security-runtime, diagnostic and harness scope.
+
+B06/B07 and the security refresh are complete within the authorized local and
+portfolio boundary. All original user data and host configuration are restored;
+no temporary firewall rules remain. The last download diagnostic stays in
+process memory and writes only on manual export, as recorded separately in
+ADR-0059. The two discovered harness defects have permanent regressions;
+neither correction weakens product checks or acceptance deadlines. Earlier
+failed attempts above remain historical evidence, not current failures or
+substitutes for the successful exact-artifact gates.
+
+This closeout changes documentation and plan navigation only. Final documentary
+review and any later CI receipts are kept outside this completed historical
+record. No installer publication or merge occurred.

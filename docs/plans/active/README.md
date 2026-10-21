@@ -6,7 +6,8 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Chatterbox certifi and Pillow security refresh](chatterbox-certifi-pillow-security-refresh.md): v5 published; production audit, installed B06/B07, bilingual reader/speed, integrity, installer policies and repository/browser/native checks pass. User state and firewall are restored. Independent acceptance and PR validation remain.
+No active implementation or acceptance plans. Completed work is listed in the
+[completed-plan index](../completed/README.md).
 
 The [reader, narration and optional acquisition corrections](../completed/reader-narration-acquisition-bugfixes.md)
 are complete: all eight fixes, required host gates, installed B06/B07 scenarios,

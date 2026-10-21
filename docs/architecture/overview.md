@@ -8,12 +8,12 @@ retention and privacy boundary are defined in [ADR-0059](decisions/ADR-0059-opti
 
 ## Status
 
-The [certifi/Pillow refresh](../plans/active/chatterbox-certifi-pillow-security-refresh.md)
+The completed [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 implements v5 admission under [ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
 Its published runtime passes the production audit, installed B06/B07, four
 bilingual reader/speed arms, integrity and installer policies. Original user
-state is restored; final independent acceptance and PR validation remain
-tracked in that plan. Retained v2/v3 are cleanup-only;
+state and firewall are restored; independent acceptance and fresh PR CI pass
+for integration commit `194846a`. Retained v2/v3 are cleanup-only;
 no component, local inference flow or audio persistence boundary changes.
 
 The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)

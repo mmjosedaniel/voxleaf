@@ -2,12 +2,12 @@
 
 ## Status
 
-Implemented; final integration acceptance in progress. Preparation is
+Accepted and implemented on 2026-10-21. Preparation and integration are
 independently approved and the exact prerelease is published. Production audit,
 installed B06/B07, bilingual reader/speed, integrity and installer policies pass,
 with original user state and firewall restored. Repository/browser/native
-checks also pass. Independent review and PR validation are tracked in the
-[security refresh plan](../../plans/active/chatterbox-certifi-pillow-security-refresh.md).
+checks and fresh PR CI also pass for integration commit `194846a`. Exact
+evidence is recorded in the [completed security refresh plan](../../plans/completed/chatterbox-certifi-pillow-security-refresh.md).
 
 ## Context
 

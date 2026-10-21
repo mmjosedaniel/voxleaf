@@ -29,14 +29,14 @@ production completion and unresolved runtime investigation are deferred to a
 future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
 Existing development-only integration, tests and historical evidence are retained.
 
-The current [certifi/Pillow refresh](plans/active/chatterbox-certifi-pillow-security-refresh.md)
+The completed [certifi/Pillow refresh](plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 publishes the reviewed Chatterbox v5 runtime and implements admission
 under [ADR-0058](architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
 The complete production audit passes on 2026-10-21. Installed B06/B07, four
 Piper/Chatterbox ES/EN reader/speed arms, runtime integrity and six installer
 policies pass, with original user state restored. Repository, browser and
 native checks also pass; temporary firewall rules are removed. Independent
-acceptance and the PR update remain tracked in that plan.
+acceptance and fresh PR #266 CI pass for integration commit `194846a`.
 V2/v3 data remains cleanup-only.
 
 The [optional-download diagnostic improvement](plans/completed/optional-download-diagnostics.md)

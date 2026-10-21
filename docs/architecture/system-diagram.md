@@ -35,8 +35,8 @@ remain evaluation evidence; the one-process local inference topology is unchange
 The certifi/Pillow refresh in ADR-0058 changes the active optional
 package to v5. Its exact prerelease is published and its production audit
 passes. Installed acquisition, bilingual reader/speed, integrity and lifecycle
-gates pass; final independent acceptance and PR validation remain tracked in
-the security refresh plan.
+gates pass, together with independent acceptance and fresh PR CI for integration
+commit `194846a`, as recorded in the completed security refresh plan.
 The process topology and local inference boundary are unchanged. Retained
 v2/v3 roots are cleanup-only, with no migration or execution fallback.
 Historical M011 and ADR-0052 checkpoints below retain their original identities.
