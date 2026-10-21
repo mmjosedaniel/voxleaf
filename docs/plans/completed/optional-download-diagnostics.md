@@ -1,9 +1,12 @@
 # Optional download diagnostics and bounded installed probe
 
 Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
-The private evidence archive
-preserves the original chronology. Requirements and final probe evidence remain
-intact; validation below is historical. The parent security refresh subsequently
+Privacy redaction: 2026-10-21. Personal context and local-data inventory values
+are omitted; technical requirements, outcomes, source/artifact identities and
+receipt IDs are retained. Full preservation receipts remain local.
+The seven PR commits were sanitized on 2026-10-21; source identities quoted
+below identify the original technical evidence. Validation below is historical. The parent
+security refresh subsequently
 completed its separate B06/B07 requirements, as recorded in its
 [completed plan](chatterbox-certifi-pillow-security-refresh.md).
 
@@ -152,8 +155,9 @@ logs and input manifests retained outside Git under the task artifact directory:
 - The preservation receipt verifies unchanged data, installation state,
   registry, shortcuts and startup value, with no leftover test installation.
   Aggregate SHA-256 comparison passed; the inventory and digest remain in the
-  local preservation receipt. The ordinary installation root was absent
-  before this test and remains absent afterwards. No firewall changes or TTS
+  local `download-diagnostics-20261020` preservation receipt.
+  The ordinary installation root was absent before this test and remains
+  absent afterwards. No firewall changes or TTS
   inference were required.
 
 Independent review `DOWNLOAD-DIAGNOSTICS-R1-ASTRA-20261021T031411Z` approved this

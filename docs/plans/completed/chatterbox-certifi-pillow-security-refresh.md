@@ -5,8 +5,11 @@ integration, installed gates, repository/browser/native checks, host restoration
 independent acceptance and fresh PR CI pass. PR #266 remains open.
 
 Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
-The private evidence archive
-retains the operational chronology. Original requirements remain unchanged.
+Privacy redaction: 2026-10-21. Personal context and local-data inventory values
+are omitted; technical requirements, outcomes, source/artifact identities and
+receipt IDs are retained. Full preservation receipts remain local.
+The seven PR commits were sanitized on 2026-10-21; source identities quoted
+below identify the original technical evidence.
 Failures and pending states below belong to their historical checkpoints;
 the final acceptance section records their resolution. No tests were rerun
 for this editorial consolidation.
@@ -43,8 +46,8 @@ CVE-2026-112395, CVE-2026-112404 and CVE-2026-112899. Non-yanked compatible
 Windows/Python 3.12 wheels exist. Compatibility remains to be validated.
 
 The approved scope exception supersedes the earlier dependency-upgrade
-exclusion only for certifi and Pillow. Existing
-commit/push/PR authorization applies to reviewed updates of PR #266; no merge,
+exclusion only for certifi and Pillow. Existing commit/push/PR authorization
+applies to reviewed updates of PR #266; no merge,
 overwrite of published artifacts or new public installer is authorized.
 
 ## Scope and non-goals
@@ -170,9 +173,9 @@ the persistent Codex Security artifact collection under the job names below.
   desktop cancellation results. An earlier probe had added 46 Numba caches;
   only those isolated files were removed, and the successful probe required
   an external cache directory. User runtime files were never changed.
-- The reviewed assembly contains 13,083 files, 5,027,548,189 installed runtime bytes and three
-  archive parts totaling 5,031,103,825 bytes. No cross-environment reproducibility
-  claim is made.
+- The reviewed assembly contains 13,083 files, 5,027,548,189 installed runtime
+  bytes and three archive parts totaling 5,031,103,825 bytes. No
+  cross-environment reproducibility claim is made.
 
 ## Discoveries and decisions
 
@@ -240,7 +243,8 @@ the persistent Codex Security artifact collection under the job names below.
   The preservation receipt confirms unchanged original data and installation,
   restored registry, shortcuts and startup value, with no leftover installation.
   Network-only HEAD comparisons across two connections found six successes
-  on one and one timeout/two successes on the other; they did not establish acquisition.
+  on one and one timeout/two successes on the other; they did not establish
+  acquisition or identify the cause of the connection failure.
   All three temporary offline firewall rules were removed and absence verified;
   ordinary-host `check:evidence`/`git diff --check` passed before later retries.
 - Review `CB-V5-INTEGRATION-R1-ASTRA-20261021T010551Z` is BLOCKED on the
@@ -446,9 +450,11 @@ Synthetic unrelated data is preserved in every policy. These local automated
 results do not claim a new clean-machine or interactive public-release gate.
 
 The executable observer passes for every observed installed process. Final
-preservation verifies unchanged original data by aggregate SHA-256 comparison,
+preservation receipts verify unchanged original data by aggregate SHA-256,
 with installation, registry, shortcuts and startup value restored and no
-leftover installation. R17 uses the verified local runtime without downloads.
+leftover installation. The inventory and aggregate digest remain in the local
+R15/R17 preservation receipts. R17 uses the verified local runtime without
+downloads.
 R18 and final host cleanup were separate requirements, completed below before
 acceptance.
 

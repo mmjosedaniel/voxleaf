@@ -6,9 +6,12 @@ Execution branch: `codex/reader-narration-acquisition-bugfixes`.
 Planning base: `f683a6eae77a7bac60a8f58f7e0af014bde27815`.
 
 Editorial consolidation: 2026-10-21, under PR266-CLEANUP-WO-20261021-01.
-The private evidence archive
-preserves the complete operational history. Requirements below are unchanged;
-all validation results describe their original checkpoint, not a new run.
+Privacy redaction: 2026-10-21. Personal context and local-data inventory values
+are omitted; technical requirements, outcomes, source/artifact identities and
+receipt IDs are retained. Full preservation receipts remain local.
+The seven PR commits were sanitized on 2026-10-21; source identities quoted
+below identify the original technical evidence. Validation results describe their original
+checkpoint.
 
 ## Goal
 
@@ -711,10 +714,11 @@ Chatterbox EN's measured seek restart is 79,329 ms and chapter restart is
   (`r3-installed-journey.log`) passes the B06/B07 OS-handle fault stages but
   fails the subsequent full-acquisition retry with
   `tts-optional-profile-cleanup-failed`. This is not a journey pass.
-  Its finally cleanup and outer restoration pass: the aggregate SHA-256 of
-  all original data files, registry exports and
-  shortcuts match the backup. A separate audit verifies startup registration,
-  absence of the test installation and absence of application processes.
+  Its finally cleanup and outer restoration pass: aggregate SHA-256 comparison
+  confirms the original data, registry exports and shortcuts match the backup.
+  The local preservation receipt retains the inventory and digest.
+  A separate audit verifies startup registration, absence of the test
+  installation and absence of application processes.
   `r3-preservation.json` and `r3-restoration-audit.json` retain this evidence.
   A new attempt adds content-free fixed-path failure diagnostics before
   restoration; the failure does not recur with the same installed candidate.
@@ -807,8 +811,9 @@ execution HEAD above, with unstaged changes and no Git mutations.
 ## Final closeout — 2026-10-20
 
 All eight corrections and required host acceptance gates are complete.
-A subsequent elevated cleanup succeeded. The ordinary-host launcher `r3-firewall-cleanup-02` records Windows
-package identity `15700` and exit 0. `r3-firewall-Remove.json` records removal
+A subsequent elevated cleanup succeeded. The ordinary-host launcher
+`r3-firewall-cleanup-02` records Windows package identity `15700` and exit 0.
+`r3-firewall-Remove.json` records removal
 of only the two task-owned rules at 21:42:24 UTC; `r3-host-cleanup-audit.json`
 confirms their absence and no installed test processes at 21:42:25 UTC.
 No other firewall rule was changed. Original data, registry, shortcuts and
