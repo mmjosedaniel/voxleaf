@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+| Plan | Scope | Status |
+| --- | --- | --- |
+| [Confirmed logic and lifecycle corrections](confirmed-logic-bugfixes.md) | Five bounded corrections for uninstall detection, Pause/completion, TTS error recovery, primary EPUB start, and promotion-backup cleanup. | Planning only; execution and validation have not started. |
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
