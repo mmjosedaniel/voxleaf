@@ -301,7 +301,11 @@ describe("bounded namespace-aware XML events", () => {
     expectXmlError(
       () =>
         readXmlBytes(
-          concatBytes(encodeUtf8("<root>"), Uint8Array.of(0xc3, 0x28)),
+          concatBytes(
+            encodeUtf8("<root>"),
+            Uint8Array.of(0xc3, 0x28),
+            encodeUtf8("</root>"),
+          ),
         ),
       "malformed-xml",
     );

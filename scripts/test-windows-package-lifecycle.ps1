@@ -16,19 +16,7 @@ if (-not $Installer) {
 }
 $Installer = (Resolve-Path -LiteralPath $Installer).Path
 
-function Assert-ExactChildPath {
-  param(
-    [Parameter(Mandatory = $true)][string]$Parent,
-    [Parameter(Mandatory = $true)][string]$Child,
-    [Parameter(Mandatory = $true)][string]$FailureCode
-  )
-
-  $resolvedParent = [IO.Path]::GetFullPath($Parent).TrimEnd([IO.Path]::DirectorySeparatorChar)
-  $resolvedChild = [IO.Path]::GetFullPath($Child)
-  if (-not $resolvedChild.StartsWith("$resolvedParent$([IO.Path]::DirectorySeparatorChar)", [StringComparison]::OrdinalIgnoreCase)) {
-    throw $FailureCode
-  }
-}
+. (Join-Path $PSScriptRoot "windows-package-lifecycle-data.ps1")
 
 $installRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA $productName))
 $expectedInstallRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA $productName))
@@ -89,6 +77,7 @@ foreach ($path in @($optionalRoots + $preferenceRoot + $unrelatedRoots)) {
 
 $applicationProcess = $null
 $originalDataBackedUp = $false
+$dataState = New-LifecycleDataState $localAppDataRoot $dataRoot $backupRoot $quarantineRoot
 $matrixResults = [Collections.Generic.List[object]]::new()
 $fixtureHashes = @{}
 $primaryFailure = $null
@@ -112,41 +101,8 @@ function Invoke-Uninstaller {
   }
 }
 
-function Assert-NoReparsePoints {
-  param(
-    [Parameter(Mandatory = $true)][string]$Root,
-    [Parameter(Mandatory = $true)][string]$FailureCode
-  )
-
-  if (-not (Test-Path -LiteralPath $Root)) {
-    return
-  }
-  $pending = [Collections.Generic.Stack[string]]::new()
-  $pending.Push($Root)
-  while ($pending.Count -gt 0) {
-    $current = $pending.Pop()
-    $item = Get-Item -LiteralPath $current -Force
-    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-      throw $FailureCode
-    }
-    if ($item.PSIsContainer) {
-      foreach ($child in Get-ChildItem -LiteralPath $current -Force) {
-        if (($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-          throw $FailureCode
-        }
-        if ($child.PSIsContainer) {
-          $pending.Push($child.FullName)
-        }
-      }
-    }
-  }
-}
-
 function Remove-TestDataRoot {
-  if (Test-Path -LiteralPath $dataRoot) {
-    Assert-NoReparsePoints $dataRoot "windows-release-lifecycle-test-data-reparse"
-    Remove-Item -LiteralPath $dataRoot -Recurse -Force
-  }
+  Remove-LifecycleTestDataRoot $dataState
 }
 
 function Write-FixtureMarker {
@@ -246,21 +202,8 @@ New-Item -ItemType Directory -Path $sentinelDirectory -Force | Out-Null
 $sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
 
 try {
-  if (Test-Path -LiteralPath $dataRoot) {
-    $existingData = Get-Item -LiteralPath $dataRoot -Force
-    if (($existingData.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-      throw "windows-release-lifecycle-preexisting-data-root-reparse"
-    }
-    if (Test-Path -LiteralPath $backupRoot) {
-      throw "windows-release-lifecycle-backup-root-occupied"
-    }
-    Move-Item -LiteralPath $dataRoot -Destination $backupRoot
-    $originalDataBackedUp = $true
-    $backup = Get-Item -LiteralPath $backupRoot -Force
-    if (-not $backup.PSIsContainer -or ($backup.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or (Test-Path -LiteralPath $dataRoot)) {
-      throw "windows-release-lifecycle-backup-verification-failed"
-    }
-  }
+  Initialize-LifecycleDataOwnership $dataState
+  $originalDataBackedUp = $dataState.BackupVerified
 
   Invoke-Installer
   $application = Join-Path $installRoot "voxleaf-desktop.exe"
@@ -322,38 +265,8 @@ try {
     $cleanupFailures.Add("windows-release-lifecycle-process-cleanup-failed")
   }
 
-  try {
-    Remove-TestDataRoot
-  } catch {
-    $cleanupFailures.Add("windows-release-lifecycle-test-data-cleanup-failed")
-    try {
-      if (Test-Path -LiteralPath $quarantineRoot) {
-        throw "windows-release-lifecycle-quarantine-root-occupied"
-      }
-      if (Test-Path -LiteralPath $dataRoot) {
-        Move-Item -LiteralPath $dataRoot -Destination $quarantineRoot
-      }
-    } catch {
-      $cleanupFailures.Add("windows-release-lifecycle-test-data-quarantine-failed:$quarantineRoot")
-    }
-  }
-
-  try {
-    if ($originalDataBackedUp) {
-      if (-not (Test-Path -LiteralPath $backupRoot -PathType Container)) {
-        throw "windows-release-lifecycle-backup-missing"
-      }
-      $backup = Get-Item -LiteralPath $backupRoot -Force
-      if (($backup.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-        throw "windows-release-lifecycle-backup-reparse"
-      }
-      if (Test-Path -LiteralPath $dataRoot) {
-        throw "windows-release-lifecycle-restore-target-occupied"
-      }
-      Move-Item -LiteralPath $backupRoot -Destination $dataRoot
-    }
-  } catch {
-    $cleanupFailures.Add("windows-release-lifecycle-original-data-restore-failed:$backupRoot")
+  foreach ($failure in @(Complete-LifecycleData $dataState)) {
+    $cleanupFailures.Add($failure)
   }
 
   try {

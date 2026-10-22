@@ -126,7 +126,17 @@ describe("OCF references", () => {
 
   it("applies the archive path limit to the resolved lookup key", () => {
     const base = parseArchiveEntryPath("a/base.xhtml", "file");
-    const oversizedTarget = "b".repeat(2_047);
+    const components = [
+      ...Array<string>(7).fill("b".repeat(255)),
+      "c".repeat(254),
+    ];
+    const exactTarget = components.join("/");
+    expect(exactTarget.length).toBe(2_046);
+    expect(resolveOcfReference(base, parseOcfReference(exactTarget)).path).toBe(
+      `a/${exactTarget}`,
+    );
+    const oversizedTarget = `${exactTarget}c`;
+    expect(oversizedTarget.length).toBe(2_047);
 
     expectPathError(
       () => resolveOcfReference(base, parseOcfReference(oversizedTarget)),

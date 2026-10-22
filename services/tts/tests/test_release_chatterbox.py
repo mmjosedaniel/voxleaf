@@ -361,8 +361,19 @@ def test_successor_authority_binds_current_artifacts_and_inherited_profile_evide
     assert inherited["status"] == "historical-v2-profile-policy-not-new-v3-measurements"
 
 
-def test_successor_publication_rejects_incomplete_or_substituted_assets(tmp_path: Path) -> None:
+@pytest.fixture
+def successor_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path, dict[str, object]]:
     authority = successor_acquisition_manifest()
+    monkeypatch.setattr(
+        chatterbox_authority, "successor_acquisition_manifest", lambda _root: authority
+    )
+    destination = tmp_path / "services/tts/release/optional/chatterbox"
+    destination.mkdir(parents=True)
+    for name in ("optional-package-manifest-v3.json", "runtime-package-evidence-v4.json"):
+        (destination / name).write_bytes(f"synthetic sentinel: {name}".encode())
+    (destination / "historical-sentinel.json").write_bytes(b"historical sentinel")
     runtime = authority["runtimeArtifact"]
     assert isinstance(runtime, dict)
     receipt = {
@@ -383,14 +394,43 @@ def test_successor_publication_rejects_incomplete_or_substituted_assets(tmp_path
         ],
     }
     path = tmp_path / "publication.json"
-    receipt["assets"][0]["digest"] = "sha256:" + "0" * 64  # type: ignore[index]
+    path.write_text(json.dumps(receipt))
+    return path, destination, authority
+
+
+@pytest.mark.parametrize("mutation", ["invalid-digest", "missing-assets"])
+def test_successor_publication_rejects_incomplete_or_substituted_assets(
+    tmp_path: Path,
+    successor_publication: tuple[Path, Path, dict[str, object]],
+    mutation: str,
+) -> None:
+    path, destination, _authority = successor_publication
+    before = {file.relative_to(destination): file.read_bytes() for file in destination.rglob("*")}
+    receipt = json.loads(path.read_text())
+    if mutation == "invalid-digest":
+        receipt["assets"][0]["digest"] = "sha256:" + "0" * 64
+    else:
+        receipt["assets"] = []
     path.write_text(json.dumps(receipt))
     with pytest.raises(ReleaseChatterboxError, match="publication-invalid"):
-        write_successor_authority(path)
-    receipt["assets"] = []
-    path.write_text(json.dumps(receipt))
-    with pytest.raises(ReleaseChatterboxError, match="publication-invalid"):
-        write_successor_authority(path)
+        write_successor_authority(path, tmp_path)
+    assert {
+        file.relative_to(destination): file.read_bytes() for file in destination.rglob("*")
+    } == before
+
+
+def test_verified_successor_publication_writes_exact_isolated_authority(
+    tmp_path: Path, successor_publication: tuple[Path, Path, dict[str, object]]
+) -> None:
+    path, destination, authority = successor_publication
+    write_successor_authority(path, tmp_path)
+    assert (destination / "optional-package-manifest-v3.json").read_bytes() == (
+        chatterbox_authority.render_successor_authority(authority)
+    )
+    assert (destination / "runtime-package-evidence-v4.json").read_bytes() == (
+        chatterbox_authority.render_successor_authority(successor_runtime_evidence(tmp_path))
+    )
+    assert (destination / "historical-sentinel.json").read_bytes() == b"historical sentinel"
 
 
 @pytest.mark.parametrize("failure", ["missing", "tampered", "different-wheel"])

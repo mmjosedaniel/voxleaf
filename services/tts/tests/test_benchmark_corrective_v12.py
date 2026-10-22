@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
 
 import pytest
 
+import benchmarks.corrective_v12 as v12
 import benchmarks.corrective_v12_quality as v12_quality
 from benchmarks.adapters.corrective_v9 import ChatterboxV9Configuration
 from benchmarks.chatterbox_v11_screen import (
@@ -26,7 +29,7 @@ from benchmarks.fake_adapter import (
     FakeNanosecondClock,
 )
 from benchmarks.harness import BenchmarkHarness, load_bilingual_corpus
-from benchmarks.preflight import HostSnapshot
+from benchmarks.preflight import HostSnapshot, RepositoryState
 from benchmarks.v11_authority import CANDIDATE_ID
 from benchmarks.v12_authority import (
     CHATTERBOX_CANDIDATE_ID,
@@ -131,13 +134,81 @@ def test_v12_private_raw_is_schema_valid_and_decision_neutral() -> None:
     assert len(attempts) == 50
 
 
-def test_v12_conditions_remain_explicit() -> None:
-    conditions = ScreenConditions(
-        sleep_disabled=True,
-        background_load_acceptable=True,
-        thermal_state_acceptable=True,
+@pytest.fixture
+def eligible_v12_preflight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[[ScreenConditions], V12PreflightReceipt]:
+    interpreter = tmp_path / "python.exe"
+    interpreter.write_bytes(b"synthetic interpreter; never executed")
+    execution = _receipt().execution
+    host = replace(
+        execution.host,
+        total_vram_bytes=8_000 * 1024**2,
+        free_vram_bytes=6_144 * 1024**2,
     )
-    assert conditions.sleep_disabled
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    monkeypatch.setattr(v12, "_candidate_paths", lambda _candidate: (interpreter, tmp_path))
+    monkeypatch.setattr(
+        v12,
+        "_load_candidate",
+        lambda _candidate, _root: (
+            execution.profile,
+            execution.configuration,
+            execution.languages,
+            execution.role,
+        ),
+    )
+    monkeypatch.setattr(
+        "benchmarks.corrective_v12.GitRepositoryProbe.snapshot",
+        lambda _self, _root: RepositoryState(commit_sha="b" * 40, clean=True),
+    )
+    monkeypatch.setattr(
+        "benchmarks.corrective_v12.WindowsHostProbe.snapshot", lambda _self, _root: host
+    )
+    monkeypatch.setattr(
+        "benchmarks.corrective_v12.WindowsFirewallNetworkProbe.active", lambda _self, _python: True
+    )
+    monkeypatch.setattr(v12, "git_authority_tree_matches", lambda _root, _commit: True)
+    monkeypatch.setattr(v12, "git_is_strict_ancestor", lambda _root, _authority, _execution: True)
+
+    def run(conditions: ScreenConditions) -> V12PreflightReceipt:
+        return v12.run_v12_preflight(
+            authority_commit_sha="a" * 40,
+            execution_commit_sha="b" * 40,
+            conditions=conditions,
+        )
+
+    return run
+
+
+def test_v12_preflight_accepts_otherwise_eligible_conditions(
+    eligible_v12_preflight: Callable[[ScreenConditions], V12PreflightReceipt],
+) -> None:
+    receipt = eligible_v12_preflight(ScreenConditions(True, True, True))
+    assert receipt.eligible
+    assert receipt.execution.eligible
+    assert receipt.failures == receipt.execution.failures == ()
+
+
+@pytest.mark.parametrize(
+    ("condition", "reason"),
+    [
+        ("sleep_disabled", "sleep"),
+        ("background_load_acceptable", "background-load"),
+        ("thermal_state_acceptable", "thermal-state"),
+    ],
+)
+def test_v12_preflight_rejects_each_unacceptable_condition(
+    eligible_v12_preflight: Callable[[ScreenConditions], V12PreflightReceipt],
+    condition: str,
+    reason: str,
+) -> None:
+    conditions = replace(ScreenConditions(True, True, True), **{condition: False})
+    receipt = eligible_v12_preflight(conditions)
+    assert not receipt.eligible
+    assert not receipt.execution.eligible
+    assert receipt.failures == receipt.execution.failures == (reason,)
 
 
 def test_v12_private_quality_aggregate_is_language_specific_and_bounded(

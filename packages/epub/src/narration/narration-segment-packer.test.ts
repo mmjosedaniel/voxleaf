@@ -529,20 +529,6 @@ describe("narration segment packer", () => {
     );
   });
 
-  it("makes stable segmentation independent of later batch slicing", async () => {
-    const source = Array.from(
-      { length: 10 },
-      (_, index) => `${String.fromCharCode(97 + index).repeat(99)}.`,
-    ).join(" ");
-    const packed = await packBlock(paragraph([text(source)]), "und");
-    const oneAtATime = groupSegments(packed, 1).flat();
-    const threeAtATime = groupSegments(packed, 3).flat();
-
-    expect(oneAtATime).toEqual(packed.segments);
-    expect(threeAtATime).toEqual(packed.segments);
-    expect(oneAtATime).toEqual(threeAtATime);
-  });
-
   it("packs the accepted corpus deterministically with frozen bounded output", async () => {
     for (const corpusCase of NARRATION_NORMALIZATION_CORPUS) {
       const fixture = corpusFixture(corpusCase);
@@ -864,17 +850,6 @@ function assertOrderedSourceSpans(packed: NarrationPackedBlock): void {
     previousEnd = segment.sourceSpan.endOffsetCodePoints;
   }
   expect(previousEnd).toBe(packed.block.sourceEndOffsetCodePoints);
-}
-
-function groupSegments(
-  packed: NarrationPackedBlock,
-  size: number,
-): readonly (readonly NarrationPackedBlock["segments"][number][])[] {
-  const groups: NarrationPackedBlock["segments"][number][][] = [];
-  for (let index = 0; index < packed.segments.length; index += size) {
-    groups.push([...packed.segments.slice(index, index + size)]);
-  }
-  return groups;
 }
 
 function assertSegmentBounds(packed: NarrationPackedBlock): void {

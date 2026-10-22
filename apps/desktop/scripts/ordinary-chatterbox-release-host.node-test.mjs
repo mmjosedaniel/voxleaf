@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import test from "node:test";
+import test, { after } from "node:test";
 
 import {
   assertNoDevelopmentEnvironment,
@@ -23,6 +23,7 @@ import { WebDriverClientError } from "./native-webdriver-client.mjs";
 import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
+after(async () => await rm(root, { recursive: true, force: true }));
 
 test("bounded download probe cancels at its first MiB without completing acquisition", async () => {
   let settle;

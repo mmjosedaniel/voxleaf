@@ -553,16 +553,6 @@ function memoryDelta(
   });
 }
 
-function selectedCapacityFor(
-  blockCount: number,
-  projectedDomNodes: number,
-): "chapter-too-large" | "render" {
-  return blockCount <= SELECTED_LIVE_BLOCK_LIMIT &&
-    projectedDomNodes <= SELECTED_LIVE_DOM_NODE_LIMIT
-    ? "render"
-    : "chapter-too-large";
-}
-
 async function productionResourceInstrumentation(
   page: Page,
 ): Promise<ProductionResourceInstrumentation> {
@@ -1283,7 +1273,4 @@ test("records exact selected reader-side capacity boundaries", () => {
   expect(BATCH_SIZE_BLOCKS).toBe(250);
   expect(SELECTED_LIVE_BLOCK_LIMIT).toBe(10_000);
   expect(SELECTED_LIVE_DOM_NODE_LIMIT).toBe(80_000);
-  expect(selectedCapacityFor(10_000, 80_000)).toBe("render");
-  expect(selectedCapacityFor(10_001, 80_000)).toBe("chapter-too-large");
-  expect(selectedCapacityFor(10_000, 80_001)).toBe("chapter-too-large");
 });

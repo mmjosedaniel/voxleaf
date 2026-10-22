@@ -420,6 +420,7 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
         _artifact(tmp_path, "voice_styles/F1.json", b"voice"),
     )
     calls: dict[str, object] = {}
+    voice_style = object()
 
     class Waveform:
         shape = (1, 44_100)
@@ -439,7 +440,7 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
 
         def get_voice_style(self, voice_id: str) -> object:
             calls["voice"] = voice_id
-            return object()
+            return voice_style
 
         def synthesize(self, text: str, **kwargs: object) -> tuple[Waveform, object]:
             calls["text"] = text
@@ -486,7 +487,7 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
     assert calls["voice"] == "F1"
     generate_call = cast(dict[str, object], calls["generate"])
     assert generate_call == {
-        "voice_style": generate_call["voice_style"],
+        "voice_style": voice_style,
         "lang": "es",
         "total_steps": 8,
         "speed": 1.05,
