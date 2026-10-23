@@ -47,7 +47,11 @@ Recent accepted work is recorded at its original checkpoint:
   five regression-tested fixes for NSIS detection, Pause/completion, operational
   TTS recovery, primary EPUB start and owned `.previous` cleanup. Ordinary
   interactive acceptance, restored-data integrity, Piper/Chatterbox ES/EN and
-  independent implementation approval passed; changes remain uncommitted.
+  independent implementation approval passed at closeout. The work is now in
+  [PR #272](https://github.com/mmjosedaniel/voxleaf/pull/272); subsequent
+  [CI and privacy](plans/evidence/confirmed-logic-bugfixes/ci-nsis-follow-up.md)
+  and [dependency audit](plans/evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md)
+  records distinguish follow-up validation from that historical acceptance.
 
 - [Reader, narration and acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md):
   eight fixes, permanent regressions and repository/browser/native/installed

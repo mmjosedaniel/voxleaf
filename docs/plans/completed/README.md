@@ -16,7 +16,7 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
-- [Confirmed logic and lifecycle corrections](confirmed-logic-bugfixes.md): five regression-tested fixes for NSIS detection, Pause/completion, operational TTS recovery, primary EPUB start and owned promotion-backup cleanup. Ordinary interactive choices, restored-user-data integrity, Piper/Chatterbox ES/EN and independent Astra implementation approval passed; final closeout review is linked in the plan. Changes remain unstaged and uncommitted.
+- [Confirmed logic and lifecycle corrections](confirmed-logic-bugfixes.md): five regression-tested fixes for NSIS detection, Pause/completion, operational TTS recovery, primary EPUB start and owned promotion-backup cleanup. Ordinary interactive choices, restored-user-data integrity, Piper/Chatterbox ES/EN and independent Astra implementation approval passed; final closeout review is linked in the plan. Published in [PR #272](https://github.com/mmjosedaniel/voxleaf/pull/272); [CI/privacy](../evidence/confirmed-logic-bugfixes/ci-nsis-follow-up.md) and [dependency-audit follow-up](../evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md) record later results and blockers.
 
 - [Test integrity and lifecycle harness safety](test-integrity-and-harness-safety.md): all eleven corrections accepted, including atomic lifecycle data ownership, long-path/reparse protection and twelve Windows fault/preservation cases; G1-G8, real installer policies, verified user-data restoration/reinstallation and independent Astra review pass. Changes remain uncommitted.
 

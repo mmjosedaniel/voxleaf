@@ -16,6 +16,15 @@ Bounded installed acquisition probes are not full B06/B07 acceptance evidence.
 
 ### Current Chatterbox security successor
 
+Current audit checkpoint (2026-10-23): PR #272's fresh production audit fails
+for `filelock` CVE-2026-112940 and `setuptools` GHSA-xmj3-9gf7-h52w in the
+published v5 lock. The earlier passing results below remain historical.
+The native lock now selects patched Tokio 1.53.3 for RUSTSEC-2026-0386;
+the Rust audit passes with the unchanged seven-notice policy. This does not
+clear the optional Python audit. See the
+[follow-up evidence](../plans/evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md)
+for the bounded patch, actual results and successor-release requirements.
+
 The current development candidate follows [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md):
 the published `chatterbox-runtime-v5` refresh changes only certifi to 2026.10.19
 and Pillow to 13.0.0. Its complete production audit passes on 2026-10-21.
