@@ -134,6 +134,7 @@ const UNINSTALL_FLAG_OPTIONS = Object.freeze(
 );
 
 const OPTIONAL_UNINSTALL_ROOTS = Object.freeze([
+  "tts\\cb\\.previous",
   "tts\\cb\\5",
   "tts\\cb\\3",
   "tts\\cb\\2",

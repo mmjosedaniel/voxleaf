@@ -43,6 +43,12 @@ candidate remains unpublished/unadmitted. See the
 
 Recent accepted work is recorded at its original checkpoint:
 
+- [Confirmed logic and lifecycle corrections](plans/completed/confirmed-logic-bugfixes.md):
+  five regression-tested fixes for NSIS detection, Pause/completion, operational
+  TTS recovery, primary EPUB start and owned `.previous` cleanup. Ordinary
+  interactive acceptance, restored-data integrity, Piper/Chatterbox ES/EN and
+  independent implementation approval passed; changes remain uncommitted.
+
 - [Reader, narration and acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md):
   eight fixes, permanent regressions and repository/browser/native/installed
   acceptance, including Piper/Chatterbox ES/EN and cancellation/cleanup faults.

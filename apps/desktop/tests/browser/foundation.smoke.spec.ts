@@ -10,6 +10,50 @@ const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
 const NARRATION_PLAYBACK_STORAGE_KEY = "voxleaf.narration.playback-preference";
 const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
 
+test("CLB-04 opens primary content and follows an auxiliary link without changing its locator", async ({
+  page,
+}) => {
+  const fixtureModule = (await import(
+    new URL(
+      "../../../../packages/epub/test-support/epub-fixture.ts",
+      import.meta.url,
+    ).href
+  )) as { buildPrimaryStartEpubFixture(): Promise<Uint8Array> };
+  const buffer = Buffer.from(
+    await fixtureModule.buildPrimaryStartEpubFixture(),
+  );
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "primary-start.epub",
+    mimeType: "application/epub+zip",
+    buffer,
+  });
+  await expect(
+    page.getByRole("heading", { name: "Primary opening" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Visit auxiliary" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Auxiliary section" }),
+  ).toBeVisible();
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        (key) => localStorage.getItem(key),
+        READER_POSITIONS_STORAGE_KEY,
+      ),
+    )
+    .toContain('"spineItemIndex":0');
+  await page.reload();
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "primary-start.epub",
+    mimeType: "application/epub+zip",
+    buffer,
+  });
+  await expect(
+    page.getByRole("heading", { name: "Auxiliary section" }),
+  ).toBeVisible();
+});
+
 async function buildNavigationFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
     "../../../../packages/epub/test-support/epub-fixture.ts",

@@ -1,4 +1,4 @@
-import type { BookV1 } from "@voxleaf/shared";
+import type { BookV1, ReadingLocatorV1 } from "@voxleaf/shared";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
@@ -20,7 +20,10 @@ import type {
   NarrationPreparationRequest,
   NarrationPreparationResult,
 } from "../document/narration-model.js";
-import type { PublicationLocatorIndex } from "../locator/locator-index.js";
+import type {
+  LocatedSemanticBlock,
+  PublicationLocatorIndex,
+} from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import {
   narrationPreparationFailure,
@@ -112,6 +115,8 @@ function mapUnexpectedCloseError(error: unknown): never {
 
 class OpenedPublicationHandle implements OpenedPublication {
   public readonly book: BookV1;
+  public readonly defaultStartLocator: ReadingLocatorV1 | undefined;
+  readonly #defaultStartBlock: LocatedSemanticBlock | undefined;
   public readonly documents: readonly SemanticDocument[];
   public readonly locators: readonly PublicationLocatedBlock[];
   public readonly navigation: readonly PublicationNavigationNode[];
@@ -137,9 +142,12 @@ class OpenedPublicationHandle implements OpenedPublication {
     archive: OpenedEpubArchive,
     values: OpenedPublicationValues,
     bindings: readonly RasterImageResourceBinding[],
+    defaultStartBlock: LocatedSemanticBlock | undefined,
   ) {
     this.#archive = archive;
     this.book = values.book;
+    this.#defaultStartBlock = defaultStartBlock;
+    this.defaultStartLocator = defaultStartBlock?.startLocator;
     this.documents = Object.freeze([...values.documents]);
     this.#locatorIndex = values.locatorIndex;
     this.#narrationResourceObserver = values.narrationResourceObserver;
@@ -211,6 +219,7 @@ class OpenedPublicationHandle implements OpenedPublication {
       createEpubProcessingBudget({
         ...(options.signal === undefined ? {} : { signal: options.signal }),
       }),
+      this.#defaultStartBlock ?? null,
     );
   }
 
@@ -349,5 +358,18 @@ export function createOpenedPublication(
   values: OpenedPublicationValues,
 ): OpenedPublication {
   const bindings = createRasterImageResourceCatalog(archive, packageDocument);
-  return new OpenedPublicationHandle(archive, values, bindings);
+  let defaultStartBlock: LocatedSemanticBlock | undefined;
+  for (const spine of packageDocument.spine) {
+    archive.budget.checkpoint();
+    if (spine.linear) {
+      defaultStartBlock = values.locatorIndex.spines[spine.index]?.blocks[0];
+      if (defaultStartBlock !== undefined) break;
+    }
+  }
+  return new OpenedPublicationHandle(
+    archive,
+    values,
+    bindings,
+    defaultStartBlock,
+  );
 }

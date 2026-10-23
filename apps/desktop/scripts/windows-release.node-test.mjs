@@ -8,6 +8,7 @@ import {
   readdir,
   realpath,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import os from "node:os";
@@ -25,6 +26,163 @@ import {
   validateClosedReleaseValues,
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
+
+test(
+  "CLB-01 compiled NSIS detects directories and each optional root",
+  {
+    skip: process.platform !== "win32",
+  },
+  async () => {
+    const { nsisHooks } = await loadReleaseDocuments(repositoryRoot());
+    const directoryFunction = nsisHooks.match(
+      /Function un\.ExactDirectoryExists[\s\S]*?FunctionEnd/,
+    )?.[0];
+    const optionalFunction = nsisHooks.match(
+      /Function un\.OptionalChatterboxDataExists[\s\S]*?FunctionEnd/,
+    )?.[0];
+    assert.ok(directoryFunction && optionalFunction);
+    const root = await mkdtemp(path.join(os.tmpdir(), "voxleaf-nsis-clb-"));
+    try {
+      const ownedRoot = path.join(root, "owned");
+      const optionalRoots = [
+        ...optionalFunction.matchAll(
+          /\$LOCALAPPDATA\\com\.voxleaf\.desktop\\([^"\r\n]+)/g,
+        ),
+      ].map((match) => match[1]);
+      assert.equal(optionalRoots.length, 7);
+      assert.ok(optionalRoots.includes("tts\\cb\\.previous"));
+      const safeFunctions = ["IsSafeOwnedDirectory", "IsSafeOwnedTree"]
+        .map((name) => {
+          const fn = nsisHooks.match(
+            new RegExp(`Function un\\.${name}[\\s\\S]*?FunctionEnd`),
+          )?.[0];
+          assert.ok(fn);
+          return fn;
+        })
+        .join("\n");
+      const hooks = nsisHooks
+        .slice(nsisHooks.indexOf("!macro NSIS_HOOK_PREUNINSTALL"))
+        .replaceAll("$LOCALAPPDATA\\com.voxleaf.desktop", "$EXEDIR\\owned");
+      const fixture = `Unicode true
+!include "FileFunc.nsh"
+Var RemoveChatterboxData
+Var RemovePreferencesAndRecovery
+Var DeleteAppDataCheckboxState
+Var ChatterboxDataCheckboxState
+RequestExecutionLevel user
+SilentInstall silent
+SilentUnInstall silent
+OutFile "${root}\\fixture.exe"
+${directoryFunction}
+${optionalFunction.replaceAll("$LOCALAPPDATA\\com.voxleaf.desktop", "$EXEDIR\\owned")}
+${safeFunctions}
+${hooks}
+Section
+  WriteUninstaller "$EXEDIR\\uninstall.exe"
+SectionEnd
+Section "Uninstall"
+  StrCpy $R0 "$EXEDIR\\candidate"
+  Call un.ExactDirectoryExists
+  FileOpen $0 "$EXEDIR\\result.txt" w
+  FileWrite $0 "$R0"
+  Call un.OptionalChatterboxDataExists
+  FileWrite $0 "$R0"
+  FileClose $0
+  !insertmacro NSIS_HOOK_PREUNINSTALL
+  !insertmacro NSIS_HOOK_POSTUNINSTALL
+SectionEnd
+`;
+      await writeFile(path.join(root, "fixture.nsi"), fixture);
+      const compiler = path.join(
+        process.env.LOCALAPPDATA,
+        "tauri",
+        "NSIS",
+        "makensis.exe",
+      );
+      const compiled = spawnSync(
+        compiler,
+        ["/V2", path.join(root, "fixture.nsi")],
+        { encoding: "utf8" },
+      );
+      assert.equal(compiled.status, 0, compiled.stderr || compiled.stdout);
+      assert.equal(spawnSync(path.join(root, "fixture.exe"), ["/S"]).status, 0);
+      const observe = async (expected) => {
+        assert.equal(
+          spawnSync(path.join(root, "uninstall.exe"), ["/S", `_?=${root}`])
+            .status,
+          0,
+        );
+        assert.equal(
+          await readFile(path.join(root, "result.txt"), "utf8"),
+          expected,
+        );
+      };
+      await observe("00");
+      await writeFile(path.join(root, "candidate"), "synthetic");
+      await observe("00");
+      await rm(path.join(root, "candidate"));
+      await mkdir(path.join(root, "candidate"));
+      await observe("10");
+      await writeFile(path.join(root, "candidate", "sentinel"), "synthetic");
+      await observe("10");
+      for (const relative of optionalRoots) {
+        await mkdir(path.join(ownedRoot, relative), { recursive: true });
+        await observe("11");
+        await rm(ownedRoot, { recursive: true });
+      }
+      const backup = path.join(ownedRoot, "tts", "cb", ".previous");
+      const preferences = path.join(
+        ownedRoot,
+        "EBWebView",
+        "Default",
+        "Local Storage",
+      );
+      const outside = path.join(root, "outside");
+      for (const directory of [backup, preferences, outside]) {
+        await mkdir(directory, { recursive: true });
+        await writeFile(path.join(directory, "keep.bin"), "synthetic");
+      }
+      const uninstall = (...flags) =>
+        spawnSync(path.join(root, "uninstall.exe"), [
+          "/S",
+          ...flags,
+          `_?=${root}`,
+        ]).status;
+      assert.equal(uninstall(), 0);
+      assert.equal(
+        await readFile(path.join(backup, "keep.bin"), "utf8"),
+        "synthetic",
+      );
+      assert.equal(uninstall("/UPDATE", "/REMOVE_CHATTERBOX_DATA=1"), 0);
+      assert.equal(
+        await readFile(path.join(backup, "keep.bin"), "utf8"),
+        "synthetic",
+      );
+      const junction = path.join(backup, "external");
+      await symlink(outside, junction, "junction");
+      assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1);
+      assert.equal(
+        await readFile(path.join(outside, "keep.bin"), "utf8"),
+        "synthetic",
+      );
+      await rm(junction);
+      assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+      await assert.rejects(readFile(path.join(backup, "keep.bin")), {
+        code: "ENOENT",
+      });
+      assert.equal(
+        await readFile(path.join(preferences, "keep.bin"), "utf8"),
+        "synthetic",
+      );
+      assert.equal(
+        await readFile(path.join(outside, "keep.bin"), "utf8"),
+        "synthetic",
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
 
 test("the checked-in Windows release configuration is closed and current", async () => {
   assert.equal(

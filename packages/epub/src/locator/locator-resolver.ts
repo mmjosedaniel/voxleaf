@@ -185,6 +185,7 @@ export function resolvePublicationLocator(
   index: PublicationLocatorIndex,
   input: unknown,
   budget: EpubProcessingBudget,
+  defaultStartBlock?: LocatedSemanticBlock | null,
 ): LocatorResolution {
   budget.checkpoint();
   const locator = decodeLocator(input);
@@ -194,8 +195,11 @@ export function resolvePublicationLocator(
 
   const spine = findMatchingSpine(index, locator, budget);
   if (spine === undefined) {
-    const bookStart = firstAddressableBlock(index, budget);
-    if (bookStart === undefined) {
+    const bookStart =
+      defaultStartBlock === undefined
+        ? firstAddressableBlock(index, budget)
+        : defaultStartBlock;
+    if (bookStart == null) {
       return fail("locator-unresolved");
     }
     budget.checkpoint();

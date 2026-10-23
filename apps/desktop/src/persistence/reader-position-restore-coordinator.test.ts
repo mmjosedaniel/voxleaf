@@ -83,6 +83,7 @@ function createPublication(): OpenedPublication {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: Object.freeze([]),
     locators: locatedBlocks,
+    defaultStartLocator: locatedBlocks[0]?.startLocator,
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,
@@ -174,6 +175,29 @@ function controlled<T>(): {
 }
 
 describe("reader position restore coordinator", () => {
+  it("CLB-04 uses the primary default for missing/invalid state but preserves saved auxiliary positions", async () => {
+    const publication = {
+      ...createPublication(),
+      defaultStartLocator: SECOND_START,
+    };
+    for (const status of ["missing", "malformed"] as const) {
+      const result = await new ReaderPositionRestoreCoordinator(
+        createRepository({ status }),
+      ).restore(publication);
+      expect(result).toMatchObject({
+        status: "ready",
+        position: { mode: "book-start", locator: SECOND_START },
+      });
+    }
+    const auxiliary = publication.locators[0]!.startLocator;
+    const restored = await new ReaderPositionRestoreCoordinator(
+      createRepository({ status: "ready", state: persistedState(auxiliary) }),
+    ).restore(publication);
+    expect(restored).toMatchObject({
+      status: "ready",
+      position: { mode: "exact", locator: auxiliary },
+    });
+  });
   it("restores an exact canonical locator and decoded display preferences", async () => {
     const publication = createPublication();
     const locator = locatorAt(SECOND_START, 3);

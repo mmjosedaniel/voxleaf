@@ -106,6 +106,7 @@ function createTestPublication(
     }),
     documents: empty ? Object.freeze([]) : Object.freeze([TEST_DOCUMENT]),
     locators: empty ? Object.freeze([]) : Object.freeze([TEST_LOCATED_BLOCK]),
+    defaultStartLocator: empty ? undefined : TEST_LOCATED_BLOCK.startLocator,
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,

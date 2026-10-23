@@ -573,6 +573,8 @@ impl WorkIdentity {
 struct Lifecycle {
     state: String,
     active: Option<WorkIdentity>,
+    // One bounded receipt, issued only after verified process termination.
+    contained_service_instance_id: Option<String>,
 }
 
 struct ChildProcess {
@@ -856,6 +858,7 @@ impl TtsServiceSupervisor {
             lifecycle: Mutex::new(Lifecycle {
                 state: "stopped".to_owned(),
                 active: None,
+                contained_service_instance_id: None,
             }),
             session: Mutex::new(None),
             child_configuration: Mutex::new(child_configuration),
@@ -946,16 +949,23 @@ impl TtsServiceSupervisor {
         timeout: Duration,
         expected_kind: &str,
     ) -> Result<Value, TtsNativeFailure> {
+        self.receive_control_with_engine_errors(session, timeout, expected_kind, false)
+    }
+
+    fn receive_control_with_engine_errors(
+        &self,
+        session: &ServiceSession,
+        timeout: Duration,
+        expected_kind: &str,
+        allow_engine_error: bool,
+    ) -> Result<Value, TtsNativeFailure> {
         let frame = session.receive(timeout)?;
         if frame.kind != FrameKind::Control {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
         let control = decode_control(&frame.payload)?;
         let actual_kind = control_kind(&control)?;
-        if actual_kind != expected_kind {
-            return Err(TtsNativeFailure::ProtocolRejected);
-        }
-        if expected_kind != "protocolRejected"
+        if actual_kind != "protocolRejected"
             && control.get("serviceInstanceId").and_then(Value::as_str)
                 != Some(session.service_instance_id.as_str())
         {
@@ -970,6 +980,38 @@ impl TtsServiceSupervisor {
             .is_none_or(|active| active.service_instance_id != session.service_instance_id)
         {
             return Err(TtsNativeFailure::Cancelled);
+        }
+        if actual_kind == "error" && allow_engine_error {
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let valid_context = match lifecycle.active.as_ref() {
+                Some(identity) => {
+                    let starting = lifecycle.state == "ready" && expected_kind == "state";
+                    let generating =
+                        lifecycle.state == "generating" && expected_kind == "audioMetadata";
+                    (starting || generating)
+                        && (identity.matches_value(control.get("workIdentity"))
+                            || (starting && control.get("workIdentity").is_none()))
+                }
+                None => {
+                    expected_kind == "state"
+                        && matches!(lifecycle.state.as_str(), "unloaded" | "loading" | "warming")
+                        && control.get("workIdentity").is_none()
+                }
+            };
+            if !valid_context || control["error"]["code"] != "internal-failure" {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            return Err(match control.get("reason").and_then(Value::as_str) {
+                Some("engine-failure") => TtsNativeFailure::InternalFailure,
+                Some("engine-timeout") => TtsNativeFailure::TimedOut,
+                _ => TtsNativeFailure::ProtocolRejected,
+            });
+        }
+        if actual_kind != expected_kind {
+            return Err(TtsNativeFailure::ProtocolRejected);
         }
         if expected_kind == "state" {
             let state = control
@@ -988,6 +1030,19 @@ impl TtsServiceSupervisor {
         expected_state: &str,
     ) -> Result<Value, TtsNativeFailure> {
         let state = self.receive_control(session, timeout, "state")?;
+        if state.get("state").and_then(Value::as_str) != Some(expected_state) {
+            return Err(TtsNativeFailure::ProtocolRejected);
+        }
+        Ok(state)
+    }
+
+    fn receive_engine_state(
+        &self,
+        session: &ServiceSession,
+        timeout: Duration,
+        expected_state: &str,
+    ) -> Result<Value, TtsNativeFailure> {
+        let state = self.receive_control_with_engine_errors(session, timeout, "state", true)?;
         if state.get("state").and_then(Value::as_str) != Some(expected_state) {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
@@ -1013,6 +1068,10 @@ impl TtsServiceSupervisor {
         {
             return error;
         }
+        let Ok(mut lifecycle) = self.lifecycle.lock() else {
+            return TtsNativeFailure::InternalFailure;
+        };
+        lifecycle.contained_service_instance_id = Some(failed.service_instance_id.clone());
         session.take();
         failure
     }
@@ -1038,6 +1097,10 @@ impl TtsServiceSupervisor {
             .clone();
         let session = ServiceSession::spawn(&child_configuration, service_instance_id.clone())?;
         self.set_state("starting")?;
+        self.lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .contained_service_instance_id = None;
         *slot = Some(session.clone());
         drop(slot);
         let handshake = json!({
@@ -1072,12 +1135,12 @@ impl TtsServiceSupervisor {
         let result = (|| {
             let load_started = Instant::now();
             session.write_control(&service_control("load", &session.service_instance_id))?;
-            let loading = self.receive_expected_state(&session, LOAD_TIMEOUT, "loading")?;
-            let warming = self.receive_expected_state(&session, LOAD_TIMEOUT, "warming")?;
+            let loading = self.receive_engine_state(&session, LOAD_TIMEOUT, "loading")?;
+            let warming = self.receive_engine_state(&session, LOAD_TIMEOUT, "warming")?;
             let load_elapsed = load_started.elapsed();
             let warm_started = Instant::now();
             session.write_control(&service_control("warm", &session.service_instance_id))?;
-            let ready = self.receive_expected_state(&session, WARM_TIMEOUT, "ready")?;
+            let ready = self.receive_engine_state(&session, WARM_TIMEOUT, "ready")?;
             let capabilities = self.receive_control(&session, WARM_TIMEOUT, "capabilities")?;
             Ok(PrepareMeasurement {
                 records: vec![loading, warming, ready, capabilities],
@@ -1133,8 +1196,13 @@ impl TtsServiceSupervisor {
         let command_started = Instant::now();
         let result = (|| {
             session.write_control(&synthesize)?;
-            self.receive_expected_state(&session, SYNTHESIS_TIMEOUT, "generating")?;
-            let metadata = self.receive_control(&session, SYNTHESIS_TIMEOUT, "audioMetadata")?;
+            self.receive_engine_state(&session, SYNTHESIS_TIMEOUT, "generating")?;
+            let metadata = self.receive_control_with_engine_errors(
+                &session,
+                SYNTHESIS_TIMEOUT,
+                "audioMetadata",
+                true,
+            )?;
             if metadata.get("requestId").and_then(Value::as_str)
                 != Some(identity.request_id.as_str())
                 || !metadata_frame_matches(&metadata, &identity)
@@ -1273,11 +1341,28 @@ impl TtsServiceSupervisor {
             Err(TtsNativeFailure::Busy) => None,
             Err(error) => return Err(error),
         };
-        if operation.is_none() {
-            let mut slot = self
-                .session
+        let mut slot = self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if slot.is_none() {
+            let mut lifecycle = self
+                .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let id = expected.ok_or(TtsNativeFailure::InvalidState)?;
+            match lifecycle.contained_service_instance_id.as_deref() {
+                Some(contained) if contained == id => {}
+                Some(_) => return Err(TtsNativeFailure::Cancelled),
+                None => return Err(TtsNativeFailure::InvalidState),
+            }
+            lifecycle.state = "stopped".to_owned();
+            return Ok(vec![
+                state_control(id, "stopping"),
+                state_control(id, "stopped"),
+            ]);
+        }
+        if operation.is_none() {
             let session = slot.as_ref().ok_or(TtsNativeFailure::InvalidState)?;
             if expected.is_some_and(|id| id != session.service_instance_id) {
                 return Err(TtsNativeFailure::Cancelled);
@@ -1299,6 +1384,7 @@ impl TtsServiceSupervisor {
                 state_control(&id, "stopped"),
             ]);
         }
+        drop(slot);
         let session = self.active_session()?;
         if expected.is_some_and(|id| id != session.service_instance_id) {
             return Err(TtsNativeFailure::Cancelled);
@@ -1339,6 +1425,7 @@ impl TtsServiceSupervisor {
         if let Ok(mut lifecycle) = self.lifecycle.lock() {
             lifecycle.active = None;
             lifecycle.state = "stopped".to_owned();
+            lifecycle.contained_service_instance_id = None;
         }
         if let Some(active) = session.take() {
             let _ = active.terminate();

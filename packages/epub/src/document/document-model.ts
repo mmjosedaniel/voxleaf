@@ -262,6 +262,8 @@ export type PublicationTargetResolution =
  */
 export interface OpenedPublication {
   readonly book: BookV1;
+  /** First addressable primary spine position; undefined means unreadable. */
+  readonly defaultStartLocator: ReadingLocatorV1 | undefined;
   readonly documents: readonly SemanticDocument[];
   readonly locators: readonly PublicationLocatedBlock[];
   readonly navigation: readonly PublicationNavigationNode[];

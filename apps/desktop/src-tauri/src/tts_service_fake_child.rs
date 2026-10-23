@@ -20,6 +20,10 @@ pub const CRASH_SCENARIO: &str = "crash";
 pub const DESCENDANT_SCENARIO: &str = "descendant";
 pub const LOADING_SCENARIO: &str = "loading";
 pub const WARMING_SCENARIO: &str = "warming";
+pub const LOAD_FAILURE_SCENARIO: &str = "load-failure";
+pub const WARM_FAILURE_SCENARIO: &str = "warm-failure";
+pub const SYNTHESIS_FAILURE_SCENARIO: &str = "synthesis-failure";
+pub const ENGINE_TIMEOUT_SCENARIO: &str = "engine-timeout";
 
 const SYNTHETIC_SAMPLE_COUNT: usize = 4_800;
 const SYNTHETIC_AUDIO_BYTES: usize = SYNTHETIC_SAMPLE_COUNT * size_of::<f32>();
@@ -33,6 +37,10 @@ enum Scenario {
     Descendant,
     Loading,
     Warming,
+    LoadFailure,
+    WarmFailure,
+    SynthesisFailure,
+    EngineTimeout,
 }
 
 impl Scenario {
@@ -44,6 +52,10 @@ impl Scenario {
             DESCENDANT_SCENARIO => Ok(Self::Descendant),
             LOADING_SCENARIO => Ok(Self::Loading),
             WARMING_SCENARIO => Ok(Self::Warming),
+            LOAD_FAILURE_SCENARIO => Ok(Self::LoadFailure),
+            WARM_FAILURE_SCENARIO => Ok(Self::WarmFailure),
+            SYNTHESIS_FAILURE_SCENARIO => Ok(Self::SynthesisFailure),
+            ENGINE_TIMEOUT_SCENARIO => Ok(Self::EngineTimeout),
             _ => Err(TtsNativeFailure::InvalidInput),
         }
     }
@@ -70,6 +82,29 @@ fn state_message(service_instance_id: &str, state: &str) -> Value {
         .expect("fixed state message is an object")
         .insert("state".to_owned(), Value::String(state.to_owned()));
     value
+}
+
+fn write_engine_failure(
+    writer: &mut impl Write,
+    service_instance_id: &str,
+    identity: Option<&Value>,
+    timeout: bool,
+) -> Result<(), TtsNativeFailure> {
+    let mut value = service_message("error", service_instance_id);
+    value["reason"] = json!(if timeout {
+        "engine-timeout"
+    } else {
+        "engine-failure"
+    });
+    value["error"] = json!({ "schemaVersion": 1, "code": "internal-failure", "category": "internal", "severity": "fatal" });
+    if let Some(identity) = identity {
+        value["workIdentity"] = identity.clone();
+    }
+    write_control(writer, &value)?;
+    write_control(writer, &state_message(service_instance_id, "failed"))?;
+    writer
+        .flush()
+        .map_err(|_| TtsNativeFailure::ChildUnavailable)
 }
 
 fn capabilities_message(service_instance_id: &str) -> Value {
@@ -262,6 +297,10 @@ fn run_child_with(
         let message = read_control(reader)?;
         match control_kind(&message)? {
             "load" => {
+                if scenario == Scenario::LoadFailure {
+                    write_engine_failure(writer, &service_instance_id, None, false)?;
+                    continue;
+                }
                 write_control(writer, &state_message(&service_instance_id, "loading"))?;
                 if scenario == Scenario::Loading {
                     writer
@@ -277,6 +316,10 @@ fn run_child_with(
                     .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
             }
             "warm" => {
+                if scenario == Scenario::WarmFailure {
+                    write_engine_failure(writer, &service_instance_id, None, false)?;
+                    continue;
+                }
                 if scenario == Scenario::Warming {
                     loop {
                         thread::sleep(Duration::from_secs(1));
@@ -302,7 +345,11 @@ fn run_child_with(
                     .flush()
                     .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
                 match scenario {
-                    Scenario::Normal | Scenario::Loading | Scenario::Warming => {
+                    Scenario::Normal
+                    | Scenario::Loading
+                    | Scenario::Warming
+                    | Scenario::LoadFailure
+                    | Scenario::WarmFailure => {
                         thread::sleep(SYNTHETIC_GENERATION_DELAY);
                         write_generation(writer, &service_instance_id, &identity)?;
                     }
@@ -310,6 +357,14 @@ fn run_child_with(
                         return settle_pending(reader, writer, &service_instance_id, &identity);
                     }
                     Scenario::Crash => return Err(TtsNativeFailure::InternalFailure),
+                    Scenario::SynthesisFailure | Scenario::EngineTimeout => {
+                        write_engine_failure(
+                            writer,
+                            &service_instance_id,
+                            Some(&identity),
+                            scenario == Scenario::EngineTimeout,
+                        )?;
+                    }
                     Scenario::Descendant => {
                         let executable = std::env::current_exe()
                             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;

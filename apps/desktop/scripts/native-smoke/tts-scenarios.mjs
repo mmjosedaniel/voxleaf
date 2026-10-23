@@ -1037,6 +1037,7 @@ export function createNativeTtsScenarios({
     const temporaryDirectory = path.dirname(fixturePath);
     if (EXERCISE_READER_CORRECTIONS) {
       await runSavedRatePauseCorrection(driver, fixturePath, setStage);
+      await runPausedEndedCorrection(driver, fixturePath, setStage);
     }
     setStage("adaptive exact-host synthetic publication injection");
     await injectNativeFile(driver, fixturePath);
@@ -2359,6 +2360,113 @@ export function createNativeTtsScenarios({
         externalRequests: 0,
       })}`,
     );
+  }
+
+  async function runPausedEndedCorrection(driver, fixturePath, setStage) {
+    for (const rate of [100, 75]) {
+      setStage(`CLB-02 queued completion after Pause at ${rate} percent`);
+      await driver.execute(`
+        localStorage.setItem("voxleaf.narration.playback-preference",
+          JSON.stringify({ schemaVersion: 1, playbackRatePercent: ${rate} }));
+        const OriginalContext = globalThis.AudioContext;
+        const OriginalNode = globalThis.AudioWorkletNode;
+        const observation = { pending: false, delivered: false, created: 0, closed: 0, starts: 0 };
+        globalThis.__voxleafPausedEnded = observation;
+        const hold = (callback, event) => {
+          if (observation.delivered || observation.pending) return callback(event);
+          observation.pending = true;
+          observation.release = () => {
+            observation.pending = false;
+            observation.delivered = true;
+            callback(event);
+          };
+        };
+        globalThis.AudioContext = class extends OriginalContext {
+          constructor(options) { super(options); observation.created += 1; }
+          createBufferSource() {
+            const source = super.createBufferSource();
+            const start = source.start.bind(source);
+            source.start = (...args) => { observation.starts += 1; return start(...args); };
+            let callback;
+            Object.defineProperty(source, "onended", { configurable: true,
+              get: () => callback, set: value => { callback = value; } });
+            source.addEventListener("ended", event => { if (callback) hold(callback, event); });
+            return source;
+          }
+          async close() { await super.close(); observation.closed += 1; }
+        };
+        globalThis.AudioWorkletNode = class extends OriginalNode {
+          constructor(...args) {
+            super(...args);
+            const port = this.port;
+            let callback;
+            Object.defineProperty(port, "onmessage", { configurable: true,
+              get: () => callback, set: value => { callback = value; } });
+            port.addEventListener("message", event => {
+              if (!callback) return;
+              if (event.data?.type === "ended") hold(callback, event);
+              else callback(event);
+            });
+            port.start();
+          }
+        };
+        observation.restore = () => { globalThis.AudioContext = OriginalContext; globalThis.AudioWorkletNode = OriginalNode; };
+        return true;
+      `);
+      try {
+        await injectNativeFile(driver, fixturePath);
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-availability') === 'available';`,
+          STARTUP_TIMEOUT_MS,
+        );
+        await driver.click(
+          await driver.findElement('[data-narration-action="play"]'),
+        );
+        await waitForCondition(
+          driver,
+          `return globalThis.__voxleafPausedEnded.pending;`,
+          4 * STARTUP_TIMEOUT_MS,
+        );
+        await driver.execute(
+          `document.querySelector('[data-narration-action="pause"]').click(); globalThis.__voxleafPausedEnded.release(); return true;`,
+        );
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'paused';`,
+        );
+        await delay(300);
+        assert(
+          await driver.execute(
+            `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'paused' && globalThis.__voxleafPausedEnded.delivered;`,
+          ),
+          "Paused completion lost paused intent.",
+        );
+        await driver.click(
+          await driver.findElement('[data-narration-action="resume"]'),
+        );
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'playing';`,
+          STARTUP_TIMEOUT_MS,
+        );
+        await driver.click(
+          await driver.findElement('[data-narration-action="stop"]'),
+        );
+        await waitForCondition(
+          driver,
+          `const o = globalThis.__voxleafPausedEnded; return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'idle' && o.created === o.closed;`,
+          STARTUP_TIMEOUT_MS,
+        );
+        console.error(
+          `CLB02_PAUSED_ENDED ${JSON.stringify({ profileId: ADAPTIVE_TTS_PROFILE_ID, language: ADAPTIVE_TTS_LANGUAGE, rate, paused: true, resumed: true, cleaned: true })}`,
+        );
+      } finally {
+        await driver.execute(
+          `globalThis.__voxleafPausedEnded?.restore(); localStorage.setItem('voxleaf.narration.playback-preference', JSON.stringify({ schemaVersion: 1, playbackRatePercent: 100 })); return true;`,
+        );
+      }
+    }
   }
 
   async function runSavedRatePauseCorrection(driver, fixturePath, setStage) {

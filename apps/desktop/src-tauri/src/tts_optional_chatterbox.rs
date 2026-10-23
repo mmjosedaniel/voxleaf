@@ -714,8 +714,19 @@ fn retained_v3_package_root(root: &Path) -> PathBuf {
     profile_root(root).join("3")
 }
 
+fn promotion_backup_root(root: &Path) -> PathBuf {
+    profile_root(root).join(".previous")
+}
+
+// Only an explicit NotFound proves absence; inaccessible or dangling entries
+// must remain discoverable and must fail closed during removal.
+fn owned_path_present(path: &Path) -> bool {
+    !matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+}
+
 fn retained_package_exists(root: &Path) -> bool {
-    retained_v3_package_root(root).exists()
+    owned_path_present(&promotion_backup_root(root))
+        || retained_v3_package_root(root).exists()
         || retained_package_root(root).exists()
         || legacy_package_root(root).exists()
 }
@@ -775,6 +786,39 @@ fn remove_contained_directory(root: &Path, directory: &Path) -> Result<(), Optio
 fn clean_staging(root: &Path) -> Result<(), OptionalProfileError> {
     let staging = staging_root(root);
     remove_contained_directory(root, &staging)
+}
+
+fn validate_backup_tree(directory: &Path, depth: usize) -> Result<(), OptionalProfileError> {
+    if depth > 128 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    for entry in fs::read_dir(directory).map_err(|_| OptionalProfileError::VerificationFailed)? {
+        let path = entry
+            .map_err(|_| OptionalProfileError::VerificationFailed)?
+            .path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if is_symlink_or_reparse_point(&metadata) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if metadata.is_dir() {
+            validate_backup_tree(&path, depth + 1)?;
+        } else if !metadata.is_file() {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+    }
+    Ok(())
+}
+
+fn remove_promotion_backup(root: &Path) -> Result<(), OptionalProfileError> {
+    let backup = promotion_backup_root(root);
+    if !owned_path_present(&backup) {
+        return Ok(());
+    }
+    canonical_contained_directory(root, &profile_root(root))?;
+    canonical_contained_directory(root, &backup)?;
+    validate_backup_tree(&backup, 0)?;
+    fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)
 }
 
 fn is_symlink_or_reparse_point(metadata: &fs::Metadata) -> bool {
@@ -1436,8 +1480,8 @@ fn promote(
         None => None,
     };
     check_acquisition_cancellation(cancellation)?;
-    let backup = parent.join(".previous");
-    let _ = fs::remove_dir_all(&backup);
+    let backup = promotion_backup_root(root);
+    remove_promotion_backup(root)?;
     invalidate_verified_runtime_receipt();
     let moved_previous = if destination.exists() {
         fs::rename(&destination, &backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
@@ -1461,7 +1505,7 @@ fn promote(
     #[cfg(test)]
     tests::run_after_commit_hook();
     if moved_previous {
-        fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        remove_promotion_backup(root)?;
     }
     invalidate_verified_runtime_receipt();
     Ok(())
@@ -2132,6 +2176,7 @@ impl OptionalChatterboxManager {
             let package = package_root(root);
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
+            remove_promotion_backup(root)?;
             remove_contained_directory(root, &retained_v3_package_root(root))?;
             remove_contained_directory(root, &retained_package_root(root))?;
             let legacy = legacy_package_root(root);

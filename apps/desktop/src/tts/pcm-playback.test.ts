@@ -425,6 +425,149 @@ function runCleanupTurns(turns: Array<() => void>): void {
 }
 
 describe("adaptive PCM playback", () => {
+  it.each(["buffered", "pending", "final"] as const)(
+    "CLB-02 honors Pause delivered just after ended with %s successor",
+    (successor) => {
+      const clock = createManualClock(0);
+      const first = segment(1, 600);
+      const second = segment(2);
+      const scheduler = readyScheduler(
+        clock,
+        successor === "final" ? [first] : [first, second],
+        true,
+      );
+      const unit = synthesize(scheduler, first, 15_000);
+      if (successor === "buffered") synthesize(scheduler, second, 15_000);
+      const backend = new ManualPcmPlaybackBackend(clock);
+      const timers = new ManualTransitionTimers();
+      const player = new AdaptivePcmPlayer(
+        scheduler,
+        backend,
+        undefined,
+        timers.schedule,
+        timers.cancel,
+      );
+      player.synchronize();
+      clock.advanceBy(15_000);
+      backend.pump();
+      expect(player.pause().state).toBe("paused");
+      expect(backend.startedSequences).toEqual([0]);
+      expect(unit.releaseCount).toBe(1);
+      expect(() => player.resume()).not.toThrow();
+      expect(player.synchronize().underrunCount).toBe(
+        successor === "pending" ? 1 : 0,
+      );
+      player.close();
+    },
+  );
+
+  it.each([100, 75] as const)(
+    "CLB-02 settles the real Web Audio backend callback at %i percent",
+    async (rate) => {
+      const clock = createManualClock(0);
+      const first = segment(1);
+      const scheduler = readyScheduler(clock, [first], true);
+      scheduler.selectPlaybackRatePercent(rate);
+      const unit = synthesize(scheduler, first, 15_000);
+      const context = new FakeAudioContext();
+      const node = new FakeWsolaNode();
+      const backend = new WebAudioPcmPlaybackBackend(
+        () => context as unknown as AudioContext,
+        async () => ({
+          node: node as unknown as AudioWorkletNode,
+          close: () => {
+            node.disconnect();
+            node.port.close();
+          },
+        }),
+      );
+      if (rate !== 100) await backend.preparePlaybackRate(rate);
+      const player = new AdaptivePcmPlayer(scheduler, backend);
+      player.synchronize();
+      player.pause();
+      if (rate === 100) context.sources[0]!.end();
+      else node.port.emit({ type: "ended", unitSequence: 0 });
+      expect(player.synchronize().state).toBe("paused");
+      expect(unit.releaseCount).toBe(1);
+      expect(player.resume().state).toBe("complete");
+      player.close();
+      await player.waitForCleanup();
+      expect(context.closeCount).toBe(1);
+    },
+  );
+
+  it.each([100, 75] as const)(
+    "CLB-02 settles a queued ended callback while paused at %i percent",
+    (rate) => {
+      for (const tailAccounted of [false, true]) {
+        for (const successor of ["buffered", "pending", "final"] as const) {
+          const clock = createManualClock(0);
+          const first = segment(1, 600);
+          const second = segment(2);
+          const scheduler = readyScheduler(
+            clock,
+            successor === "final" ? [first] : [first, second],
+            true,
+          );
+          scheduler.selectPlaybackRatePercent(rate);
+          const firstUnit = synthesize(scheduler, first, 15_000);
+          const secondUnit =
+            successor === "buffered"
+              ? synthesize(scheduler, second, 15_000)
+              : undefined;
+          const backend = new ManualPcmPlaybackBackend(clock);
+          backend.ratePrepared = true;
+          const timers = new ManualTransitionTimers();
+          const player = new AdaptivePcmPlayer(
+            scheduler,
+            backend,
+            undefined,
+            timers.schedule,
+            timers.cancel,
+          );
+          const progress: AdaptivePcmAudibleProgressObservation[] = [];
+          player.subscribeAudibleProgress((event) => progress.push(event));
+          player.synchronize();
+          clock.advanceBy(tailAccounted ? 15_000 / (rate / 100) : 1);
+          expect(player.pause().state).toBe("paused");
+          if (successor === "buffered")
+            player.setPlaybackRatePercent(rate === 100 ? 75 : 100);
+          const ended = backend.lastCallbacks!.ended;
+          // AudioContext suspension is asynchronous: an already queued
+          // completion can arrive after Pause, with an unaccounted tail.
+          backend.active = undefined;
+          ended();
+          ended();
+          expect(player.synchronize().state).toBe("paused");
+          expect(firstUnit.releaseCount).toBe(1);
+          expect(secondUnit?.releaseCount ?? 0).toBe(0);
+          expect(backend.startedSequences).toEqual([0]);
+          expect(
+            progress.filter((event) => event.kind === "segment-completed"),
+          ).toHaveLength(1);
+          expect(player.resume().state).toBe(
+            successor === "final"
+              ? "complete"
+              : successor === "pending"
+                ? "buffering"
+                : "playing",
+          );
+          if (successor === "buffered") {
+            expect(backend.startedSequences).toEqual([0]);
+            clock.advanceBy(600);
+            player.synchronize();
+            expect(backend.startedSequences).toEqual([0, 1]);
+            expect(backend.startedRates).toEqual([
+              rate / 100,
+              rate === 100 ? 0.75 : 1,
+            ]);
+          }
+          player.close();
+        }
+      }
+    },
+  );
+
   it.each(["stop", "close", "invalidateForSeek"] as const)(
     "B08 ignores late rate preparation success and failure after %s",
     async (invalidate) => {

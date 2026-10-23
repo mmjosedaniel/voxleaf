@@ -72,6 +72,87 @@ pub fn run_host() -> Result<(), &'static str> {
     .ok_or(TtsNativeFailure::InternalFailure.code())?;
 
     let normal = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    // CLB-03: real framed child errors must be contained before a replacement.
+    for (scenario, prepare_failure, expected) in [
+        (
+            crate::tts_service_fake_child::LOAD_FAILURE_SCENARIO,
+            true,
+            TtsNativeFailure::InternalFailure,
+        ),
+        (
+            crate::tts_service_fake_child::WARM_FAILURE_SCENARIO,
+            true,
+            TtsNativeFailure::InternalFailure,
+        ),
+        (
+            crate::tts_service_fake_child::SYNTHESIS_FAILURE_SCENARIO,
+            false,
+            TtsNativeFailure::InternalFailure,
+        ),
+        (
+            crate::tts_service_fake_child::ENGINE_TIMEOUT_SCENARIO,
+            false,
+            TtsNativeFailure::TimedOut,
+        ),
+    ] {
+        let supervisor = TtsServiceSupervisor::new(scenario);
+        supervisor.start().map_err(TtsNativeFailure::code)?;
+        let failed_id = supervisor
+            .active_session()
+            .map_err(TtsNativeFailure::code)?
+            .service_instance_id
+            .clone();
+        let failed = if prepare_failure {
+            supervisor.prepare().map(|_| ())
+        } else {
+            supervisor.prepare().map_err(TtsNativeFailure::code)?;
+            supervisor.synthesize(segment.clone()).map(|_| ())
+        };
+        if failed != Err(expected)
+            || supervisor
+                .session
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+                .is_some()
+            || supervisor
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+                .active
+                .is_some()
+        {
+            return Err(TtsNativeFailure::ProtocolRejected.code());
+        }
+        let contained = supervisor
+            .shutdown_instance(Some(&failed_id))
+            .map_err(TtsNativeFailure::code)?;
+        if contained
+            != vec![
+                super::state_control(&failed_id, "stopping"),
+                super::state_control(&failed_id, "stopped"),
+            ]
+        {
+            return Err(TtsNativeFailure::ProtocolRejected.code());
+        }
+        if supervisor.shutdown_instance(Some("service:foreign")) != Err(TtsNativeFailure::Cancelled)
+        {
+            return Err(TtsNativeFailure::ProtocolRejected.code());
+        }
+        *supervisor
+            .child_configuration
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())? =
+            super::ServiceChild::Fake(NORMAL_SCENARIO);
+        supervisor.start().map_err(TtsNativeFailure::code)?;
+        if supervisor.shutdown_instance(Some(&failed_id)) != Err(TtsNativeFailure::Cancelled) {
+            return Err(TtsNativeFailure::ProtocolRejected.code());
+        }
+        supervisor.prepare().map_err(TtsNativeFailure::code)?;
+        supervisor
+            .synthesize(segment.clone())
+            .map_err(TtsNativeFailure::code)?;
+        supervisor.shutdown().map_err(TtsNativeFailure::code)?;
+    }
     normal.start().map_err(TtsNativeFailure::code)?;
     normal.prepare().map_err(TtsNativeFailure::code)?;
     let audio = normal

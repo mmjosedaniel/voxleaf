@@ -1,5 +1,41 @@
 # Testing strategy
 
+## Confirmed logic correction regressions
+
+The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md)
+records the regression, installed/ordinary-host evidence and independent reviews.
+The desktop Node release suite compiles and executes the
+actual NSIS directory-detection functions on Windows using
+`%LOCALAPPDATA%/tauri/NSIS/makensis.exe` and isolated synthetic roots. Missing
+NSIS on Windows fails that gate; non-Windows skips the executable fixture.
+The Windows foundation workflow prepares the official Tauri NSIS 3.13 archive,
+verifies its pinned SHA-256 before extraction and populates that compiler path
+before running tests. Native startup builds do not prepare an installer toolchain;
+the compiled regression must not depend on a previous release build's cache.
+Local Windows contributors need the same compiler path, normally populated by
+the verified Windows packaging flow. A missing compiler is a prerequisite failure,
+not a reason to skip the regression.
+This is not interactive uninstaller acceptance.
+
+PCM regressions control Pause/ended ordering, direct and WSOLA callbacks,
+remaining tail accounting, successor/final/refill states and one-time release.
+The supported-profile reader host runner also holds one actual WebView2
+completion until after Pause at 1.00x and 0.75x, then verifies Resume and cleanup.
+The existing native startup diagnostic executes canonical load/warm/synthesis
+engine failures and timeout through a supervised synthetic child, verifies
+containment, the real client's identity-bound shutdown acknowledgement and
+rejection of foreign/stale shutdown identities before explicitly starting a
+replacement. The coordinator suite uses the real TtsProcessClient to validate
+those shutdown controls, zero automatic retries and the single explicit attempt.
+It does not inject failures
+into installed model data.
+
+EPUB package/reader/browser fixtures preserve auxiliary index zero while opening
+at primary content and restoring an explicit auxiliary visit. Rust backup tests
+use synthetic data, Windows sharing violations and junctions; lifecycle fixtures
+add the exact `.previous` root. Never remove a pre-existing ordinary installation
+to satisfy the isolated installer gate.
+
 ## Principles
 
 - Test observable behavior.

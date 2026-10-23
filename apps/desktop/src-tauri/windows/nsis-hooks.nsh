@@ -22,14 +22,13 @@ UninstPage custom un.ChatterboxDataPageCreate un.ChatterboxDataPageLeave
 
 Function un.ExactDirectoryExists
   System::Call 'kernel32::GetFileAttributesW(w R0) i .R1'
-  StrCmp $R1 -1 0 +2
-    StrCpy $R0 "0"
-    Return
+  StrCmp $R1 -1 exact_directory_absent
   IntOp $R1 $R1 & 0x10
-  StrCmp $R1 0 0 +2
-    StrCpy $R0 "0"
-    Return
+  StrCmp $R1 0 exact_directory_absent
   StrCpy $R0 "1"
+  Return
+  exact_directory_absent:
+    StrCpy $R0 "0"
 FunctionEnd
 
 ; $R0 is a literal directory. A missing path and every reparse point fail
@@ -93,6 +92,9 @@ Function un.IsSafeOwnedTree
 FunctionEnd
 
 Function un.OptionalChatterboxDataExists
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  Call un.ExactDirectoryExists
+  StrCmp $R0 "1" optional_data_exists
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\5"
   Call un.ExactDirectoryExists
   StrCmp $R0 "1" optional_data_exists
@@ -204,6 +206,23 @@ FunctionEnd
 
 !macro NSIS_HOOK_POSTUNINSTALL
   StrCmp $RemoveChatterboxData "1" 0 chatterbox_data_done
+  ; Promotion residue is cleanup-only. Validate every ancestor and child.
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  Call un.IsSafeOwnedTree
+  StrCmp $R0 "1" 0 chatterbox_current
+  RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+
+  chatterbox_current:
   ; cb/5: product identity, tts, cb, and the exact root must all be real dirs.
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
   Call un.IsSafeOwnedDirectory
@@ -305,6 +324,21 @@ FunctionEnd
   RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging\chatterbox-multilingual-v3-cuda-bf16-default-v4"
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging"
   chatterbox_data_done:
+
+  ; A refused or failed backup cleanup is retention, never successful absence.
+  StrCmp $RemoveChatterboxData "1" 0 promotion_backup_checked
+  System::Call 'kernel32::GetFileAttributesW(w "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous") i .R1 ?e'
+  Pop $R2
+  StrCmp $R1 -1 promotion_backup_missing promotion_backup_retained
+  promotion_backup_missing:
+    StrCmp $R2 2 promotion_backup_checked
+    StrCmp $R2 3 promotion_backup_checked
+  promotion_backup_retained:
+    SetErrorLevel 1
+    DetailPrint "Chatterbox promotion backup was retained because safe cleanup could not complete."
+    IfSilent promotion_backup_checked
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Chatterbox promotion backup could not be removed safely. Reinstall VoxLeaf to retry Remove Chatterbox after resolving the file lock or unsafe directory."
+  promotion_backup_checked:
 
   StrCmp $RemovePreferencesAndRecovery "1" 0 preferences_data_done
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"

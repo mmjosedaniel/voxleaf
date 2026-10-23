@@ -175,7 +175,7 @@ export class ReaderPositionSaveCoordinator {
     options: ReaderPositionSaveCoordinatorOptions = {},
   ) {
     const initialLocator =
-      options.initialLocator ?? publication.locators[0]?.startLocator;
+      options.initialLocator ?? publication.defaultStartLocator;
     if (
       initialLocator === undefined ||
       !identitiesEqual(initialLocator.bookIdentity, publication.book.identity)

@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Confirmed logic and lifecycle corrections](confirmed-logic-bugfixes.md): five regression-tested fixes for NSIS detection, Pause/completion, operational TTS recovery, primary EPUB start and owned promotion-backup cleanup. Ordinary interactive choices, restored-user-data integrity, Piper/Chatterbox ES/EN and independent Astra implementation approval passed; final closeout review is linked in the plan. Changes remain unstaged and uncommitted.
+
 - [Test integrity and lifecycle harness safety](test-integrity-and-harness-safety.md): all eleven corrections accepted, including atomic lifecycle data ownership, long-path/reparse protection and twelve Windows fault/preservation cases; G1-G8, real installer policies, verified user-data restoration/reinstallation and independent Astra review pass. Changes remain uncommitted.
 
 - [Documentation consistency and historical tooling](documentation-consistency-and-historical-tooling.md): current Piper/v5 guidance separated from stable IDs, historical v2/v3 authority and local v4 tooling; maintained navigation and summaries reconciled. Documentation checks pass against planning commit 5b93ced with protected bytes preserved; no runtime or CI change.
