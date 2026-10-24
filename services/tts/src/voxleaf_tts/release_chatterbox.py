@@ -316,7 +316,7 @@ def _copy_notices(
 ) -> None:
     layout = PackageLayout(package_version)
     notices = staging / "notices"
-    if package_version in {"3", "4", "5"}:
+    if package_version in {"3", "4", "5", "6"}:
         _copy_successor_license(root, notices, environment)
     _copy_file(root / "LICENSE", notices / "VOXLEAF-MIT.txt")
     _copy_file(
@@ -433,7 +433,7 @@ def _synchronise_environment(
         str(environment / "Scripts/python.exe"),
         str(lock),
     ]
-    if package_version in {"3", "4", "5"}:
+    if package_version in {"3", "4", "5", "6"}:
         sync_command.append("--require-hashes")
     try:
         subprocess.run(["uv", "venv", "--python", "3.12", str(environment)], check=True, cwd=root)
@@ -452,7 +452,7 @@ def build_package(
     package_version: PackageVersion = "2",
     output_root: Path | None = None,
 ) -> PackageMeasurement:
-    if package_version == "5" and not synchronise:
+    if package_version in {"5", "6"} and not synchronise:
         raise ReleaseChatterboxError("chatterbox-package-security-sync-required")
     root = repository_root()
     layout = PackageLayout(package_version)
@@ -518,7 +518,7 @@ def build_package(
         runtime_manifest_sha256=sha256_file(runtime_manifest),
         parts=parts,
     )
-    if package_version in {"4", "5"}:
+    if package_version in {"4", "5", "6"}:
         (dist / f"local-build-evidence-v{package_version}.json").write_bytes(
             render_manifest(
                 _local_package_receipt(
@@ -582,9 +582,9 @@ def _verify_local_archive_members(
 def _local_package_receipt(
     root: Path, *, package_version: PackageVersion = "4", output_root: Path | None = None
 ) -> dict[str, object]:
-    """Measure local v4/v5 outputs without publication/execution claims."""
+    """Measure local versioned outputs without publication/execution claims."""
 
-    if package_version not in {"4", "5"}:
+    if package_version not in {"4", "5", "6"}:
         raise ReleaseChatterboxError("chatterbox-package-version-invalid")
     layout = PackageLayout(package_version)
     dist = layout.dist(root, output_root)
@@ -708,17 +708,23 @@ def main(arguments: list[str] | None = None) -> int:
     parser.add_argument("--no-sync", action="store_true")
     parser.add_argument("--publication", type=Path)
     parser.add_argument("--output-root", type=Path)
-    parser.add_argument("--package-version", choices=("2", "3", "4", "5"), default="2")
+    parser.add_argument("--package-version", choices=("2", "3", "4", "5", "6"), default="2")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     version = cast(PackageVersion, args.package_version)
     if args.output_root is not None and args.command not in {"build", "check-local"}:
         parser.error("--output-root requires build or check-local")
     if args.command == "check-local":
-        if version not in {"4", "5"}:
-            parser.error("check-local requires --package-version 4 or 5")
+        if version not in {"4", "5", "6"}:
+            parser.error("check-local requires --package-version 4, 5 or 6")
         check_local_package(package_version=version, output_root=args.output_root)
         print(f"chatterbox-optional-v{version}-local:current-unpublished-unadmitted")
         return 0
+    if version == "6" and args.command in {
+        "check-acquisition",
+        "write-acquisition",
+        "reconcile-evidence",
+    }:
+        parser.error("version 6 is unpublished and has no acquisition authority")
     if version == "4" and args.command in {
         "check-acquisition",
         "write-acquisition",
@@ -745,10 +751,10 @@ def main(arguments: list[str] | None = None) -> int:
     if version in {"3", "5"} and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
-        if version not in {"3", "4", "5"}:
-            parser.error("write-source requires --package-version 3, 4 or 5")
-        if version == "5":
-            write_security_source_manifest()
+        if version not in {"3", "4", "5", "6"}:
+            parser.error("write-source requires --package-version 3, 4, 5 or 6")
+        if version in {"5", "6"}:
+            write_security_source_manifest(package_version=version)
         elif version == "4":
             write_local_source_manifest()
         else:

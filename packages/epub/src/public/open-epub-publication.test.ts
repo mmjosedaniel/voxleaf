@@ -8,6 +8,7 @@ import {
   EPUB2_CANONICAL_NCX_DOCTYPE,
   EPUB2_CANONICAL_XHTML11_DOCTYPE,
   minimalEpub2Guide,
+  minimalEpub2PackageDocument,
   minimalChapterDocument,
   minimalNavigationDocument,
   minimalPackageDocument,
@@ -39,6 +40,114 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        packageDocument: minimalPackageDocument()
+          .replace(
+            "</manifest>",
+            '<item id="aux" href="text/aux.xhtml" media-type="application/xhtml+xml"/></manifest>',
+          )
+          .replace(
+            '<itemref idref="chapter"/>',
+            '<itemref idref="aux" linear="no"/><itemref idref="chapter"/>',
+          ),
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Empty</title></head><body/></html>',
+        additionalEntries: [
+          { name: "EPUB/text/aux.xhtml", content: minimalChapterDocument() },
+        ],
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    try {
+      expect(result.publication.defaultStartLocator).toBeUndefined();
+      const auxiliary = result.publication.locators[0]!.startLocator;
+      expect(result.publication.resolveLocator(auxiliary).status).toBe("exact");
+      expect(() =>
+        result.publication.resolveLocator({
+          ...auxiliary,
+          spineItemId: "spine:missing",
+          spineItemIndex: 99,
+        }),
+      ).toThrow(EpubArchiveError);
+    } finally {
+      await result.publication.close();
+    }
+  });
+  it.each(["2.0", "3.0"] as const)(
+    "CLB-04 selects primary start without reindexing auxiliary content in EPUB %s",
+    async (version) => {
+      for (const emptyPrimary of [false, true]) {
+        const packageDocument = (
+          version === "2.0"
+            ? minimalEpub2PackageDocument()
+            : minimalPackageDocument()
+        )
+          .replace(
+            "</manifest>",
+            '<item id="aux" href="text/aux.xhtml" media-type="application/xhtml+xml"/><item id="last" href="text/last.xhtml" media-type="application/xhtml+xml"/></manifest>',
+          )
+          .replace(
+            '<itemref idref="chapter"/>',
+            '<itemref idref="aux" linear="no"/><itemref idref="chapter"/><itemref idref="last" linear="yes"/>',
+          );
+        const build =
+          version === "2.0"
+            ? buildMinimalEpub2Fixture
+            : buildMinimalEpubFixture;
+        const result = await openEpubPublication(
+          await build({
+            packageDocument,
+            ...(emptyPrimary
+              ? {
+                  chapterDocument:
+                    '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Empty</title></head><body/></html>',
+                }
+              : {}),
+            additionalEntries: [
+              {
+                name: "EPUB/text/aux.xhtml",
+                content: minimalChapterDocument(),
+              },
+              {
+                name: "EPUB/text/last.xhtml",
+                content: minimalChapterDocument(),
+              },
+            ],
+          }),
+        );
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        const publication = result.publication;
+        try {
+          const auxiliary = publication.locators[0]!;
+          const primary = publication.locators.find(
+            (block) =>
+              block.startLocator.spineItemIndex === (emptyPrimary ? 2 : 1),
+          )!;
+          expect(auxiliary.startLocator.spineItemIndex).toBe(0);
+          expect(
+            publication.resolveLocator(auxiliary.startLocator).status,
+          ).toBe("exact");
+          expect(
+            publication.resolveTarget({ documentId: auxiliary.documentId }),
+          ).toMatchObject({ locator: auxiliary.startLocator });
+          const recovered = publication.resolveLocator({
+            ...auxiliary.startLocator,
+            spineItemId: "spine:missing",
+            spineItemIndex: 99,
+          });
+          expect(recovered.reason).toBe("book-start");
+          expect(recovered.locator).toEqual(primary.startLocator);
+          expect(publication.defaultStartLocator).toEqual(primary.startLocator);
+        } finally {
+          await publication.close();
+        }
+      }
+    },
+  );
   it("maps every fixed EPUB detail to the shared operational contract", () => {
     for (const [detail, operationalCode] of Object.entries(
       EXPECTED_OPERATIONAL_CODE,

@@ -1,5 +1,8 @@
 # Architecture decision records
 
+- [ADR-0060: Primary publication start](ADR-0060-primary-publication-start.md): additive package-owned default locator; full locator ordering and auxiliary access preserved. Implementation acceptance is pending in the active correction plan.
+- [ADR-0061: Owned promotion backup](ADR-0061-owned-promotion-backup.md): exact cleanup-only `.previous` ownership, truthful failure and explicit removal; installed acceptance remains pending.
+
 - [ADR-0059: Last optional-download error in memory](ADR-0059-optional-download-diagnostics.md): accepted bounded report and explicit JSON export; installed probe and review passed in the [completed plan](../../plans/completed/optional-download-diagnostics.md). The subsequent v5 refresh also passed full acquisition.
 
 - [ADR-0058: Admit the certifi and Pillow Chatterbox v5 refresh](ADR-0058-admit-certifi-pillow-chatterbox-v5.md): accepted published runtime; installed acquisition, bilingual reader/speed, integrity, lifecycle, independent review and fresh PR CI pass. V2/v3 are retained for explicit removal only.

@@ -99,7 +99,7 @@ def resolve_runtime_sources(root: Path, manifest: Mapping[str, object]) -> dict[
     modules = manifest.get("runtimeModules")
     if not isinstance(version, str):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
-    if version in {"2", "3", "5"}:
+    if version in {"2", "3", "5", "6"}:
         source_version: PackageVersion = "2" if version == "2" else "3"
         if modules != list(HISTORICAL_IDENTITIES[source_version]):
             raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")

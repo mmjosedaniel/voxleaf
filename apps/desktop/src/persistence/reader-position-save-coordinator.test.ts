@@ -123,6 +123,7 @@ function createPublication(): OpenedPublication {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: Object.freeze([]),
     locators: Object.freeze([LOCATED_BLOCK]),
+    defaultStartLocator: LOCATED_BLOCK.startLocator,
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,
@@ -209,6 +210,20 @@ function deferredWrite() {
 }
 
 describe("reader position save coordinator", () => {
+  it("CLB-04 initializes saving from the package-owned default", async () => {
+    const repository = createRepository();
+    const initial = locatorAt(2);
+    const coordinator = new ReaderPositionSaveCoordinator(
+      { ...createPublication(), defaultStartLocator: initial },
+      repository,
+    );
+    coordinator.start();
+    await coordinator.flush();
+    expect(repository.writePosition.mock.calls[0]?.[0].locator).toEqual(
+      initial,
+    );
+    await coordinator.close();
+  });
   it("does not flush an unconfirmed restored locator until settlement requests it", async () => {
     const environment = new ManualSaveEnvironment();
     const repository = createRepository();

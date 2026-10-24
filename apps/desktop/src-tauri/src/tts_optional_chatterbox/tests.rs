@@ -500,6 +500,119 @@ fn removal_failure_is_reported_and_can_be_retried_after_repair() {
     );
 }
 
+#[test]
+fn clb05_backup_only_is_discoverable_and_explicitly_removed() {
+    let root = TestRoot::new();
+    let backup = root.0.join("cb/.previous");
+    fs::create_dir_all(&backup).unwrap();
+    fs::write(backup.join("owned.bin"), b"synthetic backup").unwrap();
+    let unrelated = root.0.join("cb/99");
+    fs::create_dir_all(&unrelated).unwrap();
+    fs::write(unrelated.join("keep.bin"), b"unrelated").unwrap();
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!backup.exists());
+    assert_eq!(fs::read(unrelated.join("keep.bin")).unwrap(), b"unrelated");
+}
+
+#[cfg(windows)]
+#[test]
+fn clb05_failed_promotion_cleanup_leaves_removable_owned_backup() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation/package");
+    let authority = write_runtime(&staging);
+    let active = package_root(&root.0);
+    fs::create_dir_all(&active).unwrap();
+    fs::write(active.join("old.bin"), b"synthetic old package").unwrap();
+    let backup = promotion_backup_root(&root.0);
+    let lock_path = backup.join("old.bin");
+    AFTER_COMMIT_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            CLEANUP_LOCK.with(|lock| {
+                *lock.borrow_mut() = Some(
+                    fs::OpenOptions::new()
+                        .read(true)
+                        .share_mode(0)
+                        .open(&lock_path)
+                        .unwrap(),
+                )
+            });
+        }))
+    });
+    let result = promote(&root.0, &staging, &authority, None);
+    CLEANUP_LOCK.with(|slot| slot.borrow_mut().take());
+    assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+    assert!(backup.join("old.bin").exists());
+    assert!(active.join("runtime/python.exe").exists());
+    let restarted = OptionalChatterboxManager::default();
+    restarted.remove_with_manifest(&root.0, &authority).unwrap();
+    assert!(!backup.exists());
+    assert!(!active.exists());
+}
+
+#[cfg(windows)]
+#[test]
+fn clb05_backup_junctions_are_retained_without_touching_external_files() {
+    for relative in ["cb", "cb/.previous", "cb/.previous/nested"] {
+        let root = TestRoot::new();
+        let external = TestRoot::new();
+        fs::write(external.0.join("keep.bin"), b"outside").unwrap();
+        fs::create_dir_all(external.0.join(".previous")).unwrap();
+        let link = root.0.join(relative);
+        fs::create_dir_all(link.parent().unwrap()).unwrap();
+        let status = std::process::Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command", "New-Item -ItemType Junction -Path $env:VOXLEAF_TEST_LINK -Target $env:VOXLEAF_TEST_TARGET -ErrorAction Stop | Out-Null"])
+            .env("VOXLEAF_TEST_LINK", &link).env("VOXLEAF_TEST_TARGET", &external.0)
+            .status().unwrap();
+        assert!(status.success());
+        let result = OptionalChatterboxManager::default().remove_at(&root.0);
+        // Remove only the junction itself before temporary-root teardown.
+        fs::remove_dir(&link).unwrap();
+        assert_eq!(result, Err(OptionalProfileError::VerificationFailed));
+        assert_eq!(fs::read(external.0.join("keep.bin")).unwrap(), b"outside");
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn clb05_locked_backup_is_retained_until_successful_retry() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let backup = root.0.join("cb/.previous");
+    fs::create_dir_all(&backup).unwrap();
+    let path = backup.join("locked.bin");
+    fs::write(&path, b"synthetic backup").unwrap();
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&path)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.remove_at(&root.0),
+        Err(OptionalProfileError::CleanupFailed)
+    );
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    assert!(backup.exists());
+    drop(lock);
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+    assert!(!backup.exists());
+}
+
 #[cfg(windows)]
 #[test]
 fn removal_can_retry_after_a_windows_sharing_violation() {

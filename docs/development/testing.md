@@ -1,5 +1,41 @@
 # Testing strategy
 
+## Confirmed logic correction regressions
+
+The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md)
+records the regression, installed/ordinary-host evidence and independent reviews.
+The desktop Node release suite compiles and executes the
+actual NSIS directory-detection functions on Windows using
+`%LOCALAPPDATA%/tauri/NSIS/makensis.exe` and isolated synthetic roots. Missing
+NSIS on Windows fails that gate; non-Windows skips the executable fixture.
+The Windows foundation workflow prepares the official Tauri NSIS 3.13 archive,
+verifies its pinned SHA-256 before extraction and populates that compiler path
+before running tests. Native startup builds do not prepare an installer toolchain;
+the compiled regression must not depend on a previous release build's cache.
+Local Windows contributors need the same compiler path, normally populated by
+the verified Windows packaging flow. A missing compiler is a prerequisite failure,
+not a reason to skip the regression.
+This is not interactive uninstaller acceptance.
+
+PCM regressions control Pause/ended ordering, direct and WSOLA callbacks,
+remaining tail accounting, successor/final/refill states and one-time release.
+The supported-profile reader host runner also holds one actual WebView2
+completion until after Pause at 1.00x and 0.75x, then verifies Resume and cleanup.
+The existing native startup diagnostic executes canonical load/warm/synthesis
+engine failures and timeout through a supervised synthetic child, verifies
+containment, the real client's identity-bound shutdown acknowledgement and
+rejection of foreign/stale shutdown identities before explicitly starting a
+replacement. The coordinator suite uses the real TtsProcessClient to validate
+those shutdown controls, zero automatic retries and the single explicit attempt.
+It does not inject failures
+into installed model data.
+
+EPUB package/reader/browser fixtures preserve auxiliary index zero while opening
+at primary content and restoring an explicit auxiliary visit. Rust backup tests
+use synthetic data, Windows sharing violations and junctions; lifecycle fixtures
+add the exact `.previous` root. Never remove a pre-existing ordinary installation
+to satisfy the isolated installer gate.
+
 ## Principles
 
 - Test observable behavior.
@@ -142,7 +178,37 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox authority checks explicitly select v5:
+Current Chatterbox authority checks explicitly select v5.
+
+V6 preparation is separate and does not change that production selection.
+Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
+historical-source, sync and unpublished-command guards. Generate its lock and
+recipe with `package:chatterbox-optional:v6:lock` and
+`package:chatterbox-optional:v6:write-source`; verify with
+`package:chatterbox-optional:v6:check-source`. Build through
+`package:chatterbox-optional:v6 --output-root <absolute-isolated-root>` and
+verify with `package:chatterbox-optional:v6:check-local` using the same root.
+On a host with long paths disabled, a short alias can make canonical containment
+comparisons fail. Use an extended canonical output path instead. If the package
+runner escapes its prefix, invoke the exact configured `uv run --directory
+services/tts --locked python -m voxleaf_tts.release_chatterbox` command directly
+with `build` or `check-local`, `--package-version 6` and that `--output-root`.
+Keep all integrity/containment checks enabled.
+`audit:chatterbox:v6` audits the candidate with the four explicit URL/CUDA
+blind spots; it does not replace `audit:release`.
+
+With the exact assembled interpreter first on process PATH,
+`test:chatterbox:v6:security --temporary-root <existing-isolated-root>` tests
+real setuptools rejection and legitimate wheel/filelock controls. The
+`:baseline` variant uses isolated old versions and intentionally exits 1 after
+reproducing the synthetic outside-destination write. No user files are used.
+Windows does not exercise filelock's advisory-specific POSIX path.
+`test:chatterbox:runtime-smoke --package-version 6 --models <verified-local-models> --language es`
+and the `en` arm require offline flags and an isolated NUMBA cache. Existing
+runtime-security/dependency-security probes apply to the same exact runtime.
+No v6 acquisition command is admitted before reviewed publication.
+
+Production checks remain:
 `pnpm.cmd package:chatterbox-optional:v5:check-source` and
 `pnpm.cmd package:chatterbox-optional:v5:check-acquisition`.
 They check source/acquisition authority, not installed runtime execution.

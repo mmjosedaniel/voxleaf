@@ -39,6 +39,7 @@ function createTestPublication(
       }),
     }),
     documents: Object.freeze([]),
+    defaultStartLocator: readable ? TEST_LOCATED_BLOCK.startLocator : undefined,
     locators: readable
       ? Object.freeze([TEST_LOCATED_BLOCK])
       : Object.freeze([]),

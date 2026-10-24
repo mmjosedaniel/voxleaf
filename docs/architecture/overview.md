@@ -1,5 +1,28 @@
 # Architecture overview
 
+The [completed confirmed-correction plan](../plans/completed/confirmed-logic-bugfixes.md)
+adds the package-owned primary `defaultStartLocator` under ADR-0060 and exact
+cleanup-only ownership of `tts/cb/.previous` under ADR-0061. The full locator
+index and all serialized schemas remain unchanged. Passing native/installed
+evidence and independent reviews are recorded in the plan.
+
+The player accounts a device completion delivered after Pause without starting
+the successor; Resume retains the existing lead/refill and semantic-delay rules.
+Native supervision accepts canonical engine-failure/engine-timeout errors only
+in the corresponding load/warm/synthesis response window after service and
+applicable work identity validation. Existing containment and explicit-recovery
+policy remain authoritative. There is no automatic retry or new service.
+After verified child termination, one bounded native receipt retains that
+service identity until replacement or force-stop. A matching identity-bound
+shutdown receives the existing stopping/stopped controls even though the child
+is already gone. Unknown identities, missing receipts and unverified termination
+never establish cleanup. A replacement clears the receipt before accepting work.
+The existing producer emits no work identity when synthesis fails before its
+`generating` state. That one initial response window accepts an identity-free
+engine error from the matching active service; after `generating`, every engine
+error must match all four active work fields. Errors after metadata/audio, during
+handshake/health or with non-engine reasons retain terminal protocol treatment.
+
 The optional Chatterbox downloader owns one structured, content-free failure
 record in native process memory, independently of its operation state. A
 read-only IPC command exposes a copy for explicit local JSON export from

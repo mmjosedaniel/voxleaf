@@ -152,6 +152,14 @@ without requiring Python or Rust to be removed from the test computer.
 
 ## Current implemented flow
 
+The current correction patch selects the first addressable primary spine
+content for a new book (ADR-0060), preserving explicit auxiliary links and valid
+saved auxiliary positions. If primary content has no addressable block, the
+reader reports the existing unreadable outcome. Explicit Chatterbox removal
+also owns abandoned `.previous` promotion data (ADR-0061); failed removal must
+remain visible and retryable. Full installed acceptance for these corrections
+is pending in the active confirmed-correction plan.
+
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
    check and shows only closed content-free status and rejection reasons.
 2. The user selects a local EPUB.

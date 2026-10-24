@@ -7,7 +7,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Final, cast
+from typing import Final, Literal, cast
 
 from .chatterbox_integrity import (
     MAXIMUM_PART_BYTES,
@@ -159,7 +159,9 @@ def load_source_manifest(
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "4" and manifest != local_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
-    if package_version == "5" and manifest != security_source_manifest(base):
+    if package_version in {"5", "6"} and manifest != security_source_manifest(
+        base, package_version=package_version
+    ):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     return manifest
 
@@ -193,26 +195,39 @@ def write_successor_source_manifest(root: Path | None = None) -> Path:
     return target
 
 
-def security_source_manifest(root: Path | None = None) -> dict[str, object]:
-    """Keep the published v3 runtime/model closure with the independent v5 lock."""
+def security_source_manifest(
+    root: Path | None = None, *, package_version: Literal["5", "6"] = "5"
+) -> dict[str, object]:
+    """Keep the frozen runtime/model closure with an independent security lock."""
 
     base = root or repository_root()
-    layout = PackageLayout("5")
-    manifest = copy.deepcopy(load_source_manifest(base, package_version="3"))
+    if package_version not in {"5", "6"}:
+        raise ReleaseChatterboxError("chatterbox-package-version-invalid")
+    layout = PackageLayout(package_version)
+    manifest = copy.deepcopy(
+        load_source_manifest(base, package_version="3" if package_version == "5" else "5")
+    )
     manifest["packageId"] = layout.directory
     manifest["packageVersion"] = layout.version
     manifest["chatterboxLock"] = {
         "path": layout.lock_path,
         "sha256": sha256_file(base / layout.lock_path),
     }
-    cast(dict[str, object], manifest["runtimeRelease"])["tag"] = "chatterbox-runtime-v5"
+    cast(dict[str, object], manifest["runtimeRelease"])["tag"] = (
+        f"chatterbox-runtime-v{package_version}"
+    )
     return manifest
 
 
-def write_security_source_manifest(root: Path | None = None) -> Path:
+def write_security_source_manifest(
+    root: Path | None = None, *, package_version: Literal["5", "6"] = "5"
+) -> Path:
     base = root or repository_root()
-    target = base / "services/tts/release/optional/chatterbox/source-manifest-v5.json"
-    target.write_bytes(render_manifest(security_source_manifest(base)))
+    manifest = security_source_manifest(base, package_version=package_version)
+    target = (
+        base / f"services/tts/release/optional/chatterbox/source-manifest-v{package_version}.json"
+    )
+    target.write_bytes(render_manifest(manifest))
     return target
 
 

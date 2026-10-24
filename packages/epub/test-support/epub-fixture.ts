@@ -916,6 +916,37 @@ export function minimalPackageDocument(): string {
   return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:minimal</dc:identifier><dc:title>Synthetic minimal publication</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/></spine></package>`;
 }
 
+/** Repository-authored primary-start regression; auxiliary IDs stay at zero. */
+export async function buildPrimaryStartEpubFixture(
+  version: "2.0" | "3.0" = "3.0",
+): Promise<Uint8Array> {
+  const packageDocument = (
+    version === "2.0" ? minimalEpub2PackageDocument() : minimalPackageDocument()
+  )
+    .replace(
+      "</manifest>",
+      '<item id="aux" href="text/aux.xhtml" media-type="application/xhtml+xml"/></manifest>',
+    )
+    .replace(
+      '<itemref idref="chapter"/>',
+      '<itemref idref="aux" linear="no"/><itemref idref="chapter"/>',
+    );
+  const build =
+    version === "2.0" ? buildMinimalEpub2Fixture : buildMinimalEpubFixture;
+  return build({
+    packageDocument,
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Primary</title></head><body><h1 id="chapter-one">Primary opening</h1><p><a href="aux.xhtml#auxiliary">Visit auxiliary</a></p></body></html>',
+    additionalEntries: [
+      {
+        name: "EPUB/text/aux.xhtml",
+        content:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Auxiliary</title></head><body><h1 id="auxiliary">Auxiliary section</h1><p>Repository synthetic auxiliary passage.</p></body></html>',
+      },
+    ],
+  });
+}
+
 export function minimalEpub2Guide(): string {
   return '<guide><reference type="text" title="Synthetic opening" href="text/chapter.xhtml#chapter-one"/></guide>';
 }

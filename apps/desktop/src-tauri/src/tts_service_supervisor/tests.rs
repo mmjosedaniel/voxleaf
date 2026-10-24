@@ -166,6 +166,185 @@ fn state_frame(service_instance_id: &str, state: &str) -> Frame {
 }
 
 #[test]
+fn clb03_engine_errors_preserve_operational_classification() {
+    for (state, kind, active, with_work_identity) in [
+        ("unloaded", "state", false, false),
+        ("warming", "state", false, false),
+        ("ready", "state", true, false),
+        ("generating", "audioMetadata", true, true),
+    ] {
+        for (reason, expected) in [
+            ("engine-failure", TtsNativeFailure::InternalFailure),
+            ("engine-timeout", TtsNativeFailure::TimedOut),
+        ] {
+            let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+            let (session, sender) = channel_session();
+            let session = Arc::new(session);
+            *supervisor.session.lock().unwrap() = Some(session.clone());
+            supervisor.set_state(state).unwrap();
+            let identity = build_work_identity(&fixture_segment()).unwrap();
+            let mut control = json!({
+                "schemaVersion": 1, "protocolVersion": 1, "kind": "error",
+                "serviceInstanceId": session.service_instance_id, "reason": reason,
+                "error": {"schemaVersion": 1, "code": "internal-failure", "category": "internal", "severity": "fatal"}
+            });
+            if with_work_identity {
+                control["workIdentity"] = json!({
+                    "requestId": identity.request_id, "sessionId": identity.session_id,
+                    "generationId": identity.generation_id, "segmentId": identity.segment_id
+                });
+            }
+            if active {
+                supervisor.lifecycle.lock().unwrap().active = Some(identity);
+            }
+            sender
+                .send(Ok(Frame {
+                    kind: FrameKind::Control,
+                    payload: encode_control(&control).unwrap(),
+                }))
+                .unwrap();
+            assert_eq!(
+                supervisor.receive_control_with_engine_errors(&session, Duration::ZERO, kind, true),
+                Err(expected)
+            );
+            assert_eq!(supervisor.fail_session(&session, expected), expected);
+            assert!(supervisor.session.lock().unwrap().is_none());
+            assert!(supervisor.lifecycle.lock().unwrap().active.is_none());
+            assert_eq!(
+                supervisor.shutdown_instance(Some(&session.service_instance_id)),
+                Ok(vec![
+                    state_control(&session.service_instance_id, "stopping"),
+                    state_control(&session.service_instance_id, "stopped"),
+                ]),
+                "the real client must acknowledge verified containment before retry"
+            );
+        }
+    }
+}
+
+#[test]
+fn clb03_missing_wrong_and_unverified_containment_never_acknowledge_cleanup() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    assert_eq!(
+        supervisor.shutdown_instance(Some("service:unknown")),
+        Err(TtsNativeFailure::InvalidState)
+    );
+    let (session, _sender) = channel_session();
+    let session = Arc::new(session);
+    *supervisor.session.lock().unwrap() = Some(session.clone());
+    assert_eq!(
+        supervisor.fail_session(&session, TtsNativeFailure::InternalFailure),
+        TtsNativeFailure::InternalFailure
+    );
+    assert_eq!(
+        supervisor.shutdown_instance(None),
+        Err(TtsNativeFailure::InvalidState)
+    );
+    assert_eq!(
+        supervisor.shutdown_instance(Some("service:foreign")),
+        Err(TtsNativeFailure::Cancelled)
+    );
+    let _operation = supervisor.acquire_operation().unwrap();
+    assert!(
+        supervisor
+            .shutdown_instance(Some(&session.service_instance_id))
+            .is_ok()
+    );
+    drop(_operation);
+    supervisor.force_stop();
+    assert_eq!(
+        supervisor.shutdown_instance(Some(&session.service_instance_id)),
+        Err(TtsNativeFailure::InvalidState)
+    );
+
+    let (unverified, _sender) = channel_session();
+    let unverified = Arc::new(unverified);
+    *supervisor.session.lock().unwrap() = Some(unverified.clone());
+    let _ = std::panic::catch_unwind(|| {
+        let _process = unverified.process.lock().unwrap();
+        panic!("synthetic termination ownership failure");
+    });
+    assert_eq!(
+        supervisor.fail_session(&unverified, TtsNativeFailure::TimedOut),
+        TtsNativeFailure::InternalFailure
+    );
+    assert!(
+        supervisor
+            .shutdown_instance(Some(&unverified.service_instance_id))
+            .is_err()
+    );
+    assert!(supervisor.session.lock().unwrap().is_some());
+}
+
+#[test]
+fn clb03_errors_do_not_weaken_identity_schema_or_sequence_validation() {
+    for fault in [
+        "service",
+        "requestId",
+        "sessionId",
+        "generationId",
+        "segmentId",
+        "missing-work",
+        "reason",
+        "format",
+        "schema",
+        "code",
+        "completed",
+        "capabilities",
+        "disallowed",
+    ] {
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        let (session, sender) = channel_session();
+        let session = Arc::new(session);
+        *supervisor.session.lock().unwrap() = Some(session.clone());
+        supervisor.set_state("generating").unwrap();
+        let identity = build_work_identity(&fixture_segment()).unwrap();
+        let mut control = json!({
+            "schemaVersion": 1, "protocolVersion": 1, "kind": "error",
+            "serviceInstanceId": session.service_instance_id, "reason": "engine-failure",
+            "error": {"schemaVersion": 1, "code": "internal-failure", "category": "internal", "severity": "fatal"},
+            "workIdentity": { "requestId": identity.request_id, "sessionId": identity.session_id, "generationId": identity.generation_id, "segmentId": identity.segment_id }
+        });
+        supervisor.lifecycle.lock().unwrap().active = Some(identity);
+        let mut kind = "audioMetadata";
+        match fault {
+            "service" => control["serviceInstanceId"] = json!("service:other"),
+            "requestId" | "sessionId" | "generationId" | "segmentId" => {
+                control["workIdentity"][fault] = json!("identity:other")
+            }
+            "missing-work" => {
+                control.as_object_mut().unwrap().remove("workIdentity");
+            }
+            "reason" => control["reason"] = json!("unknown"),
+            "format" => control["reason"] = json!("format-mismatch"),
+            "schema" => control["unexpected"] = json!(true),
+            "code" => {
+                control["error"] = json!({"schemaVersion": 1, "code": "resource-exhausted", "category": "resource", "severity": "recoverable"})
+            }
+            "completed" | "capabilities" => kind = fault,
+            _ => (),
+        }
+        sender
+            .send(Ok(Frame {
+                kind: FrameKind::Control,
+                payload: serde_json::to_vec(&control).unwrap(),
+            }))
+            .unwrap();
+        assert_eq!(
+            supervisor.receive_control_with_engine_errors(
+                &session,
+                Duration::ZERO,
+                kind,
+                fault != "disallowed"
+            ),
+            Err(TtsNativeFailure::ProtocolRejected),
+            "{fault}"
+        );
+        assert_eq!(supervisor.lifecycle.lock().unwrap().state, "generating");
+    }
+}
+
+#[test]
 fn shutdown_interrupts_preparation_without_acquiring_its_operation_guard() {
     let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
     let (session, _sender) = channel_session();

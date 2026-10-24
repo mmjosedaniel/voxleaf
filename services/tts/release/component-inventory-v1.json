@@ -8065,7 +8065,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:tokio@1.53.1",
+      "id": "cargo:tokio@1.53.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -8074,7 +8074,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed"
+        "value": "ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -8093,8 +8093,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/tokio/1.53.1",
-      "versionOrRevision": "1.53.1"
+      "source": "https://crates.io/crates/tokio/1.53.3",
+      "versionOrRevision": "1.53.3"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -14745,7 +14745,7 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "8b1a08b28ba0ef4dc9440066fec0ffe43d0fa9bc1e68309968d5f69b6b51e08a"
+      "sha256": "9336f463f36e88f35a81605348387deb063a396177c5369d3f5836b5a8790975"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox-v5/requirements.lock",

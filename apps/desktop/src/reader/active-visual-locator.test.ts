@@ -209,6 +209,7 @@ function createPublication(
       book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
       documents: Object.freeze([]),
       locators: locatedBlocks,
+      defaultStartLocator: locatedBlocks[0]?.startLocator,
       navigation: Object.freeze([]),
       resources: Object.freeze([]),
       closed: false,

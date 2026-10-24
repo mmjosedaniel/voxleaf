@@ -169,6 +169,7 @@ export class AdaptivePcmPlayer {
   #playbackRatePreparation: Promise<void> | undefined;
   #playbackRatePreparationToken = 0;
   #pausedBeforeRateStart = false;
+  #completedWhilePaused = false;
 
   public constructor(
     scheduler: AdaptiveBufferScheduler,
@@ -218,7 +219,8 @@ export class AdaptivePcmPlayer {
   public pause(): AdaptivePcmPlayerObservation {
     this.#expectActive();
     this.synchronize();
-    if (this.#scheduler.observe().playbackState !== "playing") {
+    const state = this.#scheduler.observe().playbackState;
+    if (!["playing", "buffering", "complete"].includes(state)) {
       throw new PcmPlaybackError("invalid-state");
     }
     if (this.#handle !== undefined) {
@@ -226,7 +228,11 @@ export class AdaptivePcmPlayer {
       this.#refreshProgress();
     } else if (this.#transitionPause !== undefined) {
       this.#freezeTransitionPause();
-    } else if (this.#playbackRatePreparation !== undefined) {
+    } else if (
+      this.#playbackRatePreparation !== undefined ||
+      state === "buffering" ||
+      state === "complete"
+    ) {
       // No audible unit exists yet. Retain this intent even after preparation
       // resolves, so Resume can start the queued unit exactly once.
       this.#pausedBeforeRateStart = true;
@@ -248,6 +254,13 @@ export class AdaptivePcmPlayer {
       throw new PcmPlaybackError("invalid-state");
     }
     this.#scheduler.resumePlayback();
+    if (
+      this.#completedWhilePaused &&
+      this.#scheduler.observe().playbackState === "buffering"
+    ) {
+      this.#underrunCount += 1;
+    }
+    this.#completedWhilePaused = false;
     this.#pausedBeforeRateStart = false;
     if (this.#handle !== undefined) {
       this.#handle.resume();
@@ -396,6 +409,7 @@ export class AdaptivePcmPlayer {
       return;
     }
     const completedUnit = this.#activeUnit;
+    const paused = this.#scheduler.observe().playbackState === "paused";
     this.#publishAudibleProgress(
       "segment-completed",
       completedUnit,
@@ -407,6 +421,10 @@ export class AdaptivePcmPlayer {
     this.#lastProgressObservationAtMs = undefined;
     this.#playbackStartSampleFrame = 0;
     this.#reportedSampleFrames = 0;
+    if (paused) {
+      this.#pausedBeforeRateStart = true;
+      this.#completedWhilePaused = true;
+    }
     const observation = this.#scheduler.observe();
     if (
       observation.playbackRateState.selectedRatePercent === 100 &&
@@ -417,7 +435,7 @@ export class AdaptivePcmPlayer {
     if (observation.playbackState === "buffering") {
       this.#underrunCount += 1;
     } else if (
-      observation.playbackState === "playing" &&
+      (observation.playbackState === "playing" || paused) &&
       completedUnit.transitionPauseMs > 0 &&
       this.#scheduler.currentPlaybackUnit() !== undefined
     ) {
@@ -433,7 +451,10 @@ export class AdaptivePcmPlayer {
       handle === undefined ||
       unit === undefined ||
       handle.sequence !== unit.sequence ||
-      this.#scheduler.observe().playbackState !== "playing"
+      (this.#scheduler.observe().playbackState !== "playing" &&
+        !(
+          forceComplete && this.#scheduler.observe().playbackState === "paused"
+        ))
     ) {
       return;
     }
@@ -445,7 +466,7 @@ export class AdaptivePcmPlayer {
         );
     const delta = observed - this.#reportedSampleFrames;
     if (delta > 0) {
-      this.#scheduler.consumeSampleFrames(delta);
+      this.#scheduler.accountRenderedSampleFrames(delta);
       this.#reportedSampleFrames = observed;
       const observedAtMs = this.#scheduler.observe().observedAtMs;
       if (
@@ -467,6 +488,7 @@ export class AdaptivePcmPlayer {
     }
     this.#terminalState = terminalState;
     this.#pausedBeforeRateStart = false;
+    this.#completedWhilePaused = false;
     this.#releasePlaybackRatePreparation();
     this.#cancelPendingTransitionPause();
     const transition = this.#scheduler.invalidate();
@@ -501,7 +523,9 @@ export class AdaptivePcmPlayer {
       handle: undefined,
     };
     this.#transitionPause = pending;
-    this.#startTransitionPauseTimer(pending);
+    if (this.#scheduler.observe().playbackState === "playing") {
+      this.#startTransitionPauseTimer(pending);
+    }
   }
 
   #startTransitionPauseTimer(pending: PendingTransitionPause): void {

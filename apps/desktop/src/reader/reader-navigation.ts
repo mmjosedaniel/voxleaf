@@ -194,22 +194,19 @@ export class ReaderNavigationCoordinator {
     publication: OpenedPublication,
     options: ReaderNavigationCoordinatorOptions = {},
   ) {
-    const firstLocatedBlock = publication.locators[0];
-    if (firstLocatedBlock === undefined) {
+    const startLocator =
+      options.initialLocator ?? publication.defaultStartLocator;
+    if (startLocator === undefined) {
       throw new Error("Readable spine document is unavailable.");
     }
-    let initialLocatedBlock = firstLocatedBlock;
-    let initialLocator = firstLocatedBlock.startLocator;
-    if (options.initialLocator !== undefined) {
-      let resolution: PublicationLocatorResolution;
-      try {
-        resolution = publication.resolveLocator(options.initialLocator);
-      } catch {
-        throw new Error("Initial reading locator is unavailable.");
-      }
-      initialLocatedBlock = resolution.locatedBlock;
-      initialLocator = resolution.locator;
+    let resolution: PublicationLocatorResolution;
+    try {
+      resolution = publication.resolveLocator(startLocator);
+    } catch {
+      throw new Error("Initial reading locator is unavailable.");
     }
+    const initialLocatedBlock = resolution.locatedBlock;
+    const initialLocator = resolution.locator;
     const activeDocument = documentForLocatedBlock(
       publication,
       initialLocatedBlock,
