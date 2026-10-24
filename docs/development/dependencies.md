@@ -2,6 +2,15 @@
 
 ## Scope and ownership
 
+Chatterbox v6 is an **unpublished, unadmitted preparation candidate** under the
+[active filelock/setuptools refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
+Its independent 79-package hashed lock changes only filelock to 4.2.1 and
+setuptools to 84.1.0, retaining frozen v3 service modules and all six model
+identities. Published v5 remains the selected production authority and its
+fresh audit is still blocked. Candidate audit results must not be presented as
+remediation of the downloaded/installed v5 bytes. Replacing the affected
+dependencies is preferred to advisory suppression or mutating published v5.
+
 This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added Ajv for the first real decoder, Milestone 4 Task 2.5 moved Ajv to generation/test-only use after introducing standalone validators, Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance, and Milestone 3 Task 1.2 selected the low-level ZIP and XML primitives proven below. M007 Milestone 3 promotes the minimal Rust JSON surface and Windows Job Object bindings needed by the accepted native supervisor. M010 Milestone 2 promotes the already locked official `windows` projection to a direct target-specific dependency for reviewed host-detection APIs. M010 Milestone 6 integrates the separately locked admitted Piper environment without moving it into the base Python graph. M011 Milestone 4 adds native-only `reqwest` and `zip` for a separately gated optional-profile archive; its checked-in manifest authorizes download only after renderer and native live compatibility gates pass. This inventory does not approve future bundled TTS-model, persistence, installer, updater, telemetry, or renderer-framework dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:

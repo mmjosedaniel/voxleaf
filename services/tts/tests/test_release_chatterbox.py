@@ -513,7 +513,7 @@ def test_successor_layout_keeps_v2_outputs_and_environment_isolated(tmp_path: Pa
     assert original.archive != successor.archive
     assert original.runtime_manifest != successor.runtime_manifest
     with pytest.raises(ReleaseChatterboxError, match="chatterbox-package-version-invalid"):
-        PackageLayout("6")  # type: ignore[arg-type]
+        PackageLayout("7")  # type: ignore[arg-type]
     local = PackageLayout("4")
     assert local.dist(tmp_path) == original.dist(tmp_path) / "v4"
     assert local.lock_path == successor.lock_path
