@@ -14,9 +14,9 @@
       "../../../services/tts/release/component-inventory-v1.json": "resources/release/component-inventory-v1.json",
       "../../../services/tts/release/core/dist/voxleaf-piper-core-v1/": "resources/tts/voxleaf-piper-core-v1/",
       "../../../services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md": "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
-      "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json": "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
-      "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json": "resources/release/optional/chatterbox/runtime-package-evidence-v5.json",
-      "../../../services/tts/release/optional/chatterbox/source-manifest-v5.json": "resources/release/optional/chatterbox/source-manifest-v5.json"
+      "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json": "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
+      "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json": "resources/release/optional/chatterbox/runtime-package-evidence-v6.json",
+      "../../../services/tts/release/optional/chatterbox/source-manifest-v6.json": "resources/release/optional/chatterbox/source-manifest-v6.json"
     },
     "windows": {
       "allowDowngrades": false,

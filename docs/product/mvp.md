@@ -127,7 +127,10 @@ verifies every file's expected name, byte size, and SHA-256. It does not execute
 model-repository code. M011's original runtime had a reproducible three-part
 identity published as `chatterbox-runtime-v2`;
 [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
-now selects the separately published v5 runtime, with v2/v3 cleanup-only.
+selected the separately published v5 runtime, with v2/v3 cleanup-only.
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md)
+defines the published v6 integration candidate with v5 also cleanup-only;
+its installed acceptance remains pending in the active security-refresh plan.
 The original M011 installed
 Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
 passes on the representative compatible computer. Renewed Milestone 7 accepts

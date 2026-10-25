@@ -1,4 +1,4 @@
-"""Additive v6 preparation must not rewrite or admit historical runtime bytes."""
+"""Additive v6 preparation must preserve historical runtime identities."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import pytest
 
 from voxleaf_tts import release_chatterbox
 from voxleaf_tts.packaging import chatterbox_authority as authority
+from voxleaf_tts.packaging import chatterbox_v6_authority
 from voxleaf_tts.packaging.chatterbox_integrity import (
     PackageLayout,
     ReleaseChatterboxError,
@@ -59,21 +60,29 @@ def test_v6_no_sync_fails_before_source_or_output(
             release_chatterbox.build_package(package_version="6", synchronise=False)
 
 
-@pytest.mark.parametrize(
-    "command", ["check-acquisition", "write-acquisition", "reconcile-evidence"]
-)
-def test_v6_unpublished_commands_cannot_fall_back_to_historical_authority(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], command: str
+def test_v6_acquisition_check_never_falls_back_to_historical_authority(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def unexpected_authority() -> None:
         raise AssertionError("historical-authority-reached")
 
     monkeypatch.setattr(release_chatterbox, "check_security_authority", unexpected_authority)
     monkeypatch.setattr(release_chatterbox, "load_acquisition_manifest", unexpected_authority)
+    calls = []
+    monkeypatch.setattr(
+        chatterbox_v6_authority,
+        "check_security_authority",
+        lambda: calls.append("v6"),
+    )
+    assert release_chatterbox.main(["check-acquisition", "--package-version", "6"]) == 0
+    assert calls == ["v6"]
+
+
+@pytest.mark.parametrize("command", ["write-acquisition", "reconcile-evidence"])
+def test_v6_requires_publication_and_rejects_historical_reconciliation(command: str) -> None:
     with pytest.raises(SystemExit) as caught:
         release_chatterbox.main([command, "--package-version", "6"])
     assert caught.value.code == 2
-    assert "version 6 is unpublished and has no acquisition authority" in capsys.readouterr().err
 
 
 def test_v6_preserves_frozen_modules_models_and_python() -> None:

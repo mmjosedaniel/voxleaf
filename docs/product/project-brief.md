@@ -104,7 +104,10 @@ revision, verifies each size and SHA-256, and executes no model-repository code.
 The reviewed Chatterbox runtime remains a distinct release input with a
 three-part identity. M011 originally published `chatterbox-runtime-v2`;
 [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
-selects the separately published v5 runtime, with v2/v3 cleanup-only.
+selected the separately published v5 runtime, with v2/v3 cleanup-only.
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md)
+defines the published v6 integration candidate with v5 also cleanup-only;
+its installed acceptance remains pending in the active security-refresh plan.
 Representative compatible-host acquisition and bilingual operation passed at
 their recorded checkpoints; the ordinary manifest offers optional installation
 only after renderer and native live compatibility gates pass. M011 Milestone 6B

@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Final, cast
 from urllib import request as urllib_request
 
+from .packaging import chatterbox_v6_authority
 from .packaging.chatterbox_authority import CHATTERBOX_SOURCE as CHATTERBOX_SOURCE
 from .packaging.chatterbox_authority import CURRENT_DOWNLOAD_BYTES as CURRENT_DOWNLOAD_BYTES
 from .packaging.chatterbox_authority import CURRENT_INSTALLED_BYTES as CURRENT_INSTALLED_BYTES
@@ -717,14 +718,9 @@ def main(arguments: list[str] | None = None) -> int:
         if version not in {"4", "5", "6"}:
             parser.error("check-local requires --package-version 4, 5 or 6")
         check_local_package(package_version=version, output_root=args.output_root)
-        print(f"chatterbox-optional-v{version}-local:current-unpublished-unadmitted")
+        status = "current" if version == "6" else "current-unpublished-unadmitted"
+        print(f"chatterbox-optional-v{version}-local:{status}")
         return 0
-    if version == "6" and args.command in {
-        "check-acquisition",
-        "write-acquisition",
-        "reconcile-evidence",
-    }:
-        parser.error("version 6 is unpublished and has no acquisition authority")
     if version == "4" and args.command in {
         "check-acquisition",
         "write-acquisition",
@@ -735,20 +731,26 @@ def main(arguments: list[str] | None = None) -> int:
         check_security_authority()
         print("chatterbox-v5-acquisition:current")
         return 0
+    if version == "6" and args.command == "check-acquisition":
+        chatterbox_v6_authority.check_security_authority()
+        print("chatterbox-v6-acquisition:current")
+        return 0
     if version == "3" and args.command == "check-acquisition":
         check_successor_authority()
         print("chatterbox-v3-acquisition:current")
         return 0
     if args.command == "write-acquisition":
-        if version not in {"3", "5"} or args.publication is None:
-            parser.error("write-acquisition requires version 3 or 5 and --publication")
-        if version == "5":
+        if version not in {"3", "5", "6"} or args.publication is None:
+            parser.error("write-acquisition requires version 3, 5 or 6 and --publication")
+        if version == "6":
+            chatterbox_v6_authority.write_security_authority(args.publication)
+        elif version == "5":
             write_security_authority(args.publication)
         else:
             write_successor_authority(args.publication)
         print(f"chatterbox-v{version}-acquisition:written")
         return 0
-    if version in {"3", "5"} and args.command == "reconcile-evidence":
+    if version in {"3", "5", "6"} and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
         if version not in {"3", "4", "5", "6"}:

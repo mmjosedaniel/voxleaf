@@ -5,10 +5,54 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     thread,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
+
+#[test]
+fn download_diagnostic_classifies_a_real_response_read_timeout() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let (release, released) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = [0_u8; 1024];
+        assert!(stream.read(&mut request).unwrap() > 0);
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nx")
+            .unwrap();
+        let _ = released.recv_timeout(Duration::from_secs(5));
+    });
+    let client = reqwest::blocking::Client::builder()
+        .no_proxy()
+        .timeout(Duration::from_millis(200))
+        .build()
+        .unwrap();
+    let mut response = client.get(format!("http://{address}/")).send().unwrap();
+    let slot = Mutex::new(None);
+    let mut attempt = DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 100);
+    attempt
+        .response(response.status(), response.content_length())
+        .unwrap();
+    let mut first_byte = [0_u8; 1];
+    response.read_exact(&mut first_byte).unwrap();
+    let error = response.read(&mut first_byte).unwrap_err();
+    release.send(()).unwrap();
+    server.join().unwrap();
+
+    attempt.received(1);
+    attempt.fail(DownloadStage::Read, DownloadFailureKind::Io, Some(&error));
+    let report = slot.lock().unwrap().unwrap();
+    assert_eq!(report.kind, DownloadFailureKind::Timeout);
+    assert_eq!(report.received_bytes, 1);
+    assert_eq!(report.http_status, Some(200));
+    assert!(
+        !serde_json::to_string(&report)
+            .unwrap()
+            .contains("127.0.0.1")
+    );
+}
 
 #[test]
 fn download_diagnostic_distinguishes_http_and_length_failures() {
@@ -672,8 +716,8 @@ fn runtime_artifact(runtime_manifest_sha256: String) -> RuntimeArtifact {
         archive_sha256: "0".repeat(64),
         installed_bytes: 1_024,
         parts: vec![RuntimePart {
-            filename: "voxleaf-chatterbox-runtime-v5.zip.part-001".to_owned(),
-            url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v5/voxleaf-chatterbox-runtime-v5.zip.part-001".to_owned(),
+            filename: "voxleaf-chatterbox-runtime-v6.zip.part-001".to_owned(),
+            url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v6/voxleaf-chatterbox-runtime-v6.zip.part-001".to_owned(),
             sha256: "1".repeat(64),
             download_bytes: 10,
         }],
@@ -964,7 +1008,7 @@ fn promotion_replaces_only_the_versioned_package_after_complete_verification() {
 }
 
 #[test]
-fn installed_v5_runtime_verifies_after_transient_numba_cache_cleanup() {
+fn installed_v6_runtime_verifies_after_transient_numba_cache_cleanup() {
     let root = TestRoot::new();
     let installed = package_root(&root.0);
     let authority = write_runtime(&installed);
@@ -1145,6 +1189,7 @@ fn installed_package_root_rejects_a_symlink_outside_the_managed_root() {
     for relative in [
         "cb/2",
         "cb/3",
+        "cb/5",
         "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
     ] {
         let managed = TestRoot::new();
@@ -1167,8 +1212,9 @@ fn removal_rejects_an_active_download_without_touching_staging() {
     fs::write(staging.join("partial.bin"), b"partial").expect("staging fixture should be written");
     let retained = retained_package_root(&root.0);
     let retained_v3 = retained_v3_package_root(&root.0);
+    let retained_v5 = retained_v5_package_root(&root.0);
     let legacy = legacy_package_root(&root.0);
-    for directory in [&retained, &retained_v3, &legacy] {
+    for directory in [&retained, &retained_v3, &retained_v5, &legacy] {
         fs::create_dir_all(directory).unwrap();
         fs::write(directory.join("keep.bin"), b"historical").unwrap();
     }
@@ -1182,7 +1228,7 @@ fn removal_rejects_an_active_download_without_touching_staging() {
 
     assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
     assert!(staging.join("partial.bin").exists());
-    for directory in [&retained, &retained_v3, &legacy] {
+    for directory in [&retained, &retained_v3, &retained_v5, &legacy] {
         assert_eq!(fs::read(directory.join("keep.bin")).unwrap(), b"historical");
     }
 }
@@ -1533,16 +1579,24 @@ fn ordinary_selection_requires_confirmation_without_creating_staging() {
         .select_at(&root.0)
         .expect("selection should reach consent");
     assert_eq!(selected.state, OptionalProfileState::Confirming);
-    assert_eq!(selected.download_bytes, Some(8_240_055_749));
+    assert_eq!(selected.download_bytes, Some(8_240_302_391));
     assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
     assert!(!staging_root(&root.0).exists());
     assert!(!profile_root(&root.0).exists());
 }
 #[test]
 fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
-    let manifest = exact_manifest().expect("v5 authority valid");
-    assert_eq!(manifest.identity.package_version, "5");
-    assert_eq!(manifest.layout.installed, "cb/5");
+    let retained_v5 = serde_json::from_slice::<OptionalPackageManifest>(include_bytes!(
+        "../../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        validate_manifest(&retained_v5),
+        Err(OptionalProfileError::Invalid)
+    );
+    let manifest = exact_manifest().expect("v6 authority valid");
+    assert_eq!(manifest.identity.package_version, "6");
+    assert_eq!(manifest.layout.installed, "cb/6");
     assert!(manifest.runtime_correction.is_none());
     let runtime = manifest.runtime_artifact.as_ref().unwrap();
     assert_eq!(
@@ -1551,13 +1605,13 @@ fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
             .iter()
             .map(|part| part.download_bytes)
             .sum::<u64>(),
-        5_031_103_825
+        5_031_350_467
     );
-    assert_eq!(runtime.installed_bytes, 5_027_548_189);
+    assert_eq!(runtime.installed_bytes, 5_027_792_395);
     let measurements = manifest.measurements.as_ref().unwrap();
-    assert_eq!(measurements.download_bytes, 8_240_055_749);
-    assert_eq!(measurements.installed_bytes, 8_236_500_113);
-    assert_eq!(measurements.temporary_bytes, 13_271_159_574);
+    assert_eq!(measurements.download_bytes, 8_240_302_391);
+    assert_eq!(measurements.installed_bytes, 8_236_744_319);
+    assert_eq!(measurements.temporary_bytes, 13_271_652_858);
     let mut changed = manifest.clone();
     changed.runtime_correction = serde_json::from_slice::<OptionalPackageManifest>(include_bytes!(
         "../../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
@@ -1568,7 +1622,7 @@ fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
         validate_manifest(&changed),
         Err(OptionalProfileError::Invalid)
     );
-    for version in ["2", "3", "4"] {
+    for version in ["2", "3", "4", "5"] {
         changed = manifest.clone();
         changed.identity.package_version = version.to_owned();
         assert_eq!(
@@ -1579,14 +1633,16 @@ fn successor_authority_has_exact_new_identity_and_no_legacy_correction() {
 }
 
 #[test]
-fn retained_v2_and_v3_are_cleanup_only_and_survive_observation_and_cancellation() {
+fn retained_v2_v3_and_v5_are_cleanup_only_and_survive_observation_and_cancellation() {
     for roots in [
         vec!["cb/2"],
         vec!["cb/3"],
+        vec!["cb/5"],
         vec!["profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2"],
         vec![
             "cb/2",
             "cb/3",
+            "cb/5",
             "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
         ],
     ] {
@@ -1636,14 +1692,61 @@ fn retained_v2_and_v3_are_cleanup_only_and_survive_observation_and_cancellation(
     }
 }
 
+#[cfg(any(windows, unix))]
 #[test]
-fn valid_v5_wins_over_retained_versions_and_withheld_removal_cleans_only_owned_roots() {
+fn retained_v5_dangling_link_cannot_be_reported_as_removed() {
+    let root = TestRoot::new();
+    let outside = TestRoot::new();
+    let target = outside.0.join("removed-target");
+    fs::create_dir(&target).unwrap();
+    fs::write(outside.0.join("keep.bin"), b"outside").unwrap();
+    let retained = retained_v5_package_root(&root.0);
+    fs::create_dir_all(retained.parent().unwrap()).unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&target, &retained).unwrap();
+    #[cfg(windows)]
+    {
+        let status = std::process::Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command", "New-Item -ItemType Junction -Path $env:VOXLEAF_TEST_LINK -Target $env:VOXLEAF_TEST_TARGET -ErrorAction Stop | Out-Null"])
+            .env("VOXLEAF_TEST_LINK", &retained)
+            .env("VOXLEAF_TEST_TARGET", &target)
+            .status().unwrap();
+        assert!(status.success());
+    }
+    fs::remove_dir(&target).unwrap();
+    assert!(!retained.exists());
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    let result = manager.remove_at(&root.0);
+    let state = manager.snapshot_at(&root.0).unwrap().state;
+    let link_remains = fs::symlink_metadata(&retained).is_ok();
+    // Remove only the synthetic link before assertions and temporary-root teardown.
+    #[cfg(windows)]
+    fs::remove_dir(&retained).unwrap();
+    #[cfg(unix)]
+    fs::remove_file(&retained).unwrap();
+    assert_eq!(result, Err(OptionalProfileError::VerificationFailed));
+    assert_eq!(state, OptionalProfileState::Failed);
+    assert!(link_remains);
+    assert_eq!(fs::read(outside.0.join("keep.bin")).unwrap(), b"outside");
+    assert_eq!(
+        manager.remove_at(&root.0).unwrap().state,
+        OptionalProfileState::Absent
+    );
+}
+
+#[test]
+fn valid_v6_wins_over_retained_versions_and_withheld_removal_cleans_only_owned_roots() {
     let root = TestRoot::new();
     let active = package_root(&root.0);
     let authority = write_runtime(&active);
     let retained = retained_package_root(&root.0);
     let retained_v3 = retained_v3_package_root(&root.0);
-    for directory in [&retained, &retained_v3] {
+    let retained_v5 = retained_v5_package_root(&root.0);
+    for directory in [&retained, &retained_v3, &retained_v5] {
         fs::create_dir_all(directory).unwrap();
         fs::write(directory.join("keep.bin"), b"retained").unwrap();
     }
@@ -1676,4 +1779,5 @@ fn valid_v5_wins_over_retained_versions_and_withheld_removal_cleans_only_owned_r
     assert!(!active.exists());
     assert!(!retained.exists());
     assert!(!retained_v3.exists());
+    assert!(!retained_v5.exists());
 }

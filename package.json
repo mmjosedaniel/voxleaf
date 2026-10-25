@@ -9,6 +9,8 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "package:chatterbox-optional:v6:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 6",
+    "package:chatterbox-optional:v6:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 6",
     "test:chatterbox:v6:security": "python -I -B scripts/test-chatterbox-v6-security.py",
     "test:chatterbox:v6:security:baseline": "uv run --no-project --python 3.12 --with filelock==3.32.0 --with setuptools==83.0.0 python -I -B scripts/test-chatterbox-v6-security.py --baseline",
     "package:chatterbox-optional:v6:lock": "uv pip compile services/tts/release/profiles/chatterbox-v6/requirements.in --python-version 3.12 --python-platform windows --no-deps --generate-hashes --exclude-newer 2026-10-23T22:00:00Z --output-file services/tts/release/profiles/chatterbox-v6/requirements.lock",

@@ -131,9 +131,19 @@ function Remove-LifecycleTestDataRoot {
   param([Parameter(Mandatory = $true)]$State)
   if (-not $State.OwnsTestRoot) { throw "windows-release-lifecycle-test-data-not-owned" }
   Assert-ExactChildPath $State.Parent $State.DataRoot "windows-release-lifecycle-data-root-invalid"
-  if (Test-Path -LiteralPath $State.DataRoot) {
+  $cleanupWait = [Diagnostics.Stopwatch]::StartNew()
+  while (Test-Path -LiteralPath $State.DataRoot) {
     Assert-NoReparsePoints $State.DataRoot "windows-release-lifecycle-test-data-reparse"
-    Remove-Item -LiteralPath $State.DataRoot -Recurse -Force
+    try {
+      Remove-Item -LiteralPath $State.DataRoot -Recurse -Force -ErrorAction Stop
+      return
+    } catch {
+      # WebView2 may briefly retain handles after its application exits.
+      # Retry only Windows sharing/lock violations on this owned test root.
+      $nativeCode = $_.Exception.HResult -band 0xffff
+      if (-not ($_.Exception -is [IO.IOException]) -or $nativeCode -notin @(32, 33) -or $cleanupWait.ElapsedMilliseconds -ge 10000) { throw }
+      Start-Sleep -Milliseconds 100
+    }
   }
 }
 

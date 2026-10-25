@@ -178,11 +178,12 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox authority checks explicitly select v5.
+Current Chatterbox integration authority checks explicitly select v6; historical
+v3/v5 checks remain available and must preserve their exact outputs.
 
-V6 preparation is separate and does not change that production selection.
+V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
-historical-source, sync and unpublished-command guards. Generate its lock and
+historical-source, sync and version-specific authority guards. Generate its lock and
 recipe with `package:chatterbox-optional:v6:lock` and
 `package:chatterbox-optional:v6:write-source`; verify with
 `package:chatterbox-optional:v6:check-source`. Build through
@@ -206,18 +207,21 @@ Windows does not exercise filelock's advisory-specific POSIX path.
 `test:chatterbox:runtime-smoke --package-version 6 --models <verified-local-models> --language es`
 and the `en` arm require offline flags and an isolated NUMBA cache. Existing
 runtime-security/dependency-security probes apply to the same exact runtime.
-No v6 acquisition command is admitted before reviewed publication.
+`package:chatterbox-optional:v6:write-acquisition --publication <readback>`
+requires exact published metadata before writing any authority;
+`package:chatterbox-optional:v6:check-acquisition` validates the generated files.
+Neither command substitutes for installed/native acceptance.
 
-Production checks remain:
-`pnpm.cmd package:chatterbox-optional:v5:check-source` and
-`pnpm.cmd package:chatterbox-optional:v5:check-acquisition`.
+Production integration checks select:
+`pnpm.cmd package:chatterbox-optional:v6:check-source` and
+`pnpm.cmd package:chatterbox-optional:v6:check-acquisition`.
 They check source/acquisition authority, not installed runtime execution.
-Use the [v5 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
+Use the [v6 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
 for authorized authority generation from actual publication readback.
 Unversioned aliases still select v2; explicit v3 checks remain historical
 regression gates. The local v4 builder and v3/v4 adapter-layout harness are
 [historical campaign tooling](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling),
-not current v5 acceptance.
+not current v6 acceptance.
 
 Current runtime/security integration acceptance runs the full foundation check,
 `pnpm.cmd audit:release`, inventory check and the existing Windows package,
@@ -226,8 +230,9 @@ The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
 Qwen inference. The completed
 [v5 refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 records installed B06/B07, bilingual reader/speed, integrity, lifecycle and
-independent acceptance at its exact integration commit. Native admission uses
-v5; retained v2/v3 roots are cleanup-only under ADR-0058.
+independent acceptance at its exact integration commit. V6 integration selects
+v6; retained v2/v3/v5 roots are cleanup-only under ADR-0062. The historical v5
+results do not establish v6 installed acceptance.
 The earlier [v3 security refresh](../plans/completed/chatterbox-security-dependency-refresh.md)
 retains its original audit failure, repair, completion/cancellation regression
 and installed evidence. Those results do not validate v5 bytes. Unix-only

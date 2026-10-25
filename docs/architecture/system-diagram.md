@@ -32,13 +32,16 @@ The Piper runtime refreshes in ADR-0053/ADR-0054 bind packaged and native
 development Piper execution to the current core release lock. Historical candidate locks
 remain evaluation evidence; the one-process local inference topology is unchanged.
 
-The certifi/Pillow refresh in ADR-0058 changes the active optional
-package to v5. Its exact prerelease is published and its production audit
-passes. Installed acquisition, bilingual reader/speed, integrity and lifecycle
+The historical certifi/Pillow refresh in ADR-0058 selected optional
+package v5. Its exact prerelease was published and its production audit
+passed. Installed acquisition, bilingual reader/speed, integrity and lifecycle
 gates pass, together with independent acceptance and fresh PR CI for integration
 commit `194846a`, as recorded in the completed security refresh plan.
-The process topology and local inference boundary are unchanged. Retained
-v2/v3 roots are cleanup-only, with no migration or execution fallback.
+The v6 successor in ADR-0062 updates only filelock/setuptools. Its preparation
+is independently approved and its exact prerelease is published; installed
+and final acceptance remain tracked in the active security-refresh plan.
+The process topology and local inference boundary are unchanged. V6 integration
+retains v2/v3/v5 roots as cleanup-only, with no migration or execution fallback.
 Historical M011 and ADR-0052 checkpoints below retain their original identities.
 
 | Status               | Meaning                                                                                                           |
@@ -101,7 +104,7 @@ flowchart LR
     SIGN["Trusted Windows signing authority<br/>External; currently unavailable<br/>public publication pending"]:::external
     WEBVIEW2["Microsoft WebView2 Runtime<br/>External Windows prerequisite;<br/>network only when compatible runtime is absent"]:::external
     HF_MODEL_SOURCE["Official ResembleAI/chatterbox model data<br/>full Hugging Face revision + six files;<br/>external acquisition only"]:::external
-    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>published as chatterbox-runtime-v5 prerelease"]:::implemented
+    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>v6 published; installed acceptance pending"]:::implemented
     PACKAGE["Windows x64 per-user NSIS candidate<br/>VoxLeaf 0.1.0 + Piper ES/EN;<br/>local/portfolio GO; unsigned"]:::implemented
     ORDINARY_ACQUISITION["Ordinary compatible-host acquisition<br/>renderer presentation + native pre-network recheck;<br/>ADR-0050; validation overlay retired"]:::implemented
     RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2-M4B deterministic boundary;<br/>418 components + explicit blind spots"]:::implemented

@@ -103,14 +103,14 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/source-manifest-v5.json",
+      "resources/release/optional/chatterbox/source-manifest-v6.json",
     ),
     "{}",
   );
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/runtime-package-evidence-v5.json",
+      "resources/release/optional/chatterbox/runtime-package-evidence-v6.json",
     ),
     "{}",
   );
@@ -124,17 +124,17 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   await writeFile(
     path.join(
       installed,
-      "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
+      "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
     ),
     JSON.stringify({
       availability,
-      identity: { packageVersion: "5" },
-      layout: { installed: "cb/5" },
-      runtime: { releaseTag: "chatterbox-runtime-v5" },
+      identity: { packageVersion: "6" },
+      layout: { installed: "cb/6" },
+      runtime: { releaseTag: "chatterbox-runtime-v6" },
       measurements: {
-        downloadBytes: 8_240_055_749,
-        installedBytes: 8_236_500_113,
-        temporaryBytes: 13_271_159_574,
+        downloadBytes: 8_240_302_391,
+        installedBytes: 8_236_744_319,
+        temporaryBytes: 13_271_652_858,
         minimumFreeBytes: 20_000_000_000,
       },
     }),
@@ -142,17 +142,18 @@ async function createArtifact({ availability = "downloadable" } = {}) {
   return installed;
 }
 
-test("ordinary artifact rejects a v2 identity or a legacy correction in v5", async () => {
+test("ordinary artifact rejects historical identities or a legacy correction in v6", async () => {
   for (const mutate of [
     (manifest) => (manifest.identity.packageVersion = "2"),
     (manifest) => (manifest.identity.packageVersion = "3"),
     (manifest) => (manifest.identity.packageVersion = "4"),
+    (manifest) => (manifest.identity.packageVersion = "5"),
     (manifest) => (manifest.runtimeCorrection = {}),
   ]) {
     const installed = await createArtifact();
     const manifestPath = path.join(
       installed,
-      "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
+      "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
     );
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     mutate(manifest);

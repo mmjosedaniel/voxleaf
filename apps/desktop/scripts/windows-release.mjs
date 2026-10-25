@@ -59,12 +59,12 @@ const EXPECTED_RESOURCES = Object.freeze({
   [PIPER_CORE_RESOURCE]: "resources/tts/voxleaf-piper-core-v1/",
   "../../../services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md":
     "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
-  "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json":
-    "resources/release/optional/chatterbox/optional-package-manifest-v5.json",
-  "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json":
-    "resources/release/optional/chatterbox/runtime-package-evidence-v5.json",
-  "../../../services/tts/release/optional/chatterbox/source-manifest-v5.json":
-    "resources/release/optional/chatterbox/source-manifest-v5.json",
+  "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json":
+    "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
+  "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json":
+    "resources/release/optional/chatterbox/runtime-package-evidence-v6.json",
+  "../../../services/tts/release/optional/chatterbox/source-manifest-v6.json":
+    "resources/release/optional/chatterbox/source-manifest-v6.json",
 });
 
 function fail(code) {
@@ -106,7 +106,7 @@ export async function loadReleaseDocuments(root) {
     optionalManifest: await readJson(
       path.join(
         root,
-        "services/tts/release/optional/chatterbox/optional-package-manifest-v5.json",
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v6.json",
       ),
     ),
     buildScript: await readFile(
@@ -135,6 +135,7 @@ const UNINSTALL_FLAG_OPTIONS = Object.freeze(
 
 const OPTIONAL_UNINSTALL_ROOTS = Object.freeze([
   "tts\\cb\\.previous",
+  "tts\\cb\\6",
   "tts\\cb\\5",
   "tts\\cb\\3",
   "tts\\cb\\2",
@@ -256,18 +257,18 @@ export function validateClosedReleaseValues(documents) {
   }
   if (
     optionalManifest.availability !== "downloadable" ||
-    optionalManifest.identity?.packageVersion !== "5" ||
-    optionalManifest.layout?.installed !== "cb/5" ||
-    optionalManifest.runtime?.releaseTag !== "chatterbox-runtime-v5" ||
+    optionalManifest.identity?.packageVersion !== "6" ||
+    optionalManifest.layout?.installed !== "cb/6" ||
+    optionalManifest.runtime?.releaseTag !== "chatterbox-runtime-v6" ||
     "runtimeCorrection" in optionalManifest ||
     "withholdingReason" in optionalManifest ||
     JSON.stringify(optionalManifest.measurements) !==
       JSON.stringify({
         coldStartSeconds: 83,
-        downloadBytes: 8_240_055_749,
-        installedBytes: 8_236_500_113,
+        downloadBytes: 8_240_302_391,
+        installedBytes: 8_236_744_319,
         minimumFreeBytes: 20_000_000_000,
-        temporaryBytes: 13_271_159_574,
+        temporaryBytes: 13_271_652_858,
       }) ||
     optionalManifest.requirements?.platform !== "windows-x86_64" ||
     optionalManifest.requirements?.provider !== "cuda" ||
@@ -487,13 +488,13 @@ export async function createPackageEvidence({
       optionalChatterboxManifestSha256: await sha256(
         path.join(
           root,
-          "services/tts/release/optional/chatterbox/optional-package-manifest-v5.json",
+          "services/tts/release/optional/chatterbox/optional-package-manifest-v6.json",
         ),
       ),
       optionalChatterboxRuntimeEvidenceSha256: await sha256(
         path.join(
           root,
-          "services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json",
+          "services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json",
         ),
       ),
     },
@@ -527,9 +528,9 @@ export async function createPackageEvidence({
       releaseLockedRuntime: true,
       rendererCompatibilityGateRequired: true,
       nativePreNetworkCompatibilityGateRequired: true,
-      downloadBytes: 8_240_055_749,
-      installedBytes: 8_236_500_113,
-      temporaryBytes: 13_271_159_574,
+      downloadBytes: 8_240_302_391,
+      installedBytes: 8_236_744_319,
+      temporaryBytes: 13_271_652_858,
       minimumFreeBytes: 20_000_000_000,
       representativeCompatibleHostJourney: ordinaryChatterboxStatus,
     },

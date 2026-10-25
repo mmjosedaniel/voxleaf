@@ -1,0 +1,31 @@
+{
+  "assets": [
+    {
+      "browser_download_url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v6/voxleaf-chatterbox-runtime-v6.zip.part-001",
+      "digest": "sha256:3963d4091e1c5baeb7485589251330e69af0dd06ff9a4c0f0561fcde993ab73a",
+      "name": "voxleaf-chatterbox-runtime-v6.zip.part-001",
+      "size": 1900000000,
+      "state": "uploaded"
+    },
+    {
+      "browser_download_url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v6/voxleaf-chatterbox-runtime-v6.zip.part-002",
+      "digest": "sha256:f99c82953ea5bce559b1e00efcee09d264ff2ce369eb0ee622b6595706cd3676",
+      "name": "voxleaf-chatterbox-runtime-v6.zip.part-002",
+      "size": 1900000000,
+      "state": "uploaded"
+    },
+    {
+      "browser_download_url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v6/voxleaf-chatterbox-runtime-v6.zip.part-003",
+      "digest": "sha256:5312398ef84a43d4c0dd8eec30d878e52bbf4390108b13eb7a52e4de38aca56e",
+      "name": "voxleaf-chatterbox-runtime-v6.zip.part-003",
+      "size": 1231350467,
+      "state": "uploaded"
+    }
+  ],
+  "draft": false,
+  "id": 422467861,
+  "prerelease": true,
+  "published_at": "2026-10-24T21:32:28Z",
+  "tag_name": "chatterbox-runtime-v6",
+  "target_commitish": "e46eb99c542b27a891aae6ee20d68c525d79f5f1"
+}

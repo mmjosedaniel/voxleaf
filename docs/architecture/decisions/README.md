@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0062: Admit the filelock and setuptools Chatterbox v6 refresh](ADR-0062-admit-filelock-setuptools-chatterbox-v6.md): additive verified runtime identity; previous packages remain cleanup-only. Integration and installed acceptance are tracked in the active security-refresh plan.
+
 - [ADR-0060: Primary publication start](ADR-0060-primary-publication-start.md): additive package-owned default locator; full locator ordering and auxiliary access preserved. Implementation acceptance is pending in the active correction plan.
 - [ADR-0061: Owned promotion backup](ADR-0061-owned-promotion-backup.md): exact cleanup-only `.previous` ownership, truthful failure and explicit removal; installed acceptance remains pending.
 

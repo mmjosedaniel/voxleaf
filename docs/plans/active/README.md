@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Chatterbox v6 filelock/setuptools refresh](chatterbox-filelock-setuptools-security-refresh.md): authorized preparation of a distinct patched runtime for PR #272; publication and installed admission remain pending.
+- [Chatterbox v6 filelock/setuptools refresh](chatterbox-filelock-setuptools-security-refresh.md): reviewed runtime published for PR #272; local foundation and production audit pass, while installed acceptance and final integration review remain pending.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

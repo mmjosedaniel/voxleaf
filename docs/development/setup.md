@@ -1,5 +1,9 @@
 # Development setup
 
+V6 publication/integration acceptance is tracked in the active
+[security-refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
+Preparation and a passing candidate audit do not establish installed acceptance.
+
 ## Current status
 
 The workspace implements the local EPUB reader, bounded restoration and
@@ -11,7 +15,7 @@ deferred. Use the [support matrix](../architecture/tts-support-matrix-v2.md)
 and [roadmap](../plans/roadmap.md) for support and milestone decisions.
 
 Current Piper execution uses the release core with Piper 1.8.0 and ONNX Runtime
-1.31.0. Ordinary installed Chatterbox uses v5; older v2/v3 roots are cleanup-only
+1.31.0. The v6 integration candidate replaces v5; older v2/v3/v5 roots are cleanup-only
 and local v4 is unadmitted. Stable profile IDs and model-directory names may
 contain older version labels; they are not selectors for executable dependency
 versions. The [dependency inventory](dependencies.md) separates current locks
@@ -573,27 +577,27 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-The current optional package is v5 under
-[ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+The current optional integration candidate is v6 under
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
 These explicit commands check tracked source and acquisition authority; they
 perform no model download, archive build, installation or narration:
 
 ```powershell
-pnpm.cmd package:chatterbox-optional:v5:check-source
-pnpm.cmd package:chatterbox-optional:v5:check-acquisition
+pnpm.cmd package:chatterbox-optional:v6:check-source
+pnpm.cmd package:chatterbox-optional:v6:check-acquisition
 ```
 
-The `package:chatterbox-optional:v5` builder is a release-maintainer operation,
+The `package:chatterbox-optional:v6` builder is a release-maintainer operation,
 not an end-user setup step. It assembles runtime-only output under ignored
-`services/tts/release/optional/chatterbox/dist/v5` by default, requires controlled
+`services/tts/release/optional/chatterbox/dist/v6` by default, requires controlled
 build capacity and licence/provenance review, and always synchronizes the hashed
 lock. It rejects `--no-sync` and does not copy model weights or update the
 ordinary acquisition manifest. Follow the explicit
-[v5 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
+[v6 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
 for authorized package work; do not build merely to enable the optional profile.
 
 Unversioned `package:chatterbox-optional` aliases intentionally retain the v2
-default. Explicit `:v3` checks reproduce historical authority; neither is v5
+default. Explicit `:v3` checks reproduce historical authority; neither is v6
 acceptance. Local `:v4` commands and `test:tts:adapter-layout:*` belong to the
 [historical adapter-layout campaign](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
 They remain available with their original semantics and do not admit v4 or
