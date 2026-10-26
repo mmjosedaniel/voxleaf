@@ -71,6 +71,29 @@ jobs:
       - name: Install pinned Playwright Chromium
         run: pnpm.cmd test:browser:install
 
+      - name: Prepare pinned NSIS for compiled regression tests
+        run: |
+          $nsisArchive = Join-Path $env:RUNNER_TEMP "voxleaf-nsis-3.13.zip"
+          $nsisCache = Join-Path $env:LOCALAPPDATA "tauri"
+          $nsisExtracted = Join-Path $nsisCache "nsis-3.13"
+          $nsisTarget = Join-Path $nsisCache "NSIS"
+          if ((Test-Path -LiteralPath $nsisExtracted) -or (Test-Path -LiteralPath $nsisTarget)) {
+            throw "NSIS regression setup requires an empty compiler cache."
+          }
+          Invoke-WebRequest `
+            -Uri "https://github.com/tauri-apps/binary-releases/releases/download/nsis-3.13/nsis-3.13.zip" `
+            -OutFile $nsisArchive
+          $nsisHash = (Get-FileHash -LiteralPath $nsisArchive -Algorithm SHA256).Hash
+          if ($nsisHash -ne "ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8") {
+            throw "NSIS regression compiler archive hash mismatch."
+          }
+          Expand-Archive -LiteralPath $nsisArchive -DestinationPath $nsisCache
+          Rename-Item -LiteralPath $nsisExtracted -NewName "NSIS"
+          & (Join-Path $nsisTarget "makensis.exe") /VERSION
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS regression compiler is unavailable."
+          }
+
       - name: Run real-browser desktop smoke
         run: pnpm.cmd test:browser
 

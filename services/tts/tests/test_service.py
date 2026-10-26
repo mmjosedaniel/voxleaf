@@ -13,6 +13,7 @@ from typing import Final, cast
 import pytest
 
 from voxleaf_tts.adapters.fake import FakeEngineOutcome, FakeTtsEngine
+from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 from voxleaf_tts.protocol import (
     Frame,
     FrameKind,
@@ -322,3 +323,29 @@ def test_protocol_rejection_closes_without_echoing_private_input() -> None:
 
 def test_clean_eof_requires_completed_shutdown() -> None:
     assert run_service(io.BytesIO(), io.BytesIO()) == 1
+
+
+@pytest.mark.parametrize("phase", ["load", "warm", "begin"])
+def test_clb03_preparation_and_begin_errors_are_canonical_without_work_identity(
+    phase: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = FakeTtsEngine()
+    service = ModelFreeTtsService(engine)
+    service.handle_control(load_control("valid-handshake.json"))
+    if phase != "load":
+        service.handle_control(load_control("valid-load.json"))
+    if phase == "begin":
+        service.handle_control(load_control("valid-warm.json"))
+
+    def fail(*_args: object) -> None:
+        raise EngineFailure(EngineFailureCode.FAILURE)
+
+    monkeypatch.setattr(engine, phase, fail)
+    command = "synthesize" if phase == "begin" else phase
+    records = service.handle_control(load_control(f"valid-{command}.json"))
+    assert record_kinds(records) == ["error", "state"]
+    error = control_from(records[0])
+    assert error["reason"] == "engine-failure"
+    assert error["serviceInstanceId"] == "service:synthetic-1"
+    assert "workIdentity" not in error
+    assert control_from(records[1])["state"] == "failed"

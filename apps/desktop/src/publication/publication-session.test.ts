@@ -51,6 +51,7 @@ function createTestPublication(): TestPublication {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: Object.freeze([]),
     locators: Object.freeze([]),
+    defaultStartLocator: undefined,
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,

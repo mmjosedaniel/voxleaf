@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditDate": "2026-10-20",
+  "auditDate": "2026-10-24",
   "tools": {
     "cargoAudit": "0.22.2",
     "pipAudit": "2.10.1",
@@ -74,8 +74,8 @@
     },
     {
       "id": "chatterbox-optional",
-      "lock": "services/tts/release/profiles/chatterbox-v5/requirements.lock",
-      "requirements": "services/tts/release/profiles/chatterbox-v5/requirements.lock",
+      "lock": "services/tts/release/profiles/chatterbox-v6/requirements.lock",
+      "requirements": "services/tts/release/profiles/chatterbox-v6/requirements.lock",
       "expectedBlindSpots": [
         {
           "name": "chatterbox-tts",

@@ -15,7 +15,7 @@ SOURCE_MANIFEST_NAME: Final = "source-manifest-v2.json"
 RUNTIME_ARCHIVE_NAME: Final = "voxleaf-chatterbox-runtime-v2.zip"
 MAXIMUM_PART_BYTES: Final = 1_900_000_000
 HASH_BLOCK_BYTES: Final = 8 * 1024 * 1024
-PackageVersion = Literal["2", "3", "4", "5"]
+PackageVersion = Literal["2", "3", "4", "5", "6"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +25,7 @@ class PackageLayout:
     version: PackageVersion = "2"
 
     def __post_init__(self) -> None:
-        if self.version not in {"2", "3", "4", "5"}:
+        if self.version not in {"2", "3", "4", "5", "6"}:
             raise ReleaseChatterboxError("chatterbox-package-version-invalid")
 
     @property
@@ -51,6 +51,7 @@ class PackageLayout:
             "3": "chatterbox-v3",
             "4": "chatterbox-v3",
             "5": "chatterbox-v5",
+            "6": "chatterbox-v6",
         }[self.version]
         return f"services/tts/release/profiles/{profile}/requirements.lock"
 

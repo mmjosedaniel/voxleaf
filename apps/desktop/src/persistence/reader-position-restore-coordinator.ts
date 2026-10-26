@@ -164,7 +164,7 @@ function restoredPosition(
   publication: OpenedPublication,
   result: ReaderPositionReadResult,
 ): RestoredReaderPosition {
-  const firstLocator = publication.locators[0]?.startLocator;
+  const firstLocator = publication.defaultStartLocator;
   if (firstLocator === undefined) {
     throw new Error("A readable publication locator is required.");
   }

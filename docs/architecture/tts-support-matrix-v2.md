@@ -1,5 +1,11 @@
 # Local TTS support and integration matrix v2
 
+V6 integration is accepted under the revised evidence boundary in the
+[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
+exact local artifact admission, current installed/runtime gates and scoped reuse.
+Full live acquisition failed twice; its cause remains unresolved. No complete
+v6 live-delivery pass is claimed.
+
 ## Status
 
 Accepted on 2026-07-30 as the M010.1 Milestone 5 evaluation and integration
@@ -34,11 +40,11 @@ their scores and performance do not validate the refreshed executable bytes.
 
 Likewise, `chatterbox-multilingual-v3-cuda-bf16-default-v4` remains the stable
 Chatterbox profile ID. Its `v3` model and `v4` profile labels do not select a
-runtime package. Installed execution admits **voxleaf-chatterbox-v5** under
-[ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md), using the
-[v5 acquisition manifest](../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json).
+runtime package. The accepted integration admits **voxleaf-chatterbox-v6** under
+[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md), using the
+[v6 acquisition manifest](../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json).
 Package v4 remains a separate unpublished/unadmitted local candidate, and
-installed package v2/v3 data is cleanup-only. These executable updates do not
+installed package v2/v3/v5 data is cleanup-only. These executable updates do not
 change the support decisions or host gates below.
 
 | Profile / current engine                                                                | Language            | Current state                                | Next boundary                                                                                                                                                                                                                                                                                                                                                                                                                                      |

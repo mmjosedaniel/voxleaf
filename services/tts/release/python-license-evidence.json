@@ -94,7 +94,7 @@
       "evidence": "installed package License-Expression",
       "license": "MIT",
       "name": "filelock",
-      "version": "3.32.0"
+      "version": "4.2.1"
     },
     {
       "evidence": "installed package licence classifier",
@@ -400,7 +400,7 @@
       "evidence": "installed package License-Expression",
       "license": "MIT",
       "name": "setuptools",
-      "version": "83.0.0"
+      "version": "84.1.0"
     },
     {
       "evidence": "installed package licence classifier",

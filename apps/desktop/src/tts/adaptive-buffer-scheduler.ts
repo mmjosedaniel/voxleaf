@@ -682,6 +682,17 @@ export class AdaptiveBufferScheduler {
     if (this.#playbackState !== "playing" || !isCount(requestedSampleFrames)) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
+    return this.accountRenderedSampleFrames(requestedSampleFrames);
+  }
+
+  /** Account device output already rendered while asynchronous Pause settles. */
+  public accountRenderedSampleFrames(requestedSampleFrames: number): number {
+    if (
+      (this.#playbackState !== "playing" && this.#playbackState !== "paused") ||
+      !isCount(requestedSampleFrames)
+    ) {
+      throw new AdaptiveBufferSchedulerError("invalid-state");
+    }
     let remaining = requestedSampleFrames;
     let consumed = 0;
     while (remaining > 0) {
@@ -713,7 +724,10 @@ export class AdaptiveBufferScheduler {
   }
 
   public pausePlayback(): void {
-    if (this.#playbackState !== "playing") {
+    if (
+      !this.#initialPlaybackStarted ||
+      !["playing", "buffering", "complete"].includes(this.#playbackState)
+    ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
     this.#playbackState = "paused";

@@ -29,9 +29,9 @@ use download_diagnostic::{
 };
 
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
-const PACKAGE_ID: &str = "voxleaf-chatterbox-v5";
-const PACKAGE_VERSION: &str = "5";
-const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v5.json";
+const PACKAGE_ID: &str = "voxleaf-chatterbox-v6";
+const PACKAGE_VERSION: &str = "6";
+const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v6.json";
 const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
@@ -51,7 +51,7 @@ const MODEL_CARD_SOURCE: &str =
 const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v5.json"
+    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
@@ -473,7 +473,7 @@ fn validate_manifest_version(
             != if version == "2" {
                 "services/tts/release/profiles/chatterbox/requirements.lock"
             } else {
-                "services/tts/release/profiles/chatterbox-v5/requirements.lock"
+                "services/tts/release/profiles/chatterbox-v6/requirements.lock"
             }
         || !validate_sha256(&runtime.dependency_lock.sha256)
         || limits.maximum_concurrency != 1
@@ -487,7 +487,7 @@ fn validate_manifest_version(
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
         || !match (version, &manifest.runtime_correction) {
-            ("5", None) => true,
+            ("6", None) => true,
             ("2", Some(correction)) => validate_runtime_correction(correction),
             _ => false,
         }
@@ -714,8 +714,24 @@ fn retained_v3_package_root(root: &Path) -> PathBuf {
     profile_root(root).join("3")
 }
 
+fn retained_v5_package_root(root: &Path) -> PathBuf {
+    profile_root(root).join("5")
+}
+
+fn promotion_backup_root(root: &Path) -> PathBuf {
+    profile_root(root).join(".previous")
+}
+
+// Only an explicit NotFound proves absence; inaccessible or dangling entries
+// must remain discoverable and must fail closed during removal.
+fn owned_path_present(path: &Path) -> bool {
+    !matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+}
+
 fn retained_package_exists(root: &Path) -> bool {
-    retained_v3_package_root(root).exists()
+    owned_path_present(&promotion_backup_root(root))
+        || owned_path_present(&retained_v5_package_root(root))
+        || retained_v3_package_root(root).exists()
         || retained_package_root(root).exists()
         || legacy_package_root(root).exists()
 }
@@ -775,6 +791,39 @@ fn remove_contained_directory(root: &Path, directory: &Path) -> Result<(), Optio
 fn clean_staging(root: &Path) -> Result<(), OptionalProfileError> {
     let staging = staging_root(root);
     remove_contained_directory(root, &staging)
+}
+
+fn validate_backup_tree(directory: &Path, depth: usize) -> Result<(), OptionalProfileError> {
+    if depth > 128 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    for entry in fs::read_dir(directory).map_err(|_| OptionalProfileError::VerificationFailed)? {
+        let path = entry
+            .map_err(|_| OptionalProfileError::VerificationFailed)?
+            .path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if is_symlink_or_reparse_point(&metadata) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if metadata.is_dir() {
+            validate_backup_tree(&path, depth + 1)?;
+        } else if !metadata.is_file() {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+    }
+    Ok(())
+}
+
+fn remove_promotion_backup(root: &Path) -> Result<(), OptionalProfileError> {
+    let backup = promotion_backup_root(root);
+    if !owned_path_present(&backup) {
+        return Ok(());
+    }
+    canonical_contained_directory(root, &profile_root(root))?;
+    canonical_contained_directory(root, &backup)?;
+    validate_backup_tree(&backup, 0)?;
+    fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)
 }
 
 fn is_symlink_or_reparse_point(metadata: &fs::Metadata) -> bool {
@@ -1436,8 +1485,8 @@ fn promote(
         None => None,
     };
     check_acquisition_cancellation(cancellation)?;
-    let backup = parent.join(".previous");
-    let _ = fs::remove_dir_all(&backup);
+    let backup = promotion_backup_root(root);
+    remove_promotion_backup(root)?;
     invalidate_verified_runtime_receipt();
     let moved_previous = if destination.exists() {
         fs::rename(&destination, &backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
@@ -1461,7 +1510,7 @@ fn promote(
     #[cfg(test)]
     tests::run_after_commit_hook();
     if moved_previous {
-        fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        remove_promotion_backup(root)?;
     }
     invalidate_verified_runtime_receipt();
     Ok(())
@@ -2132,6 +2181,13 @@ impl OptionalChatterboxManager {
             let package = package_root(root);
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
+            remove_promotion_backup(root)?;
+            let retained_v5 = retained_v5_package_root(root);
+            if owned_path_present(&retained_v5) {
+                canonical_contained_directory(root, &retained_v5)?;
+                fs::remove_dir_all(&retained_v5)
+                    .map_err(|_| OptionalProfileError::CleanupFailed)?;
+            }
             remove_contained_directory(root, &retained_v3_package_root(root))?;
             remove_contained_directory(root, &retained_package_root(root))?;
             let legacy = legacy_package_root(root);

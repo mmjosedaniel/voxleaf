@@ -16,6 +16,7 @@ function createPublication(): OpenedPublication {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: [],
     locators: [],
+    defaultStartLocator: undefined,
     navigation: [],
     resources: [],
     closed: false,

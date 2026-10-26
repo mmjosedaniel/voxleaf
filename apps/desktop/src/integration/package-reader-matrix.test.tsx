@@ -58,6 +58,7 @@ import type {
 } from "../reader/images/raster-image-source";
 
 interface ReaderFixtureModule {
+  buildPrimaryStartEpubFixture(version: "2.0" | "3.0"): Promise<Uint8Array>;
   readonly READER_SEMANTIC_BLOCK_OVER_LIMIT: number;
   buildReaderLongChapterEpubFixture(options: {
     readonly semanticBlockCount: number;
@@ -226,6 +227,45 @@ function immediateVisibility(
 }
 
 describe("package-to-reader integration matrix", () => {
+  it.each(["2.0", "3.0"] as const)(
+    "CLB-04 starts EPUB %s at primary and preserves auxiliary navigation/restoration",
+    async (version) => {
+      const fixtures = await readerFixtures();
+      const bytes = await fixtures.buildPrimaryStartEpubFixture(version);
+      const { publication, flow } = await openThroughDesktop(bytes);
+      const repository = createWebStorageReaderPositionRepository();
+      const navigation = new ReaderNavigationCoordinator(publication);
+      expect(navigation.state.activeLocator).toEqual(
+        publication.defaultStartLocator,
+      );
+      const restoration = new ReaderPositionRestoreCoordinator(repository);
+      expect(await restoration.restore(publication)).toMatchObject({
+        position: { locator: publication.defaultStartLocator },
+      });
+      const view = render(
+        <ReaderPublicationContent publication={publication} />,
+      );
+      expect(
+        await screen.findByRole("heading", { name: "Primary opening" }),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Visit auxiliary" }));
+      expect(
+        await screen.findByRole("heading", { name: "Auxiliary section" }),
+      ).toBeInTheDocument();
+      const auxiliary = publication.locators[0]!.startLocator;
+      await repository.writePosition(persistedState(auxiliary));
+      expect(await restoration.restore(publication)).toMatchObject({
+        position: { mode: "exact", locator: auxiliary },
+      });
+      expect(
+        new ReaderNavigationCoordinator(publication, {
+          initialLocator: auxiliary,
+        }).state.activeLocator,
+      ).toEqual(auxiliary);
+      view.unmount();
+      await flow.close();
+    },
+  );
   it("opens, renders, navigates, saves, closes, reopens, and restores exact same-byte state", async () => {
     const fixtures = await readerFixtures();
     const bytes = await fixtures.buildReaderNavigationEpubFixture();

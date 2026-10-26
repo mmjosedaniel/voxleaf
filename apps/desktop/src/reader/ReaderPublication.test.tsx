@@ -499,6 +499,7 @@ function createPublication(
       options.continuationDocument ?? CONTINUATION_DOCUMENT,
     ]),
     locators: locatedBlocks,
+    defaultStartLocator: locatedBlocks[0]?.startLocator,
     navigation: NAVIGATION,
     resources: Object.freeze([]),
     closed: false,

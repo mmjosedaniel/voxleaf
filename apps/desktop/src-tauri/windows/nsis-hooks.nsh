@@ -9,27 +9,28 @@ Var ChatterboxDataCheckboxState
 Var RemoveChatterboxData
 Var RemovePreferencesAndRecovery
 
-LangString chatterboxDataPageTitle ${LANG_ENGLISH} "Chatterbox data"
-LangString chatterboxDataPageSubtitle ${LANG_ENGLISH} "Choose whether to remove the optional local package before uninstalling VoxLeaf."
-LangString chatterboxDataPageText ${LANG_ENGLISH} "Chatterbox optional data was found. Removing it reclaims the storage used by all retained Chatterbox versions. Keeping it means that, after reinstalling this same VoxLeaf product identity, you can manage it with Remove Chatterbox."
-LangString chatterboxDataCheckbox ${LANG_ENGLISH} "Remove Chatterbox optional data (reacquisition is required to use it again)"
-LangString chatterboxDataPageTitle ${LANG_SPANISH} "Datos de Chatterbox"
-LangString chatterboxDataPageSubtitle ${LANG_SPANISH} "Elija si desea quitar el paquete local opcional antes de desinstalar VoxLeaf."
-LangString chatterboxDataPageText ${LANG_SPANISH} "Se encontraron datos opcionales de Chatterbox. Al quitarlos se recupera el espacio de todas las versiones conservadas de Chatterbox. Si los conserva, después de reinstalar esta misma identidad de VoxLeaf podrá gestionarlos con Quitar Chatterbox."
-LangString chatterboxDataCheckbox ${LANG_SPANISH} "Quitar datos opcionales de Chatterbox (deberá adquirirlos de nuevo para usarlo)"
+; Tauri includes hooks before MUI_LANGUAGE defines LANG_ENGLISH/LANG_SPANISH.
+; Bind these strings to the actual language IDs even at that early boundary.
+LangString chatterboxDataPageTitle 1033 "Chatterbox data"
+LangString chatterboxDataPageSubtitle 1033 "Choose whether to remove the optional local package before uninstalling VoxLeaf."
+LangString chatterboxDataPageText 1033 "Chatterbox optional data was found. Removing it reclaims the storage used by all retained Chatterbox versions. Keeping it means that, after reinstalling this same VoxLeaf product identity, you can manage it with Remove Chatterbox."
+LangString chatterboxDataCheckbox 1033 "Remove Chatterbox optional data (reacquisition is required to use it again)"
+LangString chatterboxDataPageTitle 1034 "Datos de Chatterbox"
+LangString chatterboxDataPageSubtitle 1034 "Elija si desea quitar el paquete local opcional antes de desinstalar VoxLeaf."
+LangString chatterboxDataPageText 1034 "Se encontraron datos opcionales de Chatterbox. Al quitarlos se recupera el espacio de todas las versiones conservadas de Chatterbox. Si los conserva, después de reinstalar esta misma identidad de VoxLeaf podrá gestionarlos con Quitar Chatterbox."
+LangString chatterboxDataCheckbox 1034 "Quitar datos opcionales de Chatterbox (deberá adquirirlos de nuevo para usarlo)"
 
 UninstPage custom un.ChatterboxDataPageCreate un.ChatterboxDataPageLeave
 
 Function un.ExactDirectoryExists
   System::Call 'kernel32::GetFileAttributesW(w R0) i .R1'
-  StrCmp $R1 -1 0 +2
-    StrCpy $R0 "0"
-    Return
+  StrCmp $R1 -1 exact_directory_absent
   IntOp $R1 $R1 & 0x10
-  StrCmp $R1 0 0 +2
-    StrCpy $R0 "0"
-    Return
+  StrCmp $R1 0 exact_directory_absent
   StrCpy $R0 "1"
+  Return
+  exact_directory_absent:
+    StrCpy $R0 "0"
 FunctionEnd
 
 ; $R0 is a literal directory. A missing path and every reparse point fail
@@ -93,6 +94,12 @@ Function un.IsSafeOwnedTree
 FunctionEnd
 
 Function un.OptionalChatterboxDataExists
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  Call un.ExactDirectoryExists
+  StrCmp $R0 "1" optional_data_exists
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\6"
+  Call un.ExactDirectoryExists
+  StrCmp $R0 "1" optional_data_exists
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\5"
   Call un.ExactDirectoryExists
   StrCmp $R0 "1" optional_data_exists
@@ -204,6 +211,40 @@ FunctionEnd
 
 !macro NSIS_HOOK_POSTUNINSTALL
   StrCmp $RemoveChatterboxData "1" 0 chatterbox_data_done
+  ; Promotion residue is cleanup-only. Validate every ancestor and child.
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_current
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  Call un.IsSafeOwnedTree
+  StrCmp $R0 "1" 0 chatterbox_current
+  RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
+  RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+
+  chatterbox_current:
+  ; cb/6: product identity, tts, cb, and the exact root must all be real dirs.
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v5
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v5
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v5
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\6"
+  Call un.IsSafeOwnedTree
+  StrCmp $R0 "1" 0 chatterbox_retained_v5
+  RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\6"
+  RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+
+  chatterbox_retained_v5:
   ; cb/5: product identity, tts, cb, and the exact root must all be real dirs.
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
   Call un.IsSafeOwnedDirectory
@@ -305,6 +346,21 @@ FunctionEnd
   RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging\chatterbox-multilingual-v3-cuda-bf16-default-v4"
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging"
   chatterbox_data_done:
+
+  ; A refused or failed backup cleanup is retention, never successful absence.
+  StrCmp $RemoveChatterboxData "1" 0 promotion_backup_checked
+  System::Call 'kernel32::GetFileAttributesW(w "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous") i .R1 ?e'
+  Pop $R2
+  StrCmp $R1 -1 promotion_backup_missing promotion_backup_retained
+  promotion_backup_missing:
+    StrCmp $R2 2 promotion_backup_checked
+    StrCmp $R2 3 promotion_backup_checked
+  promotion_backup_retained:
+    SetErrorLevel 1
+    DetailPrint "Chatterbox promotion backup was retained because safe cleanup could not complete."
+    IfSilent promotion_backup_checked
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Chatterbox promotion backup could not be removed safely. Reinstall VoxLeaf to retry Remove Chatterbox after resolving the file lock or unsafe directory."
+  promotion_backup_checked:
 
   StrCmp $RemovePreferencesAndRecovery "1" 0 preferences_data_done
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"

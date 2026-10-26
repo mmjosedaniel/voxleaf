@@ -127,7 +127,12 @@ verifies every file's expected name, byte size, and SHA-256. It does not execute
 model-repository code. M011's original runtime had a reproducible three-part
 identity published as `chatterbox-runtime-v2`;
 [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
-now selects the separately published v5 runtime, with v2/v3 cleanup-only.
+selected the separately published v5 runtime, with v2/v3 cleanup-only.
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md)
+defines the published v6 runtime with v5 also cleanup-only. The
+[completed refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+accepts exact local admission and current installed/runtime evidence with scoped
+reuse; full live-delivery reliability remains unresolved after two failed downloads.
 The original M011 installed
 Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
 passes on the representative compatible computer. Renewed Milestone 7 accepts
@@ -151,6 +156,14 @@ fallbacks and proves private-runtime use under hostile environment inputs
 without requiring Python or Rust to be removed from the test computer.
 
 ## Current implemented flow
+
+The current correction patch selects the first addressable primary spine
+content for a new book (ADR-0060), preserving explicit auxiliary links and valid
+saved auxiliary positions. If primary content has no addressable block, the
+reader reports the existing unreadable outcome. Explicit Chatterbox removal
+also owns abandoned `.previous` promotion data (ADR-0061); failed removal must
+remain visible and retryable. Full installed acceptance for these corrections
+is pending in the active confirmed-correction plan.
 
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
    check and shows only closed content-free status and rejection reasons.

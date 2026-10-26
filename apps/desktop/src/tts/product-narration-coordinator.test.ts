@@ -382,6 +382,7 @@ function createPublication(
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: Object.freeze([]),
     locators: Object.freeze([]),
+    defaultStartLocator: undefined,
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,
@@ -2154,61 +2155,187 @@ describe("product narration coordinator", () => {
     }
   });
 
-  it("contains a warm failure before exposing one explicit identity-safe restart", async () => {
-    const { client, coordinator, prepareNarration } = createHarness();
-    const prepare = vi
-      .spyOn(client, "prepare")
-      .mockRejectedValueOnce(
-        new ProductNarrationRecoveryError("model-warm-failed"),
+  it.each(["tts-service-internal-failure", "tts-service-timeout"] as const)(
+    "CLB-03 contains %s before exposing one explicit identity-safe restart",
+    async (code) => {
+      const { client, coordinator, prepareNarration } = createHarness();
+      const prepare = vi
+        .spyOn(client, "prepare")
+        .mockRejectedValueOnce(new TtsProcessClientError(code));
+      await coordinator.checkAvailability();
+
+      coordinator.start();
+      await settleUntil(
+        () => coordinator.observe().recovery.phase === "recovery-available",
       );
-    await coordinator.checkAvailability();
 
-    coordinator.start();
-    await settleUntil(
-      () => coordinator.observe().recovery.phase === "recovery-available",
-    );
+      expect(prepare).toHaveBeenCalledTimes(1);
+      expect(client.observe()).toEqual({
+        serviceInstanceId: undefined,
+        state: "stopped",
+        hasActiveGeneration: false,
+        retainedAudioUnits: 0,
+      });
+      expect(coordinator.observe()).toMatchObject({
+        failure: "tts-service-failed",
+        recovery: {
+          phase: "recovery-available",
+          failureCode: "model-warm-failed",
+          canRecover: true,
+          explicitAttemptUsed: false,
+        },
+        metrics: {
+          retainedAudioUnitCount: 0,
+          discardedAudioUnitCount: 0,
+        },
+      });
+      expect(prepareNarration).not.toHaveBeenCalled();
 
-    expect(prepare).toHaveBeenCalledTimes(1);
-    expect(client.observe()).toEqual({
-      serviceInstanceId: undefined,
-      state: "stopped",
-      hasActiveGeneration: false,
-      retainedAudioUnits: 0,
-    });
-    expect(coordinator.observe()).toMatchObject({
-      failure: "tts-service-failed",
-      recovery: {
-        phase: "recovery-available",
-        failureCode: "model-warm-failed",
-        canRecover: true,
-        explicitAttemptUsed: false,
-      },
-      metrics: {
-        retainedAudioUnitCount: 0,
-        discardedAudioUnitCount: 0,
-      },
-    });
-    expect(prepareNarration).not.toHaveBeenCalled();
+      coordinator.recover();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
 
-    coordinator.recover();
-    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(prepare).toHaveBeenCalledTimes(2);
+      expect(prepareNarration).toHaveBeenCalledWith(
+        expect.objectContaining({ startLocator: START_LOCATOR }),
+      );
+      expect(client.synthesized.at(-1)).toMatchObject({
+        sessionId: "session:product-test-3",
+        generationId: "generation:product-test-3",
+      });
+      expect(coordinator.observe().recovery).toMatchObject({
+        phase: "operational",
+        explicitAttemptUsed: true,
+        canRecover: false,
+      });
+      expect(coordinator.observe().failure).toBeUndefined();
+      await coordinator.close();
+    },
+  );
 
-    expect(prepare).toHaveBeenCalledTimes(2);
-    expect(prepareNarration).toHaveBeenCalledWith(
-      expect.objectContaining({ startLocator: START_LOCATOR }),
-    );
-    expect(client.synthesized.at(-1)).toMatchObject({
-      sessionId: "session:product-test-3",
-      generationId: "generation:product-test-3",
-    });
-    expect(coordinator.observe().recovery).toMatchObject({
-      phase: "operational",
-      explicitAttemptUsed: true,
-      canRecover: false,
-    });
-    expect(coordinator.observe().failure).toBeUndefined();
-    await coordinator.close();
-  });
+  it.each([
+    ["prepare_tts_service", "tts-service-internal-failure"],
+    ["prepare_tts_service", "tts-service-timeout"],
+    ["synthesize_tts_segment", "tts-service-internal-failure"],
+    ["synthesize_tts_segment", "tts-service-timeout"],
+  ] as const)(
+    "CLB-03 real client acknowledges contained %s/%s before explicit recovery",
+    async (failedCommand, failureCode) => {
+      let serviceInstanceId = "";
+      let starts = 0;
+      let failNext = true;
+      let containedId: string | undefined;
+      const shutdownIds: unknown[] = [];
+      const control = (kind: string, extra = {}) => ({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        kind,
+        serviceInstanceId,
+        ...extra,
+      });
+      const state = (value: string) => control("state", { state: value });
+      const capabilities = () =>
+        control("capabilities", {
+          report: {
+            schemaVersion: 1,
+            capabilities: {
+              localSpeechGeneration: "unknown",
+              streamingGeneration: "unsupported",
+              generationCancellation: "unsupported",
+              hardwareAcceleration: "unknown",
+              cpuFallback: "unsupported",
+            },
+          },
+          cancellationContainment:
+            "identity-invalidation-then-worker-termination",
+        });
+      // The native real-child diagnostic separately proves this exact error ->
+      // identity-bound stopping/stopped response. Keep the actual client here.
+      const invoke = async (
+        command: string,
+        args?: Record<string, unknown>,
+      ): Promise<unknown> => {
+        if (
+          command === "tts_profile_configuration_available" ||
+          command === "exact_tts_demo_available"
+        )
+          return true;
+        if (command === "start_tts_service") {
+          serviceInstanceId = `service:contained-${++starts}`;
+          containedId = undefined;
+          return [
+            state("handshaking"),
+            control("handshakeAccepted"),
+            state("unloaded"),
+            capabilities(),
+          ];
+        }
+        if (command === failedCommand && failNext) {
+          failNext = false;
+          containedId = serviceInstanceId;
+          throw failureCode;
+        }
+        if (command === "prepare_tts_service")
+          return [
+            state("loading"),
+            state("warming"),
+            state("ready"),
+            capabilities(),
+          ];
+        if (command === "synthesize_tts_segment")
+          return new Float32Array(360_000).buffer;
+        if (command === "cancel_tts_generation")
+          throw "tts-service-invalid-state";
+        if (command === "shutdown_tts_service") {
+          shutdownIds.push(args?.serviceInstanceId);
+          if (args?.serviceInstanceId !== (containedId ?? serviceInstanceId))
+            throw "tts-service-cancelled";
+          return [state("stopping"), state("stopped")];
+        }
+        throw new Error("unexpected synthetic command");
+      };
+      const client = new TtsProcessClient(
+        async <T>(command: string, args?: Record<string, unknown>) =>
+          (await invoke(command, args)) as T,
+      );
+      const { coordinator, backend, intervals } = createHarness({
+        serviceClient: client,
+      });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "recovery-available",
+        );
+        expect(starts).toBe(1);
+        expect(shutdownIds).toEqual(["service:contained-1"]);
+        expect(client.observe()).toMatchObject({
+          state: "stopped",
+          serviceInstanceId: undefined,
+          retainedAudioUnits: 0,
+        });
+        coordinator.recover();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(starts).toBe(2);
+        expect(client.observe().serviceInstanceId).toBe("service:contained-2");
+        expect(coordinator.observe().recovery).toMatchObject({
+          explicitAttemptUsed: true,
+          canRecover: false,
+        });
+        backend.active?.callbacks.failed();
+        intervals[0]?.();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "unavailable",
+        );
+        coordinator.recover();
+        expect(starts).toBe(2);
+        expect(coordinator.observe().recovery.canRecover).toBe(false);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
 
   it("replays a failed audible segment from its start without stale audio", async () => {
     const { backend, client, coordinator, intervals, prepareNarration } =

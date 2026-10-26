@@ -150,6 +150,12 @@ impl<'a> DownloadAttempt<'a> {
                 if io.kind() == std::io::ErrorKind::TimedOut {
                     report.kind = DownloadFailureKind::Timeout;
                 }
+                // io::Error::source() skips its boxed inner error itself. Read
+                // failures wrap reqwest::Error there, including its timeout flag.
+                if let Some(inner) = io.get_ref() {
+                    source = Some(inner);
+                    continue;
+                }
             }
             source = error.source();
         }

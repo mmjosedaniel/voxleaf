@@ -27,8 +27,9 @@ the filtered Piper runtime and explicitly assembled Chatterbox runtime.
 | `src/voxleaf_tts/release_chatterbox.py` | Optional-runtime acquisition/copying, licences, safe-loader AST admission, synchronization, staging, ZIP/splitting, measurements and CLI |
 | `src/voxleaf_tts/packaging/chatterbox_integrity.py` | Versioned package layout, canonical error, root resolution, hash/path/JSON rules and runtime manifests/tree verification |
 | `src/voxleaf_tts/packaging/chatterbox_authority.py` | Versioned source manifests and historical v2/v3 acquisition/publication/evidence validation and writers |
-| `src/voxleaf_tts/packaging/chatterbox_security_authority.py` | Current v5 publication readback, acquisition authority and runtime evidence validation/writing |
-| `src/voxleaf_tts/packaging/chatterbox_sources.py` | Closed raw-Git v2/v3 source provenance, including v5 reuse of frozen v3 modules; separate ten-module local v4 closure |
+| `src/voxleaf_tts/packaging/chatterbox_security_authority.py` | Historical v5 publication readback, acquisition authority and runtime evidence validation/writing |
+| `src/voxleaf_tts/packaging/chatterbox_v6_authority.py` | Additive exact v6 publication readback and acquisition/runtime authority |
+| `src/voxleaf_tts/packaging/chatterbox_sources.py` | Closed raw-Git v2/v3 source provenance, including v5/v6 reuse of frozen v3 modules; separate ten-module local v4 closure |
 | `benchmarks/harness.py` | Adapter/clock/memory/observation ownership, request/chunk validation, cancellation and the four historical protocol runners |
 | `benchmarks/harness_corpus.py` | Legacy and bilingual corpus loading, admission and ordered projection |
 | `benchmarks/harness_errors.py` | One shared harness failure type and raising helper |
@@ -56,8 +57,8 @@ Chatterbox retains explicit `runtimeModules` lists. Historical v2 copies seven
 verified raw Git blobs at `814fd2f70bd3588d31022207eb976c0ff93712a3`; v3 copies
 nine at `998c7b24cda7e969e9ed0344f348506bf38af3b0`, including the generated
 modules. The resolver verifies every size and SHA-256 before synchronization or
-output mutation. V5 deliberately reuses those nine frozen v3 modules with the
-refreshed v5 dependency lock. These builds and v3/v5 acquisition checks require
+output mutation. V5 and v6 deliberately reuse those nine frozen v3 modules with the
+independent versioned dependency locks. These builds and v3/v5/v6 acquisition checks require
 these commits in local full history. They do not fetch automatically or fall
 back to current source. Packaged inference does not require Git. V2's original
 archive and later generated-module correction remain separate authorities.
@@ -68,9 +69,9 @@ staging, runtime, archive and parts live under isolated `dist/v4`. Neither v4
 nor maintainer helpers enter historical runtime lists. The local receipt binds
 actual source, recipe, runtime, archive and part bytes and marks the result
 unpublished and unadmitted. Current native acquisition and installed runtime
-discovery admit only v5 at `cb/5` under
-[ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
-Retained v2/v3 installations are cleanup-only; they are not execution fallbacks.
+discovery select v6 at `cb/6` under
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
+Retained v2/v3/v5 installations are cleanup-only; they are not execution fallbacks.
 Do not infer identical rollback behavior across builders.
 
 ## Benchmark and test boundaries
@@ -111,19 +112,21 @@ pnpm.cmd build:python
 pnpm.cmd package:piper-core:check
 pnpm.cmd package:chatterbox-optional:v5:check-source
 pnpm.cmd package:chatterbox-optional:v5:check-acquisition
+pnpm.cmd package:chatterbox-optional:v6:check-source
+pnpm.cmd package:chatterbox-optional:v6:check-acquisition
 pnpm.cmd check:portable
 pnpm.cmd check
 ```
 
 These are current development and authority checks. For intentional runtime
-assembly, use the explicit v5 maintainer workflow in
+assembly, use the explicit v6 maintainer workflow in
 [dependency guidance](dependencies.md#m011-release-dependency-boundary).
-V5 always synchronizes its hashed lock and rejects `--no-sync`.
+V5 and v6 always synchronize their respective hashed locks and reject `--no-sync`.
 
 ### Historical v2/v3 checks and local v4 campaign tooling
 
 The unversioned aliases intentionally select v2; explicit v3 aliases retain
-that historical authority. Neither selects the admitted v5 package. The v4
+that historical authority. Neither selects the v6 integration candidate. The v4
 builder and adapter-layout runner belong to the completed
 [adapter-layout campaign](../plans/completed/tts-adapter-layout.md):
 

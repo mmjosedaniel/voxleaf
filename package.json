@@ -9,6 +9,17 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "package:chatterbox-optional:v6:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 6",
+    "package:chatterbox-optional:v6:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 6",
+    "test:chatterbox:v6:security": "python -I -B scripts/test-chatterbox-v6-security.py",
+    "test:chatterbox:v6:security:baseline": "uv run --no-project --python 3.12 --with filelock==3.32.0 --with setuptools==83.0.0 python -I -B scripts/test-chatterbox-v6-security.py --baseline",
+    "package:chatterbox-optional:v6:lock": "uv pip compile services/tts/release/profiles/chatterbox-v6/requirements.in --python-version 3.12 --python-platform windows --no-deps --generate-hashes --exclude-newer 2026-10-23T22:00:00Z --output-file services/tts/release/profiles/chatterbox-v6/requirements.lock",
+    "package:chatterbox-optional:v6:write-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-source --package-version 6",
+    "package:chatterbox-optional:v6:check-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-source --package-version 6",
+    "package:chatterbox-optional:v6": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox build --package-version 6",
+    "package:chatterbox-optional:v6:check-local": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-local --package-version 6",
+    "audit:chatterbox:v6": "uvx --python 3.12 --from pip-audit==2.10.1 pip-audit -r services/tts/release/profiles/chatterbox-v6/requirements.lock --no-deps --disable-pip --format json",
+    "test:chatterbox:v6:preparation": "uv run --project services/tts --locked pytest services/tts/tests/test_chatterbox_v6_preparation.py services/tts/tests/test_chatterbox_security_refresh.py services/tts/tests/test_chatterbox_sources.py services/tts/tests/test_release_chatterbox.py services/tts/tests/test_chatterbox_security_authority.py",
     "package:chatterbox-optional:v5:lock": "uv pip compile services/tts/release/profiles/chatterbox-v5/requirements.in --python-version 3.12 --python-platform windows --no-deps --generate-hashes --exclude-newer 2026-10-20T22:00:00Z --output-file services/tts/release/profiles/chatterbox-v5/requirements.lock",
     "package:chatterbox-optional:v5:write-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-source --package-version 5",
     "package:chatterbox-optional:v5:check-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-source --package-version 5",

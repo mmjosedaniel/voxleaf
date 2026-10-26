@@ -1,5 +1,34 @@
 # Architecture overview
 
+V6 integration is accepted under the revised evidence boundary in the
+[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
+exact local artifact admission, current installed/runtime gates and scoped reuse.
+Full live acquisition failed twice; its cause remains unresolved. No complete
+v6 live-delivery pass is claimed.
+
+The [completed confirmed-correction plan](../plans/completed/confirmed-logic-bugfixes.md)
+adds the package-owned primary `defaultStartLocator` under ADR-0060 and exact
+cleanup-only ownership of `tts/cb/.previous` under ADR-0061. The full locator
+index and all serialized schemas remain unchanged. Passing native/installed
+evidence and independent reviews are recorded in the plan.
+
+The player accounts a device completion delivered after Pause without starting
+the successor; Resume retains the existing lead/refill and semantic-delay rules.
+Native supervision accepts canonical engine-failure/engine-timeout errors only
+in the corresponding load/warm/synthesis response window after service and
+applicable work identity validation. Existing containment and explicit-recovery
+policy remain authoritative. There is no automatic retry or new service.
+After verified child termination, one bounded native receipt retains that
+service identity until replacement or force-stop. A matching identity-bound
+shutdown receives the existing stopping/stopped controls even though the child
+is already gone. Unknown identities, missing receipts and unverified termination
+never establish cleanup. A replacement clears the receipt before accepting work.
+The existing producer emits no work identity when synthesis fails before its
+`generating` state. That one initial response window accepts an identity-free
+engine error from the matching active service; after `generating`, every engine
+error must match all four active work fields. Errors after metadata/audio, during
+handshake/health or with non-engine reasons retain terminal protocol treatment.
+
 The optional Chatterbox downloader owns one structured, content-free failure
 record in native process memory, independently of its operation state. A
 read-only IPC command exposes a copy for explicit local JSON export from
@@ -8,13 +37,19 @@ retention and privacy boundary are defined in [ADR-0059](decisions/ADR-0059-opti
 
 ## Status
 
-The completed [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
-implements v5 admission under [ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
-Its published runtime passes the production audit, installed B06/B07, four
+The completed historical [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
+implemented v5 admission under [ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
+At that checkpoint its published runtime passed the production audit, installed B06/B07, four
 bilingual reader/speed arms, integrity and installer policies. Original user
 state and firewall are restored; independent acceptance and fresh PR CI pass
 for integration commit `194846a`. Retained v2/v3 are cleanup-only;
 no component, local inference flow or audio persistence boundary changes.
+
+The accepted v6 integration follows
+[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md), with
+v5 retained for explicit removal only. Exact local admission, current native and
+installed runtime evidence, audit and implementation-head CI pass under the
+completed plan's revised boundary; complete live delivery is not established.
 
 The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)
 implements the accepted behavior in [ADR-0057](decisions/ADR-0057-reader-acquisition-correctness.md).
@@ -218,10 +253,10 @@ assets with reproducible SHA-256 evidence. Together with the model files, the
 implementation measured 8,231,893,387 download bytes, 8,228,503,309 installed
 bytes, and a 13,254,834,850-byte peak staging calculation, with
 20,000,000,000 minimum free bytes. Runtime evidence v3 recorded that checkpoint;
-v2 retained its prior installed total corrected by 37,504 bytes. Current v5
+v2 retained its prior installed total corrected by 37,504 bytes. Current v6
 identities and sizes are in
-[ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md) and
-[runtime evidence v5](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v5.json).
+[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md) and
+[runtime evidence v6](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json).
 The historical measurements do not describe the current package.
 Native acquisition
 uses explicit consent, sequential application-owned transfers, closed

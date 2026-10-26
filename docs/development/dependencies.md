@@ -2,6 +2,17 @@
 
 ## Scope and ownership
 
+Chatterbox v6 is accepted under the revised evidence boundary in the
+[completed filelock/setuptools refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md).
+Exact local admission and current installed/runtime gates pass with reviewed
+reuse. Full live delivery remains unverified after two read-timeout failures.
+Its independent 79-package hashed lock changes only filelock to 4.2.1 and
+setuptools to 84.1.0, retaining frozen v3 service modules and all six model
+identities. Published v5 remains immutable; its
+fresh audit is still blocked. Candidate audit results must not be presented as
+remediation of the downloaded/installed v5 bytes. Replacing the affected
+dependencies is preferred to advisory suppression or mutating published v5.
+
 This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added Ajv for the first real decoder, Milestone 4 Task 2.5 moved Ajv to generation/test-only use after introducing standalone validators, Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance, and Milestone 3 Task 1.2 selected the low-level ZIP and XML primitives proven below. M007 Milestone 3 promotes the minimal Rust JSON surface and Windows Job Object bindings needed by the accepted native supervisor. M010 Milestone 2 promotes the already locked official `windows` projection to a direct target-specific dependency for reviewed host-detection APIs. M010 Milestone 6 integrates the separately locked admitted Piper environment without moving it into the base Python graph. M011 Milestone 4 adds native-only `reqwest` and `zip` for a separately gated optional-profile archive; its checked-in manifest authorizes download only after renderer and native live compatibility gates pass. This inventory does not approve future bundled TTS-model, persistence, installer, updater, telemetry, or renderer-framework dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:
@@ -189,7 +200,7 @@ Historical v3 maintainer commands remain explicit:
 `pnpm.cmd package:chatterbox-optional:v3:write-source`,
 `pnpm.cmd package:chatterbox-optional:v3:check-source` and
 `pnpm.cmd package:chatterbox-optional:v3`. Unversioned aliases retain the CLI's
-v2 default; these historical commands do not select current v5. Build from a
+v2 default; these historical commands do not select the v6 candidate. Build from a
 short Windows checkout path: nested
 dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
@@ -200,16 +211,16 @@ uses the separately published v5 runtime with certifi `2026.10.19` and Pillow
 `13.0.0`. All other 77 package versions, model bytes and frozen v3 runtime
 modules remain unchanged. The live 2026-10-20 audit rejects the old v3
 graph; historical passing dates above do not describe its current audit state.
-The desktop, production audit, inventory and monitoring select v5. Installed
+At that checkpoint, desktop, audit, inventory and monitoring selected v5. Installed
 acceptance, independent review and fresh PR CI pass for integration commit
 `194846a`. The complete `pnpm.cmd audit:release` passed again on 2026-10-21;
 the production graph and inventory also pass in GitHub Actions.
 Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
-Generate the candidate using `pnpm.cmd package:chatterbox-optional:v5:lock`,
-then `pnpm.cmd package:chatterbox-optional:v5:write-source`. Build and verify it
-with `pnpm.cmd package:chatterbox-optional:v5` and
-`pnpm.cmd package:chatterbox-optional:v5:check-local`. Both accept
+Generate the candidate using `pnpm.cmd package:chatterbox-optional:v6:lock`,
+then `pnpm.cmd package:chatterbox-optional:v6:write-source`. Build and verify it
+with `pnpm.cmd package:chatterbox-optional:v6` and
+`pnpm.cmd package:chatterbox-optional:v6:check-local`. Both accept
 `--output-root <absolute-directory>` for short temporary Windows paths; each
 version has its own `vN` child below that root. Use the same root for build and
 verification. The default output paths are unchanged. A temporary drive alias
@@ -218,9 +229,9 @@ the alias after the command finishes. With an alias such as V:, pass the
 uniform extended form `--output-root //?/V:/build` to avoid mixed canonical
 Windows prefixes and shell backslash escaping. Never target an installed user
 runtime.
-V5 rejects `--no-sync` through both CLI and Python API: use a fresh isolated
+V5 and v6 reject `--no-sync` through both CLI and Python API: use a fresh isolated
 output root so its dependency environment is always installed from the hashed
-v5 lock. An old environment must not acquire a new security package identity.
+version-specific lock. An old environment must not acquire a new security package identity.
 
 Run `test:chatterbox:runtime-security` and `test:chatterbox:runtime-smoke
 --models <isolated-model-copy> --language <es|en>` with the candidate's
@@ -234,26 +245,27 @@ The smoke probe exercises synthetic ES/EN narration, finite bounded PCM and
 cancellation without writing audio. These candidate probes do not replace
 publication readback or the installed desktop acceptance gates.
 
-V5 authority is generated with
-`pnpm.cmd package:chatterbox-optional:v5:write-acquisition --publication <receipt>`
+V6 authority is generated with
+`pnpm.cmd package:chatterbox-optional:v6:write-acquisition --publication <receipt>`
 from the actual GitHub REST publication readback. It validates the fixed release
 ID, preparation commit, tag, non-draft prerelease status and all three uploaded
-assets before producing `publication-v5.json`, `optional-package-manifest-v5.json`
-and `runtime-package-evidence-v5.json`. Run
-`pnpm.cmd package:chatterbox-optional:v5:check-acquisition` to verify them.
+assets before producing `publication-v6.json`, `optional-package-manifest-v6.json`
+and `runtime-package-evidence-v6.json`. Run
+`pnpm.cmd package:chatterbox-optional:v6:check-acquisition` to verify them.
 Drafts, mismatched or incomplete assets cannot generate desktop admission.
+The explicit v5 commands retain their historical authority and outputs.
 
 The historical `pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
 v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
 `pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
 requires the actual GitHub publication readback with exact commit, tag, three
 names, sizes, digests and URLs. It cannot replace already published assets or
-establish current v5 admission. The separate local v4 builder keeps the v3 lock
+establish v6 admission. The separate local v4 builder keeps the v3 lock
 and remains unpublished/unadmitted; see the
 [historical tooling guide](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
-Capture current licences from the actual core and v5 interpreters with the existing
+Capture current licences from the actual core and v6 interpreters with the existing
 `scripts/release_inventory.py --capture-python-licenses --python <core-python>
---python <v5-python>` interface, then run `pnpm.cmd inventory:release` and its check.
+--python <v6-python>` interface, then run `pnpm.cmd inventory:release` and its check.
 
 Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
 package's `runtime/python.exe`, without `PYTHONPATH`, and with

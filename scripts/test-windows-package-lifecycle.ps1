@@ -48,7 +48,9 @@ $optionalRoots = @(
   (Join-Path $dataRoot "tts\cb\2"),
   (Join-Path $dataRoot "tts\profiles\$profileId\2"),
   (Join-Path $dataRoot "tts\staging\$profileId"),
-  (Join-Path $dataRoot "tts\cb\cache")
+  (Join-Path $dataRoot "tts\cb\cache"),
+  (Join-Path $dataRoot "tts\cb\.previous"),
+  (Join-Path $dataRoot "tts\cb\6")
 )
 $preferenceRoot = Join-Path $dataRoot "EBWebView\Default\Local Storage"
 $unrelatedRoots = @(
@@ -62,7 +64,9 @@ $optionalMarkers = @(
   (Join-Path $optionalRoots[2] "optional-2.marker"),
   (Join-Path $optionalRoots[3] "optional-3.marker"),
   (Join-Path $optionalRoots[4] "optional-4.marker"),
-  (Join-Path $optionalRoots[5] "optional-5.marker")
+  (Join-Path $optionalRoots[5] "optional-5.marker"),
+  (Join-Path $optionalRoots[6] "optional-6.marker"),
+  (Join-Path $optionalRoots[7] "optional-7.marker")
 )
 $preferenceMarker = Join-Path $preferenceRoot "preferences.marker"
 $unrelatedMarkers = @(

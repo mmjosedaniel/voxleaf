@@ -1,5 +1,41 @@
 # Testing strategy
 
+## Confirmed logic correction regressions
+
+The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md)
+records the regression, installed/ordinary-host evidence and independent reviews.
+The desktop Node release suite compiles and executes the
+actual NSIS directory-detection functions on Windows using
+`%LOCALAPPDATA%/tauri/NSIS/makensis.exe` and isolated synthetic roots. Missing
+NSIS on Windows fails that gate; non-Windows skips the executable fixture.
+The Windows foundation workflow prepares the official Tauri NSIS 3.13 archive,
+verifies its pinned SHA-256 before extraction and populates that compiler path
+before running tests. Native startup builds do not prepare an installer toolchain;
+the compiled regression must not depend on a previous release build's cache.
+Local Windows contributors need the same compiler path, normally populated by
+the verified Windows packaging flow. A missing compiler is a prerequisite failure,
+not a reason to skip the regression.
+This is not interactive uninstaller acceptance.
+
+PCM regressions control Pause/ended ordering, direct and WSOLA callbacks,
+remaining tail accounting, successor/final/refill states and one-time release.
+The supported-profile reader host runner also holds one actual WebView2
+completion until after Pause at 1.00x and 0.75x, then verifies Resume and cleanup.
+The existing native startup diagnostic executes canonical load/warm/synthesis
+engine failures and timeout through a supervised synthetic child, verifies
+containment, the real client's identity-bound shutdown acknowledgement and
+rejection of foreign/stale shutdown identities before explicitly starting a
+replacement. The coordinator suite uses the real TtsProcessClient to validate
+those shutdown controls, zero automatic retries and the single explicit attempt.
+It does not inject failures
+into installed model data.
+
+EPUB package/reader/browser fixtures preserve auxiliary index zero while opening
+at primary content and restoring an explicit auxiliary visit. Rust backup tests
+use synthetic data, Windows sharing violations and junctions; lifecycle fixtures
+add the exact `.previous` root. Never remove a pre-existing ordinary installation
+to satisfy the isolated installer gate.
+
 ## Principles
 
 - Test observable behavior.
@@ -142,16 +178,50 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox authority checks explicitly select v5:
-`pnpm.cmd package:chatterbox-optional:v5:check-source` and
-`pnpm.cmd package:chatterbox-optional:v5:check-acquisition`.
+Current Chatterbox integration authority checks explicitly select v6; historical
+v3/v5 checks remain available and must preserve their exact outputs.
+
+V6 preparation and installed integration are separate acceptance phases.
+Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
+historical-source, sync and version-specific authority guards. Generate its lock and
+recipe with `package:chatterbox-optional:v6:lock` and
+`package:chatterbox-optional:v6:write-source`; verify with
+`package:chatterbox-optional:v6:check-source`. Build through
+`package:chatterbox-optional:v6 --output-root <absolute-isolated-root>` and
+verify with `package:chatterbox-optional:v6:check-local` using the same root.
+On a host with long paths disabled, a short alias can make canonical containment
+comparisons fail. Use an extended canonical output path instead. If the package
+runner escapes its prefix, invoke the exact configured `uv run --directory
+services/tts --locked python -m voxleaf_tts.release_chatterbox` command directly
+with `build` or `check-local`, `--package-version 6` and that `--output-root`.
+Keep all integrity/containment checks enabled.
+`audit:chatterbox:v6` audits the candidate with the four explicit URL/CUDA
+blind spots; it does not replace `audit:release`.
+
+With the exact assembled interpreter first on process PATH,
+`test:chatterbox:v6:security --temporary-root <existing-isolated-root>` tests
+real setuptools rejection and legitimate wheel/filelock controls. The
+`:baseline` variant uses isolated old versions and intentionally exits 1 after
+reproducing the synthetic outside-destination write. No user files are used.
+Windows does not exercise filelock's advisory-specific POSIX path.
+`test:chatterbox:runtime-smoke --package-version 6 --models <verified-local-models> --language es`
+and the `en` arm require offline flags and an isolated NUMBA cache. Existing
+runtime-security/dependency-security probes apply to the same exact runtime.
+`package:chatterbox-optional:v6:write-acquisition --publication <readback>`
+requires exact published metadata before writing any authority;
+`package:chatterbox-optional:v6:check-acquisition` validates the generated files.
+Neither command substitutes for installed/native acceptance.
+
+Production integration checks select:
+`pnpm.cmd package:chatterbox-optional:v6:check-source` and
+`pnpm.cmd package:chatterbox-optional:v6:check-acquisition`.
 They check source/acquisition authority, not installed runtime execution.
-Use the [v5 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
+Use the [v6 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
 for authorized authority generation from actual publication readback.
 Unversioned aliases still select v2; explicit v3 checks remain historical
 regression gates. The local v4 builder and v3/v4 adapter-layout harness are
 [historical campaign tooling](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling),
-not current v5 acceptance.
+not current v6 acceptance.
 
 Current runtime/security integration acceptance runs the full foundation check,
 `pnpm.cmd audit:release`, inventory check and the existing Windows package,
@@ -160,8 +230,9 @@ The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
 Qwen inference. The completed
 [v5 refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 records installed B06/B07, bilingual reader/speed, integrity, lifecycle and
-independent acceptance at its exact integration commit. Native admission uses
-v5; retained v2/v3 roots are cleanup-only under ADR-0058.
+independent acceptance at its exact integration commit. V6 integration selects
+v6; retained v2/v3/v5 roots are cleanup-only under ADR-0062. The historical v5
+results do not establish v6 installed acceptance.
 The earlier [v3 security refresh](../plans/completed/chatterbox-security-dependency-refresh.md)
 retains its original audit failure, repair, completion/cancellation regression
 and installed evidence. Those results do not validate v5 bytes. Unix-only

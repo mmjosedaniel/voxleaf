@@ -89,7 +89,7 @@ export async function exerciseOptionalDownloadProbe({
   const staging = path.join(dataRoot, "tts", "staging", profileId);
   const partial = path.join(
     staging,
-    "operation/downloads/runtime/.voxleaf-chatterbox-runtime-v5.zip.part-001.partial",
+    "operation/downloads/runtime/.voxleaf-chatterbox-runtime-v6.zip.part-001.partial",
   );
   await begin(client, profileId);
   // A directory at the first partial-file path produces a real OS file-create

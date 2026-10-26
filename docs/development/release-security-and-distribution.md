@@ -16,7 +16,16 @@ Bounded installed acquisition probes are not full B06/B07 acceptance evidence.
 
 ### Current Chatterbox security successor
 
-The current development candidate follows [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md):
+Historical audit checkpoint (2026-10-23): PR #272's fresh production audit failed
+for `filelock` CVE-2026-112940 and `setuptools` GHSA-xmj3-9gf7-h52w in the
+published v5 lock. The earlier passing results below remain historical.
+The native lock now selects patched Tokio 1.53.3 for RUSTSEC-2026-0386;
+the Rust audit passes with the unchanged seven-notice policy. This does not
+clear the optional Python audit. See the
+[follow-up evidence](../plans/evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md)
+for the bounded patch, actual results and successor-release requirements.
+
+The previous accepted candidate followed [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md):
 the published `chatterbox-runtime-v5` refresh changes only certifi to 2026.10.19
 and Pillow to 13.0.0. Its complete production audit passes on 2026-10-21.
 Acquisition selects v5 with 8,240,055,749 download, 8,236,500,113 installed and
@@ -29,6 +38,17 @@ six installer policies pass on the exact diagnostics installer. Original user
 state and firewall are restored. Independent acceptance and fresh PR CI pass
 for integration commit `194846a`, recorded in the
 [completed plan](../plans/completed/chatterbox-certifi-pillow-security-refresh.md).
+
+The accepted v6 integration follows [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
+It replaces only filelock and setuptools, preserves historical publication
+authority, and selects v6 consistently for audit, inventory and native admission.
+The complete local production audit passed on 2026-10-24 UTC, retaining seven
+Rust notices and four Python URL/CUDA blind spots. The
+[completed plan](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records exact local artifact admission, current installed/runtime gates and
+independently scoped reuse. Historical v5 results alone do not establish v6
+acceptance. R12/R13 failed full live acquisitions remain unresolved; this
+dependency-refresh acceptance claims no complete live-delivery pass or transport fix.
 
 ### Historical v3 acceptance checkpoint
 

@@ -28,8 +28,12 @@ production completion/investigation is deferred under
 
 Current executable identity is separate from stable profile names and historical
 evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
-Chatterbox uses **v5**, reusing frozen v3 service modules with the refreshed
-lock. V2/v3 installations are cleanup-only and the local v4 adapter-layout
+Chatterbox uses the published **v6** runtime with frozen v3 service modules and
+the refreshed lock. Its [completed refresh](plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records exact local artifact admission, current installed/runtime gates and
+reviewer-approved evidence reuse. Full live downloads failed twice; their cause
+remains unresolved and no complete v6 live-delivery pass is claimed.
+V2/v3/v5 are cleanup-only and the local v4 adapter-layout
 candidate remains unpublished/unadmitted. See the
 [current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
 
@@ -42,6 +46,16 @@ candidate remains unpublished/unadmitted. See the
 | Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
 
 Recent accepted work is recorded at its original checkpoint:
+
+- [Confirmed logic and lifecycle corrections](plans/completed/confirmed-logic-bugfixes.md):
+  five regression-tested fixes for NSIS detection, Pause/completion, operational
+  TTS recovery, primary EPUB start and owned `.previous` cleanup. Ordinary
+  interactive acceptance, restored-data integrity, Piper/Chatterbox ES/EN and
+  independent implementation approval passed at closeout. The work is now in
+  [PR #272](https://github.com/mmjosedaniel/voxleaf/pull/272); subsequent
+  [CI and privacy](plans/evidence/confirmed-logic-bugfixes/ci-nsis-follow-up.md)
+  and [dependency audit](plans/evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md)
+  records distinguish follow-up validation from that historical acceptance.
 
 - [Reader, narration and acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md):
   eight fixes, permanent regressions and repository/browser/native/installed

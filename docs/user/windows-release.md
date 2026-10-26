@@ -123,9 +123,9 @@ On a passing computer, Settings will present Chatterbox as the generally more
 natural and expressive quality option compared with Piper, while noting that
 voice preference varies. Before network access, the confirmation must disclose:
 
-- `8,240,055,749` download bytes (about 8.24 GB/7.67 GiB);
-- an installed total of `8,236,500,113` bytes (about 8.24 GB/7.67 GiB);
-- a peak temporary requirement of `13,271,159,574` bytes (about 13.27 GB/
+- `8,240,302,391` download bytes (about 8.24 GB/7.67 GiB);
+- an installed total of `8,236,744,319` bytes (about 8.24 GB/7.67 GiB);
+- a peak temporary requirement of `13,271,652,858` bytes (about 13.27 GB/
   12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
 - 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
   and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
@@ -134,9 +134,11 @@ voice preference varies. Before network access, the confirmation must disclose:
 - licence, offline, cancellation, activation, removal, and reacquisition
   consequences.
 
-The security-refreshed runtime uses package v5. Retained v2/v3 data is not executed
-or migrated into v5. If only older data remains, Settings offers removal;
-acquiring v5 requires explicit consent. Observation, failed downloads and
+The security-refreshed integration candidate uses the published package v6 under
+[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
+Retained v2/v3/v5 data is not executed
+or migrated into v6. If only older data remains, Settings offers removal;
+acquiring v6 requires explicit consent. Observation, failed downloads and
 cancellation preserve retained data. Explicit Remove Chatterbox removes the
 owned current and retained package roots; unrelated versions and reader data
 remain outside that operation. Disk usage can include both retained and current
@@ -148,7 +150,7 @@ Quick command-to-audible at `49.269` seconds in Spanish and `37.773` seconds in
 English. Historical v2 process-tree working-set peaks were
 `4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
 `3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
-countdown or guarantee for every compatible computer, and are not new v5
+countdown or guarantee for every compatible computer, and are not new v6
 measurements. The historical hardware gate is retained after representative
 v3 memory checks; current artifact evidence records successor observations.
 

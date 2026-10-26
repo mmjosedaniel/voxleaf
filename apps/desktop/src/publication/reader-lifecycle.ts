@@ -103,7 +103,7 @@ function stateForOpenResult(
     case "rejected":
       return failed(result.reason);
     case "ready":
-      return result.publication.locators.length === 0
+      return result.publication.defaultStartLocator === undefined
         ? EMPTY_STATE
         : ready(result.publication, publicationSequence);
   }
