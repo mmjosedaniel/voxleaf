@@ -3,7 +3,7 @@
 This is a new v6 integration checkpoint, not a rewrite of the completed CLB
 acceptance. HEAD is `e46eb99c542b27a891aae6ee20d68c525d79f5f1`; the integration
 changes remain uncommitted. Global v6 acceptance remains pending in the
-[active plan](../../active/chatterbox-filelock-setuptools-security-refresh.md).
+[plan, now completed](../../completed/chatterbox-filelock-setuptools-security-refresh.md).
 
 ## Reproduction and correction
 

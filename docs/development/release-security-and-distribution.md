@@ -39,13 +39,16 @@ state and firewall are restored. Independent acceptance and fresh PR CI pass
 for integration commit `194846a`, recorded in the
 [completed plan](../plans/completed/chatterbox-certifi-pillow-security-refresh.md).
 
-The v6 integration candidate follows [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
+The accepted v6 integration follows [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
 It replaces only filelock and setuptools, preserves historical publication
 authority, and selects v6 consistently for audit, inventory and native admission.
 The complete local production audit passed on 2026-10-24 UTC, retaining seven
-Rust notices and four Python URL/CUDA blind spots. Publication and installed
-acceptance status belong to the [active plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md);
-no previous installed or CI result establishes acceptance of v6.
+Rust notices and four Python URL/CUDA blind spots. The
+[completed plan](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records exact local artifact admission, current installed/runtime gates and
+independently scoped reuse. Historical v5 results alone do not establish v6
+acceptance. R12/R13 failed full live acquisitions remain unresolved; this
+dependency-refresh acceptance claims no complete live-delivery pass or transport fix.
 
 ### Historical v3 acceptance checkpoint
 

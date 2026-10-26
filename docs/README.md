@@ -28,10 +28,12 @@ production completion/investigation is deferred under
 
 Current executable identity is separate from stable profile names and historical
 evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
-Chatterbox's accepted historical checkpoint uses **v5**. The published **v6**
-integration candidate reuses frozen v3 service modules with the refreshed
-lock; its [installed acceptance is pending](plans/active/chatterbox-filelock-setuptools-security-refresh.md).
-V2/v3/v5 are cleanup-only in that candidate and the local v4 adapter-layout
+Chatterbox uses the published **v6** runtime with frozen v3 service modules and
+the refreshed lock. Its [completed refresh](plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records exact local artifact admission, current installed/runtime gates and
+reviewer-approved evidence reuse. Full live downloads failed twice; their cause
+remains unresolved and no complete v6 live-delivery pass is claimed.
+V2/v3/v5 are cleanup-only and the local v4 adapter-layout
 candidate remains unpublished/unadmitted. See the
 [current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
 

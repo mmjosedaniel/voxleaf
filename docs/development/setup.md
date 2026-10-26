@@ -1,8 +1,10 @@
 # Development setup
 
-V6 publication/integration acceptance is tracked in the active
-[security-refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
-Preparation and a passing candidate audit do not establish installed acceptance.
+V6 integration is accepted under the revised evidence boundary in the
+[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
+exact local artifact admission, current installed/runtime gates and scoped reuse.
+Full live acquisition failed twice; its cause remains unresolved. No complete
+v6 live-delivery pass is claimed.
 
 ## Current status
 
@@ -15,7 +17,7 @@ deferred. Use the [support matrix](../architecture/tts-support-matrix-v2.md)
 and [roadmap](../plans/roadmap.md) for support and milestone decisions.
 
 Current Piper execution uses the release core with Piper 1.8.0 and ONNX Runtime
-1.31.0. The v6 integration candidate replaces v5; older v2/v3/v5 roots are cleanup-only
+1.31.0. The accepted v6 runtime replaces v5; older v2/v3/v5 roots are cleanup-only
 and local v4 is unadmitted. Stable profile IDs and model-directory names may
 contain older version labels; they are not selectors for executable dependency
 versions. The [dependency inventory](dependencies.md) separates current locks
@@ -577,7 +579,7 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-The current optional integration candidate is v6 under
+The current optional runtime is v6 under
 [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
 These explicit commands check tracked source and acquisition authority; they
 perform no model download, archive build, installation or narration:

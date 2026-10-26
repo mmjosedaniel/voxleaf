@@ -1,10 +1,13 @@
 # Chatterbox v6 integration: current host validation
 
-This records partial integration evidence on base
+This records accepted integration evidence under the explicitly revised scope
+for implementation commit
+`9073ad4b1a54b9dc86e811526cbcdb6dea2ee56d`, based on
 `e46eb99c542b27a891aae6ee20d68c525d79f5f1`. The
-[active ExecPlan](../../active/chatterbox-filelock-setuptools-security-refresh.md)
-remains incomplete: full acquisition/recovery and final integration acceptance
-are pending. Earlier v5 and CLB completion do not establish v6 acceptance.
+[completed ExecPlan](../../completed/chatterbox-filelock-setuptools-security-refresh.md)
+records reviewer-approved reuse plus exact local v6 artifact admission. Earlier
+v5 and CLB completion alone do not establish v6 acceptance. Full live delivery
+remains unverified; the two failed attempts and unknown cause are retained below.
 
 All checks below ran in normal local PowerShell outside the managed sandbox.
 Raw logs, environment snapshots and restoration inventories remain private.
@@ -50,7 +53,7 @@ only under `CB-V6-NSIS-EVIDENCE-REUSE-R1-ASTRA-20261025`: the R6 uninstaller is
 byte-identical. This is explicitly reused interactive evidence, separate from
 the fresh R6 automated Lifecycle result; it is not a new interactive execution.
 
-## Acquisition remains blocked
+## Historical live acquisition failures
 
 Both full configured `pnpm.cmd package:windows:reader-corrections` executions
 failed during the download preceding verification cancellation:
@@ -74,6 +77,64 @@ a separate HTTP 200 request transferred 170,180,169 bytes before its intentional
 stalls or substitute for actual acquisition. Further work requires diagnosis
 and an explicitly revised experiment, not repeated full downloads until green.
 
+The following isolated diagnostics used exact production inputs, a private test
+addition and unchanged `download_artifact`. Each process closed, removed its
+owned partial and verified all 797 primary source inputs unchanged. No user-data
+or network-setting changes were made by these probes.
+
+| Diagnostic | Observed outcome | Interpretation limit |
+| --- | --- | --- |
+| R14 bounded native transfer | Request/connection error 11001 (`HostNotFound`), zero bytes, 11,077 ms. | No HTTP/body observation; not the same failure as either installed read timeout. |
+| R15 Rust resolver operation | Three allowed public hosts resolved without errors, 27/0/0 ms. | Later process/time; does not identify R14's failed host or cause. |
+| R16 bounded native transfer | Intentional cancellation after 134,233,617 bytes in 18,770 ms; DNS succeeded before/after. | No complete part or installed-context acceptance. |
+| R17 sustained bounded transfer | Intentional cancellation after 536,883,638 bytes in 82,143 ms; maximum inter-callback interval 177 ms; DNS succeeded before/after. | Byte cap arrived before the 90-second threshold. Callback intervals include read/write/callback work. Longer and full installed transfers remain untested. |
+
+R17 did not reproduce the read stall. It supplies no evidence for changing
+production timeout, resolver or retry/resume policy, and does not renew the
+exhausted full-acquisition retry budget. The remaining investigation must
+distinguish installed process/callback context from time-varying transport;
+neither cause has been established. The user's subsequent reuse request and
+independent review explicitly replaced the full-live-journey closeout gate with
+the complementary evidence below; this does not resolve transport reliability.
+
+## Exact local v6 admission and evidence reuse
+
+`CB-V6-RISK-BASED-REUSE-PLAN-R1-ASTRA-20261025` rejected wholesale reuse of
+v5 transport acceptance: the authority, archive and Tokio version differ.
+It approved exact unchanged model/module identities and the current v6 gates
+listed above. Current B06/B07 regressions cover cancellation, commit and failure
+cleanup; byte-identical candidate uninstallers support only the scoped NSIS UI
+reuse. V5's complete real journey remains historical evidence.
+
+R18 filled the archive-specific gap using a private ignored Rust test in an
+isolated copy, with unchanged authority and all 797 execution inputs verified.
+Offline compilation exited 0; the exact test exited 0 with one pass, no failures
+and 120 filtered tests in 750.98 seconds. All nine local artifacts passed the
+production verifier. Current acquisition code reassembled, extracted, verified
+and promoted v6; a fresh manager in the same process rediscovered it. Full
+runtime/model verification and explicit owned removal passed, preserving the
+unrelated sentinel. Retained-v5 survived acquisition until explicit removal.
+The process closed and scratch cleanup passed without source drift or watchdog
+intervention. User installation and original data were untouched.
+
+The hook supplied local bytes and rejected unexpected requests; it did not
+exercise HTTP or a new installed-process restart. No package/model body was
+downloaded. Fresh GitHub API metadata matched all three published part identities.
+The completed plan records exact commands, artifact hashes and private receipts.
+`CB-V6-LOCAL-REPLAY-R18-RESULT-R1-ASTRA-20261026` approved revised functional
+acceptance with no findings. No additional complete transfer, GPU matrix or
+installer cycle is required while those inputs remain unchanged.
+
+## Hosted CI
+
+All required jobs succeeded on implementation head `9073ad4`:
+
+- [Foundation checks](https://github.com/mmjosedaniel/voxleaf/actions/runs/40238341429): Windows native, Ubuntu portable and Ubuntu Rust; Windows completed at 2026-10-25 22:21:41 UTC.
+- [Production dependency graphs](https://github.com/mmjosedaniel/voxleaf/actions/runs/40238341460): completed successfully at 2026-10-25 22:04:48 UTC.
+
+The dependency-audit CI failure is resolved on this head. These jobs do not run
+the missing full installed Chatterbox acquisition/recovery acceptance journey.
+
 ## Review and privacy status
 
 The public R1/R2 integration-report copies omit redundant trailing blank lines.
@@ -81,8 +142,12 @@ Their complete original bytes remain in private evidence; historical report
 hashes identify those originals. No verdict, finding or technical text changed.
 
 Behavioral corrections have scoped independent Astra reports, including the
-sharing-lock regression and timeout classification. Final integration approval
-and fresh integrated-head CI remain pending. The PR remains a draft.
+sharing-lock regression and timeout classification. Fresh integrated-head CI
+passed; revised functional acceptance is approved by the R18 result review.
+The final archive/index/documentation patch has its own exact review gate,
+`CB-V6-REUSE-CLOSEOUT-R1-ASTRA-20261026`; its actual verdict is authoritative.
+The PR remains a draft. R15, R16 and R17 each had a distinct exact-helper Astra
+approval for one diagnostic execution; none was global acceptance.
 
 A targeted scan of added source/documentation and new files found no private
 host paths or credential-pattern matches; generic NSIS `$LOCALAPPDATA` variables

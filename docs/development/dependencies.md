@@ -2,8 +2,10 @@
 
 ## Scope and ownership
 
-Chatterbox v6 is the **integration candidate; installed acceptance is pending** under the
-[active filelock/setuptools refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
+Chatterbox v6 is accepted under the revised evidence boundary in the
+[completed filelock/setuptools refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md).
+Exact local admission and current installed/runtime gates pass with reviewed
+reuse. Full live delivery remains unverified after two read-timeout failures.
 Its independent 79-package hashed lock changes only filelock to 4.2.1 and
 setuptools to 84.1.0, retaining frozen v3 service modules and all six model
 identities. Published v5 remains immutable; its

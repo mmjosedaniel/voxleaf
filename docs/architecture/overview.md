@@ -1,8 +1,10 @@
 # Architecture overview
 
-V6 publication/integration acceptance is tracked in the active
-[security-refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
-Preparation and a passing candidate audit do not establish installed acceptance.
+V6 integration is accepted under the revised evidence boundary in the
+[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
+exact local artifact admission, current installed/runtime gates and scoped reuse.
+Full live acquisition failed twice; its cause remains unresolved. No complete
+v6 live-delivery pass is claimed.
 
 The [completed confirmed-correction plan](../plans/completed/confirmed-logic-bugfixes.md)
 adds the package-owned primary `defaultStartLocator` under ADR-0060 and exact
@@ -43,10 +45,11 @@ state and firewall are restored; independent acceptance and fresh PR CI pass
 for integration commit `194846a`. Retained v2/v3 are cleanup-only;
 no component, local inference flow or audio persistence boundary changes.
 
-The v6 integration candidate follows
+The accepted v6 integration follows
 [ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md), with
-v5 retained for explicit removal only. Its preparation and local dependency
-audit pass; installed/native and final acceptance remain in the active plan.
+v5 retained for explicit removal only. Exact local admission, current native and
+installed runtime evidence, audit and implementation-head CI pass under the
+completed plan's revised boundary; complete live delivery is not established.
 
 The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)
 implements the accepted behavior in [ADR-0057](decisions/ADR-0057-reader-acquisition-correctness.md).

@@ -2,15 +2,16 @@
 
 ## Status
 
-Accepted design on 2026-10-23; integration and installed acceptance are in
-progress. The user authorized publication of the three reviewed parts and
+Accepted design on 2026-10-23; integration accepted under the revised evidence
+boundary on 2026-10-25 local time. The user authorized the three reviewed parts and
 continued local integration, preserving previous versions and user data.
 Preparation is approved by `CB-V6-PREPARATION-R2-ASTRA-20261024T022500Z`.
 The exact three-part prerelease was published on 2026-10-24; its verified
-GitHub readback generated the distinct v6 authority. Installed acceptance and
-the final integration review remain pending.
-The [active ExecPlan](../../plans/active/chatterbox-filelock-setuptools-security-refresh.md)
-records publication and acceptance status; preparation is not installed proof.
+GitHub readback generated the distinct v6 authority. The
+[completed ExecPlan](../../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records exact local artifact admission, current installed/runtime evidence and
+independently approved reuse. Full live acquisition failed twice; its cause
+remains unknown. Acceptance does not claim complete live delivery or a transport fix.
 
 ## Context
 
@@ -57,7 +58,9 @@ would break the identity boundary and are rejected.
 
 The candidate passed real-library security controls and offline ES/EN probes.
 The audit retains four explicit URL/CUDA blind spots; the POSIX filelock exploit
-was not exercised on Windows. Installed B06/B07, bilingual playback, native
-recovery, lifecycle, data restoration, final review and CI remain independent
-acceptance requirements. Local inference and ephemeral audio keep the existing
+was not exercised on Windows. Current B06/B07 regressions, exact local admission,
+bilingual installed playback, native recovery, lifecycle, data restoration and
+implementation-head CI provide complementary evidence under the revised plan.
+V5's real complete journey is historical, not a v6 pass. Exact final review is
+required for the documentary closeout. Local inference and ephemeral audio keep the existing
 process topology; no public VoxLeaf installer or model asset is published.

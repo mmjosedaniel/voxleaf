@@ -1,8 +1,10 @@
 # Local TTS support and integration matrix v2
 
-V6 publication/integration acceptance is tracked in the active
-[security-refresh plan](../plans/active/chatterbox-filelock-setuptools-security-refresh.md).
-Preparation and a passing candidate audit do not establish installed acceptance.
+V6 integration is accepted under the revised evidence boundary in the
+[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
+exact local artifact admission, current installed/runtime gates and scoped reuse.
+Full live acquisition failed twice; its cause remains unresolved. No complete
+v6 live-delivery pass is claimed.
 
 ## Status
 
@@ -38,7 +40,7 @@ their scores and performance do not validate the refreshed executable bytes.
 
 Likewise, `chatterbox-multilingual-v3-cuda-bf16-default-v4` remains the stable
 Chatterbox profile ID. Its `v3` model and `v4` profile labels do not select a
-runtime package. The integration candidate admits **voxleaf-chatterbox-v6** under
+runtime package. The accepted integration admits **voxleaf-chatterbox-v6** under
 [ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md), using the
 [v6 acquisition manifest](../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json).
 Package v4 remains a separate unpublished/unadmitted local candidate, and

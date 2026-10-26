@@ -129,8 +129,10 @@ identity published as `chatterbox-runtime-v2`;
 [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
 selected the separately published v5 runtime, with v2/v3 cleanup-only.
 [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md)
-defines the published v6 integration candidate with v5 also cleanup-only;
-its installed acceptance remains pending in the active security-refresh plan.
+defines the published v6 runtime with v5 also cleanup-only. The
+[completed refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+accepts exact local admission and current installed/runtime evidence with scoped
+reuse; full live-delivery reliability remains unresolved after two failed downloads.
 The original M011 installed
 Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
 passes on the representative compatible computer. Renewed Milestone 7 accepts

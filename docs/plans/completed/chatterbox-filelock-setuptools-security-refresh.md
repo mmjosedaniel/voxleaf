@@ -18,13 +18,20 @@ preparation there is no change to the installed application or admission.
 
 ## Current state
 
-Resumed at the user's request on 2026-10-24 from the safe checkpoint below.
-Existing publication/integration authorization persists. HEAD remains the
-approved preparation commit and the index is empty. The exact three reviewed
+Integration is committed at `9073ad4b1a54b9dc86e811526cbcdb6dea2ee56d` on
+`codex/confirmed-logic-bugfixes`; the index is empty. Publication/integration
+authorization persists. Native/installed inference and lifecycle gates passed;
+full live acquisition failed twice. On 2026-10-25 the user explicitly requested
+reuse-based acceptance without unjustified repeat downloads. Independent review
+approved the revised coverage matrix below. Exact local artifact admission R18
+passed, and `CB-V6-LOCAL-REPLAY-R18-RESULT-R1-ASTRA-20261026` approved functional
+acceptance with no findings. This completed-plan documentary patch requires its
+own exact final review before acceptance. The three reviewed
 assets are now published as the non-latest `chatterbox-runtime-v6` prerelease
 (release ID `422467861`, published `2026-10-24T21:32:28Z`). GitHub confirms all
 sizes and SHA-256 digests. The v6 authority was generated from that actual public
-readback and its check passed. Full integration/installed acceptance is pending.
+readback and its check passed. No complete current-host live acquisition pass is
+claimed by the revised integration boundary.
 
 Historical preparation baseline: HEAD `4dab0baea2d462e1b7b84206f7a5f39517f4cdcc` on
 `codex/confirmed-logic-bugfixes`; clean index/worktree at entry. The user
@@ -38,8 +45,8 @@ GHSA-xmj3-9gf7-h52w. These are package-level findings, not proof that VoxLeaf
 exposes the vulnerable APIs. Filelock's advisory concerns POSIX SQLite locks;
 setuptools concerns namespace metadata in legacy Windows wheel installation.
 The prior CLB plan and v5 acceptance are immutable historical evidence. The
-uncommitted v6 selector's local production audit passes; hosted PR acceptance
-must be rerun after the integrated patch is approved and pushed.
+integrated v6 selector's local and hosted production audits pass. Ubuntu
+portable/Rust and Windows CI passed on the integration head.
 
 ## Scope and non-goals
 
@@ -91,12 +98,13 @@ system diagram; preparation changes no runtime topology.
    documentary patch, committed as `e46eb99c542b27a891aae6ee20d68c525d79f5f1`.
    The user explicitly authorized the three reviewed prerelease assets and
    subsequent integration/local validation, preserving user data and old versions.
-5. Publication and production integration — in progress under that authorization.
-   Publish only approved assets; generate authority from verified readback,
-   update admission and retained-only cleanup, run native/installed acceptance.
-6. Closeout — pending. Full production audit and fresh PR CI, exact-patch
-   approval, user-data restoration and index updates. Keep this plan active
-   until all acceptance requirements pass.
+5. Publication and production integration — complete under the explicitly revised
+   acceptance boundary. Published authority, exact local artifact admission,
+   native/installed runtime, retained-only cleanup and lifecycle gates passed.
+6. Closeout — revised functional criteria approved; plan archived and maintained
+   indexes reconciled in this documentary patch. Production audit, implementation
+   CI and host restoration passed. Final exact-patch review is a separate gate
+   on this closeout; its verdict does not imply complete live-download success.
 
 ## Testing and benchmark strategy
 
@@ -132,11 +140,52 @@ reported. Dependency probes must demonstrate the corrected behavior plus
 legitimate controls; do not substitute text inspection for feasible execution.
 Document any platform-specific proof gap.
 
-After publication/integration run `pnpm.cmd check`, `test:browser`,
+The original post-publication strategy ran `pnpm.cmd check`, `test:browser`,
 `test:native-startup`, `test:tts:reader-corrections-host`,
-`package:windows:verified-core`, `package:windows:check`,
-`package:windows:reader-corrections`, installed integrity and lifecycle checks
-against the exact candidate. Historical results cannot establish v6 acceptance.
+`package:windows:verified-core`, `package:windows:check`, installed integrity
+and lifecycle checks successfully. `package:windows:reader-corrections` failed
+twice during live download. Those failures remain recorded below. The following
+user-authorized revision supersedes the requirement to pass that entire live
+journey merely to accept this dependency refresh.
+
+### Revised acceptance and evidence reuse — 2026-10-25
+
+`CB-V6-RISK-BASED-REUSE-PLAN-R1-ASTRA-20261025` approves this strategy, subject
+to one reviewed offline replay and final acceptance. It does not relabel v5
+results or failed v6 attempts as current passing live downloads.
+
+| Responsibility | Evidence to retain or reuse | Remaining work |
+| --- | --- | --- |
+| V5 ordinary acquisition/recovery | Actual historical 17-step journey and B06/B07 receipts; behavioral history only. Tokio, installer and authority differ from the current candidate. | No wholesale v5 transport/performance gate reuse. |
+| Current transport | R16/R17 bounded transfers through current code; real timeout and cleanup tests in current Rust suite. | No further body transfer for this acceptance; live-delivery reliability remains unresolved. |
+| Published runtime identity | Exact GitHub release metadata/digests, ordered three-part archive and local-build member verification. | Reverify the local artifacts supplied to replay with the checked-in authority. |
+| Six models and frozen modules | Identity-matched local bytes; artifact reuse rather than reuse of historical measurements. | Verify all supplied model copies by complete size/hash. |
+| Exact v6 native admission | Synthetic current tests and R12 installed-tree integrity do not alone prove Rust handled the exact archive. | One offline `download_at` replay through actual verification, reassembly, extraction and promotion. |
+| B06/B07 cancellation/recovery | Current host `test:rust`, both default and `release-locked-runtime`: `b06_cancellation_accepted_during_final_hashing_prevents_promotion`, `b06_cancellation_and_commit_have_one_winner`, `b06_cancel_does_not_wait_for_installed_runtime_lock`, `b07_cancelled_worker_settles_even_when_staging_cleanup_fails` and cleanup/reselection guards. | Reuse matching passing inputs; no second full-payload cancellation replay. |
+| Retained-v5 ownership | Current observation/cancellation, dangling-link, containment and removal regressions. | Add retained-v5 and unrelated sentinels to the one replay. |
+| Native/installed inference and playback | R12 four bilingual arms, before/after integrity, cancellation/privacy/memory checks and exact environment/executable identities. | Reuse independently approved R12 gates. |
+| NSIS/lifecycle | Repaired R6 lifecycle and scoped byte-identical candidate-uninstaller interactive reuse. | No installation/uninstallation cycle for an isolated replay. |
+| Foundation/browser/audit/CI | Passing current-source host gates and implementation-head CI. | Final documentation checks and independent exact-patch review. |
+
+The private ignored replay uses an exact copy of the 797 current execution
+inputs and the existing Cargo test entrypoint with `release-locked-runtime`.
+It retains the unmodified checked-in authority. Its existing test-only download
+hook supplies the three exact local parts and six models into a fresh owned
+scratch root, explicitly invoking unchanged `verify_downloaded_artifact` for
+each copy. Unknown/duplicate/missing requests fail closed; an exhausted hook
+must not fall through to HTTP. Production `download_at` then performs archive
+verification, extraction, model placement, full runtime verification, promotion
+and cleanup. Assert nine verified artifacts, Installed state, absent staging,
+preserved retained-v5/unrelated sentinels, fresh-manager rediscovery, successful
+explicit owned removal and preserved unrelated sentinels.
+
+No production code, network policy, user installation or original model file
+is modified. The reviewed helper bounds execution to 20 minutes, retains typed
+progress and exit status, verifies process closure before scratch cleanup, and
+rechecks primary source identities. Ordinary host readiness found 126.68 GiB
+free and the required local parts/models present. This is local artifact
+admission evidence, not a complete live acquisition or an offline-inference test.
+Keep the installed read-timeout cause and live-delivery limitations explicit.
 
 ## Risks and rollback
 
@@ -149,6 +198,10 @@ rollback means abandoning their unpublished outputs, not reverting v5 history.
 Any cleanup must verify exact owned absolute roots first.
 
 ## Progress log
+
+Earlier progress and validation entries below are chronological snapshots. Their
+pending/blocked labels describe the state then; the revised closeout below is
+the current acceptance boundary and preserves every historical failed result.
 
 - 2026-10-23: User approved v6 preparation in PR #272. Baseline clean; published
   v5 remains active and audit-blocked. Started required independent investigation.
@@ -545,6 +598,65 @@ Any cleanup must verify exact owned absolute roots first.
 
 ## Final validation results
 
+### Revised closeout — 2026-10-25 local / 2026-10-26 UTC
+
+The user explicitly requested reviewer-led reuse and only necessary validation.
+`CB-V6-RISK-BASED-REUSE-PLAN-R1-ASTRA-20261025` approved the matrix above.
+V5 full acquisition remains historical evidence, not a current-v6 pass. Unchanged
+models and frozen modules are reused by exact identity. Current v6 publication,
+security, B06/B07 regressions, native/installed ES/EN, integrity, cancellation,
+Lifecycle and scoped interactive evidence are reused under their recorded
+input/environment proofs. No new complete download, GPU run or installer cycle
+was required. All 797 execution inputs remained unchanged.
+
+The one missing archive-specific check ran in normal host PowerShell using an
+isolated exact source copy and a private ignored test, approved by
+`CB-V6-LOCAL-REPLAY-R18-R1-ASTRA-20261026`. It built with:
+
+```powershell
+cargo test --offline --manifest-path <isolated-copy>/apps/desktop/src-tauri/Cargo.toml --bin voxleaf-desktop --features release-locked-runtime --no-run --message-format=json
+<discovered-test-executable> tts_optional_chatterbox::tests::optional_v6_exact_local_acquisition_replay --exact --ignored --nocapture --test-threads=1
+```
+
+Build, test and wrapper exited 0: one passed, zero failed, 120 filtered in
+750.98 seconds. The unchanged verifier checked all nine exact local artifacts;
+current Rust code reassembled, extracted, verified and promoted v6. A fresh
+manager in the same test process rediscovered it and full runtime/model
+verification passed. Retained-v5 and unrelated sentinels survived acquisition;
+explicit removal removed owned packages and preserved the unrelated sentinel.
+The process closed, scratch cleanup passed, watchdog did not fire and source
+drift was empty. Original user installation/data were untouched. HTTP was
+replaced by a fail-closed local hook; this is not a live-delivery test or a new
+installed-process restart. No package or model body was downloaded.
+
+R18 state SHA-256: `7e833ff3cd97cf3579060aad7311e38a58a3b83e12dc225ef619d80070f08270`.
+Stdout: `cc138c8096c82bd90f13eb7c4e7718bb158aed7bdd3c7f88b8771fd9acfa206d`.
+Assertion receipt: `a4966a618a30acea8a6bad2534356b6d9f6eeb2d9c03bd93350fcbe9acb9c4ba`.
+Fresh GitHub metadata readback matched all three published asset identities
+without downloading their bodies; receipt
+`f379fd538d0079e24e3b27378c81a7ed78f820c6014f5df6cc3953065fdf90d1`.
+Private raw receipts and helpers are retained outside the repository.
+
+`CB-V6-LOCAL-REPLAY-R18-RESULT-R1-ASTRA-20261026` independently approved the
+revised functional acceptance with no findings. The exact documentary closeout
+is submitted separately as `CB-V6-REUSE-CLOSEOUT-R1-ASTRA-20261026`; acceptance
+of that patch depends on its actual verdict, not this planned report identifier.
+The final host documentation gates `pnpm.cmd check:evidence` and
+`git diff --check` both exited 0; their execution receipts accompany that review.
+
+Implementation HEAD `9073ad4` has passing Foundation run `40238341429` and
+production-audit run `40238341460`. Those runs apply to that implementation
+commit, not to an unpushed documentation commit. The final documentation patch
+is unstaged at this checkpoint; no merge or public installer is authorized.
+
+**Known limitation:** R12/R13 remain failed full live acquisitions and their
+read-timeout cause remains unknown. R16/R17 bounded success and R18 local
+admission do not establish a full live-download pass or a transport fix. The
+revised security-refresh integration closes with complementary exact-artifact,
+recovery and runtime evidence; live-delivery reliability remains unresolved.
+
+### Historical validation chronology
+
 ### Response-read diagnostic follow-up
 
 The next investigation reproduced a diagnostic defect using a tiny loopback
@@ -757,6 +869,111 @@ explicitly pending. Continue diagnosis only with a bounded, discriminating
 experiment; do not repeat full acquisition or change transport policy merely
 to obtain a passing result. Moving this plan to completed remains prohibited
 until the missing acquisition/recovery and final acceptance criteria pass.
+
+Draft handoff review `CB-V6-DRAFT-CI-HANDOFF-R2-ASTRA-20261025` approved
+the exact incomplete candidate without waiving acquisition/global acceptance.
+Commit `9073ad4b1a54b9dc86e811526cbcdb6dea2ee56d` was pushed normally to
+PR #272; fresh Windows, Ubuntu portable, Ubuntu Rust and production-audit CI
+started on that head. The PR remains a draft. Staged evidence and whitespace
+checks passed after retaining immutable originals and removing only redundant
+final blank lines from two public report copies.
+
+Next diagnostic is limited to one isolated copy of the current source inputs:
+invoke the unchanged `download_artifact` with its pinned client and public v6
+part 001 from a test process, record only typed diagnostics and bounded progress,
+and cancel after 128 MiB plus at most one copy buffer. An external watchdog must
+terminate the owned test process at 120 seconds and verify its exit before
+removing its owned partial file. No installer, inference, user-data access,
+production timeout/retry/resume change or full acquisition retry is included.
+Compile/run the filtered diagnostic through the existing Cargo test entrypoint
+in that private copy, using normal host PowerShell. Review exact helper/input
+identities before execution. A successful small transfer narrows hypotheses;
+it cannot establish an installed-context defect or package acceptance.
+
+The bounded R14 transport probe built and recorded its outcome successfully,
+but the transfer failed before HTTP: request/connection, OS 11001
+(`HostNotFound`), zero bytes, 11,077 ms. The process closed, its owned partial
+was absent and all 797 primary inputs remained unchanged. This differs from
+the two installed response-read timeouts. A later .NET observation resolved
+all three allowed public hosts; it cannot establish contemporaneous Rust DNS
+behavior or identify the failed redirect host. No production defect or fix is
+inferred. The immutable R14 receipts remain private.
+
+Independent read-only analysis recommends one DNS-only Rust experiment before
+another body transfer. In a private exact-source copy, use the pinned resolver's
+same `ToSocketAddrs` operation once for each of the three allowed hosts. Retain
+only fixed host labels, address-family counts, timings and typed/numeric errors;
+no addresses or error strings. Use the reviewed external watchdog and closure
+checks, with no network-setting changes. No full acquisition retry is included.
+Only a successful DNS observation can justify proposing one separately reviewed
+bounded response-read experiment; it is not package acceptance.
+
+R15 completed under `CB-V6-DNS-PROBE-R15-R1-ASTRA-20261025`: all three Rust
+lookups succeeded without errors, at 27/0/0 ms. The process closed with no
+cleanup errors or source drift. This does not reproduce the earlier DNS failure
+or explain the read stalls. Fresh CI is now entirely successful on `9073ad4`:
+Windows native, Ubuntu portable, Ubuntu Rust and production dependency graphs.
+
+Revised R16 diagnostic: one bounded 128 MiB transfer through unchanged
+`download_artifact`, with the same three count-only Rust DNS observations before
+and after in that process. R15's success justifies trying to reach the body-read
+stage that R14 never reached. Keep the existing 120-second external watchdog,
+byte cap, typed progress/diagnostics and owned-file cleanup. Any result ends this
+experiment; it neither authorizes repeated attempts nor establishes acquisition.
+Review the exact private helper/probe before its single host execution.
+
+R16 ended at its intended limit: 134,233,617 bytes in 18,770 ms, no download
+diagnostic and successful DNS observations before/after. Closure, owned-partial
+removal and all source identities passed. This exceeds both failed byte positions
+but does not test their observed transfer duration. Independent analysis does
+not approve renewing full acquisition merely from this successful small probe.
+
+Final bounded diagnostic R17 asks whether the unchanged native-client path
+reproduces a read stall over the duration of the installed failures. Cancel on
+progress after 90 seconds or 512 MiB, whichever occurs first; retain the external
+120-second watchdog for a blocked read or resolver. Add maximum time between
+progress callbacks, explicitly including read/write/callback work, without
+throttling or sleeps. Preserve typed failures and cleanup. If the byte cap comes
+first, any longer duration remains untested; do not increase the cap or repeat.
+No full-acquisition retry is authorized by this probe. After its result, close
+independent CI/documentation/review work and record any unresolved acceptance
+blocker rather than inventing a transport fix or retrying until success.
+
+R17 completed under `CB-V6-TRANSPORT-PROBE-R17-R1-ASTRA-20261025` with
+536,883,638 bytes in 82,143 ms and intentional cancellation at the byte cap.
+The maximum interval between progress callbacks was 177 ms (not pure network
+latency); the final callback was one millisecond before the result. DNS succeeded
+before/after, no download diagnostic was recorded, and teardown/source checks
+passed. The 90-second threshold was not reached; longer transfers remain
+untested. The two installed read timeouts were not reproduced in this isolated
+process. This is evidence of a successful bounded transfer, not a root-cause
+finding, an installed-context defect or full acquisition acceptance.
+
+The current blocker is a missing passing full installed acquisition/recovery
+journey after two actual read timeouts. No source fix is justified by the bounded
+observations alone. Further diagnosis must distinguish the installed
+process/callback context from time-varying transport behavior before another
+full attempt; the completed experiment does not renew that retry budget.
+No validation process remains active, the original installation/data are
+restored, and the temporary offline rules remain removed. Keep this plan active
+and PR #272 in draft; request final independent assessment of the exact current
+patch and these evidence limits without waiving the missing gate.
+
+The final documentation check initially stopped before execution because the
+default shell resolved pnpm 11.25.0 instead of the pinned 11.15.1. Selecting the
+existing Corepack shims for that host process restored the required toolchain;
+`pnpm.cmd check:evidence` and `git diff --check` then exited 0. No global tool
+installation or source change was made to bypass the engine guard.
+
+`CB-V6-FINAL-DIAGNOSTIC-R1-ASTRA-20261025` verified the current 86-path
+patch, all 797 execution inputs, fresh passing CI and diagnostic receipts. It
+approved the two-document status update while keeping global acceptance
+BLOCKED on the missing installed journey. Its F1 found an overstatement in the
+proposed PR body: restoration did not succeed at every historical closure; one
+earlier Lifecycle failure required separately reviewed recovery. The corrected
+PR text acknowledges that failure/recovery and the final restored condition.
+Request re-review of this documentary addition and corrected publication text
+before the authorized handoff; no production code or test input changed.
 
 Preparation checkpoints below are local PowerShell results, outside the managed
 sandbox. Publication subsequently passed as recorded above; installed acceptance
