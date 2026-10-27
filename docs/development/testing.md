@@ -1,5 +1,25 @@
 # Testing strategy
 
+## Narration and Chatterbox correctness regressions
+
+The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) uses selected
+`NCC`/`ncc_` regressions followed by one foundation check. Coordinator tests join
+the real player, persistence bridge and save owner while the frame counter reaches
+the final frame before `ended`. The device callback releases the final frame only
+after publishing the exact heard end. The browser case holds only real completion
+delivery across coordinator ticks at `1.00x` and `0.75x`, then verifies exact end,
+manual saving and reopening through the mounted reader with synthetic service PCM.
+
+Visibility tests cover changed/unchanged and paused/unavailable selection,
+replacement/close, overlapping probes, and a spent recovery budget. The optional
+controls retry cached acquisition failures through existing confirmation without
+network admission. Native tests inject free-space values at the production path
+selector, checking destination/ancestor, unknown and denied results without a
+second physical disk. Packaging tests stub expensive preparation and use real
+tiny filesystem moves with promotion/restore failures; an orphaned `.previous`
+is recovery input and must survive a blocked retry. These tests do not establish
+live v6 delivery, inference quality or installer acceptance.
+
 ## Lifecycle correctness follow-up
 
 The [lifecycle follow-up plan](../plans/completed/lifecycle-correctness-follow-up.md)
@@ -226,8 +246,34 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox integration authority checks explicitly select v6; historical
-v3/v5 checks remain available and must preserve their exact outputs.
+Current Chatterbox integration authority checks explicitly select v7; historical
+v3/v5/v6 checks remain available and must preserve their exact outputs.
+
+The [v7 msgpack preparation](../plans/completed/chatterbox-msgpack-security-refresh.md)
+uses `pnpm.cmd test:chatterbox:v7:preparation` and `audit:chatterbox:v7`.
+The `package:chatterbox-optional:v7:{lock,write-source,check-source,check-local}`
+commands follow the same isolated build workflow as v6; use
+`package:chatterbox-optional:v7` to build. V7 rejects `--no-sync` and historical
+reconciliation. `:v7:write-acquisition --publication <actual-public-readback>`
+requires exact non-draft prerelease/asset metadata; `:v7:check-acquisition`
+validates the generated records. Current native admission/audit select V7.
+`test:chatterbox:v7:security:baseline` exercises msgpack 1.2.1. Run
+`test:chatterbox:v7:security` with the candidate's embedded Python on PATH;
+it checks bounded malformed-map/error handling and four legitimate controls.
+This probe does not cover every upstream vulnerability variant or establish
+EPUB reachability. Also run the existing dependency/runtime/v6 security probes
+and offline `test:chatterbox:runtime-smoke --package-version 7` for ES and EN,
+using hash-verified existing models and an isolated Numba cache. Preserve
+baseline failures and candidate evidence separately.
+
+`pnpm.cmd test:chatterbox:v7:local-admission` is an explicitly ignored Windows
+host test. Set absolute `VOXLEAF_V7_PARTS` and `VOXLEAF_V7_MODELS` directories
+containing the exact three release parts and six models. Its fail-closed local
+download hook verifies every copied artifact; native `download_at` performs real
+reassembly, extraction, integrity and promotion into a fresh synthetic root.
+It checks rediscovery, admitted ES/EN synthesis/cancellation and explicit removal
+while preserving retained V6 until removal and unrelated sentinels throughout.
+It neither accesses the user's installation nor establishes complete HTTP delivery.
 
 V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,

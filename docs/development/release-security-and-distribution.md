@@ -1,5 +1,12 @@
 # MVP release security and distribution boundary
 
+Current optional authority is V7 under
+[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).
+The [V7 plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records the
+2026-10-27 msgpack correction and exact publication/integration evidence.
+The production audit passes locally on that graph; four URL/CUDA blind spots
+remain. Historical full-live-download failures are not resolved by this update.
+
 ## Purpose
 
 ### Optional-download error diagnostics

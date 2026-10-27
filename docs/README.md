@@ -17,6 +17,13 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed narration/Chatterbox corrections](plans/completed/narration-chatterbox-correctness.md)
+preserve the exact final heard position, reconcile automatic compatibility with
+active narration, enable explicit acquisition retry, measure the optional-data
+destination's free space and retain the previous package after failed replacement.
+Focused, browser, native and integrated host evidence passed with independently
+approved continuation and scoped reuse; the plan retains all initial failures.
+
 The [completed lifecycle follow-up](plans/completed/lifecycle-correctness-follow-up.md)
 restores explicit narration restart after completion, protects admitted download
 staging, reports residual optional uninstall data and checks termination before
@@ -34,13 +41,12 @@ production completion/investigation is deferred under
 
 Current executable identity is separate from stable profile names and historical
 evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
-Chatterbox uses the published **v6** runtime with frozen v3 service modules and
-the refreshed lock. Its [completed refresh](plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
-records exact local artifact admission, current installed/runtime gates and
-reviewer-approved evidence reuse. Full live downloads failed twice; their cause
-remains unresolved and no complete v6 live-delivery pass is claimed.
-V2/v3/v5 are cleanup-only and the local v4 adapter-layout
-candidate remains unpublished/unadmitted. See the
+Chatterbox selects the published **v7** runtime with frozen v3 service modules and
+msgpack 1.2.3. Its [refresh plan](plans/completed/chatterbox-msgpack-security-refresh.md)
+records identity-bound preparation, publication and integration evidence.
+V2/v3/v5/v6 are cleanup-only; local v4 remains unpublished/unadmitted. Historical
+V6 full live downloads failed twice; complete V7 live delivery is not claimed.
+See the
 [current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
 
 | Contributor task                                                       | Maintained entry point                                                                                                           | Retained evidence or decision                                                                                                                                            |

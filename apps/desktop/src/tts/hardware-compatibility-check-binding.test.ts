@@ -52,6 +52,38 @@ function createVisibilitySource(initial: DocumentVisibilityState = "visible") {
 }
 
 describe("hardware compatibility check binding", () => {
+  it("NCC-02 reconciles only the latest settled check and ignores disconnected owners", async () => {
+    const source = createVisibilitySource("hidden");
+    const target = createTarget();
+    const resolvers: Array<(value: HardwareCompatibilitySnapshotV1) => void> =
+      [];
+    target.check.mockImplementation(
+      () => new Promise((resolve) => resolvers.push(resolve)),
+    );
+    const refresh = vi.fn(async () => undefined);
+    const disconnect = bindHardwareCompatibilityChecks(target, source, refresh);
+    source.setVisibility("visible");
+    source.dispatch();
+    source.setVisibility("hidden");
+    source.dispatch();
+    source.setVisibility("visible");
+    source.dispatch();
+    resolvers[0]!({} as HardwareCompatibilitySnapshotV1);
+    await Promise.resolve();
+    expect(refresh).not.toHaveBeenCalled();
+    resolvers[1]!({} as HardwareCompatibilitySnapshotV1);
+    await Promise.resolve();
+    expect(refresh).toHaveBeenCalledOnce();
+    source.setVisibility("hidden");
+    source.dispatch();
+    source.setVisibility("visible");
+    source.dispatch();
+    disconnect();
+    resolvers[2]!({} as HardwareCompatibilitySnapshotV1);
+    await Promise.resolve();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
   it("checks before reading visibility and subscribes without awaiting, preserving receivers", () => {
     const source = createVisibilitySource();
     const target = createTarget();

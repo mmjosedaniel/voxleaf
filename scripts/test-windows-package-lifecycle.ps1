@@ -50,7 +50,8 @@ $optionalRoots = @(
   (Join-Path $dataRoot "tts\staging\$profileId"),
   (Join-Path $dataRoot "tts\cb\cache"),
   (Join-Path $dataRoot "tts\cb\.previous"),
-  (Join-Path $dataRoot "tts\cb\6")
+  (Join-Path $dataRoot "tts\cb\6"),
+  (Join-Path $dataRoot "tts\cb\7")
 )
 $preferenceRoot = Join-Path $dataRoot "EBWebView\Default\Local Storage"
 $unrelatedRoots = @(

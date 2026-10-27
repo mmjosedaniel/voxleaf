@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Final, cast
 from urllib import request as urllib_request
 
-from .packaging import chatterbox_v6_authority
+from .packaging import chatterbox_v6_authority, chatterbox_v7_authority
 from .packaging.chatterbox_authority import CHATTERBOX_SOURCE as CHATTERBOX_SOURCE
 from .packaging.chatterbox_authority import CURRENT_DOWNLOAD_BYTES as CURRENT_DOWNLOAD_BYTES
 from .packaging.chatterbox_authority import CURRENT_INSTALLED_BYTES as CURRENT_INSTALLED_BYTES
@@ -317,7 +317,7 @@ def _copy_notices(
 ) -> None:
     layout = PackageLayout(package_version)
     notices = staging / "notices"
-    if package_version in {"3", "4", "5", "6"}:
+    if package_version in {"3", "4", "5", "6", "7"}:
         _copy_successor_license(root, notices, environment)
     _copy_file(root / "LICENSE", notices / "VOXLEAF-MIT.txt")
     _copy_file(
@@ -434,7 +434,7 @@ def _synchronise_environment(
         str(environment / "Scripts/python.exe"),
         str(lock),
     ]
-    if package_version in {"3", "4", "5", "6"}:
+    if package_version in {"3", "4", "5", "6", "7"}:
         sync_command.append("--require-hashes")
     try:
         subprocess.run(["uv", "venv", "--python", "3.12", str(environment)], check=True, cwd=root)
@@ -453,7 +453,7 @@ def build_package(
     package_version: PackageVersion = "2",
     output_root: Path | None = None,
 ) -> PackageMeasurement:
-    if package_version in {"5", "6"} and not synchronise:
+    if package_version in {"5", "6", "7"} and not synchronise:
         raise ReleaseChatterboxError("chatterbox-package-security-sync-required")
     root = repository_root()
     layout = PackageLayout(package_version)
@@ -498,11 +498,25 @@ def build_package(
         verify_package_tree(staging, json.loads(rendered), package_version=package_version)
         target = dist / layout.directory
         previous = dist / f".{layout.directory}.previous"
+        # A failed rollback leaves the only previous package here. Recover it
+        # before treating a backup as disposable, including on a later build.
+        if previous.exists() and not target.exists():
+            previous.replace(target)
         if previous.exists():
             shutil.rmtree(previous)
         if target.exists():
             target.replace(previous)
-        staging.replace(target)
+        try:
+            staging.replace(target)
+        except OSError as error:
+            if previous.exists():
+                try:
+                    previous.replace(target)
+                except OSError:
+                    error.add_note(
+                        "Previous package retained in the promotion backup; recovery failed."
+                    )
+            raise
         shutil.rmtree(previous, ignore_errors=True)
     finally:
         shutil.rmtree(staging_parent, ignore_errors=True)
@@ -519,7 +533,7 @@ def build_package(
         runtime_manifest_sha256=sha256_file(runtime_manifest),
         parts=parts,
     )
-    if package_version in {"4", "5", "6"}:
+    if package_version in {"4", "5", "6", "7"}:
         (dist / f"local-build-evidence-v{package_version}.json").write_bytes(
             render_manifest(
                 _local_package_receipt(
@@ -585,7 +599,7 @@ def _local_package_receipt(
 ) -> dict[str, object]:
     """Measure local versioned outputs without publication/execution claims."""
 
-    if package_version not in {"4", "5", "6"}:
+    if package_version not in {"4", "5", "6", "7"}:
         raise ReleaseChatterboxError("chatterbox-package-version-invalid")
     layout = PackageLayout(package_version)
     dist = layout.dist(root, output_root)
@@ -709,16 +723,16 @@ def main(arguments: list[str] | None = None) -> int:
     parser.add_argument("--no-sync", action="store_true")
     parser.add_argument("--publication", type=Path)
     parser.add_argument("--output-root", type=Path)
-    parser.add_argument("--package-version", choices=("2", "3", "4", "5", "6"), default="2")
+    parser.add_argument("--package-version", choices=("2", "3", "4", "5", "6", "7"), default="2")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     version = cast(PackageVersion, args.package_version)
     if args.output_root is not None and args.command not in {"build", "check-local"}:
         parser.error("--output-root requires build or check-local")
     if args.command == "check-local":
-        if version not in {"4", "5", "6"}:
-            parser.error("check-local requires --package-version 4, 5 or 6")
+        if version not in {"4", "5", "6", "7"}:
+            parser.error("check-local requires --package-version 4, 5, 6 or 7")
         check_local_package(package_version=version, output_root=args.output_root)
-        status = "current" if version == "6" else "current-unpublished-unadmitted"
+        status = "current" if version in {"6", "7"} else "current-unpublished-unadmitted"
         print(f"chatterbox-optional-v{version}-local:{status}")
         return 0
     if version == "4" and args.command in {
@@ -735,14 +749,20 @@ def main(arguments: list[str] | None = None) -> int:
         chatterbox_v6_authority.check_security_authority()
         print("chatterbox-v6-acquisition:current")
         return 0
+    if version == "7" and args.command == "check-acquisition":
+        chatterbox_v7_authority.check_security_authority()
+        print("chatterbox-v7-acquisition:current")
+        return 0
     if version == "3" and args.command == "check-acquisition":
         check_successor_authority()
         print("chatterbox-v3-acquisition:current")
         return 0
     if args.command == "write-acquisition":
-        if version not in {"3", "5", "6"} or args.publication is None:
-            parser.error("write-acquisition requires version 3, 5 or 6 and --publication")
-        if version == "6":
+        if version not in {"3", "5", "6", "7"} or args.publication is None:
+            parser.error("write-acquisition requires version 3, 5, 6 or 7 and --publication")
+        if version == "7":
+            chatterbox_v7_authority.write_security_authority(args.publication)
+        elif version == "6":
             chatterbox_v6_authority.write_security_authority(args.publication)
         elif version == "5":
             write_security_authority(args.publication)
@@ -750,12 +770,12 @@ def main(arguments: list[str] | None = None) -> int:
             write_successor_authority(args.publication)
         print(f"chatterbox-v{version}-acquisition:written")
         return 0
-    if version in {"3", "5", "6"} and args.command == "reconcile-evidence":
+    if version in {"3", "5", "6", "7"} and args.command == "reconcile-evidence":
         parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
-        if version not in {"3", "4", "5", "6"}:
-            parser.error("write-source requires --package-version 3, 4, 5 or 6")
-        if version in {"5", "6"}:
+        if version not in {"3", "4", "5", "6", "7"}:
+            parser.error("write-source requires --package-version 3, 4, 5, 6 or 7")
+        if version in {"5", "6", "7"}:
             write_security_source_manifest(package_version=version)
         elif version == "4":
             write_local_source_manifest()

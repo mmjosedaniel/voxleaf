@@ -274,8 +274,11 @@ export function App({
       bindHardwareCompatibilityChecks(
         hardwareCompatibilityCoordinator,
         document,
+        async () => {
+          await narrationCoordinator?.refreshSelectedProfile();
+        },
       ),
-    [hardwareCompatibilityCoordinator],
+    [hardwareCompatibilityCoordinator, narrationCoordinator],
   );
 
   useEffect(() => {

@@ -1,10 +1,10 @@
 # Architecture overview
 
-V6 integration is accepted under the revised evidence boundary in the
-[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
-exact local artifact admission, current installed/runtime gates and scoped reuse.
-Full live acquisition failed twice; its cause remains unresolved. No complete
-v6 live-delivery pass is claimed.
+V7 is the current msgpack-corrected runtime under
+[ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
+[refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records
+publication, local admission/runtime validation and CI. Historical V6 full live
+downloads failed twice; no transport fix or complete V7 live-delivery pass is claimed.
 
 The [completed confirmed-correction plan](../plans/completed/confirmed-logic-bugfixes.md)
 adds the package-owned primary `defaultStartLocator` under ADR-0060 and exact

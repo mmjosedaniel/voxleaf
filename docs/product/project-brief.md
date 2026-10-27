@@ -106,7 +106,9 @@ three-part identity. M011 originally published `chatterbox-runtime-v2`;
 [ADR-0058](../architecture/decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md)
 selected the separately published v5 runtime, with v2/v3 cleanup-only.
 [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md)
-defines the published v6 runtime with v5 also cleanup-only. The
+defines the historical v6 runtime with v5 also cleanup-only. Current
+[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md)
+selects published v7 with msgpack 1.2.3; v6 is also cleanup-only. The
 [completed refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
 accepts exact local admission and current installed/runtime evidence with scoped
 reuse; full live-delivery reliability remains unresolved after two failed downloads.

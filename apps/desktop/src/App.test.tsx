@@ -1094,6 +1094,70 @@ describe("App preference connection characterization", () => {
 });
 
 describe("desktop reader lifecycle surface", () => {
+  it("NCC-02 reconciles the mounted owner and ignores checks from replaced or closed books", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "visibilityState",
+    );
+    let visibility: DocumentVisibilityState = "visible";
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => visibility,
+    });
+    const pending: Array<() => void> = [];
+    const hardware = {
+      ensureChecked: vi.fn(async () => undefined),
+      check: vi.fn(() => new Promise<void>((resolve) => pending.push(resolve))),
+      close: vi.fn(),
+    } as unknown as HardwareProfileCompatibilityCoordinator;
+    const owners: ControlledNarrationCoordinator[] = [];
+    const factory = () => {
+      const owner = new ControlledNarrationCoordinator();
+      owners.push(owner);
+      return owner as unknown as ProductNarrationCoordinator;
+    };
+    const cycle = () => {
+      visibility = "hidden";
+      fireEvent(document, new Event("visibilitychange"));
+      visibility = "visible";
+      fireEvent(document, new Event("visibilitychange"));
+    };
+    const view = render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        hardwareCompatibilityCoordinator={hardware}
+        createNarrationCoordinator={factory}
+        ReadyPublicationContent={() => <article>Synthetic reader</article>}
+      />,
+    );
+    try {
+      selectEpub();
+      await waitFor(() => expect(owners).toHaveLength(1));
+      cycle();
+      await act(async () => pending[0]!());
+      expect(owners[0]!.configurationEvents).toEqual(["refresh"]);
+      cycle();
+      selectEpub("replacement.epub");
+      await waitFor(() => expect(owners).toHaveLength(2));
+      await act(async () => pending[1]!());
+      expect(owners[0]!.configurationEvents).toEqual(["refresh"]);
+      expect(owners[1]!.configurationEvents).toEqual([]);
+      cycle();
+      view.unmount();
+      await act(async () => pending[2]!());
+      expect(owners[1]!.configurationEvents).toEqual([]);
+    } finally {
+      view.unmount();
+      if (descriptor)
+        Object.defineProperty(document, "visibilityState", descriptor);
+      else Reflect.deleteProperty(document, "visibilityState");
+    }
+  });
+
   it.each([false, true])(
     "waits for late hardware before enabling Play, including unmount=%s",
     async (unmountBeforeCheck) => {

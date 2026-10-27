@@ -17,7 +17,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--language", choices=("es", "en"), required=True)
-    parser.add_argument("--package-version", choices=("5", "6"), default="5")
+    parser.add_argument("--package-version", choices=("5", "6", "7"), default="5")
     args = parser.parse_args()
     assert os.environ.get("HF_HUB_OFFLINE") == "1"
     assert os.environ.get("TRANSFORMERS_OFFLINE") == "1"
@@ -42,9 +42,12 @@ def main() -> None:
     }
     assert versions["certifi"] == "2026.10.19"
     assert versions["pillow"] == "13.0.0"
-    if args.package_version == "6":
+    if args.package_version in {"6", "7"}:
         assert versions["filelock"] == "4.2.1"
         assert versions["setuptools"] == "84.1.0"
+    if args.package_version == "7":
+        versions["msgpack"] = importlib.metadata.version("msgpack")
+        assert versions["msgpack"] == "1.2.3"
     engine = ChatterboxMultilingualTtsEngine(args.models, args.language)
     started = time.monotonic()
     try:

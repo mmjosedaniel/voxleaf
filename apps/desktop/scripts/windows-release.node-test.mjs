@@ -52,7 +52,8 @@ for (const lcf of [false, true]) {
             /\$LOCALAPPDATA\\com\.voxleaf\.desktop\\([^"\r\n]+)/g,
           ),
         ].map((match) => match[1]);
-        assert.equal(optionalRoots.length, 8);
+        assert.equal(optionalRoots.length, 9);
+        assert.ok(optionalRoots.includes("tts\\cb\\7"));
         assert.ok(optionalRoots.includes("tts\\cb\\6"));
         assert.ok(optionalRoots.includes("tts\\cb\\5"));
         assert.ok(optionalRoots.includes("tts\\cb\\.previous"));
@@ -559,7 +560,7 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
   assert.equal(unsigned.lifecycle.localReleaseGatesPassed, false);
   assert.equal(unsigned.payload.chatterboxRuntimeOrWeightsBundled, false);
   assert.equal(unsigned.optionalChatterbox.releaseLockedRuntime, true);
-  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_240_302_391);
+  assert.equal(unsigned.optionalChatterbox.downloadBytes, 8_240_315_465);
   assert.equal(
     unsigned.optionalChatterbox.representativeCompatibleHostJourney,
     "not-run",
