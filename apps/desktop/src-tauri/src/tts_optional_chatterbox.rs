@@ -29,9 +29,9 @@ use download_diagnostic::{
 };
 
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
-const PACKAGE_ID: &str = "voxleaf-chatterbox-v6";
-const PACKAGE_VERSION: &str = "6";
-const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v6.json";
+const PACKAGE_ID: &str = "voxleaf-chatterbox-v7";
+const PACKAGE_VERSION: &str = "7";
+const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v7.json";
 const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
@@ -51,7 +51,7 @@ const MODEL_CARD_SOURCE: &str =
 const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v6.json"
+    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v7.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
@@ -473,7 +473,7 @@ fn validate_manifest_version(
             != if version == "2" {
                 "services/tts/release/profiles/chatterbox/requirements.lock"
             } else {
-                "services/tts/release/profiles/chatterbox-v6/requirements.lock"
+                "services/tts/release/profiles/chatterbox-v7/requirements.lock"
             }
         || !validate_sha256(&runtime.dependency_lock.sha256)
         || limits.maximum_concurrency != 1
@@ -487,7 +487,7 @@ fn validate_manifest_version(
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
         || !match (version, &manifest.runtime_correction) {
-            ("6", None) => true,
+            ("7", None) => true,
             ("2", Some(correction)) => validate_runtime_correction(correction),
             _ => false,
         }
@@ -718,6 +718,10 @@ fn retained_v5_package_root(root: &Path) -> PathBuf {
     profile_root(root).join("5")
 }
 
+fn retained_v6_package_root(root: &Path) -> PathBuf {
+    profile_root(root).join("6")
+}
+
 fn promotion_backup_root(root: &Path) -> PathBuf {
     profile_root(root).join(".previous")
 }
@@ -730,6 +734,7 @@ fn owned_path_present(path: &Path) -> bool {
 
 fn retained_package_exists(root: &Path) -> bool {
     owned_path_present(&promotion_backup_root(root))
+        || owned_path_present(&retained_v6_package_root(root))
         || owned_path_present(&retained_v5_package_root(root))
         || retained_v3_package_root(root).exists()
         || retained_package_root(root).exists()
@@ -2213,6 +2218,12 @@ impl OptionalChatterboxManager {
             invalidate_verified_runtime_receipt();
             remove_contained_directory(root, &package)?;
             remove_promotion_backup(root)?;
+            let retained_v6 = retained_v6_package_root(root);
+            if owned_path_present(&retained_v6) {
+                canonical_contained_directory(root, &retained_v6)?;
+                fs::remove_dir_all(&retained_v6)
+                    .map_err(|_| OptionalProfileError::CleanupFailed)?;
+            }
             let retained_v5 = retained_v5_package_root(root);
             if owned_path_present(&retained_v5) {
                 canonical_contained_directory(root, &retained_v5)?;

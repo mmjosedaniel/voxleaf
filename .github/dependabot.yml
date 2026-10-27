@@ -50,7 +50,7 @@ updates:
       - dependencies
 
   - package-ecosystem: pip
-    directory: /services/tts/release/profiles/chatterbox-v6
+    directory: /services/tts/release/profiles/chatterbox-v7
     schedule:
       interval: weekly
       day: monday

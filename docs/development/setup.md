@@ -1,10 +1,10 @@
 # Development setup
 
-V6 integration is accepted under the revised evidence boundary in the
-[completed security refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md):
-exact local artifact admission, current installed/runtime gates and scoped reuse.
-Full live acquisition failed twice; its cause remains unresolved. No complete
-v6 live-delivery pass is claimed.
+V7 is the current msgpack-corrected runtime under
+[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
+[refresh plan](../plans/active/chatterbox-msgpack-security-refresh.md) records
+publication, local admission/runtime validation and CI. Historical V6 full live
+downloads failed twice; no transport fix or complete V7 live-delivery pass is claimed.
 
 ## Current status
 
@@ -17,7 +17,7 @@ deferred. Use the [support matrix](../architecture/tts-support-matrix-v2.md)
 and [roadmap](../plans/roadmap.md) for support and milestone decisions.
 
 Current Piper execution uses the release core with Piper 1.8.0 and ONNX Runtime
-1.31.0. The accepted v6 runtime replaces v5; older v2/v3/v5 roots are cleanup-only
+1.31.0. The current v7 runtime replaces v6; older v2/v3/v5/v6 roots are cleanup-only
 and local v4 is unadmitted. Stable profile IDs and model-directory names may
 contain older version labels; they are not selectors for executable dependency
 versions. The [dependency inventory](dependencies.md) separates current locks
@@ -579,31 +579,30 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-The current optional runtime is v6 under
-[ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
-V7 is an unpublished maintainer candidate for the msgpack security correction;
-see its [preparation plan](../plans/active/chatterbox-msgpack-security-refresh.md).
-It is not yet available through ordinary acquisition. Preparing it does not
-repair an existing v6 installation.
+The current optional runtime is V7 under
+[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).
+Its [refresh plan](../plans/active/chatterbox-msgpack-security-refresh.md)
+records preparation, publication and integration. Existing V6 is cleanup-only;
+publication alone does not repair it or migrate user data.
 These explicit commands check tracked source and acquisition authority; they
 perform no model download, archive build, installation or narration:
 
 ```powershell
-pnpm.cmd package:chatterbox-optional:v6:check-source
-pnpm.cmd package:chatterbox-optional:v6:check-acquisition
+pnpm.cmd package:chatterbox-optional:v7:check-source
+pnpm.cmd package:chatterbox-optional:v7:check-acquisition
 ```
 
-The `package:chatterbox-optional:v6` builder is a release-maintainer operation,
+The `package:chatterbox-optional:v7` builder is a release-maintainer operation,
 not an end-user setup step. It assembles runtime-only output under ignored
-`services/tts/release/optional/chatterbox/dist/v6` by default, requires controlled
+`services/tts/release/optional/chatterbox/dist/v7` by default, requires controlled
 build capacity and licence/provenance review, and always synchronizes the hashed
 lock. It rejects `--no-sync` and does not copy model weights or update the
 ordinary acquisition manifest. Follow the explicit
-[v6 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
+[v7 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
 for authorized package work; do not build merely to enable the optional profile.
 
 Unversioned `package:chatterbox-optional` aliases intentionally retain the v2
-default. Explicit `:v3` checks reproduce historical authority; neither is v6
+default. Explicit `:v3` checks reproduce historical authority; neither is v7
 acceptance. Local `:v4` commands and `test:tts:adapter-layout:*` belong to the
 [historical adapter-layout campaign](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
 They remain available with their original semantics and do not admit v4 or

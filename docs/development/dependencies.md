@@ -223,11 +223,13 @@ for msgpack 1.2.1. The [v7 preparation](../plans/active/chatterbox-msgpack-secur
 adds a separate 79-package hashed graph with only msgpack changed to 1.2.3;
 the other 78 pins, frozen service, Python/Torch/CUDA and six models are retained.
 Use the explicit `:v7` lock/source/build/check-local commands and
-`pnpm.cmd audit:chatterbox:v7` for this unpublished candidate. Its audit retains
+`pnpm.cmd audit:chatterbox:v7` for this published successor. Its audit retains
 the four URL/CUDA blind spots. Active production audit/inventory and desktop
-admission still select v6, so candidate success does not make production CI
-green. Publication and integration remain a separate handoff; no advisory
-exception or historical authority rewrite is permitted.
+admission select V7 under ADR-0064; the local production audit passed on
+2026-10-27. Hosted CI remains a separately recorded result. V7 acquisition
+authority is generated with `package:chatterbox-optional:v7:write-acquisition
+--publication <actual-public-readback>` and checked with `:v7:check-acquisition`.
+There is no advisory exception or historical authority rewrite.
 
 Generate the v6 runtime using `pnpm.cmd package:chatterbox-optional:v6:lock`,
 then `pnpm.cmd package:chatterbox-optional:v6:write-source`. Build and verify it
@@ -275,9 +277,9 @@ names, sizes, digests and URLs. It cannot replace already published assets or
 establish v6 admission. The separate local v4 builder keeps the v3 lock
 and remains unpublished/unadmitted; see the
 [historical tooling guide](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
-Capture current licences from the actual core and v6 interpreters with the existing
+Capture current licences from the actual core and v7 interpreters with the existing
 `scripts/release_inventory.py --capture-python-licenses --python <core-python>
---python <v6-python>` interface, then run `pnpm.cmd inventory:release` and its check.
+--python <v7-python>` interface, then run `pnpm.cmd inventory:release` and its check.
 
 Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
 package's `runtime/python.exe`, without `PYTHONPATH`, and with

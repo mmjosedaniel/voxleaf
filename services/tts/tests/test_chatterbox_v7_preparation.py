@@ -53,10 +53,8 @@ def test_v7_requires_sync_before_source_or_output(
             release_chatterbox.build_package(package_version="7", synchronise=False)
 
 
-@pytest.mark.parametrize(
-    "command", ["check-acquisition", "write-acquisition", "reconcile-evidence"]
-)
-def test_v7_unpublished_commands_cannot_reach_other_authorities(
+@pytest.mark.parametrize("command", ["reconcile-evidence"])
+def test_v7_reconciliation_cannot_reach_other_authorities(
     monkeypatch: pytest.MonkeyPatch, command: str
 ) -> None:
     def unexpected() -> None:
@@ -132,7 +130,7 @@ def test_v7_sync_uses_its_exact_hashed_lock(
     assert str(tmp_path / PackageLayout("7").lock_path) in calls[1]
 
 
-def test_v7_check_local_does_not_claim_admission(
+def test_v7_check_local_reports_current_artifact(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = []
@@ -146,7 +144,4 @@ def test_v7_check_local_does_not_claim_admission(
         == 0
     )
     assert calls == [{"package_version": "7", "output_root": tmp_path}]
-    assert (
-        capsys.readouterr().out.strip()
-        == "chatterbox-optional-v7-local:current-unpublished-unadmitted"
-    )
+    assert capsys.readouterr().out.strip() == "chatterbox-optional-v7-local:current"

@@ -246,15 +246,17 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox integration authority checks explicitly select v6; historical
-v3/v5 checks remain available and must preserve their exact outputs.
+Current Chatterbox integration authority checks explicitly select v7; historical
+v3/v5/v6 checks remain available and must preserve their exact outputs.
 
 The [v7 msgpack preparation](../plans/active/chatterbox-msgpack-security-refresh.md)
 uses `pnpm.cmd test:chatterbox:v7:preparation` and `audit:chatterbox:v7`.
 The `package:chatterbox-optional:v7:{lock,write-source,check-source,check-local}`
 commands follow the same isolated build workflow as v6; use
-`package:chatterbox-optional:v7` to build. V7 rejects `--no-sync` and unpublished
-acquisition/reconciliation; it does not change active v6 admission or audit.
+`package:chatterbox-optional:v7` to build. V7 rejects `--no-sync` and historical
+reconciliation. `:v7:write-acquisition --publication <actual-public-readback>`
+requires exact non-draft prerelease/asset metadata; `:v7:check-acquisition`
+validates the generated records. Current native admission/audit select V7.
 `test:chatterbox:v7:security:baseline` exercises msgpack 1.2.1. Run
 `test:chatterbox:v7:security` with the candidate's embedded Python on PATH;
 it checks bounded malformed-map/error handling and four legitimate controls.
@@ -263,6 +265,15 @@ EPUB reachability. Also run the existing dependency/runtime/v6 security probes
 and offline `test:chatterbox:runtime-smoke --package-version 7` for ES and EN,
 using hash-verified existing models and an isolated Numba cache. Preserve
 baseline failures and candidate evidence separately.
+
+`pnpm.cmd test:chatterbox:v7:local-admission` is an explicitly ignored Windows
+host test. Set absolute `VOXLEAF_V7_PARTS` and `VOXLEAF_V7_MODELS` directories
+containing the exact three release parts and six models. Its fail-closed local
+download hook verifies every copied artifact; native `download_at` performs real
+reassembly, extraction, integrity and promotion into a fresh synthetic root.
+It checks rediscovery, admitted ES/EN synthesis/cancellation and explicit removal
+while preserving retained V6 until removal and unrelated sentinels throughout.
+It neither accesses the user's installation nor establishes complete HTTP delivery.
 
 V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,

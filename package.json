@@ -17,7 +17,7 @@
     "audit:chatterbox:v7": "uvx --python 3.12 --from pip-audit==2.10.1 pip-audit -r services/tts/release/profiles/chatterbox-v7/requirements.lock --no-deps --disable-pip --format json",
     "test:chatterbox:v7:security": "python -I -B scripts/test-chatterbox-v7-security.py",
     "test:chatterbox:v7:security:baseline": "uv run --no-project --python 3.12 --with msgpack==1.2.1 python -I -B scripts/test-chatterbox-v7-security.py --baseline",
-    "test:chatterbox:v7:preparation": "uv run --project services/tts --locked pytest services/tts/tests/test_chatterbox_v7_preparation.py services/tts/tests/test_chatterbox_v6_preparation.py services/tts/tests/test_chatterbox_security_refresh.py services/tts/tests/test_chatterbox_sources.py services/tts/tests/test_release_chatterbox.py services/tts/tests/test_chatterbox_security_authority.py",
+    "test:chatterbox:v7:preparation": "uv run --project services/tts --locked pytest services/tts/tests/test_chatterbox_v7_preparation.py services/tts/tests/test_chatterbox_v6_preparation.py services/tts/tests/test_chatterbox_security_refresh.py services/tts/tests/test_chatterbox_sources.py services/tts/tests/test_release_chatterbox.py services/tts/tests/test_chatterbox_security_authority.py services/tts/tests/test_chatterbox_v7_authority.py",
     "package:chatterbox-optional:v6:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 6",
     "package:chatterbox-optional:v6:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 6",
     "test:chatterbox:v6:security": "python -I -B scripts/test-chatterbox-v6-security.py",
@@ -131,7 +131,10 @@
     "package:chatterbox-optional:v3:write-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-source --package-version 3",
     "test:chatterbox:dependency-security": "python scripts/test-chatterbox-dependency-security.py",
     "package:chatterbox-optional:v3:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 3",
-    "package:chatterbox-optional:v3:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 3"
+    "package:chatterbox-optional:v3:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 3",
+    "package:chatterbox-optional:v7:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 7",
+    "package:chatterbox-optional:v7:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 7",
+    "test:chatterbox:v7:local-admission": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime tts_optional_chatterbox::tests::exact_local::optional_v7_exact_local_acquisition_replay -- --exact --ignored --nocapture --test-threads=1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

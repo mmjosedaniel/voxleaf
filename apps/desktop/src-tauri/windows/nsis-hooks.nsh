@@ -97,6 +97,9 @@ Function un.OptionalChatterboxDataExists
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous"
   Call un.ExactDirectoryExists
   StrCmp $R0 "1" optional_data_exists
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\7"
+  Call un.ExactDirectoryExists
+  StrCmp $R0 "1" optional_data_exists
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\6"
   Call un.ExactDirectoryExists
   StrCmp $R0 "1" optional_data_exists
@@ -242,6 +245,23 @@ FunctionEnd
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
 
   chatterbox_current:
+  ; cb/7: product identity, tts, cb, and the exact root must all be real dirs.
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v6
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v6
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+  Call un.IsSafeOwnedDirectory
+  StrCmp $R0 "1" 0 chatterbox_retained_v6
+  StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\7"
+  Call un.IsSafeOwnedTree
+  StrCmp $R0 "1" 0 chatterbox_retained_v6
+  RMDir /r "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\7"
+  RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb"
+
+  chatterbox_retained_v6:
   ; cb/6: product identity, tts, cb, and the exact root must all be real dirs.
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"
   Call un.IsSafeOwnedDirectory
@@ -365,7 +385,8 @@ FunctionEnd
   StrCmp $RemoveChatterboxData "1" 0 optional_cleanup_checked
   StrCpy $R3 "0"
   !insertmacro CheckOptionalDataAbsent "tts\cb\.previous" optional_previous
-  !insertmacro CheckOptionalDataAbsent "tts\cb\6" optional_current
+  !insertmacro CheckOptionalDataAbsent "tts\cb\7" optional_current
+  !insertmacro CheckOptionalDataAbsent "tts\cb\6" optional_retained_v6
   !insertmacro CheckOptionalDataAbsent "tts\cb\5" optional_v5
   !insertmacro CheckOptionalDataAbsent "tts\cb\3" optional_v3
   !insertmacro CheckOptionalDataAbsent "tts\cb\2" optional_v2

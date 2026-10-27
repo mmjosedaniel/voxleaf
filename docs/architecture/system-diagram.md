@@ -43,6 +43,10 @@ are recorded in the [completed refresh](../plans/completed/chatterbox-filelock-s
 Full live delivery remains unverified after two read-timeout failures.
 The process topology and local inference boundary are unchanged. V6 integration
 retains v2/v3/v5 roots as cleanup-only, with no migration or execution fallback.
+The current V7 successor in ADR-0064 changes only msgpack to 1.2.3 and adds
+retained V6 cleanup-only ownership. Publication, current native admission and
+validation are recorded in the [V7 plan](../plans/active/chatterbox-msgpack-security-refresh.md).
+No component, process, inference flow or audio persistence boundary changes.
 Historical M011 and ADR-0052 checkpoints below retain their original identities.
 
 | Status               | Meaning                                                                                                           |

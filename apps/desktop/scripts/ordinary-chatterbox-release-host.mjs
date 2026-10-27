@@ -95,9 +95,9 @@ const DEVELOPMENT_ENVIRONMENT_KEYS = Object.freeze([
 ]);
 const REQUIRED_RESOURCES = Object.freeze([
   "resources/tts/voxleaf-piper-core-v1/runtime-manifest-v1.json",
-  "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
-  "resources/release/optional/chatterbox/runtime-package-evidence-v6.json",
-  "resources/release/optional/chatterbox/source-manifest-v6.json",
+  "resources/release/optional/chatterbox/optional-package-manifest-v7.json",
+  "resources/release/optional/chatterbox/runtime-package-evidence-v7.json",
+  "resources/release/optional/chatterbox/source-manifest-v7.json",
   "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
 ]);
 const FORBIDDEN_ARTIFACT_PATHS = Object.freeze([
@@ -269,7 +269,7 @@ export async function validateOrdinaryArtifact(installedRoot) {
   );
   const manifestPath = path.join(
     installedRoot,
-    "resources/release/optional/chatterbox/optional-package-manifest-v6.json",
+    "resources/release/optional/chatterbox/optional-package-manifest-v7.json",
   );
   for (const resource of REQUIRED_RESOURCES) {
     await existingFile(path.join(installedRoot, resource), "resource-missing");
@@ -277,14 +277,14 @@ export async function validateOrdinaryArtifact(installedRoot) {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   if (
     manifest?.availability !== "downloadable" ||
-    manifest?.identity?.packageVersion !== "6" ||
-    manifest?.layout?.installed !== "cb/6" ||
-    manifest?.runtime?.releaseTag !== "chatterbox-runtime-v6" ||
+    manifest?.identity?.packageVersion !== "7" ||
+    manifest?.layout?.installed !== "cb/7" ||
+    manifest?.runtime?.releaseTag !== "chatterbox-runtime-v7" ||
     manifest?.runtimeCorrection !== undefined ||
     manifest?.withholdingReason !== undefined ||
-    manifest?.measurements?.downloadBytes !== 8_240_302_391 ||
-    manifest?.measurements?.installedBytes !== 8_236_744_319 ||
-    manifest?.measurements?.temporaryBytes !== 13_271_652_858 ||
+    manifest?.measurements?.downloadBytes !== 8_240_315_465 ||
+    manifest?.measurements?.installedBytes !== 8_236_757_393 ||
+    manifest?.measurements?.temporaryBytes !== 13_271_679_006 ||
     manifest?.measurements?.minimumFreeBytes !== 20_000_000_000
   ) {
     fail("ordinary-manifest-authority");
@@ -697,7 +697,7 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
   await waitForOptionalState(client, "absent");
   await assertAbsent(staging, "verification-staging-retained");
   await assertAbsent(
-    path.join(dataRoot, "tts", "cb", "6"),
+    path.join(dataRoot, "tts", "cb", "7"),
     "cancelled-package-installed",
   );
   return {
@@ -1123,7 +1123,7 @@ export async function runJourney(options, environment = process.env) {
         ).catch(() => undefined)
       : undefined;
     const paths = [
-      "tts/cb/6",
+      "tts/cb/7",
       "tts/cb/.previous",
       `tts/staging/${PROFILE_ID}`,
       `tts/staging/${PROFILE_ID}/operation/package`,
