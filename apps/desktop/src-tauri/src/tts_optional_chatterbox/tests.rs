@@ -203,11 +203,88 @@ fn installed_host_integrity_diagnostic() {
 
 type DownloadHook = Box<dyn FnOnce(&Path, &AtomicBool) -> Result<(), OptionalProfileError>>;
 thread_local! {
+    static SNAPSHOT_IDLE_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static HASH_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static BEFORE_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static AFTER_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static DOWNLOAD_HOOK: std::cell::RefCell<Option<DownloadHook>> = const { std::cell::RefCell::new(None) };
     static CLEANUP_LOCK: std::cell::RefCell<Option<File>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn run_snapshot_idle_hook() {
+    let hook = SNAPSHOT_IDLE_HOOK.with(|slot| slot.borrow_mut().take());
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+// The real download owner uses the Windows-only free-space admission probe.
+#[cfg(windows)]
+#[test]
+fn lcf_snapshot_preserves_concurrently_admitted_download_staging() {
+    let root = TestRoot::new();
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    let (idle, observed_idle) = std::sync::mpsc::channel();
+    let (resume, resumed) = std::sync::mpsc::channel();
+    let snapshot_manager = Arc::clone(&manager);
+    let snapshot_root = root.0.clone();
+    let snapshot = thread::spawn(move || {
+        SNAPSHOT_IDLE_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                idle.send(()).unwrap();
+                resumed.recv_timeout(Duration::from_secs(10)).unwrap();
+            }))
+        });
+        snapshot_manager.snapshot_at(&snapshot_root)
+    });
+    observed_idle.recv_timeout(Duration::from_secs(10)).unwrap();
+    manager.select_at(&root.0).unwrap();
+    let (staged, observed_staging) = std::sync::mpsc::channel();
+    let (finish, finished) = std::sync::mpsc::channel();
+    let download_manager = Arc::clone(&manager);
+    let download_root = root.0.clone();
+    let download = thread::spawn(move || {
+        DOWNLOAD_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
+                fs::write(destination, b"synthetic in-flight bytes").unwrap();
+                staged.send(destination.to_path_buf()).unwrap();
+                let _ = finished.recv_timeout(Duration::from_secs(10));
+                assert!(cancelled.load(Ordering::Acquire));
+                Err(OptionalProfileError::Cancelled)
+            }))
+        });
+        download_manager.download_at(&download_root)
+    });
+    let sentinel = observed_staging
+        .recv_timeout(Duration::from_secs(10))
+        .unwrap();
+    let cancellation = manager
+        .operation
+        .lock()
+        .unwrap()
+        .cancellation
+        .clone()
+        .unwrap();
+    resume.send(()).unwrap();
+    let result = snapshot.join().unwrap();
+    let bytes = fs::read(sentinel);
+    let same_owner = manager
+        .operation
+        .lock()
+        .unwrap()
+        .cancellation
+        .as_ref()
+        .is_some_and(|signal| Arc::ptr_eq(signal, &cancellation));
+    manager.cancel_at(&root.0).unwrap();
+    finish.send(()).unwrap();
+    let downloaded = download.join().unwrap();
+    assert_eq!(bytes.unwrap(), b"synthetic in-flight bytes");
+    assert_eq!(result.unwrap().state, OptionalProfileState::Downloading);
+    assert!(same_owner);
+    assert!(cancellation.load(Ordering::Acquire));
+    assert_eq!(downloaded.unwrap().state, OptionalProfileState::Absent);
+    assert!(!staging_root(&root.0).exists());
+    assert!(!manager.operation.lock().unwrap().worker_active);
 }
 
 pub(super) fn run_hash_hook() {
@@ -542,6 +619,32 @@ fn removal_failure_is_reported_and_can_be_retried_after_repair() {
         manager.remove_at(&root.0).unwrap().state,
         OptionalProfileState::Absent
     );
+}
+
+#[test]
+fn lcf_removal_stops_before_deletion_when_termination_is_unverified() {
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    fs::create_dir_all(&package).unwrap();
+    let sentinel = package.join("synthetic.bin");
+    fs::write(&sentinel, b"owned package").unwrap();
+    let manager = OptionalChatterboxManager::default();
+    let supervisor =
+        crate::tts_service_supervisor::TtsServiceSupervisor::lcf_unverified_termination_fixture();
+    let result = manager.remove_after_service_stop(&root.0, &supervisor);
+    let bytes = fs::read(&sentinel);
+    assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+    assert_eq!(bytes.unwrap(), b"owned package");
+    assert!(manager.operation.lock().unwrap().state.is_none());
+    supervisor.lcf_repair_termination_fixture();
+    assert_eq!(
+        manager
+            .remove_after_service_stop(&root.0, &supervisor)
+            .unwrap()
+            .state,
+        OptionalProfileState::Absent
+    );
+    assert!(!package.exists());
 }
 
 #[test]
@@ -1255,7 +1358,7 @@ fn concurrent_installed_runtime_checks_are_serialized() {
         let worker_barrier = Arc::clone(&barrier);
         workers.push(thread::spawn(move || {
             worker_barrier.wait();
-            prepare_and_verify_installed_runtime(&worker_root, &worker_authority, false)
+            prepare_and_verify_installed_runtime(&worker_root, &worker_authority)
         }));
     }
     barrier.wait();
@@ -1678,7 +1781,7 @@ fn retained_v2_v3_and_v5_are_cleanup_only_and_survive_observation_and_cancellati
             }
             assert!(!package_root(&root.0).exists());
             assert_eq!(
-                prepare_and_verify_installed_runtime(&root.0, &authority, false),
+                prepare_and_verify_installed_runtime(&root.0, &authority),
                 Err(OptionalProfileError::VerificationFailed)
             );
             manager.remove_with_manifest(&root.0, &authority).unwrap();

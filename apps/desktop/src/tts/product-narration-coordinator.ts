@@ -825,7 +825,7 @@ export class ProductNarrationCoordinator {
     ) {
       return;
     }
-    if (this.#playIntent === "inactive") {
+    if (this.#playIntent === "inactive" && this.#scheduler === undefined) {
       this.#activeLocator = this.#visibleLocator;
       this.start();
       return;
@@ -855,7 +855,7 @@ export class ProductNarrationCoordinator {
     }
 
     let pending: PendingNavigation;
-    if (this.#playIntent === "inactive") {
+    if (this.#playIntent === "inactive" && this.#scheduler === undefined) {
       this.#navigationRevision += 1;
       pending = {
         revision: this.#navigationRevision,
@@ -1325,11 +1325,14 @@ export class ProductNarrationCoordinator {
       }
       return existing;
     }
-    if (this.#playIntent === "inactive") {
+    if (this.#playIntent === "inactive" && !forceRestart) {
       throw new Error("content-free-navigation-state");
     }
     this.#navigationRevision += 1;
-    const priorIntent = this.#playIntent;
+    // Explicit restart must contain the retained completed run before replacement.
+    const priorIntent =
+      this.#playIntent === "inactive" ? "playing" : this.#playIntent;
+    this.#playIntent = priorIntent;
     this.#pausedNavigationState =
       priorIntent === "paused"
         ? this.#pausedStateFrom(this.#snapshot.state)

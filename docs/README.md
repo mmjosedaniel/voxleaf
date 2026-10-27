@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed lifecycle follow-up](plans/completed/lifecycle-correctness-follow-up.md)
+restores explicit narration restart after completion, protects admitted download
+staging, reports residual optional uninstall data and checks termination before
+package removal. Its plan records focused/integrated host evidence and independent
+review; no model, dependency, public-contract or system-topology change is involved.
+
 VoxLeaf is pre-alpha. The unsigned Windows x64 local/portfolio MVP includes
 local EPUB reading, stable-locator restoration, synchronized narration and
 bounded memory-only playback. Piper Spanish/English is the CPU core;
@@ -37,13 +43,13 @@ V2/v3/v5 are cleanup-only and the local v4 adapter-layout
 candidate remains unpublished/unadmitted. See the
 [current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
 
-| Contributor task | Maintained entry point | Retained evidence or decision |
-| --- | --- | --- |
-| Set up the workspace and select current commands | [Development setup](development/setup.md) | [Dependency inventory](development/dependencies.md) |
-| Select checks for an implementation change | [Testing strategy](development/testing.md) | [Evidence retention](development/evidence-retention.md) |
-| Understand runtime/maintainer boundaries and historical v2/v3/v4 tools | [TTS service organization](development/tts-service-organization.md) | [Adapter-layout campaign](plans/completed/tts-adapter-layout.md) |
-| Understand product support and local distribution | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
-| Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
+| Contributor task                                                       | Maintained entry point                                                                                                           | Retained evidence or decision                                                                                                                                            |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Set up the workspace and select current commands                       | [Development setup](development/setup.md)                                                                                        | [Dependency inventory](development/dependencies.md)                                                                                                                      |
+| Select checks for an implementation change                             | [Testing strategy](development/testing.md)                                                                                       | [Evidence retention](development/evidence-retention.md)                                                                                                                  |
+| Understand runtime/maintainer boundaries and historical v2/v3/v4 tools | [TTS service organization](development/tts-service-organization.md)                                                              | [Adapter-layout campaign](plans/completed/tts-adapter-layout.md)                                                                                                         |
+| Understand product support and local distribution                      | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
+| Follow component ownership and milestone status                        | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md)                                          | [Completed-plan index](plans/completed/README.md)                                                                                                                        |
 
 Recent accepted work is recorded at its original checkpoint:
 

@@ -508,6 +508,107 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["visible", "leaf"] as const)(
+    "LCF-01 restarts completed narration through %s after cleanup",
+    async (action) => {
+      const { coordinator, client, backend, intervals, prepareNarration } =
+        createHarness();
+      coordinator.subscribeNavigationRequests((request) =>
+        coordinator.settleExternalNavigation(request.locator),
+      );
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const oldGeneration = client.synthesized[0]!.generationId;
+      backend.finish();
+      for (const tick of [...intervals]) tick();
+      expect(coordinator.observe().state?.phase).toBe("complete");
+      const target = action === "visible" ? END_LOCATOR : START_LOCATOR;
+      coordinator.updateVisibleLocator(target);
+      let release = (): void => undefined;
+      const cleanup = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const shutdown = client.shutdown.bind(client);
+      const held = vi
+        .spyOn(client, "shutdown")
+        .mockImplementationOnce(async () => {
+          await cleanup;
+          await shutdown();
+        });
+      try {
+        if (action === "visible") coordinator.startAtVisibleLocator();
+        else expect(coordinator.startAtLocator(END_LOCATOR)).toBe(true);
+        expect(held).toHaveBeenCalledTimes(1);
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+      } finally {
+        release();
+      }
+      await settleUntil(
+        () => client.synthesized.length === 2 && backend.active !== undefined,
+      );
+      expect(prepareNarration).toHaveBeenCalledTimes(2);
+      expect(prepareNarration.mock.calls[1]?.[0]).toMatchObject({
+        startLocator: target,
+      });
+      expect(client.synthesized[1]!.generationId).not.toBe(oldGeneration);
+      expect(coordinator.observe().state?.phase).toBe("playing");
+      await coordinator.close();
+    },
+  );
+
+  it.each(["stop", "close", "supersede"] as const)(
+    "LCF-01 suppresses a completed-run restart when %s wins during cleanup",
+    async (action) => {
+      const { coordinator, client, backend, intervals, prepareNarration } =
+        createHarness();
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      backend.finish();
+      for (const tick of [...intervals]) tick();
+      expect(coordinator.observe().state?.phase).toBe("complete");
+      let release = (): void => undefined;
+      const cleanup = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const shutdown = client.shutdown.bind(client);
+      const held = vi
+        .spyOn(client, "shutdown")
+        .mockImplementationOnce(async () => {
+          await cleanup;
+          await shutdown();
+        });
+      coordinator.updateVisibleLocator(END_LOCATOR);
+      coordinator.startAtVisibleLocator();
+      let stopped: Promise<void> | undefined;
+      try {
+        expect(held).toHaveBeenCalledTimes(1);
+        if (action === "supersede") {
+          stopped = coordinator.beginExternalNavigation("chapter-navigation");
+          coordinator.settleExternalNavigation(START_LOCATOR);
+        } else
+          stopped =
+            action === "close" ? coordinator.close() : coordinator.stop();
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+      } finally {
+        release();
+      }
+      if (action === "supersede") {
+        await settleUntil(() => client.synthesized.length === 2);
+        expect(prepareNarration).toHaveBeenCalledTimes(2);
+        expect(prepareNarration.mock.calls[1]?.[0]).toMatchObject({
+          startLocator: START_LOCATOR,
+        });
+      } else {
+        await stopped;
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+        expect(client.synthesized).toHaveLength(1);
+      }
+      await coordinator.close();
+    },
+  );
+
   it("NLC-02 returns persistence to manual reading after natural completion", async () => {
     const { coordinator, backend, intervals } = createHarness();
     const storage = new Map<string, string>();

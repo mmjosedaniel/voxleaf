@@ -369,7 +369,9 @@ fn run_termination_case(
                 .terminate_child_for_diagnostic()
                 .map_err(TtsNativeFailure::code)?;
         }
-        TerminationAction::ApplicationExit => supervisor.force_stop(),
+        TerminationAction::ApplicationExit => {
+            supervisor.force_stop().map_err(TtsNativeFailure::code)?;
+        }
     }
     let termination_elapsed = termination_started.elapsed();
     let worker_result = worker
