@@ -6,11 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Chatterbox runtime correctness](chatterbox-runtime-correctness.md): planned
-  corrections for private DLL loading, exact CUDA architecture admission and
-  precision reporting, with identity-bound evidence reuse and minimal new host
-  validation. Execution has not started; preserving the published v7 payload is
-  the preferred path.
+- [All validated chat findings](validated-chat-findings-corrections.md): planned
+  corrections for all 12 findings with static support across EPUB, narration,
+  recovery, packaging and Chatterbox/CUDA; two concurrency candidates require
+  confirmation before correction. Includes evidence reuse and minimal combined
+  validation. Execution has not started; preserving the v7 payload is preferred.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
