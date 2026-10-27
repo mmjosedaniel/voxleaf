@@ -218,6 +218,8 @@ pub(super) fn run_snapshot_idle_hook() {
     }
 }
 
+// The real download owner uses the Windows-only free-space admission probe.
+#[cfg(windows)]
 #[test]
 fn lcf_snapshot_preserves_concurrently_admitted_download_staging() {
     let root = TestRoot::new();

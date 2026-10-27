@@ -10,14 +10,20 @@ focused group. One LCF browser case drives both mounted controls, verifies new
 generation/target/audio, manual saves after completion and closed old contexts.
 
 Native LCF tests pause an idle snapshot, admit a download through the real manager
-and retain its synthetic bytes/cancellation owner across snapshot cleanup. The
+and retain its synthetic bytes/cancellation owner across snapshot cleanup. That
+download regression runs only on Windows because its real free-space admission
+probe is unavailable on other platforms. The
 existing poisoned-process-lock seam proves failed explicit termination retains
 ownership and stops package removal; repaired termination permits removal. This
 is error-handling evidence, not a reproduced orphan process.
 
 The LCF Windows release test compiles the actual NSIS hook against test-owned
 roots. Each of the eight optional roots is tested with a sharing violation and a
-junction, followed by successful retry. A denied parent verifies failed inspection;
+junction, followed by successful retry. A denied parent verifies failed inspection.
+Its disposable PowerShell process removes its traversal-bypass privilege before
+launching the uninstaller child and requires a real Win32 access-denied result;
+the fixture restores the test-owned ACL in `finally`. This does not alter the
+calling host's token or production installer privileges. The
 silent retention, update mode, preference independence and unrelated files remain
 controls. Missing NSIS is a prerequisite failure. These checks do not require an
 installation, model download or GPU. The plan retains one final `pnpm.cmd check`;

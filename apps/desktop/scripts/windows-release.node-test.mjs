@@ -224,8 +224,40 @@ SectionEnd
           // even if the child uninstaller fails. Access denied is not absence.
           const deniedParent = path.join(ownedRoot, "tts", "cb");
           await mkdir(path.join(deniedParent, "6"), { recursive: true });
+          // Runners can bypass directory traversal ACLs. Remove that privilege
+          // only from this short-lived fixture process and its uninstaller child.
+          const attributeProbe = `
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+public static class LcfAttributes {
+  [StructLayout(LayoutKind.Sequential)]
+  private struct TokenPrivileges { public uint Count; public uint Low; public int High; public uint Attributes; }
+  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+  public static extern int GetFileAttributesW(string path);
+  [DllImport("advapi32.dll", SetLastError=true)]
+  private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+  [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+  private static extern bool LookupPrivilegeValueW(string system, string name, out long luid);
+  [DllImport("advapi32.dll", SetLastError=true)]
+  private static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref TokenPrivileges privileges, uint length, IntPtr previous, IntPtr returned);
+  [DllImport("kernel32.dll")]
+  private static extern bool CloseHandle(IntPtr handle);
+  public static void RemoveTraverseBypass() {
+    IntPtr token;
+    if (!OpenProcessToken(new IntPtr(-1), 0x28, out token)) throw new Win32Exception();
+    try {
+      long luid;
+      if (!LookupPrivilegeValueW(null, "SeChangeNotifyPrivilege", out luid)) throw new Win32Exception();
+      var privileges = new TokenPrivileges { Count = 1, Low = (uint)luid, High = (int)(luid >> 32), Attributes = 4 };
+      if (!AdjustTokenPrivileges(token, false, ref privileges, 0, IntPtr.Zero, IntPtr.Zero)) throw new Win32Exception();
+      int error = Marshal.GetLastWin32Error();
+      if (error != 0) throw new Win32Exception(error);
+    } finally { CloseHandle(token); }
+  }
+}`;
           const denied = runPowerShell(
-            `$ErrorActionPreference='Stop'; $path=${quote(deniedParent)}; $original=Get-Acl -LiteralPath $path; $blocked=Get-Acl -LiteralPath $path; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes,ReadExtendedAttributes,ExecuteFile','ContainerInherit,ObjectInherit','None','Deny'); $blocked.AddAccessRule($rule); Add-Type 'using System; using System.Runtime.InteropServices; public static class LcfAttributes { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern int GetFileAttributesW(string path); }'; try { Set-Acl -LiteralPath $path -AclObject $blocked; $attributes=[LcfAttributes]::GetFileAttributesW((Join-Path $path '6')); $inspectionError=[Runtime.InteropServices.Marshal]::GetLastWin32Error(); if ($attributes -ne -1 -or $inspectionError -ne 5) { throw 'expected-access-denied-inspection' }; Write-Output 'inspection-error=5'; $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { Set-Acl -LiteralPath $path -AclObject $original }; exit $result`,
+            `$ErrorActionPreference='Stop'; $path=${quote(deniedParent)}; $original=Get-Acl -LiteralPath $path; $blocked=Get-Acl -LiteralPath $path; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes,ReadExtendedAttributes,ExecuteFile','ContainerInherit,ObjectInherit','None','Deny'); $blocked.AddAccessRule($rule); Add-Type ${quote(attributeProbe)}; [LcfAttributes]::RemoveTraverseBypass(); try { Set-Acl -LiteralPath $path -AclObject $blocked; $attributes=[LcfAttributes]::GetFileAttributesW((Join-Path $path '6')); $inspectionError=[Runtime.InteropServices.Marshal]::GetLastWin32Error(); if ($attributes -ne -1 -or $inspectionError -ne 5) { throw "expected-access-denied-inspection: attributes=$attributes error=$inspectionError" }; Write-Output 'inspection-error=5'; $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { Set-Acl -LiteralPath $path -AclObject $original }; exit $result`,
           );
           assert.equal(denied.status, 1, denied.stderr || denied.stdout);
           assert.equal(denied.stderr, "");
