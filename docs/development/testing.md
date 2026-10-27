@@ -249,6 +249,21 @@ for the diagnostic, host checks, and independent review.
 Current Chatterbox integration authority checks explicitly select v6; historical
 v3/v5 checks remain available and must preserve their exact outputs.
 
+The [v7 msgpack preparation](../plans/active/chatterbox-msgpack-security-refresh.md)
+uses `pnpm.cmd test:chatterbox:v7:preparation` and `audit:chatterbox:v7`.
+The `package:chatterbox-optional:v7:{lock,write-source,check-source,check-local}`
+commands follow the same isolated build workflow as v6; use
+`package:chatterbox-optional:v7` to build. V7 rejects `--no-sync` and unpublished
+acquisition/reconciliation; it does not change active v6 admission or audit.
+`test:chatterbox:v7:security:baseline` exercises msgpack 1.2.1. Run
+`test:chatterbox:v7:security` with the candidate's embedded Python on PATH;
+it checks bounded malformed-map/error handling and four legitimate controls.
+This probe does not cover every upstream vulnerability variant or establish
+EPUB reachability. Also run the existing dependency/runtime/v6 security probes
+and offline `test:chatterbox:runtime-smoke --package-version 7` for ES and EN,
+using hash-verified existing models and an isolated Numba cache. Preserve
+baseline failures and candidate evidence separately.
+
 V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
 historical-source, sync and version-specific authority guards. Generate its lock and

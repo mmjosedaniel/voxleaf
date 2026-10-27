@@ -581,6 +581,10 @@ package behavior.
 
 The current optional runtime is v6 under
 [ADR-0062](../architecture/decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
+V7 is an unpublished maintainer candidate for the msgpack security correction;
+see its [preparation plan](../plans/active/chatterbox-msgpack-security-refresh.md).
+It is not yet available through ordinary acquisition. Preparing it does not
+repair an existing v6 installation.
 These explicit commands check tracked source and acquisition authority; they
 perform no model download, archive build, installation or narration:
 

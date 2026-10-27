@@ -217,7 +217,19 @@ acceptance, independent review and fresh PR CI pass for integration commit
 the production graph and inventory also pass in GitHub Actions.
 Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
-Generate the candidate using `pnpm.cmd package:chatterbox-optional:v6:lock`,
+On 2026-10-27, CI and the local v6 audit reported
+[GHSA-j586-36cw-2gc2](https://github.com/advisories/GHSA-j586-36cw-2gc2)
+for msgpack 1.2.1. The [v7 preparation](../plans/active/chatterbox-msgpack-security-refresh.md)
+adds a separate 79-package hashed graph with only msgpack changed to 1.2.3;
+the other 78 pins, frozen service, Python/Torch/CUDA and six models are retained.
+Use the explicit `:v7` lock/source/build/check-local commands and
+`pnpm.cmd audit:chatterbox:v7` for this unpublished candidate. Its audit retains
+the four URL/CUDA blind spots. Active production audit/inventory and desktop
+admission still select v6, so candidate success does not make production CI
+green. Publication and integration remain a separate handoff; no advisory
+exception or historical authority rewrite is permitted.
+
+Generate the v6 runtime using `pnpm.cmd package:chatterbox-optional:v6:lock`,
 then `pnpm.cmd package:chatterbox-optional:v6:write-source`. Build and verify it
 with `pnpm.cmd package:chatterbox-optional:v6` and
 `pnpm.cmd package:chatterbox-optional:v6:check-local`. Both accept

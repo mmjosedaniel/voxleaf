@@ -159,7 +159,7 @@ def load_source_manifest(
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "4" and manifest != local_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
-    if package_version in {"5", "6"} and manifest != security_source_manifest(
+    if package_version in {"5", "6", "7"} and manifest != security_source_manifest(
         base, package_version=package_version
     ):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
@@ -196,17 +196,18 @@ def write_successor_source_manifest(root: Path | None = None) -> Path:
 
 
 def security_source_manifest(
-    root: Path | None = None, *, package_version: Literal["5", "6"] = "5"
+    root: Path | None = None, *, package_version: Literal["5", "6", "7"] = "5"
 ) -> dict[str, object]:
     """Keep the frozen runtime/model closure with an independent security lock."""
 
     base = root or repository_root()
-    if package_version not in {"5", "6"}:
+    if package_version not in {"5", "6", "7"}:
         raise ReleaseChatterboxError("chatterbox-package-version-invalid")
     layout = PackageLayout(package_version)
-    manifest = copy.deepcopy(
-        load_source_manifest(base, package_version="3" if package_version == "5" else "5")
+    previous_version: PackageVersion = (
+        "6" if package_version == "7" else "3" if package_version == "5" else "5"
     )
+    manifest = copy.deepcopy(load_source_manifest(base, package_version=previous_version))
     manifest["packageId"] = layout.directory
     manifest["packageVersion"] = layout.version
     manifest["chatterboxLock"] = {
@@ -220,7 +221,7 @@ def security_source_manifest(
 
 
 def write_security_source_manifest(
-    root: Path | None = None, *, package_version: Literal["5", "6"] = "5"
+    root: Path | None = None, *, package_version: Literal["5", "6", "7"] = "5"
 ) -> Path:
     base = root or repository_root()
     manifest = security_source_manifest(base, package_version=package_version)

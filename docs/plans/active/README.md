@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans.
+- [Chatterbox v7 msgpack security refresh](chatterbox-msgpack-security-refresh.md):
+  prepare an isolated one-dependency security successor; publication and product
+  admission remain separate gates.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
