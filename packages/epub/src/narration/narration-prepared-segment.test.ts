@@ -36,6 +36,20 @@ import {
 const DOCUMENT_ID = "document:prepared-segment" as ContentDocumentId;
 
 describe("canonical prepared narration segments", () => {
+  it("NLC-05 keeps corrected Celsius source spans exact", async () => {
+    const fixture = narrationFixture([paragraph("1,20 °C")]);
+    const leaf = requiredLeaf(fixture.leaves[0]);
+    const prepared = await prepareNarrationSourceLeaf(leaf, "es", {
+      normalizationProfile: "narration-bilingual-v2",
+    });
+    const segment = requiredSegment(prepared.segments[0]);
+    expect(segment.text).toBe("1,20 °C");
+    expect(segment.sourceRange.start.textOffsetCodePoints).toBe(0);
+    expect(segment.sourceRange.end.textOffsetCodePoints).toBe(7);
+    assertExactEndpoint(fixture.index, leaf, segment.sourceRange.start);
+    assertExactEndpoint(fixture.index, leaf, segment.sourceRange.end);
+  });
+
   it("emits deeply frozen sensitive text, exact half-open ranges, metadata, and continuation", async () => {
     const fixture = narrationFixture([
       heading("Apertura"),

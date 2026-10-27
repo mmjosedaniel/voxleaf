@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildEpubVersionEquivalenceFixture,
+  buildMinimalEpubFixture,
   buildNarrationIntegrationEpubFixture,
   NARRATION_INTEGRATION_FIXTURE_EXPECTATIONS,
   NARRATION_INTEGRATION_FIXTURE_PROVENANCE,
@@ -26,6 +27,65 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it.each(["es", "en"] as const)(
+    "NLC-05 reaches current Piper and Chatterbox %s with exact source locators",
+    async (language) => {
+      const source = language === "es" ? "1,20 °C" : "1.20 °C";
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${language}"><head><title>Synthetic</title></head><body><p id="temperature">${source}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-open-failed");
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      const start = publication.defaultStartLocator!;
+      try {
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-chatterbox-v1",
+          "narration-bilingual-v2",
+        ] as const) {
+          const result = await publication.prepareNarration({
+            startLocator: start,
+            profile,
+            defaultLanguage: language,
+            maximumSegments: 16,
+          });
+          if (result.status !== "complete")
+            throw new Error("synthetic-preparation-failed");
+          expect(result.segments).toHaveLength(1);
+          const segment = result.segments[0]!;
+          expect(segment.text).toBe(source);
+          expect(segment.sourceRange.start).toEqual(start);
+          expect(segment.sourceRange.end.textOffsetCodePoints).toBe(
+            Array.from(source).length,
+          );
+          assertPublicSegment(publication, segment, 0);
+        }
+        if (language === "es") {
+          for (const profile of [
+            "narration-v1",
+            "narration-piper-v1",
+          ] as const) {
+            const legacy = await publication.prepareNarration({
+              startLocator: start,
+              profile,
+              defaultLanguage: language,
+              maximumSegments: 16,
+            });
+            if (legacy.status !== "complete")
+              throw new Error("legacy-preparation-failed");
+            expect(legacy.segments[0]!.text).toBe("1,veinte grados Celsius");
+          }
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
   it("keeps the dedicated fixture provenance explicit and deterministic", async () => {
     expect(NARRATION_INTEGRATION_FIXTURE_PROVENANCE).toEqual({
       kind: "repository-authored-synthetic",

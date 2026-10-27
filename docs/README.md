@@ -47,6 +47,13 @@ candidate remains unpublished/unadmitted. See the
 
 Recent accepted work is recorded at its original checkpoint:
 
+- [Narration logic corrections](plans/completed/narration-logic-corrections.md):
+  WSOLA progression across silence, manual persistence after narration completion,
+  contained compatibility changes, default CUDA admission and Celsius boundaries.
+  Focused/browser/integrated checks, Piper host/listening and Chatterbox H2 passed
+  with independent implementation approval and documented evidence reuse. Changes
+  remain uncommitted; physical multi-GPU and HTTP acquisition are not claimed.
+
 - [Confirmed logic and lifecycle corrections](plans/completed/confirmed-logic-bugfixes.md):
   five regression-tested fixes for NSIS detection, Pause/completion, operational
   TTS recovery, primary EPUB start and owned `.previous` cleanup. Ordinary

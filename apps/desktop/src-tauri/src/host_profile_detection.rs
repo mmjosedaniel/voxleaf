@@ -476,6 +476,7 @@ fn normalize_accelerated_provider(
     devices: &ProbeValue<Vec<NativeProviderDevice>>,
     adapters: &ProbeValue<Vec<NativeAdapter>>,
     status: &mut ProbeStatusAccumulator,
+    default_device_only: bool,
 ) -> ProviderReport {
     let ProbeValue::Known(devices) = devices else {
         return match devices {
@@ -497,7 +498,14 @@ fn normalize_accelerated_provider(
 
     let mut selected: Option<ProviderReport> = None;
     let mut ambiguous = false;
-    for device in devices {
+    // CUDA engines use visible ordinal zero. Never admit a different device
+    // when that ordinal cannot be mapped or lacks usable capacity.
+    let candidate_count = if default_device_only {
+        1
+    } else {
+        devices.len()
+    };
+    for device in devices.iter().take(candidate_count) {
         let Some(candidate) = provider_candidate(*device, adapters) else {
             continue;
         };
@@ -571,10 +579,18 @@ fn normalize_snapshot(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityR
         normalize_processor_count(&snapshot.logical_processor_count, &mut status);
     let memory = normalize_memory(&snapshot.memory, &mut status);
     let storage = normalize_storage(&snapshot.application_volume_available_bytes, &mut status);
-    let cuda =
-        normalize_accelerated_provider(&snapshot.cuda_devices, &snapshot.adapters, &mut status);
-    let directml =
-        normalize_accelerated_provider(&snapshot.directml_devices, &snapshot.adapters, &mut status);
+    let cuda = normalize_accelerated_provider(
+        &snapshot.cuda_devices,
+        &snapshot.adapters,
+        &mut status,
+        true,
+    );
+    let directml = normalize_accelerated_provider(
+        &snapshot.directml_devices,
+        &snapshot.adapters,
+        &mut status,
+        false,
+    );
 
     HostProfileCompatibilityReportV1 {
         schema_version: SCHEMA_VERSION,
