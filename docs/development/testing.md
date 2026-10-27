@@ -1,5 +1,23 @@
 # Testing strategy
 
+## Narration logic correction regressions
+
+The [completed correction plan](../plans/completed/narration-logic-corrections.md)
+records NLC-01 through NLC-05 and their host evidence. The real registered WSOLA
+processor suite covers silence followed by late content at all five slow rates,
+periodic pitch, exact frame accounting, bounded work memory and lifecycle controls.
+Coordinator tests connect natural completion to the real persistence bridge and
+save/restore owners, and hold compatibility containment before policy replacement.
+Native ordered-device tests cover default CUDA admission and unchanged DirectML
+ranking in both feature configurations. EPUB tests cover current Piper ES/EN and
+Chatterbox routing, exact locators and unchanged frozen controls under ADR-0063.
+
+The NLC-labelled case in `reader-narration-bugfixes.smoke.spec.ts` observes actual
+production-bundled worklet output and natural completion followed by manual save
+and reopen. It uses repository-authored PCM and a synthetic native-service seam;
+it is neither model inference nor human listening evidence. The integration batch
+also requires `pnpm.cmd check` and the two sequential native arms in the plan.
+
 ## Confirmed logic correction regressions
 
 The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md)

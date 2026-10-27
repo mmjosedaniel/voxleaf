@@ -503,12 +503,17 @@ export class ProductNarrationCoordinator {
       return;
     }
     const revision = ++this.#availabilityRevision;
+    const runToken = this.#runToken;
     await Promise.all([
       this.#hydrateStartPreference(),
       this.#hydratePlaybackPreference(),
       this.#profileCompatibility?.ensureChecked?.(),
     ]);
     if (this.#closed || revision !== this.#availabilityRevision) {
+      return;
+    }
+    if (runToken !== this.#runToken) {
+      await this.checkAvailability();
       return;
     }
     let availability: TtsExactDemoAvailability;
@@ -545,8 +550,32 @@ export class ProductNarrationCoordinator {
     if (this.#closed || revision !== this.#availabilityRevision) {
       return;
     }
+    if (runToken !== this.#runToken) {
+      // Stop/navigation invalidated this observation, not the surviving owner.
+      // Renew the explicit availability request without restarting narration.
+      await this.checkAvailability();
+      return;
+    }
+    if (
+      this.#scheduler !== undefined &&
+      (profileId !== this.#profileId ||
+        language !== this.#language ||
+        availability !== "available")
+    ) {
+      const stop = this.stopForConfigurationChange();
+      const containmentToken = this.#runToken;
+      await stop;
+      if (
+        this.#closed ||
+        revision !== this.#availabilityRevision ||
+        containmentToken !== this.#runToken ||
+        this.#recovery.observe().phase !== "operational"
+      )
+        return;
+    }
     this.#profileId = profileId;
     this.#language = language;
+    this.#selectSegmentationContext(profileId, language);
     this.#availability = availability;
     this.#publish();
   }
@@ -555,26 +584,6 @@ export class ProductNarrationCoordinator {
     if (this.#closed) {
       return;
     }
-    const profileId = this.#profileCompatibility?.activeProfileId?.();
-    const language =
-      this.#profileCompatibility?.activeLanguage?.() ??
-      DEFAULT_NARRATION_LANGUAGE_V2;
-    const context = this.#preparationContext(
-      profileId ?? this.#profileId,
-      language,
-    );
-    if (
-      this.#segmentationContext !== context &&
-      this.#scheduler !== undefined
-    ) {
-      await this.stopForConfigurationChange();
-      if (this.#closed) return;
-    }
-    if (profileId !== undefined) {
-      this.#profileId = profileId;
-    }
-    this.#language = language;
-    this.#selectSegmentationContext(this.#profileId, language);
     this.#availability = "checking";
     this.#publish();
     await this.checkAvailability();
@@ -1750,6 +1759,9 @@ export class ProductNarrationCoordinator {
         return;
       }
       this.#updateMetrics(player);
+      if (player.state === "complete") {
+        this.#playIntent = "inactive";
+      }
       this.#publish();
       this.#requestPump(runToken);
     } catch (error) {

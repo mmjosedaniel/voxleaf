@@ -149,6 +149,73 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 ]);
 
 describe("narration normalization", () => {
+  it("NLC-05 retains the entire accepted Spanish corpus through the bilingual path", () => {
+    for (const corpusCase of NARRATION_NORMALIZATION_CORPUS) {
+      if (corpusCase.defaultLanguage !== "es") continue;
+      const { leaf } = corpusFixture(corpusCase);
+      expect(
+        normalizeBilingualNarrationSourceTokens(leaf.sourceTokens, "es"),
+        corpusCase.id,
+      ).toEqual(normalizeNarrationSourceTokens(leaf.sourceTokens, "es"));
+    }
+  });
+
+  it.each(["es", "en"] as const)(
+    "NLC-05 preserves attached Celsius numeric expressions in %s",
+    (language) => {
+      for (const source of [
+        "1,20 °C",
+        "1.20 °C",
+        "120 °C",
+        "1/20 °C",
+        "1:20 °C",
+        "1-20 °C",
+        "+20 °C",
+        "−20 °C",
+      ]) {
+        const leaf = singleTextFixture(source, false);
+        const normalized = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(normalized.text, source).toBe(source);
+        assertSourceMapping(
+          leaf,
+          normalized as unknown as NarrationNormalizedStream,
+        );
+      }
+      for (const source of ["20 °C", "(20 °C),"]) {
+        const leaf = singleTextFixture(source, false);
+        const normalized = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(normalized.text).toBe(
+          source.replace(
+            "20 °C",
+            language === "es"
+              ? "veinte grados Celsius"
+              : "twenty degrees Celsius",
+          ),
+        );
+        assertSourceMapping(
+          leaf,
+          normalized as unknown as NarrationNormalizedStream,
+        );
+      }
+      const code = singleTextFixture("20 °C", true);
+      expect(
+        normalizeBilingualNarrationSourceTokens(code.sourceTokens, language)
+          .text,
+      ).toBe("20 °C");
+      const foreign = leafFor(paragraph([text("20 °C", "fr")]));
+      expect(
+        normalizeBilingualNarrationSourceTokens(foreign.sourceTokens, language)
+          .text,
+      ).toBe("20 °C");
+    },
+  );
+
   describe("frozen bilingual v2 corpus", () => {
     for (const [index, corpusCase] of BILINGUAL_V2_CORPUS.entries()) {
       it(`normalizes frozen case ${index + 1}`, () => {

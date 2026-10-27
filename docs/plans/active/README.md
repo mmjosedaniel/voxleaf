@@ -6,11 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Narration logic corrections](narration-logic-corrections.md): planning-only
-  follow-up for WSOLA source progression, persistence after natural completion,
-  compatibility rechecks, default-CUDA-device admission, and Celsius numeric
-  boundaries. Defines minimal changes and justified focused/integration gates;
-  implementation and validation have not started.
+There are no active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

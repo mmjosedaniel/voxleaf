@@ -451,7 +451,17 @@ function isExactCelsiusForm(
 
   const before = sourceText(tokens[startIndex - 1]);
   const after = sourceText(tokens[startIndex + form.length]);
-  return !isWordContextCodePoint(before) && !isWordContextCodePoint(after);
+  // ADR-0063: punctuation can attach this accepted suffix to an unsupported
+  // numeric expression. Inspect only the two preceding source code points.
+  const attachedNumericSyntax =
+    /[+−-]/u.test(before ?? "") ||
+    (/[.,/:]/u.test(before ?? "") &&
+      isAsciiDigit(sourceText(tokens[startIndex - 2])?.charCodeAt(0) ?? -1));
+  return (
+    !attachedNumericSyntax &&
+    !isWordContextCodePoint(before) &&
+    !isWordContextCodePoint(after)
+  );
 }
 
 function planCelsiusReplacement(

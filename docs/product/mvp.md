@@ -2,6 +2,17 @@
 
 ## Implementation status
 
+The [completed narration logic corrections](../plans/completed/narration-logic-corrections.md)
+restore manual-position persistence after natural narration completion and contain
+changed/unavailable compatibility selections before applying a new preparation
+policy; same-profile rechecks preserve playback. Slowed WSOLA progression remains
+anchored to nominal output progress across silence. Under
+[ADR-0063](../architecture/decisions/ADR-0063-default-cuda-and-celsius-boundaries.md),
+CUDA admission evaluates the default visible device used by inference, and current
+Piper/Chatterbox preparation preserves unsupported Celsius numeric expressions.
+The plan records passing integration/host checks and independent acceptance,
+including the limits of synthetic multi-device and single-host evidence.
+
 The completed [reader/acquisition corrections](../plans/completed/reader-narration-acquisition-bugfixes.md)
 add an explicit **Play available audio** action when capacity blocks a prepared
 target, bounded deep-paragraph starts, navigation scoped to the selected

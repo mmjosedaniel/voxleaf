@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0063: Default CUDA admission and Celsius numeric boundaries](ADR-0063-default-cuda-and-celsius-boundaries.md).
+
 - [ADR-0062: Admit the filelock and setuptools Chatterbox v6 refresh](ADR-0062-admit-filelock-setuptools-chatterbox-v6.md): accepted additive runtime identity with exact local admission and reviewed runtime evidence; previous packages remain cleanup-only. The completed security-refresh plan retains unresolved full live-delivery failures.
 
 - [ADR-0060: Primary publication start](ADR-0060-primary-publication-start.md): additive package-owned default locator; full locator ordering and auxiliary access preserved. Implementation acceptance is pending in the active correction plan.

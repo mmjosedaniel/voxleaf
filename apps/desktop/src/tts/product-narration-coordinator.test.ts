@@ -18,6 +18,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { NarrationStartPreferenceRepository } from "../persistence/narration-start-preference";
 import type { NarrationPlaybackPreferenceRepository } from "../persistence/narration-playback-preference";
+import { bindNarrationPositionPersistence } from "../persistence/narration-position-save-bridge";
+import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
+import { ReaderPositionRestoreCoordinator } from "../persistence/reader-position-restore-coordinator";
+import { createWebStorageReaderPositionRepository } from "../persistence/reader-position-repository";
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
 import {
@@ -504,6 +508,223 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("NLC-02 returns persistence to manual reading after natural completion", async () => {
+    const { coordinator, backend, intervals } = createHarness();
+    const storage = new Map<string, string>();
+    const repository = createWebStorageReaderPositionRepository({
+      storage: () => ({
+        getItem: (key) => storage.get(key) ?? null,
+        setItem: (key, value) => {
+          storage.set(key, value);
+        },
+      }),
+    });
+    const publication = {
+      ...createPublication(async () => completeResult()),
+      defaultStartLocator: START_LOCATOR,
+    };
+    const save = new ReaderPositionSaveCoordinator(publication, repository, {
+      initialLocator: START_LOCATOR,
+    });
+    const finish = vi.spyOn(save, "finishNarration");
+    const begin = vi.spyOn(save, "beginNarration");
+    const unbind = bindNarrationPositionPersistence(coordinator, save);
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    backend.finish();
+    for (const tick of [...intervals]) tick();
+    await save.flush();
+    expect(
+      await repository.readPosition(START_LOCATOR.bookIdentity),
+    ).toMatchObject({ status: "ready", state: { locator: SOURCE_RANGE.end } });
+    const manual = decodeReadingLocatorV1({
+      ...START_LOCATOR,
+      textOffsetCodePoints: 1,
+    });
+    expect(save.schedulePassive(manual)).toBe(true);
+    await save.flush();
+    for (let index = 0; index < 3; index += 1)
+      for (const tick of [...intervals]) tick();
+    await save.flush();
+    expect(
+      await repository.readPosition(START_LOCATOR.bookIdentity),
+    ).toMatchObject({ status: "ready", state: { locator: manual } });
+    expect(begin).toHaveBeenCalledTimes(1);
+    expect(finish).toHaveBeenCalledTimes(1);
+    const restored = await new ReaderPositionRestoreCoordinator(
+      repository,
+    ).restore(publication);
+    expect(restored).toMatchObject({
+      status: "ready",
+      position: { mode: "exact", locator: manual },
+    });
+    expect(coordinator.observe()).toMatchObject({
+      state: { phase: "complete" },
+      navigation: { playIntent: "inactive" },
+    });
+    unbind();
+    await save.close();
+    await coordinator.close();
+  });
+
+  it.each([
+    "changed",
+    "unavailable",
+    "paused",
+    "paused-unavailable",
+    "unchanged",
+  ] as const)(
+    "NLC-03 contains a %s compatibility recheck before applying policy",
+    async (scenario) => {
+      const original = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      let selected: string | undefined = original;
+      const { coordinator, client, prepareNarration, backend } = createHarness({
+        profileCompatibility: {
+          activeProfileId: () => selected,
+          activeLanguage: () => "en",
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+        },
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      if (scenario.startsWith("paused")) coordinator.pause();
+      const unavailable = scenario.endsWith("unavailable");
+      const oldAudio = backend.active;
+      let release = (): void => undefined;
+      const wait = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const shutdown = client.shutdown.bind(client);
+      vi.spyOn(client, "shutdown").mockImplementation(async () => {
+        await wait;
+        await shutdown();
+      });
+      selected =
+        scenario === "unchanged"
+          ? original
+          : unavailable
+            ? undefined
+            : "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+      coordinator.resetRecoveryEpisode();
+      if (scenario === "unchanged") {
+        await settleUntil(
+          () => coordinator.observe().availability === "available",
+        );
+        expect(client.shutdown).not.toHaveBeenCalled();
+        expect(backend.active).toBe(oldAudio);
+        expect(coordinator.observe().navigation.playIntent).toBe("playing");
+      } else {
+        await settleUntil(
+          () =>
+            vi.mocked(client.shutdown).mock.calls.length > 0 ||
+            coordinator.observe().availability !== "checking",
+        );
+        expect(client.shutdown).toHaveBeenCalled();
+        expect(coordinator.observe().profileId).toBe(original);
+        expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+      }
+      release();
+      await settleUntil(
+        () => coordinator.observe().availability !== "checking",
+      );
+      expect(client.startedProfiles).toEqual([original]);
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      if (scenario !== "unchanged") {
+        expect(coordinator.observe().metrics.retainedAudioUnitCount).toBe(0);
+        expect(coordinator.observe().availability).toBe(
+          unavailable ? "unavailable" : "available",
+        );
+      }
+      await coordinator.close();
+    },
+  );
+
+  it.each([false, true])(
+    "NLC-03 settles a recheck interrupted by Stop (profile changed: %s)",
+    async (changeProfile) => {
+      let selected = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      const { coordinator, client } = createHarness({
+        profileCompatibility: {
+          activeProfileId: () => selected,
+          activeLanguage: () => "en",
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+        },
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      let release = (): void => undefined;
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const availability = vi
+        .spyOn(client, "profileConfigurationAvailability")
+        .mockImplementationOnce(async () => {
+          await pending;
+          return "available";
+        });
+      if (changeProfile)
+        selected = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+      const recheck = coordinator.refreshSelectedProfile();
+      await settleUntil(() => availability.mock.calls.length === 1);
+      await coordinator.stop();
+      release();
+      await recheck;
+      expect(coordinator.observe()).toMatchObject({
+        availability: "available",
+        profileId: selected,
+        navigation: { playIntent: "inactive" },
+      });
+      expect(client.startedProfiles).toHaveLength(1);
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(client.startedProfiles).toHaveLength(2);
+      expect(client.startedProfiles[1]).toBe(selected);
+      await coordinator.close();
+    },
+  );
+
+  it("NLC-03 ignores a delayed compatibility result after close", async () => {
+    let selected = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    const { coordinator, client } = createHarness({
+      profileCompatibility: {
+        activeProfileId: () => selected,
+        activeLanguage: () => "en",
+        isProfileCurrentlyAllowed: () => true,
+        isProfileStartAllowed: async () => true,
+      },
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    let release = (): void => undefined;
+    const wait = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.spyOn(client, "profileConfigurationAvailability").mockImplementation(
+      async () => {
+        await wait;
+        return "available";
+      },
+    );
+    selected = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+    coordinator.resetRecoveryEpisode();
+    await settleUntil(
+      () =>
+        vi.mocked(client.profileConfigurationAvailability).mock.calls.length >
+        0,
+    );
+    await coordinator.close();
+    const closed = coordinator.observe();
+    release();
+    for (let index = 0; index < 10; index += 1) await Promise.resolve();
+    expect(coordinator.observe()).toBe(closed);
+  });
+
   it.each(["available", "unavailable", "closed"] as const)(
     "waits for initial compatibility before publishing %s availability",
     async (outcome) => {

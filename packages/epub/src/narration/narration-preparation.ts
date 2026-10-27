@@ -711,8 +711,7 @@ export async function prepareNarrationBatch(
               normalizationProfile:
                 request.profile === "narration-bilingual-v2" ||
                 request.profile === "narration-chatterbox-v1" ||
-                (request.profile === "narration-piper-v2" &&
-                  request.defaultLanguage === "en")
+                request.profile === "narration-piper-v2"
                   ? "narration-bilingual-v2"
                   : "narration-v1",
               maximumSegments: remainingSegmentEntries,

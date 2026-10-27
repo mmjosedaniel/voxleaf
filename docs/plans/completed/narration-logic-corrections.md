@@ -4,7 +4,23 @@
 
 Correct the five statically verified findings below without redesigning narration, adding dependencies, replacing the audio backend, or rebuilding TTS distributions.
 
-**Planning checkpoint:** 2026-10-26, source HEAD `530445fdef1c39893197b5f5070e5ebe58c69ac6`, initially clean `main`. The working branch is `codex/narration-logic-corrections`, for this plan and its eventual implementation. The current authorization is **plan, branch, and local planning commit only**. No implementation, test execution, model work, push, or PR is authorized in this planning turn. Every command below is a future command, not an executed result.
+**Planning checkpoint:** 2026-10-26, source HEAD `530445fdef1c39893197b5f5070e5ebe58c69ac6`, initially clean `main`. The working branch is `codex/narration-logic-corrections`, for this plan and its eventual implementation. The original planning-turn authorization was **plan, branch, and local planning commit only**. No implementation, test execution, model work, push, or PR is authorized in this planning turn. Every command below is a future command, not an executed result.
+
+**Implementation authorization (2026-10-26):** the maintainer explicitly authorized
+all five fixes and the planned host validations, superseding planning-only scope.
+No commit, push, PR, merge or publication is authorized. Implementation starts at
+`afa2e0f6ec5541499c20b3862656a5bb4c5ac318` on the specified branch with an empty
+index and clean worktree; no later commits or unrelated edits were present.
+ADR-0063 records the additive CUDA/Celsius correction authority.
+
+**Runtime preparation follow-up authorization (2026-10-26):** the maintainer
+authorized the downloads and installation needed to prepare v6, execute H2 and
+obtain independent acceptance. Changes must remain uncommitted. This supersedes
+the earlier preparation prohibition only for H2's prerequisite; it does not
+authorize runtime redesign, new package identities, publication or unrelated
+validation campaigns. Existing exact local v6 artifacts and model files are
+preferred after fresh identity verification. Earlier blocked results below
+remain historical evidence and are not relabeled as passes.
 
 ## User-visible outcome
 
@@ -73,7 +89,7 @@ Review the canonical system diagram at closeout. No component, process, persiste
 
 After implementation is authorized, verify HEAD, dirty/index state, configured tools and existing dependency/model availability without installing or downloading anything. Preserve unrelated changes. Record the actual implementation baseline. Add each regression immediately before its corresponding correction and run its focused gate against the unchanged relevant production code. It must fail for the reported reason, not a broken harness or missing dependency. Do not run the entire repository as a speculative baseline.
 
-Validation: gates F1-F4 below as their tests are introduced. Status: not started; static evidence only.
+Validation: F1-F4 executed before/after their corresponding fixes. Status: complete; initial failures and repairs are recorded below.
 
 ### 2. NLC-01: preserve source progression in WSOLA
 
@@ -81,7 +97,7 @@ Anchor expected analysis position to nominal synthesis/output progress, so corre
 
 Execute the real processor in the focused test through its registration/message boundary. Use repository-authored PCM with leading/intermediate silence and distinguishable later bursts. At each of 75/80/85/90/95%, assert that late content survives, output is finite, duration/accounting is correct, and completion occurs once. Cover a short unit, all-silence input, and pause/resume/stop with no post-stop output. Include a periodic synthetic signal to detect gross pitch/rate regression; metadata-only assertions are insufficient. Existing backend tests retain the 100% bypass and resource-release controls.
 
-Validation: F1, then B1 and the single Piper host arm after integration. Status: not started.
+Validation: F1 and B1 pass; Piper host arm and maintainer listening pass. Status: complete; independent batch acceptance APPROVE in R03.
 
 ### 3. NLC-02/03: repair terminal intent and guarded profile application
 
@@ -91,7 +107,7 @@ Apply compatibility changes through one guarded coordinator path. Before assigni
 
 Tests must connect actual coordinator behavior to the actual persistence bridge/save owner, rather than manually fabricating only a successful `inactive` snapshot. Assert natural end -> saved heard end -> manual scroll -> newer saved/restored position; repeated ticks must not re-enter narration or overwrite that position. For rechecks, cover changed and unavailable selection during an active run, a paused run, an unchanged selection, and a delayed stale result. Assert stop-before-policy-change, no stale preparation/audio, and no automatic restart. Use existing fake service/compatibility ports, not actual resource exhaustion or new public hooks.
 
-Validation: F2; B1 checks the real reader/persistence wiring. Settings/App-focused tests become necessary only if those files or callback contracts change. Status: not started.
+Validation: F2; B1 checks the real reader/persistence wiring. Settings/App-focused tests were not added because those files/contracts are unchanged. Status: complete; F2/B1 pass and independent acceptance APPROVE in R03.
 
 ### 4. NLC-04: align native CUDA admission with default-device inference
 
@@ -99,7 +115,7 @@ Change the CUDA selection boundary in the existing native host report. Preserve 
 
 Use ordered synthetic snapshots: insufficient default/sufficient secondary must reject; sufficient default/larger secondary must report the default's facts; unknown/unmapped default must fail closed; the existing single-device case must still pass. Preserve DirectML controls. Update the old best-memory CUDA expectation because the additive ADR deliberately corrects that policy; do not rewrite unrelated assertions.
 
-Validation: F3 in both Rust feature configurations, then one compatible-host Chatterbox arm. A single-GPU pass does not constitute a physical multi-GPU reproduction; report that limitation. Synthetic multi-device regression is mandatory, but obtaining a second computer/GPU is not a prerequisite for this bounded algorithm correction. Status: not started.
+Validation: F3 in both Rust feature configurations, then one compatible-host Chatterbox arm. A single-GPU pass does not constitute a physical multi-GPU reproduction; report that limitation. Synthetic multi-device regression passes; physical multi-GPU behavior is not claimed. Status: F3a/F3b and H2 pass after the authorized v6 preparation recorded below.
 
 ### 5. NLC-05: preserve numeric context without changing frozen history
 
@@ -107,13 +123,13 @@ Add a bounded numeric-context guard to the bilingual Celsius matcher, reusing ex
 
 Add cases in existing tests for `1,20 °C` (Spanish), `1.20 °C` (English), standalone `20 °C`, punctuation-delimited supported forms, code/unsupported-language preservation, and a larger attached number. Verify current Piper ES/EN and Chatterbox preparation routes through the public synthetic EPUB boundary, with unchanged displayed text and exact source spans/locator resolution. Reuse the frozen Spanish/bilingual corpora as unchanged controls. Keep legacy v1 expectations explicit; do not pretend its historical implementation was fixed.
 
-Validation: F4. Existing frozen-authority Python tests run inside I1; do not run a separate Python matrix just because the caller is TTS. Status: not started.
+Validation: F4. Existing frozen-authority Python tests run inside I1; no separate Python matrix was run. Status: complete; F4/I1 frozen-authority controls pass and independent acceptance APPROVE in R03.
 
 ### 6. Integrate, document, and obtain independent acceptance
 
 After focused gates pass, run B1, then I1 once on the combined patch. Run the two selected native arms against that exact built executable, sequentially. Record a brief listening check during the Piper arm for audible tail, correct slowdown, and stable pitch; do not call duration metadata a listening result. Freeze source/tests/documentation and delegate one final review to `change_reviewer` as required by `agentic-change-review.md`. The reviewer does not edit or run tests. Supply exact source identities and host evidence; resolve actionable findings and obtain APPROVE for the exact patch. Missing required evidence/reviewer remains blocked.
 
-Update this plan's results and maintained indexes at actual closeout; only then move it to `completed/`. Any later push/PR requires authorization; existing CI requirements must pass before integration, but this plan does not authorize remote actions. Status: not started.
+Update this plan's results and maintained indexes at actual closeout; only then move it to `completed/`. Any later push/PR requires authorization; existing CI requirements must pass before integration, but this plan does not authorize remote actions. Status: implementation, focused/browser/integrated checks and H1/H2 complete; independent acceptance APPROVE in R03. The linked review record owns the subsequent exact archive/link review.
 
 ## Testing and benchmark strategy
 
@@ -182,6 +198,33 @@ Keep each implementation unit diff separable. If one fix fails, retain its faile
 - 2026-10-26: Rechecked clean source HEAD and existing owners, tests, configured commands, frozen-authority constraints, and native runner selectors. No test or model was executed.
 - 2026-10-26: Created `codex/narration-logic-corrections` from the stated `main` checkpoint. Added this plan and its active-index entry only. Implementation milestones and every acceptance gate remain not started.
 
+- 2026-10-26 implementation: F1 reproduced missing late PCM at all five rates
+  (5 failures, 42 passes); nominal anchoring and nearest-candidate ties repaired
+  it (47/47). F2 reproduced manual-save rejection and three missing containment
+  cases (4 failures, 85 passes). After the shared owner fixes and added paused
+  unavailability/restore controls, 90/90 pass. An intermediate F2 used the wrong
+  terminal spelling (`completed` instead of `complete`); a later test-only restore
+  fixture lacked its default locator. Both were corrected before the scoped rerun.
+- F3a reproduced wrong default-device facts and incorrect optional admission
+  (2 failures, 15 passes); F3a/F3b then pass 17/17 each, including the actual
+  Windows probe. The native launch path inherits CUDA visibility/order without
+  overriding either; the probe retains every CUDA ordinal or fails closed.
+- F4 reproduced partial Celsius expansion at pure and public boundaries in both
+  languages (4 failures, 118 passes). Rebuilt workspace exports after correction;
+  124/124 pass, including full accepted Spanish corpus equivalence. A compile
+  error on absent preceding tokens was fixed before the successful rebuild.
+- All acceptance commands so far ran via escalated normal local PowerShell.
+  Node is 24.20.0; cached Corepack pnpm is 11.15.1. The initially resolved fallback
+  pnpm 11.25.0 rejected F1 before tests ran. Subsequent pnpm commands set the
+  process PATH prefix to `C:/nvm4w/nodejs/node_modules/corepack/shims` and
+  `COREPACK_ENABLE_NETWORK=0`; no installation or download occurred.
+- B1's first run passed the real audio marker, completion and manual-save
+  assertions, then failed on a test expectation: successful reopening reports
+  `Reading position restored.`. Corrected that expectation; B1 passes (1/1, 24.1 seconds).
+- Production changes remain in the planned owners. Settings/App and public
+  callback contracts are untouched. The canonical system diagram remains valid:
+  no component, process, persistence or trust boundary changes.
+
 ## Discoveries and decisions
 
 - Existing worklet/controller fakes cannot validate actual DSP; one real-processor regression file is necessary, whereas a new audio framework is not.
@@ -196,9 +239,182 @@ Keep each implementation unit diff separable. If one fix fails, retain its faile
 | Evidence | Current result |
 | --- | --- |
 | Static finding verification | Five source-level paths traced at the planning source HEAD; not runtime reproduction. |
-| F1-F4 failing regressions and repairs | Not run; implementation not started. |
-| B1, I1, H1, H2 and listening | Not run. |
-| Independent implementation review | Not requested; no implementation patch exists. |
-| Current planning work | Documentation only. No tests, builds, installs, model loads, or runtime changes. Git inspection/commit is not behavioral acceptance. |
+| F1-F4 failing regressions and repairs | Executed on host; before/after outcomes above. Final focused groups: F1 47, F2 92 after R01 correction, F3a/F3b 17 each, F4 124 passing. |
+| B1 | `pnpm.cmd test:browser reader-narration-bugfixes.smoke.spec.ts --grep NLC`: 1/1 pass after test-only restored-status correction. Actual bundled worklet retains the late marker, all units end, heard end saves, manual wheel updates and reopening restores it. |
+| I1 | `pnpm.cmd check`: exit 0. Evidence guard 13; shared/EPUB/desktop Vitest 209/680/837; desktop Node 100; Rust default 120 passed/2 ignored and release-locked 119 passed/2 ignored; Python 645. Format, lint, types, schemas and all builds pass. `tmp/evidence/narration-logic-corrections/I1.log` retains the raw host result. |
+| Reused binary | I1 output `apps/desktop/src-tauri/target/release/voxleaf-desktop.exe`, SHA-256 `e1369be434d87955566631605315f041553b7dea84188d1c47722c61ee42d01b`. No rebuild between host arms. |
+| H1 | `node apps/desktop/scripts/native-startup-smoke.mjs --adaptive-tts-exact-host --exercise-playback-speeds --tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1 --tts-language=en`: exit 0; all six rates, no stale playback, valid ranges/focus, cleanup 0 retained/0 discarded units and 0 generated audio files; 0 external requests. Existing packaged core and outbound interpreter block; EdgeDriver/WebView2 major 155. |
+| H2 | Initial attempt exited 1 before inference with `tts-optional-profile-unavailable`; admitted v6 was absent. After separately authorized exact-local v6 installation and native integrity verification, the exact planned command passes on the final R02 executable: exit 0, 403.89 seconds. Full attribution and metrics are recorded in the follow-up below. |
+| Listening | Maintainer explicitly confirmed audible phrase endings, correct slowdown and stable pitch during H1. This is human-reported listening, separate from synthetic PCM/counters; no broader quality claim. |
+| Independent implementation review | **APPROVE, NLC-2026-10-26-R03-ASTRA-01**. R01's actionable finding and R02's missing H2 evidence are resolved. The immutable [review record](../evidence/narration-logic-corrections-review.md) records the final archive/link review separately. |
+| Implementation | Complete: all five corrections implemented; F1-F4, B1, I1 and H1/H2 pass with the documented scoped reuse after R01. V6 was installed from exact verified local artifacts; no download, commit, push, PR or merge. Independent implementation acceptance is APPROVE. |
 
 At closeout replace pending rows with exact commands/outcomes, source and artifact identities, review ID/verdict, cleanup results, and remaining limitations. A gate that was omitted under the table above is not a pass.
+
+### Integrated evidence attribution and limitations
+
+Every command uses the repository root and normal local PowerShell outside the
+managed sandbox. The branch and HEAD remain unchanged from implementation start;
+the index remains empty. `tmp/evidence/narration-logic-corrections/integrated-identities.json`
+records the integrated source/test/document identities; a post-I1 comparison found
+zero changed paths. Subsequent plan-only evidence updates do not change runtime,
+tests, binary, dependency or environment inputs. I1 reran the focused production
+responsibilities after formatting and package reconstruction; no historical CI or
+model evidence is substituted.
+
+I1 emitted a Vite large-chunk advisory and a pytest cache-write warning (the
+existing cache nodeids path denied a write); all 645 tests completed successfully.
+The two explicit Rust ignores remain the installed integrity diagnostic (outside
+this scope) and a subprocess fixture exercised via its parent test. No installer,
+full browser, Qwen, acquisition/download or new multi-GPU campaign was run; the
+omission table remains applicable. All frozen authorities, historical hashes,
+completed plans and generated tracked files are unchanged.
+
+### Host closeout and review request
+
+H1 and H2 ran sequentially against the exact I1 executable hash above. H1
+completed its normal teardown. H2 exited with its required selection failure
+and no cleanup-error message; no inference was attempted. Do not interpret
+single-device H1/native-probe success as physical multi-GPU validation.
+The H2 runtime prerequisite cannot be repaired by selecting a cleanup-only
+older package, changing admission, downloading a model or reinstalling packages
+under this task. Continue with independent static review, but retain the blocked
+acceptance state until the admitted v6 runtime is available and H2 passes.
+
+The exact commands for F1, F2, F3a, F3b and F4 are those in the required focused
+matrix above, executed without additional filters. `pnpm.cmd build:packages`
+ran after EPUB source changes, and again through B1/I1's existing scripts.
+Only task-owned TypeScript files were formatted with `pnpm.cmd exec prettier
+--write <task-owned .ts paths>`; Rust used the configured `cargo fmt
+--manifest-path apps/desktop/src-tauri/Cargo.toml`. No tracked generated file
+was edited. `git diff --check` passes and the index is empty.
+
+### Independent review correction, revision 2
+
+Review `NLC-2026-10-26-R01-ASTRA-01` returned **BLOCKED**: one source-confirmed
+P2 (`NLC-R01-F01`) plus the independent H2 prerequisite gap. Stop during a delayed
+availability result invalidated the run token and left the surviving coordinator
+permanently checking. Added same-profile and changed-profile regressions before
+repair: F2 failed exactly those two cases (90 passed). The owner now renews the
+explicit availability request after run invalidation, but only when the original
+revision still owns it and the coordinator is open; no narration starts. F2 then
+passes 92/92. Close/stale-result and same-profile lifecycle controls remain green.
+
+Only the coordinator and its tests changed after I1. Scoped ESLint, desktop
+typecheck, B1, a new native build and H1 are the affected follow-up gates. Preserve
+I1's unaffected EPUB, Rust, Python, evidence/schema and other ownership results;
+do not claim the old executable validates the final coordinator. The prior
+human listening observation remains specific to the unchanged WSOLA backend.
+No second H2 attempt is justified while its diagnosed runtime prerequisite is
+unchanged. Final follow-up outcomes and executable identity are recorded below.
+
+Revision 2 follow-up: scoped `pnpm.cmd exec eslint
+apps/desktop/src/tts/product-narration-coordinator.ts
+apps/desktop/src/tts/product-narration-coordinator.test.ts` and
+`pnpm.cmd --filter @voxleaf/desktop typecheck` pass. The exact B1 command passes
+again (1/1, 23.9 seconds). `pnpm.cmd build:desktop` exits 0; the final executable
+SHA-256 is `4c60a4ee9829983b6f6340c0df50def6513bc0723e93561b43e9dddbe614ecd8`.
+The exact H1 command is repeated on this executable; its final outcome and the
+revision-2 review verdict are retained in the linked independent review record,
+which is outside its own identity manifest. H2 has not been rerun on this binary:
+its diagnosed prerequisite remains absent, so neither the original failed H2 nor
+H1 can supply the missing Chatterbox acceptance. The plan stays active and no
+APPROVE or complete status is claimed.
+
+### Authorized H2 prerequisite follow-up
+
+The maintainer subsequently authorized v6 preparation, including necessary
+downloads/installation, while retaining the no-commit boundary. No source,
+test, dependency, runtime authority or executable changed during preparation.
+The R02 executable still hashes to
+`4c60a4ee9829983b6f6340c0df50def6513bc0723e93561b43e9dddbe614ecd8`.
+
+The exact local v6 build and six existing model artifacts were available.
+`uv run --directory services/tts --locked python -m
+voxleaf_tts.release_chatterbox check-local --package-version 6 --output-root
+<existing-local-output-root>` initially exited 1 because the non-extended Windows
+path omitted long descendants during traversal. A bounded inventory with the
+documented extended path found all 13,092 expected files and no extras. Repeating
+the configured command with that corrected extended output-root argument passed
+(`chatterbox-optional-v6-local:current`, exit 0). The package was not rebuilt or
+modified to obtain this result. This fresh check verifies the source/lock,
+runtime tree, archive members, ordered parts and receipt; it does not claim a new
+HTTP download. Raw logs remain in the ignored NLC evidence directory.
+
+The ignored `prepare-runtime-v6.ps1` copied that exact local package to a new
+staging sibling of `cb/6`, verified all 13,091 manifest-listed payload files and
+the manifest identity, and copied/reverified the six unchanged model artifacts
+against v6 authority. Containment, reparse-point, occupied-target and active-app
+guards protect the copy/promotion. The new `cb/6` was promoted only after these
+checks; previous packages and unrelated user data were not moved or removed.
+No package or model bytes were downloaded. This is local installation from
+verified artifacts, not evidence for the product's HTTP acquisition path.
+
+The newly installed prerequisite justified exactly one additional existing gate:
+`cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+tts_optional_chatterbox::tests::installed_host_integrity_diagnostic -- --exact
+--ignored --nocapture`. It passed outside the sandbox: 1 passed, 0 failed,
+121 filtered, 142.90 seconds after a 22.05-second test-target build. The diagnostic
+verified the ordinary host context, canonical root, tree stamp, bytecode authority
+and runtime. It did not rebuild the release executable or invoke an installer
+lifecycle campaign. This bounded prerequisite check is the only expansion to
+the original omitted-validation table.
+
+### Successful H2 on the final executable
+
+The exact H2 command from the required matrix ran in normal local PowerShell
+outside the sandbox on 2026-10-27 03:18:37-03:25:21 UTC (2026-10-26 local).
+It exited 0 in 403.89 seconds. `H2-R03.log` and `H2-R03-result.json` preserve
+the output and command/timing/exit/executable identity receipt in ignored
+`tmp/evidence/narration-logic-corrections/`. The executable hash before and after
+matches R02's final binary; H1-R02 and H2 were sequential, with no intervening
+release build or runtime source/test change. H1-R02 remains its passing Piper
+evidence; it is not relabeled as a new execution.
+
+- Installed profile admission: v6 installed, default CUDA host compatible;
+  selected Chatterbox Spanish arm completed successfully.
+- Quick command-to-audible: 47,185 ms, with 19,240 ms playable lead. Prepared
+  command-to-audible: 63,671 ms for 61,040 ms playable audio; warm prepared RTF
+  1.04. These are measured observations, not a claim of instantaneous startup.
+- Observed underruns and buffering: zero; stable playback observed for 60,083 ms.
+  This observation is bounded to the harness's measured interval.
+- Cancellation: 292 ms; startup cancellation 235 ms; startup child shutdown
+  220 ms. All five created audio contexts closed.
+- Synchronization: 12 segment transitions, valid ranges, preserved focus,
+  pause/resume at the same boundary, no stale playback, cleared highlight on
+  cleanup. Follow latency P95: 0.8 ms.
+- Cleanup: zero retained/discarded units, zero generated-audio files, 713 ms
+  resource release. Peak observed dedicated GPU memory 3,896 MiB returned to
+  the measured 41 MiB baseline. The WebView2 harness counted zero external
+  requests; the existing child offline environment remained unchanged. No new
+  firewall-enforcement or whole-host network-capture claim is made.
+
+This supplies the previously missing engine integration evidence. No physical
+multi-GPU validation, Chatterbox human-listening assessment, HTTP acquisition
+success, second language arm or speed matrix is inferred. The earlier H1 human
+listening confirmation remains attributed to the unchanged WSOLA path. Existing
+F1/F3/F4 and unaffected I1 reuse from R02 retains identical inputs. Only plan
+status/documentation changes followed preparation; final independent review is
+the remaining acceptance gate.
+
+### Accepted implementation and documentation closeout
+
+`NLC-2026-10-26-R03-ASTRA-01` returned **APPROVE**, with no findings and no
+missing required evidence. It independently confirmed the closed path identities,
+the preparation helper, fresh host evidence, and scoped reuse from R02. The
+earlier blocked reports remain immutable historical results.
+
+Following that acceptance, this plan is archived under `completed/`; maintained
+indexes and incoming links are updated. The canonical system diagram was reviewed
+and still matches the implementation: there is no change to component/process,
+persistence or trust boundaries. Historical plans, frozen authorities/hashes and
+tracked generated files remain unchanged. The evidence record retains the
+subsequent exact-state documentary review and final closeout checks without
+changing this accepted plan's bytes or refreshing an earlier approval hash.
+
+All changes remain unstaged and uncommitted on the specified branch and planning
+HEAD. No push, PR, merge or publication was performed. The only retained host
+preparation is the verified optional v6 installation; previous runtime versions
+and unrelated user data remain preserved. No mandatory implementation or host
+validation remains pending. The limitations and omitted/conditional tests above
+remain explicit and do not become passing results merely through closeout.

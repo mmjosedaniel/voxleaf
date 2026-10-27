@@ -226,11 +226,16 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       first,
       maximumStart,
     );
-    let bestFrame = first;
-    let bestScore = Number.NEGATIVE_INFINITY;
+    const nominalFrame = boundedInteger(expectedFrame, first, last);
+    let bestFrame = nominalFrame;
+    let bestScore = this.#correlation(bestFrame);
     for (let frame = first; frame <= last; frame += 1) {
       const score = this.#correlation(frame);
-      if (score > bestScore) {
+      if (
+        score > bestScore ||
+        (score === bestScore &&
+          Math.abs(frame - nominalFrame) < Math.abs(bestFrame - nominalFrame))
+      ) {
         bestFrame = frame;
         bestScore = score;
       }
@@ -241,7 +246,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   #appendGrain(): void {
     if (this.#nextOutputFrame > 0) {
       const expectedAnalysisFrame =
-        this.#analysisFrame + (SYNTHESIS_HOP_FRAMES * this.#ratePercent) / 100;
+        (this.#nextOutputFrame * this.#ratePercent) / 100;
       this.#analysisFrame = this.#chooseAnalysisFrame(expectedAnalysisFrame);
     }
 
