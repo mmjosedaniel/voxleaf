@@ -42,7 +42,7 @@ production completion/investigation is deferred under
 Current executable identity is separate from stable profile names and historical
 evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
 Chatterbox selects the published **v7** runtime with frozen v3 service modules and
-msgpack 1.2.3. Its [refresh plan](plans/active/chatterbox-msgpack-security-refresh.md)
+msgpack 1.2.3. Its [refresh plan](plans/completed/chatterbox-msgpack-security-refresh.md)
 records identity-bound preparation, publication and integration evidence.
 V2/v3/v5/v6 are cleanup-only; local v4 remains unpublished/unadmitted. Historical
 V6 full live downloads failed twice; complete V7 live delivery is not claimed.

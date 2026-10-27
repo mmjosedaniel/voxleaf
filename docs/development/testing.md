@@ -249,7 +249,7 @@ for the diagnostic, host checks, and independent review.
 Current Chatterbox integration authority checks explicitly select v7; historical
 v3/v5/v6 checks remain available and must preserve their exact outputs.
 
-The [v7 msgpack preparation](../plans/active/chatterbox-msgpack-security-refresh.md)
+The [v7 msgpack preparation](../plans/completed/chatterbox-msgpack-security-refresh.md)
 uses `pnpm.cmd test:chatterbox:v7:preparation` and `audit:chatterbox:v7`.
 The `package:chatterbox-optional:v7:{lock,write-source,check-source,check-local}`
 commands follow the same isolated build workflow as v6; use

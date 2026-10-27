@@ -1,5 +1,10 @@
 # Chatterbox v7 msgpack security refresh
 
+Completed on 2026-10-27: verified package retained and published, V7 integrated,
+independent local acceptance obtained, and all four hosted checks passed on
+integration commit `5695f4ed4a52885e6d6aa03976d23b5c34defde8`. The staged
+authorization history and unsuccessful attempts below remain historical.
+
 ## Goal
 
 Prepare a distinct, verified `voxleaf-chatterbox-v7` runtime with msgpack 1.2.3 to address the dependency finding CVE-2026-114613 / GHSA-j586-36cw-2gc2. Preserve the other 78 package pins, frozen service modules, Python/Torch/CUDA and all six model identities. Use the existing packaging design rather than a new on-device installer architecture.
@@ -53,10 +58,10 @@ V7 extends the existing closed package identities and inherits frozen v3 service
 5. Independent candidate/acceptance review — complete for technical local preparation. Security bypass review found no actionable issues; Astra report `CB-V7-PREPARATION-R1-ASTRA-20261027` returned APPROVE with no findings. Its closed 1,389-path identity manifest SHA-256 is `11a705b055763084ed6ba00bbb666a6ee0e2a68f372888bd1f924d3ebf51d7d7`. Only this plan's acceptance/handoff entries were updated afterward; final closeout review reference: `CB-V7-PREPARATION-R2-ASTRA-20261027` (the independent report owns its verdict). Retention/publication/integration remain outside that technical acceptance.
 6. Publication handoff — complete. Exact identities below were approved and published under the additional authorization.
 7. Authorized retention/publication — complete. Original evidence and package retained under ignored `services/tts/release/optional/chatterbox/dist/v7`; copied identities verified. Non-latest prerelease targets the preparation commit; every public asset was read back before admission.
-8. Active V7 integration — implemented, acceptance pending. Independent version-specific publication authority preserves historical authorities; current native/audit/inventory/resource selectors and exact cleanup-only V6 ownership are updated. Explicit consent, cancellation, failed-acquisition data and old versions remain preserved until explicit removal.
+8. Active V7 integration — complete and independently accepted. Independent version-specific publication authority preserves historical authorities; current native/audit/inventory/resource selectors and exact cleanup-only V6 ownership are updated. Explicit consent, cancellation, failed-acquisition data and old versions remain preserved until explicit removal.
 9. Integration validation — complete locally. Focused publication/selector/retained-root regressions, Python/native checks, compiled NSIS fixtures, generated inventory/license checks and production audit pass through the recorded aggregate continuation. Exact local artifact admission, fresh ES/EN execution and native startup pass. Original prepared-V7 security evidence is subject to the scoped identity/reuse assessment below and independent review.
-10. Independent integration acceptance — pending. Astra reviews the exact patch, evidence and bounded reuse decisions without editing or executing tests. Correct findings before acceptance.
-11. PR/CI closeout — pending. Commit and push the approved integration to existing PR #278; obtain fresh required CI on the exact integration head. Archive only after required local and hosted acceptance; no merge.
+10. Independent integration acceptance — complete. `CB-V7-INTEGRATION-R2-ASTRA-20261027` returned APPROVE for the exact patch, evidence and scoped reuse after the two R1 gaps were resolved. No implementation findings remained; reviewer did not edit or execute tests.
+11. PR/CI closeout — complete for integration. Approved integration committed and pushed to existing PR #278; all four fresh hosted checks pass on its exact head. Plan archived with maintained incoming links/indexes. PR remains open; no merge or public installer publication.
 
 ## Testing and benchmark strategy
 
@@ -246,3 +251,53 @@ follow-up was edited after these runs. No production/test source, package,
 model, dependency or environment correction was needed. The next independent
 exact-patch review is `CB-V7-INTEGRATION-R2-ASTRA-20261027`; its report owns the
 verdict. Commit/push requires APPROVE, and hosted CI remains a subsequent gate.
+
+### Integration commit and hosted acceptance
+
+R2 returned **APPROVE** with no pending findings. Its immutable manifest SHA-256
+is `6d1fb7d91c1a9fd92ba0f0c4f4bb8228f5749ccb627954641fd625f697aabd3f`.
+The 1,396 source identities were rechecked before staging; all 40 staged paths
+and filtered Git blobs matched the approval. A first precommit guard stopped on
+PowerShell-versus-Git sorting order, not different membership; exact set and
+blob checks resolved this without discarding or changing any staged content.
+Staged diff/evidence checks passed.
+
+Integration commit `5695f4ed4a52885e6d6aa03976d23b5c34defde8` was pushed to
+[PR #278](https://github.com/mmjosedaniel/voxleaf/pull/278); worktree and index
+were clean at that checkpoint. The GitHub connector returned 403 editing PR
+metadata; authenticated `gh pr edit --body-file` succeeded. The title and body
+now describe NCC corrections plus V7 and retain validation failures/limits.
+
+Fresh hosted runs for this head:
+[Foundation checks 40572573748](https://github.com/mmjosedaniel/voxleaf/actions/runs/40572573748)
+and [Release dependency audit 40572573753](https://github.com/mmjosedaniel/voxleaf/actions/runs/40572573753).
+Both started; all four jobs are pending/in progress at this entry. The earlier
+preparation-head audit failure is preserved, not attributed to this new head.
+
+Final readback supersedes that in-progress entry: both workflows completed
+successfully for `5695f4ed4a52885e6d6aa03976d23b5c34defde8`; PR head readback
+matches. Original connector responses are retained in
+`dist/v7/evidence/CI-integration-5695f4e.json`.
+
+| Hosted check | Job | Final result |
+| --- | --- | --- |
+| Production dependency graphs | 122430391268 | PASS, including exact graph audit and inventory verification |
+| Ubuntu portable foundation | 122430391448 | PASS |
+| Ubuntu Rust foundation | 122430391994 | PASS |
+| Windows native foundation | 122430391956 | PASS, including browser, packaged WebView2 startup and the full foundation aggregate |
+
+This fresh hosted aggregate is separate from the local failed aggregate and its
+approved continuation; no failure was relabeled. The final archive/index/link
+patch changes documentation only and preserves every validated executable
+input. Its independent exact-patch closeout reference is
+`CB-V7-CLOSEOUT-R3-ASTRA-20261027`; that report owns its verdict. Any subsequent
+documentation-commit CI is recorded in the PR and retained receipts rather than
+rewriting this immutable historical implementation acceptance.
+
+Outcome: the production graph no longer selects affected V6 msgpack. The same
+reviewed V7 parts are publicly available and preserved locally; no new package
+build was introduced during integration. Explicit acquisition is still required
+for an existing user installation. Remaining limitations are the four audit
+blind spots and historical complete-live-delivery timeouts; this correction
+does not claim to resolve them. No further in-scope implementation or acceptance
+work remains after the referenced documentary closeout approval.

@@ -219,7 +219,7 @@ Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
 On 2026-10-27, CI and the local v6 audit reported
 [GHSA-j586-36cw-2gc2](https://github.com/advisories/GHSA-j586-36cw-2gc2)
-for msgpack 1.2.1. The [v7 preparation](../plans/active/chatterbox-msgpack-security-refresh.md)
+for msgpack 1.2.1. The [v7 preparation](../plans/completed/chatterbox-msgpack-security-refresh.md)
 adds a separate 79-package hashed graph with only msgpack changed to 1.2.3;
 the other 78 pins, frozen service, Python/Torch/CUDA and six models are retained.
 Use the explicit `:v7` lock/source/build/check-local commands and

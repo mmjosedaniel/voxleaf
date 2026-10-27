@@ -4,7 +4,7 @@
 
 Accepted design on 2026-10-27. The user authorized exact-asset prerelease
 publication and V7 integration. Implementation acceptance and its limits are
-recorded in the [refresh plan](../../plans/active/chatterbox-msgpack-security-refresh.md).
+recorded in the [refresh plan](../../plans/completed/chatterbox-msgpack-security-refresh.md).
 
 ## Context
 

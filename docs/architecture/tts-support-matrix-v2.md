@@ -2,7 +2,7 @@
 
 V7 is the current msgpack-corrected runtime under
 [ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
-[refresh plan](../plans/active/chatterbox-msgpack-security-refresh.md) records
+[refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records
 publication, local admission/runtime validation and CI. Historical V6 full live
 downloads failed twice; no transport fix or complete V7 live-delivery pass is claimed.
 
