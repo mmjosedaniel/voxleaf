@@ -17,6 +17,13 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed narration/Chatterbox corrections](plans/completed/narration-chatterbox-correctness.md)
+preserve the exact final heard position, reconcile automatic compatibility with
+active narration, enable explicit acquisition retry, measure the optional-data
+destination's free space and retain the previous package after failed replacement.
+Focused, browser, native and integrated host evidence passed with independently
+approved continuation and scoped reuse; the plan retains all initial failures.
+
 The [completed lifecycle follow-up](plans/completed/lifecycle-correctness-follow-up.md)
 restores explicit narration restart after completion, protects admitted download
 staging, reports residual optional uninstall data and checks termination before

@@ -1762,7 +1762,7 @@ fn discard_verified_runtime_parts(parts_root: &Path) -> Result<(), OptionalProfi
 }
 
 impl OptionalChatterboxManager {
-    fn profile_root_for() -> Result<&'static PathBuf, OptionalProfileError> {
+    pub(crate) fn profile_root_for() -> Result<&'static PathBuf, OptionalProfileError> {
         APPLICATION_DATA_ROOT
             .get()
             .ok_or(OptionalProfileError::Unavailable)

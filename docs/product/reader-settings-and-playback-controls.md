@@ -116,6 +116,12 @@ prior profile, preference, identities, service ownership, and recovery episode.
 A failed selection instead leaves a stable actionable error and the safest
 valid profile state.
 
+Automatic compatibility checks after a hidden/visible transition reconcile the
+current narration owner after the probe settles. A changed or unavailable
+selection stops obsolete narration before applying its preparation policy;
+unchanged admission preserves playback. This never starts narration or renews
+the explicit recovery budget. Replaced/closed owners ignore late results.
+
 An initial compatibility check must finish before a newly opened book is marked
 unavailable. Closing/replacing that book makes pending availability results
 ineligible. If a language/profile selection or language reset succeeds while a
@@ -165,6 +171,15 @@ Reselecting Chatterbox during download, verification, or removal preserves that
 operation and its cancellation signal. A failed removal exposes a recoverable
 failure state. After the filesystem obstruction is resolved, removal can be
 retried without restarting VoxLeaf.
+
+A cached transfer, free-space or acquisition-verification failure offers
+**Review Chatterbox download again**. After the prerequisite is corrected, this
+explicit selection returns to confirmation; downloading still requires a
+separate click. Installed-integrity checks and removal recovery retain their
+own actions. Compatibility storage means the volume containing the managed
+application-local optional-data destination, including its nearest existing
+ancestor before the `tts` directory exists. Unknown or denied storage remains
+unavailable, and native download admission repeats its independent space check.
 
 The Windows uninstall journey presents optional-package data separately from
 ordinary preferences/recovery state.

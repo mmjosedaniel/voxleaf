@@ -1,5 +1,25 @@
 # Testing strategy
 
+## Narration and Chatterbox correctness regressions
+
+The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) uses selected
+`NCC`/`ncc_` regressions followed by one foundation check. Coordinator tests join
+the real player, persistence bridge and save owner while the frame counter reaches
+the final frame before `ended`. The device callback releases the final frame only
+after publishing the exact heard end. The browser case holds only real completion
+delivery across coordinator ticks at `1.00x` and `0.75x`, then verifies exact end,
+manual saving and reopening through the mounted reader with synthetic service PCM.
+
+Visibility tests cover changed/unchanged and paused/unavailable selection,
+replacement/close, overlapping probes, and a spent recovery budget. The optional
+controls retry cached acquisition failures through existing confirmation without
+network admission. Native tests inject free-space values at the production path
+selector, checking destination/ancestor, unknown and denied results without a
+second physical disk. Packaging tests stub expensive preparation and use real
+tiny filesystem moves with promotion/restore failures; an orphaned `.previous`
+is recovery input and must survive a blocked retry. These tests do not establish
+live v6 delivery, inference quality or installer acceptance.
+
 ## Lifecycle correctness follow-up
 
 The [lifecycle follow-up plan](../plans/completed/lifecycle-correctness-follow-up.md)

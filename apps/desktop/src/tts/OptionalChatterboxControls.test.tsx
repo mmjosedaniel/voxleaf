@@ -46,6 +46,58 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it.each([
+    "tts-optional-profile-download-failed",
+    "tts-optional-profile-insufficient-space",
+    "tts-optional-profile-invalid",
+  ])(
+    "NCC-03 explicitly retries cached %s through fresh confirmation",
+    async (failure) => {
+      let corrected = false;
+      let current = {
+        ...snapshot("failed"),
+        failure: failure as string | null,
+      };
+      const invoke = vi.fn(async (command: string) => {
+        if (command === "select_optional_chatterbox" && corrected)
+          current = { ...snapshot("confirming"), failure: null };
+        if (command === "download_optional_chatterbox")
+          current = { ...snapshot("installed"), failure: null };
+        return current;
+      });
+      const client = new OptionalChatterboxClient(invoke);
+      const onRemove = vi.fn(async () => undefined);
+      render(
+        <OptionalChatterboxControls
+          client={client}
+          onActivate={vi.fn(async () => true)}
+          onRecheck={vi.fn(async () => true)}
+          onRemove={onRemove}
+        />,
+      );
+      const retry = await screen.findByRole("button", {
+        name: /Check Chatterbox again|Review Chatterbox download again/,
+      });
+      corrected = true;
+      fireEvent.click(retry);
+      await waitFor(() => expect(client.observe().state).toBe("confirming"));
+      expect(invoke).toHaveBeenCalledWith("select_optional_chatterbox", {
+        profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+      });
+      expect(invoke.mock.calls.map(([command]) => command)).not.toContain(
+        "download_optional_chatterbox",
+      );
+      expect(onRemove).not.toHaveBeenCalled();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Download Chatterbox" }),
+      );
+      await waitFor(() => expect(client.observe().state).toBe("installed"));
+      expect(invoke).toHaveBeenCalledWith("download_optional_chatterbox", {
+        profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+      });
+    },
+  );
+
   it("reads the last download error only after an explicit export request", async () => {
     const invoke = vi.fn(async (command: string) =>
       command === "optional_chatterbox_download_diagnostic"

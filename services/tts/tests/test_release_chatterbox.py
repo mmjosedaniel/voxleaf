@@ -620,6 +620,98 @@ def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+@pytest.fixture
+def ncc_package_builder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Run real verification/promotion with tiny files, without sync or downloads."""
+
+    def synchronise(root: Path, environment: Path, *, package_version: str) -> None:
+        (environment / "Lib/site-packages").mkdir(parents=True, exist_ok=True)
+
+    def extract(archive: Path, target: Path) -> None:
+        _write_tree(target, {"python.exe": b"new synthetic runtime"})
+
+    monkeypatch.setattr(release_chatterbox, "_synchronise_environment", synchronise)
+    monkeypatch.setattr(release_chatterbox, "verify_safe_model_load_sites", lambda *a: None)
+    monkeypatch.setattr(
+        release_chatterbox, "_download_artifact", lambda *a: tmp_path / "unused.zip"
+    )
+    monkeypatch.setattr(release_chatterbox, "_extract_embedded_python", extract)
+    monkeypatch.setattr(release_chatterbox, "_local_package_receipt", lambda *a, **kw: {})
+    for name in (
+        "_configure_embedded_python",
+        "_copy_tree",
+        "_copy_runtime_modules",
+        "_copy_notices",
+    ):
+        monkeypatch.setattr(release_chatterbox, name, lambda *a, **kw: None)
+    return tmp_path / "output"
+
+
+def test_ncc_promotion_failure_restores_previous_package(
+    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dist = PackageLayout("6").dist(repository_root(), ncc_package_builder)
+    target = dist / PackageLayout("6").directory
+    previous = dist / f".{target.name}.previous"
+    _write_tree(target, {"old.txt": b"previous valid tree"})
+    replace = Path.replace
+
+    def fail_promotion(path: Path, destination: Path) -> Path:
+        if path.parent.name == ".s":
+            raise OSError("injected promotion failure")
+        return replace(path, destination)
+
+    monkeypatch.setattr(Path, "replace", fail_promotion)
+    with pytest.raises(OSError, match="injected promotion failure"):
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert (target / "old.txt").read_bytes() == b"previous valid tree"
+    assert not previous.exists()
+    assert not (dist / ".s").exists()
+
+
+def test_ncc_failed_restore_preserves_backup_across_retry(
+    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dist = PackageLayout("6").dist(repository_root(), ncc_package_builder)
+    target = dist / PackageLayout("6").directory
+    previous = dist / f".{target.name}.previous"
+    _write_tree(target, {"old.txt": b"sole surviving tree"})
+    replace = Path.replace
+    restore_blocked = True
+
+    def fail_moves(path: Path, destination: Path) -> Path:
+        if path.parent.name == ".s":
+            raise OSError("injected promotion failure")
+        if path == previous and restore_blocked:
+            raise OSError("injected restoration failure")
+        return replace(path, destination)
+
+    monkeypatch.setattr(Path, "replace", fail_moves)
+    for _ in range(2):
+        with pytest.raises(OSError):
+            release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+        assert not target.exists()
+        assert (previous / "old.txt").read_bytes() == b"sole surviving tree"
+    restore_blocked = False
+    with pytest.raises(OSError, match="injected promotion failure"):
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert (target / "old.txt").read_bytes() == b"sole surviving tree"
+    assert not previous.exists()
+
+
+def test_ncc_successful_promotion_preserves_unrelated_tree(ncc_package_builder: Path) -> None:
+    dist = PackageLayout("6").dist(repository_root(), ncc_package_builder)
+    target = dist / PackageLayout("6").directory
+    _write_tree(target, {"old.txt": b"previous tree"})
+    _write_tree(dist, {"sentinel/keep.txt": b"unrelated"})
+    result = release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert result.file_count > 0
+    assert (target / "runtime/python.exe").read_bytes() == b"new synthetic runtime"
+    assert not (target / "old.txt").exists()
+    assert not (dist / f".{target.name}.previous").exists()
+    assert (dist / "sentinel/keep.txt").read_bytes() == b"unrelated"
+
+
 def _write_tree(root: Path, files: dict[str, bytes]) -> None:
     for relative, value in files.items():
         target = root / relative

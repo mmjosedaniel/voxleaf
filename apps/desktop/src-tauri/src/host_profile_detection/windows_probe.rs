@@ -112,13 +112,37 @@ fn memory() -> ProbeValue<NativeMemory> {
 }
 
 fn application_volume() -> ProbeValue<u64> {
-    let Ok(executable) = std::env::current_exe() else {
+    application_volume_at(
+        crate::tts_optional_chatterbox::OptionalChatterboxManager::profile_root_for()
+            .ok()
+            .map(|root| root.as_path()),
+        disk_free_bytes,
+    )
+}
+
+pub(super) fn application_volume_at(
+    destination: Option<&Path>,
+    free_bytes: impl Fn(&Path) -> ProbeValue<u64>,
+) -> ProbeValue<u64> {
+    let Some(mut directory) = destination.filter(|path| path.is_absolute()) else {
         return ProbeValue::Unknown;
     };
-    let Some(directory) = executable.parent() else {
-        return ProbeValue::Unknown;
-    };
-    disk_free_bytes(directory)
+    loop {
+        match std::fs::metadata(directory) {
+            Ok(metadata) if metadata.is_dir() => return free_bytes(directory),
+            Ok(_) => return ProbeValue::Unknown,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                let Some(parent) = directory.parent() else {
+                    return ProbeValue::Unknown;
+                };
+                directory = parent;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
+                return ProbeValue::PermissionDenied;
+            }
+            Err(_) => return ProbeValue::Unknown,
+        }
+    }
 }
 
 fn disk_free_bytes(directory: &Path) -> ProbeValue<u64> {

@@ -461,7 +461,10 @@ export class AdaptivePcmPlayer {
     const observed = forceComplete
       ? unit.metadata.sampleCountSamples
       : Math.min(
-          unit.metadata.sampleCountSamples,
+          // The device counter can reach the end before its queued ended
+          // callback. Retain the last frame until that callback publishes the
+          // exact heard end, before the scheduler releases persistence ownership.
+          unit.metadata.sampleCountSamples - 1,
           this.#playbackStartSampleFrame + handle.playedSampleFrames,
         );
     const delta = observed - this.#reportedSampleFrames;

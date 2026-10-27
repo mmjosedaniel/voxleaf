@@ -214,6 +214,13 @@ export function OptionalChatterboxControls({
   const [exporting, setExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
   const storageFootprintBytes = snapshot.installedBytes;
+  const retryAcquisition =
+    snapshot.failure === "tts-optional-profile-download-failed" ||
+    snapshot.failure === "tts-optional-profile-insufficient-space" ||
+    snapshot.failure === "tts-optional-profile-invalid";
+  const recheckCompatibility =
+    snapshot.failure === "tts-optional-profile-incompatible-host" ||
+    (retryAcquisition && !acquisitionAllowed);
 
   useEffect(() => {
     void client.refresh();
@@ -413,15 +420,19 @@ export function OptionalChatterboxControls({
             disabled={disabled || pending}
             onClick={() =>
               run(
-                snapshot.failure === "tts-optional-profile-incompatible-host"
+                recheckCompatibility
                   ? onRecheck
-                  : () => client.refresh(),
+                  : retryAcquisition
+                    ? () => client.select()
+                    : () => client.refresh(),
               )
             }
           >
-            {snapshot.failure === "tts-optional-profile-incompatible-host"
+            {recheckCompatibility
               ? "Recheck device compatibility"
-              : "Check Chatterbox again"}
+              : retryAcquisition
+                ? "Review Chatterbox download again"
+                : "Check Chatterbox again"}
           </button>
           <button
             type="button"

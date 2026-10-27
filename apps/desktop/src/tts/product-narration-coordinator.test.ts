@@ -24,6 +24,8 @@ import { ReaderPositionRestoreCoordinator } from "../persistence/reader-position
 import { createWebStorageReaderPositionRepository } from "../persistence/reader-position-repository";
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
+import { bindHardwareCompatibilityChecks } from "./hardware-compatibility-check-binding";
+import type { HardwareCompatibilitySnapshotV1 } from "./hardware-profile-compatibility";
 import {
   AdaptivePcmPlayer,
   type PcmPlaybackBackend,
@@ -59,6 +61,7 @@ class ManualClock implements ProductNarrationClock {
 }
 
 class FakePlaybackBackend implements PcmPlaybackBackend {
+  public playedSampleFrames = 0;
   public active:
     | {
         readonly request: PcmPlaybackRequest;
@@ -74,9 +77,13 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
     callbacks: PcmPlaybackCallbacks,
   ): PcmPlaybackHandle {
     this.active = { request, callbacks };
+    const playedSampleFrames = () => this.playedSampleFrames;
+    this.playedSampleFrames = 0;
     return {
       sequence: request.sequence,
-      playedSampleFrames: 0,
+      get playedSampleFrames() {
+        return playedSampleFrames();
+      },
       pause: vi.fn(),
       resume: vi.fn(),
       stop: vi.fn(),
@@ -508,6 +515,84 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["changed-playing", "unavailable-paused", "unchanged"] as const)(
+    "NCC-02 reconciles automatic %s without restart",
+    async (scenario) => {
+      const original = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      let selected: string | undefined = original;
+      const { coordinator, client, backend, prepareNarration } = createHarness({
+        profileCompatibility: {
+          activeProfileId: () => selected,
+          activeLanguage: () => "en",
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+        },
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      if (scenario === "unavailable-paused") coordinator.pause();
+      const oldAudio = backend.active;
+      const reset = vi.spyOn(coordinator, "resetRecoveryEpisode");
+      const refresh = vi.spyOn(coordinator, "refreshSelectedProfile");
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const shutdown = client.shutdown.bind(client);
+      vi.spyOn(client, "shutdown").mockImplementation(async () => {
+        await held;
+        await shutdown();
+      });
+      const source = Object.assign(new EventTarget(), {
+        visibilityState: "hidden" as DocumentVisibilityState,
+      });
+      const target = {
+        ensureChecked: async () => ({}) as HardwareCompatibilitySnapshotV1,
+        check: vi.fn(async () => {
+          selected =
+            scenario === "unchanged"
+              ? original
+              : scenario === "unavailable-paused"
+                ? undefined
+                : "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+          return {} as HardwareCompatibilitySnapshotV1;
+        }),
+      };
+      const disconnect = bindHardwareCompatibilityChecks(target, source, () =>
+        coordinator.refreshSelectedProfile(),
+      );
+      source.visibilityState = "visible";
+      source.dispatchEvent(new Event("visibilitychange"));
+      await settleUntil(() => refresh.mock.calls.length === 1);
+      if (scenario !== "unchanged") {
+        await settleUntil(
+          () => vi.mocked(client.shutdown).mock.calls.length > 0,
+        );
+        expect(coordinator.observe().profileId).toBe(original);
+        expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+      } else {
+        await settleUntil(
+          () => coordinator.observe().availability === "available",
+        );
+        expect(client.shutdown).not.toHaveBeenCalled();
+        expect(backend.active).toBe(oldAudio);
+      }
+      release();
+      await settleUntil(
+        () => coordinator.observe().availability !== "checking",
+      );
+      expect(client.startedProfiles).toEqual([original]);
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      expect(reset).not.toHaveBeenCalled();
+      expect(coordinator.observe().availability).toBe(
+        scenario === "unavailable-paused" ? "unavailable" : "available",
+      );
+      disconnect();
+      await coordinator.close();
+    },
+  );
+
   it.each(["visible", "leaf"] as const)(
     "LCF-01 restarts completed narration through %s after cleanup",
     async (action) => {
@@ -668,6 +753,92 @@ describe("product narration coordinator", () => {
     await save.close();
     await coordinator.close();
   });
+
+  it.each([100, 75] as const)(
+    "NCC-01 saves the heard end before terminal persistence at %s percent",
+    async (rate) => {
+      const { coordinator, backend, intervals } = createHarness();
+      const storage = new Map<string, string>();
+      const repository = createWebStorageReaderPositionRepository({
+        storage: () => ({
+          getItem: (key) => storage.get(key) ?? null,
+          setItem: (key, value) => {
+            storage.set(key, value);
+          },
+        }),
+      });
+      const publication = {
+        ...createPublication(async () => completeResult()),
+        defaultStartLocator: START_LOCATOR,
+      };
+      const save = new ReaderPositionSaveCoordinator(publication, repository, {
+        initialLocator: START_LOCATOR,
+      });
+      const finish = vi.spyOn(save, "finishNarration");
+      const begin = vi.spyOn(save, "beginNarration");
+      const unbind = bindNarrationPositionPersistence(coordinator, save);
+      const audible: ProductNarrationAudibleProgressObservation[] = [];
+      coordinator.subscribeAudibleProgress((event) => audible.push(event));
+      await coordinator.checkAvailability();
+      await coordinator.setPlaybackRatePercent(rate);
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      await settleUntil(() => backend.active !== undefined);
+      const finalAudio = backend.active!;
+      backend.playedSampleFrames = finalAudio.request.sampleCountSamples;
+      for (const tick of [...intervals]) tick();
+      expect(finish).not.toHaveBeenCalled();
+      expect(coordinator.observe().navigation.playIntent).toBe("playing");
+      backend.finish();
+      finalAudio.callbacks.ended();
+      for (const tick of [...intervals]) tick();
+      await save.flush();
+      expect(
+        await repository.readPosition(START_LOCATOR.bookIdentity),
+      ).toMatchObject({
+        status: "ready",
+        state: { locator: SOURCE_RANGE.end },
+      });
+      const manual = decodeReadingLocatorV1({
+        ...START_LOCATOR,
+        textOffsetCodePoints: 1,
+      });
+      expect(save.schedulePassive(manual)).toBe(true);
+      await save.flush();
+      for (let index = 0; index < 3; index += 1)
+        for (const tick of [...intervals]) tick();
+      await save.flush();
+      expect(
+        await repository.readPosition(START_LOCATOR.bookIdentity),
+      ).toMatchObject({ status: "ready", state: { locator: manual } });
+      expect(begin).toHaveBeenCalledTimes(1);
+      expect(finish).toHaveBeenCalledTimes(1);
+      expect(
+        audible.filter((event) => event.kind === "segment-completed"),
+      ).toHaveLength(1);
+      const restored = await new ReaderPositionRestoreCoordinator(
+        repository,
+      ).restore(publication);
+      expect(restored).toMatchObject({
+        status: "ready",
+        position: { mode: "exact", locator: manual },
+      });
+      expect(coordinator.observe()).toMatchObject({
+        state: { phase: "complete" },
+        navigation: { playIntent: "inactive" },
+      });
+      coordinator.subscribeNavigationRequests((request) =>
+        coordinator.settleExternalNavigation(request.locator),
+      );
+      coordinator.updateVisibleLocator(START_LOCATOR);
+      coordinator.startAtVisibleLocator();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(begin).toHaveBeenCalledTimes(2);
+      unbind();
+      await save.close();
+      await coordinator.close();
+    },
+  );
 
   it.each([
     "changed",
@@ -2746,7 +2917,7 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
-  it("makes a failed explicit restart terminal until an explicit recheck", async () => {
+  it("NCC-02 keeps a spent recovery budget across automatic recheck until an explicit recheck", async () => {
     const { client, coordinator } = createHarness();
     vi.spyOn(client, "prepare")
       .mockRejectedValueOnce(
@@ -2775,6 +2946,28 @@ describe("product narration coordinator", () => {
     await Promise.resolve();
     expect(client.synthesized).toHaveLength(0);
 
+    const recovery = coordinator.observe().recovery;
+    const source = Object.assign(new EventTarget(), {
+      visibilityState: "hidden" as DocumentVisibilityState,
+    });
+    const target = {
+      ensureChecked: async () => ({}) as HardwareCompatibilitySnapshotV1,
+      check: async () => ({}) as HardwareCompatibilitySnapshotV1,
+    };
+    const refresh = vi.spyOn(coordinator, "refreshSelectedProfile");
+    const disconnect = bindHardwareCompatibilityChecks(target, source, () =>
+      coordinator.refreshSelectedProfile(),
+    );
+    source.visibilityState = "visible";
+    source.dispatchEvent(new Event("visibilitychange"));
+    await settleUntil(
+      () =>
+        refresh.mock.calls.length === 1 &&
+        coordinator.observe().availability !== "checking",
+    );
+    expect(coordinator.observe().recovery).toEqual(recovery);
+    expect(client.synthesized).toHaveLength(0);
+    disconnect();
     coordinator.resetRecoveryEpisode();
     expect(coordinator.observe().recovery).toMatchObject({
       phase: "operational",

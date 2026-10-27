@@ -498,11 +498,25 @@ def build_package(
         verify_package_tree(staging, json.loads(rendered), package_version=package_version)
         target = dist / layout.directory
         previous = dist / f".{layout.directory}.previous"
+        # A failed rollback leaves the only previous package here. Recover it
+        # before treating a backup as disposable, including on a later build.
+        if previous.exists() and not target.exists():
+            previous.replace(target)
         if previous.exists():
             shutil.rmtree(previous)
         if target.exists():
             target.replace(previous)
-        staging.replace(target)
+        try:
+            staging.replace(target)
+        except OSError as error:
+            if previous.exists():
+                try:
+                    previous.replace(target)
+                except OSError:
+                    error.add_note(
+                        "Previous package retained in the promotion backup; recovery failed."
+                    )
+            raise
         shutil.rmtree(previous, ignore_errors=True)
     finally:
         shutil.rmtree(staging_parent, ignore_errors=True)

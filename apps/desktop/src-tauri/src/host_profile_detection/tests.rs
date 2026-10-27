@@ -4,6 +4,80 @@ use serde_json::Value;
 
 use super::*;
 
+#[cfg(windows)]
+#[test]
+fn ncc_storage_measures_destination_not_executable_volume() {
+    let destination = std::env::temp_dir();
+    let executable = std::env::current_exe().unwrap();
+    assert_ne!(Some(destination.as_path()), executable.parent());
+    for available in [gibibytes(30), gibibytes(1)] {
+        let measured = windows_probe::application_volume_at(Some(&destination), |path| {
+            if path == destination {
+                ProbeValue::Known(available)
+            } else {
+                ProbeValue::Known(0)
+            }
+        });
+        let mut snapshot = complete_snapshot();
+        snapshot.application_volume_available_bytes = measured;
+        assert_eq!(
+            normalize_snapshot(snapshot)
+                .storage
+                .application_volume_available_mi_b,
+            Quantity::Known {
+                value: available / MEBIBYTE_BYTES
+            }
+        );
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn ncc_storage_uses_existing_destination_ancestor_without_creating_leaf() {
+    let ancestor = std::env::temp_dir();
+    let destination = ancestor
+        .join(format!("voxleaf-ncc-absent-{}", std::process::id()))
+        .join("tts");
+    assert!(!destination.parent().unwrap().exists());
+    let measured = windows_probe::application_volume_at(Some(&destination), |path| {
+        assert_eq!(path, ancestor);
+        ProbeValue::Known(gibibytes(30))
+    });
+    assert_eq!(measured, ProbeValue::Known(gibibytes(30)));
+    assert!(!destination.parent().unwrap().exists());
+}
+
+#[cfg(windows)]
+#[test]
+fn ncc_storage_unknown_and_denied_never_fall_back_to_executable() {
+    for destination in [None, Some(std::path::Path::new("relative/tts"))] {
+        assert_eq!(
+            windows_probe::application_volume_at(destination, |_| panic!("unexpected fallback")),
+            ProbeValue::Unknown
+        );
+    }
+    let file = std::env::current_exe().unwrap();
+    assert_eq!(
+        windows_probe::application_volume_at(Some(&file), |_| panic!("not a directory")),
+        ProbeValue::Unknown
+    );
+    for result in [ProbeValue::Unknown, ProbeValue::PermissionDenied] {
+        let destination = std::env::temp_dir();
+        let measured = windows_probe::application_volume_at(Some(&destination), |path| {
+            assert_eq!(path, destination);
+            result.clone()
+        });
+        let mut snapshot = complete_snapshot();
+        snapshot.application_volume_available_bytes = measured;
+        let report = normalize_snapshot(snapshot);
+        assert_eq!(
+            report.storage.application_volume_available_mi_b,
+            Quantity::Unknown
+        );
+        assert_ne!(report.probe_status, ProbeStatus::Complete);
+    }
+}
+
 struct InjectedProbe(NativeHostSnapshot);
 
 impl HostProbePort for InjectedProbe {
@@ -628,6 +702,10 @@ fn implementation_has_no_process_network_model_or_persistence_surface() {
         include_str!("windows_probe.rs"),
         include_str!("tests.rs"),
     ];
+    // NCC-04 needs one read-only directory metadata lookup to find an existing
+    // destination ancestor. Keep all other filesystem surfaces prohibited.
+    let metadata_read = ["std::", "fs::metadata(directory)"].concat();
+    assert_eq!(sources[1].matches(&metadata_read).count(), 1);
     let forbidden = [
         ["std::process::", "Command"].concat(),
         ["Tcp", "Stream"].concat(),
@@ -648,7 +726,12 @@ fn implementation_has_no_process_network_model_or_persistence_surface() {
         ["import ", "torch"].concat(),
     ];
     for forbidden in forbidden {
-        for source in sources {
+        for (index, source) in sources.iter().enumerate() {
+            let source = if index == 1 {
+                source.replace(&metadata_read, "allowed_directory_metadata")
+            } else {
+                source.to_string()
+            };
             assert!(
                 !source.contains(&forbidden),
                 "forbidden surface: {forbidden}"

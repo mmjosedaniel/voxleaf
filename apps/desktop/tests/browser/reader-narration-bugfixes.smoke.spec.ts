@@ -326,12 +326,103 @@ test("LCF completed narration restarts from visible passage and paragraph leaf",
   expect(errors).toEqual([]);
 });
 
+test("NCC final device counter precedes completion delivery, then saves exact end and manual reopen at direct and slow rates", async ({
+  browser,
+}) => {
+  test.setTimeout(90_000);
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 24 }, (_, i) => `<p id="passage-${i}">Synthetic passage number ${i}.</p>`).join("")}</body></html>`;
+  const file = {
+    name: "synthetic-ncc.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (await fixtures()).buildMinimalEpubFixture({ chapterDocument }),
+    ),
+  };
+  for (const rate of ["100", "75"]) {
+    const context = await browser.newContext({
+      viewport: { width: 800, height: 500 },
+      reducedMotion: "reduce",
+    });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.name));
+    try {
+      await installSyntheticService(page, true, true);
+      await page.goto("/");
+      await page.getByLabel("Open a book").setInputFiles(file);
+      await page
+        .getByLabel("Playback speed", { exact: true })
+        .selectOption(rate);
+      await page.locator('[data-narration-action="play"]').click();
+      const narration = page.locator(".product-narration");
+      const saved = () =>
+        page.evaluate(
+          () =>
+            JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+              .states?.[0]?.locator,
+        );
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () => Reflect.get(globalThis, "__rnb").completionPending,
+            ),
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+      // Device completion is real; only delivery is held across coordinator ticks.
+      await page.waitForTimeout(600);
+      await expect(narration).toHaveAttribute(
+        "data-narration-phase",
+        "playing",
+      );
+      await expect.poll(saved).toMatchObject({
+        anchor: { anchorIndex: 23 },
+        textOffsetCodePoints: 0,
+      });
+      expect(
+        await page.evaluate(() => Reflect.get(globalThis, "__rnb").deviceEnded),
+      ).toBe(24);
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").releaseCompletion(),
+      );
+      await expect(narration).toHaveAttribute(
+        "data-narration-phase",
+        "complete",
+      );
+      await expect.poll(saved).toMatchObject({
+        anchor: { anchorIndex: 23 },
+        textOffsetCodePoints: "Synthetic passage number 23.".length,
+      });
+      const viewport = page.getByRole("region", {
+        name: "Publication reading viewport",
+      });
+      await viewport.hover();
+      await page.mouse.wheel(0, -20_000);
+      await expect
+        .poll(async () => (await saved())?.anchor.anchorIndex)
+        .toBe(0);
+      const manual = await saved();
+      await page.reload();
+      await page.getByLabel("Open a book").setInputFiles(file);
+      await expect(page.getByRole("status")).toHaveText(
+        "Reading position restored.",
+      );
+      expect(await saved()).toEqual(manual);
+      expect(errors).toEqual([]);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
 async function installSyntheticService(
   page: Page,
   naturalCompletion = false,
+  holdFinalCompletion = false,
 ): Promise<void> {
   await page.addInitScript(
-    ({ hostReport, naturalCompletion }) => {
+    ({ hostReport, naturalCompletion, holdFinalCompletion }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
       sessionStorage.setItem("nlc-initialized", "true");
@@ -358,6 +449,20 @@ async function installSyntheticService(
         }>,
         preparing: false,
         release: () => {},
+        deviceEnded: 0,
+        completionPending: false,
+        releaseCompletion: () => {},
+      };
+      const deliverCompletion = (deliver: () => void) => {
+        observations.deviceEnded += 1;
+        if (holdFinalCompletion && observations.deviceEnded === 24) {
+          observations.completionPending = true;
+          observations.releaseCompletion = () => {
+            observations.completionPending = false;
+            observations.releaseCompletion = () => {};
+            deliver();
+          };
+        } else deliver();
       };
       Object.assign(globalThis, { __rnb: observations });
       const Original = globalThis.AudioContext;
@@ -392,6 +497,28 @@ async function installSyntheticService(
           }
           return gain;
         }
+        override createBufferSource() {
+          const source = super.createBufferSource();
+          if (holdFinalCompletion) {
+            const descriptor = Object.getOwnPropertyDescriptor(
+              AudioScheduledSourceNode.prototype,
+              "onended",
+            )!;
+            Object.defineProperty(source, "onended", {
+              configurable: true,
+              get: () => descriptor.get!.call(source),
+              set: (callback: ((event: Event) => void) | null) =>
+                descriptor.set!.call(
+                  source,
+                  callback === null
+                    ? null
+                    : (event: Event) =>
+                        deliverCompletion(() => callback.call(source, event)),
+                ),
+            });
+          }
+          return source;
+        }
         override async close() {
           await super.close();
           observations.closed += 1;
@@ -410,6 +537,28 @@ async function installSyntheticService(
               if (event.data.type === "ended") observations.ended += 1;
             });
             this.port.start();
+            if (holdFinalCompletion) {
+              const port = this.port;
+              const descriptor = Object.getOwnPropertyDescriptor(
+                MessagePort.prototype,
+                "onmessage",
+              )!;
+              Object.defineProperty(port, "onmessage", {
+                configurable: true,
+                get: () => descriptor.get!.call(port),
+                set: (callback: ((event: MessageEvent) => void) | null) =>
+                  descriptor.set!.call(
+                    port,
+                    callback === null
+                      ? null
+                      : (event: MessageEvent) => {
+                          if (event.data.type === "ended")
+                            deliverCompletion(() => callback.call(port, event));
+                          else callback.call(port, event);
+                        },
+                  ),
+              });
+            }
           }
         };
       }
@@ -497,6 +646,6 @@ async function installSyntheticService(
         },
       });
     },
-    { hostReport: report, naturalCompletion },
+    { hostReport: report, naturalCompletion, holdFinalCompletion },
   );
 }
