@@ -6,7 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Narration and Chatterbox correctness](narration-chatterbox-correctness.md):
+  planning-only corrections for final heard-position persistence, automatic
+  compatibility reconciliation, explicit acquisition retry, destination-volume
+  storage checks and maintainer package rollback. Includes inspected historical
+  evidence and a minimal validation plan; execution is not yet authorized.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
