@@ -215,6 +215,7 @@ signing limitations. The static security scan and its limits remain in the
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [`plans/active/chatterbox-runtime-correctness.md`](plans/active/chatterbox-runtime-correctness.md): planning-only Chatterbox DLL/admission/precision corrections, with a scoped evidence-reuse matrix; execution has not started.
 - [Test integrity and lifecycle harness safety](plans/completed/test-integrity-and-harness-safety.md): eleven corrections completed; G1-G8, real installer lifecycle, verified user-data restoration/reinstallation and independent review pass.
 - [`plans/completed/narration-state-and-optional-package-corrections.md`](plans/completed/narration-state-and-optional-package-corrections.md): accepted package-operation, availability, preference, volume, preparation-error and compatibility-status corrections; 169 focused tests and full repository/Chromium/WebView2 checks pass with independent Astra approval.
 - [`plans/completed/reader-narration-bugfixes.md`](plans/completed/reader-narration-bugfixes.md): accepted fixes and permanent regressions for four startup-cancellation, playback-disposal, lazy-image and prepared-navigation defects; repository, browser/native and all six real-model arms pass with independent Astra approval.

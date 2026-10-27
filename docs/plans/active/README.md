@@ -6,7 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Chatterbox runtime correctness](chatterbox-runtime-correctness.md): planned
+  corrections for private DLL loading, exact CUDA architecture admission and
+  precision reporting, with identity-bound evidence reuse and minimal new host
+  validation. Execution has not started; preserving the published v7 payload is
+  the preferred path.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
