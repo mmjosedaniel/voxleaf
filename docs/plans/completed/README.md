@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Minimal lifecycle correctness follow-up](lifecycle-correctness-follow-up.md): completed-run restart, atomic staging cleanup/admission, residual optional-data uninstall reporting and checked termination before package removal. Focused host gates, final-byte browser coverage and integrated stages pass; the plan preserves the initial aggregate format failure and independently approved continuation. LCF-R01-20261027 approves the implementation; the plan points to the exact archive review. Changes remain uncommitted on the existing branch, with no model, dependency or deletion-root expansion.
+
 - [Narration logic corrections](narration-logic-corrections.md): five bounded fixes for WSOLA silence progression, manual persistence after completion, contained compatibility changes, default CUDA admission and Celsius numeric boundaries. Focused regressions, browser/integrated checks, Piper host/listening and Chatterbox H2 pass with documented scoped reuse. Independent implementation approval is recorded; the exact archive/link review is retained in the linked evidence record. Changes remain uncommitted. Physical multi-GPU behavior and HTTP acquisition are not claimed.
 
 - [Chatterbox v6 filelock/setuptools refresh](chatterbox-filelock-setuptools-security-refresh.md): published successor accepted under the user's revised, independently reviewed scope. Exact local admission, current installed/native runtime, recovery regressions, lifecycle, audit and implementation-head CI pass with scoped evidence reuse. No repeated full download was needed; two failed live transfers and their unknown cause remain explicitly unresolved.

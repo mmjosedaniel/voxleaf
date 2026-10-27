@@ -6,11 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Minimal lifecycle correctness follow-up](lifecycle-correctness-follow-up.md)
-  is planning-only: completed-narration restart, snapshot/download staging
-  ownership, incomplete optional-data uninstall reporting and checked explicit
-  termination. It records verified prior evidence and a minimal validation
-  matrix. Implementation and test execution have not been authorized or started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

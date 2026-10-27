@@ -1,5 +1,53 @@
 use super::*;
 
+impl TtsServiceSupervisor {
+    pub(crate) fn lcf_unverified_termination_fixture() -> Self {
+        let supervisor = Self::new(NORMAL_SCENARIO);
+        let (session, _sender) = channel_session();
+        let session = Arc::new(session);
+        *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+        supervisor.set_state("generating").unwrap();
+        supervisor.lifecycle.lock().unwrap().active =
+            Some(build_work_identity(&fixture_segment()).unwrap());
+        let _ = std::panic::catch_unwind(|| {
+            let _process = session.process.lock().unwrap();
+            panic!("synthetic termination ownership failure");
+        });
+        supervisor
+    }
+
+    pub(crate) fn lcf_repair_termination_fixture(&self) {
+        self.session
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .process
+            .clear_poison();
+    }
+}
+
+#[test]
+fn lcf_force_stop_retains_unverified_ownership_until_success() {
+    let supervisor = TtsServiceSupervisor::lcf_unverified_termination_fixture();
+    let before = supervisor.lifecycle_observation().unwrap();
+    assert_eq!(
+        supervisor.force_stop(),
+        Err(TtsNativeFailure::InternalFailure)
+    );
+    assert_eq!(supervisor.lifecycle_observation().unwrap(), before);
+    assert!(supervisor.lifecycle.lock().unwrap().active.is_some());
+    supervisor.lcf_repair_termination_fixture();
+    assert_eq!(supervisor.force_stop(), Ok(()));
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert!(supervisor.lifecycle.lock().unwrap().active.is_none());
+    assert_eq!(
+        supervisor.lifecycle_observation().unwrap()["state"],
+        "stopped"
+    );
+    assert_eq!(supervisor.force_stop(), Ok(()));
+}
+
 #[test]
 fn lifecycle_observation_reports_captured_identity_during_busy_preparation() {
     let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
@@ -251,7 +299,7 @@ fn clb03_missing_wrong_and_unverified_containment_never_acknowledge_cleanup() {
             .is_ok()
     );
     drop(_operation);
-    supervisor.force_stop();
+    supervisor.force_stop().unwrap();
     assert_eq!(
         supervisor.shutdown_instance(Some(&session.service_instance_id)),
         Err(TtsNativeFailure::InvalidState)

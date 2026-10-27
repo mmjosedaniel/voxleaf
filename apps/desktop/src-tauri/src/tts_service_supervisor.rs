@@ -1418,24 +1418,30 @@ impl TtsServiceSupervisor {
         Ok(records)
     }
 
-    pub fn force_stop(&self) {
-        let Ok(mut session) = self.session.lock() else {
-            return;
-        };
-        if let Ok(mut lifecycle) = self.lifecycle.lock() {
-            lifecycle.active = None;
-            lifecycle.state = "stopped".to_owned();
-            lifecycle.contained_service_instance_id = None;
+    pub fn force_stop(&self) -> Result<(), TtsNativeFailure> {
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let mut lifecycle = self
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        // Keep ownership and the last truthful state until termination is verified.
+        if let Some(active) = session.as_ref() {
+            active.terminate()?;
         }
-        if let Some(active) = session.take() {
-            let _ = active.terminate();
-        }
+        session.take();
+        lifecycle.active = None;
+        lifecycle.state = "stopped".to_owned();
+        lifecycle.contained_service_instance_id = None;
+        Ok(())
     }
 }
 
 impl Drop for TtsServiceSupervisor {
     fn drop(&mut self) {
-        self.force_stop();
+        let _ = self.force_stop();
     }
 }
 

@@ -1,5 +1,29 @@
 # Testing strategy
 
+## Lifecycle correctness follow-up
+
+The [lifecycle follow-up plan](../plans/completed/lifecycle-correctness-follow-up.md)
+limits new coverage to the existing owners. LCF coordinator cases finish synthetic
+playback, restart through both explicit actions and hold cleanup against Stop,
+close and superseding navigation; the persistence bridge remains in the same
+focused group. One LCF browser case drives both mounted controls, verifies new
+generation/target/audio, manual saves after completion and closed old contexts.
+
+Native LCF tests pause an idle snapshot, admit a download through the real manager
+and retain its synthetic bytes/cancellation owner across snapshot cleanup. The
+existing poisoned-process-lock seam proves failed explicit termination retains
+ownership and stops package removal; repaired termination permits removal. This
+is error-handling evidence, not a reproduced orphan process.
+
+The LCF Windows release test compiles the actual NSIS hook against test-owned
+roots. Each of the eight optional roots is tested with a sharing violation and a
+junction, followed by successful retry. A denied parent verifies failed inspection;
+silent retention, update mode, preference independence and unrelated files remain
+controls. Missing NSIS is a prerequisite failure. These checks do not require an
+installation, model download or GPU. The plan retains one final `pnpm.cmd check`;
+unchanged model/DSP, installer choices and runtime topology do not require repeated
+voice, benchmark or installation campaigns.
+
 ## Narration logic correction regressions
 
 The [completed correction plan](../plans/completed/narration-logic-corrections.md)
@@ -482,7 +506,6 @@ roles fail; default tests and CI still load no model or generated audio.
   failures on the locked development executable.
 - `apps/desktop/src/file-ingress/local-epub-file.test.ts` verifies exact/max-plus-one size preflight without allocating a 100-MiB fixture, invalid sizes, caller-owned bytes, post-read length mismatch, active `FileReader` abort, and fixed content-free read failures. `apps/desktop/src/publication/publication-session.test.ts` proves one cancellable/replaced publication lifecycle, stale-success cleanup, shared close, reopen, and package-error redaction. `apps/desktop/src/publication/local-publication-open.test.ts` composes both boundaries and proves the real invalid-input path, replacement-at-selection cleanup, abort/stale-read rejection, bounded-byte handoff, closed read/package/close outcome mapping, unmount cleanup, and unexpected-failure containment. `apps/desktop/src/persistence/reader-position-repository.test.ts` proves the asynchronous replaceable Web Storage adapter, exact-identity lookup, strict nested/shared and app-local decoding, fixed-key isolation, most-recent replacement, 128-state eviction, serialized-size rejection, malformed-current repair, unsupported-version preservation/write disablement, no coercion or sensitive fields, independent preference/position migrations, and content-free read/write failures. `apps/desktop/src/persistence/reader-position-save-coordinator.test.ts` uses a manual clock and lifecycle port to prove the exact 499/500 ms passive boundary, latest-only supersession, immediate position/preference coalescing, passive-to-settled promotion, hidden/`pagehide`/close flushes, serialized bounded writes, stale-book rejection, failure containment, and content-free records. `apps/desktop/src/persistence/reader-position-restore-coordinator.test.ts` proves exact and nearest-valid resolution, every fixed repository fallback, identity mismatch, resolution failure, stale-read cancellation, one preference read per application owner, and close containment without exposing content. `apps/desktop/src/publication/reader-lifecycle.test.ts` proves immutable idle/opening/ready/empty/failure/closing states, zero-locator empty classification, prior-publication clearing, stale completion rejection, shared close, reopen, cleanup invalidation, renderer-failure cleanup, and content-free failures. `apps/desktop/src/reader/large-chapter-rendering.test.ts` proves recursive below/exact/above semantic-block and projected-node boundaries plus exact 250-block scheduling, one pending yield, cancellation, and stale-callback rejection. `apps/desktop/src/reader/SemanticDocument.test.tsx` proves exhaustive semantic headings, paragraphs, block quotes, ordered/unordered lists, text, emphasis, strong text, code, line breaks, inherited language/direction, source order, React text escaping, available/inert internal-target presentation, accessible unloaded raster fallback, omission of publisher attributes/styles/identities/URLs from rendered markup, first/next incremental batches, and no partial content above the ceiling. `apps/desktop/src/reader/active-visual-locator.test.ts` injects deterministic viewport, block, caret, scheduler, and observer ports to prove top/partial/between/end selection, source-order ties, exact code-point mapping, ambiguous-caret and structural block-start fallback, package normalization, geometry omission, duplicate suppression, visibility-bounded measurement, callback coalescing, nested suspension, and exhaustive cleanup. `apps/desktop/src/reader/ReaderPublication.test.tsx` proves canonical coordinator state, same-spine passive active-locator updates, exact and recovered target resolution, non-spine unavailability, chapter boundaries, hierarchical TOC order, fixed unavailable explanations, TOC/internal/chapter convergence, application-owned skip/return focus without URL mutation, passive focus/storage isolation, explicit-navigation tracker suspension and destination focus, initial target materialization/range settlement without focus movement or premature save, settled explicit/preference-reflow save intents, last-valid-locator preservation/recovery around an oversized destination, and omission of publisher anchors, hrefs, source fragments, DOM IDs, and browser-history mutation. `apps/desktop/src/reader/images/raster-image-policy.test.ts` verifies narrow GIF/JPEG/PNG/APNG/WebP metadata parsing, exact/max-plus-one dimensions/pixels/frames, static-only policy, malformed/type-mismatched rejection, and equal-or-stricter policy construction. `apps/desktop/src/reader/images/raster-image-source.test.ts` verifies one-decode concurrency, live source/pixel capacity, postdecode agreement, cancellation, fixed errors, no network calls, and exact object-URL release/close behavior. `apps/desktop/src/reader/images/publication-raster-image-loader.test.ts` verifies one serialized resource-read/decode path, the eight-outstanding-operation ceiling, queued cancellation, fixed unknown/read-failure fallback, caller-owned byte clearing, shared idempotent close, and content-free results. `apps/desktop/src/reader/images/SemanticRasterImage.test.tsx` verifies visibility-gated loading, semantic/missing alternative-text presentation, local ready rendering, late-result rejection, abort/release on unmount, final `<img>` failure fallback, and omission of resource identity. `apps/desktop/src/App.test.tsx` verifies the accessible six-state surface, busy/status semantics, accept hint, browser-picker cancellation, same-input clearing, validated metadata plus starting-spine semantic rendering without resource/target resolution when navigation is empty, zero-content recovery, exact/recovered restoration before reader settlement, delayed recovered-position rewrite, StrictMode mount-probe survival without closing live narration/restoration/persistence/application resources, final position flush ordering before replacement/close, preference writes, explicit close/reopen, fixed open/close/render failure messages, private-filename/metadata/error omission, stale-result rejection, render-boundary cleanup, real-unmount cleanup, and the independent synthetic raster-probe presentation.
 
-
 The App restoration boundary also has colocated pure coverage in
 `apps/desktop/src/app-reader-restoration.test.ts`: exact publication-reference
 and sequence matching, absent/loading/ready states, all terminal settlement
@@ -507,6 +530,7 @@ observation. The latter requires a fresh settling transition after arming and
 retains brief transitions between polls; pre-arm, previous-seek and stopped
 observations cannot satisfy it. Native deadlines, scenario order, synchronization
 assertions and resource cleanup remain in force.
+
 - ADR-0041 supersedes the older App-surface clauses above: the current suite
   proves one stable custom Open a book action, no empty-state Settings or
   compatibility chrome, replacement/unmount cleanup, and no manual raster

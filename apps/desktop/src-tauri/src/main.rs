@@ -57,7 +57,7 @@ fn main() {
         .expect("failed to build the VoxLeaf desktop shell");
     application.run(|handle, event| {
         if matches!(event, tauri::RunEvent::Exit) {
-            handle
+            let _ = handle
                 .state::<Arc<tts_service_supervisor::TtsServiceSupervisor>>()
                 .force_stop();
         }

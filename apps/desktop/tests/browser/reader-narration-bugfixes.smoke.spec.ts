@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import type { NarrationSegmentV1 } from "@voxleaf/shared";
 import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
 async function fixtures() {
@@ -228,6 +229,103 @@ test("NLC real worklet retains the tail and natural completion releases manual s
   expect(errors).toEqual([]);
 });
 
+test("LCF completed narration restarts from visible passage and paragraph leaf", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  await installSyntheticService(page, true);
+  await page.setViewportSize({ width: 800, height: 500 });
+  await page.goto("/");
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 24 }, (_, i) => `<p id="passage-${i}">Synthetic passage number ${i}.</p>`).join("")}</body></html>`;
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-lcf.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (await fixtures()).buildMinimalEpubFixture({ chapterDocument }),
+    ),
+  });
+  await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+  await page.locator('[data-narration-action="details-toggle"]').click();
+  await page.locator('[data-narration-action="play"]').click();
+  const narration = page.locator(".product-narration");
+  const observation = () =>
+    page.evaluate(() => {
+      const value = Reflect.get(globalThis, "__rnb");
+      return {
+        service: value.service as number,
+        created: value.created as number,
+        closed: value.closed as number,
+        synthesized: value.synthesized as number,
+        ended: value.ended as number,
+        requests: value.requests as Array<{
+          service: number;
+          generation: string;
+          anchor: number;
+        }>,
+      };
+    });
+  const savedAnchor = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator.anchor.anchorIndex,
+    );
+  const viewport = page.getByRole("region", {
+    name: "Publication reading viewport",
+  });
+  for (const [index, action] of ["visible", "leaf"].entries()) {
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "complete",
+      { timeout: 25_000 },
+    );
+    await expect.poll(savedAnchor).toBe(23);
+    const before = await observation();
+    expect(before.ended).toBe(before.synthesized);
+    await viewport.hover();
+    await page.mouse.wheel(0, -20_000);
+    await expect.poll(savedAnchor).toBe(0);
+    const target = action === "visible" ? 0 : 2;
+    if (action === "visible")
+      await page.locator('[data-narration-action="visible-passage"]').click();
+    else {
+      await page.locator(".semantic-document p").nth(target).hover();
+      await page.locator(".paragraph-leaf").click();
+    }
+    await expect
+      .poll(async () => (await observation()).service)
+      .toBe(index + 2);
+    await expect
+      .poll(async () => (await observation()).ended)
+      .toBeGreaterThan(before.ended);
+    const after = await observation();
+    const restarted = after.requests.slice(before.requests.length);
+    expect(restarted[0]?.anchor).toBe(target);
+    expect(new Set(restarted.map((request) => request.generation)).size).toBe(
+      1,
+    );
+    expect(restarted[0]?.generation).not.toBe(
+      before.requests.at(-1)?.generation,
+    );
+    expect(restarted.every((request) => request.service === index + 2)).toBe(
+      true,
+    );
+    expect(after.created).toBe(index + 2);
+    expect(after.closed).toBe(index + 1);
+  }
+  await expect(narration).toHaveAttribute("data-narration-phase", "complete", {
+    timeout: 25_000,
+  });
+  const final = await observation();
+  expect(final.service).toBe(3);
+  expect(final.ended).toBe(final.synthesized);
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect.poll(async () => (await observation()).closed).toBe(3);
+  expect(errors).toEqual([]);
+});
+
 async function installSyntheticService(
   page: Page,
   naturalCompletion = false,
@@ -253,6 +351,11 @@ async function installSyntheticService(
         created: 0,
         closed: 0,
         service: 0,
+        requests: [] as Array<{
+          service: number;
+          generation: string;
+          anchor: number;
+        }>,
         preparing: false,
         release: () => {},
       };
@@ -337,7 +440,10 @@ async function installSyntheticService(
       });
       Object.assign(window, {
         __TAURI_INTERNALS__: {
-          invoke: async (command: string) => {
+          invoke: async (
+            command: string,
+            args?: { segment: NarrationSegmentV1 },
+          ) => {
             switch (command) {
               case "detect_host_profile_compatibility":
                 return hostReport;
@@ -367,6 +473,12 @@ async function installSyntheticService(
                 ];
               case "synthesize_tts_segment": {
                 if (!naturalCompletion) return new ArrayBuffer(24_000 * 4);
+                const segment = args!.segment;
+                observations.requests.push({
+                  service: observations.service,
+                  generation: segment.generationId,
+                  anchor: segment.sourceRange.start.anchor.anchorIndex,
+                });
                 const pcm = new Float32Array(
                   observations.synthesized++ === 0 ? 48_000 : 1_200,
                 );

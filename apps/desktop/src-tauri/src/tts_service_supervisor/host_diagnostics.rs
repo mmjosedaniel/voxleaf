@@ -28,7 +28,7 @@ pub fn run_host() -> Result<(), &'static str> {
             != phase
         {
             if Instant::now() >= deadline {
-                supervisor.force_stop();
+                let _ = supervisor.force_stop();
                 let _ = worker.join();
                 return Err(TtsNativeFailure::TimedOut.code());
             }

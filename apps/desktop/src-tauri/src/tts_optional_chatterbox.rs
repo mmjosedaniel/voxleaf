@@ -1362,12 +1362,8 @@ fn prepare_installed_runtime(
 fn prepare_and_verify_installed_runtime(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
-    clean_abandoned_staging: bool,
 ) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
     with_installed_runtime_lock(|| {
-        if clean_abandoned_staging {
-            clean_staging(root)?;
-        }
         prepare_installed_runtime(root, manifest_authority)?;
         verify_runtime_cached(&package_root(root), manifest_authority)
     })
@@ -1824,6 +1820,8 @@ impl OptionalChatterboxManager {
         if let Some(snapshot) = self.operation_snapshot(manifest) {
             return Ok(snapshot);
         }
+        #[cfg(test)]
+        tests::run_snapshot_idle_hook();
         let active_exists = package_root(root).exists();
         let retained_exists = retained_package_exists(root);
         if (!active_exists && retained_exists)
@@ -1850,7 +1848,29 @@ impl OptionalChatterboxManager {
             .runtime_artifact
             .as_ref()
             .ok_or(OptionalProfileError::Invalid)?;
-        match prepare_and_verify_installed_runtime(root, manifest, true) {
+        // Lock order matches promotion: installed runtime, then operation.
+        // Admission cannot create staging until this cleanup releases operation;
+        // neither lock on admission is held across transfer or package hashing.
+        let admitted = with_installed_runtime_lock(|| {
+            let operation = self
+                .operation
+                .lock()
+                .map_err(|_| OptionalProfileError::Busy)?;
+            if let Some(state) = &operation.state {
+                return Ok(Some(snapshot_from(
+                    manifest,
+                    state.clone(),
+                    operation.downloaded_bytes,
+                    operation.failure,
+                )));
+            }
+            clean_staging(root)?;
+            Ok(None)
+        })?;
+        if let Some(snapshot) = admitted {
+            return Ok(snapshot);
+        }
+        match prepare_and_verify_installed_runtime(root, manifest) {
             Ok(_) => Ok(snapshot_from(
                 manifest,
                 OptionalProfileState::Installed,
@@ -2149,6 +2169,17 @@ impl OptionalChatterboxManager {
         self.remove_with_manifest(root, &manifest)
     }
 
+    fn remove_after_service_stop(
+        &self,
+        root: &Path,
+        supervisor: &crate::tts_service_supervisor::TtsServiceSupervisor,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+        supervisor
+            .force_stop()
+            .map_err(|_| OptionalProfileError::CleanupFailed)?;
+        self.remove_at(root)
+    }
+
     fn remove_with_manifest(
         &self,
         root: &Path,
@@ -2223,7 +2254,7 @@ pub(crate) fn discover_installed_chatterbox_runtime()
         return Ok(None);
     }
     let root = OptionalChatterboxManager::profile_root_for()?;
-    match prepare_and_verify_installed_runtime(root, &manifest, false) {
+    match prepare_and_verify_installed_runtime(root, &manifest) {
         Ok(runtime) => Ok(Some(runtime)),
         Err(OptionalProfileError::VerificationFailed) => Ok(None),
         Err(error) => Err(error),
@@ -2356,11 +2387,11 @@ pub async fn remove_optional_chatterbox(
     // The renderer performs identity-first player/scheduler cleanup before
     // invoking removal. Native still terminates an owned child as the final
     // containment guard before the exact package tree can be deleted.
-    supervisor.force_stop();
     let manager = Arc::clone(manager.inner());
+    let supervisor = Arc::clone(supervisor.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let root = OptionalChatterboxManager::profile_root_for()?;
-        manager.remove_at(root)
+        manager.remove_after_service_stop(root, &supervisor)
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?

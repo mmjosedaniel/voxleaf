@@ -209,6 +209,20 @@ FunctionEnd
   StrCpy $DeleteAppDataCheckboxState "0"
 !macroend
 
+; Only missing-file/path errors establish absence. Existing files, unsafe roots
+; and failed inspection all keep the aggregate optional-data failure flag.
+!macro CheckOptionalDataAbsent RELATIVE LABEL
+  System::Call 'kernel32::GetFileAttributesW(w "$LOCALAPPDATA\com.voxleaf.desktop\${RELATIVE}") i .R1 ?e'
+  Pop $R2
+  StrCmp $R1 -1 ${LABEL}_missing ${LABEL}_retained
+  ${LABEL}_missing:
+    StrCmp $R2 2 ${LABEL}_checked
+    StrCmp $R2 3 ${LABEL}_checked
+  ${LABEL}_retained:
+    StrCpy $R3 "1"
+  ${LABEL}_checked:
+!macroend
+
 !macro NSIS_HOOK_POSTUNINSTALL
   StrCmp $RemoveChatterboxData "1" 0 chatterbox_data_done
   ; Promotion residue is cleanup-only. Validate every ancestor and child.
@@ -347,20 +361,23 @@ FunctionEnd
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging"
   chatterbox_data_done:
 
-  ; A refused or failed backup cleanup is retention, never successful absence.
-  StrCmp $RemoveChatterboxData "1" 0 promotion_backup_checked
-  System::Call 'kernel32::GetFileAttributesW(w "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb\.previous") i .R1 ?e'
-  Pop $R2
-  StrCmp $R1 -1 promotion_backup_missing promotion_backup_retained
-  promotion_backup_missing:
-    StrCmp $R2 2 promotion_backup_checked
-    StrCmp $R2 3 promotion_backup_checked
-  promotion_backup_retained:
+  ; Report one aggregate failure while preserving independent preference cleanup.
+  StrCmp $RemoveChatterboxData "1" 0 optional_cleanup_checked
+  StrCpy $R3 "0"
+  !insertmacro CheckOptionalDataAbsent "tts\cb\.previous" optional_previous
+  !insertmacro CheckOptionalDataAbsent "tts\cb\6" optional_current
+  !insertmacro CheckOptionalDataAbsent "tts\cb\5" optional_v5
+  !insertmacro CheckOptionalDataAbsent "tts\cb\3" optional_v3
+  !insertmacro CheckOptionalDataAbsent "tts\cb\2" optional_v2
+  !insertmacro CheckOptionalDataAbsent "tts\cb\cache" optional_cache
+  !insertmacro CheckOptionalDataAbsent "tts\profiles\chatterbox-multilingual-v3-cuda-bf16-default-v4\2" optional_profile
+  !insertmacro CheckOptionalDataAbsent "tts\staging\chatterbox-multilingual-v3-cuda-bf16-default-v4" optional_staging
+  StrCmp $R3 "0" optional_cleanup_checked
     SetErrorLevel 1
-    DetailPrint "Chatterbox promotion backup was retained because safe cleanup could not complete."
-    IfSilent promotion_backup_checked
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Chatterbox promotion backup could not be removed safely. Reinstall VoxLeaf to retry Remove Chatterbox after resolving the file lock or unsafe directory."
-  promotion_backup_checked:
+    DetailPrint "Some Chatterbox optional data was retained because safe cleanup could not complete."
+    IfSilent optional_cleanup_checked
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Some Chatterbox optional data could not be removed safely. Reinstall VoxLeaf to retry Remove Chatterbox after resolving the file lock, access restriction or unsafe directory."
+  optional_cleanup_checked:
 
   StrCmp $RemovePreferencesAndRecovery "1" 0 preferences_data_done
   StrCpy $R0 "$LOCALAPPDATA\com.voxleaf.desktop"

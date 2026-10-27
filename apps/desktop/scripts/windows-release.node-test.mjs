@@ -27,45 +27,48 @@ import {
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
 
-test(
-  "CLB-01 compiled NSIS detects directories and each optional root",
-  {
-    skip: process.platform !== "win32",
-  },
-  async () => {
-    const { nsisHooks } = await loadReleaseDocuments(repositoryRoot());
-    const directoryFunction = nsisHooks.match(
-      /Function un\.ExactDirectoryExists[\s\S]*?FunctionEnd/,
-    )?.[0];
-    const optionalFunction = nsisHooks.match(
-      /Function un\.OptionalChatterboxDataExists[\s\S]*?FunctionEnd/,
-    )?.[0];
-    assert.ok(directoryFunction && optionalFunction);
-    const root = await mkdtemp(path.join(os.tmpdir(), "voxleaf-nsis-clb-"));
-    try {
-      const ownedRoot = path.join(root, "owned");
-      const optionalRoots = [
-        ...optionalFunction.matchAll(
-          /\$LOCALAPPDATA\\com\.voxleaf\.desktop\\([^"\r\n]+)/g,
-        ),
-      ].map((match) => match[1]);
-      assert.equal(optionalRoots.length, 8);
-      assert.ok(optionalRoots.includes("tts\\cb\\6"));
-      assert.ok(optionalRoots.includes("tts\\cb\\5"));
-      assert.ok(optionalRoots.includes("tts\\cb\\.previous"));
-      const safeFunctions = ["IsSafeOwnedDirectory", "IsSafeOwnedTree"]
-        .map((name) => {
-          const fn = nsisHooks.match(
-            new RegExp(`Function un\\.${name}[\\s\\S]*?FunctionEnd`),
-          )?.[0];
-          assert.ok(fn);
-          return fn;
-        })
-        .join("\n");
-      const hooks = nsisHooks
-        .slice(nsisHooks.indexOf("!macro NSIS_HOOK_PREUNINSTALL"))
-        .replaceAll("$LOCALAPPDATA\\com.voxleaf.desktop", "$EXEDIR\\owned");
-      const fixture = `Unicode true
+for (const lcf of [false, true]) {
+  test(
+    lcf
+      ? "LCF compiled NSIS reports incomplete cleanup of every optional root"
+      : "CLB-01 compiled NSIS detects directories and each optional root",
+    {
+      skip: process.platform !== "win32",
+    },
+    async () => {
+      const { nsisHooks } = await loadReleaseDocuments(repositoryRoot());
+      const directoryFunction = nsisHooks.match(
+        /Function un\.ExactDirectoryExists[\s\S]*?FunctionEnd/,
+      )?.[0];
+      const optionalFunction = nsisHooks.match(
+        /Function un\.OptionalChatterboxDataExists[\s\S]*?FunctionEnd/,
+      )?.[0];
+      assert.ok(directoryFunction && optionalFunction);
+      const root = await mkdtemp(path.join(os.tmpdir(), "voxleaf-nsis-clb-"));
+      try {
+        const ownedRoot = path.join(root, "owned");
+        const optionalRoots = [
+          ...optionalFunction.matchAll(
+            /\$LOCALAPPDATA\\com\.voxleaf\.desktop\\([^"\r\n]+)/g,
+          ),
+        ].map((match) => match[1]);
+        assert.equal(optionalRoots.length, 8);
+        assert.ok(optionalRoots.includes("tts\\cb\\6"));
+        assert.ok(optionalRoots.includes("tts\\cb\\5"));
+        assert.ok(optionalRoots.includes("tts\\cb\\.previous"));
+        const safeFunctions = ["IsSafeOwnedDirectory", "IsSafeOwnedTree"]
+          .map((name) => {
+            const fn = nsisHooks.match(
+              new RegExp(`Function un\\.${name}[\\s\\S]*?FunctionEnd`),
+            )?.[0];
+            assert.ok(fn);
+            return fn;
+          })
+          .join("\n");
+        const hooks = nsisHooks
+          .slice(nsisHooks.indexOf("!macro NSIS_HOOK_PREUNINSTALL"))
+          .replaceAll("$LOCALAPPDATA\\com.voxleaf.desktop", "$EXEDIR\\owned");
+        const fixture = `Unicode true
 !include "FileFunc.nsh"
 Var RemoveChatterboxData
 Var RemovePreferencesAndRecovery
@@ -94,97 +97,190 @@ Section "Uninstall"
   !insertmacro NSIS_HOOK_POSTUNINSTALL
 SectionEnd
 `;
-      await writeFile(path.join(root, "fixture.nsi"), fixture);
-      const compiler = path.join(
-        process.env.LOCALAPPDATA,
-        "tauri",
-        "NSIS",
-        "makensis.exe",
-      );
-      const compiled = spawnSync(
-        compiler,
-        ["/V2", path.join(root, "fixture.nsi")],
-        { encoding: "utf8" },
-      );
-      assert.equal(compiled.status, 0, compiled.stderr || compiled.stdout);
-      assert.equal(spawnSync(path.join(root, "fixture.exe"), ["/S"]).status, 0);
-      const observe = async (expected) => {
+        await writeFile(path.join(root, "fixture.nsi"), fixture);
+        const compiler = path.join(
+          process.env.LOCALAPPDATA,
+          "tauri",
+          "NSIS",
+          "makensis.exe",
+        );
+        const compiled = spawnSync(
+          compiler,
+          ["/V2", path.join(root, "fixture.nsi")],
+          { encoding: "utf8" },
+        );
+        assert.equal(compiled.status, 0, compiled.stderr || compiled.stdout);
         assert.equal(
-          spawnSync(path.join(root, "uninstall.exe"), ["/S", `_?=${root}`])
-            .status,
+          spawnSync(path.join(root, "fixture.exe"), ["/S"]).status,
           0,
         );
-        assert.equal(
-          await readFile(path.join(root, "result.txt"), "utf8"),
-          expected,
+        const observe = async (expected) => {
+          assert.equal(
+            spawnSync(path.join(root, "uninstall.exe"), ["/S", `_?=${root}`])
+              .status,
+            0,
+          );
+          assert.equal(
+            await readFile(path.join(root, "result.txt"), "utf8"),
+            expected,
+          );
+        };
+        if (!lcf) {
+          await observe("00");
+          await writeFile(path.join(root, "candidate"), "synthetic");
+          await observe("00");
+          await rm(path.join(root, "candidate"));
+          await mkdir(path.join(root, "candidate"));
+          await observe("10");
+          await writeFile(
+            path.join(root, "candidate", "sentinel"),
+            "synthetic",
+          );
+          await observe("10");
+          for (const relative of optionalRoots) {
+            await mkdir(path.join(ownedRoot, relative), { recursive: true });
+            await observe("11");
+            await rm(ownedRoot, { recursive: true });
+          }
+        }
+        const backup = path.join(ownedRoot, "tts", "cb", ".previous");
+        const preferences = path.join(
+          ownedRoot,
+          "EBWebView",
+          "Default",
+          "Local Storage",
         );
-      };
-      await observe("00");
-      await writeFile(path.join(root, "candidate"), "synthetic");
-      await observe("00");
-      await rm(path.join(root, "candidate"));
-      await mkdir(path.join(root, "candidate"));
-      await observe("10");
-      await writeFile(path.join(root, "candidate", "sentinel"), "synthetic");
-      await observe("10");
-      for (const relative of optionalRoots) {
-        await mkdir(path.join(ownedRoot, relative), { recursive: true });
-        await observe("11");
-        await rm(ownedRoot, { recursive: true });
+        const outside = path.join(root, "outside");
+        for (const directory of [
+          ...(lcf ? [] : [backup]),
+          preferences,
+          outside,
+        ]) {
+          await mkdir(directory, { recursive: true });
+          await writeFile(path.join(directory, "keep.bin"), "synthetic");
+        }
+        const uninstall = (...flags) =>
+          spawnSync(path.join(root, "uninstall.exe"), [
+            "/S",
+            ...flags,
+            `_?=${root}`,
+          ]).status;
+        if (lcf) {
+          const quote = (value) => `'${value.replaceAll("'", "''")}'`;
+          const runPowerShell = (script) => {
+            const result = spawnSync(
+              "powershell.exe",
+              ["-NoProfile", "-NonInteractive", "-Command", script],
+              {
+                encoding: "utf8",
+                timeout: 30_000,
+                windowsHide: true,
+                // Windows PowerShell must resolve its own modules, not inherit
+                // PowerShell 7's incompatible module search path from the host.
+                env: Object.fromEntries(
+                  Object.entries(process.env).filter(
+                    ([name]) => name.toLowerCase() !== "psmodulepath",
+                  ),
+                ),
+              },
+            );
+            assert.equal(result.error, undefined);
+            return result;
+          };
+          // Each literal root must participate in the final postcondition; there
+          // is no .previous directory while testing cb/6 and the other roots.
+          for (const relative of optionalRoots) {
+            const directory = path.join(ownedRoot, relative);
+            await mkdir(directory, { recursive: true });
+            const sentinel = path.join(directory, "locked.bin");
+            await writeFile(sentinel, "synthetic");
+            assert.equal(uninstall(), 0);
+            assert.equal(uninstall("/UPDATE", "/REMOVE_CHATTERBOX_DATA=1"), 0);
+            assert.equal(await readFile(sentinel, "utf8"), "synthetic");
+            const locked = runPowerShell(
+              `$ErrorActionPreference='Stop'; $handle=[IO.File]::Open(${quote(sentinel)}, 'Open', 'Read', 'Read'); try { $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { $handle.Dispose() }; exit $result`,
+            );
+            assert.equal(
+              locked.status,
+              1,
+              `${relative}: ${locked.stderr || locked.stdout}`,
+            );
+            assert.equal(await readFile(sentinel, "utf8"), "synthetic");
+            assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+            await assert.rejects(readFile(sentinel), { code: "ENOENT" });
+            await mkdir(path.dirname(directory), { recursive: true });
+            await symlink(outside, directory, "junction");
+            try {
+              assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1, relative);
+              assert.equal(
+                await readFile(path.join(outside, "keep.bin"), "utf8"),
+                "synthetic",
+              );
+            } finally {
+              await rm(directory);
+            }
+          }
+          // Deny directory lookup under a test-owned parent, then restore its ACL
+          // even if the child uninstaller fails. Access denied is not absence.
+          const deniedParent = path.join(ownedRoot, "tts", "cb");
+          await mkdir(path.join(deniedParent, "6"), { recursive: true });
+          const denied = runPowerShell(
+            `$ErrorActionPreference='Stop'; $path=${quote(deniedParent)}; $original=Get-Acl -LiteralPath $path; $blocked=Get-Acl -LiteralPath $path; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes,ReadExtendedAttributes,ExecuteFile','ContainerInherit,ObjectInherit','None','Deny'); $blocked.AddAccessRule($rule); Add-Type 'using System; using System.Runtime.InteropServices; public static class LcfAttributes { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern int GetFileAttributesW(string path); }'; try { Set-Acl -LiteralPath $path -AclObject $blocked; $attributes=[LcfAttributes]::GetFileAttributesW((Join-Path $path '6')); $inspectionError=[Runtime.InteropServices.Marshal]::GetLastWin32Error(); if ($attributes -ne -1 -or $inspectionError -ne 5) { throw 'expected-access-denied-inspection' }; Write-Output 'inspection-error=5'; $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { Set-Acl -LiteralPath $path -AclObject $original }; exit $result`,
+          );
+          assert.equal(denied.status, 1, denied.stderr || denied.stdout);
+          assert.equal(denied.stderr, "");
+          assert.match(denied.stdout, /inspection-error=5/);
+          assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+          assert.equal(
+            await readFile(path.join(preferences, "keep.bin"), "utf8"),
+            "synthetic",
+          );
+          assert.equal(uninstall("/REMOVE_PREFERENCES_AND_RECOVERY=1"), 0);
+          await assert.rejects(readFile(path.join(preferences, "keep.bin")), {
+            code: "ENOENT",
+          });
+          assert.equal(
+            await readFile(path.join(outside, "keep.bin"), "utf8"),
+            "synthetic",
+          );
+          return;
+        }
+        assert.equal(uninstall(), 0);
+        assert.equal(
+          await readFile(path.join(backup, "keep.bin"), "utf8"),
+          "synthetic",
+        );
+        assert.equal(uninstall("/UPDATE", "/REMOVE_CHATTERBOX_DATA=1"), 0);
+        assert.equal(
+          await readFile(path.join(backup, "keep.bin"), "utf8"),
+          "synthetic",
+        );
+        const junction = path.join(backup, "external");
+        await symlink(outside, junction, "junction");
+        assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1);
+        assert.equal(
+          await readFile(path.join(outside, "keep.bin"), "utf8"),
+          "synthetic",
+        );
+        await rm(junction);
+        assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+        await assert.rejects(readFile(path.join(backup, "keep.bin")), {
+          code: "ENOENT",
+        });
+        assert.equal(
+          await readFile(path.join(preferences, "keep.bin"), "utf8"),
+          "synthetic",
+        );
+        assert.equal(
+          await readFile(path.join(outside, "keep.bin"), "utf8"),
+          "synthetic",
+        );
+      } finally {
+        await rm(root, { recursive: true, force: true });
       }
-      const backup = path.join(ownedRoot, "tts", "cb", ".previous");
-      const preferences = path.join(
-        ownedRoot,
-        "EBWebView",
-        "Default",
-        "Local Storage",
-      );
-      const outside = path.join(root, "outside");
-      for (const directory of [backup, preferences, outside]) {
-        await mkdir(directory, { recursive: true });
-        await writeFile(path.join(directory, "keep.bin"), "synthetic");
-      }
-      const uninstall = (...flags) =>
-        spawnSync(path.join(root, "uninstall.exe"), [
-          "/S",
-          ...flags,
-          `_?=${root}`,
-        ]).status;
-      assert.equal(uninstall(), 0);
-      assert.equal(
-        await readFile(path.join(backup, "keep.bin"), "utf8"),
-        "synthetic",
-      );
-      assert.equal(uninstall("/UPDATE", "/REMOVE_CHATTERBOX_DATA=1"), 0);
-      assert.equal(
-        await readFile(path.join(backup, "keep.bin"), "utf8"),
-        "synthetic",
-      );
-      const junction = path.join(backup, "external");
-      await symlink(outside, junction, "junction");
-      assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1);
-      assert.equal(
-        await readFile(path.join(outside, "keep.bin"), "utf8"),
-        "synthetic",
-      );
-      await rm(junction);
-      assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
-      await assert.rejects(readFile(path.join(backup, "keep.bin")), {
-        code: "ENOENT",
-      });
-      assert.equal(
-        await readFile(path.join(preferences, "keep.bin"), "utf8"),
-        "synthetic",
-      );
-      assert.equal(
-        await readFile(path.join(outside, "keep.bin"), "utf8"),
-        "synthetic",
-      );
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  },
-);
+    },
+  );
+}
 
 test(
   "NSIS resolves optional-data strings after Tauri includes hooks before languages",
