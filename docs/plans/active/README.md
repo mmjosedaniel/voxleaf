@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans.
+- [Validated audit follow-up](validated-audit-follow-up.md): planning-only
+  corrections for twelve retained static findings across reader/narration,
+  benchmark helpers and Windows lifecycle. Execution has not started; the plan
+  defines minimum regression gates and conditional evidence reuse.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
