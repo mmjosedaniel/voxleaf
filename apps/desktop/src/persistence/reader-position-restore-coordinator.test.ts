@@ -362,6 +362,24 @@ describe("reader position restore coordinator", () => {
     });
   });
 
+  it("SAC-15 preserves the hydrated future-version status when opening a book", async () => {
+    const repository = createRepository({ status: "missing" });
+    const coordinator = new ReaderPositionRestoreCoordinator(repository);
+    coordinator.setPreferences(
+      DEFAULT_READER_PREFERENCES,
+      "unsupported-version",
+    );
+    await expect(
+      coordinator.restore(createPublication()),
+    ).resolves.toMatchObject({
+      status: "ready",
+      preferences: DEFAULT_READER_PREFERENCES,
+      preferenceStatus: "unsupported-version",
+    });
+    expect(repository.readPreferences).not.toHaveBeenCalled();
+    expect(repository.writePreferences).not.toHaveBeenCalled();
+  });
+
   it("returns cancelled after explicit cancellation or close", async () => {
     const pending = controlled<ReaderPositionReadResult>();
     const repository = createRepository({ status: "missing" });

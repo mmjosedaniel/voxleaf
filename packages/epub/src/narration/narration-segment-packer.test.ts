@@ -49,6 +49,29 @@ const DOCUMENT_ID = "document:segment-packer" as ContentDocumentId;
 const IMAGE_ID = "resource:packing-image" as RasterImageResourceId;
 
 describe("narration segment packer", () => {
+  it.each([319, 320, 321])(
+    "SAC-08 retains a bounded continuation before a %s-code-point silent suffix",
+    async (silentCount) => {
+      const packed = await packBlock(
+        paragraph([text(`A${"\u00a0".repeat(silentCount)}`)]),
+        "und",
+        NARRATION_PIPER_V2_SEGMENT_POLICY,
+      );
+      const consumed = Math.min(
+        silentCount + 1,
+        NARRATION_PIPER_V2_SEGMENT_POLICY.sourceCodePointsHardMaximum,
+      );
+      expect(packed.disposition).toBe("spoken");
+      expect(packed.segments).toHaveLength(1);
+      expect(packed.segments[0]?.text).toBe("A");
+      expect(packed.segments[0]?.sourceSpan.endOffsetCodePoints).toBe(consumed);
+      expect(packed.measurements.sourceCodePointsConsumed).toBe(consumed);
+      expect(packed.complete).toBe(consumed === silentCount + 1);
+      expect(packed.segments[0]?.sourceSpan.startOffsetCodePoints).toBe(0);
+      assertPiperExpansionBounds(packed);
+    },
+  );
+
   it("keeps short headings and paragraphs in separate block-local segments", async () => {
     const leaves = tokenLeavesFor([
       heading([text("Synthetic heading")]),

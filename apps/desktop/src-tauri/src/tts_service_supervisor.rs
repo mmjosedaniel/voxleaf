@@ -4,7 +4,7 @@ use std::{
     process::{Child, ChildStdin, Command, Stdio},
     sync::{
         Arc, Mutex, TryLockError,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc::{self, Receiver, RecvTimeoutError},
     },
     thread,
@@ -81,6 +81,56 @@ const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
 const CHATTERBOX_CHILD_BOOTSTRAP: &str =
     include_str!("tts_service_supervisor/chatterbox_child_bootstrap.py");
+
+fn command_timeout(timeout: Duration) -> Duration {
+    #[cfg(test)]
+    if let Some(timeout) = tests::command_timeout_override() {
+        return timeout;
+    }
+    timeout
+}
+
+fn command_now() -> Instant {
+    #[cfg(test)]
+    if let Some(now) = tests::command_clock() {
+        return now;
+    }
+    Instant::now()
+}
+
+struct CommandDeadline(Instant);
+
+impl CommandDeadline {
+    fn new(timeout: Duration) -> Self {
+        Self(command_now() + command_timeout(timeout))
+    }
+
+    fn remaining(&self) -> Result<Duration, TtsNativeFailure> {
+        self.0
+            .checked_duration_since(command_now())
+            .ok_or(TtsNativeFailure::TimedOut)
+    }
+
+    fn check(&self) -> Result<(), TtsNativeFailure> {
+        self.remaining().map(|_| ())
+    }
+
+    fn write_control(
+        &self,
+        session: &ServiceSession,
+        control: &Value,
+    ) -> Result<(), TtsNativeFailure> {
+        self.check()?;
+        session.write_control(control, self)?;
+        self.check()
+    }
+
+    fn receive(&self, session: &ServiceSession) -> Result<Frame, TtsNativeFailure> {
+        let frame = session.receive(self.remaining()?)?;
+        self.check()?;
+        Ok(frame)
+    }
+}
 
 static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -644,6 +694,10 @@ impl ChildProcess {
     }
 
     fn terminate(&mut self) -> Result<(), TtsNativeFailure> {
+        self.terminate_with_timeout(TERMINATION_TIMEOUT)
+    }
+
+    fn terminate_with_timeout(&mut self, timeout: Duration) -> Result<(), TtsNativeFailure> {
         #[cfg(windows)]
         {
             if self.job != 0 {
@@ -661,7 +715,7 @@ impl ChildProcess {
         {
             let _ = self.child.kill();
         }
-        self.wait_until(TERMINATION_TIMEOUT)
+        self.wait_until(timeout)
     }
 
     fn wait_until(&mut self, timeout: Duration) -> Result<(), TtsNativeFailure> {
@@ -742,10 +796,164 @@ fn assign_kill_on_close_job(
     }
 }
 
+struct ControlWriteRequest {
+    payload: Vec<u8>,
+    deadline: Instant,
+    completion: mpsc::SyncSender<Result<(), TtsNativeFailure>>,
+}
+
+struct ControlWriter {
+    requests: Mutex<Option<mpsc::SyncSender<ControlWriteRequest>>>,
+    worker: Mutex<Option<thread::JoinHandle<()>>>,
+    busy: Arc<AtomicBool>,
+    closed: Arc<AtomicBool>,
+}
+
+impl ControlWriter {
+    fn spawn(mut input: ChildStdin) -> Self {
+        let (sender, requests) = mpsc::sync_channel::<ControlWriteRequest>(1);
+        let busy = Arc::new(AtomicBool::new(false));
+        let closed = Arc::new(AtomicBool::new(false));
+        let worker_busy = Arc::clone(&busy);
+        let worker_closed = Arc::clone(&closed);
+        let worker = thread::spawn(move || {
+            use std::io::Write;
+            while let Ok(request) = requests.recv() {
+                let result = if worker_closed.load(Ordering::Acquire) {
+                    Err(TtsNativeFailure::Cancelled)
+                } else if Instant::now() > request.deadline {
+                    Err(TtsNativeFailure::TimedOut)
+                } else {
+                    write_frame(&mut input, FrameKind::Control, &request.payload)
+                        .and_then(|()| {
+                            input
+                                .flush()
+                                .map_err(|_| TtsNativeFailure::ChildUnavailable)
+                        })
+                        .and_then(|()| {
+                            if worker_closed.load(Ordering::Acquire) {
+                                Err(TtsNativeFailure::Cancelled)
+                            } else if Instant::now() > request.deadline {
+                                Err(TtsNativeFailure::TimedOut)
+                            } else {
+                                Ok(())
+                            }
+                        })
+                };
+                let failed = result.is_err();
+                if failed {
+                    worker_closed.store(true, Ordering::Release);
+                }
+                // The write no longer owns work before its acknowledgement permits a successor.
+                worker_busy.store(false, Ordering::Release);
+                let _ = request.completion.try_send(result);
+                if failed {
+                    break;
+                }
+            }
+            drop(input);
+            worker_closed.store(true, Ordering::Release);
+            worker_busy.store(false, Ordering::Release);
+        });
+        Self {
+            requests: Mutex::new(Some(sender)),
+            worker: Mutex::new(Some(worker)),
+            busy,
+            closed,
+        }
+    }
+
+    #[cfg(test)]
+    fn empty() -> Self {
+        Self {
+            requests: Mutex::new(None),
+            worker: Mutex::new(None),
+            busy: Arc::new(AtomicBool::new(false)),
+            closed: Arc::new(AtomicBool::new(true)),
+        }
+    }
+
+    fn enqueue(
+        &self,
+        control: &Value,
+        deadline: Instant,
+    ) -> Result<Receiver<Result<(), TtsNativeFailure>>, TtsNativeFailure> {
+        if self.closed.load(Ordering::Acquire) {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        // One request includes both queued and in-flight ownership, not one of each.
+        self.busy
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| TtsNativeFailure::Busy)?;
+        let result = (|| {
+            let payload = encode_control(control)?;
+            let (completion, receiver) = mpsc::sync_channel(1);
+            let requests = self
+                .requests
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if self.closed.load(Ordering::Acquire) {
+                return Err(TtsNativeFailure::Cancelled);
+            }
+            requests
+                .as_ref()
+                .ok_or(TtsNativeFailure::ChildUnavailable)?
+                .try_send(ControlWriteRequest {
+                    payload,
+                    deadline,
+                    completion,
+                })
+                .map_err(|error| match error {
+                    mpsc::TrySendError::Full(_) => TtsNativeFailure::Busy,
+                    mpsc::TrySendError::Disconnected(_) => TtsNativeFailure::ChildUnavailable,
+                })?;
+            Ok(receiver)
+        })();
+        if result.is_err() {
+            self.busy.store(false, Ordering::Release);
+        }
+        result
+    }
+
+    fn close(&self) -> Result<(), TtsNativeFailure> {
+        self.closed.store(true, Ordering::Release);
+        self.requests
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .take();
+        Ok(())
+    }
+
+    fn join_until(&self, deadline: Instant) -> Result<(), TtsNativeFailure> {
+        let mut worker = self
+            .worker
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if worker.is_none() {
+            return Ok(());
+        }
+        loop {
+            let remaining = deadline
+                .checked_duration_since(Instant::now())
+                .ok_or(TtsNativeFailure::TimedOut)?;
+            if worker.as_ref().is_some_and(thread::JoinHandle::is_finished) {
+                break;
+            }
+            thread::sleep(POLL_INTERVAL.min(remaining));
+        }
+        if let Some(worker) = worker.take() {
+            worker
+                .join()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        }
+        Ok(())
+    }
+}
+
 struct ServiceSession {
     service_instance_id: String,
     start_request_id: Option<String>,
-    input: Mutex<Option<ChildStdin>>,
+    input: ControlWriter,
     frames: Mutex<Receiver<Result<Frame, TtsNativeFailure>>>,
     process: Mutex<Option<ChildProcess>>,
 }
@@ -756,6 +964,10 @@ impl ServiceSession {
         service_instance_id: String,
         start_request_id: Option<String>,
     ) -> Result<Arc<Self>, TtsNativeFailure> {
+        #[cfg(test)]
+        if let Some(session) = tests::spawn_session_hook(&service_instance_id, &start_request_id) {
+            return Ok(session);
+        }
         let mut process = ChildProcess::spawn(child_configuration)?;
         let input = process
             .child
@@ -780,27 +992,38 @@ impl ServiceSession {
         Ok(Arc::new(Self {
             service_instance_id,
             start_request_id,
-            input: Mutex::new(Some(input)),
+            input: ControlWriter::spawn(input),
             frames: Mutex::new(frames),
             process: Mutex::new(Some(process)),
         }))
     }
 
-    fn write_control(&self, value: &Value) -> Result<(), TtsNativeFailure> {
-        let payload = encode_control(value)?;
-        let mut input = self
-            .input
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)?;
-        let writer = input.as_mut().ok_or(TtsNativeFailure::ChildUnavailable)?;
-        write_frame(writer, FrameKind::Control, &payload)?;
-        use std::io::Write;
-        writer
-            .flush()
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)
+    fn write_control(
+        &self,
+        value: &Value,
+        deadline: &CommandDeadline,
+    ) -> Result<(), TtsNativeFailure> {
+        #[cfg(test)]
+        if let Some(result) = tests::write_control_hook(value) {
+            return result;
+        }
+        let completion = self.input.enqueue(value, deadline.0)?;
+        let result =
+            completion
+                .recv_timeout(deadline.remaining()?)
+                .map_err(|error| match error {
+                    RecvTimeoutError::Timeout => TtsNativeFailure::TimedOut,
+                    RecvTimeoutError::Disconnected => TtsNativeFailure::ChildUnavailable,
+                })?;
+        deadline.check()?;
+        result
     }
 
     fn receive(&self, timeout: Duration) -> Result<Frame, TtsNativeFailure> {
+        #[cfg(test)]
+        if let Some(result) = tests::receive_hook(timeout) {
+            return result;
+        }
         let receiver = self
             .frames
             .lock()
@@ -813,28 +1036,50 @@ impl ServiceSession {
     }
 
     fn terminate(&self) -> Result<(), TtsNativeFailure> {
-        if let Ok(mut input) = self.input.lock() {
-            input.take();
-        }
+        let deadline = Instant::now() + TERMINATION_TIMEOUT;
+        self.input.close()?;
         let mut process = self
             .process
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
-        process.as_mut().map_or(Ok(()), ChildProcess::terminate)?;
+        process.as_mut().map_or(Ok(()), |child| {
+            child.terminate_with_timeout(deadline.saturating_duration_since(Instant::now()))
+        })?;
+        self.input.join_until(deadline)?;
         process.take();
         Ok(())
     }
 
     fn wait_for_exit(&self, timeout: Duration) -> Result<(), TtsNativeFailure> {
-        let mut process = self
-            .process
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)?;
-        process
-            .as_mut()
-            .map_or(Ok(()), |child| child.wait_until(timeout))?;
-        process.take();
-        Ok(())
+        let deadline = Instant::now() + timeout;
+        self.input.close()?;
+        // Poll without retaining the process lock so force-stop can still interrupt shutdown.
+        loop {
+            let exited = self
+                .process
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .as_mut()
+                .map_or(Ok(true), |process| {
+                    process
+                        .child
+                        .try_wait()
+                        .map(|status| status.is_some())
+                        .map_err(|_| TtsNativeFailure::ChildUnavailable)
+                })?;
+            if exited {
+                self.input.join_until(deadline)?;
+                self.process
+                    .lock()
+                    .map_err(|_| TtsNativeFailure::InternalFailure)?
+                    .take();
+                return Ok(());
+            }
+            let remaining = deadline
+                .checked_duration_since(Instant::now())
+                .ok_or(TtsNativeFailure::TimedOut)?;
+            thread::sleep(POLL_INTERVAL.min(remaining));
+        }
     }
 }
 
@@ -966,20 +1211,20 @@ impl TtsServiceSupervisor {
     fn receive_control(
         &self,
         session: &ServiceSession,
-        timeout: Duration,
+        deadline: &CommandDeadline,
         expected_kind: &str,
     ) -> Result<Value, TtsNativeFailure> {
-        self.receive_control_with_engine_errors(session, timeout, expected_kind, false)
+        self.receive_control_with_engine_errors(session, deadline, expected_kind, false)
     }
 
     fn receive_control_with_engine_errors(
         &self,
         session: &ServiceSession,
-        timeout: Duration,
+        deadline: &CommandDeadline,
         expected_kind: &str,
         allow_engine_error: bool,
     ) -> Result<Value, TtsNativeFailure> {
-        let frame = session.receive(timeout)?;
+        let frame = deadline.receive(session)?;
         if frame.kind != FrameKind::Control {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
@@ -1033,6 +1278,7 @@ impl TtsServiceSupervisor {
         if actual_kind != expected_kind {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
+        deadline.check()?;
         if expected_kind == "state" {
             let state = control
                 .get("state")
@@ -1046,10 +1292,10 @@ impl TtsServiceSupervisor {
     fn receive_expected_state(
         &self,
         session: &ServiceSession,
-        timeout: Duration,
+        deadline: &CommandDeadline,
         expected_state: &str,
     ) -> Result<Value, TtsNativeFailure> {
-        let state = self.receive_control(session, timeout, "state")?;
+        let state = self.receive_control(session, deadline, "state")?;
         if state.get("state").and_then(Value::as_str) != Some(expected_state) {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
@@ -1059,10 +1305,10 @@ impl TtsServiceSupervisor {
     fn receive_engine_state(
         &self,
         session: &ServiceSession,
-        timeout: Duration,
+        deadline: &CommandDeadline,
         expected_state: &str,
     ) -> Result<Value, TtsNativeFailure> {
-        let state = self.receive_control_with_engine_errors(session, timeout, "state", true)?;
+        let state = self.receive_control_with_engine_errors(session, deadline, "state", true)?;
         if state.get("state").and_then(Value::as_str) != Some(expected_state) {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
@@ -1145,16 +1391,15 @@ impl TtsServiceSupervisor {
             "kind": "handshake",
             "serviceInstanceId": service_instance_id,
         });
-        if let Err(failure) = session.write_control(&handshake) {
+        let deadline = CommandDeadline::new(HANDSHAKE_TIMEOUT);
+        if let Err(failure) = deadline.write_control(&session, &handshake) {
             return Err(self.fail_session(&session, failure));
         }
         let result = (|| {
-            let handshaking =
-                self.receive_expected_state(&session, HANDSHAKE_TIMEOUT, "handshaking")?;
-            let accepted =
-                self.receive_control(&session, HANDSHAKE_TIMEOUT, "handshakeAccepted")?;
-            let unloaded = self.receive_expected_state(&session, HANDSHAKE_TIMEOUT, "unloaded")?;
-            let capabilities = self.receive_control(&session, HANDSHAKE_TIMEOUT, "capabilities")?;
+            let handshaking = self.receive_expected_state(&session, &deadline, "handshaking")?;
+            let accepted = self.receive_control(&session, &deadline, "handshakeAccepted")?;
+            let unloaded = self.receive_expected_state(&session, &deadline, "unloaded")?;
+            let capabilities = self.receive_control(&session, &deadline, "capabilities")?;
             Ok(vec![handshaking, accepted, unloaded, capabilities])
         })();
         result.map_err(|failure| self.fail_session(&session, failure))
@@ -1170,14 +1415,22 @@ impl TtsServiceSupervisor {
         let session = self.active_session()?;
         let result = (|| {
             let load_started = Instant::now();
-            session.write_control(&service_control("load", &session.service_instance_id))?;
-            let loading = self.receive_engine_state(&session, LOAD_TIMEOUT, "loading")?;
-            let warming = self.receive_engine_state(&session, LOAD_TIMEOUT, "warming")?;
+            let load_deadline = CommandDeadline::new(LOAD_TIMEOUT);
+            load_deadline.write_control(
+                &session,
+                &service_control("load", &session.service_instance_id),
+            )?;
+            let loading = self.receive_engine_state(&session, &load_deadline, "loading")?;
+            let warming = self.receive_engine_state(&session, &load_deadline, "warming")?;
             let load_elapsed = load_started.elapsed();
             let warm_started = Instant::now();
-            session.write_control(&service_control("warm", &session.service_instance_id))?;
-            let ready = self.receive_engine_state(&session, WARM_TIMEOUT, "ready")?;
-            let capabilities = self.receive_control(&session, WARM_TIMEOUT, "capabilities")?;
+            let warm_deadline = CommandDeadline::new(WARM_TIMEOUT);
+            warm_deadline.write_control(
+                &session,
+                &service_control("warm", &session.service_instance_id),
+            )?;
+            let ready = self.receive_engine_state(&session, &warm_deadline, "ready")?;
+            let capabilities = self.receive_control(&session, &warm_deadline, "capabilities")?;
             Ok(PrepareMeasurement {
                 records: vec![loading, warming, ready, capabilities],
                 load_elapsed,
@@ -1191,9 +1444,13 @@ impl TtsServiceSupervisor {
         let _operation = self.acquire_operation()?;
         let session = self.active_session()?;
         let result = (|| {
-            session.write_control(&service_control("health", &session.service_instance_id))?;
-            let state = self.receive_control(&session, HEALTH_TIMEOUT, "state")?;
-            let capabilities = self.receive_control(&session, HEALTH_TIMEOUT, "capabilities")?;
+            let deadline = CommandDeadline::new(HEALTH_TIMEOUT);
+            deadline.write_control(
+                &session,
+                &service_control("health", &session.service_instance_id),
+            )?;
+            let state = self.receive_control(&session, &deadline, "state")?;
+            let capabilities = self.receive_control(&session, &deadline, "capabilities")?;
             Ok(vec![state, capabilities])
         })();
         result.map_err(|failure| self.fail_session(&session, failure))
@@ -1230,12 +1487,13 @@ impl TtsServiceSupervisor {
             "segment": segment,
         });
         let command_started = Instant::now();
+        let deadline = CommandDeadline::new(SYNTHESIS_TIMEOUT);
         let result = (|| {
-            session.write_control(&synthesize)?;
-            self.receive_engine_state(&session, SYNTHESIS_TIMEOUT, "generating")?;
+            deadline.write_control(&session, &synthesize)?;
+            self.receive_engine_state(&session, &deadline, "generating")?;
             let metadata = self.receive_control_with_engine_errors(
                 &session,
-                SYNTHESIS_TIMEOUT,
+                &deadline,
                 "audioMetadata",
                 true,
             )?;
@@ -1246,7 +1504,7 @@ impl TtsServiceSupervisor {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
             let command_to_first_transport_frame = command_started.elapsed();
-            let audio = session.receive(SYNTHESIS_TIMEOUT)?;
+            let audio = deadline.receive(&session)?;
             if audio.kind != FrameKind::Audio {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
@@ -1254,11 +1512,11 @@ impl TtsServiceSupervisor {
             validate_audio(&audio.payload, &metadata)?;
             let payload = audio.payload;
             let native_frame_handoff = native_handoff_started.elapsed();
-            let completed = self.receive_control(&session, SYNTHESIS_TIMEOUT, "completed")?;
+            let completed = self.receive_control(&session, &deadline, "completed")?;
             if !identity.matches_value(completed.get("workIdentity")) {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
-            self.receive_expected_state(&session, SYNTHESIS_TIMEOUT, "ready")?;
+            self.receive_expected_state(&session, &deadline, "ready")?;
             let still_active = self
                 .lifecycle
                 .lock()
@@ -1269,6 +1527,7 @@ impl TtsServiceSupervisor {
             if !still_active {
                 return Err(TtsNativeFailure::Cancelled);
             }
+            deadline.check()?;
             Ok(SynthesisMeasurement {
                 audio: payload,
                 command_to_first_transport_frame,
@@ -1350,7 +1609,9 @@ impl TtsServiceSupervisor {
             "serviceInstanceId": session.service_instance_id,
             "workIdentity": identity.as_value(),
         });
-        let _ = session.write_control(&cancel);
+        let _ = session
+            .input
+            .enqueue(&cancel, Instant::now() + TERMINATION_TIMEOUT);
         session.terminate()?;
         slot.take();
         self.set_state("stopped")?;
@@ -1454,10 +1715,15 @@ impl TtsServiceSupervisor {
             lifecycle.state = "stopping".to_owned();
         }
         let result = (|| {
-            session.write_control(&service_control("shutdown", &session.service_instance_id))?;
-            let stopping = self.receive_expected_state(&session, SHUTDOWN_TIMEOUT, "stopping")?;
-            let stopped = self.receive_expected_state(&session, SHUTDOWN_TIMEOUT, "stopped")?;
-            session.wait_for_exit(SHUTDOWN_TIMEOUT)?;
+            let deadline = CommandDeadline::new(SHUTDOWN_TIMEOUT);
+            deadline.write_control(
+                &session,
+                &service_control("shutdown", &session.service_instance_id),
+            )?;
+            let stopping = self.receive_expected_state(&session, &deadline, "stopping")?;
+            let stopped = self.receive_expected_state(&session, &deadline, "stopped")?;
+            session.wait_for_exit(deadline.remaining()?)?;
+            deadline.check()?;
             Ok(vec![stopping, stopped])
         })();
         let records = result.map_err(|failure| self.fail_session(&session, failure))?;

@@ -1,5 +1,7 @@
 import {
   openEpubPublication,
+  type NarrationPreparationLanguage,
+  type NarrationPreparationProfileId,
   type OpenedPublication,
   type PreparedNarrationSegment,
   type PublicationLocatedBlock,
@@ -27,10 +29,74 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it("SAC-08 drains silent tails at segment limits without skipping the following paragraph", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><h1 id="opening">Opening</h1><p id="tail">A${"\u00a0".repeat(320)}</p><p id="silent">${"\u00a0".repeat(321)}</p><p id="following">After the silent tail.</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-silent-tail-open-failed");
+    const publication = opened.publication;
+    const before = JSON.stringify(publication.documents);
+    try {
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const start = publication.defaultStartLocator!;
+        const single = await collectPreparedSegments(
+          publication,
+          start,
+          1,
+          profile,
+          "en",
+        );
+        const many = await collectPreparedSegments(
+          publication,
+          start,
+          16,
+          profile,
+          "en",
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(single.segments.map((segment) => segment.text)).toEqual([
+          "Opening",
+          "A",
+          "After the silent tail.",
+        ]);
+        expect(single.segments[1]?.sourceRange.end.textOffsetCodePoints).toBe(
+          320,
+        );
+        expect(single.segments[2]?.sourceRange.start).toEqual(
+          requiredBlock(publication, "following").startLocator,
+        );
+        for (const [sequence, segment] of single.segments.entries()) {
+          assertPublicSegment(publication, segment, sequence);
+          expect(segment.measurements.sourceCodePoints).toBeLessThanOrEqual(
+            320,
+          );
+        }
+        const controller = new AbortController();
+        controller.abort();
+        const cancelled = await publication.prepareNarration({
+          startLocator: start,
+          profile,
+          defaultLanguage: "en",
+          maximumSegments: 1,
+          signal: controller.signal,
+        });
+        expect(cancelled.status).toBe("cancelled");
+      }
+      expect(JSON.stringify(publication.documents)).toBe(before);
+    } finally {
+      await publication.close();
+    }
+  });
+
   it.each(["es", "en"] as const)(
     "CHAT-AUDIT F04/F07 preserves explicit unknown context and numeric compounds through current %s profiles",
     async (language) => {
-      const source = "0.25 % 12:14:30";
+      const source = "0.25 % 12:14:30 0,20 EUR";
       const opened = await openEpubPublication(
         await buildMinimalEpubFixture({
           chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language.toUpperCase()}" xml:lang="${language}"><head><title>Synthetic</title></head><body><p id="compound">${source}</p><p lang="" id="unknown">25 % <em>14:30</em></p><p lang="${language}" id="known">25 %</p></body></html>`,
@@ -498,6 +564,8 @@ async function collectPreparedSegments(
   publication: OpenedPublication,
   startLocator: ReadingLocatorV1,
   maximumSegments: number,
+  profile: NarrationPreparationProfileId = "narration-v1",
+  defaultLanguage: NarrationPreparationLanguage = "und",
 ): Promise<CollectedSegments> {
   const segments: PreparedNarrationSegment[] = [];
   let nextStart = startLocator;
@@ -509,12 +577,12 @@ async function collectPreparedSegments(
   ) {
     const result = await publication.prepareNarration({
       startLocator: nextStart,
-      profile: "narration-v1",
-      defaultLanguage: "und",
+      profile,
+      defaultLanguage,
       maximumSegments,
     });
     if (result.status !== "batch" && result.status !== "complete") {
-      throw new Error("narration-matrix-public-result-failed");
+      throw new Error(`narration-matrix-public-result-failed:${result.status}`);
     }
     segments.push(...result.segments);
     if (result.status === "complete") {

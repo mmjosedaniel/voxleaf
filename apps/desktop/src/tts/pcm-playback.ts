@@ -602,6 +602,11 @@ export class AdaptivePcmPlayer {
       pending.handle = undefined;
     }
     this.#captureTransitionPauseElapsed(pending);
+    if (pending.remainingMs === 0) {
+      this.#transitionPause = undefined;
+      this.#completedTransitionPauseCount += 1;
+      this.#pausedBeforeRateStart = true;
+    }
   }
 
   #captureTransitionPauseElapsed(pending: PendingTransitionPause): void {

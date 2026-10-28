@@ -149,6 +149,51 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 ]);
 
 describe("narration normalization", () => {
+  it("SAC-07 preserves unsupported decimal currency expressions as a whole", () => {
+    for (const source of [
+      "0,20 EUR",
+      "1.20 EUR",
+      "1/20 EUR",
+      "-20 EUR",
+      "+20 EUR",
+      "−20 EUR",
+    ]) {
+      const leaf = singleTextFixture(source, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        "es",
+      );
+      expect(normalized.text, source).toBe(source);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+    }
+    for (const [source, expected] of [
+      ["20 EUR", "veinte euros"],
+      ["(20 EUR).", "(veinte euros)."],
+    ]) {
+      const leaf = singleTextFixture(source!, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        "es",
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+    }
+    const code = singleTextFixture("20 EUR", true);
+    expect(
+      normalizeBilingualNarrationSourceTokens(code.sourceTokens, "es").text,
+    ).toBe("20 EUR");
+    const foreign = leafFor(paragraph([text("20 EUR", "fr")]));
+    expect(
+      normalizeBilingualNarrationSourceTokens(foreign.sourceTokens, "es").text,
+    ).toBe("20 EUR");
+  });
+
   it.each(["es", "en"] as const)(
     "CHAT-AUDIT F04 preserves whole compound percentages and times in %s",
     (language) => {

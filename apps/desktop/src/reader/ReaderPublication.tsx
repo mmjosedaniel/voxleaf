@@ -509,6 +509,9 @@ export function ReaderPublicationContent({
   );
   const runProgrammaticNavigation = useCallback(
     (navigate: () => void, reason: ReaderUserNavigationEvent): void => {
+      if (reason === "chapter-navigation") {
+        segmentHighlightController.clear();
+      }
       const request = programmaticNavigationRequest.current + 1;
       programmaticNavigationRequest.current = request;
       const continueNavigation = (): void => {
@@ -558,6 +561,7 @@ export function ReaderPublicationContent({
       onNavigationIntent,
       notifySettlement,
       reflowRestorer,
+      segmentHighlightController,
       visualLocatorTracker,
     ],
   );

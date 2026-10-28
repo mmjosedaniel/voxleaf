@@ -21,6 +21,7 @@ import {
 } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
+import { NARRATION_PIPER_V2_SEGMENT_POLICY } from "./narration-piper-policy.js";
 import {
   prepareNarrationSourceLeaf,
   type NarrationBoundaryReason,
@@ -36,6 +37,62 @@ import {
 const DOCUMENT_ID = "document:prepared-segment" as ContentDocumentId;
 
 describe("canonical prepared narration segments", () => {
+  it.each([319, 320, 321])(
+    "SAC-08 keeps finalization exact before a %s-code-point silent suffix",
+    async (silentCount) => {
+      const fixture = narrationFixture([
+        paragraph(`A${"\u00a0".repeat(silentCount)}`),
+      ]);
+      const leaf = requiredLeaf(fixture.leaves[0]);
+      const prepared = await prepareNarrationSourceLeaf(leaf, "und", {
+        segmentPolicy: NARRATION_PIPER_V2_SEGMENT_POLICY,
+      });
+      const segment = requiredSegment(prepared.segments[0]);
+      expect(segment.text).toBe("A");
+      expect(prepared.continuation).toEqual(segment.sourceRange.end);
+      expect(prepared.continuation.textOffsetCodePoints).toBe(
+        Math.min(silentCount + 1, 320),
+      );
+      expect(prepared.complete).toBe(silentCount < 320);
+      assertExactEndpoint(fixture.index, leaf, prepared.continuation);
+      if (!prepared.complete) {
+        const consumed = prepared.continuation.textOffsetCodePoints;
+        const suffix = await prepareNarrationSourceLeaf(
+          {
+            ...leaf,
+            sourceStartOffsetCodePoints: consumed,
+            sourceCodePoints: createIndex(silentCount + 1 - consumed),
+            sourceTokens: Object.freeze(leaf.sourceTokens.slice(consumed)),
+          },
+          "und",
+          { segmentPolicy: NARRATION_PIPER_V2_SEGMENT_POLICY },
+        );
+        expect(suffix).toMatchObject({
+          complete: true,
+          disposition: "unspoken",
+          segments: [],
+        });
+        expect(suffix.continuation.textOffsetCodePoints).toBe(silentCount + 1);
+      }
+    },
+  );
+
+  it("SAC-08 consumes an entirely silent block without empty speech", async () => {
+    const fixture = narrationFixture([paragraph("\u00a0".repeat(321))]);
+    const leaf = requiredLeaf(fixture.leaves[0]);
+    const prepared = await prepareNarrationSourceLeaf(leaf, "und", {
+      segmentPolicy: NARRATION_PIPER_V2_SEGMENT_POLICY,
+    });
+    expect(prepared).toMatchObject({
+      complete: true,
+      disposition: "unspoken",
+      segments: [],
+      measurements: { sourceCodePointsConsumed: 321 },
+    });
+    expect(prepared.continuation.textOffsetCodePoints).toBe(321);
+    assertExactEndpoint(fixture.index, leaf, prepared.continuation);
+  });
+
   it("NLC-05 keeps corrected Celsius source spans exact", async () => {
     const fixture = narrationFixture([paragraph("1,20 °C")]);
     const leaf = requiredLeaf(fixture.leaves[0]);

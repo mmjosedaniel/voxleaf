@@ -987,6 +987,49 @@ describe("adaptive PCM playback", () => {
     });
   });
 
+  it("SAC-11 settles a transition exhausted between Pause clock reads without starting its successor", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1, 600), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    synthesize(scheduler, segments[0]!, 8_000);
+    synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const timers = new ManualTransitionTimers();
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      backend,
+      (callback) => callback(),
+      timers.schedule,
+      timers.cancel,
+    );
+    player.synchronize();
+    clock.advanceBy(8_000);
+    backend.pump();
+    clock.advanceBy(599);
+    const observe = scheduler.observe.bind(scheduler);
+    vi.spyOn(scheduler, "observe").mockImplementation(() => {
+      const snapshot = observe();
+      // The eligibility read sees one millisecond remaining; freezing sees zero.
+      if (snapshot.observedAtMs === 8_599) clock.advanceBy(1);
+      return snapshot;
+    });
+
+    expect(player.pause()).toMatchObject({
+      state: "paused",
+      completedTransitionPauseCount: 1,
+      intentionalTransitionPauseRemainingMs: 0,
+    });
+    expect(backend.startedSequences).toEqual([0]);
+    timers.timers[0]!.callback();
+    expect(backend.startedSequences).toEqual([0]);
+    expect(player.resume()).toMatchObject({
+      state: "playing",
+      activeSequence: 1,
+    });
+    player.synchronize();
+    expect(backend.startedSequences).toEqual([0, 1]);
+  });
+
   it("does not compound real buffering or delay the final unit", () => {
     const clock = createManualClock(0);
     const segments = [segment(1, 600), segment(2, 1_200)];

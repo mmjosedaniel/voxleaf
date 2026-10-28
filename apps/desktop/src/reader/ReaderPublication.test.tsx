@@ -189,7 +189,7 @@ class ManualSegmentHighlightEnvironment implements SegmentHighlightEnvironment {
 }
 
 function narrationSnapshot(
-  phase: "playing" | "preparing" | "stopped" | undefined,
+  phase: "playing" | "preparing" | "stopped" | "complete" | undefined,
 ): ProductNarrationSnapshot {
   return Object.freeze({
     availability: "available",
@@ -342,6 +342,13 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
 
   stop(): void {
     this.#snapshot = narrationSnapshot("stopped");
+    for (const listener of this.#listeners) {
+      listener();
+    }
+  }
+
+  complete(): void {
+    this.#snapshot = narrationSnapshot("complete");
     for (const listener of this.#listeners) {
       listener();
     }
@@ -1111,6 +1118,36 @@ describe("navigable publication reader", () => {
 
     act(() => narrationSource.stop());
     expect(highlightEnvironment.highlighted).toBeUndefined();
+  });
+
+  it("SAC-01 revokes a completed materialized highlight before explicit chapter navigation", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const highlightEnvironment = new ManualSegmentHighlightEnvironment();
+    const onNavigationIntent = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        segmentHighlightEnvironment={highlightEnvironment}
+        onNavigationIntent={onNavigationIntent}
+      />,
+    );
+    act(() => {
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+      narrationSource.complete();
+    });
+    expect(highlightEnvironment.highlighted?.toString()).toBe("Opening");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+
+    expect(onNavigationIntent).toHaveBeenCalledExactlyOnceWith(
+      "chapter-navigation",
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toBeInTheDocument();
+    expect(highlightEnvironment.highlighted).toBeUndefined();
+    expect(narrationSource.startLocators).toEqual([]);
   });
 
   it("publishes passive canonical positions without focus or storage side effects", () => {

@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation ExecPlans are currently awaiting work or acceptance.
+There are no active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

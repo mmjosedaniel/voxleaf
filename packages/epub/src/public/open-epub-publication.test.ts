@@ -40,6 +40,38 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("SAC-13 resolves equivalent opaque fragments to the exact public target", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p><a href="#note?1">Literal</a><a href="#note%3F1">Encoded</a><a href="chapter.xhtml?mode=reader#note?1">Query</a><a href="https://example.invalid/#note?1">External</a></p><p id="note?1">Destination</p></body></html>',
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-publication-open-failed");
+    const publication = opened.publication;
+    try {
+      const block = publication.documents.find(
+        (document) => document.location.kind === "spine",
+      )?.blocks[0];
+      if (block?.kind !== "paragraph")
+        throw new Error("expected synthetic links");
+      const links = block.children.filter(
+        (inline) => inline.kind === "internal-link",
+      );
+      expect(links).toHaveLength(2);
+      const destination = publication.locators[1];
+      expect(destination).toBeDefined();
+      for (const link of links)
+        expect(publication.resolveTarget(link.target)).toMatchObject({
+          status: "exact",
+          reason: "fragment",
+          locator: destination!.startLocator,
+        });
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("CHAT-AUDIT F03 opens each spine occurrence of a shared XHTML fallback with its own locator", async () => {
     const result = await openEpubPublication(
       await buildMinimalEpubFixture({

@@ -19,6 +19,7 @@ import {
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeResourceObservation } from "./native-smoke/resource-observation.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
+import { buildOrientedRasterEpubFixture } from "../tests/fixtures/oriented-raster-epub-fixture.mjs";
 import {
   syntheticNarrationSentences,
   chatterboxPlaybackSpeedParagraph,
@@ -936,6 +937,10 @@ async function run() {
   );
   const profileDirectory = path.join(temporaryDirectory, "webview-profile");
   const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+  const orientedFixturePath = path.join(
+    temporaryDirectory,
+    "synthetic-oriented.epub",
+  );
   const dismissalFixturePath = path.join(
     temporaryDirectory,
     "invalid-replacement.epub",
@@ -1055,6 +1060,9 @@ async function run() {
     ]);
     await Promise.all([
       writeFile(fixturePath, primaryFixture, { flag: "wx" }),
+      buildOrientedRasterEpubFixture().then((bytes) =>
+        writeFile(orientedFixturePath, bytes, { flag: "wx" }),
+      ),
       writeFile(fileIngressFixturePaths.replacement, replacementFixture, {
         flag: "wx",
       }),
@@ -1464,6 +1472,33 @@ async function run() {
     assert(
       (await driver.findElements('img[alt="Synthetic cover"]')).length === 0,
       "Native publication raster image remained mounted after close.",
+    );
+
+    stage = "SAC-09 oriented JPEG decode and release";
+    await injectNativeFile(driver, orientedFixturePath);
+    for (const alt of [
+      "Synthetic orientation six",
+      "Synthetic orientation eight",
+    ]) {
+      await waitForCondition(
+        driver,
+        `const target = document.querySelector('img[alt="${alt}"]') ??
+          document.querySelector('[role="img"][aria-label^="${alt}."]');
+        if (target === null) return false;
+        target.scrollIntoView({ block: "center" });
+        return true;`,
+      );
+      await waitForCondition(
+        driver,
+        `const image = document.querySelector('img[alt="${alt}"]');
+        return image !== null && image.src.startsWith("blob:") && image.naturalWidth === 2 && image.naturalHeight === 3;`,
+      );
+    }
+    await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
+    assert(
+      (await driver.findElements('img[alt^="Synthetic orientation"]'))
+        .length === 0,
+      "Native oriented raster image remained mounted after close.",
     );
 
     const externalLoadedResourceCount = await driver.execute(

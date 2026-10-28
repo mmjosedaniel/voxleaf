@@ -215,11 +215,14 @@ export class ReaderPositionRestoreCoordinator {
     });
   }
 
-  public setPreferences(preferences: ReaderPreferencesV1): void {
+  public setPreferences(
+    preferences: ReaderPreferencesV1,
+    status: ReaderPreferencesReadResult["status"] = "ready",
+  ): void {
     if (!this.#closed) {
       this.#preferences = Object.freeze({
         preferences,
-        status: "ready",
+        status,
       });
     }
   }

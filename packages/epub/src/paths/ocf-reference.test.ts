@@ -41,6 +41,18 @@ describe("OCF references", () => {
       "section-2",
     ],
     ["EPUB/Text/chapter-1.xhtml", "", "EPUB/Text/chapter-1.xhtml", undefined],
+    [
+      "EPUB/Text/chapter-1.xhtml",
+      "#note?1",
+      "EPUB/Text/chapter-1.xhtml",
+      "note?1",
+    ],
+    [
+      "EPUB/Text/chapter-1.xhtml",
+      "#note%3F1",
+      "EPUB/Text/chapter-1.xhtml",
+      "note?1",
+    ],
   ])(
     "resolves %s against an in-container base",
     (base, rawReference, expectedPath, expectedFragment) => {
@@ -94,6 +106,7 @@ describe("OCF references", () => {
     "C:/EPUB/chapter.xhtml",
     "C%3AEPUB/chapter.xhtml",
     "chapter.xhtml?mode=reader",
+    "chapter.xhtml?mode=reader#note?1",
     "EPUB\\chapter.xhtml",
     "Text//chapter.xhtml",
     "Text/chapter.xhtml/",

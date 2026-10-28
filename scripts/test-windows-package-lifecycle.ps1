@@ -60,14 +60,9 @@ $unrelatedRoots = @(
   (Join-Path $dataRoot "unrelated-owned-entry")
 )
 $optionalMarkers = @(
-  (Join-Path $optionalRoots[0] "optional-0.marker"),
-  (Join-Path $optionalRoots[1] "optional-1.marker"),
-  (Join-Path $optionalRoots[2] "optional-2.marker"),
-  (Join-Path $optionalRoots[3] "optional-3.marker"),
-  (Join-Path $optionalRoots[4] "optional-4.marker"),
-  (Join-Path $optionalRoots[5] "optional-5.marker"),
-  (Join-Path $optionalRoots[6] "optional-6.marker"),
-  (Join-Path $optionalRoots[7] "optional-7.marker")
+  for ($index = 0; $index -lt $optionalRoots.Count; $index++) {
+    Join-Path $optionalRoots[$index] "optional-$index.marker"
+  }
 )
 $preferenceMarker = Join-Path $preferenceRoot "preferences.marker"
 $unrelatedMarkers = @(

@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  jpegExifSegment,
+  syntheticJpegBytes,
+} from "../../../tests/fixtures/jpeg-fixture";
 
 import { createRasterImageSafetyPolicy } from "./raster-image-policy";
 import {
@@ -110,6 +114,56 @@ afterEach(() => {
 });
 
 describe("bounded raster image source lifecycle", () => {
+  it.each([6, 8])(
+    "SAC-09 admits orientation %i with exact pixels and one release",
+    async (orientation) => {
+      const adapter = new FakeBrowserAdapter();
+      adapter.decode.mockResolvedValue({ widthPixels: 2, heightPixels: 3 });
+      const manager = new RasterImageSourceManager(undefined, adapter);
+      const result = await manager.prepare(
+        syntheticJpegBytes(jpegExifSegment(orientation)),
+        "image/jpeg",
+      );
+      expect(result.status).toBe("ready");
+      if (result.status !== "ready")
+        throw new Error("Expected oriented source");
+      expect(result.source).toMatchObject({
+        widthPixels: 2,
+        heightPixels: 3,
+        decodedPixels: 6,
+      });
+      expect(manager.liveDecodedPixels).toBe(6);
+      result.source.release();
+      result.source.release();
+      manager.close();
+      expect(adapter.revoked).toEqual(["blob:voxleaf-1"]);
+      expect(manager.liveDecodedPixels).toBe(0);
+    },
+  );
+
+  it.each([undefined, 1, 2, 6])(
+    "SAC-09 rejects unexpected decoded dimensions for orientation %s",
+    async (orientation) => {
+      const adapter = new FakeBrowserAdapter();
+      adapter.decode.mockResolvedValue({
+        widthPixels: 2,
+        heightPixels: orientation === 6 ? 2 : 3,
+      });
+      const manager = new RasterImageSourceManager(undefined, adapter);
+      const result = await manager.prepare(
+        syntheticJpegBytes(
+          orientation === undefined ? undefined : jpegExifSegment(orientation),
+        ),
+        "image/jpeg",
+      );
+      expect(result).toEqual({ status: "rejected", reason: "decode-mismatch" });
+      expect(adapter.revoked).toEqual(["blob:voxleaf-1"]);
+      expect(manager.liveDecodedPixels).toBe(0);
+      manager.close();
+      expect(adapter.revoked).toHaveLength(1);
+    },
+  );
+
   it("creates a decoded local object URL and revokes it exactly once on release", async () => {
     const fetch = vi.fn(() => {
       throw new Error("network must not be requested");

@@ -1434,6 +1434,80 @@ describe("product narration coordinator", () => {
     },
   );
 
+  it.each([5_000, 5_001])(
+    "SAC-10 shares one operational containment deadline across cancellation, operation and backend at %i ms",
+    async (elapsed) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      const { coordinator, backend, client, clock, intervals } = createHarness({
+        result: completeSegments([
+          preparedSegment("First synthetic sentence.", sourceRange(0, 12)),
+          preparedSegment("Second synthetic sentence.", sourceRange(12, 24)),
+        ]),
+      });
+      Object.defineProperty(clock, "nowMs", { get: () => Date.now() });
+      vi.spyOn(clock, "advance").mockImplementation(() => undefined);
+      let finishOperation!: () => void;
+      let finishCancellation!: () => void;
+      let finishBackend!: () => void;
+      const synthesize = client.synthesize.bind(client);
+      vi.spyOn(client, "synthesize")
+        .mockImplementationOnce(synthesize)
+        .mockImplementationOnce(async () => {
+          client.state = "generating";
+          await new Promise<void>((resolve) => {
+            finishOperation = resolve;
+          });
+          throw new TtsProcessClientError("tts-service-cancelled");
+        });
+      vi.spyOn(client, "cancel").mockImplementation(async () => {
+        await new Promise<void>((resolve) => {
+          finishCancellation = resolve;
+        });
+        client.state = "stopped";
+      });
+      vi.spyOn(backend, "close").mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishBackend = resolve;
+          }),
+      );
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => backend.active !== undefined && finishOperation !== undefined,
+        );
+        backend.active!.callbacks.failed();
+        intervals[0]!();
+        await settleUntil(() => finishCancellation !== undefined);
+        await vi.advanceTimersByTimeAsync(1_000);
+        finishCancellation();
+        await vi.advanceTimersByTimeAsync(3_000);
+        finishOperation();
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(elapsed - 4_000);
+        finishBackend();
+        await settleUntil(() =>
+          ["recovery-available", "contained"].includes(
+            coordinator.observe().recovery.phase,
+          ),
+        );
+        expect(coordinator.observe().recovery).toMatchObject(
+          elapsed === 5_000
+            ? { phase: "recovery-available", failureCode: "playback-failed" }
+            : { phase: "contained", failureCode: "cleanup-failed" },
+        );
+      } finally {
+        finishCancellation?.();
+        finishOperation?.();
+        finishBackend?.();
+        await coordinator.close();
+        vi.useRealTimers();
+      }
+    },
+  );
+
   it("permits explicit restart after the typed client's completed-synthesis cancellation race", async () => {
     const serviceInstanceId = "service:coordinator-race";
     const state = (value: string) => ({
@@ -2083,6 +2157,81 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().availability).toBe("unavailable");
     await coordinator.close();
   });
+
+  it.each(["resolve", "reject"] as const)(
+    "SAC-04 records audible metrics only after deferred persisted 0.75x preparation %s",
+    async (outcome) => {
+      const playbackPreferenceRepository: NarrationPlaybackPreferenceRepository =
+        {
+          read: vi.fn(async () => ({
+            status: "ready" as const,
+            playbackRatePercent: 75 as const,
+          })),
+          write: vi.fn(async () => ({ status: "saved" as const })),
+          reset: vi.fn(async () => ({ status: "saved" as const })),
+        };
+      const { coordinator, backend, clock, intervals } = createHarness({
+        playbackPreferenceRepository,
+      });
+      let resolve!: () => void;
+      let reject!: () => void;
+      vi.spyOn(backend, "preparePlaybackRate").mockImplementation(
+        () =>
+          new Promise<void>((yes, no) => {
+            resolve = () => {
+              backend.ratePrepared = true;
+              yes();
+            };
+            reject = () => no(new Error("synthetic preparation failure"));
+          }),
+      );
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () =>
+            resolve !== undefined &&
+            coordinator.observe().state?.phase === "playing",
+        );
+        clock.advance(2_000);
+        intervals[0]!();
+        expect(backend.active).toBeUndefined();
+        expect(coordinator.observe().metrics).toMatchObject({
+          commandToAudibleMs: undefined,
+          playbackMs: 0,
+        });
+        if (outcome === "resolve") {
+          const startedAt = clock.nowMs;
+          resolve();
+          await Promise.resolve();
+          await Promise.resolve();
+          intervals[0]!();
+          await settleUntil(() => backend.active !== undefined);
+          expect(coordinator.observe().metrics.commandToAudibleMs).toBe(
+            startedAt,
+          );
+          clock.advance(250);
+          intervals[0]!();
+          expect(coordinator.observe().metrics.playbackMs).toBe(250);
+        } else {
+          reject();
+          await Promise.resolve();
+          await Promise.resolve();
+          intervals[0]!();
+          await settleUntil(
+            () => coordinator.observe().failure === "audio-playback-failed",
+          );
+          expect(coordinator.observe().metrics).toMatchObject({
+            commandToAudibleMs: undefined,
+            playbackMs: 0,
+          });
+        }
+      } finally {
+        resolve?.();
+        await coordinator.close();
+      }
+    },
+  );
 
   it("prepares from the active locator, dispatches one exact request, and transfers sole audio ownership", async () => {
     const sensitiveText = "Private synthetic narration.";
@@ -2839,6 +2988,57 @@ describe("product narration coordinator", () => {
       await coordinator.close();
     }
   });
+
+  it.each([false, true])(
+    "SAC-06 retries retained Stop owners before same-profile Recheck (persistent failure: %s)",
+    async (persistent) => {
+      const { coordinator, client } = createHarness();
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const performShutdown = client.shutdown.bind(client);
+      const shutdown = vi
+        .spyOn(client, "shutdown")
+        .mockRejectedValue(new Error("synthetic shutdown failure"));
+      try {
+        await coordinator.stop();
+        expect(coordinator.observe()).toMatchObject({
+          availability: "unavailable",
+          recovery: { phase: "contained", failureCode: "cleanup-failed" },
+        });
+        if (!persistent) shutdown.mockImplementation(performShutdown);
+
+        coordinator.resetRecoveryEpisode();
+        await settleUntil(
+          () => coordinator.observe().availability !== "checking",
+        );
+        if (persistent) {
+          expect(coordinator.observe()).toMatchObject({
+            availability: "unavailable",
+            failure: "tts-service-failed",
+            recovery: { phase: "contained", failureCode: "cleanup-failed" },
+          });
+          coordinator.start();
+          expect(client.startedProfiles).toHaveLength(1);
+        } else {
+          expect(coordinator.observe()).toMatchObject({
+            availability: "available",
+            failure: undefined,
+            state: undefined,
+            recovery: { phase: "operational" },
+          });
+          coordinator.start();
+          await settleUntil(() => client.startedProfiles.length === 2);
+          await settleUntil(
+            () => coordinator.observe().state?.phase === "playing",
+          );
+        }
+      } finally {
+        shutdown.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
 
   it("prioritizes failed cleanup over a preparation diagnostic", async () => {
     const { coordinator, client } = createHarness({

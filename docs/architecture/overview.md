@@ -1,5 +1,13 @@
 # Architecture overview
 
+[ADR-0066](decisions/ADR-0066-bounded-orientation-and-silent-tail-corrections.md)
+defines the bounded JPEG orientation interpretation and silent-tail continuation
+correction. The [completed static-audit plan](../plans/completed/static-audit-corrections.md)
+records their accepted combined validation together with lifecycle deadlines,
+actual-audio metrics, cancellation classification and truthful preference
+restoration. Existing owners, public contracts and runtime/model versions
+remain unchanged.
+
 [ADR-0065](decisions/ADR-0065-validated-runtime-and-narration-boundaries.md) records
 the coordinated CUDA/free-memory fact, pending-start ownership, episode metrics,
 private child bootstrap and EPUB/narration corrections. They stay in existing

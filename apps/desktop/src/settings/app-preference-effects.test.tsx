@@ -141,6 +141,7 @@ describe("preference hydration connection", () => {
       const preferences = status === "ready" ? savedReader : defaultReader;
       expect(f.restore.setPreferences).toHaveBeenCalledExactlyOnceWith(
         preferences,
+        status,
       );
       expect(f.restore.setPreferences.mock.contexts).toEqual([f.restore]);
       expect(f.publishReader).toHaveBeenCalledExactlyOnceWith({
@@ -274,6 +275,7 @@ describe("preference hydration connection", () => {
       });
       expect(f.restore.setPreferences).toHaveBeenCalledExactlyOnceWith(
         savedReader,
+        "ready",
       );
       expect(f.publishReader).toHaveBeenCalledExactlyOnceWith({
         preferences: savedReader,

@@ -54,6 +54,7 @@ interface ParsedRasterImageMetadata {
   readonly heightPixels: number;
   readonly frameCount: number;
   readonly animated: boolean;
+  readonly swapDimensions?: boolean;
 }
 
 const GIF_87A = Object.freeze([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]);
@@ -359,6 +360,42 @@ function isStandaloneJpegMarker(marker: number): boolean {
   );
 }
 
+/** Only IFD0 orientation affects the main image dimensions; no other IFD is followed. */
+function parseJpegExifOrientation(tiff: Uint8Array): number | undefined {
+  const littleEndian = hasAsciiAt(tiff, "II", 0);
+  if (tiff.byteLength < 8 || (!littleEndian && !hasAsciiAt(tiff, "MM", 0))) {
+    return undefined;
+  }
+  const read16 = littleEndian ? readUint16LittleEndian : readUint16BigEndian;
+  const read32 = littleEndian ? readUint32LittleEndian : readUint32BigEndian;
+  if (read16(tiff, 2) !== 42) return undefined;
+  const directoryOffset = read32(tiff, 4);
+  if (directoryOffset < 8) return undefined;
+  const count = read16(tiff, directoryOffset);
+  if (
+    count < 0 ||
+    checkedEnd(directoryOffset + 2, count * 12 + 4, tiff.byteLength) ===
+      undefined
+  ) {
+    return undefined;
+  }
+  let orientation: number | undefined;
+  for (let index = 0; index < count; index += 1) {
+    const entry = directoryOffset + 2 + index * 12;
+    if (read16(tiff, entry) !== 0x0112) continue;
+    if (
+      orientation !== undefined ||
+      read16(tiff, entry + 2) !== 3 ||
+      read32(tiff, entry + 4) !== 1
+    ) {
+      return undefined;
+    }
+    orientation = read16(tiff, entry + 8);
+    if (orientation < 1 || orientation > 8) return undefined;
+  }
+  return orientation ?? 1;
+}
+
 function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
   if (!hasBytesAt(bytes, JPEG)) {
     return undefined;
@@ -366,6 +403,7 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
 
   let offset = JPEG.length;
   let dimensions: readonly [number, number] | undefined;
+  let orientation: number | undefined;
   while (offset < bytes.byteLength) {
     if (bytes[offset] !== 0xff) {
       return undefined;
@@ -394,6 +432,21 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
       return undefined;
     }
 
+    if (
+      marker === 0xe1 &&
+      hasAsciiAt(bytes.subarray(offset + 2, segmentEnd), "Exif", 0)
+    ) {
+      if (
+        orientation !== undefined ||
+        !hasAsciiAt(bytes.subarray(offset + 2, segmentEnd), "Exif\0\0", 0)
+      )
+        return undefined;
+      orientation = parseJpegExifOrientation(
+        bytes.subarray(offset + 8, segmentEnd),
+      );
+      if (orientation === undefined) return undefined;
+    }
+
     if (JPEG_START_OF_FRAME_MARKERS.has(marker)) {
       if (dimensions !== undefined || segmentLength < 8) {
         return undefined;
@@ -413,6 +466,7 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
             heightPixels: dimensions[1],
             frameCount: 1,
             animated: false,
+            swapDimensions: orientation !== undefined && orientation >= 5,
           };
     }
     offset = segmentEnd;
@@ -603,9 +657,17 @@ export function inspectRasterImageMetadata(
   if (parsed === undefined) {
     return rejected("invalid-image");
   }
+  const widthPixels = parsed.swapDimensions
+    ? parsed.heightPixels
+    : parsed.widthPixels;
+  const heightPixels = parsed.swapDimensions
+    ? parsed.widthPixels
+    : parsed.heightPixels;
   if (
     parsed.widthPixels > normalizedPolicy.maximumWidthPixels ||
-    parsed.heightPixels > normalizedPolicy.maximumHeightPixels
+    parsed.heightPixels > normalizedPolicy.maximumHeightPixels ||
+    widthPixels > normalizedPolicy.maximumWidthPixels ||
+    heightPixels > normalizedPolicy.maximumHeightPixels
   ) {
     return rejected("dimensions-exceeded");
   }
@@ -627,8 +689,8 @@ export function inspectRasterImageMetadata(
   return Object.freeze({
     status: "accepted",
     metadata: Object.freeze({
-      widthPixels: parsed.widthPixels,
-      heightPixels: parsed.heightPixels,
+      widthPixels,
+      heightPixels,
       decodedPixels,
       frameCount: parsed.frameCount,
     }),
