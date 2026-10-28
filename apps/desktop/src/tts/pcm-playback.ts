@@ -185,6 +185,11 @@ export class AdaptivePcmPlayer {
     this.#cancelTransitionPause = cancelTransitionPause;
   }
 
+  /** Read counters without starting or settling playback during owner cleanup. */
+  public observe(): AdaptivePcmPlayerObservation {
+    return this.#observation();
+  }
+
   public synchronize(): AdaptivePcmPlayerObservation {
     if (this.#terminalState !== undefined) {
       return this.#observation();

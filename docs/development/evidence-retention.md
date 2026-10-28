@@ -51,6 +51,23 @@ reported as deletions relative to HEAD. A newly staged raw file remains rejected
 even if it is subsequently removed from the worktree. Git execution/index read
 failures stop the check; a missing Git installation is not a passing result.
 
+The same guard checks all tracked and non-ignored untracked Markdown (`.md`,
+case-insensitive) for literal Windows, macOS and Linux home-directory paths.
+It reads current worktree text and separately inspects staged additions and
+modifications, so a local edit or deletion cannot hide private bytes already
+staged. Existing HEAD files can be anonymized or deleted before staging.
+Errors identify only repository-relative files, line numbers and the worktree
+or staged source; they do not echo the matching personal text. Unreadable files
+and Git failures stop the check. Ignored local originals remain outside its
+scope unless forced into the index.
+
+Use `<repo-root>`, `<user>`, `%USERPROFILE%` or `$HOME` instead of literal personal
+paths. Only the exact historical sentence documenting the synthetic privacy
+canary in `M006-001-local-tts-profile-blocker-resolution.md` is exempt; the rest
+of that file is checked. Synthetic source/test fixtures are outside this
+Markdown check. This is a targeted path guard, not an exhaustive secret scanner,
+and it does not inspect or rewrite prior commits.
+
 ## PR #229 archive
 
 The three new collections were archived at source commit

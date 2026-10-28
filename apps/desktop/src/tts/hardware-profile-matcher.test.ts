@@ -53,6 +53,7 @@ function report(
 
 function reportValue() {
   return {
+    cudaComputeCapability: { status: "known" as const, major: 12, minor: 0 },
     schemaVersion: 1,
     probeStatus: "complete" as const,
     platform: {
@@ -166,6 +167,75 @@ function firstReason(
 }
 
 describe("hardware profile matcher v1", () => {
+  it("CHAT-AUDIT F01 restricts Chatterbox to known default CUDA 12.0 without falsifying BF16 or CPU facts", () => {
+    for (const [capability, state] of [
+      [undefined, "unknown"],
+      [{ status: "unknown" }, "unknown"],
+      [{ status: "known", major: 8, minor: 0 }, "incompatible"],
+      [{ status: "known", major: 9, minor: 0 }, "incompatible"],
+      [{ status: "known", major: 12, minor: 1 }, "incompatible"],
+      [{ status: "known", major: 12, minor: 0 }, "compatible"],
+    ] as const) {
+      const raw: Record<string, unknown> = { ...reportValue() };
+      if (capability === undefined) delete raw.cudaComputeCapability;
+      else raw.cudaComputeCapability = capability;
+      const host = decodeHostProfileCompatibilityReportV1(raw);
+      const result = matchHardwareProfilesV1({
+        report: host,
+        registry: HARDWARE_PROFILE_REGISTRY_V1,
+        nativeDevelopmentGate: true,
+      });
+      expect(
+        result.profiles.find(
+          (profile) => profile.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID,
+        )?.state,
+      ).toBe(state);
+      expect(result.compatibleProfileIds).toContain(
+        PIPER_ENGLISH_CPU_PROFILE_ID,
+      );
+      expect(host.providers.cuda.precisions.bfloat16).toBe("available");
+    }
+  });
+
+  it("CHAT-AUDIT F06 keeps allocation headroom checks for new starts and requires positive known continuation resources", () => {
+    const host = report((value) => ({
+      ...value,
+      memory: { ...value.memory, availablePhysicalMiB: knownQuantity(1) },
+    }));
+    const input = {
+      report: host,
+      registry: HARDWARE_PROFILE_REGISTRY_V1,
+      nativeDevelopmentGate: true,
+    };
+    expect(matchHardwareProfilesV1(input).compatibleProfileIds).not.toContain(
+      PIPER_ENGLISH_CPU_PROFILE_ID,
+    );
+    expect(
+      matchHardwareProfilesV1({
+        ...input,
+        continuingProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      }).compatibleProfileIds,
+    ).toContain(PIPER_ENGLISH_CPU_PROFILE_ID);
+    expect(
+      matchHardwareProfilesV1({
+        ...input,
+        continuingProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      }).compatibleProfileIds,
+    ).not.toContain(CHATTERBOX_BILINGUAL_PROFILE_ID);
+    for (const availablePhysicalMiB of [knownQuantity(0), unknownQuantity()]) {
+      const invalid = report((value) => ({
+        ...value,
+        memory: { ...value.memory, availablePhysicalMiB },
+      }));
+      expect(
+        matchHardwareProfilesV1({
+          ...input,
+          report: invalid,
+          continuingProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+        }).compatibleProfileIds,
+      ).not.toContain(PIPER_ENGLISH_CPU_PROFILE_ID);
+    }
+  });
   it("admits the supported CPU fallback and exact native-gated development profile", () => {
     const result = matchHardwareProfilesV1({
       report: report(),
@@ -392,6 +462,7 @@ describe("hardware profile matcher v1", () => {
       "provider",
       (value: ReturnType<typeof reportValue>) => ({
         ...value,
+        cudaComputeCapability: { status: "unknown" as const },
         providers: { ...value.providers, cuda: unavailableProvider() },
       }),
     ],

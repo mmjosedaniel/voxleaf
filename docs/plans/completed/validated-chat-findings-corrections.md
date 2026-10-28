@@ -1,6 +1,6 @@
 # Correct all validated chat findings with minimal changes
 
-Status: **Planned; execution not started.** Created on 2026-10-27.
+Status: **Completed M0-M4; implementation accepted by CHAT-FINDINGS-R3-ASTRA-20261027.** Created and completed on 2026-10-27.
 
 Planning base: `bd2cbb9f17e104f8c42e2e388219e718aca791fe` on `main`.
 Working branch: `codex/chatterbox-runtime-correctness`.
@@ -10,10 +10,13 @@ The existing branch is retained; its name does not restrict this plan's scope.
 The scope correction follows the user's explicit clarification that every valid
 finding in this chat must be addressed, not only Chatterbox/CUDA.
 
-The current authorization covers this ExecPlan, its index entries and the local
-planning Git work requested by the user. It does not authorize executing this plan,
-running tests, implementation, package construction, downloads, publication, push,
-PR creation or merge. A later execution request is required.
+The 2026-10-27 execution request authorizes minimal corrections, regression tests,
+documentation and necessary local-host validation on the existing branch. It does
+not authorize staging, commits, push, PR, merge, publication, model downloads or
+new package versions. The initial HEAD is
+`5f67bd69c805a59e0699d5ee103ff84255e0472d`; index and worktree were clean.
+The [execution ledger](../evidence/validated-chat-findings-corrections.md) records
+scope, commands, evidence identities, reuse decisions and outstanding gates.
 
 ## Goal
 
@@ -60,6 +63,12 @@ or change the voice by introducing BF16 casts.
 
 ## Current state
 
+All fourteen findings are implemented, including both concurrency candidates
+confirmed during execution. R1 review corrections and final host revalidation
+pass; independent final acceptance is APPROVE. The execution ledger is the
+current evidence inventory. The following planning baseline is retained for
+provenance and does not describe the current execution status.
+
 Planning source base is `bd2cbb9`; `6eed9b4` changed only documentation. The scope
 correction re-read the chat's original reports and revalidation, relevant current
 code, previous plans and retained receipts. No regression, model or clean-host
@@ -81,8 +90,8 @@ CRC-02 and CRC-03 correspond to F13, F01 and F14. Its CRC-04/05 are R01/R02.
 | F05, valid with corrected trigger, P2 | `release_core.py::atomic_stage` deletes `.previous` at the start of the next attempt. When earlier promotion and restoration both failed, that backup can be the sole surviving package. | Recover or retain the backup before a retry can destroy it; preserve it if restoration remains blocked. Use tiny real filesystem fixtures with injected move failures. No Piper runtime rebuild is necessary for this packager-only fix. |
 | F06, valid under the stated condition, P2 | `hardware-profile-matcher.ts` reapplies the full free-RAM start requirement; compatibility reconciliation in `product-narration-coordinator.ts::checkAvailability` can stop an active scheduler after the loaded model consumed that RAM. This is not a failure on every window restoration. | Distinguish admission for a new allocation from continuation of the same admitted, healthy session. Preserve genuine configuration/provider/fatal-resource containment and explicit start/restart checks. |
 | F07, valid, P2 | `xhtml-projector.ts::deriveContext` rejects empty language and compares `lang`/`xml:lang` case-sensitively. | Accept explicitly unknown language, compare equivalent tags ASCII case-insensitively, and preserve the distinction between missing/inherited and explicitly unknown context through narration. Keep malformed controls/whitespace and actual conflicts rejected. |
-| F08, unconfirmed candidate, P2 if reproduced | `process-client.ts::stopService` may send identity-less shutdown while start is pending; native shutdown accepts absent expected identity. The stale request overtaking a different book's new service has not been demonstrated. | Trace the actual IPC/locking order and use deferred-start/shutdown tests. Only if a reachable damaging order is reproduced, bind cancellation to the original owner using the smallest lifecycle change. Otherwise retain counterevidence and no production change. |
-| F09, unconfirmed candidate, P2 if reproduced | Worklet `failed` messages have no unit identity; `web-audio-pcm-playback.ts` attributes them to its active handle. Delivery from an older unit after the next handler is installed remains unproved. | Exercise the real worklet and MessagePort ordering. Fix identity/ownership only if the stale failure can affect the next unit; preserve legitimate current-unit failures. Do not accept an impossible fabricated interleaving as reproduction. |
+| F08, confirmed in execution, P2 | The actual native Busy/start locking order permits an old pending-start shutdown to terminate a replacement. D6-F08-red-native-child preserves IPC order and reproduces the damage. | Bind pending-start shutdown to an additive bounded request identity allocated before dispatch. Final real-child green passes; no TTS wire protocol change. |
+| F09, confirmed in execution, P2 | A real worklet can queue `ended` and then a Pause failure for A; FIFO delivery of `ended` installs B's handler before the failure. The real MessageChannel reproduction failed B. | Add unit identity to failed events and reject mismatches. Real current-unit failure remains effective; Node-worker and bundled-browser controls pass. |
 | F10, valid, P2 | Coordinator snapshots read `playerObservation?.underrunCount ?? 0`; releasing the player loses its count. Restart also resets buffering/playback time. Recovery policy requires interruption history to survive recovery. | Retain bounded aggregate counters at the recovery-episode owner; snapshot before release, accumulate deltas without double counting and reset only at the documented new-episode boundary. |
 | F11, valid, P2 | `xhtml-projector.ts::consumeStart` gives the root `omitted: false`, bypassing `hidden`/`aria-hidden` checks used for descendants. | Apply root omission while still validating document structure, budgets and cancellation. Do not turn a valid hidden chapter into a malformed-document error or narrate its descendants. |
 | F12, valid, P3 | `product-narration-coordinator.ts::#stateFromActiveOwners` changes only `phase` to `failed`; inherited `canPause`/`canResume` survive player removal and drive dead controls. | Derive terminal actions from surviving owners; remove false pause/resume capability while retaining the intended explicit recovery action. Cover playing and paused failures. |
@@ -259,7 +268,7 @@ or claim new TTS functionality from a narration-preparation correction.
 
 ### M0 — Freeze scope, baseline and reuse decisions
 
-Status: **Not started.** Inspect drift from the planning base and preserve any
+Status: **Complete: scope/design and focused red evidence recorded in the ledger.** Inspect drift from the planning base and preserve any
 new user changes. Resolve original receipts and their before/after manifests.
 Create a gate ledger with every F/R ID, input identities, commands, environment,
 status and invalidation rules. Resolve F08/F09 through source-order analysis and
@@ -276,7 +285,7 @@ the two duplicate Chatterbox architecture reports remain one F01.
 
 ### M1 — Apply the smallest corrections and permanent regressions
 
-Status: **Not started.** Implement U1-U6 with the regression/acceptance cases below,
+Status: **Complete: U1-U7 implemented, including both confirmed candidates.** Implement U1-U6 with the regression/acceptance cases below,
 and U7 only for confirmed candidates. Use existing ownership; do not refactor the
 whole projector, coordinator, probe or package framework. Cover R01/R02 through
 existing guards and the real-startup diagnostic. Register any missing focused
@@ -315,7 +324,7 @@ suites under new names.
 
 ### M2 — Run fast gates, then freeze executable sources
 
-Status: **Not started.** Run affected format/lint/types and focused regressions
+Status: **Complete: foundation leaves and grouped browser coverage recorded.** Run affected format/lint/types and focused regressions
 in normal local PowerShell. Generate contracts only through the registered
 generator if the schema changes. Refresh shared/EPUB build outputs before desktop
 tests consume their `dist` exports; do not accept stale compiled fixtures. Run
@@ -328,7 +337,7 @@ it is not a reason to rebuild an already verified executable after model gates.
 
 ### M3 — Validate packaged integration and real startup once
 
-Status: **Not started.** Check short writable scratch paths, tool versions,
+Status: **Complete: final pinned F08/loader/Piper/ES/EN gates, integrity and cleanup pass.** Check short writable scratch paths, tool versions,
 existing package/model hashes, driver, GPU capability, free resources and owned
 process cleanup before inference. Reuse verified local artifacts; do not download
 models or reconstruct the three-part ZIP for a launcher-only change.
@@ -371,7 +380,7 @@ Missing cases require only their smallest additional scenario, not all models.
 
 ### M4 — Integration and independent acceptance
 
-Status: **Not started.** Complete the applicable foundation graph once. Prefer
+Status: **Complete: CHAT-FINDINGS-R3-ASTRA-20261027 APPROVE, including scoped evidence reuse.** Complete the applicable foundation graph once. Prefer
 an explicitly recorded equivalent set of existing `pnpm.cmd check` leaves:
 credit M2's passing gates whose complete inputs still match, then execute only
 uncovered or invalidated leaves. Use the aggregate when establishing equivalence
@@ -551,6 +560,24 @@ receipts. Do not reset retry counts by changing a run name or rebuilding blindly
 
 ## Progress log
 
+- 2026-10-27: M0-M4 complete. R1 review found two bounded regressions; both were
+  reproduced, corrected and independently cleared in R2. Fresh final native
+  byte-bound F08/loader/Piper/ES/EN and cleanup gates pass. R3 APPROVE accepts the
+  complete implementation and scoped foundation reuse. Archive and maintained
+  link updates follow; the exact archive/link review is retained separately in
+  `tmp/evidence/validated-chat-findings/review-R4.txt`, outside its own manifest.
+
+- 2026-10-27: Execution authorized at planning HEAD `5f67bd6`, with clean index
+  and worktree. The execution ledger freezes units, input snapshots and commands.
+  Focused host red evidence reproduced F03/F04/F05/F06/F07/F10/F11/F12 and the
+  hardware/loader gaps. F08 and F09 were subsequently confirmed with real native
+  child/lock order and real processor/MessagePort FIFO; both now require fixes.
+  Fourteen unique F findings and R01/R02 remain the final acceptance inventory.
+  Applied bounded corrections, generated the additive host-report field through
+  the registered generator, added pending-start IPC request ownership, and added
+  native loader/supervisor diagnostics. No package/model build/download or Git
+  mutation occurred. M2 integrated checks are in progress; M3/M4 are pending.
+
 - 2026-10-27: Planning-only request received. Clean `main`/index observed at the
   recorded base; branch `codex/chatterbox-runtime-correctness` created.
 - 2026-10-27: Read v7 closeout and original C1/S3/S4/S5/S6/P1/P2/R8/N2/R9/I14
@@ -597,19 +624,44 @@ receipts. Do not reset retry counts by changing a run name or rebuilding blindly
 
 ## Final validation results
 
-**Execution pending.** Historical results above are attributed to their original
-receipts. No implementation, test, benchmark, loader, clean-host or new package
-acceptance is claimed by this plan. Planning inspection and selected hash/tree
-comparisons are not runtime acceptance.
+**Completed and independently accepted.** All fourteen unique
+findings are implemented, including the two candidates confirmed with real
+ownership/order reproductions. R01 source-selection guards and historical v2
+identity correction pass; R02's production-command loader control passes.
+The [execution ledger](../evidence/validated-chat-findings-corrections.md) owns
+exact commands, input snapshots, retained failures and proposed evidence reuse.
 
-Planning scope inventory: F01-F07/F10-F14 are the 12 supported correction targets;
-F08/F09 are confirmation work only until validated; R01/R02 are explicit package
-risks. Every row has an owner, minimum correction boundary and current/conditional
-gate. No finding was silently dropped or counted twice. All M0-M4 milestones
-remain not started.
+M0-M3 are complete. Both Rust configurations, the equivalent TypeScript/Python
+foundation graph, builds, evidence checks and four grouped browser outcomes are
+covered. Cold private-loader, Piper EN WebView2 and native sequential Chatterbox
+ES/EN arms pass. Runtime/model integrity, zero audio persistence and owned cleanup
+are verified. M4's exact independent review is APPROVE. No fresh installer
+or full acquisition result is claimed.
 
-The planning-only documentation patch is exempt from behavioral change review.
-Execution must supply the exact changed paths and identities, every fresh and
-reused gate with its scope, retained failures, host cleanup evidence, and the new
-independent APPROVE report. Current Git authorization ends with the requested
-local planning commit.
+Review `CHAT-FINDINGS-R1-ASTRA-20261027` requested two corrections: read-only
+cleanup metrics and provider-local unknown CUDA free memory. Both are now fixed;
+four new desktop controls and a native control pass. Current desktop suite is
+867 cases; native suites are 132/131 with six opt-ins ignored each. Current
+browser four-case matrix and default app build pass. The changed linked native
+executable invalidates initial loader/GPU acceptance for final bytes. Freeze the
+produced executables, perform bounded code review, then run the same loader,
+Piper EN, F08 and ES/EN opt-ins on final identities; preserve initial receipts.
+
+`CHAT-FINDINGS-R2-ASTRA-20261027` resolved both code findings with no remaining
+code/coverage issue and required only final host receipts. Those now pass:
+`R1-D6-F08`, `R1-H-LOAD`, `R1-H-CPU`, `R1-H-GPU` and `R1-H-cleanup`.
+The same frozen release-locked test binary performed loader and bilingual work;
+all three final executable hashes remain unchanged. Piper EN starts in 5,717 ms
+with 23,359 ms lead and cancels in 557 ms. Chatterbox ES/EN cancels in 240/219 ms,
+with FP32 observations, zero guarded network/audio writes, runtime/model hashes
+verified and no owned process/scratch left. No further code change followed.
+
+`CHAT-FINDINGS-R3-ASTRA-20261027` is the independent implementation APPROVE,
+including each retained evidence group. Its exact manifest, patch and report
+are retained under the ignored evidence directory. No acceptance-blocking
+uncertainty remains within the requested scope. Host results cover the recorded
+machine/profile scenarios; physical multi-GPU, a new clean-Windows installation,
+full live HTTP delivery, installers and broad rate sweeps are not newly claimed.
+
+All changes remain unstaged and uncommitted on the existing branch/HEAD.
+No Git mutation, model download or new optional package version occurred.

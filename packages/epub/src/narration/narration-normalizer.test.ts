@@ -149,6 +149,57 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 ]);
 
 describe("narration normalization", () => {
+  it.each(["es", "en"] as const)(
+    "CHAT-AUDIT F04 preserves whole compound percentages and times in %s",
+    (language) => {
+      for (const source of [
+        "0.25 %",
+        "0,25 %",
+        "1/25 %",
+        "-25 %",
+        "+25 %",
+        "−25 %",
+        "12:14:30",
+        "14:30:12",
+        "1-14:30",
+      ]) {
+        const leaf = singleTextFixture(source, false);
+        const normalized = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(normalized.text, source).toBe(source);
+        assertSourceMapping(
+          leaf,
+          normalized as unknown as NarrationNormalizedStream,
+        );
+      }
+      for (const [source, expansion] of [
+        [
+          "(25 %).",
+          language === "es"
+            ? "(veinticinco por ciento)."
+            : "(twenty-five percent).",
+        ],
+        [
+          "14:30.",
+          language === "es" ? "las catorce treinta." : "fourteen thirty.",
+        ],
+      ]) {
+        const leaf = singleTextFixture(source!, false);
+        const normalized = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(normalized.text).toBe(expansion);
+        assertSourceMapping(
+          leaf,
+          normalized as unknown as NarrationNormalizedStream,
+        );
+      }
+    },
+  );
+
   it("NLC-05 retains the entire accepted Spanish corpus through the bilingual path", () => {
     for (const corpusCase of NARRATION_NORMALIZATION_CORPUS) {
       if (corpusCase.defaultLanguage !== "es") continue;

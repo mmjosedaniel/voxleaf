@@ -134,7 +134,9 @@
     "package:chatterbox-optional:v3:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 3",
     "package:chatterbox-optional:v7:write-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-acquisition --package-version 7",
     "package:chatterbox-optional:v7:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition --package-version 7",
-    "test:chatterbox:v7:local-admission": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime tts_optional_chatterbox::tests::exact_local::optional_v7_exact_local_acquisition_replay -- --exact --ignored --nocapture --test-threads=1"
+    "test:chatterbox:v7:local-admission": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime tts_optional_chatterbox::tests::exact_local::optional_v7_exact_local_acquisition_replay -- --exact --ignored --nocapture --test-threads=1",
+    "test:chatterbox:v7:native-loader": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime tts_service_supervisor::tests::packaged_chatterbox::packaged_v7_private_loader -- --exact --ignored --nocapture --test-threads=1",
+    "test:chatterbox:v7:native-startup": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime tts_service_supervisor::tests::packaged_chatterbox::packaged_v7_supervised_bilingual -- --exact --ignored --nocapture --test-threads=1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

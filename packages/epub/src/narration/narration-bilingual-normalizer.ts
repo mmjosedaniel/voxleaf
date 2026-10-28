@@ -626,8 +626,22 @@ function matchesLexicalForm(
     return fail();
   }
   const endIndexExclusive = startIndex + source.length;
+  const before = sourceText(tokens[startIndex - 1]) ?? "";
+  const after = sourceText(tokens[endIndexExclusive]) ?? "";
+  const attachedCompound =
+    (form.kind === "percentage" || form.kind === "time") &&
+    (/[+−-]/u.test(before) ||
+      (/[.,/:]/u.test(before) &&
+        isAsciiDigit(
+          sourceText(tokens[startIndex - 2])?.charCodeAt(0) ?? -1,
+        )) ||
+      (/[.,/:-]/u.test(after) &&
+        isAsciiDigit(
+          sourceText(tokens[endIndexExclusive + 1])?.charCodeAt(0) ?? -1,
+        )));
   if (
     endIndexExclusive > tokens.length ||
+    attachedCompound ||
     !isLexicalBoundary(sourceText(tokens[startIndex - 1])) ||
     !isLexicalBoundary(sourceText(tokens[endIndexExclusive])) ||
     (form.kind === "number" &&

@@ -165,3 +165,170 @@ test("fails closed outside a Git repository", (t) => {
   rmSync(join(repo.root, ".git"), { recursive: true });
   assert.throws(repo.check, /Cannot read Git/);
 });
+
+for (const [name, personalPath] of [
+  ["Windows", String.raw`C:\Users\privacy-canary\project`],
+  ["escaped Windows", String.raw`C:\\Users\\privacy-canary\\project`],
+  ["Windows forward slashes", "c:/users/privacy-canary/project"],
+  ["Windows name with spaces", String.raw`D:\Users\Privacy Canary\project`],
+  ["macOS", "/Users/privacy-canary/project"],
+  ["Linux", "/home/privacy-canary/project"],
+  ["file URL", "file:///home/privacy-canary/project"],
+  ["emphasized Windows", String.raw`_C:\Users\privacy-canary\project_`],
+  ["emphasized Linux", "_/home/privacy-canary/project_"],
+  ["strongly emphasized macOS", "__/Users/privacy-canary/project__"],
+]) {
+  test(`rejects an untracked Markdown ${name} home path without echoing it`, (t) => {
+    const repo = repository(t);
+    const path = "docs/plans/evidence/run with spaces/report.MD";
+    repo.write(path, `# Result\n\nCommand ran from ${personalPath}.\n`);
+    assert.throws(repo.check, (error) => {
+      assert.match(error.message, /Personal home paths/);
+      assert.ok(error.message.includes(`${path}:3 (worktree)`));
+      assert.ok(!error.message.includes(personalPath));
+      assert.ok(!error.message.includes("privacy-canary"));
+      return true;
+    });
+  });
+}
+
+test("accepts placeholders, web links and synthetic source fixtures", (t) => {
+  const repo = repository(t);
+  repo.write(
+    "README.md",
+    [
+      "<repo-root>/docs",
+      String.raw`C:\Users\<user>\project`,
+      "%USERPROFILE%/project",
+      "$HOME/project",
+      "/home/${USER}/project",
+      "/Users/<user>/project",
+      "https://docs.example.invalid/home/example",
+    ].join("\n"),
+  );
+  repo.write(
+    "packages/example/privacy.test.ts",
+    'const path = "/home/private";',
+  );
+  repo.git("add", "--", "README.md", "packages/example/privacy.test.ts");
+  assert.doesNotThrow(repo.check);
+});
+
+test("ignores local Markdown originals but rejects forced staged copies", (t) => {
+  const repo = repository(t);
+  repo.write(".gitignore", "tmp/\n");
+  const path = "tmp/evidence/original.md";
+  repo.write(path, "/home/privacy-canary/project");
+  assert.doesNotThrow(repo.check);
+  repo.git("add", "-f", "--", path);
+  assert.throws(repo.check, /Personal home paths/);
+});
+
+for (const missing of [false, true]) {
+  test(`rejects private staged Markdown when its worktree is ${missing ? "deleted" : "cleaned"}`, (t) => {
+    const repo = repository(t);
+    const path = "docs/report.md";
+    repo.write(path, "/home/privacy-canary/project");
+    repo.git("add", "--", path);
+    if (missing) rmSync(join(repo.root, path));
+    else repo.write(path, "<repo-root>");
+    assert.throws(repo.check, (error) => {
+      assert.ok(error.message.includes(`${path}:1 (staged)`));
+      assert.ok(!error.message.includes("privacy-canary"));
+      return true;
+    });
+  });
+}
+
+test("checks tracked Markdown and allows an unstaged historical redaction or deletion", (t) => {
+  const repo = repository(t);
+  const path = "README.md";
+  repo.write(path, "/home/privacy-canary/project");
+  repo.git("add", "--", path);
+  repo.git(
+    "-c",
+    "user.name=Evidence Test",
+    "-c",
+    "user.email=evidence@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "commit",
+    "--quiet",
+    "-m",
+    "synthetic historical path",
+  );
+  assert.throws(repo.check, /README\.md:1 \(worktree\)/);
+  repo.write(path, "<repo-root>");
+  assert.doesNotThrow(repo.check);
+  rmSync(join(repo.root, path));
+  assert.doesNotThrow(repo.check);
+  repo.git("add", "--", path);
+  // A staged deletion does not exempt a new untracked file at the same path.
+  repo.write(path, "/home/privacy-canary/recreated");
+  assert.throws(repo.check, /README\.md:1 \(worktree\)/);
+});
+
+test("checks emphasized staged modifications when their worktree correction is clean", (t) => {
+  const repo = repository(t);
+  const path = "docs/report.md";
+  repo.write(path, "<repo-root>");
+  repo.git("add", "--", path);
+  repo.git(
+    "-c",
+    "user.name=Evidence Test",
+    "-c",
+    "user.email=evidence@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "commit",
+    "--quiet",
+    "-m",
+    "synthetic public summary",
+  );
+  repo.write(path, String.raw`_C:\Users\privacy-canary\project_`);
+  repo.git("add", "--", path);
+  repo.write(path, "<repo-root>");
+  assert.throws(repo.check, (error) => {
+    assert.match(error.message, /docs\/report\.md:1 \(staged\)/);
+    assert.ok(!error.message.includes("privacy-canary"));
+    return true;
+  });
+});
+
+test("exempts only the exact historical synthetic-canary sentence", (t) => {
+  const repo = repository(t);
+  const path =
+    "docs/plans/completed/M006-001-local-tts-profile-blocker-resolution.md";
+  const canary =
+    "  one home-style match is the deliberate `/home/private/voice` privacy canary.";
+  repo.write(path, `${canary}\n`);
+  assert.doesNotThrow(repo.check);
+  repo.write(path, `${canary}\n/home/privacy-canary/project\n`);
+  assert.throws(repo.check, (error) => {
+    assert.ok(error.message.includes(`${path}:2 (worktree)`));
+    return true;
+  });
+  repo.write(path, `${canary} /home/privacy-canary/project\n`);
+  assert.throws(repo.check, /Personal home paths/);
+  repo.write(path, `${canary}\n`);
+  repo.write("docs/other.md", `${canary}\n`);
+  assert.throws(repo.check, /docs\/other\.md:1 \(worktree\)/);
+});
+
+test("fails closed when a tracked Markdown file cannot be read", (t) => {
+  const repo = repository(t);
+  const path = "docs/report.md";
+  repo.write(path);
+  repo.git("add", "--", path);
+  rmSync(join(repo.root, path));
+  mkdirSync(join(repo.root, path));
+  assert.throws(repo.check, (error) => {
+    assert.match(
+      error.message,
+      /Cannot read Markdown evidence: docs\/report\.md/,
+    );
+    assert.ok(!error.message.includes(repo.root));
+    assert.equal(error.cause, undefined);
+    return true;
+  });
+});

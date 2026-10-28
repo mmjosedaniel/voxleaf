@@ -40,6 +40,7 @@ function unavailableProvider() {
 
 function completeReport(availableRamMiB = 16_384) {
   return decodeHostProfileCompatibilityReportV1({
+    cudaComputeCapability: { status: "known", major: 12, minor: 0 },
     schemaVersion: 1,
     probeStatus: "complete",
     platform: {
@@ -175,6 +176,88 @@ function dependencies(
 }
 
 describe("hardware profile compatibility coordinator", () => {
+  it("CHAT-AUDIT R1 unknown CUDA free memory preserves Piper admission and continuation", async () => {
+    let current = completeReport();
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({
+        detector: { detect: async () => current },
+        preference: preference({
+          status: "ready",
+          profileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+        }),
+        languagePreference: languagePreference("en"),
+      }),
+    );
+    await subject.ensureChecked();
+    current = decodeHostProfileCompatibilityReportV1({
+      ...current,
+      providers: {
+        ...current.providers,
+        cuda: {
+          ...current.providers.cuda,
+          availableDedicatedMemoryMiB: unknownQuantity(),
+        },
+      },
+    });
+    try {
+      const snapshot = await subject.check("operating-system-resume");
+      expect(snapshot.activeProfileId).toBe(PIPER_ENGLISH_CPU_PROFILE_ID);
+      expect(
+        subject.isProfileCurrentlyAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+      ).toBe(true);
+      expect(
+        subject.isProfileContinuationAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+      ).toBe(true);
+      expect(
+        await subject.isProfileStartAllowed(
+          PIPER_ENGLISH_CPU_PROFILE_ID,
+          "before-profile-start",
+          "en",
+        ),
+      ).toBe(true);
+      expect(chatterboxAcquisitionPresentation(snapshot).allowed).toBe(false);
+    } finally {
+      subject.close();
+    }
+  });
+
+  it("CHAT-AUDIT F06 evaluates continuation separately from admission after a resource recheck", async () => {
+    let availableRam = 16_384;
+    const dependency = dependencies({
+      detector: { detect: async () => completeReport(availableRam) },
+      preference: preference({
+        status: "ready",
+        profileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      }),
+      languagePreference: languagePreference("en"),
+    });
+    const coordinator = new HardwareProfileCompatibilityCoordinator(dependency);
+    await coordinator.ensureChecked();
+    expect(
+      coordinator.isProfileCurrentlyAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+    ).toBe(true);
+    availableRam = 1;
+    await coordinator.check("operating-system-resume");
+    expect(
+      coordinator.isProfileCurrentlyAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+    ).toBe(false);
+    expect(
+      coordinator.isProfileContinuationAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+    ).toBe(true);
+    expect(
+      await coordinator.isProfileStartAllowed(
+        PIPER_ENGLISH_CPU_PROFILE_ID,
+        "before-profile-start",
+        "en",
+      ),
+    ).toBe(false);
+    availableRam = 0;
+    await coordinator.check("operating-system-resume");
+    expect(
+      coordinator.isProfileContinuationAllowed(PIPER_ENGLISH_CPU_PROFILE_ID),
+    ).toBe(false);
+    coordinator.close();
+  });
   it("recommends the admitted CPU fallback while retaining the exact development profile", async () => {
     const subject = new HardwareProfileCompatibilityCoordinator(dependencies());
 

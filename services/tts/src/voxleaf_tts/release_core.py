@@ -406,6 +406,13 @@ def atomic_stage(target: Path, populate: Callable[[Path], None]) -> None:
     _clean_staging(parent)
     staging = parent / f".{PACKAGE_DIRECTORY_NAME}{STAGING_MARKER}{os.getpid()}"
     backup = parent / f".{PACKAGE_DIRECTORY_NAME}.previous"
+    # Failed promotion and restoration may have left this as the only package.
+    # Recover it before cleanup or population can discard the recovery input.
+    if backup.exists() and not target.exists():
+        try:
+            backup.replace(target)
+        except OSError:
+            raise ReleaseCoreError("piper-core-promotion-failed") from None
     shutil.rmtree(staging, ignore_errors=True)
     shutil.rmtree(backup, ignore_errors=True)
     staging.mkdir(parents=True)

@@ -40,6 +40,73 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("CHAT-AUDIT F03 opens each spine occurrence of a shared XHTML fallback with its own locator", async () => {
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        packageDocument: minimalPackageDocument()
+          .replace(
+            "</manifest>",
+            '<item id="one" href="one.bin" media-type="application/x-synthetic" fallback="chapter"/><item id="two" href="two.bin" media-type="application/x-synthetic" fallback="chapter"/></manifest>',
+          )
+          .replace(
+            '<itemref idref="chapter"/>',
+            '<itemref idref="one"/><itemref idref="two"/>',
+          ),
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Shared</title></head><body><p id="shared">Shared passage.</p></body></html>',
+        navigationDocument: minimalNavigationDocument().replace(
+          "#chapter-one",
+          "#shared",
+        ),
+        additionalEntries: [
+          { name: "EPUB/one.bin", content: "one" },
+          { name: "EPUB/two.bin", content: "two" },
+        ],
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const publication = result.publication;
+    try {
+      expect(publication.book.spine).toHaveLength(2);
+      const blocks = publication.locators;
+      expect(blocks).toHaveLength(2);
+      expect(new Set(blocks.map((block) => block.documentId)).size).toBe(2);
+      for (const [index, block] of blocks.entries()) {
+        expect(block.startLocator.spineItemIndex).toBe(index);
+        expect(publication.resolveLocator(block.startLocator).status).toBe(
+          "exact",
+        );
+        expect(
+          publication.resolveTarget({
+            documentId: block.documentId,
+            fragment: "shared",
+          }),
+        ).toMatchObject({ locator: block.startLocator });
+        const prepared = await publication.prepareNarration({
+          startLocator: block.startLocator,
+          profile: "narration-bilingual-v2",
+          defaultLanguage: "en",
+          maximumSegments: 1,
+        });
+        expect(["complete", "batch"]).toContain(prepared.status);
+        if (prepared.status === "complete" || prepared.status === "batch")
+          expect(prepared.segments[0]?.sourceRange.start.spineItemIndex).toBe(
+            index,
+          );
+      }
+      expect(
+        publication.resolveTarget(
+          publication.navigation[0]!.kind === "link"
+            ? publication.navigation[0]!.target
+            : {},
+        ),
+      ).toMatchObject({ locator: blocks[0]!.startLocator });
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
     const result = await openEpubPublication(
       await buildMinimalEpubFixture({

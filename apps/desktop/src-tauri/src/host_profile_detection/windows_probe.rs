@@ -13,8 +13,7 @@ use windows::Win32::Foundation::{E_ACCESSDENIED, FreeLibrary, HMODULE};
 use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_11_0;
 use windows::Win32::Graphics::Direct3D12::{D3D12CreateDevice, ID3D12Device};
 use windows::Win32::Graphics::Dxgi::{
-    CreateDXGIFactory1, DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_ERROR_NOT_FOUND,
-    DXGI_MEMORY_SEGMENT_GROUP_LOCAL, DXGI_QUERY_VIDEO_MEMORY_INFO, IDXGIAdapter1, IDXGIAdapter3,
+    CreateDXGIFactory1, DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_ERROR_NOT_FOUND, IDXGIAdapter1,
     IDXGIFactory1,
 };
 use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
@@ -26,7 +25,7 @@ use windows::Win32::System::SystemInformation::{
     PROCESSOR_ARCHITECTURE_ARM64, SYSTEM_INFO,
 };
 use windows::Win32::System::Threading::{ALL_PROCESSOR_GROUPS, GetActiveProcessorCount};
-use windows::core::{Interface, PCSTR, w};
+use windows::core::{PCSTR, w};
 
 use super::{
     Architecture, Availability, DeviceClass, HostProbePort, MAXIMUM_NATIVE_ADAPTERS, NativeAdapter,
@@ -40,6 +39,11 @@ type CuDeviceGetCount = unsafe extern "system" fn(*mut i32) -> i32;
 type CuDeviceGet = unsafe extern "system" fn(*mut i32, i32) -> i32;
 type CuDeviceComputeCapability = unsafe extern "system" fn(*mut i32, *mut i32, i32) -> i32;
 type CuDeviceGetLuid = unsafe extern "system" fn(*mut i8, *mut u32, i32) -> i32;
+type CuPrimaryCtxRetain = unsafe extern "system" fn(*mut *mut c_void, i32) -> i32;
+type CuCtxPushCurrent = unsafe extern "system" fn(*mut c_void) -> i32;
+type CuMemGetInfo = unsafe extern "system" fn(*mut usize, *mut usize) -> i32;
+type CuCtxPopCurrent = unsafe extern "system" fn(*mut *mut c_void) -> i32;
+type CuPrimaryCtxRelease = unsafe extern "system" fn(i32) -> i32;
 
 pub(super) struct WindowsHostProbe;
 
@@ -167,7 +171,7 @@ fn luid_key(luid: windows::Win32::Foundation::LUID) -> u64 {
 }
 
 fn adapter_memory(
-    adapter: &IDXGIAdapter1,
+    _adapter: &IDXGIAdapter1,
     device_class: DeviceClass,
     dedicated_video_memory: usize,
 ) -> Result<(Option<u64>, Option<u64>), windows::core::Error> {
@@ -177,25 +181,9 @@ fn adapter_memory(
     ) {
         return Ok((Some(0), Some(0)));
     }
-    let Ok(adapter3) = adapter.cast::<IDXGIAdapter3>() else {
-        return Ok((Some(dedicated_video_memory as u64), None));
-    };
-    let mut information = DXGI_QUERY_VIDEO_MEMORY_INFO::default();
-    if let Err(error) = unsafe {
-        adapter3.QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &mut information)
-    } {
-        if error.code() == E_ACCESSDENIED {
-            return Err(error);
-        }
-        return Ok((Some(dedicated_video_memory as u64), None));
-    }
-    if information.CurrentUsage > information.Budget {
-        return Ok((Some(dedicated_video_memory as u64), None));
-    }
-    Ok((
-        Some(dedicated_video_memory as u64),
-        Some(information.Budget - information.CurrentUsage),
-    ))
+    // DXGI Budget - CurrentUsage is this process's budget headroom. It is
+    // neither free device memory nor the allocation headroom of the TTS child.
+    Ok((Some(dedicated_video_memory as u64), None))
 }
 
 fn directml_data_type(
@@ -258,7 +246,12 @@ fn directml_device(
         bfloat16: Availability::Unavailable,
         int8: directml_data_type(&dml_device, DML_TENSOR_DATA_TYPE_INT8)?,
     };
-    Ok(Some(NativeProviderDevice { luid, precisions }))
+    Ok(Some(NativeProviderDevice {
+        luid,
+        precisions,
+        cuda_compute_capability: None,
+        cuda_available_memory_bytes: None,
+    }))
 }
 
 fn adapters_and_directml() -> (
@@ -338,7 +331,7 @@ pub(super) fn cuda_precisions_for_compute_capability(
     major: i32,
     minor: i32,
 ) -> Option<PrecisionReport> {
-    if major < 2 || minor < 0 {
+    if !(2..=255).contains(&major) || !(0..=255).contains(&minor) {
         return None;
     }
     let float16 = if major > 5 || (major == 5 && minor >= 3) {
@@ -414,9 +407,45 @@ fn cuda() -> ProbeValue<Vec<NativeProviderDevice>> {
             return ProbeValue::Malformed;
         };
         let luid = u64::from_le_bytes(luid.map(|value| value as u8));
-        devices.push(NativeProviderDevice { luid, precisions });
+        devices.push(NativeProviderDevice {
+            luid,
+            precisions,
+            cuda_compute_capability: Some((major as u8, minor as u8)),
+            cuda_available_memory_bytes: if ordinal == 0 {
+                cuda_free_memory(&library, device)
+            } else {
+                None
+            },
+        });
     }
     ProbeValue::Known(devices)
+}
+
+fn cuda_free_memory(library: &CudaLibrary, device: i32) -> Option<u64> {
+    let (retain, push, query, pop, release) = unsafe {
+        (
+            library
+                .procedure::<CuPrimaryCtxRetain>(windows::core::s!("cuDevicePrimaryCtxRetain"))?,
+            library.procedure::<CuCtxPushCurrent>(windows::core::s!("cuCtxPushCurrent_v2"))?,
+            library.procedure::<CuMemGetInfo>(windows::core::s!("cuMemGetInfo_v2"))?,
+            library.procedure::<CuCtxPopCurrent>(windows::core::s!("cuCtxPopCurrent_v2"))?,
+            library.procedure::<CuPrimaryCtxRelease>(windows::core::s!(
+                "cuDevicePrimaryCtxRelease_v2"
+            ))?,
+        )
+    };
+    let mut context = std::ptr::null_mut();
+    if unsafe { retain(&mut context, device) } != CUDA_SUCCESS {
+        return None;
+    }
+    let mut free = 0;
+    let mut total = 0;
+    let pushed = unsafe { push(context) } == CUDA_SUCCESS;
+    let measured = pushed && unsafe { query(&mut free, &mut total) } == CUDA_SUCCESS;
+    let mut popped = std::ptr::null_mut();
+    let restored = !pushed || (unsafe { pop(&mut popped) } == CUDA_SUCCESS && popped == context);
+    let released = unsafe { release(device) } == CUDA_SUCCESS;
+    (measured && restored && released && total > 0 && free <= total).then_some(free as u64)
 }
 
 impl HostProbePort for WindowsHostProbe {

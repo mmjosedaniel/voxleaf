@@ -45,6 +45,16 @@ export type HostFactAvailabilityV1Wire =
  * A bounded privacy-safe snapshot of local host facts needed for conservative TTS profile matching. It contains no host identity, raw platform output, path, recommendation, or support claim.
  */
 export interface HostProfileCompatibilityReportV1Wire {
+  /**
+   * Compute capability of the same default visible CUDA device as providers.cuda. Missing or unknown never establishes an exact runtime architecture.
+   */
+  cudaComputeCapability?:
+    | {
+        status: "known";
+        major: number;
+        minor: number;
+      }
+    | UnknownHostQuantityV1Wire;
   schemaVersion: SchemaVersionWire & 1;
   probeStatus: "complete" | "partial" | "permission-denied" | "unavailable";
   platform: {

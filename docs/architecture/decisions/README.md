@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0065: Runtime admission, ownership and narration boundaries](ADR-0065-validated-runtime-and-narration-boundaries.md): exact CUDA/free-memory facts, private child loader, pending-start ownership, episode metrics and conservative EPUB/narration corrections; validation is in its active plan.
+
 - [ADR-0063: Default CUDA admission and Celsius numeric boundaries](ADR-0063-default-cuda-and-celsius-boundaries.md).
 
 - [ADR-0062: Admit the filelock and setuptools Chatterbox v6 refresh](ADR-0062-admit-filelock-setuptools-chatterbox-v6.md): accepted additive runtime identity with exact local admission and reviewed runtime evidence; previous packages remain cleanup-only. The completed security-refresh plan retains unresolved full live-delivery failures.

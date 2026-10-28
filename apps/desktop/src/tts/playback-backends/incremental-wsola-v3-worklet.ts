@@ -15,6 +15,7 @@ interface ArmMessage {
 
 interface UnitMessage {
   readonly type: "start" | "pause" | "resume" | "stop";
+  readonly unitSequence?: number;
 }
 
 type WorkletMessage = ArmMessage | UnitMessage;
@@ -92,7 +93,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     }
     if (message.type === "start") {
       if (!this.#armed || this.#active || this.#ended) {
-        this.port.postMessage({ type: "failed" });
+        this.port.postMessage({
+          type: "failed",
+          unitSequence: message.unitSequence ?? this.#unitSequence,
+        });
         return;
       }
       this.#active = true;
@@ -101,7 +105,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     }
     if (message.type === "pause") {
       if (!this.#active || this.#ended) {
-        this.port.postMessage({ type: "failed" });
+        this.port.postMessage({
+          type: "failed",
+          unitSequence: message.unitSequence ?? this.#unitSequence,
+        });
         return;
       }
       this.#paused = true;
@@ -114,7 +121,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     }
     if (message.type === "resume") {
       if (!this.#active || this.#ended) {
-        this.port.postMessage({ type: "failed" });
+        this.port.postMessage({
+          type: "failed",
+          unitSequence: message.unitSequence ?? this.#unitSequence,
+        });
         return;
       }
       this.#paused = false;
@@ -142,7 +152,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       message.unitSequence <= this.#unitSequence ||
       (this.#active && !this.#ended)
     ) {
-      this.port.postMessage({ type: "failed" });
+      this.port.postMessage({
+        type: "failed",
+        unitSequence: message.unitSequence,
+      });
       return;
     }
 
