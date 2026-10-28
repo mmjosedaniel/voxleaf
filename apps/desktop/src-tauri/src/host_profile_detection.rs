@@ -136,8 +136,16 @@ struct ProviderReports {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "status", rename_all = "kebab-case")]
+enum CudaComputeCapability {
+    Known { major: u8, minor: u8 },
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HostProfileCompatibilityReportV1 {
+    cuda_compute_capability: CudaComputeCapability,
     schema_version: u8,
     probe_status: ProbeStatus,
     platform: PlatformReport,
@@ -192,6 +200,8 @@ struct NativeAdapter {
 struct NativeProviderDevice {
     luid: u64,
     precisions: PrecisionReport,
+    cuda_compute_capability: Option<(u8, u8)>,
+    cuda_available_memory_bytes: Option<u64>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -424,6 +434,7 @@ fn provider_rank(value: &ProviderReport) -> (bool, u64, bool, u64, u8) {
 fn provider_candidate(
     device: NativeProviderDevice,
     adapters: &[NativeAdapter],
+    cuda: bool,
 ) -> Option<ProviderReport> {
     let mut matching = adapters
         .iter()
@@ -452,7 +463,11 @@ fn provider_candidate(
         Some(bytes) => quantity_from_bytes(bytes).unwrap_or(Quantity::Unknown),
         None => Quantity::Unknown,
     };
-    let available_dedicated_memory_mi_b = match adapter.available_dedicated_memory_bytes {
+    let available_dedicated_memory_mi_b = match if cuda {
+        device.cuda_available_memory_bytes
+    } else {
+        adapter.available_dedicated_memory_bytes
+    } {
         Some(bytes) => quantity_from_bytes(bytes).unwrap_or(Quantity::Unknown),
         None => Quantity::Unknown,
     };
@@ -506,7 +521,7 @@ fn normalize_accelerated_provider(
         devices.len()
     };
     for device in devices.iter().take(candidate_count) {
-        let Some(candidate) = provider_candidate(*device, adapters) else {
+        let Some(candidate) = provider_candidate(*device, adapters, default_device_only) else {
             continue;
         };
         match selected {
@@ -529,13 +544,9 @@ fn normalize_accelerated_provider(
         status.mark_incomplete();
         return unknown_provider();
     };
-    if matches!(
-        (
-            selected.dedicated_memory_mi_b,
-            selected.available_dedicated_memory_mi_b,
-        ),
-        (Quantity::Unknown, _) | (_, Quantity::Unknown)
-    ) {
+    // Free provider memory is optional. Its unknown fact rejects allocations
+    // requiring that provider without invalidating otherwise complete CPU facts.
+    if selected.dedicated_memory_mi_b == Quantity::Unknown {
         status.mark_incomplete();
     }
     selected
@@ -544,6 +555,7 @@ fn normalize_accelerated_provider(
 fn normalize_snapshot(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityReportV1 {
     if !snapshot.platform_supported {
         return HostProfileCompatibilityReportV1 {
+            cuda_compute_capability: CudaComputeCapability::Unknown,
             schema_version: SCHEMA_VERSION,
             probe_status: ProbeStatus::Unavailable,
             platform: snapshot.platform,
@@ -593,6 +605,15 @@ fn normalize_snapshot(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityR
     );
 
     HostProfileCompatibilityReportV1 {
+        cuda_compute_capability: match &snapshot.cuda_devices {
+            ProbeValue::Known(devices) if cuda.availability == Availability::Available => devices
+                .first()
+                .and_then(|device| device.cuda_compute_capability)
+                .map_or(CudaComputeCapability::Unknown, |(major, minor)| {
+                    CudaComputeCapability::Known { major, minor }
+                }),
+            _ => CudaComputeCapability::Unknown,
+        },
         schema_version: SCHEMA_VERSION,
         probe_status: status.finish(),
         platform: snapshot.platform,
@@ -707,6 +728,11 @@ fn optional_cuda_bf16_profile_admitted_from_report(
         )
         && cuda.availability == Availability::Available
         && cuda.device_class == DeviceClass::DiscreteGpu
+        && report.cuda_compute_capability
+            == (CudaComputeCapability::Known {
+                major: 12,
+                minor: 0,
+            })
         && cuda.precisions.bfloat16 == Availability::Available
         && quantity_at_least(
             cuda.dedicated_memory_mi_b,

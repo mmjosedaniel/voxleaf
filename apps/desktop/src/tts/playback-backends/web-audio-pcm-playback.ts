@@ -301,7 +301,11 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       const type = Reflect.get(message, "type");
       const unitSequence = Reflect.get(message, "unitSequence");
       if (type === "failed") {
-        if (!stopped && this.#active === handle) {
+        if (
+          unitSequence === request.sequence &&
+          !stopped &&
+          this.#active === handle
+        ) {
           handle.stop();
           callbacks.failed();
         }

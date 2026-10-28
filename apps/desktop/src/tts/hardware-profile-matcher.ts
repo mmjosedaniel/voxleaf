@@ -10,6 +10,7 @@ import {
   type HardwareProfileEvidenceGateStateV1,
   type HardwareProfileRegistryEntryV1,
 } from "./hardware-profile-authority";
+import { CHATTERBOX_BILINGUAL_PROFILE_ID } from "./hardware-profile-registry";
 
 export type HardwareProfileRejectionReasonV1 =
   | "contract-version"
@@ -53,6 +54,8 @@ export interface HardwareProfileMatchResultV1 {
 }
 
 export interface MatchHardwareProfilesInputV1 {
+  /** Only the owner of an already admitted, healthy loaded session may set this. */
+  readonly continuingProfileId?: string;
   readonly report: HostProfileCompatibilityReportV1;
   readonly registry: readonly HardwareProfileRegistryEntryV1[];
   readonly nativeDevelopmentGate: boolean;
@@ -289,6 +292,7 @@ function insufficientQuantity(
 function providerFailure(
   provider: HostProviderCapabilityV1,
   entry: HardwareProfileRegistryEntryV1,
+  continuing: boolean,
 ): HardwareProfileMatchV1 | undefined {
   if (provider.availability !== "available") {
     return match(
@@ -348,7 +352,7 @@ function providerFailure(
     ) ??
     insufficientQuantity(
       provider.availableDedicatedMemoryMiB,
-      requiredAvailableVram,
+      continuing ? 1 : requiredAvailableVram,
       entry,
       "available-dedicated-vram",
     )
@@ -360,6 +364,7 @@ function matchEntry(
   entry: HardwareProfileRegistryEntryV1,
   nativeDevelopmentGate: boolean,
   registryValid: boolean,
+  continuing: boolean,
 ): HardwareProfileMatchV1 {
   if (Number(report.schemaVersion) !== 1) {
     return match("unknown", entry, "contract-version");
@@ -439,7 +444,7 @@ function matchEntry(
     ) ??
     insufficientQuantity(
       report.memory.availablePhysicalMiB,
-      exactAvailableRamRequirement,
+      continuing ? 1 : exactAvailableRamRequirement,
       entry,
       "available-ram",
     );
@@ -464,8 +469,16 @@ function matchEntry(
   }
 
   const provider = report.providers[entry.requirements.provider];
+  if (entry.identity.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+    const capability = report.cudaComputeCapability;
+    if (capability?.status !== "known")
+      return match("unknown", entry, "provider");
+    if (capability.major !== 12 || capability.minor !== 0)
+      return match("incompatible", entry, "provider");
+  }
   return (
-    providerFailure(provider, entry) ?? match("compatible", entry, undefined)
+    providerFailure(provider, entry, continuing) ??
+    match("compatible", entry, undefined)
   );
 }
 
@@ -474,6 +487,7 @@ export function matchHardwareProfilesV1({
   registry,
   nativeDevelopmentGate,
   preferredProfileId,
+  continuingProfileId,
 }: MatchHardwareProfilesInputV1): HardwareProfileMatchResultV1 {
   const registryValid =
     registry.length <= HARDWARE_PROFILE_AUTHORITY_V1.registry.maximumEntries &&
@@ -484,7 +498,13 @@ export function matchHardwareProfilesV1({
   );
   const profiles = Object.freeze(
     entries.map((entry) =>
-      matchEntry(report, entry, nativeDevelopmentGate, registryValid),
+      matchEntry(
+        report,
+        entry,
+        nativeDevelopmentGate,
+        registryValid,
+        continuingProfileId === entry.identity.profileId,
+      ),
     ),
   );
   const compatibleProfileIds = Object.freeze(

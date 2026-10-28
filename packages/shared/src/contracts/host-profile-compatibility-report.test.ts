@@ -112,6 +112,42 @@ function createSyntheticKnownReport() {
 }
 
 describe("host profile compatibility report v1", () => {
+  it("CHAT-AUDIT F01 accepts missing/unknown architecture, freezes exact facts and rejects malformed additions", () => {
+    const legacy = createSyntheticKnownReport();
+    expect(
+      decodeHostProfileCompatibilityReportV1(legacy).cudaComputeCapability,
+    ).toBeUndefined();
+    for (const capability of [
+      { status: "unknown" },
+      { status: "known", major: 12, minor: 0 },
+    ]) {
+      const decoded = decodeHostProfileCompatibilityReportV1({
+        ...legacy,
+        cudaComputeCapability: capability,
+      });
+      expect(decoded.cudaComputeCapability).toEqual(capability);
+      expect(Object.isFrozen(decoded.cudaComputeCapability)).toBe(true);
+    }
+    for (const capability of [
+      { status: "known", major: 12 },
+      { status: "known", major: 12, minor: -1 },
+      { status: "known", major: 256, minor: 0 },
+      { status: "known", major: 12, minor: 0, deviceName: "forbidden" },
+    ]) {
+      expect(() =>
+        decodeHostProfileCompatibilityReportV1({
+          ...legacy,
+          cudaComputeCapability: capability,
+        }),
+      ).toThrow(HostProfileCompatibilityReportContractError);
+    }
+    expect(() =>
+      decodeHostProfileCompatibilityReportV1({
+        ...createUnknownReport(),
+        cudaComputeCapability: { status: "known", major: 12, minor: 0 },
+      }),
+    ).toThrow(HostProfileCompatibilityReportContractError);
+  });
   it("round-trips a synthetic known report and deeply freezes it", () => {
     const input = createSyntheticKnownReport();
     const report = decodeHostProfileCompatibilityReportV1(input);

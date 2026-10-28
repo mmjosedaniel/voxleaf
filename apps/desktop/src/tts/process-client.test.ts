@@ -54,6 +54,22 @@ it("contains a child whose start response arrives after shutdown was requested",
     .mockRejectedValueOnce("tts-service-invalid-state")
     .mockResolvedValue(shutdownControls());
   const stopping = client.shutdown();
+  const request = (mockedInvoke.mock.calls[0]![1] as Record<string, unknown>)
+    .startRequestId;
+  expect(request).toEqual(expect.stringMatching(/^start:/u));
+  expect(mockedInvoke).toHaveBeenCalledWith("shutdown_tts_service", {
+    startRequestId: request,
+  });
+  // F08 counterevidence: another book cannot dispatch a replacement start
+  // while either the pending start or its shutdown still owns this client.
+  await expect(client.start()).rejects.toMatchObject({
+    code: "tts-service-invalid-state",
+  });
+  expect(
+    mockedInvoke.mock.calls.filter(
+      ([command]) => command === "start_tts_service",
+    ),
+  ).toHaveLength(1);
   finish(startControls());
   await stopping;
   await rejected;
@@ -254,6 +270,7 @@ describe("typed native TTS process client", () => {
     await client.start("piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1", "es");
 
     expect(mockedInvoke).toHaveBeenCalledWith("start_tts_service", {
+      startRequestId: expect.stringMatching(/^start:/u),
       profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
       language: "es",
     });

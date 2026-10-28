@@ -1,5 +1,19 @@
 # Testing strategy
 
+## Validated chat finding corrections
+
+Use the [execution ledger](../plans/evidence/validated-chat-findings-corrections.md)
+for current versus reused results. New opt-in native gates are
+`pnpm.cmd test:chatterbox:v7:native-loader` (cold private DLL/Torch import plus
+missing/invalid controls) and `pnpm.cmd test:chatterbox:v7:native-startup`
+(sequential supervised ES/EN, dtype observation, health, cancellation/restart,
+network denial and integrity). Both require the existing verified v7 root via
+`VOXLEAF_V7_RUNTIME` and short disposable `VOXLEAF_V7_SCRATCH`; inference also
+requires the six verified models at `VOXLEAF_V7_MODELS`. They never download.
+The F08 opt-in Cargo case requires `VOXLEAF_NATIVE_MODEL_FREE_BINARY` for the
+ordinary fake-child CLI. Browser label `CHAT-AUDIT` selects the mounted reader,
+failure/recovery and real bundled-worklet FIFO cases in one invocation.
+
 ## Narration and Chatterbox correctness regressions
 
 The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) uses selected

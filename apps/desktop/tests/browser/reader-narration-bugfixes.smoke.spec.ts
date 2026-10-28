@@ -14,9 +14,203 @@ async function fixtures() {
     }): Promise<Uint8Array>;
     buildMinimalEpubFixture(options: {
       chapterDocument: string;
+      packageDocument?: string;
+      navigationDocument?: string;
+      additionalEntries?: { name: string; content: string }[];
     }): Promise<Uint8Array>;
   }>;
 }
+
+test("CHAT-AUDIT shared fallback, hidden root, unknown language and loaded-session recheck", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+  });
+  const packageDocument =
+    '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:chat-audit</dc:identifier><dc:title>Synthetic audit</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="a" href="a.bin" media-type="application/x-synthetic" fallback="chapter"/><item id="b" href="b.bin" media-type="application/x-synthetic" fallback="chapter"/><item id="hidden" href="text/hidden.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="hidden"/><itemref idref="a"/><itemref idref="b"/></spine></package>';
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-audit.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        packageDocument,
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" lang="EN" xml:lang="en"><head><title>Synthetic</title></head><body><p id="chapter-one">0.25 % 12:14:30</p><p lang="">25 % <em>14:30</em></p></body></html>',
+        additionalEntries: [
+          { name: "EPUB/a.bin", content: "a" },
+          { name: "EPUB/b.bin", content: "b" },
+          {
+            name: "EPUB/text/hidden.xhtml",
+            content:
+              '<html xmlns="http://www.w3.org/1999/xhtml" hidden=""><head><title>Hidden</title></head><body><p>Hidden audit sentinel</p></body></html>',
+          },
+        ],
+      }),
+    ),
+  });
+  await expect(page.getByRole("status")).toHaveText(
+    "The EPUB opened successfully.",
+  );
+  await expect(page.locator(".semantic-document")).not.toContainText(
+    "Hidden audit sentinel",
+  );
+  await page.locator('[data-narration-action="play"]').click();
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").prepared.map(
+          (value: { text: string }) => value.text,
+        ),
+      ),
+    )
+    .toEqual([
+      "0.25 % 12:14:30",
+      "25 % 14:30",
+      "0.25 % 12:14:30",
+      "25 % 14:30",
+    ]);
+  expect(
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").prepared.map(
+        (value: { spine: number }) => value.spine,
+      ),
+    ),
+  ).toEqual([1, 1, 2, 2]);
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").hostReport.memory.availablePhysicalMiB = {
+      status: "known",
+      value: 1,
+    };
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").probes))
+    .toBeGreaterThanOrEqual(2);
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+});
+
+for (const paused of [false, true])
+  test(`CHAT-AUDIT failed synthesis removes dead controls and supports explicit recovery (paused=${paused})`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, false, false, false, true);
+    await page.goto("/");
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.audioFrames = 360_000;
+      state.holdAfter = 1;
+    });
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-failure.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>First synthetic passage.</p><p>Second synthetic passage.</p></body></html>',
+        }),
+      ),
+    });
+    await page.locator('[data-narration-action="play"]').click();
+    const narration = page.locator(".product-narration");
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await expect
+      .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").blocked))
+      .toBe(true);
+    if (paused) await page.locator('[data-narration-action="pause"]').click();
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").failSynthesis());
+    await expect(narration).toHaveAttribute(
+      "data-narration-recovery-phase",
+      "recovery-available",
+    );
+    await expect(page.locator('[data-narration-action="pause"]')).toHaveCount(
+      0,
+    );
+    await expect(page.locator('[data-narration-action="resume"]')).toHaveCount(
+      0,
+    );
+    await page.evaluate(() => {
+      Reflect.get(globalThis, "__rnb").holdAfter = Number.MAX_SAFE_INTEGER;
+    });
+    await page.locator('[data-narration-action="recover"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await page.locator('[data-narration-action="stop"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+  });
+
+test("CHAT-AUDIT real bundled worklet preserves FIFO ownership through an ended/Pause race", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true, false, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-worklet-race.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${"synthetic ".repeat(160)}</p></body></html>`,
+      }),
+    ),
+  });
+  await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").workletEnded),
+    )
+    .toBe(true);
+  await page.locator('[data-narration-action="pause"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").workletFailed),
+    )
+    .toBe(true);
+  await page.locator('[data-narration-action="resume"]').click();
+  const order = await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    const order = state.workletMessages.slice();
+    state.releaseWorkletMessages();
+    return order;
+  });
+  expect(order.indexOf("ended")).toBeLessThan(order.indexOf("failed"));
+  expect(
+    await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").failedDeliveredToSequence,
+    ),
+  ).toBeGreaterThan(0);
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "operational",
+  );
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+});
 
 test("renders a local raster first encountered after thirty seconds of real reading time", async ({
   page,
@@ -420,13 +614,21 @@ async function installSyntheticService(
   page: Page,
   naturalCompletion = false,
   holdFinalCompletion = false,
+  auditWorkletFIFO = false,
+  quickStart = false,
 ): Promise<void> {
   await page.addInitScript(
-    ({ hostReport, naturalCompletion, holdFinalCompletion }) => {
+    ({
+      hostReport,
+      naturalCompletion,
+      holdFinalCompletion,
+      auditWorkletFIFO,
+      quickStart,
+    }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
       sessionStorage.setItem("nlc-initialized", "true");
-      if (!naturalCompletion)
+      if (!naturalCompletion && !quickStart)
         localStorage.setItem(
           "voxleaf.narration.start-preference",
           JSON.stringify({
@@ -436,6 +638,19 @@ async function installSyntheticService(
           }),
         );
       const observations = {
+        hostReport,
+        probes: 0,
+        audioFrames: 24_000,
+        holdAfter: Number.MAX_SAFE_INTEGER,
+        calls: 0,
+        blocked: false,
+        failSynthesis: () => {},
+        prepared: [] as Array<{ text: string; spine: number }>,
+        workletEnded: false,
+        workletFailed: false,
+        workletMessages: [] as string[],
+        failedDeliveredToSequence: -1,
+        releaseWorkletMessages: () => {},
         tailMinimum: 0,
         synthesized: 0,
         ended: 0,
@@ -537,6 +752,50 @@ async function installSyntheticService(
               if (event.data.type === "ended") observations.ended += 1;
             });
             this.port.start();
+            if (auditWorkletFIFO) {
+              const port = this.port;
+              let consumer: ((event: MessageEvent) => void) | null = null;
+              let armedSequence = -1;
+              const postMessage = port.postMessage.bind(port);
+              port.postMessage = (message, transfer = []) => {
+                if (message.type === "arm")
+                  armedSequence = message.unitSequence;
+                if (Array.isArray(transfer)) postMessage(message, transfer);
+                else postMessage(message, transfer);
+              };
+              let holding = true;
+              const queued: MessageEvent[] = [];
+              const descriptor = Object.getOwnPropertyDescriptor(
+                MessagePort.prototype,
+                "onmessage",
+              )!;
+              descriptor.set!.call(port, (event: MessageEvent) => {
+                if (holding) {
+                  queued.push(event);
+                  observations.workletMessages.push(event.data.type);
+                  if (event.data.type === "ended")
+                    observations.workletEnded = true;
+                  if (event.data.type === "failed")
+                    observations.workletFailed = true;
+                } else consumer?.(event);
+              });
+              Object.defineProperty(port, "onmessage", {
+                configurable: true,
+                get: () => consumer,
+                set: (value) => {
+                  consumer = value;
+                },
+              });
+              observations.releaseWorkletMessages = () => {
+                holding = false;
+                while (queued.length) {
+                  const event = queued.shift()!;
+                  if (consumer && event.data.type === "failed")
+                    observations.failedDeliveredToSequence = armedSequence;
+                  consumer?.(event);
+                }
+              };
+            }
             if (holdFinalCompletion) {
               const port = this.port;
               const descriptor = Object.getOwnPropertyDescriptor(
@@ -595,7 +854,8 @@ async function installSyntheticService(
           ) => {
             switch (command) {
               case "detect_host_profile_compatibility":
-                return hostReport;
+                observations.probes += 1;
+                return observations.hostReport;
               case "tts_profile_configuration_available":
                 return true;
               case "exact_tts_demo_available":
@@ -621,15 +881,31 @@ async function installSyntheticService(
                   capabilities(),
                 ];
               case "synthesize_tts_segment": {
-                if (!naturalCompletion) return new ArrayBuffer(24_000 * 4);
                 const segment = args!.segment;
+                if (observations.prepared.length < 16)
+                  observations.prepared.push({
+                    text: segment.text,
+                    spine: segment.sourceRange.start.spineItemIndex,
+                  });
+                if (observations.calls++ >= observations.holdAfter)
+                  return new Promise((_resolve, reject) => {
+                    observations.blocked = true;
+                    observations.failSynthesis = () => {
+                      observations.blocked = false;
+                      reject("tts-service-internal-failure");
+                    };
+                  });
+                if (!naturalCompletion)
+                  return new ArrayBuffer(observations.audioFrames * 4);
                 observations.requests.push({
                   service: observations.service,
                   generation: segment.generationId,
                   anchor: segment.sourceRange.start.anchor.anchorIndex,
                 });
                 const pcm = new Float32Array(
-                  observations.synthesized++ === 0 ? 48_000 : 1_200,
+                  observations.synthesized++ === 0 || auditWorkletFIFO
+                    ? 48_000
+                    : 1_200,
                 );
                 if (pcm.length === 48_000) {
                   pcm.fill(0.25, 12_000, 16_000);
@@ -646,6 +922,12 @@ async function installSyntheticService(
         },
       });
     },
-    { hostReport: report, naturalCompletion, holdFinalCompletion },
+    {
+      hostReport: report,
+      naturalCompletion,
+      holdFinalCompletion,
+      auditWorkletFIFO,
+      quickStart,
+    },
   );
 }

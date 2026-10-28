@@ -127,12 +127,20 @@ voice preference varies. Before network access, the confirmation must disclose:
 - an installed total of `8,236,757,393` bytes (about 8.24 GB/7.67 GiB);
 - a peak temporary requirement of `13,271,679,006` bytes (about 13.27 GB/
   12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
-- 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
+- 64-bit Windows, default CUDA device capability **12.0** with BF16 hardware
+  support (CUDA runtime 12.8), at least 8 logical processors, 24,576 MiB total
   and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
   currently available dedicated VRAM; nominal 7,680-MiB/8-GB-class VRAM remains
   the evaluated recommendation; and
 - licence, offline, cancellation, activation, removal, and reacquisition
   consequences.
+
+The legacy BF16 profile name is stable; hardware BF16 support is separate from
+effective model precision: the current native ES/EN checks observed FP32 model
+parameters and T3 forward inputs, with autocast disabled. The child uses existing verified private C++ DLLs,
+without requiring a machine-wide Visual C++ installation. See
+[ADR-0065](../architecture/decisions/ADR-0065-validated-runtime-and-narration-boundaries.md)
+and its current acceptance ledger for startup/dtype evidence and limits.
 
 The security-refreshed integration candidate uses the published package v7 under
 [ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).

@@ -599,7 +599,11 @@ verified host restoration/cleanup. Independent report
 All C01-C11/U1-U15 acceptance criteria are complete.
 Earlier R1/R2 reports remain immutable historical BLOCKED reports for missing G7.
 
-Commands ran from `C:\Users\mmjos\Desktop\workbeanch\voxleaf` in normal local
+Privacy redaction (2026-10-27, user-authorized): the personal checkout path below
+was replaced with `<repo-root>`. The original is preserved locally outside Git;
+technical requirements, results and historical approval remain unchanged.
+
+Commands ran from `<repo-root>` in normal local
 PowerShell outside the sandbox. Acceptance used Windows PowerShell 5.1, Node
 24.20.0, pinned pnpm 11.15.1 through the process-local Corepack shim, uv 0.11.29,
 Python 3.12.10, Rust/Cargo 1.97.1 and Windows build 26200. Recovery-copy cleanup

@@ -322,6 +322,8 @@ export class HardwareProfileCompatibilityCoordinator {
   #sequence = 0;
   #profileSelection: HardwareProfilePreferenceReadResult | undefined;
   #languageSelection: NarrationLanguagePreferenceReadResult | undefined;
+  #lastReport: HostProfileCompatibilityReportV1 | undefined;
+  #lastNativeGate = false;
 
   public constructor(
     dependencies: HardwareProfileCompatibilityDependencies = {},
@@ -417,6 +419,28 @@ export class HardwareProfileCompatibilityCoordinator {
             profileId,
             this.#snapshot.language,
           );
+  }
+
+  public isProfileContinuationAllowed(profileId: string): boolean {
+    if (
+      this.#closed ||
+      this.#lastReport === undefined ||
+      this.#snapshot.status === "checking" ||
+      this.#snapshot.status === "failed" ||
+      !profileSupportsNarrationLanguageV1(profileId, this.#snapshot.language) ||
+      (this.#snapshot.selectionSource === "preference" &&
+        this.#snapshot.activeProfileId !== profileId)
+    )
+      return false;
+    return matchHardwareProfilesV1({
+      report: this.#lastReport,
+      registry: this.#registry,
+      nativeDevelopmentGate: this.#lastNativeGate,
+      continuingProfileId: profileId,
+    }).profiles.some(
+      (profile) =>
+        profile.profileId === profileId && profile.state === "compatible",
+    );
   }
 
   public async selectProfile(profileId: string): Promise<boolean> {
@@ -581,6 +605,8 @@ export class HardwareProfileCompatibilityCoordinator {
             : undefined,
       }) satisfies HardwareCompatibilitySnapshotV1;
       if (!this.#closed && sequence === this.#sequence) {
+        this.#lastReport = report;
+        this.#lastNativeGate = nativeGate === "available";
         this.#snapshot = snapshot;
         this.#publish();
       }

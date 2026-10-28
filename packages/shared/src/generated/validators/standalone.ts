@@ -2713,9 +2713,9 @@ return errors === 0;
 validate36.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validateHostProfileCompatibilityReportV1Wire = validate37;
-const schema91 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:host-profile-compatibility-report:v1","title":"HostProfileCompatibilityReportV1Wire","description":"A bounded privacy-safe snapshot of local host facts needed for conservative TTS profile matching. It contains no host identity, raw platform output, path, recommendation, or support claim.","type":"object","additionalProperties":false,"required":["schemaVersion","probeStatus","platform","processor","memory","storage","providers"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"probeStatus":{"type":"string","enum":["complete","partial","permission-denied","unavailable"]},"platform":{"type":"object","additionalProperties":false,"required":["operatingSystem","architecture"],"properties":{"operatingSystem":{"type":"string","enum":["windows","linux","macos","other","unknown"]},"architecture":{"type":"string","enum":["x86_64","aarch64","other","unknown"]}}},"processor":{"type":"object","additionalProperties":false,"required":["logicalProcessorCount"],"properties":{"logicalProcessorCount":{"$ref":"#/$defs/knownLogicalProcessorCount"}}},"memory":{"type":"object","additionalProperties":false,"required":["totalPhysicalMiB","availablePhysicalMiB"],"properties":{"totalPhysicalMiB":{"$ref":"#/$defs/knownPositiveMebibytes"},"availablePhysicalMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"}}},"storage":{"type":"object","additionalProperties":false,"required":["applicationVolumeAvailableMiB"],"properties":{"applicationVolumeAvailableMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"}}},"providers":{"type":"object","additionalProperties":false,"required":["cpu","cuda","directml","rocm","metal"],"properties":{"cpu":{"$ref":"#/$defs/providerCapability"},"cuda":{"$ref":"#/$defs/providerCapability"},"directml":{"$ref":"#/$defs/providerCapability"},"rocm":{"$ref":"#/$defs/providerCapability"},"metal":{"$ref":"#/$defs/providerCapability"}}}},"$defs":{"availabilityStatus":{"title":"HostFactAvailabilityV1Wire","type":"string","enum":["available","unavailable","unknown"]},"knownLogicalProcessorCount":{"title":"KnownLogicalProcessorCountV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":1024}}},{"$ref":"#/$defs/unknownQuantity"}]},"knownPositiveMebibytes":{"title":"KnownPositiveMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]},"knownNonNegativeMebibytes":{"title":"KnownNonNegativeMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":0,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]},"unknownQuantity":{"title":"UnknownHostQuantityV1Wire","type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"const":"unknown"}}},"providerCapability":{"title":"HostProviderCapabilityV1Wire","type":"object","additionalProperties":false,"required":["availability","deviceClass","dedicatedMemoryMiB","availableDedicatedMemoryMiB","precisions"],"properties":{"availability":{"$ref":"#/$defs/availabilityStatus"},"deviceClass":{"type":"string","enum":["cpu","discrete-gpu","integrated-gpu","software","unknown"]},"dedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"availableDedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"precisions":{"type":"object","additionalProperties":false,"required":["float32","float16","bfloat16","int8"],"properties":{"float32":{"$ref":"#/$defs/availabilityStatus"},"float16":{"$ref":"#/$defs/availabilityStatus"},"bfloat16":{"$ref":"#/$defs/availabilityStatus"},"int8":{"$ref":"#/$defs/availabilityStatus"}}}}}}};
-const schema93 = {"title":"KnownLogicalProcessorCountV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":1024}}},{"$ref":"#/$defs/unknownQuantity"}]};
-const schema94 = {"title":"UnknownHostQuantityV1Wire","type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"const":"unknown"}}};
+const schema91 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:host-profile-compatibility-report:v1","title":"HostProfileCompatibilityReportV1Wire","description":"A bounded privacy-safe snapshot of local host facts needed for conservative TTS profile matching. It contains no host identity, raw platform output, path, recommendation, or support claim.","type":"object","additionalProperties":false,"required":["schemaVersion","probeStatus","platform","processor","memory","storage","providers"],"properties":{"cudaComputeCapability":{"description":"Compute capability of the same default visible CUDA device as providers.cuda. Missing or unknown never establishes an exact runtime architecture.","oneOf":[{"type":"object","additionalProperties":false,"required":["status","major","minor"],"properties":{"status":{"const":"known"},"major":{"type":"integer","minimum":2,"maximum":255},"minor":{"type":"integer","minimum":0,"maximum":255}}},{"$ref":"#/$defs/unknownQuantity"}]},"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"probeStatus":{"type":"string","enum":["complete","partial","permission-denied","unavailable"]},"platform":{"type":"object","additionalProperties":false,"required":["operatingSystem","architecture"],"properties":{"operatingSystem":{"type":"string","enum":["windows","linux","macos","other","unknown"]},"architecture":{"type":"string","enum":["x86_64","aarch64","other","unknown"]}}},"processor":{"type":"object","additionalProperties":false,"required":["logicalProcessorCount"],"properties":{"logicalProcessorCount":{"$ref":"#/$defs/knownLogicalProcessorCount"}}},"memory":{"type":"object","additionalProperties":false,"required":["totalPhysicalMiB","availablePhysicalMiB"],"properties":{"totalPhysicalMiB":{"$ref":"#/$defs/knownPositiveMebibytes"},"availablePhysicalMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"}}},"storage":{"type":"object","additionalProperties":false,"required":["applicationVolumeAvailableMiB"],"properties":{"applicationVolumeAvailableMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"}}},"providers":{"type":"object","additionalProperties":false,"required":["cpu","cuda","directml","rocm","metal"],"properties":{"cpu":{"$ref":"#/$defs/providerCapability"},"cuda":{"$ref":"#/$defs/providerCapability"},"directml":{"$ref":"#/$defs/providerCapability"},"rocm":{"$ref":"#/$defs/providerCapability"},"metal":{"$ref":"#/$defs/providerCapability"}}}},"$defs":{"availabilityStatus":{"title":"HostFactAvailabilityV1Wire","type":"string","enum":["available","unavailable","unknown"]},"knownLogicalProcessorCount":{"title":"KnownLogicalProcessorCountV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":1024}}},{"$ref":"#/$defs/unknownQuantity"}]},"knownPositiveMebibytes":{"title":"KnownPositiveMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]},"knownNonNegativeMebibytes":{"title":"KnownNonNegativeMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":0,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]},"unknownQuantity":{"title":"UnknownHostQuantityV1Wire","type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"const":"unknown"}}},"providerCapability":{"title":"HostProviderCapabilityV1Wire","type":"object","additionalProperties":false,"required":["availability","deviceClass","dedicatedMemoryMiB","availableDedicatedMemoryMiB","precisions"],"properties":{"availability":{"$ref":"#/$defs/availabilityStatus"},"deviceClass":{"type":"string","enum":["cpu","discrete-gpu","integrated-gpu","software","unknown"]},"dedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"availableDedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"precisions":{"type":"object","additionalProperties":false,"required":["float32","float16","bfloat16","int8"],"properties":{"float32":{"$ref":"#/$defs/availabilityStatus"},"float16":{"$ref":"#/$defs/availabilityStatus"},"bfloat16":{"$ref":"#/$defs/availabilityStatus"},"int8":{"$ref":"#/$defs/availabilityStatus"}}}}}}};
+const schema92 = {"title":"UnknownHostQuantityV1Wire","type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"const":"unknown"}}};
+const schema94 = {"title":"KnownLogicalProcessorCountV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":1024}}},{"$ref":"#/$defs/unknownQuantity"}]};
 
 function validate38(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -2916,7 +2916,7 @@ return errors === 0;
 }
 validate38.evaluated = {"dynamicProps":true,"dynamicItems":false};
 
-const schema95 = {"title":"KnownPositiveMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]};
+const schema96 = {"title":"KnownPositiveMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":1,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]};
 
 function validate40(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -3117,7 +3117,7 @@ return errors === 0;
 }
 validate40.evaluated = {"dynamicProps":true,"dynamicItems":false};
 
-const schema97 = {"title":"KnownNonNegativeMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":0,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]};
+const schema98 = {"title":"KnownNonNegativeMebibytesV1Wire","oneOf":[{"type":"object","additionalProperties":false,"required":["status","value"],"properties":{"status":{"const":"known"},"value":{"type":"integer","minimum":0,"maximum":16777216}}},{"$ref":"#/$defs/unknownQuantity"}]};
 
 function validate42(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -3318,8 +3318,8 @@ return errors === 0;
 }
 validate42.evaluated = {"dynamicProps":true,"dynamicItems":false};
 
-const schema99 = {"title":"HostProviderCapabilityV1Wire","type":"object","additionalProperties":false,"required":["availability","deviceClass","dedicatedMemoryMiB","availableDedicatedMemoryMiB","precisions"],"properties":{"availability":{"$ref":"#/$defs/availabilityStatus"},"deviceClass":{"type":"string","enum":["cpu","discrete-gpu","integrated-gpu","software","unknown"]},"dedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"availableDedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"precisions":{"type":"object","additionalProperties":false,"required":["float32","float16","bfloat16","int8"],"properties":{"float32":{"$ref":"#/$defs/availabilityStatus"},"float16":{"$ref":"#/$defs/availabilityStatus"},"bfloat16":{"$ref":"#/$defs/availabilityStatus"},"int8":{"$ref":"#/$defs/availabilityStatus"}}}}};
-const schema100 = {"title":"HostFactAvailabilityV1Wire","type":"string","enum":["available","unavailable","unknown"]};
+const schema100 = {"title":"HostProviderCapabilityV1Wire","type":"object","additionalProperties":false,"required":["availability","deviceClass","dedicatedMemoryMiB","availableDedicatedMemoryMiB","precisions"],"properties":{"availability":{"$ref":"#/$defs/availabilityStatus"},"deviceClass":{"type":"string","enum":["cpu","discrete-gpu","integrated-gpu","software","unknown"]},"dedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"availableDedicatedMemoryMiB":{"$ref":"#/$defs/knownNonNegativeMebibytes"},"precisions":{"type":"object","additionalProperties":false,"required":["float32","float16","bfloat16","int8"],"properties":{"float32":{"$ref":"#/$defs/availabilityStatus"},"float16":{"$ref":"#/$defs/availabilityStatus"},"bfloat16":{"$ref":"#/$defs/availabilityStatus"},"int8":{"$ref":"#/$defs/availabilityStatus"}}}}};
+const schema101 = {"title":"HostFactAvailabilityV1Wire","type":"string","enum":["available","unavailable","unknown"]};
 
 function validate45(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -3407,7 +3407,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((data0 === "available") || (data0 === "unavailable")) || (data0 === "unknown"))){
-const err7 = {instancePath:instancePath+"/availability",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema100.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/availability",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -3430,7 +3430,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!(((((data1 === "cpu") || (data1 === "discrete-gpu")) || (data1 === "integrated-gpu")) || (data1 === "software")) || (data1 === "unknown"))){
-const err9 = {instancePath:instancePath+"/deviceClass",schemaPath:"#/properties/deviceClass/enum",keyword:"enum",params:{allowedValues: schema99.properties.deviceClass.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/deviceClass",schemaPath:"#/properties/deviceClass/enum",keyword:"enum",params:{allowedValues: schema100.properties.deviceClass.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -3520,7 +3520,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!(((data5 === "available") || (data5 === "unavailable")) || (data5 === "unknown"))){
-const err16 = {instancePath:instancePath+"/precisions/float32",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema100.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/precisions/float32",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -3543,7 +3543,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!(((data6 === "available") || (data6 === "unavailable")) || (data6 === "unknown"))){
-const err18 = {instancePath:instancePath+"/precisions/float16",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema100.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/precisions/float16",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -3566,7 +3566,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!(((data7 === "available") || (data7 === "unavailable")) || (data7 === "unknown"))){
-const err20 = {instancePath:instancePath+"/precisions/bfloat16",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema100.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/precisions/bfloat16",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -3589,7 +3589,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!(((data8 === "available") || (data8 === "unavailable")) || (data8 === "unknown"))){
-const err22 = {instancePath:instancePath+"/precisions/int8",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema100.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/precisions/int8",schemaPath:"#/$defs/availabilityStatus/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -3711,7 +3711,7 @@ vErrors.push(err6);
 errors++;
 }
 for(const key0 in data){
-if(!(((((((key0 === "schemaVersion") || (key0 === "probeStatus")) || (key0 === "platform")) || (key0 === "processor")) || (key0 === "memory")) || (key0 === "storage")) || (key0 === "providers"))){
+if(!((((((((key0 === "cudaComputeCapability") || (key0 === "schemaVersion")) || (key0 === "probeStatus")) || (key0 === "platform")) || (key0 === "processor")) || (key0 === "memory")) || (key0 === "storage")) || (key0 === "providers"))){
 const err7 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err7];
@@ -3722,10 +3722,15 @@ vErrors.push(err7);
 errors++;
 }
 }
-if(data.schemaVersion !== undefined){
-let data0 = data.schemaVersion;
-if(!(((typeof data0 == "number") && (!(data0 % 1) && !isNaN(data0))) && (isFinite(data0)))){
-const err8 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(data.cudaComputeCapability !== undefined){
+let data0 = data.cudaComputeCapability;
+const _errs3 = errors;
+let valid1 = false;
+let passing0 = null;
+const _errs4 = errors;
+if(data0 && typeof data0 == "object" && !Array.isArray(data0)){
+if(data0.status === undefined){
+const err8 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/required",keyword:"required",params:{missingProperty: "status"},message:"must have required property '"+"status"+"'"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -3734,9 +3739,8 @@ vErrors.push(err8);
 }
 errors++;
 }
-if((typeof data0 == "number") && (isFinite(data0))){
-if(data0 > 9007199254740991 || isNaN(data0)){
-const err9 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/maximum",keyword:"maximum",params:{comparison: "<=", limit: 9007199254740991},message:"must be <= 9007199254740991"};
+if(data0.major === undefined){
+const err9 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/required",keyword:"required",params:{missingProperty: "major"},message:"must have required property '"+"major"+"'"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -3745,8 +3749,8 @@ vErrors.push(err9);
 }
 errors++;
 }
-if(data0 < 1 || isNaN(data0)){
-const err10 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
+if(data0.minor === undefined){
+const err10 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/required",keyword:"required",params:{missingProperty: "minor"},message:"must have required property '"+"minor"+"'"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -3755,9 +3759,9 @@ vErrors.push(err10);
 }
 errors++;
 }
-}
-if(1 !== data0){
-const err11 = {instancePath:instancePath+"/schemaVersion",schemaPath:"#/properties/schemaVersion/allOf/1/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+for(const key1 in data0){
+if(!(((key1 === "status") || (key1 === "major")) || (key1 === "minor"))){
+const err11 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -3767,10 +3771,9 @@ vErrors.push(err11);
 errors++;
 }
 }
-if(data.probeStatus !== undefined){
-let data1 = data.probeStatus;
-if(typeof data1 !== "string"){
-const err12 = {instancePath:instancePath+"/probeStatus",schemaPath:"#/properties/probeStatus/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(data0.status !== undefined){
+if("known" !== data0.status){
+const err12 = {instancePath:instancePath+"/cudaComputeCapability/status",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/status/const",keyword:"const",params:{allowedValue: "known"},message:"must be equal to constant"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -3779,8 +3782,11 @@ vErrors.push(err12);
 }
 errors++;
 }
-if(!((((data1 === "complete") || (data1 === "partial")) || (data1 === "permission-denied")) || (data1 === "unavailable"))){
-const err13 = {instancePath:instancePath+"/probeStatus",schemaPath:"#/properties/probeStatus/enum",keyword:"enum",params:{allowedValues: schema91.properties.probeStatus.enum},message:"must be equal to one of the allowed values"};
+}
+if(data0.major !== undefined){
+let data2 = data0.major;
+if(!(((typeof data2 == "number") && (!(data2 % 1) && !isNaN(data2))) && (isFinite(data2)))){
+const err13 = {instancePath:instancePath+"/cudaComputeCapability/major",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/major/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -3789,12 +3795,9 @@ vErrors.push(err13);
 }
 errors++;
 }
-}
-if(data.platform !== undefined){
-let data2 = data.platform;
-if(data2 && typeof data2 == "object" && !Array.isArray(data2)){
-if(data2.operatingSystem === undefined){
-const err14 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/required",keyword:"required",params:{missingProperty: "operatingSystem"},message:"must have required property '"+"operatingSystem"+"'"};
+if((typeof data2 == "number") && (isFinite(data2))){
+if(data2 > 255 || isNaN(data2)){
+const err14 = {instancePath:instancePath+"/cudaComputeCapability/major",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/major/maximum",keyword:"maximum",params:{comparison: "<=", limit: 255},message:"must be <= 255"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -3803,8 +3806,8 @@ vErrors.push(err14);
 }
 errors++;
 }
-if(data2.architecture === undefined){
-const err15 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/required",keyword:"required",params:{missingProperty: "architecture"},message:"must have required property '"+"architecture"+"'"};
+if(data2 < 2 || isNaN(data2)){
+const err15 = {instancePath:instancePath+"/cudaComputeCapability/major",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/major/minimum",keyword:"minimum",params:{comparison: ">=", limit: 2},message:"must be >= 2"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -3813,9 +3816,12 @@ vErrors.push(err15);
 }
 errors++;
 }
-for(const key1 in data2){
-if(!((key1 === "operatingSystem") || (key1 === "architecture"))){
-const err16 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
+}
+}
+if(data0.minor !== undefined){
+let data3 = data0.minor;
+if(!(((typeof data3 == "number") && (!(data3 % 1) && !isNaN(data3))) && (isFinite(data3)))){
+const err16 = {instancePath:instancePath+"/cudaComputeCapability/minor",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/minor/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -3824,11 +3830,9 @@ vErrors.push(err16);
 }
 errors++;
 }
-}
-if(data2.operatingSystem !== undefined){
-let data3 = data2.operatingSystem;
-if(typeof data3 !== "string"){
-const err17 = {instancePath:instancePath+"/platform/operatingSystem",schemaPath:"#/properties/platform/properties/operatingSystem/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if((typeof data3 == "number") && (isFinite(data3))){
+if(data3 > 255 || isNaN(data3)){
+const err17 = {instancePath:instancePath+"/cudaComputeCapability/minor",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/minor/maximum",keyword:"maximum",params:{comparison: "<=", limit: 255},message:"must be <= 255"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -3837,8 +3841,8 @@ vErrors.push(err17);
 }
 errors++;
 }
-if(!(((((data3 === "windows") || (data3 === "linux")) || (data3 === "macos")) || (data3 === "other")) || (data3 === "unknown"))){
-const err18 = {instancePath:instancePath+"/platform/operatingSystem",schemaPath:"#/properties/platform/properties/operatingSystem/enum",keyword:"enum",params:{allowedValues: schema91.properties.platform.properties.operatingSystem.enum},message:"must be equal to one of the allowed values"};
+if(data3 < 0 || isNaN(data3)){
+const err18 = {instancePath:instancePath+"/cudaComputeCapability/minor",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/properties/minor/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -3848,10 +3852,10 @@ vErrors.push(err18);
 errors++;
 }
 }
-if(data2.architecture !== undefined){
-let data4 = data2.architecture;
-if(typeof data4 !== "string"){
-const err19 = {instancePath:instancePath+"/platform/architecture",schemaPath:"#/properties/platform/properties/architecture/type",keyword:"type",params:{type: "string"},message:"must be string"};
+}
+}
+else {
+const err19 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf/0/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -3860,8 +3864,16 @@ vErrors.push(err19);
 }
 errors++;
 }
-if(!((((data4 === "x86_64") || (data4 === "aarch64")) || (data4 === "other")) || (data4 === "unknown"))){
-const err20 = {instancePath:instancePath+"/platform/architecture",schemaPath:"#/properties/platform/properties/architecture/enum",keyword:"enum",params:{allowedValues: schema91.properties.platform.properties.architecture.enum},message:"must be equal to one of the allowed values"};
+var _valid0 = _errs4 === errors;
+if(_valid0){
+valid1 = true;
+passing0 = 0;
+var props0 = true;
+}
+const _errs12 = errors;
+if(data0 && typeof data0 == "object" && !Array.isArray(data0)){
+if(data0.status === undefined){
+const err20 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/$defs/unknownQuantity/required",keyword:"required",params:{missingProperty: "status"},message:"must have required property '"+"status"+"'"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -3870,10 +3882,9 @@ vErrors.push(err20);
 }
 errors++;
 }
-}
-}
-else {
-const err21 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/type",keyword:"type",params:{type: "object"},message:"must be object"};
+for(const key2 in data0){
+if(!(key2 === "status")){
+const err21 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/$defs/unknownQuantity/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key2},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -3883,11 +3894,9 @@ vErrors.push(err21);
 errors++;
 }
 }
-if(data.processor !== undefined){
-let data5 = data.processor;
-if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
-if(data5.logicalProcessorCount === undefined){
-const err22 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/required",keyword:"required",params:{missingProperty: "logicalProcessorCount"},message:"must have required property '"+"logicalProcessorCount"+"'"};
+if(data0.status !== undefined){
+if("unknown" !== data0.status){
+const err22 = {instancePath:instancePath+"/cudaComputeCapability/status",schemaPath:"#/$defs/unknownQuantity/properties/status/const",keyword:"const",params:{allowedValue: "unknown"},message:"must be equal to constant"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -3896,9 +3905,10 @@ vErrors.push(err22);
 }
 errors++;
 }
-for(const key2 in data5){
-if(!(key2 === "logicalProcessorCount")){
-const err23 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key2},message:"must NOT have additional properties"};
+}
+}
+else {
+const err23 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/$defs/unknownQuantity/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -3907,16 +3917,22 @@ vErrors.push(err23);
 }
 errors++;
 }
-}
-if(data5.logicalProcessorCount !== undefined){
-if(!(validate38(data5.logicalProcessorCount, {instancePath:instancePath+"/processor/logicalProcessorCount",parentData:data5,parentDataProperty:"logicalProcessorCount",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate38.errors : vErrors.concat(validate38.errors);
-errors = vErrors.length;
-}
-}
+var _valid0 = _errs12 === errors;
+if(_valid0 && valid1){
+valid1 = false;
+passing0 = [passing0, 1];
 }
 else {
-const err24 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(_valid0){
+valid1 = true;
+passing0 = 1;
+if(props0 !== true){
+props0 = true;
+}
+}
+}
+if(!valid1){
+const err24 = {instancePath:instancePath+"/cudaComputeCapability",schemaPath:"#/properties/cudaComputeCapability/oneOf",keyword:"oneOf",params:{passingSchemas: passing0},message:"must match exactly one schema in oneOf"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -3925,12 +3941,22 @@ vErrors.push(err24);
 }
 errors++;
 }
+else {
+errors = _errs3;
+if(vErrors !== null){
+if(_errs3){
+vErrors.length = _errs3;
 }
-if(data.memory !== undefined){
-let data7 = data.memory;
-if(data7 && typeof data7 == "object" && !Array.isArray(data7)){
-if(data7.totalPhysicalMiB === undefined){
-const err25 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/required",keyword:"required",params:{missingProperty: "totalPhysicalMiB"},message:"must have required property '"+"totalPhysicalMiB"+"'"};
+else {
+vErrors = null;
+}
+}
+}
+}
+if(data.schemaVersion !== undefined){
+let data5 = data.schemaVersion;
+if(!(((typeof data5 == "number") && (!(data5 % 1) && !isNaN(data5))) && (isFinite(data5)))){
+const err25 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -3939,8 +3965,9 @@ vErrors.push(err25);
 }
 errors++;
 }
-if(data7.availablePhysicalMiB === undefined){
-const err26 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/required",keyword:"required",params:{missingProperty: "availablePhysicalMiB"},message:"must have required property '"+"availablePhysicalMiB"+"'"};
+if((typeof data5 == "number") && (isFinite(data5))){
+if(data5 > 9007199254740991 || isNaN(data5)){
+const err26 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/maximum",keyword:"maximum",params:{comparison: "<=", limit: 9007199254740991},message:"must be <= 9007199254740991"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -3949,9 +3976,8 @@ vErrors.push(err26);
 }
 errors++;
 }
-for(const key3 in data7){
-if(!((key3 === "totalPhysicalMiB") || (key3 === "availablePhysicalMiB"))){
-const err27 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
+if(data5 < 1 || isNaN(data5)){
+const err27 = {instancePath:instancePath+"/schemaVersion",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err27];
 }
@@ -3961,21 +3987,8 @@ vErrors.push(err27);
 errors++;
 }
 }
-if(data7.totalPhysicalMiB !== undefined){
-if(!(validate40(data7.totalPhysicalMiB, {instancePath:instancePath+"/memory/totalPhysicalMiB",parentData:data7,parentDataProperty:"totalPhysicalMiB",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate40.errors : vErrors.concat(validate40.errors);
-errors = vErrors.length;
-}
-}
-if(data7.availablePhysicalMiB !== undefined){
-if(!(validate42(data7.availablePhysicalMiB, {instancePath:instancePath+"/memory/availablePhysicalMiB",parentData:data7,parentDataProperty:"availablePhysicalMiB",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate42.errors : vErrors.concat(validate42.errors);
-errors = vErrors.length;
-}
-}
-}
-else {
-const err28 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(1 !== data5){
+const err28 = {instancePath:instancePath+"/schemaVersion",schemaPath:"#/properties/schemaVersion/allOf/1/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -3985,11 +3998,10 @@ vErrors.push(err28);
 errors++;
 }
 }
-if(data.storage !== undefined){
-let data10 = data.storage;
-if(data10 && typeof data10 == "object" && !Array.isArray(data10)){
-if(data10.applicationVolumeAvailableMiB === undefined){
-const err29 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/required",keyword:"required",params:{missingProperty: "applicationVolumeAvailableMiB"},message:"must have required property '"+"applicationVolumeAvailableMiB"+"'"};
+if(data.probeStatus !== undefined){
+let data6 = data.probeStatus;
+if(typeof data6 !== "string"){
+const err29 = {instancePath:instancePath+"/probeStatus",schemaPath:"#/properties/probeStatus/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -3998,9 +4010,8 @@ vErrors.push(err29);
 }
 errors++;
 }
-for(const key4 in data10){
-if(!(key4 === "applicationVolumeAvailableMiB")){
-const err30 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
+if(!((((data6 === "complete") || (data6 === "partial")) || (data6 === "permission-denied")) || (data6 === "unavailable"))){
+const err30 = {instancePath:instancePath+"/probeStatus",schemaPath:"#/properties/probeStatus/enum",keyword:"enum",params:{allowedValues: schema91.properties.probeStatus.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -4010,15 +4021,11 @@ vErrors.push(err30);
 errors++;
 }
 }
-if(data10.applicationVolumeAvailableMiB !== undefined){
-if(!(validate42(data10.applicationVolumeAvailableMiB, {instancePath:instancePath+"/storage/applicationVolumeAvailableMiB",parentData:data10,parentDataProperty:"applicationVolumeAvailableMiB",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate42.errors : vErrors.concat(validate42.errors);
-errors = vErrors.length;
-}
-}
-}
-else {
-const err31 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data.platform !== undefined){
+let data7 = data.platform;
+if(data7 && typeof data7 == "object" && !Array.isArray(data7)){
+if(data7.operatingSystem === undefined){
+const err31 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/required",keyword:"required",params:{missingProperty: "operatingSystem"},message:"must have required property '"+"operatingSystem"+"'"};
 if(vErrors === null){
 vErrors = [err31];
 }
@@ -4027,12 +4034,8 @@ vErrors.push(err31);
 }
 errors++;
 }
-}
-if(data.providers !== undefined){
-let data12 = data.providers;
-if(data12 && typeof data12 == "object" && !Array.isArray(data12)){
-if(data12.cpu === undefined){
-const err32 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "cpu"},message:"must have required property '"+"cpu"+"'"};
+if(data7.architecture === undefined){
+const err32 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/required",keyword:"required",params:{missingProperty: "architecture"},message:"must have required property '"+"architecture"+"'"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -4041,8 +4044,9 @@ vErrors.push(err32);
 }
 errors++;
 }
-if(data12.cuda === undefined){
-const err33 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "cuda"},message:"must have required property '"+"cuda"+"'"};
+for(const key3 in data7){
+if(!((key3 === "operatingSystem") || (key3 === "architecture"))){
+const err33 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err33];
 }
@@ -4051,8 +4055,11 @@ vErrors.push(err33);
 }
 errors++;
 }
-if(data12.directml === undefined){
-const err34 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "directml"},message:"must have required property '"+"directml"+"'"};
+}
+if(data7.operatingSystem !== undefined){
+let data8 = data7.operatingSystem;
+if(typeof data8 !== "string"){
+const err34 = {instancePath:instancePath+"/platform/operatingSystem",schemaPath:"#/properties/platform/properties/operatingSystem/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err34];
 }
@@ -4061,8 +4068,8 @@ vErrors.push(err34);
 }
 errors++;
 }
-if(data12.rocm === undefined){
-const err35 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "rocm"},message:"must have required property '"+"rocm"+"'"};
+if(!(((((data8 === "windows") || (data8 === "linux")) || (data8 === "macos")) || (data8 === "other")) || (data8 === "unknown"))){
+const err35 = {instancePath:instancePath+"/platform/operatingSystem",schemaPath:"#/properties/platform/properties/operatingSystem/enum",keyword:"enum",params:{allowedValues: schema91.properties.platform.properties.operatingSystem.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err35];
 }
@@ -4071,8 +4078,11 @@ vErrors.push(err35);
 }
 errors++;
 }
-if(data12.metal === undefined){
-const err36 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "metal"},message:"must have required property '"+"metal"+"'"};
+}
+if(data7.architecture !== undefined){
+let data9 = data7.architecture;
+if(typeof data9 !== "string"){
+const err36 = {instancePath:instancePath+"/platform/architecture",schemaPath:"#/properties/platform/properties/architecture/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err36];
 }
@@ -4081,9 +4091,8 @@ vErrors.push(err36);
 }
 errors++;
 }
-for(const key5 in data12){
-if(!(((((key5 === "cpu") || (key5 === "cuda")) || (key5 === "directml")) || (key5 === "rocm")) || (key5 === "metal"))){
-const err37 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key5},message:"must NOT have additional properties"};
+if(!((((data9 === "x86_64") || (data9 === "aarch64")) || (data9 === "other")) || (data9 === "unknown"))){
+const err37 = {instancePath:instancePath+"/platform/architecture",schemaPath:"#/properties/platform/properties/architecture/enum",keyword:"enum",params:{allowedValues: schema91.properties.platform.properties.architecture.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err37];
 }
@@ -4093,39 +4102,9 @@ vErrors.push(err37);
 errors++;
 }
 }
-if(data12.cpu !== undefined){
-if(!(validate45(data12.cpu, {instancePath:instancePath+"/providers/cpu",parentData:data12,parentDataProperty:"cpu",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
-errors = vErrors.length;
-}
-}
-if(data12.cuda !== undefined){
-if(!(validate45(data12.cuda, {instancePath:instancePath+"/providers/cuda",parentData:data12,parentDataProperty:"cuda",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
-errors = vErrors.length;
-}
-}
-if(data12.directml !== undefined){
-if(!(validate45(data12.directml, {instancePath:instancePath+"/providers/directml",parentData:data12,parentDataProperty:"directml",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
-errors = vErrors.length;
-}
-}
-if(data12.rocm !== undefined){
-if(!(validate45(data12.rocm, {instancePath:instancePath+"/providers/rocm",parentData:data12,parentDataProperty:"rocm",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
-errors = vErrors.length;
-}
-}
-if(data12.metal !== undefined){
-if(!(validate45(data12.metal, {instancePath:instancePath+"/providers/metal",parentData:data12,parentDataProperty:"metal",rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
-errors = vErrors.length;
-}
-}
 }
 else {
-const err38 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const err38 = {instancePath:instancePath+"/platform",schemaPath:"#/properties/platform/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err38];
 }
@@ -4135,14 +4114,266 @@ vErrors.push(err38);
 errors++;
 }
 }
-}
-else {
-const err39 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data.processor !== undefined){
+let data10 = data.processor;
+if(data10 && typeof data10 == "object" && !Array.isArray(data10)){
+if(data10.logicalProcessorCount === undefined){
+const err39 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/required",keyword:"required",params:{missingProperty: "logicalProcessorCount"},message:"must have required property '"+"logicalProcessorCount"+"'"};
 if(vErrors === null){
 vErrors = [err39];
 }
 else {
 vErrors.push(err39);
+}
+errors++;
+}
+for(const key4 in data10){
+if(!(key4 === "logicalProcessorCount")){
+const err40 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err40];
+}
+else {
+vErrors.push(err40);
+}
+errors++;
+}
+}
+if(data10.logicalProcessorCount !== undefined){
+if(!(validate38(data10.logicalProcessorCount, {instancePath:instancePath+"/processor/logicalProcessorCount",parentData:data10,parentDataProperty:"logicalProcessorCount",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate38.errors : vErrors.concat(validate38.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err41 = {instancePath:instancePath+"/processor",schemaPath:"#/properties/processor/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err41];
+}
+else {
+vErrors.push(err41);
+}
+errors++;
+}
+}
+if(data.memory !== undefined){
+let data12 = data.memory;
+if(data12 && typeof data12 == "object" && !Array.isArray(data12)){
+if(data12.totalPhysicalMiB === undefined){
+const err42 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/required",keyword:"required",params:{missingProperty: "totalPhysicalMiB"},message:"must have required property '"+"totalPhysicalMiB"+"'"};
+if(vErrors === null){
+vErrors = [err42];
+}
+else {
+vErrors.push(err42);
+}
+errors++;
+}
+if(data12.availablePhysicalMiB === undefined){
+const err43 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/required",keyword:"required",params:{missingProperty: "availablePhysicalMiB"},message:"must have required property '"+"availablePhysicalMiB"+"'"};
+if(vErrors === null){
+vErrors = [err43];
+}
+else {
+vErrors.push(err43);
+}
+errors++;
+}
+for(const key5 in data12){
+if(!((key5 === "totalPhysicalMiB") || (key5 === "availablePhysicalMiB"))){
+const err44 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key5},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err44];
+}
+else {
+vErrors.push(err44);
+}
+errors++;
+}
+}
+if(data12.totalPhysicalMiB !== undefined){
+if(!(validate40(data12.totalPhysicalMiB, {instancePath:instancePath+"/memory/totalPhysicalMiB",parentData:data12,parentDataProperty:"totalPhysicalMiB",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate40.errors : vErrors.concat(validate40.errors);
+errors = vErrors.length;
+}
+}
+if(data12.availablePhysicalMiB !== undefined){
+if(!(validate42(data12.availablePhysicalMiB, {instancePath:instancePath+"/memory/availablePhysicalMiB",parentData:data12,parentDataProperty:"availablePhysicalMiB",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate42.errors : vErrors.concat(validate42.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err45 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err45];
+}
+else {
+vErrors.push(err45);
+}
+errors++;
+}
+}
+if(data.storage !== undefined){
+let data15 = data.storage;
+if(data15 && typeof data15 == "object" && !Array.isArray(data15)){
+if(data15.applicationVolumeAvailableMiB === undefined){
+const err46 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/required",keyword:"required",params:{missingProperty: "applicationVolumeAvailableMiB"},message:"must have required property '"+"applicationVolumeAvailableMiB"+"'"};
+if(vErrors === null){
+vErrors = [err46];
+}
+else {
+vErrors.push(err46);
+}
+errors++;
+}
+for(const key6 in data15){
+if(!(key6 === "applicationVolumeAvailableMiB")){
+const err47 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key6},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err47];
+}
+else {
+vErrors.push(err47);
+}
+errors++;
+}
+}
+if(data15.applicationVolumeAvailableMiB !== undefined){
+if(!(validate42(data15.applicationVolumeAvailableMiB, {instancePath:instancePath+"/storage/applicationVolumeAvailableMiB",parentData:data15,parentDataProperty:"applicationVolumeAvailableMiB",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate42.errors : vErrors.concat(validate42.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err48 = {instancePath:instancePath+"/storage",schemaPath:"#/properties/storage/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err48];
+}
+else {
+vErrors.push(err48);
+}
+errors++;
+}
+}
+if(data.providers !== undefined){
+let data17 = data.providers;
+if(data17 && typeof data17 == "object" && !Array.isArray(data17)){
+if(data17.cpu === undefined){
+const err49 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "cpu"},message:"must have required property '"+"cpu"+"'"};
+if(vErrors === null){
+vErrors = [err49];
+}
+else {
+vErrors.push(err49);
+}
+errors++;
+}
+if(data17.cuda === undefined){
+const err50 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "cuda"},message:"must have required property '"+"cuda"+"'"};
+if(vErrors === null){
+vErrors = [err50];
+}
+else {
+vErrors.push(err50);
+}
+errors++;
+}
+if(data17.directml === undefined){
+const err51 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "directml"},message:"must have required property '"+"directml"+"'"};
+if(vErrors === null){
+vErrors = [err51];
+}
+else {
+vErrors.push(err51);
+}
+errors++;
+}
+if(data17.rocm === undefined){
+const err52 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "rocm"},message:"must have required property '"+"rocm"+"'"};
+if(vErrors === null){
+vErrors = [err52];
+}
+else {
+vErrors.push(err52);
+}
+errors++;
+}
+if(data17.metal === undefined){
+const err53 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/required",keyword:"required",params:{missingProperty: "metal"},message:"must have required property '"+"metal"+"'"};
+if(vErrors === null){
+vErrors = [err53];
+}
+else {
+vErrors.push(err53);
+}
+errors++;
+}
+for(const key7 in data17){
+if(!(((((key7 === "cpu") || (key7 === "cuda")) || (key7 === "directml")) || (key7 === "rocm")) || (key7 === "metal"))){
+const err54 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key7},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err54];
+}
+else {
+vErrors.push(err54);
+}
+errors++;
+}
+}
+if(data17.cpu !== undefined){
+if(!(validate45(data17.cpu, {instancePath:instancePath+"/providers/cpu",parentData:data17,parentDataProperty:"cpu",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+}
+if(data17.cuda !== undefined){
+if(!(validate45(data17.cuda, {instancePath:instancePath+"/providers/cuda",parentData:data17,parentDataProperty:"cuda",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+}
+if(data17.directml !== undefined){
+if(!(validate45(data17.directml, {instancePath:instancePath+"/providers/directml",parentData:data17,parentDataProperty:"directml",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+}
+if(data17.rocm !== undefined){
+if(!(validate45(data17.rocm, {instancePath:instancePath+"/providers/rocm",parentData:data17,parentDataProperty:"rocm",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+}
+if(data17.metal !== undefined){
+if(!(validate45(data17.metal, {instancePath:instancePath+"/providers/metal",parentData:data17,parentDataProperty:"metal",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err55 = {instancePath:instancePath+"/providers",schemaPath:"#/properties/providers/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err55];
+}
+else {
+vErrors.push(err55);
+}
+errors++;
+}
+}
+}
+else {
+const err56 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err56];
+}
+else {
+vErrors.push(err56);
 }
 errors++;
 }
@@ -4152,8 +4383,8 @@ return errors === 0;
 validate37.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validateLocatorRangeV1Wire = validate53;
-const schema105 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:locator-range:v1","title":"LocatorRangeV1Wire","description":"An ordered content-free range between two logical reading positions.","$comment":"Semantic validation requires matching book identities and nondecreasing (spineItemIndex, anchorIndex, textOffsetCodePoints) position order.","type":"object","additionalProperties":false,"required":["schemaVersion","start","end"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"start":{"$ref":"urn:voxleaf:schema:locator:v1"},"end":{"$ref":"urn:voxleaf:schema:locator:v1"}}};
-const schema107 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:locator:v1","title":"ReadingLocatorV1Wire","description":"A content-free, layout-independent logical position within one book.","type":"object","additionalProperties":false,"required":["schemaVersion","bookIdentity","spineItemId","spineItemIndex","anchor","textOffsetCodePoints"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"spineItemId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId"},"spineItemIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based position of the spine item in the validated book contract."},"anchor":{"$ref":"#/$defs/structuralAnchor"},"textOffsetCodePoints":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based Unicode code-point offset within the anchored text representation."},"progression":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/progression","description":"Optional book-level progression used only for recovery and progress display."}},"$defs":{"structuralAnchor":{"title":"StructuralAnchorV1Wire","type":"object","additionalProperties":false,"required":["kind","formatVersion","value","anchorIndex"],"properties":{"kind":{"const":"element-id"},"formatVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"value":{"title":"StructuralAnchorValueWire","description":"Opaque structural element identifier; never a text quotation.","type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_][A-Za-z0-9._:-]*$"},"anchorIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based structural anchor order within the spine item."}}}}};
+const schema106 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:locator-range:v1","title":"LocatorRangeV1Wire","description":"An ordered content-free range between two logical reading positions.","$comment":"Semantic validation requires matching book identities and nondecreasing (spineItemIndex, anchorIndex, textOffsetCodePoints) position order.","type":"object","additionalProperties":false,"required":["schemaVersion","start","end"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"start":{"$ref":"urn:voxleaf:schema:locator:v1"},"end":{"$ref":"urn:voxleaf:schema:locator:v1"}}};
+const schema108 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:locator:v1","title":"ReadingLocatorV1Wire","description":"A content-free, layout-independent logical position within one book.","type":"object","additionalProperties":false,"required":["schemaVersion","bookIdentity","spineItemId","spineItemIndex","anchor","textOffsetCodePoints"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"spineItemId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId"},"spineItemIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based position of the spine item in the validated book contract."},"anchor":{"$ref":"#/$defs/structuralAnchor"},"textOffsetCodePoints":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based Unicode code-point offset within the anchored text representation."},"progression":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/progression","description":"Optional book-level progression used only for recovery and progress display."}},"$defs":{"structuralAnchor":{"title":"StructuralAnchorV1Wire","type":"object","additionalProperties":false,"required":["kind","formatVersion","value","anchorIndex"],"properties":{"kind":{"const":"element-id"},"formatVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"value":{"title":"StructuralAnchorValueWire","description":"Opaque structural element identifier; never a text quotation.","type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_][A-Za-z0-9._:-]*$"},"anchorIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based structural anchor order within the spine item."}}}}};
 const schema46 = {"title":"ProgressionWire","type":"number","minimum":0,"maximum":1};
 
 function validate55(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
@@ -4382,7 +4613,7 @@ return errors === 0;
 }
 validate55.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema114 = {"title":"StructuralAnchorV1Wire","type":"object","additionalProperties":false,"required":["kind","formatVersion","value","anchorIndex"],"properties":{"kind":{"const":"element-id"},"formatVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"value":{"title":"StructuralAnchorValueWire","description":"Opaque structural element identifier; never a text quotation.","type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_][A-Za-z0-9._:-]*$"},"anchorIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based structural anchor order within the spine item."}}};
+const schema115 = {"title":"StructuralAnchorV1Wire","type":"object","additionalProperties":false,"required":["kind","formatVersion","value","anchorIndex"],"properties":{"kind":{"const":"element-id"},"formatVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"value":{"title":"StructuralAnchorValueWire","description":"Opaque structural element identifier; never a text quotation.","type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9_][A-Za-z0-9._:-]*$"},"anchorIndex":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based structural anchor order within the spine item."}}};
 const pattern31 = new RegExp("^[A-Za-z0-9_][A-Za-z0-9._:-]*$", "u");
 
 function validate57(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
@@ -5040,7 +5271,7 @@ validate53.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 export const validateReadingLocatorV1Wire = validate54;
 
 export const validateNarrationSegmentV1Wire = validate61;
-const schema119 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:narration-segment:v1","title":"NarrationSegmentV1Wire","description":"One sensitive narration payload tied to a stable reading range and asynchronous work identity.","type":"object","additionalProperties":false,"required":["schemaVersion","segmentId","bookIdentity","sessionId","generationId","sequence","sourceRange","text"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"sequence":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based order within the active generation; segment production rules remain external."},"sourceRange":{"$ref":"urn:voxleaf:schema:locator-range:v1","description":"The ordered logical reading range that supplied this narration text."},"text":{"type":"string","minLength":1,"description":"Sensitive narration text. It must not be copied into errors, metrics, persisted reading state, or debug snapshots."}}};
+const schema120 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:narration-segment:v1","title":"NarrationSegmentV1Wire","description":"One sensitive narration payload tied to a stable reading range and asynchronous work identity.","type":"object","additionalProperties":false,"required":["schemaVersion","segmentId","bookIdentity","sessionId","generationId","sequence","sourceRange","text"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"sequence":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Zero-based order within the active generation; segment production rules remain external."},"sourceRange":{"$ref":"urn:voxleaf:schema:locator-range:v1","description":"The ordered logical reading range that supplied this narration text."},"text":{"type":"string","minLength":1,"description":"Sensitive narration text. It must not be copied into errors, metrics, persisted reading state, or debug snapshots."}}};
 
 function validate62(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -5642,7 +5873,7 @@ return errors === 0;
 validate61.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validateOperationalErrorV1Wire = validate65;
-const schema128 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:operational-error:v1","title":"OperationalErrorV1Wire","description":"A privacy-safe machine-readable failure without content, paths, stack traces, or implementation details.","type":"object","additionalProperties":false,"required":["schemaVersion","code","category","severity"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"code":{"type":"string","enum":["invalid-input","unsupported-input","capability-unavailable","operation-cancelled","resource-exhausted","internal-failure"],"description":"Stable machine-readable error code. Presentation layers map it to safe localized text."},"category":{"type":"string","enum":["input","availability","cancellation","resource","internal"]},"severity":{"type":"string","enum":["recoverable","fatal"],"description":"Whether the owning workflow can offer a safe recovery path or must stop."}}};
+const schema129 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:operational-error:v1","title":"OperationalErrorV1Wire","description":"A privacy-safe machine-readable failure without content, paths, stack traces, or implementation details.","type":"object","additionalProperties":false,"required":["schemaVersion","code","category","severity"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"code":{"type":"string","enum":["invalid-input","unsupported-input","capability-unavailable","operation-cancelled","resource-exhausted","internal-failure"],"description":"Stable machine-readable error code. Presentation layers map it to safe localized text."},"category":{"type":"string","enum":["input","availability","cancellation","resource","internal"]},"severity":{"type":"string","enum":["recoverable","fatal"],"description":"Whether the owning workflow can offer a safe recovery path or must stop."}}};
 
 function validate65(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="urn:voxleaf:schema:operational-error:v1" */;
@@ -5766,7 +5997,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data1 === "invalid-input") || (data1 === "unsupported-input")) || (data1 === "capability-unavailable")) || (data1 === "operation-cancelled")) || (data1 === "resource-exhausted")) || (data1 === "internal-failure"))){
-const err10 = {instancePath:instancePath+"/code",schemaPath:"#/properties/code/enum",keyword:"enum",params:{allowedValues: schema128.properties.code.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/code",schemaPath:"#/properties/code/enum",keyword:"enum",params:{allowedValues: schema129.properties.code.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -5789,7 +6020,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((data2 === "input") || (data2 === "availability")) || (data2 === "cancellation")) || (data2 === "resource")) || (data2 === "internal"))){
-const err12 = {instancePath:instancePath+"/category",schemaPath:"#/properties/category/enum",keyword:"enum",params:{allowedValues: schema128.properties.category.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/category",schemaPath:"#/properties/category/enum",keyword:"enum",params:{allowedValues: schema129.properties.category.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -5812,7 +6043,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((data3 === "recoverable") || (data3 === "fatal"))){
-const err14 = {instancePath:instancePath+"/severity",schemaPath:"#/properties/severity/enum",keyword:"enum",params:{allowedValues: schema128.properties.severity.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/severity",schemaPath:"#/properties/severity/enum",keyword:"enum",params:{allowedValues: schema129.properties.severity.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -5839,7 +6070,7 @@ return errors === 0;
 validate65.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validatePersistedReadingStateV1Wire = validate66;
-const schema130 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:persisted-reading-state:v1","title":"PersistedReadingStateV1Wire","description":"Content-free local reading state for one book without choosing a storage implementation.","type":"object","additionalProperties":false,"required":["schemaVersion","bookIdentity","locator","preferences"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"locator":{"$ref":"urn:voxleaf:schema:locator:v1","description":"The authoritative layout-independent reading position."},"preferences":{"$ref":"#/$defs/readingPreferences"}},"$defs":{"preferenceIdentifier":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:-]*$"},"readingPreferences":{"title":"PersistedReadingPreferencesV1Wire","description":"Minimal preferences already defined by product requirements; capability support is validated by later application layers.","type":"object","additionalProperties":false,"properties":{"selectedVoiceId":{"$ref":"#/$defs/preferenceIdentifier","description":"Opaque local voice identifier; never a filesystem path."},"playbackRate":{"type":"number","exclusiveMinimum":0,"description":"Positive requested playback-rate multiplier; later capability contracts determine supported values."}}}}};
+const schema131 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:persisted-reading-state:v1","title":"PersistedReadingStateV1Wire","description":"Content-free local reading state for one book without choosing a storage implementation.","type":"object","additionalProperties":false,"required":["schemaVersion","bookIdentity","locator","preferences"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"locator":{"$ref":"urn:voxleaf:schema:locator:v1","description":"The authoritative layout-independent reading position."},"preferences":{"$ref":"#/$defs/readingPreferences"}},"$defs":{"preferenceIdentifier":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:-]*$"},"readingPreferences":{"title":"PersistedReadingPreferencesV1Wire","description":"Minimal preferences already defined by product requirements; capability support is validated by later application layers.","type":"object","additionalProperties":false,"properties":{"selectedVoiceId":{"$ref":"#/$defs/preferenceIdentifier","description":"Opaque local voice identifier; never a filesystem path."},"playbackRate":{"type":"number","exclusiveMinimum":0,"description":"Positive requested playback-rate multiplier; later capability contracts determine supported values."}}}}};
 
 function validate67(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -6067,8 +6298,8 @@ return errors === 0;
 }
 validate67.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema135 = {"title":"PersistedReadingPreferencesV1Wire","description":"Minimal preferences already defined by product requirements; capability support is validated by later application layers.","type":"object","additionalProperties":false,"properties":{"selectedVoiceId":{"$ref":"#/$defs/preferenceIdentifier","description":"Opaque local voice identifier; never a filesystem path."},"playbackRate":{"type":"number","exclusiveMinimum":0,"description":"Positive requested playback-rate multiplier; later capability contracts determine supported values."}}};
-const schema136 = {"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:-]*$"};
+const schema136 = {"title":"PersistedReadingPreferencesV1Wire","description":"Minimal preferences already defined by product requirements; capability support is validated by later application layers.","type":"object","additionalProperties":false,"properties":{"selectedVoiceId":{"$ref":"#/$defs/preferenceIdentifier","description":"Opaque local voice identifier; never a filesystem path."},"playbackRate":{"type":"number","exclusiveMinimum":0,"description":"Positive requested playback-rate multiplier; later capability contracts determine supported values."}}};
+const schema137 = {"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:-]*$"};
 const pattern41 = new RegExp("^[A-Za-z0-9][A-Za-z0-9._:-]*$", "u");
 
 function validate70(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
@@ -6325,7 +6556,7 @@ return errors === 0;
 validate66.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validateReadingSessionV1Wire = validate72;
-const schema137 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:reading-session:v1","title":"ReadingSessionV1Wire","description":"The active book-reading session and generation used to reject stale asynchronous work.","type":"object","additionalProperties":false,"required":["schemaVersion","sessionId","bookIdentity","generationId"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId","description":"The currently active generation within this session."}}};
+const schema138 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:reading-session:v1","title":"ReadingSessionV1Wire","description":"The active book-reading session and generation used to reject stale asynchronous work.","type":"object","additionalProperties":false,"required":["schemaVersion","sessionId","bookIdentity","generationId"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"bookIdentity":{"$ref":"urn:voxleaf:schema:book:v1#/$defs/bookIdentity"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId","description":"The currently active generation within this session."}}};
 
 function validate73(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -6776,10 +7007,10 @@ return errors === 0;
 validate72.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validateTtsProtocolControlV1Wire = validate75;
-const schema144 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:tts-protocol-control:v1","title":"TtsProtocolControlV1Wire","description":"Closed JSON control messages for VoxLeaf local TTS process protocol version 1. Raw PCM is carried only in a separate bounded audio record.","oneOf":[{"$ref":"#/$defs/handshake"},{"$ref":"#/$defs/load"},{"$ref":"#/$defs/warm"},{"$ref":"#/$defs/synthesize"},{"$ref":"#/$defs/cancel"},{"$ref":"#/$defs/health"},{"$ref":"#/$defs/shutdown"},{"$ref":"#/$defs/handshakeAccepted"},{"$ref":"#/$defs/state"},{"$ref":"#/$defs/capabilities"},{"$ref":"#/$defs/audioMetadata"},{"$ref":"#/$defs/completed"},{"$ref":"#/$defs/cancelled"},{"$ref":"#/$defs/error"},{"$ref":"#/$defs/protocolRejected"}],"$defs":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"protocolVersion":{"type":"integer","const":1},"serviceInstanceId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"requestId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"serviceState":{"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]},"protocolReason":{"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]},"workIdentity":{"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}},"handshake":{"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"load":{"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"warm":{"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"synthesize":{"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}},"cancel":{"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"health":{"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"shutdown":{"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"handshakeAccepted":{"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"state":{"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}},"capabilities":{"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}},"audioMetadata":{"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}},"completed":{"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"cancelled":{"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"error":{"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"protocolRejected":{"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}}}};
-const schema145 = {"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
-const schema148 = {"type":"integer","const":1};
-const schema146 = {"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]};
+const schema145 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:tts-protocol-control:v1","title":"TtsProtocolControlV1Wire","description":"Closed JSON control messages for VoxLeaf local TTS process protocol version 1. Raw PCM is carried only in a separate bounded audio record.","oneOf":[{"$ref":"#/$defs/handshake"},{"$ref":"#/$defs/load"},{"$ref":"#/$defs/warm"},{"$ref":"#/$defs/synthesize"},{"$ref":"#/$defs/cancel"},{"$ref":"#/$defs/health"},{"$ref":"#/$defs/shutdown"},{"$ref":"#/$defs/handshakeAccepted"},{"$ref":"#/$defs/state"},{"$ref":"#/$defs/capabilities"},{"$ref":"#/$defs/audioMetadata"},{"$ref":"#/$defs/completed"},{"$ref":"#/$defs/cancelled"},{"$ref":"#/$defs/error"},{"$ref":"#/$defs/protocolRejected"}],"$defs":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"protocolVersion":{"type":"integer","const":1},"serviceInstanceId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"requestId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"serviceState":{"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]},"protocolReason":{"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]},"workIdentity":{"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}},"handshake":{"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"load":{"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"warm":{"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"synthesize":{"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}},"cancel":{"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"health":{"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"shutdown":{"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"handshakeAccepted":{"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"state":{"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}},"capabilities":{"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}},"audioMetadata":{"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}},"completed":{"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"cancelled":{"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"error":{"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"protocolRejected":{"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}}}};
+const schema146 = {"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema149 = {"type":"integer","const":1};
+const schema147 = {"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]};
 
 function validate77(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7004,7 +7235,7 @@ return errors === 0;
 }
 validate76.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema150 = {"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema151 = {"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
 
 function validate80(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7171,7 +7402,7 @@ return errors === 0;
 }
 validate80.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema153 = {"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema154 = {"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
 
 function validate83(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7338,7 +7569,7 @@ return errors === 0;
 }
 validate83.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema156 = {"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}};
+const schema157 = {"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}};
 
 function validate86(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7624,8 +7855,8 @@ return errors === 0;
 }
 validate86.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema160 = {"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
-const schema163 = {"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}};
+const schema161 = {"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema164 = {"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}};
 
 function validate92(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8068,7 +8299,7 @@ return errors === 0;
 }
 validate90.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema168 = {"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema169 = {"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
 
 function validate95(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8235,7 +8466,7 @@ return errors === 0;
 }
 validate95.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema171 = {"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema172 = {"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
 
 function validate98(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8402,7 +8633,7 @@ return errors === 0;
 }
 validate98.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema174 = {"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema175 = {"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
 
 function validate101(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8569,8 +8800,8 @@ return errors === 0;
 }
 validate101.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema177 = {"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}};
-const schema180 = {"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]};
+const schema178 = {"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}};
+const schema181 = {"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]};
 
 function validate104(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8744,7 +8975,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!(((((((((((data4 === "starting") || (data4 === "handshaking")) || (data4 === "unloaded")) || (data4 === "loading")) || (data4 === "warming")) || (data4 === "ready")) || (data4 === "generating")) || (data4 === "cancelling")) || (data4 === "stopping")) || (data4 === "stopped")) || (data4 === "failed"))){
-const err14 = {instancePath:instancePath+"/state",schemaPath:"#/$defs/serviceState/enum",keyword:"enum",params:{allowedValues: schema180.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/state",schemaPath:"#/$defs/serviceState/enum",keyword:"enum",params:{allowedValues: schema181.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -8770,7 +9001,7 @@ return errors === 0;
 }
 validate104.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema181 = {"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}};
+const schema182 = {"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}};
 
 function validate107(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8975,7 +9206,7 @@ return errors === 0;
 }
 validate107.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema184 = {"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}};
+const schema185 = {"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}};
 
 function validate111(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9387,7 +9618,7 @@ return errors === 0;
 }
 validate111.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema188 = {"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema189 = {"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
 
 function validate115(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9570,7 +9801,7 @@ return errors === 0;
 }
 validate115.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema191 = {"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema192 = {"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
 
 function validate119(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9753,8 +9984,8 @@ return errors === 0;
 }
 validate119.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema194 = {"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
-const schema197 = {"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]};
+const schema195 = {"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema198 = {"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]};
 
 function validate123(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9938,7 +10169,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!(((((((((((((((((((((data4 === "malformed-frame") || (data4 === "unsupported-protocol-version")) || (data4 === "unknown-record-kind")) || (data4 === "invalid-flags")) || (data4 === "empty-payload")) || (data4 === "over-limit")) || (data4 === "invalid-utf8")) || (data4 === "malformed-json")) || (data4 === "unknown-message-kind")) || (data4 === "unsupported-schema-version")) || (data4 === "invalid-message")) || (data4 === "invalid-state")) || (data4 === "identity-mismatch")) || (data4 === "duplicate-identity")) || (data4 === "sequence-gap")) || (data4 === "format-mismatch")) || (data4 === "busy")) || (data4 === "engine-failure")) || (data4 === "engine-timeout")) || (data4 === "operation-cancelled")) || (data4 === "resource-exhausted"))){
-const err15 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema197.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema198.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -9976,7 +10207,7 @@ return errors === 0;
 }
 validate123.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema198 = {"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}};
+const schema199 = {"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}};
 
 function validate128(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -10095,7 +10326,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!(((((((((((((((((((((data3 === "malformed-frame") || (data3 === "unsupported-protocol-version")) || (data3 === "unknown-record-kind")) || (data3 === "invalid-flags")) || (data3 === "empty-payload")) || (data3 === "over-limit")) || (data3 === "invalid-utf8")) || (data3 === "malformed-json")) || (data3 === "unknown-message-kind")) || (data3 === "unsupported-schema-version")) || (data3 === "invalid-message")) || (data3 === "invalid-state")) || (data3 === "identity-mismatch")) || (data3 === "duplicate-identity")) || (data3 === "sequence-gap")) || (data3 === "format-mismatch")) || (data3 === "busy")) || (data3 === "engine-failure")) || (data3 === "engine-timeout")) || (data3 === "operation-cancelled")) || (data3 === "resource-exhausted"))){
-const err9 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema197.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema198.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }

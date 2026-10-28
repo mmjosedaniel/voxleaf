@@ -8,9 +8,93 @@ import importlib.metadata
 import json
 import math
 import os
-from pathlib import Path
 import socket
 import time
+from pathlib import Path
+
+
+def install_native_observation(receipt_path: Path, private_origins: list[str]) -> None:
+    """Opt-in native-harness observer; never installs in ordinary product startup."""
+    from voxleaf_tts.chatterbox_adapter import ChatterboxMultilingualTtsEngine
+
+    observed: dict[str, object] = {
+        "privateDllOrigins": private_origins,
+        "networkAttempts": 0,
+        "audioFilesWritten": 0,
+    }
+
+    def save() -> None:
+        receipt_path.write_text(json.dumps(observed, sort_keys=True), encoding="utf-8")
+
+    def deny_network(*_args: object, **_kwargs: object) -> None:
+        observed["networkAttempts"] = int(observed["networkAttempts"]) + 1
+        save()
+        raise AssertionError("native-candidate-network-disabled")
+
+    socket.socket.connect = deny_network
+    socket.socket.connect_ex = deny_network
+    socket.create_connection = deny_network
+
+    def audit(event: str, arguments: tuple[object, ...]) -> None:
+        if event == "open" and isinstance(arguments[0], (str, bytes)):
+            name = os.fsdecode(arguments[0]).lower()
+            mode = arguments[1]
+            flags = arguments[2]
+            writing = (
+                isinstance(mode, str) and any(flag in mode for flag in "wax+")
+            ) or (
+                isinstance(flags, int)
+                and bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT))
+            )
+            if writing and name.endswith((".wav", ".pcm", ".mp3", ".ogg", ".flac")):
+                observed["audioFilesWritten"] = int(observed["audioFilesWritten"]) + 1
+                save()
+                raise AssertionError("native-audio-persistence-disabled")
+
+    sys_module = __import__("sys")
+    sys_module.addaudithook(audit)
+    original_load = ChatterboxMultilingualTtsEngine.load
+
+    def observe_load(engine: object) -> None:
+        original_load(engine)
+        import torch
+
+        model = engine._model
+        transformer = model.t3.tfmr
+        observed["parameterDtypes"] = {
+            name: sorted({str(parameter.dtype) for parameter in module.parameters()})
+            for name, module in (
+                ("t3", model.t3),
+                ("s3gen", model.s3gen),
+                ("ve", model.ve),
+            )
+        }
+        observed["cudaCapability"] = list(torch.cuda.get_device_capability())
+        observed["autocastEnabledAtLoad"] = torch.is_autocast_enabled("cuda")
+        original_forward = transformer.forward
+
+        def observe_forward(*args: object, **kwargs: object) -> object:
+            if "activationDtypes" not in observed:
+                dtypes = sorted(
+                    {
+                        str(value.dtype)
+                        for value in (*args, *kwargs.values())
+                        if isinstance(value, torch.Tensor) and value.is_floating_point()
+                    }
+                )
+                if dtypes:
+                    observed["activationDtypes"] = dtypes
+                    observed["autocastEnabledAtForward"] = torch.is_autocast_enabled(
+                        "cuda"
+                    )
+                    save()
+            return original_forward(*args, **kwargs)
+
+        transformer.forward = observe_forward
+        save()
+
+    ChatterboxMultilingualTtsEngine.load = observe_load
+    save()
 
 
 def main() -> None:
@@ -38,7 +122,15 @@ def main() -> None:
 
     versions = {
         name: importlib.metadata.version(name)
-        for name in ("certifi", "pillow", "torch", "torchaudio", "chatterbox-tts", "filelock", "setuptools")
+        for name in (
+            "certifi",
+            "pillow",
+            "torch",
+            "torchaudio",
+            "chatterbox-tts",
+            "filelock",
+            "setuptools",
+        )
     }
     assert versions["certifi"] == "2026.10.19"
     assert versions["pillow"] == "13.0.0"
@@ -86,18 +178,22 @@ def main() -> None:
         assert not engine.can_settle
         assert engine.capabilities().local_speech_generation != "supported"
         assert network_attempts == 0
-        print(json.dumps({
-            "result": "pass",
-            "language": args.language,
-            "versions": versions,
-            "load_and_warm_seconds": round(ready_seconds, 3),
-            "pcm_bytes": payload_bytes,
-            "torch_peak_reserved_bytes": torch_peak_reserved_bytes,
-            "audio_seconds": payload_bytes / (24000 * 4),
-            "cancel_ms": round(cancel_ms, 3),
-            "network_attempts": network_attempts,
-            "audio_files_written": 0,
-        }))
+        print(
+            json.dumps(
+                {
+                    "result": "pass",
+                    "language": args.language,
+                    "versions": versions,
+                    "load_and_warm_seconds": round(ready_seconds, 3),
+                    "pcm_bytes": payload_bytes,
+                    "torch_peak_reserved_bytes": torch_peak_reserved_bytes,
+                    "audio_seconds": payload_bytes / (24000 * 4),
+                    "cancel_ms": round(cancel_ms, 3),
+                    "network_attempts": network_attempts,
+                    "audio_files_written": 0,
+                }
+            )
+        )
     finally:
         engine.cleanup()
 

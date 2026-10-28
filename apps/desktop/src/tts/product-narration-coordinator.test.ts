@@ -515,6 +515,227 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["stop", "synthesis-failure"] as const)(
+    "CHAT-AUDIT R1 captures final metrics without advancing an expired transition during %s",
+    async (action) => {
+      const { coordinator, client, backend, clock, intervals } = createHarness({
+        result: completeSegments([
+          preparedSegment(
+            "First synthetic passage.",
+            sourceRange(0, 12),
+            1,
+            "sentence",
+          ),
+          preparedSegment("Second synthetic passage.", sourceRange(12, 24)),
+          preparedSegment("Third synthetic passage.", sourceRange(24, 36)),
+        ]),
+      });
+      const synthesize = client.synthesize.bind(client);
+      vi.spyOn(client, "synthesize")
+        .mockImplementationOnce(synthesize)
+        .mockImplementationOnce(async (input) => {
+          const result = await synthesize(input);
+          client.blockSynthesis = true;
+          return result;
+        });
+      let start: ReturnType<typeof vi.spyOn> | undefined;
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.synthesized.length === 3);
+        clock.advance(15_000);
+        intervals[0]?.();
+        backend.finish();
+        intervals[0]?.();
+        clock.advance(300);
+        start = vi.spyOn(backend, "start").mockImplementation(() => {
+          throw new Error("synthetic-device-no-longer-available");
+        });
+        if (action === "stop") await coordinator.stop();
+        else {
+          await client.shutdown();
+          await settleUntil(() => backend.closed);
+          await settleUntil(
+            () => coordinator.observe().recovery.phase === "recovery-available",
+          );
+        }
+        expect(start).not.toHaveBeenCalled();
+        expect(backend.closed).toBe(true);
+        expect(client.state).toBe("stopped");
+        expect(intervals).toHaveLength(0);
+        expect(coordinator.observe().metrics.intentionalWaitMs).toBe(300);
+        expect(coordinator.observe().metrics.retainedAudioUnitCount).toBe(0);
+      } finally {
+        start?.mockRestore();
+        await coordinator.close().catch(() => undefined);
+      }
+    },
+  );
+
+  it.each([false, true])(
+    "CHAT-AUDIT F12 terminal actions after a playing synthesis failure (paused=%s)",
+    async (paused) => {
+      const { coordinator, client } = createHarness({
+        result: completeSegments([
+          preparedSegment("First synthetic passage.", sourceRange(0, 12)),
+          preparedSegment("Second synthetic passage.", sourceRange(12, 24)),
+        ]),
+      });
+      const synthesize = client.synthesize.bind(client);
+      vi.spyOn(client, "synthesize").mockImplementationOnce(async (input) => {
+        const result = await synthesize(input);
+        client.blockSynthesis = true;
+        return result;
+      });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.synthesized.length === 2);
+        if (paused) coordinator.pause();
+        await client.shutdown();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "recovery-available",
+        );
+        expect(coordinator.observe().state).toMatchObject({
+          phase: "failed",
+          canPause: false,
+          canResume: false,
+          canPlayAvailableAudio: false,
+        });
+        expect(coordinator.observe().recovery.canRecover).toBe(true);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+  it("CHAT-AUDIT R1 metric observation failure cannot skip Stop cleanup", async () => {
+    const { coordinator, backend, client, intervals } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => backend.active !== undefined);
+    const read = vi
+      .spyOn(AdaptivePcmPlayer.prototype, "observe")
+      .mockImplementationOnce(() => {
+        throw new Error("synthetic-observation-failure");
+      });
+    try {
+      await coordinator.stop();
+      expect(read).toHaveBeenCalled();
+      expect(backend.closed).toBe(true);
+      expect(client.state).toBe("stopped");
+      expect(intervals).toHaveLength(0);
+    } finally {
+      read.mockRestore();
+      await coordinator.close();
+    }
+  });
+  it("CHAT-AUDIT F06 keeps the identical healthy loaded owner after startup headroom is consumed", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    let hasStartupHeadroom = true;
+    let canContinue = true;
+    const compatibility = {
+      activeProfileId: () => (hasStartupHeadroom ? profileId : undefined),
+      activeLanguage: () => "en" as const,
+      isProfileCurrentlyAllowed: () => hasStartupHeadroom,
+      isProfileContinuationAllowed: () => canContinue,
+      isProfileStartAllowed: vi.fn(async () => hasStartupHeadroom),
+    };
+    const { coordinator, client } = createHarness({
+      profileCompatibility: compatibility,
+    });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const service = client.observe().serviceInstanceId;
+      hasStartupHeadroom = false;
+      await coordinator.refreshSelectedProfile();
+      expect(coordinator.observe().state?.phase).toBe("playing");
+      expect(client.shutdownCount).toBe(0);
+      expect(client.observe().serviceInstanceId).toBe(service);
+      canContinue = false;
+      await coordinator.refreshSelectedProfile();
+      expect(client.shutdownCount).toBeGreaterThan(0);
+      expect(coordinator.observe().availability).toBe("unavailable");
+    } finally {
+      await coordinator.close();
+    }
+  });
+
+  it.each([false, true])(
+    "CHAT-AUDIT F10/F12 retains episode interruptions and removes dead actions after synthesis fails (paused=%s)",
+    async (paused) => {
+      const { coordinator, client, backend, clock, intervals } = createHarness({
+        result: completeSegments([
+          preparedSegment("First synthetic passage.", sourceRange(0, 12)),
+          preparedSegment("Second synthetic passage.", sourceRange(12, 24)),
+        ]),
+      });
+      const synthesize = client.synthesize.bind(client);
+      vi.spyOn(client, "synthesize").mockImplementationOnce(async (input) => {
+        const result = await synthesize(input);
+        client.blockSynthesis = true;
+        return result;
+      });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.synthesized.length === 2);
+        clock.advance(15_000);
+        intervals[0]?.();
+        backend.finish();
+        intervals[0]?.();
+        clock.advance(500);
+        intervals[0]?.();
+        const before = coordinator.observe().metrics;
+        expect(before.underrunCount).toBe(1);
+        expect(before.bufferingMs).toBeGreaterThanOrEqual(500);
+        if (paused) coordinator.pause();
+        await client.shutdown();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "recovery-available",
+        );
+        expect(coordinator.observe().state).toMatchObject({
+          phase: "failed",
+          canPause: false,
+          canResume: false,
+          canPlayAvailableAudio: false,
+        });
+        expect(coordinator.observe().metrics.underrunCount).toBe(
+          before.underrunCount,
+        );
+        expect(
+          coordinator.observe().metrics.bufferingMs,
+        ).toBeGreaterThanOrEqual(before.bufferingMs);
+        client.blockSynthesis = false;
+        coordinator.recover();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(coordinator.observe().metrics.underrunCount).toBe(1);
+        expect(
+          coordinator.observe().metrics.bufferingMs,
+        ).toBeGreaterThanOrEqual(before.bufferingMs);
+        expect(coordinator.observe().metrics.playbackMs).toBeGreaterThanOrEqual(
+          before.playbackMs,
+        );
+        intervals[0]?.();
+        intervals[0]?.();
+        expect(coordinator.observe().metrics.underrunCount).toBe(1);
+        await coordinator.stop();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(coordinator.observe().metrics.underrunCount).toBe(1);
+        coordinator.resetRecoveryEpisode();
+        expect(coordinator.observe().metrics.underrunCount).toBe(0);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
   it.each(["changed-playing", "unavailable-paused", "unchanged"] as const)(
     "NCC-02 reconciles automatic %s without restart",
     async (scenario) => {

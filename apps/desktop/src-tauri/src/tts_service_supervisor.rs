@@ -79,6 +79,8 @@ const HEALTH_TIMEOUT: Duration = Duration::from_secs(2);
 const TERMINATION_TIMEOUT: Duration = Duration::from_secs(2);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
+const CHATTERBOX_CHILD_BOOTSTRAP: &str =
+    include_str!("tts_service_supervisor/chatterbox_child_bootstrap.py");
 
 static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -419,10 +421,25 @@ impl ExactRuntime {
                 .map_err(|_| TtsNativeFailure::ChildUnavailable)?
         };
         let mut command = Command::new(child_process_path(&self.python));
+        command.arg("-s");
+        if self.service_module == "voxleaf_tts.chatterbox_service"
+            && self.service_source == self.service_site_packages
+        {
+            command
+                .arg("-c")
+                .arg(CHATTERBOX_CHILD_BOOTSTRAP)
+                .arg(&service_site_packages);
+            #[cfg(test)]
+            if let Some((observer, receipt)) = tests::chatterbox_observer_arguments(&self.python) {
+                command
+                    .arg("--diagnostic-observer")
+                    .arg(observer)
+                    .arg(receipt);
+            }
+        } else {
+            command.arg("-m").arg(self.service_module);
+        }
         command
-            .arg("-s")
-            .arg("-m")
-            .arg(self.service_module)
             .current_dir(child_process_path(&self.model_root))
             .env("PYTHONPATH", python_path)
             .env("PYTHONNOUSERSITE", "1")
@@ -727,6 +744,7 @@ fn assign_kill_on_close_job(
 
 struct ServiceSession {
     service_instance_id: String,
+    start_request_id: Option<String>,
     input: Mutex<Option<ChildStdin>>,
     frames: Mutex<Receiver<Result<Frame, TtsNativeFailure>>>,
     process: Mutex<Option<ChildProcess>>,
@@ -736,6 +754,7 @@ impl ServiceSession {
     fn spawn(
         child_configuration: &ServiceChild,
         service_instance_id: String,
+        start_request_id: Option<String>,
     ) -> Result<Arc<Self>, TtsNativeFailure> {
         let mut process = ChildProcess::spawn(child_configuration)?;
         let input = process
@@ -760,6 +779,7 @@ impl ServiceSession {
         });
         Ok(Arc::new(Self {
             service_instance_id,
+            start_request_id,
             input: Mutex::new(Some(input)),
             frames: Mutex::new(frames),
             process: Mutex::new(Some(process)),
@@ -1077,6 +1097,16 @@ impl TtsServiceSupervisor {
     }
 
     pub fn start(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        self.start_owned(None)
+    }
+
+    fn start_owned(
+        &self,
+        start_request_id: Option<String>,
+    ) -> Result<Vec<Value>, TtsNativeFailure> {
+        if let Some(request) = &start_request_id {
+            validate_start_request_id(request)?;
+        }
         let _operation = self.acquire_operation()?;
         // Publish the spawned child under the same lock used by interruption.
         let mut slot = self
@@ -1095,7 +1125,11 @@ impl TtsServiceSupervisor {
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?
             .clone();
-        let session = ServiceSession::spawn(&child_configuration, service_instance_id.clone())?;
+        let session = ServiceSession::spawn(
+            &child_configuration,
+            service_instance_id.clone(),
+            start_request_id,
+        )?;
         self.set_state("starting")?;
         self.lifecycle
             .lock()
@@ -1103,6 +1137,8 @@ impl TtsServiceSupervisor {
             .contained_service_instance_id = None;
         *slot = Some(session.clone());
         drop(slot);
+        #[cfg(test)]
+        tests::pause_start_after_publish();
         let handshake = json!({
             "schemaVersion": 1,
             "protocolVersion": 1,
@@ -1336,11 +1372,26 @@ impl TtsServiceSupervisor {
     }
 
     fn shutdown_instance(&self, expected: Option<&str>) -> Result<Vec<Value>, TtsNativeFailure> {
+        self.shutdown_owned(expected, None)
+    }
+
+    fn shutdown_owned(
+        &self,
+        expected: Option<&str>,
+        start_request_id: Option<&str>,
+    ) -> Result<Vec<Value>, TtsNativeFailure> {
+        if let Some(request) = start_request_id {
+            validate_start_request_id(request)?;
+        }
         let operation = match self.acquire_operation() {
             Ok(guard) => Some(guard),
             Err(TtsNativeFailure::Busy) => None,
             Err(error) => return Err(error),
         };
+        #[cfg(test)]
+        if operation.is_none() {
+            tests::pause_shutdown_after_busy();
+        }
         let mut slot = self
             .session
             .lock()
@@ -1364,7 +1415,10 @@ impl TtsServiceSupervisor {
         }
         if operation.is_none() {
             let session = slot.as_ref().ok_or(TtsNativeFailure::InvalidState)?;
-            if expected.is_some_and(|id| id != session.service_instance_id) {
+            if expected.is_some_and(|id| id != session.service_instance_id)
+                || start_request_id
+                    .is_some_and(|id| session.start_request_id.as_deref() != Some(id))
+            {
                 return Err(TtsNativeFailure::Cancelled);
             }
             let id = session.service_instance_id.clone();
@@ -1386,7 +1440,9 @@ impl TtsServiceSupervisor {
         }
         drop(slot);
         let session = self.active_session()?;
-        if expected.is_some_and(|id| id != session.service_instance_id) {
+        if expected.is_some_and(|id| id != session.service_instance_id)
+            || start_request_id.is_some_and(|id| session.start_request_id.as_deref() != Some(id))
+        {
             return Err(TtsNativeFailure::Cancelled);
         }
         {
@@ -1577,13 +1633,17 @@ pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
     profile_id: Option<String>,
     language: Option<String>,
+    start_request_id: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
     blocking(move || {
+        if let Some(request) = &start_request_id {
+            validate_start_request_id(request)?;
+        }
         if let Some(profile_id) = profile_id {
             supervisor.configure_profile(&profile_id, language.as_deref())?;
         }
-        supervisor.start()
+        supervisor.start_owned(start_request_id)
     })
     .await
 }
@@ -1628,9 +1688,26 @@ pub async fn cancel_tts_generation(
 pub async fn shutdown_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
     service_instance_id: Option<String>,
+    start_request_id: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
-    blocking(move || supervisor.shutdown_instance(service_instance_id.as_deref())).await
+    blocking(move || {
+        supervisor.shutdown_owned(service_instance_id.as_deref(), start_request_id.as_deref())
+    })
+    .await
+}
+
+fn validate_start_request_id(value: &str) -> Result<(), TtsNativeFailure> {
+    if value.starts_with("start:")
+        && (7..=96).contains(&value.len())
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'-'))
+    {
+        Ok(())
+    } else {
+        Err(TtsNativeFailure::InvalidInput)
+    }
 }
 
 pub fn run_exact_host() -> Result<(), &'static str> {

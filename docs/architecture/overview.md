@@ -1,5 +1,10 @@
 # Architecture overview
 
+[ADR-0065](decisions/ADR-0065-validated-runtime-and-narration-boundaries.md) records
+the coordinated CUDA/free-memory fact, pending-start ownership, episode metrics,
+private child bootstrap and EPUB/narration corrections. They stay in existing
+owners; current acceptance is tracked in the linked execution ledger.
+
 V7 is the current msgpack-corrected runtime under
 [ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
 [refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records

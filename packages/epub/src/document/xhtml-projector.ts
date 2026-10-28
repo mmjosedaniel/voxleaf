@@ -294,7 +294,8 @@ function deriveContext(
   if (
     xmlLanguage !== undefined &&
     htmlLanguage !== undefined &&
-    xmlLanguage !== htmlLanguage
+    xmlLanguage.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()) !==
+      htmlLanguage.replace(/[A-Z]/gu, (letter) => letter.toLowerCase())
   ) {
     return fail("malformed-package");
   }
@@ -302,9 +303,7 @@ function deriveContext(
   const language = xmlLanguage ?? htmlLanguage;
   if (
     language !== undefined &&
-    (language.length === 0 ||
-      language !== language.trim() ||
-      hasControlCharacter(language))
+    (/\s/u.test(language) || hasControlCharacter(language))
   ) {
     return fail("malformed-package");
   }
@@ -596,6 +595,7 @@ class XhtmlProjector {
     archive: OpenedEpubArchive,
     packageDocument: ParsedPackageDocument,
     path: ArchiveFilePath,
+    spineItemIndex?: number,
   ) {
     this.#archive = archive;
     this.#path = path;
@@ -620,9 +620,25 @@ class XhtmlProjector {
       return fail("unsupported-resource");
     }
 
-    const spineItem = packageDocument.spine.find(
+    const firstSpineItem = packageDocument.spine.find(
       (item) => String(item.path) === String(path),
     );
+    const spineItem =
+      spineItemIndex === undefined
+        ? firstSpineItem
+        : packageDocument.spine[spineItemIndex];
+    if (
+      spineItemIndex !== undefined &&
+      (spineItem === undefined || String(spineItem.path) !== String(path))
+    ) {
+      return fail("internal-failure");
+    }
+    if (spineItem !== undefined && spineItem !== firstSpineItem) {
+      this.#documentId =
+        `${this.#documentId}:spine:${String(spineItem.index)}` as ContentDocumentId;
+      // A link to this resource within a repeated occurrence stays in that occurrence.
+      this.#documentsByPath.set(String(path), this.#documentId);
+    }
     this.#documentLocation = Object.freeze(
       spineItem === undefined
         ? { kind: "non-spine" }
@@ -726,7 +742,7 @@ class XhtmlProjector {
       this.#elements.push({
         name: event.name,
         context,
-        omitted: false,
+        omitted: isExplicitlyHidden(event),
       });
       return;
     }
@@ -736,13 +752,13 @@ class XhtmlProjector {
       return fail("internal-failure");
     }
 
-    if (parent.omitted) {
-      this.#elements.push({ name: event.name, context, omitted: true });
+    if (depth === 2) {
+      this.consumeRootChild(event, context, elementId);
       return;
     }
 
-    if (depth === 2) {
-      this.consumeRootChild(event, context, elementId);
+    if (parent.omitted) {
+      this.#elements.push({ name: event.name, context, omitted: true });
       return;
     }
 
@@ -792,7 +808,8 @@ class XhtmlProjector {
     this.#elements.push({
       name: event.name,
       context,
-      omitted: isExplicitlyHidden(event),
+      omitted:
+        this.#elements.at(-1)?.omitted === true || isExplicitlyHidden(event),
       closeAction: { kind: "body", collector },
       paragraphSourceBoundary: true,
       ...(elementId === undefined
@@ -1427,10 +1444,16 @@ export async function projectXhtmlDocumentProjection(
   archive: OpenedEpubArchive,
   packageDocument: ParsedPackageDocument,
   path: ArchiveFilePath,
+  spineItemIndex?: number,
 ): Promise<XhtmlDocumentProjection> {
   try {
     archive.budget.checkpoint();
-    const projector = new XhtmlProjector(archive, packageDocument, path);
+    const projector = new XhtmlProjector(
+      archive,
+      packageDocument,
+      path,
+      spineItemIndex,
+    );
     const bytes = await archive.readEntry(path, {
       maximumBytes: archive.budget.policy.maxContentDocumentBytes,
     });

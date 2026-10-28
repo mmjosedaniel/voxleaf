@@ -43,6 +43,74 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("CHAT-AUDIT F07 preserves explicitly unknown language and accepts case-equivalent tags", async () => {
+    await withArchive(
+      xhtml(
+        '<h:p lang="">25 % <h:em>14:30</h:em><h:strong lang="en">25 %</h:strong></h:p>',
+        'lang="EN-us" xml:lang="en-US"',
+      ),
+      {},
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        expect(document.language).toBe("en-US");
+        expect(document.blocks[0]).toMatchObject({
+          language: "",
+          children: expect.arrayContaining([
+            expect.objectContaining({ kind: "text", language: "" }),
+            expect.objectContaining({
+              kind: "emphasis",
+              language: "",
+              children: [expect.objectContaining({ language: "" })],
+            }),
+            expect.objectContaining({
+              kind: "strong",
+              language: "en",
+              children: expect.arrayContaining([
+                expect.objectContaining({ language: "en" }),
+              ]),
+            }),
+          ]),
+        });
+      },
+    );
+  });
+
+  it.each(['hidden=""', 'aria-hidden="true"'])(
+    "CHAT-AUDIT F11 omits a hidden root (%s) while requiring a body",
+    async (hidden) => {
+      await withArchive(
+        xhtml("<h:p>Hidden source</h:p>", hidden),
+        {},
+        async (archive) => {
+          const projection = await projectXhtmlDocumentProjection(
+            archive,
+            createPackageDocument(),
+            CHAPTER_PATH,
+          );
+          expect(projection.document.blocks).toEqual([]);
+          expect(projection.addressableBlocks).toEqual([]);
+        },
+      );
+      await withArchive(
+        xhtml("", hidden).replace("<h:body></h:body>", ""),
+        {},
+        async (archive) => {
+          await expect(
+            projectXhtmlDocument(
+              archive,
+              createPackageDocument(),
+              CHAPTER_PATH,
+            ),
+          ).rejects.toMatchObject({ code: "malformed-package" });
+        },
+      );
+    },
+  );
+
   it("projects supported semantics, inherited text context, and opaque local targets in source order", async () => {
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");

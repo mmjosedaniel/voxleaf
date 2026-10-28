@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -18,6 +20,67 @@ from voxleaf_tts.packaging.chatterbox_integrity import (
     repository_root,
 )
 from voxleaf_tts.packaging.chatterbox_sources import resolve_runtime_sources
+
+
+def test_native_observer_is_content_free_and_preserves_forwarding(tmp_path: Path) -> None:
+    program = r"""
+import json, pathlib, runpy, socket, sys, types
+root=pathlib.Path(sys.argv[2]); receipt=root/'observation.json'
+class Tensor:
+    dtype='torch.float32'
+    def is_floating_point(self): return True
+class Module:
+    def parameters(self): return [Tensor()]
+class Transformer(Module):
+    def forward(self, *args, **kwargs):
+        assert not args and set(kwargs)=={'inputs_embeds'}
+        return 42
+class Engine:
+    def load(self):
+        t3=Module(); t3.tfmr=Transformer()
+        self._model=types.SimpleNamespace(t3=t3,s3gen=Module(),ve=Module())
+adapter=types.ModuleType('voxleaf_tts.chatterbox_adapter')
+adapter.ChatterboxMultilingualTtsEngine=Engine
+sys.modules['voxleaf_tts.chatterbox_adapter']=adapter
+torch=types.ModuleType('torch');torch.Tensor=Tensor
+torch.is_autocast_enabled=lambda device:False
+torch.cuda=types.SimpleNamespace(get_device_capability=lambda:(12,0))
+sys.modules['torch']=torch
+runpy.run_path(sys.argv[1])['install_native_observation'](receipt,['owned/private.dll'])
+engine=Engine();engine.load()
+assert engine._model.t3.tfmr.forward(inputs_embeds=Tensor())==42
+observed=json.loads(receipt.read_text())
+assert observed['parameterDtypes']=={name:['torch.float32'] for name in ('t3','s3gen','ve')}
+assert observed['activationDtypes']==['torch.float32']
+assert observed['autocastEnabledAtLoad'] is False
+assert observed['autocastEnabledAtForward'] is False
+assert observed['networkAttempts']==observed['audioFilesWritten']==0
+try: socket.create_connection(('unused.invalid',443))
+except AssertionError: pass
+else: raise AssertionError('network guard absent')
+try: (root/'never.wav').write_bytes(b'forbidden')
+except AssertionError: pass
+else: raise AssertionError('audio guard absent')
+assert not (root/'never.wav').exists()
+observed=json.loads(receipt.read_text())
+assert observed['networkAttempts']==observed['audioFilesWritten']==1
+assert 'inputs_embeds' not in receipt.read_text()
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            program,
+            str(repository_root() / "scripts/test-chatterbox-runtime-smoke.py"),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
 
 
 def test_v7_is_an_independent_one_pin_hashed_successor() -> None:

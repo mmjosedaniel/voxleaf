@@ -1,5 +1,175 @@
 use super::*;
 
+#[cfg(windows)]
+mod packaged_chatterbox;
+
+thread_local! {
+    static CHATTERBOX_OBSERVER: std::cell::RefCell<Option<(PathBuf, PathBuf, PathBuf)>> = const { std::cell::RefCell::new(None) };
+    static START_PUBLISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static SHUTDOWN_BUSY_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn pause_start_after_publish() {
+    START_PUBLISHED_HOOK.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().take() {
+            hook();
+        }
+    });
+}
+
+pub(super) fn pause_shutdown_after_busy() {
+    SHUTDOWN_BUSY_HOOK.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().take() {
+            hook();
+        }
+    });
+}
+
+#[test]
+#[cfg(windows)]
+#[ignore = "explicit native executable supplies the real model-free child entrypoint"]
+fn chat_audit_f08_old_pending_start_shutdown_cannot_kill_a_replacement() {
+    fn child_command() -> Command {
+        let mut command = Command::new(
+            std::env::var_os("VOXLEAF_NATIVE_MODEL_FREE_BINARY")
+                .expect("native model-free fixture executable required"),
+        );
+        command
+            .arg(crate::tts_service_fake_child::CHILD_ARGUMENT)
+            .arg(NORMAL_SCENARIO);
+        command
+    }
+    let supervisor = Arc::new(TtsServiceSupervisor::with_child(ServiceChild::TestCommand(
+        child_command,
+    )));
+    let (published, published_rx) = mpsc::sync_channel(1);
+    let (continue_start, continue_start_rx) = mpsc::sync_channel(1);
+    let first = Arc::clone(&supervisor);
+    let starting = thread::spawn(move || {
+        START_PUBLISHED_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                published.send(()).unwrap();
+                continue_start_rx.recv_timeout(HANDSHAKE_TIMEOUT).unwrap();
+            }))
+        });
+        first.start_owned(Some("start:old".to_owned()))
+    });
+    published_rx.recv_timeout(HANDSHAKE_TIMEOUT).unwrap();
+    let (busy, busy_rx) = mpsc::sync_channel(1);
+    let (continue_shutdown, continue_shutdown_rx) = mpsc::sync_channel(1);
+    let old = Arc::clone(&supervisor);
+    let stopping = thread::spawn(move || {
+        SHUTDOWN_BUSY_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                busy.send(()).unwrap();
+                continue_shutdown_rx
+                    .recv_timeout(HANDSHAKE_TIMEOUT)
+                    .unwrap();
+            }))
+        });
+        old.shutdown_owned(None, Some("start:old"))
+    });
+    busy_rx.recv_timeout(HANDSHAKE_TIMEOUT).unwrap();
+    // Model the old child dying while its start response is still pending.
+    supervisor.terminate_child_for_diagnostic().unwrap();
+    continue_start.send(()).unwrap();
+    assert!(starting.join().unwrap().is_err());
+    supervisor
+        .start_owned(Some("start:new".to_owned()))
+        .unwrap();
+    let replacement = supervisor
+        .active_session()
+        .unwrap()
+        .service_instance_id
+        .clone();
+    continue_shutdown.send(()).unwrap();
+    let old_result = stopping.join().unwrap();
+    let surviving = supervisor
+        .active_session()
+        .ok()
+        .map(|session| session.service_instance_id.clone());
+    let current_shutdown = supervisor.shutdown_owned(None, Some("start:new"));
+    supervisor.force_stop().unwrap();
+    assert_eq!(
+        surviving,
+        Some(replacement),
+        "old request result: {old_result:?}"
+    );
+    assert!(
+        current_shutdown.is_ok(),
+        "current owner must retain shutdown"
+    );
+}
+
+pub(super) fn chatterbox_observer_arguments(python: &Path) -> Option<(PathBuf, PathBuf)> {
+    CHATTERBOX_OBSERVER.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .filter(|(expected, _, _)| expected == python)
+            .map(|(_, observer, receipt)| (observer.clone(), receipt.clone()))
+    })
+}
+
+#[test]
+fn chat_audit_f08_pending_shutdown_requires_the_original_start_request() {
+    for busy in [false, true] {
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        let (mut session, _sender) = channel_session();
+        session.start_request_id = Some("start:current".to_owned());
+        let session = Arc::new(session);
+        *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+        supervisor.set_state("handshaking").unwrap();
+        let _guard = busy.then(|| supervisor.acquire_operation().unwrap());
+        assert_eq!(
+            supervisor.shutdown_owned(None, Some("start:old")),
+            Err(TtsNativeFailure::Cancelled)
+        );
+        assert!(Arc::ptr_eq(&session, &supervisor.active_session().unwrap()));
+        assert_eq!(supervisor.lifecycle.lock().unwrap().state, "handshaking");
+    }
+    for invalid in [
+        "",
+        "start:",
+        "other:request",
+        "start:path/forbidden",
+        "start:has space",
+    ] {
+        assert_eq!(
+            validate_start_request_id(invalid),
+            Err(TtsNativeFailure::InvalidInput)
+        );
+    }
+}
+
+#[test]
+fn chat_audit_f13_bootstraps_private_dlls_before_importing_chatterbox() {
+    let runtime = ExactRuntime {
+        python: PathBuf::from("python.exe"),
+        model_root: PathBuf::from("model"),
+        service_source: PathBuf::from("site-packages"),
+        service_site_packages: PathBuf::from("site-packages"),
+        service_module: "voxleaf_tts.chatterbox_service",
+        runtime_environment: Vec::new(),
+        numba_cache_root: None,
+    };
+    let command = runtime.command().unwrap();
+    assert_eq!(command.get_args().nth(1), Some(std::ffi::OsStr::new("-c")));
+    assert!(
+        command
+            .get_args()
+            .any(|argument| argument.to_string_lossy().contains("msvcp140.dll"))
+    );
+    for module in ["voxleaf_tts.piper_service", "voxleaf_tts.qwen_service"] {
+        let command = ExactRuntime {
+            service_module: module,
+            ..runtime.clone()
+        }
+        .command()
+        .unwrap();
+        assert_eq!(command.get_args().collect::<Vec<_>>(), ["-s", "-m", module]);
+    }
+}
+
 impl TtsServiceSupervisor {
     pub(crate) fn lcf_unverified_termination_fixture() -> Self {
         let supervisor = Self::new(NORMAL_SCENARIO);
@@ -198,6 +368,7 @@ fn channel_session() -> (
     let (sender, frames) = mpsc::sync_channel(1);
     let session = ServiceSession {
         service_instance_id: "service:synthetic-1".to_owned(),
+        start_request_id: None,
         input: Mutex::new(None),
         frames: Mutex::new(frames),
         process: Mutex::new(None),
@@ -686,13 +857,10 @@ fn exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_sta
     let command = runtime.command().expect("command should be created");
     assert!(Path::new(command.get_program()).is_absolute());
     assert_eq!(command.get_program(), runtime.python.as_os_str());
+    assert_eq!(command.get_args().nth(1), Some(std::ffi::OsStr::new("-c")));
     assert_eq!(
-        command.get_args().collect::<Vec<_>>(),
-        [
-            std::ffi::OsStr::new("-s"),
-            std::ffi::OsStr::new("-m"),
-            std::ffi::OsStr::new("voxleaf_tts.chatterbox_service"),
-        ]
+        command.get_args().last(),
+        Some(runtime.service_site_packages.as_os_str())
     );
     for removed in [
         "PYTHONHOME",

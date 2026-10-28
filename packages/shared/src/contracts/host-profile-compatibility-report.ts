@@ -43,6 +43,9 @@ export class HostProfileCompatibilityReportContractError extends Error {
 }
 
 export interface HostProfileCompatibilityReportV1 {
+  readonly cudaComputeCapability?: Readonly<
+    NonNullable<HostProfileCompatibilityReportV1Wire["cudaComputeCapability"]>
+  >;
   readonly schemaVersion: SchemaVersion;
   readonly probeStatus: HostProbeStatusV1;
   readonly platform: Readonly<HostProfileCompatibilityReportV1Wire["platform"]>;
@@ -164,6 +167,12 @@ export function decodeHostProfileCompatibilityReportV1(
   if (!validateHostProfileCompatibilityReportV1Wire(input)) {
     return malformedHostProfileCompatibilityReport();
   }
+  if (
+    input.cudaComputeCapability?.status === "known" &&
+    input.providers.cuda.availability !== "available"
+  ) {
+    return malformedHostProfileCompatibilityReport();
+  }
 
   const totalPhysicalMiB = knownValue(input.memory.totalPhysicalMiB);
   const availablePhysicalMiB = knownValue(input.memory.availablePhysicalMiB);
@@ -185,6 +194,13 @@ export function decodeHostProfileCompatibilityReportV1(
 
   return Object.freeze({
     schemaVersion,
+    ...(input.cudaComputeCapability === undefined
+      ? {}
+      : {
+          cudaComputeCapability: Object.freeze({
+            ...input.cudaComputeCapability,
+          }),
+        }),
     probeStatus: input.probeStatus,
     platform: Object.freeze({ ...input.platform }),
     processor: Object.freeze({

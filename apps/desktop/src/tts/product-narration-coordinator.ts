@@ -182,6 +182,7 @@ export interface ProductNarrationProfileCompatibility {
   activeProfileId?(): string | undefined;
   activeLanguage?(): NarrationLanguageV1;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
+  isProfileContinuationAllowed?(profileId: string): boolean;
   isProfileStartAllowed(
     profileId: string,
     trigger: "application-start" | "before-profile-start",
@@ -425,6 +426,8 @@ export class ProductNarrationCoordinator {
   #bufferingMs = 0;
   #intentionalWaitMs = 0;
   #playbackMs = 0;
+  #underrunCount = 0;
+  #lastPlayerUnderrunCount = 0;
   #lastMetricsAtMs: number | undefined;
   #lastPlayerPhase: AdaptivePcmPlayerObservation["state"] | undefined;
   #lastPlayerIntentionalWaitMs = 0;
@@ -525,7 +528,17 @@ export class ProductNarrationCoordinator {
       language =
         this.#profileCompatibility.activeLanguage?.() ??
         DEFAULT_NARRATION_LANGUAGE_V2;
-      const selectedProfileId = this.#profileCompatibility.activeProfileId?.();
+      const continuing =
+        this.#scheduler !== undefined &&
+        this.#recovery.observe().phase === "operational" &&
+        ["ready", "generating"].includes(this.#client.observe().state) &&
+        language === this.#language &&
+        this.#profileCompatibility.isProfileContinuationAllowed?.(
+          this.#profileId,
+        ) === true;
+      const selectedProfileId = continuing
+        ? this.#profileId
+        : this.#profileCompatibility.activeProfileId?.();
       if (selectedProfileId === undefined) {
         availability = "unavailable";
       } else {
@@ -533,12 +546,13 @@ export class ProductNarrationCoordinator {
         const current =
           this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
         const allowed =
-          current ??
-          (await this.#profileCompatibility.isProfileStartAllowed(
-            profileId,
-            "application-start",
-            language,
-          ));
+          continuing ||
+          (current ??
+            (await this.#profileCompatibility.isProfileStartAllowed(
+              profileId,
+              "application-start",
+              language,
+            )));
         availability =
           allowed &&
           (await this.#client.profileConfigurationAvailability(profileId)) ===
@@ -957,6 +971,15 @@ export class ProductNarrationCoordinator {
     }
     try {
       this.#recovery.resetEpisode();
+      this.#bufferingMs = 0;
+      this.#playbackMs = 0;
+      this.#intentionalWaitMs = 0;
+      this.#underrunCount = 0;
+      const player = this.#player?.synchronize();
+      this.#lastPlayerUnderrunCount = player?.underrunCount ?? 0;
+      this.#lastPlayerIntentionalWaitMs =
+        player?.intentionalTransitionPauseMs ?? 0;
+      this.#lastMetricsAtMs = this.#clock.nowMs;
       this.#failure = undefined;
       this.#preparationFailure = undefined;
       this.#terminalState = undefined;
@@ -983,9 +1006,9 @@ export class ProductNarrationCoordinator {
     this.#nextSequence = 0;
     this.#acceptedAudioUnitCount = 0;
     this.#acceptedAudioSampleFrames = 0;
-    this.#bufferingMs = 0;
-    this.#intentionalWaitMs = 0;
-    this.#playbackMs = 0;
+    // Interruption totals belong to the recovery episode, not to this player.
+    // Only resetRecoveryEpisode clears them; Stop/Play and recovery replace owners.
+    this.#lastPlayerUnderrunCount = 0;
     this.#lastPlayerIntentionalWaitMs = 0;
     this.#commandToAudibleMs = undefined;
     this.#commandStartedAtMs = this.#clock.nowMs;
@@ -1198,6 +1221,7 @@ export class ProductNarrationCoordinator {
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
     const player = this.#player;
+    this.#captureFinalMetrics(player);
     const transition = player.close();
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
@@ -1786,7 +1810,12 @@ export class ProductNarrationCoordinator {
         this.#playbackMs += Math.max(0, elapsed - intentionalWaitDelta);
       }
     }
-    this.#intentionalWaitMs = player.intentionalTransitionPauseMs;
+    this.#intentionalWaitMs += intentionalWaitDelta;
+    this.#underrunCount += Math.max(
+      0,
+      player.underrunCount - this.#lastPlayerUnderrunCount,
+    );
+    this.#lastPlayerUnderrunCount = player.underrunCount;
     if (
       player.state === "playing" &&
       this.#commandToAudibleMs === undefined &&
@@ -1797,6 +1826,16 @@ export class ProductNarrationCoordinator {
     this.#lastMetricsAtMs = nowMs;
     this.#lastPlayerPhase = player.state;
     this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
+  }
+
+  #captureFinalMetrics(player: AdaptivePcmPlayer | undefined): void {
+    try {
+      if (player !== undefined) this.#updateMetrics(player.observe());
+    } catch {
+      // Diagnostic observation must never prevent owner invalidation/cleanup.
+    } finally {
+      this.#lastMetricsAtMs = undefined;
+    }
   }
 
   #fail(
@@ -1833,6 +1872,7 @@ export class ProductNarrationCoordinator {
     const scheduler = this.#scheduler;
     const player = this.#player;
     const containmentToken = ++this.#runToken;
+    this.#captureFinalMetrics(player);
     this.#identity = undefined;
     if (!wasRecovering) {
       this.#recovery.markIdentityInvalidated();
@@ -2016,7 +2056,7 @@ export class ProductNarrationCoordinator {
       return undefined;
     }
     try {
-      const player = this.#player?.synchronize();
+      const player = this.#player?.observe();
       const projected = createAdaptivePreparationUiState({
         mode: this.#selection,
         scheduler: scheduler.observe(),
@@ -2027,7 +2067,14 @@ export class ProductNarrationCoordinator {
               volumePercent: player.volumePercent,
             }),
       });
-      return Object.freeze({ ...projected, phase: "failed" });
+      return Object.freeze({
+        ...projected,
+        phase: "failed",
+        canPause: false,
+        canResume: false,
+        canPlayAvailableAudio: false,
+        pauseContinuesPreparation: false,
+      });
     } catch {
       return undefined;
     }
@@ -2043,7 +2090,8 @@ export class ProductNarrationCoordinator {
   #createSnapshot(): ProductNarrationSnapshot {
     const scheduler = this.#scheduler?.observe();
     const player = this.#player;
-    const playerObservation = player?.synchronize();
+    const playerObservation =
+      this.#failure === undefined ? player?.synchronize() : player?.observe();
     let state = this.#terminalState;
     if (
       state === undefined &&
@@ -2101,10 +2149,21 @@ export class ProductNarrationCoordinator {
         commandToAudibleMs: this.#commandToAudibleMs,
         bufferingMs: this.#bufferingMs,
         intentionalWaitMs:
-          playerObservation?.intentionalTransitionPauseMs ??
-          this.#intentionalWaitMs,
+          this.#intentionalWaitMs +
+          Math.max(
+            0,
+            (playerObservation?.intentionalTransitionPauseMs ??
+              this.#lastPlayerIntentionalWaitMs) -
+              this.#lastPlayerIntentionalWaitMs,
+          ),
         playbackMs: this.#playbackMs,
-        underrunCount: playerObservation?.underrunCount ?? 0,
+        underrunCount:
+          this.#underrunCount +
+          Math.max(
+            0,
+            (playerObservation?.underrunCount ??
+              this.#lastPlayerUnderrunCount) - this.#lastPlayerUnderrunCount,
+          ),
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
         retainedAudioUnitCount: scheduler?.retainedAudioUnitCount ?? 0,

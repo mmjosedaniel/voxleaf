@@ -81,13 +81,24 @@ async function projectDocuments(
   for (const item of packageDocument.manifest) {
     archive.budget.checkpoint();
     if (isSupportedContentDocument(item) && item.location.kind === "local") {
-      projections.push(
-        await projectXhtmlDocumentProjection(
-          archive,
-          packageDocument,
-          item.location.path,
-        ),
+      const path = item.location.path;
+      const occurrences = packageDocument.spine.filter(
+        (spineItem) => String(spineItem.path) === String(path),
       );
+      // Each accepted spine occurrence owns its location. Reprojection uses the
+      // same archive budgets, so repeated fallbacks cannot bypass work limits.
+      for (const occurrence of occurrences.length === 0
+        ? [undefined]
+        : occurrences) {
+        projections.push(
+          await projectXhtmlDocumentProjection(
+            archive,
+            packageDocument,
+            path,
+            occurrence?.index,
+          ),
+        );
+      }
     }
   }
   return Object.freeze(projections);

@@ -1,5 +1,11 @@
 # Canonical system diagram
 
+[ADR-0065](decisions/ADR-0065-validated-runtime-and-narration-boundaries.md) retains
+this topology. The typed host-report edge includes default CUDA architecture;
+pending-start cancellation carries the original request ID. The existing
+Chatterbox child resolves manifest-owned C++ dependencies before service import.
+No process, network or persistence owner is added; receipts remain opt-in evidence.
+
 ## Purpose and evidence rule
 
 This is VoxLeaf's canonical high-level system map. It distinguishes running product behavior from repository foundations and approved or deferred work. A type, fake, scaffold, ADR, or plan is not implementation evidence by itself. Statuses here are based on production code plus the validation recorded in completed plans; future nodes appear only when accepted architecture or the roadmap supports them.

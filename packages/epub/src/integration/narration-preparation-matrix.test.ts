@@ -28,6 +28,56 @@ afterEach(() => {
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
   it.each(["es", "en"] as const)(
+    "CHAT-AUDIT F04/F07 preserves explicit unknown context and numeric compounds through current %s profiles",
+    async (language) => {
+      const source = "0.25 % 12:14:30";
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language.toUpperCase()}" xml:lang="${language}"><head><title>Synthetic</title></head><body><p id="compound">${source}</p><p lang="" id="unknown">25 % <em>14:30</em></p><p lang="${language}" id="known">25 %</p></body></html>`,
+        }),
+      );
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      try {
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-chatterbox-v1",
+          "narration-bilingual-v2",
+        ] as const) {
+          const prepared = await publication.prepareNarration({
+            startLocator: publication.defaultStartLocator!,
+            profile,
+            defaultLanguage: language,
+            maximumSegments: 16,
+          });
+          expect(prepared.status).toBe("complete");
+          if (prepared.status !== "complete") continue;
+          expect(prepared.segments.map((segment) => segment.text)).toEqual([
+            source,
+            "25 % 14:30",
+            language === "es"
+              ? "veinticinco por ciento"
+              : "twenty-five percent",
+          ]);
+          for (const [index, segment] of prepared.segments.entries()) {
+            expect(segment.sourceRange.start).toEqual(
+              publication.locators[index]!.startLocator,
+            );
+            expect(segment.sourceRange.end.textOffsetCodePoints).toBe(
+              [source.length, 10, 4][index],
+            );
+          }
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each(["es", "en"] as const)(
     "NLC-05 reaches current Piper and Chatterbox %s with exact source locators",
     async (language) => {
       const source = language === "es" ? "1,20 °C" : "1.20 °C";

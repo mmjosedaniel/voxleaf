@@ -261,6 +261,50 @@ def test_atomic_staging_promotes_success_and_preserves_previous_on_failure(
     assert not list(tmp_path.glob(f".{PACKAGE_DIRECTORY_NAME}.staging-*"))
 
 
+def test_atomic_stage_retains_sole_backup_across_blocked_retries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / PACKAGE_DIRECTORY_NAME
+    backup = tmp_path / f".{PACKAGE_DIRECTORY_NAME}.previous"
+    target.mkdir()
+    (target / "marker").write_bytes(b"original")
+    sibling = tmp_path / "unrelated"
+    sibling.write_bytes(b"keep")
+    replace = Path.replace
+    blocked = True
+
+    def controlled_replace(source: Path, destination: Path) -> Path:
+        if blocked and destination == target:
+            raise PermissionError("injected move failure")
+        return replace(source, destination)
+
+    def populate(staging: Path) -> None:
+        (staging / "marker").write_bytes(b"replacement")
+
+    monkeypatch.setattr(Path, "replace", controlled_replace)
+    for _attempt in range(2):
+        with pytest.raises((ReleaseCoreError, OSError)):
+            atomic_stage(target, populate)
+        assert not target.exists()
+        assert (backup / "marker").read_bytes() == b"original"
+        assert sibling.read_bytes() == b"keep"
+        assert not list(tmp_path.glob(f".{PACKAGE_DIRECTORY_NAME}.staging-*"))
+
+    blocked = False
+
+    def fail_after_recovery(_staging: Path) -> None:
+        assert (target / "marker").read_bytes() == b"original"
+        raise ReleaseCoreError("piper-core-test-failure")
+
+    with pytest.raises(ReleaseCoreError, match="^piper-core-test-failure$"):
+        atomic_stage(target, fail_after_recovery)
+    assert (target / "marker").read_bytes() == b"original"
+    atomic_stage(target, populate)
+    assert (target / "marker").read_bytes() == b"replacement"
+    assert not backup.exists()
+    assert sibling.read_bytes() == b"keep"
+
+
 def test_generated_manifest_is_canonical_and_content_free(tmp_path: Path) -> None:
     files = {
         "runtime/python.exe": b"python",

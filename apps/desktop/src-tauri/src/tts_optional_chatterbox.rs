@@ -32,14 +32,18 @@ pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-defaul
 const PACKAGE_ID: &str = "voxleaf-chatterbox-v7";
 const PACKAGE_VERSION: &str = "7";
 const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v7.json";
-const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
+// Published v2 correction identities are historical authority. Current shared
+// schema generation must not change which retained v2 package can be removed.
+const GENERATED_RUNTIME_FILES: [(&str, u64, &str); 2] = [
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
-        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/__init__.py"),
+        62,
+        "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
     ),
     (
         "runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py",
-        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/protocol_schemas.py"),
+        37_039,
+        "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650",
     ),
 ];
 const MODEL_REVISION: &str = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18";
@@ -535,15 +539,11 @@ fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
     correction.accepted_runtime_manifest_sha256
         == "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
         && correction.files.len() == GENERATED_RUNTIME_FILES.len()
-        && correction
-            .files
-            .iter()
-            .zip(GENERATED_RUNTIME_FILES)
-            .all(|(record, (path, contents))| {
-                record.path == path
-                    && record.size_bytes == contents.len() as u64
-                    && record.sha256 == encode_sha256(Sha256::digest(contents))
-            })
+        && correction.files.iter().zip(GENERATED_RUNTIME_FILES).all(
+            |(record, (path, size, sha256))| {
+                record.path == path && record.size_bytes == size && record.sha256 == sha256
+            },
+        )
 }
 
 fn validate_runtime_artifact(

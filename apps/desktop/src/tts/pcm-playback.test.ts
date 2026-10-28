@@ -1,4 +1,8 @@
 import { decodeLocatorRangeV1, decodeReadingLocatorV1 } from "@voxleaf/shared";
+import { MessageChannel, Worker } from "node:worker_threads";
+import path from "node:path";
+import process from "node:process";
+import { pathToFileURL } from "node:url";
 import {
   createManualClock,
   VALID_SYNTHETIC_DOCUMENT_FIXTURE,
@@ -29,6 +33,102 @@ import type { PlaybackTransitionPauseMs } from "./playback-transition-policy";
 const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-playback-1",
   generationId: "generation:synthetic-playback-1",
+});
+
+it("CHAT-AUDIT F09 rejects a prior unit failure delivered FIFO after its ended callback starts the successor", async () => {
+  const channel = new MessageChannel();
+  const flags = new Int32Array(new SharedArrayBuffer(12));
+  const worker = new Worker(
+    `
+    const {parentPort, workerData} = require('node:worker_threads');
+    const flags = new Int32Array(workerData.flags);
+    let processor;
+    globalThis.currentFrame = 0;
+    globalThis.AudioWorkletProcessor = class { port = workerData.port; };
+    globalThis.registerProcessor = (_name, Type) => { processor = new Type(); };
+    import(workerData.source).then(() => {
+      const receive = processor.port.onmessage;
+      processor.port.onmessage = event => {
+        receive(event);
+        if (event.data.type === 'start') { Atomics.store(flags,0,1); Atomics.notify(flags,0); }
+        if (event.data.type === 'pause') { Atomics.store(flags,2,1); Atomics.notify(flags,2); }
+      };
+      parentPort.on('message', () => {
+        processor.process([], [[new Float32Array(128)]]);
+        Atomics.store(flags,1,1); Atomics.notify(flags,1);
+      });
+      parentPort.postMessage('ready');
+    }).catch(error => { throw error; });
+  `,
+    {
+      eval: true,
+      workerData: {
+        port: channel.port2,
+        flags: flags.buffer,
+        source: pathToFileURL(
+          path.resolve(
+            process.cwd(),
+            "src/tts/playback-backends/incremental-wsola-v3-worklet.ts",
+          ),
+        ).href,
+      },
+      transferList: [channel.port2],
+    },
+  );
+  const context = new FakeAudioContext();
+  const node = { port: channel.port1, connect: vi.fn(), disconnect: vi.fn() };
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+    async () => ({
+      node: node as unknown as AudioWorkletNode,
+      close: () => channel.port1.close(),
+    }),
+  );
+  try {
+    await new Promise<void>((resolve, reject) => {
+      worker.once("message", () => resolve());
+      worker.once("error", reject);
+    });
+    await backend.preparePlaybackRate(75);
+    const failed = vi.fn();
+    const request = {
+      sequence: 1,
+      payload: new Uint8Array(64),
+      sampleRateHz: 24_000,
+      channelCount: 1,
+      sampleFormat: "float32-le",
+      sampleCountSamples: 16,
+      startSampleFrame: 0,
+      volumePercent: 100,
+      playbackRate: 0.75,
+    } as const;
+    const ended = vi.fn(() => {
+      backend.start({ ...request, sequence: 2 }, { ended: vi.fn(), failed });
+    });
+    const first = backend.start(request, { ended, failed: vi.fn() });
+    expect(Atomics.wait(flags, 0, 0, 2000)).not.toBe("timed-out");
+    worker.postMessage("render");
+    expect(Atomics.wait(flags, 1, 0, 2000)).not.toBe("timed-out");
+    // The audio thread has ended A, while this busy main thread has not yet
+    // received that event. Pause A is still a valid product action here.
+    first.pause();
+    expect(Atomics.wait(flags, 2, 0, 2000)).not.toBe("timed-out");
+    await vi.waitFor(() => expect(ended).toHaveBeenCalledOnce());
+    // Give the second FIFO message the same event-loop opportunity as ended.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    expect(failed).not.toHaveBeenCalled();
+    node.port.postMessage({
+      type: "arm",
+      input: new Float32Array(),
+      ratePercent: 75,
+      unitSequence: 2,
+    });
+    await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
+  } finally {
+    backend.close();
+    channel.port1.close();
+    await worker.terminate();
+  }
 });
 const SOURCE_START = decodeReadingLocatorV1(
   VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[0]!.locator,

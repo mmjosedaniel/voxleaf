@@ -15,6 +15,22 @@
     "providers"
   ],
   "properties": {
+    "cudaComputeCapability": {
+      "description": "Compute capability of the same default visible CUDA device as providers.cuda. Missing or unknown never establishes an exact runtime architecture.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "major", "minor"],
+          "properties": {
+            "status": { "const": "known" },
+            "major": { "type": "integer", "minimum": 2, "maximum": 255 },
+            "minor": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
+        },
+        { "$ref": "#/$defs/unknownQuantity" }
+      ]
+    },
     "schemaVersion": {
       "allOf": [
         {

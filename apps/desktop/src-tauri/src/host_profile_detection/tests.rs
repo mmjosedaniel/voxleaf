@@ -4,6 +4,73 @@ use serde_json::Value;
 
 use super::*;
 
+#[test]
+fn chat_audit_f01_reports_actual_default_cuda_architecture() {
+    let report = normalize_snapshot(complete_snapshot());
+    assert_eq!(
+        report.providers.cuda.precisions.bfloat16,
+        Availability::Available
+    );
+    let value = serde_json::to_value(report).unwrap();
+    assert_eq!(
+        value["cudaComputeCapability"],
+        serde_json::json!({"status":"known", "major":12, "minor":0})
+    );
+}
+
+#[test]
+fn chat_audit_f02_does_not_treat_dxgi_budget_as_free_cuda_memory() {
+    let mut snapshot = complete_snapshot();
+    if let ProbeValue::Known(adapters) = &mut snapshot.adapters {
+        adapters[0].available_dedicated_memory_bytes = Some(gibibytes(1));
+    }
+    let report = normalize_snapshot(snapshot);
+    // The CUDA provider observation, not this process's DXGI budget, owns free VRAM.
+    assert_ne!(
+        report.providers.cuda.available_dedicated_memory_mi_b,
+        Quantity::Known { value: 1024 }
+    );
+}
+
+#[test]
+fn chat_audit_f02_unknown_free_cuda_memory_preserves_complete_cpu_facts() {
+    let mut snapshot = complete_snapshot();
+    if let ProbeValue::Known(devices) = &mut snapshot.cuda_devices {
+        devices[0].cuda_available_memory_bytes = None;
+    }
+    let report = normalize_snapshot(snapshot);
+    assert_eq!(report.probe_status, ProbeStatus::Complete);
+    assert_eq!(report.providers.cuda.availability, Availability::Available);
+    assert_eq!(
+        report.providers.cuda.available_dedicated_memory_mi_b,
+        Quantity::Unknown
+    );
+    assert_eq!(report.providers.cpu.availability, Availability::Available);
+    assert!(!optional_cuda_bf16_profile_admitted_from_report(
+        report, 8, 24_576, 4_096, 5_632, 4_668
+    ));
+}
+
+#[test]
+fn chat_audit_f01_rejects_unsupported_and_unknown_default_architectures() {
+    for capability in [
+        None,
+        Some((8, 0)),
+        Some((9, 0)),
+        Some((12, 1)),
+        Some((12, 0)),
+    ] {
+        let mut snapshot = threshold_optional_snapshot();
+        if let ProbeValue::Known(devices) = &mut snapshot.cuda_devices {
+            devices[0].cuda_compute_capability = capability;
+        }
+        assert_eq!(
+            optional_profile_admitted(snapshot),
+            capability == Some((12, 0))
+        );
+    }
+}
+
 #[cfg(windows)]
 #[test]
 fn ncc_storage_measures_destination_not_executable_volume() {
@@ -171,6 +238,8 @@ fn complete_snapshot() -> NativeHostSnapshot {
             available_dedicated_memory_bytes: Some(gibibytes(9)),
         }]),
         cuda_devices: ProbeValue::Known(vec![NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 1,
             precisions: cuda_precisions(),
         }]),
@@ -191,6 +260,9 @@ fn threshold_optional_snapshot() -> NativeHostSnapshot {
         dedicated_memory_bytes: Some(mebibytes(5_632)),
         available_dedicated_memory_bytes: Some(mebibytes(4_668)),
     }]);
+    if let ProbeValue::Known(devices) = &mut snapshot.cuda_devices {
+        devices[0].cuda_available_memory_bytes = Some(mebibytes(4_668));
+    }
     snapshot
 }
 
@@ -246,6 +318,9 @@ fn optional_download_gate_rejects_one_below_every_numeric_threshold() {
         dedicated_memory_bytes: Some(mebibytes(5_632)),
         available_dedicated_memory_bytes: Some(mebibytes(4_667)),
     }]);
+    if let ProbeValue::Known(devices) = &mut insufficient.cuda_devices {
+        devices[0].cuda_available_memory_bytes = Some(mebibytes(4_667));
+    }
     assert!(!optional_profile_admitted(insufficient));
 }
 
@@ -275,6 +350,9 @@ fn optional_download_gate_fails_closed_for_each_unknown_capacity() {
         dedicated_memory_bytes: Some(mebibytes(5_632)),
         available_dedicated_memory_bytes: None,
     }]);
+    if let ProbeValue::Known(devices) = &mut unknown.cuda_devices {
+        devices[0].cuda_available_memory_bytes = None;
+    }
     assert!(!optional_profile_admitted(unknown));
 }
 
@@ -350,6 +428,7 @@ fn normalizes_complete_snapshot_without_identity_or_support_claims() {
             .map(String::as_str)
             .collect::<BTreeSet<_>>(),
         BTreeSet::from([
+            "cudaComputeCapability",
             "memory",
             "platform",
             "probeStatus",
@@ -452,10 +531,14 @@ fn selects_default_cuda_and_best_directml_candidate() {
     ]);
     snapshot.cuda_devices = ProbeValue::Known(vec![
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(6)),
             luid: 1,
             precisions: cuda_precisions(),
         },
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 2,
             precisions: cuda_precisions(),
         },
@@ -495,20 +578,24 @@ fn nlc04_rejects_insufficient_or_unmapped_default_even_with_eligible_secondary()
         secondary.luid = 2;
         adapters.push(secondary);
         let mut default = NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 1,
             precisions: cuda_precisions(),
         };
         match default_kind {
-            "insufficient" => adapters[0].available_dedicated_memory_bytes = Some(gibibytes(1)),
+            "insufficient" => default.cuda_available_memory_bytes = Some(gibibytes(1)),
             "unmapped" => default.luid = 99,
             "ambiguous" => adapters.push(adapters[0]),
-            "unknown-memory" => adapters[0].available_dedicated_memory_bytes = None,
+            "unknown-memory" => default.cuda_available_memory_bytes = None,
             "unusable" => default.precisions = unavailable_precisions(),
             _ => unreachable!(),
         }
         snapshot.cuda_devices = ProbeValue::Known(vec![
             default,
             NativeProviderDevice {
+                cuda_compute_capability: Some((12, 0)),
+                cuda_available_memory_bytes: Some(gibibytes(9)),
                 luid: 2,
                 precisions: cuda_precisions(),
             },
@@ -536,10 +623,14 @@ fn discarded_unusable_adapter_does_not_poison_a_known_provider() {
     ]);
     snapshot.directml_devices = ProbeValue::Known(vec![
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 1,
             precisions: directml_precisions(),
         },
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 2,
             precisions: directml_precisions(),
         },
@@ -588,6 +679,8 @@ fn preserves_integrated_only_low_memory_and_no_provider_scenarios() {
     }]);
     integrated.cuda_devices = ProbeValue::Unavailable;
     integrated.directml_devices = ProbeValue::Known(vec![NativeProviderDevice {
+        cuda_compute_capability: Some((12, 0)),
+        cuda_available_memory_bytes: Some(gibibytes(9)),
         luid: 3,
         precisions: directml_precisions(),
     }]);
@@ -648,10 +741,14 @@ fn fails_closed_for_unknown_provider_and_ambiguous_exact_tie() {
     tied.cuda_devices = ProbeValue::Unavailable;
     tied.directml_devices = ProbeValue::Known(vec![
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 4,
             precisions: cuda_precisions(),
         },
         NativeProviderDevice {
+            cuda_compute_capability: Some((12, 0)),
+            cuda_available_memory_bytes: Some(gibibytes(9)),
             luid: 5,
             precisions: PrecisionReport {
                 bfloat16: Availability::Unavailable,
