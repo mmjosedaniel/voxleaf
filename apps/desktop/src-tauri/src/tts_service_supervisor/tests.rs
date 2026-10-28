@@ -7,6 +7,544 @@ thread_local! {
     static CHATTERBOX_OBSERVER: std::cell::RefCell<Option<(PathBuf, PathBuf, PathBuf)>> = const { std::cell::RefCell::new(None) };
     static START_PUBLISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static SHUTDOWN_BUSY_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static SYNTHETIC_COMMAND_SESSION: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static COMMAND_CLOCK: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
+    static COMMAND_BUDGET: std::cell::Cell<Option<Duration>> = const { std::cell::Cell::new(None) };
+    static CONTROL_WRITE_HOOK: std::cell::RefCell<Option<ControlWriteHook>> = const { std::cell::RefCell::new(None) };
+    static RECEIVE_HOOK: std::cell::RefCell<Option<ReceiveHook>> = const { std::cell::RefCell::new(None) };
+}
+
+type ControlWriteHook = Box<dyn FnMut(&Value) -> Result<(), TtsNativeFailure>>;
+type ReceiveHook = Box<dyn FnMut(Duration) -> Result<Frame, TtsNativeFailure>>;
+
+pub(super) fn spawn_session_hook(
+    id: &str,
+    start_request_id: &Option<String>,
+) -> Option<Arc<ServiceSession>> {
+    SYNTHETIC_COMMAND_SESSION.get().then(|| {
+        let (mut session, _sender) = channel_session();
+        session.service_instance_id = id.to_owned();
+        session.start_request_id = start_request_id.clone();
+        Arc::new(session)
+    })
+}
+
+pub(super) fn command_clock() -> Option<Instant> {
+    COMMAND_CLOCK.get()
+}
+
+pub(super) fn command_timeout_override() -> Option<Duration> {
+    COMMAND_BUDGET.get()
+}
+
+pub(super) fn write_control_hook(value: &Value) -> Option<Result<(), TtsNativeFailure>> {
+    CONTROL_WRITE_HOOK.with(|slot| slot.borrow_mut().as_mut().map(|hook| hook(value)))
+}
+
+pub(super) fn receive_hook(timeout: Duration) -> Option<Result<Frame, TtsNativeFailure>> {
+    RECEIVE_HOOK.with(|slot| slot.borrow_mut().as_mut().map(|hook| hook(timeout)))
+}
+
+struct CommandFixture;
+
+impl CommandFixture {
+    fn new(delay: Duration, slow_command: &'static str) -> Self {
+        Self::with_extra(delay, slow_command, Duration::ZERO)
+    }
+
+    fn with_extra(delay: Duration, slow_command: &'static str, final_extra: Duration) -> Self {
+        SYNTHETIC_COMMAND_SESSION.set(true);
+        COMMAND_CLOCK.set(Some(Instant::now()));
+        COMMAND_BUDGET.set(Some(Duration::from_millis(10)));
+        CONTROL_WRITE_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |control| {
+                let id = control["serviceInstanceId"].as_str().unwrap();
+                let kind = control["kind"].as_str().unwrap();
+                let record = |value: Value| Frame {
+                    kind: FrameKind::Control,
+                    payload: encode_control(&value).unwrap(),
+                };
+                let capabilities = || record(json!({
+                    "schemaVersion": 1, "protocolVersion": 1, "kind": "capabilities",
+                    "serviceInstanceId": id,
+                    "report": {"schemaVersion": 1, "capabilities": {
+                        "localSpeechGeneration": "unknown", "streamingGeneration": "unsupported",
+                        "generationCancellation": "unsupported", "hardwareAcceleration": "unknown",
+                        "cpuFallback": "unsupported"
+                    }},
+                    "cancellationContainment": "identity-invalidation-then-worker-termination"
+                }));
+                let state = |state: &str| state_frame(id, state);
+                let frames = match kind {
+                    "handshake" => vec![state("handshaking"), record(service_control("handshakeAccepted", id)), state("unloaded"), capabilities()],
+                    "load" => vec![state("loading"), state("warming")],
+                    "warm" => vec![state("ready"), capabilities()],
+                    "health" => vec![state("ready"), capabilities()],
+                    "shutdown" => vec![state("stopping"), state("stopped")],
+                    "synthesize" => {
+                        let segment = &control["segment"];
+                        let identity = json!({"requestId": control["requestId"],
+                            "sessionId": segment["sessionId"], "generationId": segment["generationId"],
+                            "segmentId": segment["segmentId"]});
+                        vec![state("generating"), record(json!({
+                            "schemaVersion": 1, "protocolVersion": 1, "kind": "audioMetadata",
+                            "serviceInstanceId": id, "requestId": control["requestId"],
+                            "frame": {"schemaVersion": 1, "frameId": control["requestId"],
+                                "sessionId": segment["sessionId"], "generationId": segment["generationId"],
+                                "segmentId": segment["segmentId"], "sequence": 0, "sampleRateHz": 24000,
+                                "sampleCountSamples": 1, "channelCount": 1, "endOfSegment": true},
+                            "sampleFormat": "float32-le", "payloadBytes": 4
+                        })), Frame {kind: FrameKind::Audio, payload: vec![0; 4]},
+                        record(json!({"schemaVersion": 1, "protocolVersion": 1, "kind": "completed",
+                            "serviceInstanceId": id, "workIdentity": identity})), state("ready")]
+                    }
+                    _ => panic!("unexpected command"),
+                };
+                let frame_delay = if kind == slow_command || (slow_command == "prepare" && matches!(kind, "load" | "warm")) { delay } else { Duration::ZERO };
+                let mut frames = frames.into_iter();
+                RECEIVE_HOOK.with(|slot| {
+                    *slot.borrow_mut() = Some(Box::new(move |timeout| {
+                        let now = COMMAND_CLOCK.get().unwrap();
+                        let frame_delay = frame_delay + if frames.len() == 1 { final_extra } else { Duration::ZERO };
+                        if frame_delay > timeout {
+                            COMMAND_CLOCK.set(Some(now + timeout));
+                            return Err(TtsNativeFailure::TimedOut);
+                        }
+                        COMMAND_CLOCK.set(Some(now + frame_delay));
+                        frames.next().ok_or(TtsNativeFailure::ChildUnavailable)
+                    }));
+                });
+                Ok(())
+            }));
+        });
+        Self
+    }
+}
+
+impl Drop for CommandFixture {
+    fn drop(&mut self) {
+        SYNTHETIC_COMMAND_SESSION.set(false);
+        COMMAND_CLOCK.set(None);
+        COMMAND_BUDGET.set(None);
+        CONTROL_WRITE_HOOK.with(|slot| slot.borrow_mut().take());
+        RECEIVE_HOOK.with(|slot| slot.borrow_mut().take());
+    }
+}
+
+#[test]
+fn sac12_commands_reject_cumulatively_late_responses_without_renewing_budget() {
+    for command in [
+        "handshake",
+        "load",
+        "warm",
+        "health",
+        "synthesize",
+        "shutdown",
+    ] {
+        let _fixture = CommandFixture::new(Duration::from_millis(6), command);
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        let (session, _sender) = channel_session();
+        if command != "handshake" {
+            *supervisor.session.lock().unwrap() = Some(Arc::new(session));
+        }
+        supervisor
+            .set_state(if matches!(command, "load" | "warm") {
+                "unloaded"
+            } else {
+                "ready"
+            })
+            .unwrap();
+        let result = match command {
+            "handshake" => supervisor.start().map(|_| ()),
+            "load" | "warm" => supervisor.prepare().map(|_| ()),
+            "health" => supervisor.health().map(|_| ()),
+            "synthesize" => supervisor.synthesize(fixture_segment()).map(|_| ()),
+            "shutdown" => supervisor.shutdown().map(|_| ()),
+            _ => unreachable!(),
+        };
+        assert_eq!(result, Err(TtsNativeFailure::TimedOut), "{command}");
+        assert!(supervisor.session.lock().unwrap().is_none(), "{command}");
+    }
+}
+
+#[test]
+fn sac12_command_deadlines_are_inclusive_and_load_and_warm_are_separate() {
+    for command in [
+        "handshake",
+        "load",
+        "warm",
+        "health",
+        "synthesize",
+        "shutdown",
+    ] {
+        for final_extra in [Duration::ZERO, Duration::from_millis(1)] {
+            let delay = match command {
+                "synthesize" => Duration::from_millis(2),
+                "handshake" => Duration::from_micros(2500),
+                _ => Duration::from_millis(5),
+            };
+            let _fixture = CommandFixture::with_extra(delay, command, final_extra);
+            let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+            let (session, _sender) = channel_session();
+            if command != "handshake" {
+                *supervisor.session.lock().unwrap() = Some(Arc::new(session));
+            }
+            supervisor
+                .set_state(if matches!(command, "load" | "warm") {
+                    "unloaded"
+                } else {
+                    "ready"
+                })
+                .unwrap();
+            let result = match command {
+                "handshake" => supervisor.start().map(|_| ()),
+                "load" | "warm" => supervisor.prepare().map(|_| ()),
+                "health" => supervisor.health().map(|_| ()),
+                "synthesize" => supervisor.synthesize(fixture_segment()).map(|_| ()),
+                "shutdown" => supervisor.shutdown().map(|_| ()),
+                _ => unreachable!(),
+            };
+            assert_eq!(
+                result,
+                if final_extra.is_zero() {
+                    Ok(())
+                } else {
+                    Err(TtsNativeFailure::TimedOut)
+                },
+                "{command}, {final_extra:?}"
+            );
+        }
+    }
+    // Both commands can spend their whole budget; warm never inherits load's deadline.
+    let _fixture = CommandFixture::new(Duration::from_millis(5), "prepare");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, _sender) = channel_session();
+    let session = Arc::new(session);
+    *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+    supervisor.set_state("unloaded").unwrap();
+    let initial = COMMAND_CLOCK.get().unwrap();
+    assert!(supervisor.prepare().is_ok());
+    assert_eq!(
+        COMMAND_CLOCK.get().unwrap() - initial,
+        Duration::from_millis(20)
+    );
+}
+
+#[test]
+fn sac12_expired_or_late_queued_controls_never_update_lifecycle() {
+    for late_after_receive in [false, true] {
+        let _fixture = CommandFixture::new(Duration::ZERO, "health");
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        let (session, sender) = channel_session();
+        let session = Arc::new(session);
+        *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+        supervisor.set_state("loading").unwrap();
+        let deadline = CommandDeadline::new(Duration::from_millis(10));
+        sender
+            .send(Ok(state_frame(&session.service_instance_id, "ready")))
+            .unwrap();
+        if late_after_receive {
+            RECEIVE_HOOK.with(|slot| {
+                *slot.borrow_mut() = Some(Box::new(|_| {
+                    COMMAND_CLOCK.set(Some(
+                        COMMAND_CLOCK.get().unwrap()
+                            + Duration::from_millis(10)
+                            + Duration::from_millis(1),
+                    ));
+                    Ok(state_frame("service:synthetic-1", "ready"))
+                }))
+            });
+        } else {
+            COMMAND_CLOCK.set(Some(
+                COMMAND_CLOCK.get().unwrap() + Duration::from_millis(10) + Duration::from_millis(1),
+            ));
+        }
+        assert_eq!(
+            supervisor.receive_expected_state(&session, &deadline, "ready"),
+            Err(TtsNativeFailure::TimedOut)
+        );
+        assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
+    }
+}
+
+#[test]
+fn sac12_dispatch_time_counts_against_the_command_deadline() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "health");
+    CONTROL_WRITE_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(|_| {
+            COMMAND_CLOCK.set(Some(
+                COMMAND_CLOCK.get().unwrap() + Duration::from_millis(10) + Duration::from_millis(1),
+            ));
+            Ok(())
+        }))
+    });
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, _sender) = channel_session();
+    *supervisor.session.lock().unwrap() = Some(Arc::new(session));
+    assert_eq!(supervisor.health(), Err(TtsNativeFailure::TimedOut));
+    assert!(supervisor.session.lock().unwrap().is_none());
+}
+
+#[cfg(windows)]
+fn stdin_pipe_capacity(input: &impl AsRawHandle) -> usize {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetNamedPipeInfo(
+            pipe: *mut std::ffi::c_void,
+            flags: *mut u32,
+            output_buffer_size: *mut u32,
+            input_buffer_size: *mut u32,
+            maximum_instances: *mut u32,
+        ) -> i32;
+    }
+    let mut output_capacity = 0;
+    let mut input_capacity = 0;
+    assert_ne!(
+        unsafe {
+            GetNamedPipeInfo(
+                input.as_raw_handle(),
+                std::ptr::null_mut(),
+                &mut output_capacity,
+                &mut input_capacity,
+                std::ptr::null_mut(),
+            )
+        },
+        0
+    );
+    let capacity = output_capacity.max(input_capacity);
+    assert!(capacity > 0 && capacity <= 1_048_576);
+    capacity as usize
+}
+
+#[cfg(windows)]
+fn backpressure_child_command() -> Command {
+    let mut command = Command::new(std::env::current_exe().unwrap());
+    let capacity_path = BACKPRESSURE_CAPACITY_PATH.with(|path| path.borrow().clone().unwrap());
+    command
+        .args([
+            "--exact",
+            "tts_service_supervisor::tests::stdin_backpressure_child_fixture",
+            "--ignored",
+            "--nocapture",
+        ])
+        .env(
+            "VOXLEAF_STDIN_BACKPRESSURE_PARENT",
+            std::process::id().to_string(),
+        )
+        .env("VOXLEAF_STDIN_BACKPRESSURE_CAPACITY", capacity_path);
+    command
+}
+
+#[cfg(windows)]
+thread_local! {
+    static BACKPRESSURE_CAPACITY_PATH: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(windows)]
+fn backpressure_session() -> (Arc<ServiceSession>, usize) {
+    let root = std::env::temp_dir().join(format!(
+        "voxleaf-stdin-capacity-{}-{}",
+        std::process::id(),
+        REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed)
+    ));
+    fs::create_dir(&root).unwrap();
+    let capacity_path = root.join("capacity");
+    BACKPRESSURE_CAPACITY_PATH.with(|path| *path.borrow_mut() = Some(capacity_path.clone()));
+    let session = ServiceSession::spawn(
+        &ServiceChild::TestCommand(backpressure_child_command),
+        "service:backpressure".to_owned(),
+        None,
+    )
+    .unwrap();
+    BACKPRESSURE_CAPACITY_PATH.with(|path| path.borrow_mut().take());
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !capacity_path.exists() {
+        assert!(
+            Instant::now() < deadline,
+            "stdin fixture did not publish capacity"
+        );
+        thread::sleep(POLL_INTERVAL);
+    }
+    let capacity = fs::read_to_string(&capacity_path).unwrap().parse().unwrap();
+    fs::remove_file(capacity_path).unwrap();
+    fs::remove_dir(root).unwrap();
+    (session, capacity)
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "subprocess fixture selected only by bounded-stdin tests"]
+fn stdin_backpressure_child_fixture() {
+    use windows_sys::Win32::{
+        Foundation::WAIT_OBJECT_0,
+        System::Threading::{INFINITE, OpenProcess, PROCESS_SYNCHRONIZE, WaitForSingleObject},
+    };
+    let Ok(parent) = std::env::var("VOXLEAF_STDIN_BACKPRESSURE_PARENT") else {
+        return;
+    };
+    let parent = unsafe { OpenProcess(PROCESS_SYNCHRONIZE, 0, parent.parse().unwrap()) };
+    assert!(!parent.is_null());
+    let parent = unsafe { OwnedHandle::from_raw_handle(parent) };
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetStdHandle(kind: u32) -> *mut std::ffi::c_void;
+    }
+    let input =
+        unsafe { std::os::windows::io::BorrowedHandle::borrow_raw(GetStdHandle((-10_i32) as u32)) };
+    let capacity = stdin_pipe_capacity(&input);
+    let capacity_path =
+        PathBuf::from(std::env::var_os("VOXLEAF_STDIN_BACKPRESSURE_CAPACITY").unwrap());
+    let partial = capacity_path.with_extension("partial");
+    fs::write(&partial, capacity.to_string()).unwrap();
+    fs::rename(partial, capacity_path).unwrap();
+    // No stdin read: the real anonymous pipe necessarily applies backpressure.
+    assert_eq!(
+        unsafe { WaitForSingleObject(parent.as_raw_handle(), INFINITE) },
+        WAIT_OBJECT_0
+    );
+}
+
+#[cfg(windows)]
+fn fill_stdin_to_capacity(session: &ServiceSession, stdin_capacity: usize) -> Value {
+    let mut control: Value = serde_json::from_str(include_str!(
+        "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
+    )).unwrap();
+    control["serviceInstanceId"] = json!(session.service_instance_id);
+    control["segment"]["text"] = json!("x".repeat(MAX_NARRATION_CODE_POINTS));
+    let frame_bytes =
+        encode_control(&control).unwrap().len() + crate::tts_service_protocol::HEADER_BYTES;
+    let mut filled = 0;
+    while filled + frame_bytes <= stdin_capacity {
+        CommandDeadline::new(Duration::from_secs(1))
+            .write_control(session, &control)
+            .unwrap();
+        filled += frame_bytes;
+    }
+    assert!(filled <= 1_048_576);
+    control
+}
+
+#[cfg(windows)]
+#[test]
+fn sac12_real_blocked_stdin_dispatch_times_out_and_releases_only_its_owner() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, stdin_capacity) = backpressure_session();
+    *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+    let rescued = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let watchdog_session = Arc::clone(&session);
+    let watchdog_rescued = Arc::clone(&rescued);
+    let (blocked, blocked_rx) = mpsc::sync_channel(1);
+    let (finished, finished_rx) = mpsc::sync_channel(1);
+    let watchdog = thread::spawn(move || {
+        let entered = blocked_rx.recv_timeout(Duration::from_secs(2)).is_ok();
+        let finished = entered && finished_rx.recv_timeout(Duration::from_secs(3)).is_ok();
+        if !finished {
+            watchdog_rescued.store(true, Ordering::Release);
+            // Bypass ServiceSession/input ownership so the original defect cannot hang RED.
+            if let Some(process) = watchdog_session.process.lock().unwrap().as_mut() {
+                process.terminate().unwrap();
+            }
+        }
+    });
+    let control = fill_stdin_to_capacity(&session, stdin_capacity);
+    blocked.send(()).unwrap();
+    let began = Instant::now();
+    let result = CommandDeadline::new(Duration::from_millis(100)).write_control(&session, &control);
+    let dispatch_elapsed = began.elapsed();
+    let contained = supervisor.fail_session(&session, result.unwrap_err());
+    let elapsed = began.elapsed();
+    finished.send(()).ok();
+    watchdog.join().unwrap();
+    assert!(
+        !rescued.load(Ordering::Acquire),
+        "the blocked writer required watchdog rescue"
+    );
+    assert_eq!(contained, TtsNativeFailure::TimedOut);
+    assert!(dispatch_elapsed < Duration::from_millis(500));
+    assert!(elapsed < Duration::from_millis(2500));
+    eprintln!(
+        "SAC12 blocked dispatch: quota_bytes={stdin_capacity}, dispatch_ms={}, cleanup_total_ms={}, watchdog=false",
+        dispatch_elapsed.as_millis(),
+        elapsed.as_millis()
+    );
+    assert!(session.process.lock().unwrap().is_none());
+    assert!(session.input.worker.lock().unwrap().is_none());
+    assert!(!session.input.busy.load(Ordering::Acquire));
+    assert!(supervisor.session.lock().unwrap().is_none());
+    let (mut replacement, _sender) = channel_session();
+    replacement.service_instance_id = "service:replacement".to_owned();
+    *supervisor.session.lock().unwrap() = Some(Arc::new(replacement));
+    assert_eq!(
+        supervisor.fail_session(&session, TtsNativeFailure::TimedOut),
+        TtsNativeFailure::Cancelled
+    );
+    assert_eq!(
+        supervisor.active_session().unwrap().service_instance_id,
+        "service:replacement"
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn sac12_cancel_interrupts_real_blocked_stdin_without_queuing_more_work() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (session, capacity) = backpressure_session();
+    *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+    let control = fill_stdin_to_capacity(&session, capacity);
+    let identity = build_work_identity(&fixture_segment()).unwrap();
+    supervisor.lifecycle.lock().unwrap().active = Some(identity.clone());
+    let rescued = Arc::new(AtomicBool::new(false));
+    let watchdog_session = Arc::clone(&session);
+    let watchdog_rescued = Arc::clone(&rescued);
+    let (finished, finished_rx) = mpsc::sync_channel(1);
+    let watchdog = thread::spawn(move || {
+        if finished_rx.recv_timeout(Duration::from_secs(3)).is_err() {
+            watchdog_rescued.store(true, Ordering::Release);
+            if let Some(process) = watchdog_session.process.lock().unwrap().as_mut() {
+                process.terminate().unwrap();
+            }
+        }
+    });
+    let writing_session = Arc::clone(&session);
+    let (writer_done, writer_done_rx) = mpsc::sync_channel(1);
+    let writing = thread::spawn(move || {
+        let result =
+            CommandDeadline::new(Duration::from_secs(1)).write_control(&writing_session, &control);
+        writer_done.send(result).unwrap();
+        result
+    });
+    let observed_blocked = matches!(
+        writer_done_rx.recv_timeout(Duration::from_millis(30)),
+        Err(RecvTimeoutError::Timeout)
+    );
+    let extra = session.input.enqueue(
+        &service_control("health", &session.service_instance_id),
+        Instant::now() + Duration::from_secs(1),
+    );
+    let began = Instant::now();
+    let cancelled = supervisor.cancel(CancelScope {
+        session_id: identity.session_id,
+        generation_id: identity.generation_id,
+        segment_id: identity.segment_id,
+    });
+    let elapsed = began.elapsed();
+    let written = writing.join().unwrap();
+    finished.send(()).ok();
+    watchdog.join().unwrap();
+    assert!(observed_blocked);
+    assert!(matches!(extra, Err(TtsNativeFailure::Busy)));
+    assert!(cancelled.is_ok(), "{cancelled:?}");
+    assert!(written.is_err());
+    assert!(!rescued.load(Ordering::Acquire));
+    assert!(elapsed < Duration::from_millis(2500));
+    eprintln!(
+        "SAC12 blocked cancel: quota_bytes={capacity}, containment_ms={}, watchdog=false",
+        elapsed.as_millis()
+    );
+    assert!(session.process.lock().unwrap().is_none());
+    assert!(session.input.worker.lock().unwrap().is_none());
+    assert!(!session.input.busy.load(Ordering::Acquire));
+    assert!(supervisor.session.lock().unwrap().is_none());
 }
 
 pub(super) fn pause_start_after_publish() {
@@ -369,7 +907,7 @@ fn channel_session() -> (
     let session = ServiceSession {
         service_instance_id: "service:synthetic-1".to_owned(),
         start_request_id: None,
-        input: Mutex::new(None),
+        input: ControlWriter::empty(),
         frames: Mutex::new(frames),
         process: Mutex::new(None),
     };
@@ -423,7 +961,12 @@ fn clb03_engine_errors_preserve_operational_classification() {
                 }))
                 .unwrap();
             assert_eq!(
-                supervisor.receive_control_with_engine_errors(&session, Duration::ZERO, kind, true),
+                supervisor.receive_control_with_engine_errors(
+                    &session,
+                    &CommandDeadline::new(Duration::from_secs(1)),
+                    kind,
+                    true
+                ),
                 Err(expected)
             );
             assert_eq!(supervisor.fail_session(&session, expected), expected);
@@ -552,7 +1095,7 @@ fn clb03_errors_do_not_weaken_identity_schema_or_sequence_validation() {
         assert_eq!(
             supervisor.receive_control_with_engine_errors(
                 &session,
-                Duration::ZERO,
+                &CommandDeadline::new(Duration::from_secs(1)),
                 kind,
                 fault != "disallowed"
             ),
@@ -591,7 +1134,7 @@ fn late_old_control_cannot_change_a_replacement_session() {
         .send(Ok(state_frame(&old.service_instance_id, "ready")))
         .unwrap();
     assert_eq!(
-        supervisor.receive_control(&old, Duration::ZERO, "state"),
+        supervisor.receive_control(&old, &CommandDeadline::new(Duration::from_secs(1)), "state"),
         Err(TtsNativeFailure::Cancelled)
     );
     assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
@@ -621,7 +1164,11 @@ fn expected_state_returns_original_control_and_updates_lifecycle() {
         .send(Ok(state_frame(&session.service_instance_id, "ready")))
         .expect("frame should be queued");
     assert_eq!(
-        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        supervisor.receive_expected_state(
+            &session,
+            &CommandDeadline::new(Duration::from_secs(1)),
+            "ready"
+        ),
         Ok(control)
     );
     assert_eq!(supervisor.lifecycle.lock().unwrap().state, "ready");
@@ -637,7 +1184,11 @@ fn unexpected_valid_state_updates_lifecycle_before_rejection() {
         .send(Ok(state_frame(&session.service_instance_id, "warming")))
         .expect("frame should be queued");
     assert_eq!(
-        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        supervisor.receive_expected_state(
+            &session,
+            &CommandDeadline::new(Duration::from_secs(1)),
+            "ready"
+        ),
         Err(TtsNativeFailure::ProtocolRejected)
     );
     assert_eq!(supervisor.lifecycle.lock().unwrap().state, "warming");
@@ -654,7 +1205,11 @@ fn wrong_service_identity_rejects_before_lifecycle_update() {
         .send(Ok(state_frame("service:synthetic-2", "ready")))
         .expect("frame should be queued");
     assert_eq!(
-        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        supervisor.receive_expected_state(
+            &session,
+            &CommandDeadline::new(Duration::from_secs(1)),
+            "ready"
+        ),
         Err(TtsNativeFailure::ProtocolRejected)
     );
     assert_eq!(supervisor.lifecycle.lock().unwrap().state, "loading");
@@ -665,12 +1220,20 @@ fn expected_state_preserves_timeout_and_disconnection_failures() {
     let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
     let (session, sender) = channel_session();
     assert_eq!(
-        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        supervisor.receive_expected_state(
+            &session,
+            &CommandDeadline::new(Duration::from_millis(1)),
+            "ready"
+        ),
         Err(TtsNativeFailure::TimedOut)
     );
     drop(sender);
     assert_eq!(
-        supervisor.receive_expected_state(&session, Duration::ZERO, "ready"),
+        supervisor.receive_expected_state(
+            &session,
+            &CommandDeadline::new(Duration::from_millis(1)),
+            "ready"
+        ),
         Err(TtsNativeFailure::ChildUnavailable)
     );
     assert_eq!(supervisor.lifecycle.lock().unwrap().state, "stopped");

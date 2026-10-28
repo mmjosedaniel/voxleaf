@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  jpegExifSegment,
+  syntheticJpegBytes,
+} from "../../../tests/fixtures/jpeg-fixture";
 
 import {
   createRasterImageSafetyPolicy,
@@ -182,6 +186,132 @@ function createAnimatedWebp(
 }
 
 describe("raster image predecode policy", () => {
+  it.each([true, false])(
+    "SAC-09 interprets bounded EXIF orientation with littleEndian=%s",
+    (littleEndian) => {
+      for (const orientation of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        expect(
+          inspectRasterImageMetadata(
+            syntheticJpegBytes(jpegExifSegment(orientation, littleEndian)),
+            "image/jpeg",
+          ),
+        ).toEqual({
+          status: "accepted",
+          metadata: {
+            widthPixels: orientation >= 5 ? 2 : 3,
+            heightPixels: orientation >= 5 ? 3 : 2,
+            decodedPixels: 6,
+            frameCount: 1,
+          },
+        });
+      }
+    },
+  );
+
+  it.each([
+    ["byte order", 10, 0],
+    ["TIFF magic", 12, 0],
+    ["IFD offset inside header", 14, 4],
+    ["IFD offset outside APP1", 14, 255],
+    ["truncated directory", 18, 2],
+    ["wrong tag type", 22, 4],
+    ["wrong tag count", 24, 2],
+    ["zero orientation", 28, 0],
+    ["unknown orientation", 28, 9],
+  ] as const)("SAC-09 rejects malformed EXIF %s", (_name, offset, value) => {
+    const exif = jpegExifSegment(6);
+    exif[offset] = value;
+    expect(
+      inspectRasterImageMetadata(syntheticJpegBytes(exif), "image/jpeg"),
+    ).toEqual({
+      status: "rejected",
+      reason: "invalid-image",
+    });
+  });
+
+  it("SAC-09 rejects duplicate orientation tags and EXIF segments", () => {
+    const exif = jpegExifSegment(6);
+    const duplicate = new Uint8Array([
+      ...exif.slice(0, 32),
+      ...exif.slice(20, 32),
+      0,
+      0,
+      0,
+      0,
+    ]);
+    duplicate[3] = 46;
+    duplicate[18] = 2;
+    for (const malformed of [duplicate, new Uint8Array([...exif, ...exif])]) {
+      expect(
+        inspectRasterImageMetadata(syntheticJpegBytes(malformed), "image/jpeg"),
+      ).toEqual({
+        status: "rejected",
+        reason: "invalid-image",
+      });
+    }
+  });
+
+  it("SAC-09 bounds EXIF to APP1 and leaves absent orientation unchanged", () => {
+    const noOrientation = jpegExifSegment(6);
+    noOrientation[20] = 0x13;
+    expect(
+      inspectRasterImageMetadata(
+        syntheticJpegBytes(noOrientation),
+        "image/jpeg",
+      ),
+    ).toMatchObject({
+      status: "accepted",
+      metadata: { widthPixels: 3, heightPixels: 2 },
+    });
+    for (const length of [8, 12, 20, 35]) {
+      const truncated = jpegExifSegment(6).slice(0, length);
+      truncated[3] = length - 2;
+      expect(
+        inspectRasterImageMetadata(syntheticJpegBytes(truncated), "image/jpeg"),
+      ).toEqual({
+        status: "rejected",
+        reason: "invalid-image",
+      });
+    }
+  });
+
+  it("SAC-09 enforces both raw and presented dimensions and unchanged pixels", () => {
+    const bytes = syntheticJpegBytes(jpegExifSegment(6));
+    const exact = createRasterImageSafetyPolicy({
+      maximumWidthPixels: 3,
+      maximumHeightPixels: 3,
+      maximumDecodedPixels: 6,
+    });
+    expect(inspectRasterImageMetadata(bytes, "image/jpeg", exact).status).toBe(
+      "accepted",
+    );
+    for (const bounds of [
+      { maximumWidthPixels: 2 },
+      { maximumHeightPixels: 2 },
+    ]) {
+      expect(
+        inspectRasterImageMetadata(
+          bytes,
+          "image/jpeg",
+          createRasterImageSafetyPolicy({ ...exact, ...bounds }),
+        ),
+      ).toEqual({
+        status: "rejected",
+        reason: "dimensions-exceeded",
+      });
+    }
+    expect(
+      inspectRasterImageMetadata(
+        bytes,
+        "image/jpeg",
+        createRasterImageSafetyPolicy({ ...exact, maximumDecodedPixels: 5 }),
+      ),
+    ).toEqual({
+      status: "rejected",
+      reason: "pixels-exceeded",
+    });
+  });
+
   it("freezes exact production limits for dimensions, pixels, animation, and lifetime", () => {
     expect(DEFAULT_RASTER_IMAGE_SAFETY_POLICY).toEqual({
       maximumWidthPixels: 8_192,

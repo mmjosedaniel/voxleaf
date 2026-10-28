@@ -27,6 +27,40 @@ import {
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
 
+test(
+  "lifecycle fixtures provide one marker for each declared optional root",
+  {
+    skip: process.platform !== "win32",
+  },
+  async () => {
+    const { lifecycleScript } = await loadReleaseDocuments(repositoryRoot());
+    const declarations = lifecycleScript.slice(
+      lifecycleScript.indexOf("$optionalRoots = @("),
+      lifecycleScript.indexOf("$preferenceMarker ="),
+    );
+    assert.ok(declarations.startsWith("$optionalRoots = @("));
+    const result = spawnSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-Command",
+        `
+$ErrorActionPreference = 'Stop'
+$dataRoot = Join-Path ([IO.Path]::GetTempPath()) 'voxleaf-synthetic-fixtures'
+$profileId = 'synthetic-profile'
+${declarations}
+if ($optionalRoots.Count -ne 9 -or $optionalMarkers.Count -ne $optionalRoots.Count) { throw 'optional-marker-count' }
+for ($index = 0; $index -lt $optionalRoots.Count; $index++) {
+  if ($optionalMarkers[$index] -ne (Join-Path $optionalRoots[$index] "optional-$index.marker")) { throw 'optional-marker-owner' }
+}
+`,
+      ],
+      { encoding: "utf8", windowsHide: true },
+    );
+    assert.equal(result.status, 0, result.stderr);
+  },
+);
+
 for (const lcf of [false, true]) {
   test(
     lcf

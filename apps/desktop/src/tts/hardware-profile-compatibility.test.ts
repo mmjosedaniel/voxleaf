@@ -1,7 +1,10 @@
 import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import { describe, expect, it, vi } from "vitest";
 
-import type { HardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
+import {
+  createWebStorageHardwareProfilePreferenceRepository,
+  type HardwareProfilePreferenceRepository,
+} from "../persistence/hardware-profile-preference";
 import type { NarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 import {
   HardwareProfileCompatibilityCoordinator,
@@ -427,6 +430,35 @@ describe("hardware profile compatibility coordinator", () => {
       subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
     ).resolves.toBe(true);
     expect(subject.observe().status).toBe("compatible");
+  });
+
+  it("SAC-03 applies an explicit profile after malformed stored JSON", async () => {
+    let value = "{";
+    const preferenceRepository =
+      createWebStorageHardwareProfilePreferenceRepository({
+        storage: () => ({
+          getItem: () => value,
+          setItem: (_key, next) => {
+            value = next;
+          },
+        }),
+      });
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ preference: preferenceRepository }),
+    );
+    await subject.check("application-start");
+    await expect(
+      subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
+    ).resolves.toBe(true);
+    expect(subject.observe()).toMatchObject({
+      status: "compatible",
+      selectionSource: "preference",
+      preferenceStatus: "used",
+    });
+    await expect(preferenceRepository.read()).resolves.toEqual({
+      status: "ready",
+      profileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+    });
   });
 
   it.each(["select", "reset"] as const)(

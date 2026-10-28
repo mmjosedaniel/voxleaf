@@ -2,7 +2,9 @@
 
 Planning date: 2026-10-28. Planning base: `4942ac74cbba70fc32711b1c86c024998c05b757`
 (`main`, PR #280). Branch: `codex/static-audit-corrections`.
-Status: planning complete; implementation and validation not started.
+Status: all fifteen corrections and required execution gates accepted in
+`SAC-R3-20261028-01`. The separate exact archive review and its identity recheck
+are recorded in the [final report](../evidence/static-audit-corrections/review-final.md).
 
 ## Goal
 
@@ -12,11 +14,11 @@ runtime/model versions and product constraints. Minimize validation by extending
 existing regression tests, sharing integration runs and reusing only evidence
 whose complete inputs and environment remain applicable.
 
-Current authorization is **create this plan, its index entry, a branch and a
-documentation commit only**. Do not implement this plan, execute its commands,
-run tests/builds/models, publish, push or open a PR during the planning task.
-Implementation requires a subsequent user instruction. That instruction does
-not itself authorize unrelated Git operations or external publication.
+Implementation was authorized after planning on the dedicated branch at
+`7c00f2f633ffd0c79043ab694f29b7defb46941a`. All fifteen corrections and their
+required acceptance are in scope. Commit, push, PR and merge remain prohibited.
+Subsequent authorization also permits uninstall/reinstall of the existing host
+installation for L1, with user-data preservation and verified restoration.
 
 ## User-visible outcome
 
@@ -145,7 +147,7 @@ than sleeping through production 120-second timeouts.
 
 ## Milestones
 
-### M0: Freeze scope and evidence decisions — not started
+### M0: Freeze scope and evidence decisions — complete
 
 At implementation start recheck HEAD, worktree/index, owners, existing assertions
 and current commands. Record the allowlist, full input/environment identities
@@ -160,7 +162,7 @@ that affected gate. Do not run a fresh full baseline by default; add focused
 regressions demonstrating the specific old behavior. Historical passing controls
 are useful baseline context but do not pretend the new regressions already ran.
 
-### M1: Correct the five groups — not started
+### M1: Correct the five groups — complete and accepted
 
 Extend existing tests at public/owner boundaries before each corresponding fix.
 Collect the new failing cases by package/owner in as few focused invocations as
@@ -174,7 +176,7 @@ threshold increase counts as a fix. Preserve nonaffected negative controls.
 Group A's coordinator edits are one cohesive unit to avoid repeatedly modifying
 and validating the same lifecycle logic.
 
-### M2: Cheap combined validation and artifact preparation — not started
+### M2: Cheap combined validation and artifact preparation — complete
 
 Run affected formatting, lint, types and deterministic tests before builds,
 models or installer mutation. Get an independent read-only review of the
@@ -188,7 +190,7 @@ source/harness edit; default Tauri and `release-locked-runtime` are distinct
 artifacts. Keep their identities and installer bytes separate. A build does not
 prove installation, native startup, playback or cleanup.
 
-### M3: One combined acceptance and review — not started
+### M3: One combined acceptance and review — implementation accepted
 
 Run the selected browser, native, host and lifecycle gates below. Freeze and
 hash app/test executables before each artifact's host session; no relinking
@@ -285,7 +287,7 @@ actual timing and outcomes later; no estimated test-count reduction is claimed.
 | H-CPU | `node apps/desktop/scripts/native-startup-smoke.mjs --adaptive-tts-exact-host --tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1 --tts-language=en` | One current Piper arm for supervisor/coordinator lifecycle, synchronization and cleanup. New decimal text/ranges are proved deterministically; no pronunciation/quality claim. Current app/harness, verified core/voice, WebView2 and host are inputs. |
 | H-GPU | `pnpm.cmd test:chatterbox:v7:native-startup` | Existing bounded production-launcher diagnostic, sequential ES/EN in one invocation, cancellation/restart/cleanup. Use verified V7 runtime/models and documented `VOXLEAF_V7_RUNTIME`, `VOXLEAF_V7_MODELS`, owned scratch. No Qwen or model download. Both native owners change, so historical H-GPU is not sufficient. |
 | P1 | `pnpm.cmd package:windows:ordinary-chatterbox:preflight` | Once with a verified release-locked executable and compatible host after the JS gate fix. Node negatives prove other architectures; actual host report proves positive path. Does not establish download/runtime acceptance. |
-| L1 | `pnpm.cmd package:windows:lifecycle` | Execute repaired script once in an appropriate isolated account/environment with no pre-existing installation. Journal/restore existing data through its current safeguards. Uses verified installer, NSIS behavior and PowerShell; no TTS/model generation. See preparation decision below. |
+| L1 | `pnpm.cmd package:windows:lifecycle` | Execute the repaired script with no installation at entry. Updated authorization permits uninstall/reinstall on this host; its fixture data are isolated by the existing backup/restore safeguards. Uses verified installer, NSIS behavior and PowerShell; no TTS/model generation or clean-new-Windows claim. See preparation decision below. |
 | F1 | Equivalent applicable leaves of `check`/`check:portable`, below | Once on final relevant inputs, with explicit receipt reuse; no aggregate claim when only leaves ran. Current CI obligations are unchanged. |
 
 For L1, the minimum is a verified retained installer when its unchanged
@@ -294,10 +296,13 @@ installation of the newly corrected product. At M0 inspect the retained artifact
 and P1's release-binary requirements: if a matching prerequisite is unavailable,
 or current packaged-product acceptance is required by the actual patch, run
 `pnpm.cmd package:windows:verified-core` once after source freeze and use that
-final installer for both relevant checks. `pnpm.cmd package:windows:check` checks
-the package inputs. Never remove an unrelated installation to make a gate run,
-rebuild unchanged Piper payloads instead of checking them, or claim old installer
-acceptance for new bytes. Resolve this concrete choice before costly preparation.
+final installer for both relevant checks. Its existing leaves may instead be
+executed with the evidence output captured separately to preserve the historical
+tracked package receipt; see the [current ledger](../evidence/static-audit-corrections/M3-validation-ledger.md).
+`pnpm.cmd package:windows:check` checks the package inputs. The user's subsequent
+authorization permits uninstall/reinstall on this host with verified data
+restoration. Do not rebuild unchanged Piper payloads instead of checking them
+or claim old installer acceptance for new bytes.
 
 Additional loader-negative probes, installed acquisition probes, full replay,
 interactive installer choices or all-rate listening are conditional only on a
@@ -362,10 +367,117 @@ No second download, model-package build or all-engine portfolio is the default.
 - 2026-10-28: Two independent read-only document reviews found no actionable
   scope, command, reuse or acceptance gaps; cited owner/test/authority paths were
   checked. This is document consistency evidence, not future patch approval.
-- [ ] M0 scope/identity/reuse ledger after implementation authorization.
-- [ ] M1 minimal corrections and focused regressions.
-- [ ] M2 cheap checks, review and final artifact preparation.
-- [ ] M3 current combined acceptance, verified cleanup and independent approval.
+- [x] M0 scope/identity/reuse ledger after implementation authorization.
+- [x] M1 minimal corrections and focused regressions.
+- [x] M2 cheap checks, review and final artifact preparation.
+- [x] M3 current combined acceptance, verified cleanup and independent approval.
+
+- 2026-10-28 implementation: branch/HEAD match the planning commit; initial
+  index/worktree clean. Independent investigations revalidated all fifteen
+  findings with no contradictory disposition. Scope/evidence frozen in
+  [M0](../evidence/static-audit-corrections/M0-scope.md), with fixture/host
+  [amendments](../evidence/static-audit-corrections/M1-scope-amendments.md).
+  Source snapshots and tool versions were captured before production edits in
+  ignored `tmp/evidence/static-audit-corrections/M0-*`.
+- Regression-first host receipts preserve A-red-01 (7 intended failures/1
+  passing boundary control), B-red-01 (4 intended failures), C-red-01 (7 intended
+  failures/3 controls), D-red-01 (15 intended failures/4 controls),
+  E-tools-red-01 (2 intended failures), E-download-red-01 and E-deadline-red-01.
+- Focused current results: A-owner-green-01 168 PASS, C-green-02 15 PASS,
+  E-rust-green-02 5 PASS, E-tools-green-01 2 PASS. These do not replace final
+  integration/native/hardware gates. Early green attempts with fixture/ticker
+  assumptions are retained under their original IDs. BD-green-01 has 164 PASS
+  and two stale mock-signature assertions, corrected before final acceptance.
+- M2: complete TS graph passed (210 shared, 702 EPUB, 899 desktop, 102 Node);
+  Python leaves passed (678 tests, mypy 180, Ruff, wheel/sdist), evidence tests
+  passed 31. B1 first attempt had 16 PASS/1 fixture failure; affected-spec
+  continuation had 12 PASS/1 selector failure. The directed corrected SAC-15
+  case now passes. Stage diagnosis/replanning is recorded in
+  [M2 adjustment](../evidence/static-audit-corrections/M2-review-adjustment.md).
+- Independent [R1 review](../evidence/static-audit-corrections/review-R1.md)
+  returned BLOCKED, confirming a real SAC-12 blocked-write hole plus the B1
+  selector gap. Source writing paused during review. The private writer-owner
+  correction and real pipe regression precede expensive native preparation;
+  final exact-patch approval remains pending.
+- B1-reader-browser-03 passed all 13 reader cases. The four unchanged foundation
+  cases retain their B1-browser-01 evidence. Final TS format/lint and affected
+  desktop types passed; independent closure analysis supports retaining this
+  run's Python and Vitest/Node results. Exact commands and reuse conditions are
+  tracked in the [current validation ledger](../evidence/static-audit-corrections/M3-validation-ledger.md).
+- SAC-12's real pipe regression reached its intended RED after two preserved
+  fixture setup failures and explicit replanning. The original writer required
+  the captured-process rescue watchdog. The private bounded writer correction
+  now passes all 32 supervisor cases, including real blocked dispatch and
+  cancellation without rescue. Earlier cumulative-clock tests remain controls.
+  Full Rust validation and renewed review remain pending.
+- [R2 review](../evidence/static-audit-corrections/review-R2.md) closed both R1
+  findings with no actionable defect; BLOCKED only by remaining acceptance.
+  Subsequently the final Rust matrix passed 139 default and 138 release-locked
+  tests, and the default Tauri build passed. Native/host gates are in progress.
+- N1's new image test initially waited on lazy images outside the retained
+  narrow viewport. A focused native diagnosis confirmed correct 2x3 decode
+  after scrolling; the harness now makes the images visible before asserting
+  dimensions. Full N1-native-02 passes with the same binary. H-CPU-01 passes
+  real Piper playback, synchronization and cancellation with zero retained
+  audio/units/external requests at cleanup. H-GPU is running.
+- H-GPU-01 passed supervised V7 ES/EN, cancellation/restart and complete runtime
+  post-verification; its owned scratch and processes are cleared. Because Cargo
+  relinked the release-locked libtest, its 138-test leaf was renewed directly on
+  the exact tested executable; no hardware rerun or new compile was needed.
+- Final NSIS build and artifact evidence passed using the existing packaging
+  leaves, preserving the historical package receipt. L1-lifecycle-01 stopped
+  before data ownership initialization because pnpm inherited PowerShell 7
+  module paths into PowerShell 5.1. The original data remain protected and the
+  wrapper reinstalls in `finally`. A process-only Windows module precedence
+  correction was reproduced successfully; one bounded infrastructure retry is
+  pending the first restoration verification.
+- First restoration verified every original data byte. The installed app's
+  three-byte Tauri NSIS stamp was independently tied to its exact build and
+  cached crate authority; build and installed identities are recorded separately.
+  L1-lifecycle-02 then passed installation, first start, repair and all six
+  option scenarios, followed by final reinstall and P1-preflight-01 PASS in
+  ordinary/hostile environments. Final original-data comparison is running.
+- H-install-restore-02 completed with verified final installation and every
+  original data byte/directory restored after L1/P1. Final inspection found no
+  task-owned temporary roots or native/driver/model processes; pre-existing
+  unrelated roots were preserved. No firewall/drive-alias mutation occurred.
+- Current evidence/privacy guard, local Markdown targets and diff checks pass;
+  final conservative reuse manifests confirm unchanged consumed inputs and
+  Python artifacts. Toolchain/environment versions match the initial capture.
+  Final exact-patch review was the remaining acceptance gate at that checkpoint.
+- Independent [R3 review](../evidence/static-audit-corrections/review-R3.md),
+  `SAC-R3-20261028-01`, returned APPROVE for all fifteen findings and their
+  mandatory execution evidence, with no actionable findings or blocking gaps.
+  The 94 manifest paths plus nine unchanged supporting paths matched before
+  and after review. Branch/HEAD are unchanged and the index remains empty.
+- Documentary closeout moves this accepted plan to completed, updates its
+  indexes and ADR status, and renews only the evidence/privacy guard, local
+  links and exact archive review. Runtime sources, fixtures, tools and artifacts
+  remain unchanged. The [final report](../evidence/static-audit-corrections/review-final.md)
+  records that separate review's ID, verdict and final identity check. No commit,
+  push, PR or merge is authorized or performed.
+
+All fifteen dispositions below are accepted by R3. Focused receipts identify
+the original regressions; the final passing package and integration gates in
+the validation ledger establish acceptance after subsequent corrections.
+
+| Finding | Accepted disposition and regression evidence |
+| --- | --- |
+| SAC-01 | Explicit chapter navigation clears obsolete completed highlighting; stationary completion preserved. A-red-01/A-owner-green-01; B1 PASS. |
+| SAC-02 | Real HTTP read failure rechecks cancellation before replacing diagnostic; loopback manager state/staging regression. E-download-red-01/E-rust-green-02. |
+| SAC-03 | Explicit valid hardware preference replaces malformed JSON; storage/future guards retained. B-red-01/BD-green-01. |
+| SAC-04 | Actual started unit anchors audible metrics; pending/failed worklet initialization excluded. A-red-01/A-owner-green-01. |
+| SAC-05 | Marker array derives from all nine optional roots. E-tools-red-01/E-tools-green-01; real L1 PASS. |
+| SAC-06 | Recheck retries retained-owner cleanup once and preserves persistent blocking. A-red-01/A-owner-green-01; B1 PASS. |
+| SAC-07 | Existing adjacent-number guard includes currency without changing lexical authority. C-red-01/C-green-02. |
+| SAC-08 | Packer completion requires actual unit consumption; silent suffix follows existing unspoken continuation. Finalizer unchanged. C-red-01/C-green-02. |
+| SAC-09 | Bounded IFD0 EXIF orientation determines presented dimensions; raw/presented/pixel limits retained. D-red-01/BD-green-01; B1 and N1 PASS. |
+| SAC-10 | Operational containment shares one final cleanup deadline and separate termination maximum. A-red-01/A-owner-green-01. |
+| SAC-11 | Exhausted transition settles during Pause; successor starts once on Resume. A-red-01/A-owner-green-01. |
+| SAC-12 | Dispatch/write/response chains share absolute deadlines, load/warm separate; one bounded writer permits independent termination. Real blocked-write RED, final Rust/N1/H-CPU/H-GPU PASS; R3 APPROVE. |
+| SAC-13 | Existing OCF parser handles opaque fragments and rejects actual queries. C-red-01/C-green-02; B1 PASS. |
+| SAC-14 | Ordinary preflight requires known CUDA 12.0 exactly. E-tools-red-01/E-tools-green-01; real P1 PASS. |
+| SAC-15 | Hydration retains preference status through book restoration; future bytes/disabled controls protected. B-red-01/BD-green-01; B1 PASS. |
 
 ## Discoveries and decisions
 
@@ -388,14 +500,23 @@ No second download, model-package build or all-engine portfolio is the default.
 
 ## Final validation results
 
-**Planning only.** Source and evidence inspection completed; commands above are
-future selections, not execution receipts. No new test, lint, type, build,
-benchmark, runtime, installer or performance PASS is claimed. No current reuse
-approval or implementation acceptance exists.
+**Implementation accepted: `SAC-R3-20261028-01`, APPROVE.** All selected
+execution and evidence/privacy checks passed, including the required native,
+CPU/GPU, installer and verified host-restoration gates. All fifteen corrections
+are accepted with no pending implementation or mandatory execution criterion.
+No historical runtime PASS is reused. Python leaves ran currently because
+complete historical proof was unavailable. B1 passes through the explicitly
+identified leaf composition; no failed aggregate is reported as passing.
+R1/R2 remain historical BLOCKED checkpoints whose findings and evidence gaps
+were resolved before R3. The [validation ledger](../evidence/static-audit-corrections/M3-validation-ledger.md)
+records commands, binary identities, reuse proofs and preserved failures; the
+[final archive report](../evidence/static-audit-corrections/review-final.md)
+records the review of this documentary closeout.
 
-The documentation-only plan/index change is exempt from mandatory behavioral
-`change_reviewer` acceptance under the repository review workflow. Its scope,
-links, commands and diff passed read-only consistency review before the requested
-documentation commit. Implementation will require its own exact-patch review and
-all applicable fresh/reused host evidence. Record those actual results here only
-after execution is separately authorized.
+The canonical diagram and M005 boundary still match the implementation. No
+production dependency, public contract, runtime/model version or frozen
+authority changed. Original application-data bytes and directory membership
+were verified after reinstalling the final package. This local Windows
+acceptance does not establish public signing/distribution, antivirus clearance,
+an interactive clean-new-Windows installation or full ordinary Chatterbox
+online acquisition; those remain outside this plan's bounded scope.

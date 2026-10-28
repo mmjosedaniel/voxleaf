@@ -274,6 +274,7 @@ test("the bounded host gate admits only the published Chatterbox profile state",
       totalPhysicalMiB: { status: "known", value: 24_576 },
       availablePhysicalMiB: { status: "known", value: 4_096 },
     },
+    cudaComputeCapability: { status: "known", major: 12, minor: 0 },
     providers: {
       cuda: {
         availability: "available",
@@ -285,6 +286,19 @@ test("the bounded host gate admits only the published Chatterbox profile state",
     },
   };
   assert.equal(evaluateHostGate(compatible), true);
+  for (const capability of [
+    undefined,
+    { status: "unknown" },
+    { status: "known", major: 11, minor: 0 },
+    { status: "known", major: 12, minor: 1 },
+    { status: "known", major: 13, minor: 0 },
+  ]) {
+    assert.equal(
+      evaluateHostGate({ ...compatible, cudaComputeCapability: capability }),
+      false,
+    );
+  }
+
   assert.equal(
     evaluateHostGate({
       ...compatible,

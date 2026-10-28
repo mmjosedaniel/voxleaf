@@ -629,7 +629,9 @@ function matchesLexicalForm(
   const before = sourceText(tokens[startIndex - 1]) ?? "";
   const after = sourceText(tokens[endIndexExclusive]) ?? "";
   const attachedCompound =
-    (form.kind === "percentage" || form.kind === "time") &&
+    (form.kind === "currency" ||
+      form.kind === "percentage" ||
+      form.kind === "time") &&
     (/[+−-]/u.test(before) ||
       (/[.,/:]/u.test(before) &&
         isAsciiDigit(

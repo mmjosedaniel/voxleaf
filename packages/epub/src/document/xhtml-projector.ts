@@ -1355,7 +1355,6 @@ class XhtmlProjector {
     return (
       value.startsWith("/") ||
       value.startsWith("//") ||
-      value.includes("?") ||
       /^[a-z][a-z0-9+.-]*:/iu.test(value)
     );
   }

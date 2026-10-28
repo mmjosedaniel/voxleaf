@@ -12,6 +12,96 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+#[cfg(windows)]
+#[test]
+fn sac02_cancelled_blocked_response_read_preserves_diagnostic_and_cleans_staging() {
+    for cancel in [false, true] {
+        let root = TestRoot::new();
+        let manager = Arc::new(OptionalChatterboxManager::default());
+        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        DownloadAttempt::new(
+            &manager.last_download_error,
+            DownloadSource::GithubRelease,
+            1,
+            100,
+        )
+        .fail(
+            DownloadStage::Request,
+            DownloadFailureKind::InvalidUrl,
+            None,
+        );
+        let previous = *manager.last_download_error.lock().unwrap();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (release, released) = std::sync::mpsc::channel();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0_u8; 1024];
+            assert!(stream.read(&mut request).unwrap() > 0);
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nx")
+                .unwrap();
+            let _ = released.recv_timeout(Duration::from_secs(5));
+        });
+        let (reading, read_started) = std::sync::mpsc::channel();
+        let cancelling_manager = Arc::clone(&manager);
+        let cancelling_root = root.0.clone();
+        let cancelling = thread::spawn(move || {
+            read_started.recv_timeout(Duration::from_secs(5)).unwrap();
+            // The first byte is already consumed. The next HTTP read blocks
+            // until the client's bounded timeout, after cancellation is requested.
+            thread::sleep(Duration::from_millis(30));
+            if cancel {
+                cancelling_manager.cancel_at(&cancelling_root).unwrap();
+            }
+        });
+        let downloading_manager = Arc::clone(&manager);
+        DOWNLOAD_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
+                let client = reqwest::blocking::Client::builder()
+                    .no_proxy()
+                    .timeout(Duration::from_millis(500))
+                    .build()
+                    .unwrap();
+                let response = client.get(format!("http://{address}/")).send().unwrap();
+                let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
+                artifact.download_bytes = 100;
+                copy_download_response(
+                    &artifact,
+                    response,
+                    destination,
+                    cancelled,
+                    |_| {
+                        let _ = reading.send(());
+                    },
+                    DownloadAttempt::new(
+                        &downloading_manager.last_download_error,
+                        DownloadSource::GithubRelease,
+                        1,
+                        100,
+                    ),
+                )
+            }));
+        });
+        let result = manager.download_at(&root.0);
+        cancelling.join().unwrap();
+        release.send(()).unwrap();
+        server.join().unwrap();
+        assert!(!manager.operation.lock().unwrap().worker_active);
+        assert!(!staging_root(&root.0).exists());
+        if cancel {
+            assert_eq!(result.unwrap().state, OptionalProfileState::Absent);
+            assert_eq!(*manager.last_download_error.lock().unwrap(), previous);
+        } else {
+            assert_eq!(result, Err(OptionalProfileError::DownloadFailed));
+            let diagnostic = manager.last_download_error.lock().unwrap().unwrap();
+            assert_eq!(diagnostic.stage, DownloadStage::Read);
+            assert_eq!(diagnostic.kind, DownloadFailureKind::Timeout);
+            assert_eq!(diagnostic.received_bytes, 1);
+        }
+    }
+}
+
 #[test]
 fn download_diagnostic_classifies_a_real_response_read_timeout() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();

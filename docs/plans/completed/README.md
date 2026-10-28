@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Static-audit corrections](static-audit-corrections.md): all fifteen reader, narration, preference, native and validation-tool findings corrected with focused regressions. Package/browser/native checks, Piper EN, Chatterbox ES/EN, Windows lifecycle/preflight and verified data restoration passed. `SAC-R3-20261028-01` approves implementation and scoped reuse; the plan links the separate final archive review. Runtime/model versions and frozen authorities are preserved; changes remain uncommitted.
+
 - [Validated chat findings corrections](validated-chat-findings-corrections.md): all fourteen findings corrected, including two confirmed native/worklet ownership races, plus R01/R02. Current 867 desktop and 132/131 Rust suites, four browser cases, frozen-byte native loader/Piper EN/Chatterbox ES/EN, integrity and cleanup pass. R3 accepts implementation and scoped reuse; the plan identifies the separate exact archive/link review. Original v7/models/arithmetic are preserved; changes remain uncommitted.
 
 - [Chatterbox V7 msgpack security refresh](chatterbox-msgpack-security-refresh.md): published and admitted the msgpack 1.2.3 successor with the other 78 pins and six models preserved. Exact local acquisition/runtime/removal, scoped regression gates and all four hosted checks pass on integration commit `5695f4ed4a52885e6d6aa03976d23b5c34defde8`; Astra R2 approves local acceptance. Original failed attempts and the two resolved review evidence gaps remain recorded. Full live HTTP delivery and broad GPU/voice matrices are not claimed; the plan references the separate documentary closeout review.

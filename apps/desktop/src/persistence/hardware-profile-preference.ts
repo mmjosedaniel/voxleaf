@@ -145,7 +145,14 @@ export function createWebStorageHardwareProfilePreferenceRepository({
           ) {
             return OVER_LIMIT;
           }
-          const decoded: unknown = JSON.parse(current);
+          let decoded: unknown;
+          try {
+            decoded = JSON.parse(current);
+          } catch {
+            // An explicit valid selection can replace malformed current data.
+            // Storage failures still belong to the outer unavailable boundary.
+            decoded = undefined;
+          }
           if (
             isRecord(decoded) &&
             typeof decoded.schemaVersion === "number" &&

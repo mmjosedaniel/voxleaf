@@ -430,6 +430,7 @@ export class ProductNarrationCoordinator {
   #lastPlayerUnderrunCount = 0;
   #lastMetricsAtMs: number | undefined;
   #lastPlayerPhase: AdaptivePcmPlayerObservation["state"] | undefined;
+  #lastPlayerAudible = false;
   #lastPlayerIntentionalWaitMs = 0;
   #acceptedAudioUnitCount = 0;
   #acceptedAudioSampleFrames = 0;
@@ -949,14 +950,18 @@ export class ProductNarrationCoordinator {
    * never starts narration and is ignored while containment is still active.
    */
   public resetRecoveryEpisode(): void {
-    if (this.#closed) {
+    if (this.#closed || this.#recoveryResetPending) {
       return;
     }
-    if (this.#stopOperation !== undefined) {
+    if (
+      this.#stopOperation !== undefined ||
+      (this.#recovery.observe().phase === "contained" &&
+        (this.#player !== undefined || this.#scheduler !== undefined))
+    ) {
       this.#recoveryResetPending = true;
       this.#availability = "checking";
       this.#publish();
-      const stop = this.#stopOperation;
+      const stop = this.#stopOperation ?? this.#stopActiveRun();
       void stop.finally(() => {
         if (
           !this.#closed &&
@@ -964,6 +969,11 @@ export class ProductNarrationCoordinator {
           this.#recoveryResetPending
         ) {
           this.#recoveryResetPending = false;
+          if (this.#player !== undefined || this.#scheduler !== undefined) {
+            this.#availability = "unavailable";
+            this.#publish();
+            return;
+          }
           this.resetRecoveryEpisode();
         }
       });
@@ -1014,6 +1024,7 @@ export class ProductNarrationCoordinator {
     this.#commandStartedAtMs = this.#clock.nowMs;
     this.#lastMetricsAtMs = this.#clock.nowMs;
     this.#lastPlayerPhase = "preparing";
+    this.#lastPlayerAudible = false;
     const runToken = ++this.#runToken;
     const identity = Object.freeze({
       sessionId: this.#createIdentifier!("session", runToken),
@@ -1035,6 +1046,13 @@ export class ProductNarrationCoordinator {
           observation.generationId === this.#identity.generationId
         ) {
           if (observation.kind === "segment-started") {
+            try {
+              if (this.#player !== undefined) {
+                this.#updateMetrics(this.#player.observe());
+              }
+            } catch {
+              // Metrics cannot suppress the authoritative audible boundary.
+            }
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
             this.#rememberBoundary(observation.sourceRange);
@@ -1806,7 +1824,7 @@ export class ProductNarrationCoordinator {
       const elapsed = nowMs - this.#lastMetricsAtMs;
       if (this.#lastPlayerPhase === "buffering") {
         this.#bufferingMs += elapsed;
-      } else if (this.#lastPlayerPhase === "playing") {
+      } else if (this.#lastPlayerAudible) {
         this.#playbackMs += Math.max(0, elapsed - intentionalWaitDelta);
       }
     }
@@ -1816,8 +1834,10 @@ export class ProductNarrationCoordinator {
       player.underrunCount - this.#lastPlayerUnderrunCount,
     );
     this.#lastPlayerUnderrunCount = player.underrunCount;
+    const audible =
+      player.state === "playing" && player.activeSequence !== undefined;
     if (
-      player.state === "playing" &&
+      audible &&
       this.#commandToAudibleMs === undefined &&
       this.#commandStartedAtMs !== undefined
     ) {
@@ -1825,6 +1845,7 @@ export class ProductNarrationCoordinator {
     }
     this.#lastMetricsAtMs = nowMs;
     this.#lastPlayerPhase = player.state;
+    this.#lastPlayerAudible = audible;
     this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
   }
 
@@ -1867,6 +1888,9 @@ export class ProductNarrationCoordinator {
   }
 
   async #containOperationalFailure(wasRecovering: boolean): Promise<void> {
+    const cleanupDeadline =
+      this.#clock.nowMs +
+      HARDWARE_PROFILE_AUTHORITY_V1.cleanup.finalCleanupMaximumMs;
     const operation = this.#operation;
     const scope = this.#activeScope;
     const scheduler = this.#scheduler;
@@ -1897,27 +1921,23 @@ export class ProductNarrationCoordinator {
     let cleanupFailure: "cancellation-timeout" | "cleanup-failed" | undefined;
     const terminationMaximumMs =
       HARDWARE_PROFILE_AUTHORITY_V1.cleanup.processTreeTerminationMaximumMs;
-    const finalCleanupMaximumMs =
-      HARDWARE_PROFILE_AUTHORITY_V1.cleanup.finalCleanupMaximumMs;
     try {
       if (transition === "cancel" && scope !== undefined) {
-        await this.#within(
+        await this.#withinCleanupDeadline(
           this.#client.cancel(scope),
-          terminationMaximumMs,
+          Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
           "cancellation-timeout",
         );
       }
       if (operation !== undefined) {
-        await this.#within(
+        await this.#withinCleanupDeadline(
           operation.catch(() => undefined),
-          finalCleanupMaximumMs,
-          "cleanup-failed",
+          cleanupDeadline,
         );
       }
-      await this.#within(
+      await this.#withinCleanupDeadline(
         this.#client.shutdown(),
-        terminationMaximumMs,
-        "cleanup-failed",
+        Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
       );
     } catch (error) {
       cleanupFailure =
@@ -1929,10 +1949,9 @@ export class ProductNarrationCoordinator {
           ? "cancellation-timeout"
           : "cleanup-failed";
       try {
-        await this.#within(
+        await this.#withinCleanupDeadline(
           this.#client.shutdown(),
-          terminationMaximumMs,
-          "cleanup-failed",
+          Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
         );
       } catch {
         cleanupFailure ??= "cleanup-failed";
@@ -1948,10 +1967,9 @@ export class ProductNarrationCoordinator {
 
     try {
       if (player !== undefined) {
-        await this.#within(
+        await this.#withinCleanupDeadline(
           player.waitForCleanup(),
-          finalCleanupMaximumMs,
-          "cleanup-failed",
+          cleanupDeadline,
         );
       }
       try {
@@ -2025,16 +2043,17 @@ export class ProductNarrationCoordinator {
   async #withinCleanupDeadline<T>(
     operation: Promise<T>,
     deadline: number,
+    failureCode: "cancellation-timeout" | "cleanup-failed" = "cleanup-failed",
   ): Promise<T> {
     const remaining = deadline - this.#clock.nowMs;
     // Inclusive authority: exact deadline is admitted, maximum plus one fails.
     const result = await this.#within(
       operation,
       Math.max(0, remaining) + 1,
-      "cleanup-failed",
+      failureCode,
     );
     if (this.#clock.nowMs > deadline)
-      throw new ProductNarrationRecoveryError("cleanup-failed");
+      throw new ProductNarrationRecoveryError(failureCode);
     return result;
   }
 

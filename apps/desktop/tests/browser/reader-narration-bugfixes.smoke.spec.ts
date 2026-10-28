@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import type { NarrationSegmentV1 } from "@voxleaf/shared";
 import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
+import { closeSettings, openSettings } from "./settings-helpers";
+
 async function fixtures() {
   return import(
     new URL(
@@ -210,6 +212,228 @@ test("CHAT-AUDIT real bundled worklet preserves FIFO ownership through an ended/
   );
   await page.locator('[data-narration-action="stop"]').click();
   await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+});
+
+test("SAC-01 completed materialized narration releases chapter navigation without returning to its highlight", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-completed-navigation.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        packageDocument:
+          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:sac-navigation</dc:identifier><dc:title>Synthetic navigation</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/><itemref idref="final"/></spine></package>',
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#chapter-one">Opening</a></li><li><a href="text/final.xhtml#chapter-two">Final</a></li></ol></nav></body></html>',
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Opening</title></head><body><h1 id="chapter-one">Opening</h1><p>Synthetic opening.</p></body></html>',
+        additionalEntries: [
+          {
+            name: "EPUB/text/final.xhtml",
+            content:
+              '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Final</title></head><body><h1 id="chapter-two">Final</h1><p>Synthetic final narration.</p></body></html>',
+          },
+        ],
+      }),
+    ),
+  });
+  // Start in an already materialized final chapter, so the last range has
+  // never acquired a chapter-materialization request of its own.
+  await page.getByRole("button", { name: "Next chapter" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Final" }),
+  ).toBeVisible();
+  await page.locator('[data-narration-action="play"]').click();
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute("data-narration-phase", "complete");
+  const highlightText = () =>
+    page.evaluate(() =>
+      Array.from(
+        CSS.highlights.get("voxleaf-narration-active") ?? [],
+        (range) => range.toString(),
+      ).join(""),
+    );
+  await expect.poll(highlightText).toBe("Synthetic final narration.");
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  await expect.poll(saved).toMatchObject({
+    spineItemIndex: 1,
+    textOffsetCodePoints: "Synthetic final narration.".length,
+  });
+  await page.getByRole("button", { name: "Previous chapter" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Opening" }),
+  ).toBeVisible();
+  await expect.poll(highlightText).toBe("");
+  await expect.poll(saved).toMatchObject({ spineItemIndex: 0 });
+  await expect(narration).toHaveAttribute(
+    "data-narration-play-intent",
+    "inactive",
+  );
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+for (const persistent of [false, true])
+  test(`SAC-06 same-profile Recheck settles retained Stop owners (persistent=${persistent})`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, false, false, false, true);
+    await page.goto("/");
+    await page.evaluate(() => {
+      Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+    });
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-recheck.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Synthetic retained-owner passage.</p></body></html>',
+        }),
+      ),
+    });
+    const narration = page.locator(".product-narration");
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    const profile = await narration.getAttribute("data-narration-profile");
+    await page.evaluate((persistent) => {
+      Reflect.get(globalThis, "__rnb").shutdownFailures = persistent ? 4 : 2;
+    }, persistent);
+    await page.locator('[data-narration-action="stop"]').click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-recovery-phase",
+      "contained",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-recovery-code",
+      "cleanup-failed",
+    );
+    await expect(page.locator('[data-narration-action="play"]')).toHaveCount(0);
+    const settings = await openSettings(page);
+    await settings
+      .getByRole("button", { name: "Check compatibility again" })
+      .click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownCalls),
+      )
+      .toBeGreaterThanOrEqual(3);
+    await expect(narration).toHaveAttribute("data-narration-profile", profile!);
+    if (persistent) {
+      await expect
+        .poll(() =>
+          page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownCalls),
+        )
+        .toBe(4);
+      await expect(narration).toHaveAttribute(
+        "data-narration-recovery-phase",
+        "contained",
+      );
+      await expect(narration).toHaveAttribute(
+        "data-narration-failure",
+        "tts-service-failed",
+      );
+      await expect(page.locator('[data-narration-action="play"]')).toHaveCount(
+        0,
+      );
+      await expect(
+        settings.getByRole("button", { name: "Check compatibility again" }),
+      ).toBeEnabled();
+      expect(
+        await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+      ).toBe(1);
+    } else {
+      await expect(narration).toHaveAttribute(
+        "data-narration-recovery-phase",
+        "operational",
+      );
+      await closeSettings(page, settings);
+      await expect(
+        page.locator('[data-narration-action="play"]'),
+      ).toBeEnabled();
+      await page.locator('[data-narration-action="play"]').click();
+      await expect(narration).toHaveAttribute(
+        "data-narration-phase",
+        "playing",
+      );
+      expect(
+        await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+      ).toBe(2);
+      await page.locator('[data-narration-action="stop"]').click();
+      await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+    }
+  });
+
+test("SAC-15 future appearance preferences stay protected through hydration and book opening", async ({
+  page,
+}) => {
+  const future = '{"schemaVersion":99,"futureAppearance":"synthetic-sentinel"}';
+  await page.addInitScript((future) => {
+    localStorage.setItem("voxleaf.reader.preferences", future);
+    const setItem = Storage.prototype.setItem;
+    Reflect.set(globalThis, "__sacPreferenceWrites", 0);
+    Storage.prototype.setItem = function (key, value) {
+      if (this === localStorage && key === "voxleaf.reader.preferences")
+        Reflect.set(
+          globalThis,
+          "__sacPreferenceWrites",
+          Reflect.get(globalThis, "__sacPreferenceWrites") + 1,
+        );
+      setItem.call(this, key, value);
+    };
+  }, future);
+  await page.goto("/");
+  const verifyBytes = async () => {
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("voxleaf.reader.preferences"),
+      ),
+    ).toBe(future);
+    expect(
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__sacPreferenceWrites"),
+      ),
+    ).toBe(0);
+  };
+  await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
+  await expect(page.getByRole("button", { name: "Settings" })).toHaveCount(0);
+  await verifyBytes();
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-future-preferences.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Synthetic preference restoration.</p></body></html>',
+      }),
+    ),
+  });
+  await expect(page.getByRole("status")).toHaveText(
+    "The EPUB opened successfully.",
+  );
+  const settings = await openSettings(page);
+  for (const label of ["Text size", "Line spacing", "Content width", "Theme"])
+    await expect(
+      settings.getByRole("combobox", { name: label, exact: true }),
+    ).toBeDisabled();
+  await verifyBytes();
+  await closeSettings(page, settings);
 });
 
 test("renders a local raster first encountered after thirty seconds of real reading time", async ({
@@ -657,6 +881,8 @@ async function installSyntheticService(
         created: 0,
         closed: 0,
         service: 0,
+        shutdownFailures: 0,
+        shutdownCalls: 0,
         requests: [] as Array<{
           service: number;
           generation: string;
@@ -914,6 +1140,11 @@ async function installSyntheticService(
                 return pcm.buffer;
               }
               case "shutdown_tts_service":
+                observations.shutdownCalls += 1;
+                if (observations.shutdownFailures > 0) {
+                  observations.shutdownFailures -= 1;
+                  throw "tts-service-internal-failure";
+                }
                 return [state("stopping"), state("stopped")];
               default:
                 throw "tts-service-unavailable";

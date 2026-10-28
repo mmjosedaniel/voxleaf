@@ -43,6 +43,37 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("SAC-13 preserves literal and encoded opaque fragments but flattens real queries", async () => {
+    await withArchive(
+      xhtml(
+        '<h:p><h:a href="#note?1">Literal</h:a><h:a href="#note%3F1">Encoded</h:a><h:a href="chapter.xhtml?mode=reader#note?1">Query</h:a><h:a href="https://example.invalid/#note?1">External</h:a><h:a href="../%2e%2e/chapter.xhtml#note?1">Unsafe</h:a></h:p>',
+      ),
+      {},
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        const block = document.blocks[0];
+        if (block?.kind !== "paragraph")
+          throw new Error("expected synthetic paragraph");
+        const links = block.children.filter(
+          (inline) => inline.kind === "internal-link",
+        );
+        expect(links).toHaveLength(2);
+        for (const link of links)
+          expect(link.target).toEqual({
+            documentId: "document:1",
+            fragment: "note?1",
+          });
+        expect(JSON.stringify(document)).toContain("Query");
+        expect(JSON.stringify(document)).toContain("External");
+        expect(JSON.stringify(document)).toContain("Unsafe");
+      },
+    );
+  });
+
   it("CHAT-AUDIT F07 preserves explicitly unknown language and accepts case-equivalent tags", async () => {
     await withArchive(
       xhtml(

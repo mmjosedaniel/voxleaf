@@ -10,6 +10,67 @@ const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
 const NARRATION_PLAYBACK_STORAGE_KEY = "voxleaf.narration.playback-preference";
 const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
 
+test("SAC-09/SAC-13 decodes oriented JPEGs and resolves opaque local fragments", async ({
+  page,
+}) => {
+  const fixture = (await import(
+    new URL("../fixtures/oriented-raster-epub-fixture.mjs", import.meta.url)
+      .href
+  )) as {
+    buildOrientedRasterEpubFixture(): Promise<Uint8Array>;
+  };
+  const externalRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname === "example.invalid")
+      externalRequests.push(request.url());
+  });
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-oriented.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(await fixture.buildOrientedRasterEpubFixture()),
+  });
+  for (const name of [
+    "Synthetic orientation six",
+    "Synthetic orientation eight",
+  ]) {
+    const image = page.getByRole("img", { name, exact: true });
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute("src", /^blob:/u);
+    expect(
+      await image.evaluate((element: HTMLImageElement) => [
+        element.naturalWidth,
+        element.naturalHeight,
+      ]),
+    ).toEqual([2, 3]);
+  }
+  for (const name of ["Literal fragment", "Encoded fragment"]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Opaque fragment target" }),
+    ).toBeFocused();
+    await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
+  }
+  await expect(page.getByRole("button", { name: "Query blocked" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole("button", { name: "External blocked" }),
+  ).toHaveCount(0);
+  expect(externalRequests).toEqual([]);
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "invalid.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from("invalid"),
+  });
+  await expect(
+    page.getByRole("img", { name: "Synthetic orientation six" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("img", { name: "Synthetic orientation eight" }),
+  ).toHaveCount(0);
+});
+
 test("CLB-04 opens primary content and follows an auxiliary link without changing its locator", async ({
   page,
 }) => {

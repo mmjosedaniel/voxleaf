@@ -1582,7 +1582,7 @@ fn download_artifact(
     destination: &Path,
     cancelled: &AtomicBool,
     on_progress: impl Fn(u64),
-    mut diagnostic: DownloadAttempt<'_>,
+    diagnostic: DownloadAttempt<'_>,
 ) -> Result<(), OptionalProfileError> {
     #[cfg(test)]
     if let Some(result) = tests::run_download_hook(destination, cancelled) {
@@ -1624,7 +1624,7 @@ fn download_artifact(
                 Some(&error),
             )
         })?;
-    let mut response = client
+    let response = client
         .get(artifact.url())
         .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2")
         .send()
@@ -1635,6 +1635,24 @@ fn download_artifact(
                 Some(&error),
             )
         })?;
+    copy_download_response(
+        artifact,
+        response,
+        destination,
+        cancelled,
+        on_progress,
+        diagnostic,
+    )
+}
+
+fn copy_download_response(
+    artifact: &impl DownloadIdentity,
+    mut response: reqwest::blocking::Response,
+    destination: &Path,
+    cancelled: &AtomicBool,
+    on_progress: impl Fn(u64),
+    mut diagnostic: DownloadAttempt<'_>,
+) -> Result<(), OptionalProfileError> {
     diagnostic.response(response.status(), response.content_length())?;
     let filename = destination
         .file_name()
@@ -1656,7 +1674,11 @@ fn download_artifact(
             return Err(OptionalProfileError::Cancelled);
         }
         let read = response.read(&mut buffer).map_err(|error| {
-            diagnostic.fail(DownloadStage::Read, DownloadFailureKind::Io, Some(&error))
+            if cancelled.load(Ordering::Acquire) {
+                OptionalProfileError::Cancelled
+            } else {
+                diagnostic.fail(DownloadStage::Read, DownloadFailureKind::Io, Some(&error))
+            }
         })?;
         if read == 0 {
             break;

@@ -1042,12 +1042,7 @@ async function packNarrationBoundaryScanInternal(
     startUnitIndex = candidate.unitIndexExclusive;
   }
 
-  const complete =
-    difference(
-      prefix.substantiveUnitCount,
-      startUnitIndex,
-      scan.normalized.units.length,
-    ) === 0;
+  const complete = startUnitIndex === scan.normalized.units.length;
   work.beforePublication();
   return Object.freeze({
     block: scan.block,

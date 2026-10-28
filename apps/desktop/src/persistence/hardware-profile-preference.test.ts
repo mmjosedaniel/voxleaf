@@ -80,6 +80,23 @@ describe("hardware profile preference repository", () => {
     expect(storage.setItem).not.toHaveBeenCalled();
   });
 
+  it("SAC-03 replaces malformed JSON on an explicit validated save", async () => {
+    const storage = memoryStorage("{");
+    const subject = repository(storage);
+    await expect(subject.read()).resolves.toEqual({ status: "malformed" });
+    await expect(subject.write("current-profile")).resolves.toEqual({
+      status: "saved",
+    });
+    await expect(subject.read()).resolves.toEqual({
+      status: "ready",
+      profileId: "current-profile",
+    });
+    expect(storage.setItem).toHaveBeenCalledExactlyOnceWith(
+      HARDWARE_PROFILE_AUTHORITY_V1.preference.storageKey,
+      JSON.stringify({ schemaVersion: 1, profileId: "current-profile" }),
+    );
+  });
+
   it("enforces profile and envelope bounds", async () => {
     const storage = memoryStorage(
       "x".repeat(
@@ -109,6 +126,9 @@ describe("hardware profile preference repository", () => {
       }),
     });
     await expect(getFailure.read()).resolves.toEqual({
+      status: "unavailable",
+    });
+    await expect(getFailure.write("profile")).resolves.toEqual({
       status: "unavailable",
     });
 

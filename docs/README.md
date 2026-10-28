@@ -17,6 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed static-audit corrections](plans/completed/static-audit-corrections.md)
+resolve fifteen reader, narration, preference, native and validation-tool defects.
+Regression, browser, native, CPU/GPU and installer acceptance passed, including
+verified restoration of the original user data. Independent R3 approved the
+implementation and scoped evidence reuse; the plan links the final archive
+review. Public contracts, dependencies, runtime/model versions and frozen
+authorities remain unchanged.
+
 The [completed narration/Chatterbox corrections](plans/completed/narration-chatterbox-correctness.md)
 preserve the exact final heard position, reconcile automatic compatibility with
 active narration, enable explicit acquisition retry, measure the optional-data

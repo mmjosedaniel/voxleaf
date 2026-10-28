@@ -73,7 +73,10 @@ export function usePreferenceHydration({
           result.status === "ready"
             ? result.preferences
             : defaultReaderPreferences;
-        readerPositionRestoreCoordinator.setPreferences(preferences);
+        readerPositionRestoreCoordinator.setPreferences(
+          preferences,
+          result.status,
+        );
         setReaderPreferencePresentation({
           preferences,
           status: result.status,

@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Static-audit corrections](static-audit-corrections.md): fifteen revalidated
-  reader, narration, preference, native and validation-tool findings; minimal
-  owner changes and explicit historical-evidence reuse decisions. Planning
-  complete; implementation and validation not started.
+There are no active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

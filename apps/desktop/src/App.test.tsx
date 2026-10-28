@@ -37,6 +37,7 @@ import {
   type NarrationStartPreferenceReadResult,
 } from "./persistence/narration-start-preference";
 import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-restore-coordinator";
+import { READER_PREFERENCES_STORAGE_KEY } from "./persistence/reader-position-repository";
 import { DEFAULT_READER_PREFERENCES } from "./reader/reader-preferences";
 import * as settingsDialog from "./settings/ReaderSettingsDialog";
 import type {
@@ -484,7 +485,7 @@ describe("App preference connection characterization", () => {
         canPersist: status !== "unsupported-version",
       },
     });
-    expect(sink).toHaveBeenCalledExactlyOnceWith(preferences);
+    expect(sink).toHaveBeenCalledExactlyOnceWith(preferences, status);
     expect(sink.mock.invocationCallOrder[0]).toBeLessThan(
       settings.observer.mock.invocationCallOrder.at(-1)!,
     );
@@ -492,6 +493,39 @@ describe("App preference connection characterization", () => {
     expect(f.reader.writePosition).not.toHaveBeenCalled();
     expect(f.narration.write).not.toHaveBeenCalled();
     expect(f.narration.reset).not.toHaveBeenCalled();
+  });
+
+  it("SAC-15 keeps future preferences protected after hydration and book open", async () => {
+    const future = '{"schemaVersion":2,"futureSetting":"preserved"}';
+    window.localStorage.setItem(READER_PREFERENCES_STORAGE_KEY, future);
+    const settings = observeSettings();
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        ReadyPublicationContent={() => <article>Synthetic reader</article>}
+      />,
+    );
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe(
+        "unsupported-version",
+      ),
+    );
+    expect(settings.current().canPersistReaderPreferences).toBe(false);
+    selectEpub();
+    await screen.findByRole("article");
+    expect(settings.current()).toMatchObject({
+      readerPreferences: DEFAULT_READER_PREFERENCES,
+      readerPreferencesStatus: "unsupported-version",
+      canPersistReaderPreferences: false,
+    });
+    openSettings();
+    expect(screen.getByRole("combobox", { name: "Theme" })).toBeDisabled();
+    expect(window.localStorage.getItem(READER_PREFERENCES_STORAGE_KEY)).toBe(
+      future,
+    );
   });
 
   it.each([
@@ -598,9 +632,7 @@ describe("App preference connection characterization", () => {
       expect(f.reader.readPreferences).toHaveBeenCalledTimes(
         outcome === "resolve" ? 1 : 2,
       );
-      expect(settings.current().readerPreferencesStatus).toBe(
-        outcome === "resolve" ? "ready" : "unavailable",
-      );
+      expect(settings.current().readerPreferencesStatus).toBe("unavailable");
       expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
         DEFAULT_READER_PREFERENCES,
       );
@@ -993,7 +1025,10 @@ describe("App preference connection characterization", () => {
         });
         f.narrationRead.resolve({ status: "ready", selection: savedSelection });
       });
-      expect(sink).toHaveBeenCalledExactlyOnceWith(savedReaderPreferences);
+      expect(sink).toHaveBeenCalledExactlyOnceWith(
+        savedReaderPreferences,
+        "ready",
+      );
       expect(settings.current().readerPreferences).toEqual(
         savedReaderPreferences,
       );

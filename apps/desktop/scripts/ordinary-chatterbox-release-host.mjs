@@ -370,6 +370,7 @@ export function evaluateHostGate(report) {
   const knownAtLeast = (quantity, minimum) =>
     quantity?.status === "known" && quantity.value >= minimum;
   const cuda = report?.providers?.cuda;
+  const capability = report?.cudaComputeCapability;
   return (
     report?.schemaVersion === 1 &&
     report?.platform?.operatingSystem === "windows" &&
@@ -380,6 +381,9 @@ export function evaluateHostGate(report) {
     cuda?.availability === "available" &&
     cuda?.deviceClass === "discrete-gpu" &&
     cuda?.precisions?.bfloat16 === "available" &&
+    capability?.status === "known" &&
+    capability.major === 12 &&
+    capability.minor === 0 &&
     knownAtLeast(cuda?.dedicatedMemoryMiB, 5_632) &&
     knownAtLeast(cuda?.availableDedicatedMemoryMiB, 4_668)
   );
