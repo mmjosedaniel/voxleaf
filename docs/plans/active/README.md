@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation ExecPlans are currently awaiting work or acceptance.
+- [Static-audit corrections](static-audit-corrections.md): fifteen revalidated
+  reader, narration, preference, native and validation-tool findings; minimal
+  owner changes and explicit historical-evidence reuse decisions. Planning
+  complete; implementation and validation not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
