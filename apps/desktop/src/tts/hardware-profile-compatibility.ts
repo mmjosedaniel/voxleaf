@@ -547,24 +547,30 @@ export class HardwareProfileCompatibilityCoordinator {
   async #runProbe(sequence: number): Promise<HardwareCompatibilitySnapshotV1> {
     const profileSelection = this.#profileSelection;
     const languageSelection = this.#languageSelection;
+    let preference: HardwareProfilePreferenceReadResult | undefined;
+    let languagePreference: NarrationLanguagePreferenceReadResult | undefined;
     try {
-      const [report, nativeGate, readPreference, readLanguagePreference] =
+      const [hardware, readPreference, readLanguagePreference] =
         await Promise.all([
-          this.#detector.detect(),
-          this.#developmentGate.exactDemoAvailability(),
+          Promise.all([
+            this.#detector.detect(),
+            this.#developmentGate.exactDemoAvailability(),
+          ]).catch(() => undefined),
           this.#preferenceRepository.read(),
           this.#languagePreferenceRepository.read(),
         ]);
       // Only choices completed during this probe supersede its captured reads.
       // Fresh hardware facts still decide whether the resulting choice is admitted.
-      const preference =
+      preference =
         this.#profileSelection !== profileSelection
           ? (this.#profileSelection ?? readPreference)
           : readPreference;
-      const languagePreference =
+      languagePreference =
         this.#languageSelection !== languageSelection
           ? (this.#languageSelection ?? readLanguagePreference)
           : readLanguagePreference;
+      if (hardware === undefined) throw new Error("compatibility-unavailable");
+      const [report, nativeGate] = hardware;
       const language = languagePreference.language;
       const preferredProfileId = preferenceInput(preference);
       const matches = matchHardwareProfilesV1({
@@ -614,22 +620,30 @@ export class HardwareProfileCompatibilityCoordinator {
         ? this.#snapshot
         : snapshot;
     } catch {
-      const languagePreference =
+      languagePreference =
         this.#languageSelection !== languageSelection
           ? this.#languageSelection
-          : undefined;
+          : languagePreference;
       const snapshot = Object.freeze({
+        ...this.#snapshot,
         status: "failed",
         reason: undefined,
         profiles: Object.freeze([]),
         activeProfileId: undefined,
         selectionSource: undefined,
-        preferenceStatus: "unavailable",
+        preferenceStatus: preference?.status ?? this.#snapshot.preferenceStatus,
         fallbackAvailable: false,
-        canPersistSelection: true,
-        language: languagePreference?.language ?? DEFAULT_NARRATION_LANGUAGE_V2,
-        languagePreferenceStatus: languagePreference?.status ?? "unavailable",
-        canPersistLanguage: true,
+        canPersistSelection:
+          preference === undefined
+            ? this.#snapshot.canPersistSelection
+            : preference.status !== "unsupported-version",
+        language: languagePreference?.language ?? this.#snapshot.language,
+        languagePreferenceStatus:
+          languagePreference?.status ?? this.#snapshot.languagePreferenceStatus,
+        canPersistLanguage:
+          languagePreference === undefined
+            ? this.#snapshot.canPersistLanguage
+            : languagePreference.status !== "unsupported-version",
         languageReason: "no-profile-for-language",
       }) satisfies HardwareCompatibilitySnapshotV1;
       if (!this.#closed && sequence === this.#sequence) {

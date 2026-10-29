@@ -1,5 +1,26 @@
 # Testing strategy
 
+## Verified chat audit regressions
+
+The [VCA plan](../plans/completed/verified-chat-audit-corrections.md) groups the nine
+corrections into desktop, owned-path removal and benchmark suites. `VCA`/`vca`
+tests use deferred teardown, a real process-client protocol boundary, code-point
+DOM geometry, disposable Windows junctions and controlled API failures. The
+existing reader browser spec covers paused next/previous placement, exact Resume
+offsets, retained heard checkpoints, focus/selection and empty preparation
+controls in one synthetic book. A deterministic reader regression overlaps
+preference reflow with pending interior navigation and verifies one navigation
+settlement, retained paused intent and resumed passive locator observations.
+
+The Windows benchmark watchdog regression starts a blocked synthetic descendant
+and observes its verified handle exit within the injected watchdog plus cleanup
+bound, with unconditional owned-handle cleanup. Job accounting reaching zero
+does not mean every process handle is already signalled in the same instant.
+Production containment assigns the suspended worker to its Job before resuming
+the interpreter launcher. These tests require neither models nor GPU inference;
+they do not revise historical benchmark results. Both configured Rust variants,
+the package hooks and desktop Node suites remain part of combined acceptance.
+
 ## Validated chat finding corrections
 
 Use the [execution ledger](../plans/evidence/validated-chat-findings-corrections.md)

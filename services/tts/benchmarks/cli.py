@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Mapping
+from ctypes import wintypes
 from pathlib import Path
-from typing import Final, NoReturn, cast
+from typing import Final, NoReturn, Protocol, cast
 
 from benchmarks.adapters.manifest import (
     CandidateConfiguration,
@@ -16,6 +19,7 @@ from benchmarks.adapters.manifest import (
     CandidateProvider,
     load_benchmark_candidate_profile,
 )
+from benchmarks.memory import _load_windows_dll
 from benchmarks.preflight import (
     PreflightReceipt,
     PreflightRequest,
@@ -270,6 +274,185 @@ def _preflight_passed(receipt: PreflightReceipt) -> bool:
     return receipt.purpose == "pilot" or receipt.eligible_for_official_run
 
 
+class _JobLimits(ctypes.Structure):
+    _fields_ = (
+        ("process_time", ctypes.c_longlong),
+        ("job_time", ctypes.c_longlong),
+        ("flags", wintypes.DWORD),
+        ("minimum_working_set", ctypes.c_size_t),
+        ("maximum_working_set", ctypes.c_size_t),
+        ("active_process_limit", wintypes.DWORD),
+        ("affinity", ctypes.c_size_t),
+        ("priority_class", wintypes.DWORD),
+        ("scheduling_class", wintypes.DWORD),
+    )
+
+
+class _ExtendedJobLimits(ctypes.Structure):
+    _fields_ = (
+        ("basic", _JobLimits),
+        ("io_counters", ctypes.c_ulonglong * 6),
+        ("process_memory", ctypes.c_size_t),
+        ("job_memory", ctypes.c_size_t),
+        ("peak_process_memory", ctypes.c_size_t),
+        ("peak_job_memory", ctypes.c_size_t),
+    )
+
+
+class _JobAccounting(ctypes.Structure):
+    _fields_ = (
+        ("times", ctypes.c_longlong * 4),
+        ("page_faults", wintypes.DWORD),
+        ("total_processes", wintypes.DWORD),
+        ("active_processes", wintypes.DWORD),
+        ("terminated_processes", wintypes.DWORD),
+    )
+
+
+class _WindowsProcessHandle(Protocol):
+    _handle: int
+
+
+class _ThreadEntry(ctypes.Structure):
+    _fields_ = (
+        ("size", wintypes.DWORD),
+        ("usage", wintypes.DWORD),
+        ("thread_id", wintypes.DWORD),
+        ("process_id", wintypes.DWORD),
+        ("base_priority", wintypes.LONG),
+        ("delta_priority", wintypes.LONG),
+        ("flags", wintypes.DWORD),
+    )
+
+
+class _MeasurementJob:
+    """The Windows-only measurement owner keeps a non-inherited tree handle."""
+
+    def __init__(self) -> None:
+        self._kernel = _load_windows_dll("kernel32")
+        for name, arguments, result in (
+            ("CreateJobObjectW", (ctypes.c_void_p, wintypes.LPCWSTR), wintypes.HANDLE),
+            (
+                "SetInformationJobObject",
+                (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD),
+                wintypes.BOOL,
+            ),
+            ("AssignProcessToJobObject", (wintypes.HANDLE, wintypes.HANDLE), wintypes.BOOL),
+            ("TerminateJobObject", (wintypes.HANDLE, wintypes.UINT), wintypes.BOOL),
+            (
+                "QueryInformationJobObject",
+                (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p),
+                wintypes.BOOL,
+            ),
+            ("CloseHandle", (wintypes.HANDLE,), wintypes.BOOL),
+            ("CreateToolhelp32Snapshot", (wintypes.DWORD, wintypes.DWORD), wintypes.HANDLE),
+            ("Thread32First", (wintypes.HANDLE, ctypes.POINTER(_ThreadEntry)), wintypes.BOOL),
+            ("Thread32Next", (wintypes.HANDLE, ctypes.POINTER(_ThreadEntry)), wintypes.BOOL),
+            ("OpenThread", (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD), wintypes.HANDLE),
+            ("GetProcessIdOfThread", (wintypes.HANDLE,), wintypes.DWORD),
+            ("ResumeThread", (wintypes.HANDLE,), wintypes.DWORD),
+            ("WaitForSingleObject", (wintypes.HANDLE, wintypes.DWORD), wintypes.DWORD),
+        ):
+            function = getattr(self._kernel, name)
+            function.argtypes = arguments
+            function.restype = result
+        self._handle = self._kernel.CreateJobObjectW(None, None)
+        if not self._handle:
+            _fail("cleanup-failed")
+        limits = _ExtendedJobLimits()
+        limits.basic.flags = 0x00002000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not self._kernel.SetInformationJobObject(
+            self._handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)
+        ):
+            self._kernel.CloseHandle(self._handle)
+            _fail("cleanup-failed")
+
+    def assign(self, process: subprocess.Popen[str]) -> None:
+        # Popen owns this exact CreateProcess handle; no PID lookup or name kill.
+        handle = int(cast(_WindowsProcessHandle, process)._handle)
+        if not self._kernel.AssignProcessToJobObject(self._handle, handle):
+            _fail("cleanup-failed")
+        # Popen closes its primary thread handle. Find that still-suspended
+        # thread, verify its owner against the retained live process handle,
+        # and resume only after containment (including Python venv launchers).
+        snapshot = self._kernel.CreateToolhelp32Snapshot(0x00000004, 0)
+        if snapshot == ctypes.c_void_p(-1).value:
+            _fail("cleanup-failed")
+        try:
+            entry = _ThreadEntry()
+            entry.size = ctypes.sizeof(entry)
+            found = self._kernel.Thread32First(snapshot, ctypes.byref(entry))
+            deadline = time.monotonic() + 5
+            while found and time.monotonic() < deadline:
+                if entry.process_id == process.pid:
+                    thread = self._kernel.OpenThread(0x0002 | 0x0800, False, entry.thread_id)
+                    if not thread:
+                        _fail("cleanup-failed")
+                    try:
+                        if (
+                            self._kernel.WaitForSingleObject(handle, 0) != 258
+                            or self._kernel.GetProcessIdOfThread(thread) != process.pid
+                            or self._kernel.ResumeThread(thread) != 1
+                        ):
+                            _fail("cleanup-failed")
+                        return
+                    finally:
+                        self._kernel.CloseHandle(thread)
+                found = self._kernel.Thread32Next(snapshot, ctypes.byref(entry))
+            _fail("cleanup-failed")
+        finally:
+            self._kernel.CloseHandle(snapshot)
+
+    def close(self, deadline: float) -> None:
+        try:
+            if not self._kernel.TerminateJobObject(self._handle, 1):
+                _fail("cleanup-failed")
+            while True:
+                accounting = _JobAccounting()
+                if not self._kernel.QueryInformationJobObject(
+                    self._handle, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None
+                ):
+                    _fail("cleanup-failed")
+                if accounting.active_processes == 0:
+                    return
+                if time.monotonic() >= deadline:
+                    _fail("cleanup-failed")
+                time.sleep(0.01)
+        finally:
+            self._kernel.CloseHandle(self._handle)
+
+
+def _measure_process(command: tuple[str, ...], payload: str) -> subprocess.CompletedProcess[str]:
+    job = _MeasurementJob()
+    process: subprocess.Popen[str] | None = None
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=SERVICE_ROOT,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=0x08000000 | 0x00000004,  # NO_WINDOW | SUSPENDED
+        )
+        # Assignment precedes even the interpreter launcher's first instruction.
+        job.assign(process)
+        stdout, stderr = process.communicate(payload, timeout=MEASUREMENT_TIMEOUT_SECONDS)
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    finally:
+        deadline = time.monotonic() + 5
+        try:
+            job.close(deadline)
+        finally:
+            if process is not None:
+                if process.poll() is None:
+                    process.kill()
+                process.wait(timeout=max(0.001, deadline - time.monotonic()))
+                for stream in (process.stdin, process.stdout, process.stderr):
+                    if stream is not None:
+                        stream.close()
+
+
 def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:
     request = parse_preflight_request(value)
     receipt = run_local_preflight(request)
@@ -283,19 +466,14 @@ def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:
             2,
         )
     try:
-        completed = subprocess.run(
+        completed = _measure_process(
             (
                 str(request.candidate_python.resolve(strict=True)),
                 "-m",
                 "benchmarks.cli",
                 "_measure-worker",
             ),
-            cwd=SERVICE_ROOT,
-            input=json.dumps(value, ensure_ascii=True, separators=(",", ":")),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=MEASUREMENT_TIMEOUT_SECONDS,
+            json.dumps(value, ensure_ascii=True, separators=(",", ":")),
         )
         if len(completed.stdout.encode("utf-8")) > MAXIMUM_STDIN_BYTES:
             _fail("invalid-worker-output")

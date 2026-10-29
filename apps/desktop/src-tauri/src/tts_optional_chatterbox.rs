@@ -729,16 +729,20 @@ fn promotion_backup_root(root: &Path) -> PathBuf {
 // Only an explicit NotFound proves absence; inaccessible or dangling entries
 // must remain discoverable and must fail closed during removal.
 fn owned_path_present(path: &Path) -> bool {
-    !matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+    #[cfg(test)]
+    let metadata = tests::owned_path_metadata(path);
+    #[cfg(not(test))]
+    let metadata = fs::symlink_metadata(path);
+    !matches!(metadata, Err(error) if error.kind() == std::io::ErrorKind::NotFound)
 }
 
 fn retained_package_exists(root: &Path) -> bool {
     owned_path_present(&promotion_backup_root(root))
         || owned_path_present(&retained_v6_package_root(root))
         || owned_path_present(&retained_v5_package_root(root))
-        || retained_v3_package_root(root).exists()
-        || retained_package_root(root).exists()
-        || legacy_package_root(root).exists()
+        || owned_path_present(&retained_v3_package_root(root))
+        || owned_path_present(&retained_package_root(root))
+        || owned_path_present(&legacy_package_root(root))
 }
 
 fn runtime_manifest_name(manifest: &OptionalPackageManifest) -> String {
@@ -786,7 +790,7 @@ fn canonical_contained_directory(
 }
 
 fn remove_contained_directory(root: &Path, directory: &Path) -> Result<(), OptionalProfileError> {
-    if !directory.exists() {
+    if !owned_path_present(directory) {
         return Ok(());
     }
     canonical_contained_directory(root, directory)?;
@@ -1863,7 +1867,7 @@ impl OptionalChatterboxManager {
         }
         #[cfg(test)]
         tests::run_snapshot_idle_hook();
-        let active_exists = package_root(root).exists();
+        let active_exists = owned_path_present(&package_root(root));
         let retained_exists = retained_package_exists(root);
         if (!active_exists && retained_exists)
             || (manifest.availability == "withheld" && (active_exists || retained_exists))
@@ -1918,14 +1922,12 @@ impl OptionalChatterboxManager {
                 0,
                 None,
             )),
-            Err(OptionalProfileError::VerificationFailed) if package_root(root).exists() => {
-                Ok(snapshot_from(
-                    manifest,
-                    OptionalProfileState::Failed,
-                    0,
-                    Some("installed-package-invalid"),
-                ))
-            }
+            Err(OptionalProfileError::VerificationFailed) if active_exists => Ok(snapshot_from(
+                manifest,
+                OptionalProfileState::Failed,
+                0,
+                Some("installed-package-invalid"),
+            )),
             Err(OptionalProfileError::VerificationFailed) => Ok(snapshot_from(
                 manifest,
                 OptionalProfileState::Absent,

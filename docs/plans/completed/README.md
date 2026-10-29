@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Verified chat audit corrections](verified-chat-audit-corrections.md): nine desktop, optional-removal and benchmark corrections accepted with intended-red regressions, combined host checks and Chromium/WebView2 proof. `VCA-R2-20261029` approves the exact implementation and two unchanged current-task Python receipts; R1's preference-overlap finding is resolved. The plan links the separate archive review. VCA-10, model/GPU/download/installer/quality campaigns and historical-result reuse remain excluded. Changes remain unstaged and uncommitted.
+
 - [Validated audit follow-up](validated-audit-follow-up.md): twelve retained reader, narration, benchmark and lifecycle findings corrected. Combined host checks, browser/native evidence, authorized Windows lifecycle and measured personal-state restoration pass. `VAF-R4-20261028` approves implementation and scoped reuse; the plan identifies the separate archive review. H5, real-model occurrence of H8 and new release/quality claims remain excluded. Changes remain unstaged and uncommitted.
 
 - [Static-audit corrections](static-audit-corrections.md): all fifteen reader, narration, preference, native and validation-tool findings corrected with focused regressions. Package/browser/native checks, Piper EN, Chatterbox ES/EN, Windows lifecycle/preflight and verified data restoration passed. `SAC-R3-20261028-01` approves implementation and scoped reuse; the plan links the separate final archive review. Runtime/model versions and frozen authorities are preserved; changes remain uncommitted.

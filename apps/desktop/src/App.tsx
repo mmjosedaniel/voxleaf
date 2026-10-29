@@ -236,9 +236,15 @@ export function App({
   const readyRestoration =
     activeRestoration?.status === "ready" ? activeRestoration : undefined;
   const readyRestorationResult = readyRestoration?.result;
+  const narrationCloseBarrier = useRef(Promise.resolve(true));
+  const [narrationHandoff, setNarrationHandoff] = useState<
+    "ready" | "pending" | "failed"
+  >("ready");
   const narrationCoordinator = useMemo(
     () =>
-      readyPublication === undefined || readyRestorationResult === undefined
+      readyPublication === undefined ||
+      readyRestorationResult === undefined ||
+      narrationHandoff !== "ready"
         ? undefined
         : createNarrationCoordinator(
             readyPublication,
@@ -254,10 +260,38 @@ export function App({
       narrationPlaybackPreferenceRepository,
       readyPublication,
       readyRestorationResult,
+      narrationHandoff,
     ],
   );
 
   useStrictModeSafeResourceCleanup(narrationCoordinator);
+
+  const containNarrationForReplacement = useCallback((): void => {
+    if (narrationCoordinator === undefined) return;
+    setNarrationHandoff("pending");
+    const close = (async () => {
+      await narrationCoordinator?.close();
+      const snapshot = narrationCoordinator?.observe();
+      return (
+        snapshot === undefined ||
+        (snapshot.serviceState === "stopped" &&
+          snapshot.metrics.retainedAudioUnitCount === 0 &&
+          snapshot.metrics.discardedAudioUnitCount === 0 &&
+          snapshot.failure !== "tts-service-failed")
+      );
+    })();
+    const barrier = Promise.all([narrationCloseBarrier.current, close]).then(
+      ([previousContained, currentContained]) =>
+        previousContained && currentContained,
+      () => false,
+    );
+    narrationCloseBarrier.current = barrier;
+    void barrier.then((contained) => {
+      if (narrationCloseBarrier.current === barrier) {
+        setNarrationHandoff(contained ? "ready" : "failed");
+      }
+    });
+  }, [narrationCoordinator]);
 
   useEffect(() => {
     if (narrationCoordinator === undefined) {
@@ -485,7 +519,7 @@ export function App({
     setSettingsOpen(false);
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
-    void narrationCoordinator?.close();
+    containNarrationForReplacement();
     void readerLifecycle.open(file);
   };
   const handleReaderPreferencesChange = useCallback(
@@ -600,11 +634,11 @@ export function App({
   const handleRenderingFailure = useCallback((): void => {
     readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
-    void narrationCoordinator?.close();
+    containNarrationForReplacement();
     readerLifecycle.failRendering();
   }, [
     closeActivePositionSaveCoordinator,
-    narrationCoordinator,
+    containNarrationForReplacement,
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
@@ -732,6 +766,14 @@ export function App({
           onOpenSettings={() => setSettingsOpen(true)}
         />
         {ready ? null : <ShellWelcome />}
+        {narrationHandoff === "pending" ? (
+          <p role="status">Stopping previous narration.</p>
+        ) : narrationHandoff === "failed" ? (
+          <p role="alert">
+            Narration could not be stopped. Restart VoxLeaf before playing
+            another book.
+          </p>
+        ) : null}
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}

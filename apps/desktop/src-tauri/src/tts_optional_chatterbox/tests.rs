@@ -1974,14 +1974,18 @@ fn retained_v2_v3_v5_and_v6_are_cleanup_only_and_survive_observation_and_cancell
 
 #[cfg(any(windows, unix))]
 #[test]
-fn retained_v5_and_v6_dangling_links_cannot_be_reported_as_removed() {
-    for version in ["5", "6"] {
+fn vca02_owned_dangling_links_cannot_be_reported_as_removed() {
+    for version in ["5", "6", "7", "3", "2", "legacy", "cache", "staging"] {
         let root = TestRoot::new();
         let outside = TestRoot::new();
         let target = outside.0.join("removed-target");
         fs::create_dir(&target).unwrap();
         fs::write(outside.0.join("keep.bin"), b"outside").unwrap();
-        let retained = profile_root(&root.0).join(version);
+        let retained = match version {
+            "legacy" => legacy_package_root(&root.0),
+            "staging" => staging_root(&root.0),
+            _ => profile_root(&root.0).join(version),
+        };
         fs::create_dir_all(retained.parent().unwrap()).unwrap();
         #[cfg(unix)]
         std::os::unix::fs::symlink(&target, &retained).unwrap();
@@ -1997,10 +2001,7 @@ fn retained_v5_and_v6_dangling_links_cannot_be_reported_as_removed() {
         fs::remove_dir(&target).unwrap();
         assert!(!retained.exists());
         let manager = OptionalChatterboxManager::default();
-        assert_eq!(
-            manager.snapshot_at(&root.0).unwrap().state,
-            OptionalProfileState::Failed
-        );
+        let discovered = manager.snapshot_at(&root.0);
         let result = manager.remove_at(&root.0);
         let state = manager.snapshot_at(&root.0).unwrap().state;
         let link_remains = fs::symlink_metadata(&retained).is_ok();
@@ -2009,6 +2010,13 @@ fn retained_v5_and_v6_dangling_links_cannot_be_reported_as_removed() {
         fs::remove_dir(&retained).unwrap();
         #[cfg(unix)]
         fs::remove_file(&retained).unwrap();
+        if version != "cache" && version != "staging" {
+            assert_eq!(
+                discovered.unwrap().state,
+                OptionalProfileState::Failed,
+                "{version}"
+            );
+        }
         assert_eq!(result, Err(OptionalProfileError::VerificationFailed));
         assert_eq!(state, OptionalProfileState::Failed);
         assert!(link_remains);
@@ -2017,7 +2025,42 @@ fn retained_v5_and_v6_dangling_links_cannot_be_reported_as_removed() {
             manager.remove_at(&root.0).unwrap().state,
             OptionalProfileState::Absent
         );
+        fs::create_dir_all(&retained).unwrap();
+        fs::write(retained.join("synthetic.bin"), b"owned").unwrap();
+        assert_eq!(
+            manager.remove_at(&root.0).unwrap().state,
+            OptionalProfileState::Absent
+        );
+        assert!(!retained.exists());
     }
+}
+
+thread_local! {
+    static VCA_DENIED_METADATA: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn owned_path_metadata(path: &Path) -> std::io::Result<fs::Metadata> {
+    if VCA_DENIED_METADATA.with(|slot| slot.borrow().as_deref() == Some(path)) {
+        Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+    } else {
+        fs::symlink_metadata(path)
+    }
+}
+
+#[test]
+fn vca02_denied_metadata_is_not_successful_removal() {
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    VCA_DENIED_METADATA.with(|slot| *slot.borrow_mut() = Some(package.clone()));
+    let discovered = OptionalChatterboxManager::default()
+        .snapshot_at(&root.0)
+        .unwrap()
+        .state;
+    let removed = remove_contained_directory(&root.0, &package);
+    VCA_DENIED_METADATA.with(|slot| *slot.borrow_mut() = None);
+    assert_eq!(discovered, OptionalProfileState::Failed);
+    assert_eq!(removed, Err(OptionalProfileError::VerificationFailed));
+    assert_eq!(remove_contained_directory(&root.0, &package), Ok(()));
 }
 
 #[test]

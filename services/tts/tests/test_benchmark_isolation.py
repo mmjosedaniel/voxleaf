@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 
@@ -12,7 +14,7 @@ from benchmarks.batch_contracts import (
     BatchWorkIdentity,
 )
 from benchmarks.batch_fake import DeterministicBatchCandidateFactory
-from benchmarks.contracts import AdapterOperationError, GenerationRequest
+from benchmarks.contracts import AdapterOperationError, AudioChunk, FailureCode, GenerationRequest
 from benchmarks.fake_adapter import FakeMemoryProbe, FakeNanosecondClock
 from benchmarks.harness import (
     MAX_SAMPLE_FRAMES_PER_REQUEST,
@@ -20,6 +22,52 @@ from benchmarks.harness import (
 )
 from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
 from benchmarks.process_fake import ProcessFakeAdapter, ProcessFakeFactory
+
+
+@pytest.mark.parametrize("elapsed", [70.0, 121.0])
+def test_vca07_receives_only_the_remaining_request_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+    elapsed: float,
+) -> None:
+    clock = [0.0]
+    waits: list[float] = []
+    aborted: list[FailureCode] = []
+    adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(adapter, "_ensure_loaded", lambda: None)
+    monkeypatch.setattr(adapter, "_send", lambda _message: None)
+
+    def abort(code: FailureCode) -> NoReturn:
+        aborted.append(code)
+        raise AdapterOperationError(code)
+
+    def receive(timeout: float) -> tuple[object, ...]:
+        waits.append(timeout)
+        if len(waits) == 2 and timeout <= 50:
+            abort("timeout")  # Later chunk is blocked beyond the remaining budget.
+        clock[0] += 70
+        return (
+            "chunk",
+            AudioChunk(
+                request_id="process-request",
+                sequence=len(waits) - 1,
+                sample_count=1,
+                sample_rate_hz=24_000,
+                channels=1,
+                sample_format="float32",
+                end_of_output=False,
+            ),
+        )
+
+    monkeypatch.setattr(adapter, "receive", receive)
+    monkeypatch.setattr(adapter, "abort", abort)
+    generation = adapter.generate(_request())
+    assert next(generation).sequence == 0
+    clock[0] = elapsed
+    with pytest.raises(AdapterOperationError, match="timeout"):
+        next(generation)
+    assert aborted == ["timeout"]
+    assert waits == ([120.0, 50.0] if elapsed == 70 else [120.0])
 
 
 class _VafDiagnosticAdapter(ProcessFakeAdapter):

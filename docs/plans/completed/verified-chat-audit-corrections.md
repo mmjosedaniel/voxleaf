@@ -8,10 +8,13 @@ product, contracts, model/runtime versions and accepted authorities. Minimize
 validation by reusing fixtures and proven unchanged evidence, grouping coupled
 regressions, and running combined acceptance once after the final relevant edit.
 
-This is a planning-only document. Implementation, reproduction, tests, lint,
-type checks, builds, model execution and host mutations have not started.
-The user authorized creation of this plan, its branch and a documentation
-commit; implementation and later Git publication require separate authorization.
+Implementation is authorized in this chat. Entry branch/HEAD are
+`codex/verified-chat-audit-corrections` / `61b9f32c2360f8eb27c1822aa4c94768c465a9ed`;
+the index and worktree were clean. All changes remain uncommitted: staging,
+commit, push, PR and merge are prohibited. Implementation acceptance is approved
+by [VCA-R2-20261029](../evidence/verified-chat-audit-corrections/review-R2.md).
+The separate [archive report](../evidence/verified-chat-audit-corrections/review-R3.md)
+records the final documentation-state assessment.
 
 ## User-visible outcome
 
@@ -135,7 +138,7 @@ only for changes actually delivered; add an ADR only for a new durable decision.
 
 ### M0 — Freeze scope and economical validation
 
-Status: planning complete; execution preparation pending.
+Status: complete; current execution identities captured. Historical PASS reuse declined.
 
 Before production edits, inspect clean/changed paths, capture baseline HEAD,
 complete test/source/config membership and tool/host identities outside the
@@ -147,7 +150,7 @@ regressions must fail for the intended reason before their production fix.
 
 ### M1 — Desktop state and placement corrections
 
-Status: not started.
+Status: implemented; intended-red evidence captured; combined acceptance pending.
 
 - **VCA-01:** explicitly settle an interrupted recovery only after successful
   containment, permitting a new explicit episode/action. Reject late completion
@@ -185,7 +188,7 @@ finding. Keep real native handoff proof distinct from Chromium service mocks.
 
 ### M2 — Fail-closed optional removal
 
-Status: not started.
+Status: implemented; intended-red evidence captured; combined acceptance pending.
 
 **VCA-02:** replace the permissive presence check with the existing
 `owned_path_present` semantics; retain canonical containment, reparse rejection
@@ -205,7 +208,7 @@ removal, installer cycle or GPU is needed for this predicate change.
 
 ### M3 — Trustworthy benchmark failures and containment
 
-Status: not started.
+Status: implemented; intended-red evidence captured; combined acceptance pending.
 
 - **VCA-03:** propagate failed live-process memory inspection as unavailable/
   sampling failure through the existing result boundary. Distinguish proven
@@ -235,7 +238,7 @@ observations. Do not regenerate benchmarks to obtain new numbers for this plan.
 
 ### M4 — One combined acceptance and independent review
 
-Status: not started.
+Status: in progress; host static and combined acceptance next.
 
 Run the selected foundation leaves once on the final relevant sources. Their
 passing regression coverage can supply the final green for M1-M3; do not add a
@@ -316,11 +319,13 @@ at planning time; the source equality narrows the later proof needed.
 
 ### Gate matrix and exact commands
 
-All commands below are **future**, derived from current package configuration,
+Commands below are the selected matrix, derived from current package configuration,
 existing pytest/Cargo runners and existing harnesses. Default cwd is repository
 root; `--filter ... exec` executes inside the desktop package. Filter focused
 tests to the actual edited group. Do not create an unlisted test command from
 memory. A new fixture belongs to an existing runner unless separately justified.
+Actual attempts and current results are distinguished in the
+[execution ledger](../evidence/verified-chat-audit-corrections/execution-ledger.md).
 
 | Gate / invariant | Existing command(s) | Timing, inputs and invalidation |
 | --- | --- | --- |
@@ -388,6 +393,195 @@ because archive bytes match.
 
 ## Progress log
 
+- 2026-10-29 R2 APPROVE: all nine acceptance criteria, R1-F1 resolution,
+  current combined/browser/native evidence and scoped Python carry-forward pass
+  independent review. The director rechecked all 412 reviewed SHA-256/blob/status
+  identities before closeout; branch/HEAD remain unchanged and index empty.
+  Archive this plan and update only maintained navigation/testing/ledger prose.
+  No production/test/build input changes follow R2. Request separate immutable
+  VCA-R3-20261029 for that final documentation state; preserve R1/R2 unchanged.
+  Final archive evidence guard/diff/identity checks run in local PowerShell.
+
+- 2026-10-29 current combined gates after R1-F1: F-TS-R2-04 passed all static
+  leaves and shared 210 / EPUB 720 / desktop 929 / Node 110 with package hooks.
+  F-Desktop-R2-build-02 built the corrected default executable and standalone
+  frontend. F-Rust-R2-02 passed format, both Clippy variants and 141/140 tests
+  after those assets, seven explicit ignores each. B1-browser-R2-04 passed all
+  15 cases (172.82 seconds including hooks), with identical built assets.
+  N1-native-01 passed on that exact binary (13.41 seconds), including native
+  supervisor, isolated WebView2 profile, replacement/persistence and cleanup;
+  no errors/external requests. No extra build via the native wrapper was needed.
+  F-Host-R2-01 confirms unchanged tool versions. Current Python receipts retain
+  zero changed Python inputs (309 recorded identities); submit the complete
+  source/membership/artifact/environment comparison to R2 for scoped carry-forward.
+  F-Docs-R2-02 renews guard plus 31 guard tests; final exact-patch approval remains
+  pending. No historical PASS, model run, download or installation is reused.
+
+- 2026-10-29 F-TS-R2-03 passed format/lint and stopped before runtime tests on
+  two new regression fixture typings: the helper lacked paused state and the
+  assertion used playback instead of state. Add the existing paused contract to
+  that test helper and correct the assertion; no production change. Renew the
+  same combined gate once after formatting; preserve the failed receipt.
+
+- 2026-10-29 R1 returned CHANGES_REQUESTED for one P2 overlap: changing a
+  reader preference replaced pending interior navigation with a reflow-only
+  completion, retaining its sampling suspension. R1-overlap-red-01 reproduced
+  the wrong settlement reason before correction. Preserve the original
+  restoration reason while navigation is pending; the same regression checks
+  paused intent, no automatic start, one settlement and subsequent passive
+  observations. No new production owner or contract is needed. Renew affected
+  TS static/suites, final frontend/native build and full browser spec; renew
+  Rust leaves after final frontend assets because generate_context consumes
+  those inputs. N1 will use that corrected binary. Preserve R1 and all receipts.
+  B1-browser-final-03 had passed all 15 cases on R1; it is superseded for current
+  acceptance by this production correction, not discarded. Python inputs remain
+  unchanged; complete identity proof is required to retain its current receipts.
+
+- 2026-10-29 B1-vca-diagnostic-05 passed navigation, empty controls, focus and
+  selection, then exposed the fixture's existing sixteen-entry observation cap
+  at Resume. Clear only that synthetic observation list before Resume and assert
+  its first new exact offset. Strengthen the same case's multi-screen precondition
+  and traverse twelve next boundaries plus two previous boundaries, so geometry
+  cannot pass merely because nearby targets are visible at block start. One
+  focused diagnosis follows; no product/source/build input changes are needed.
+
+- 2026-10-29 B1-vca-diagnostic-04 reached the focus assertion. The fixture
+  focused the action button that production deliberately disables during
+  settlement; Chromium blurs disabled controls. Use the stable contents button
+  as the existing-focus subject and dispatch the navigation action without
+  moving it, matching the unit case and the preserved focus-policy criterion.
+  Retain all focus and selection assertions, then diagnose this single case;
+  full-spec acceptance still requires one current all-case PASS.
+
+- 2026-10-29 B1-vca-diagnostic-03 passed geometry but failed the added immediate
+  persistence assertion. Caller inspection confirms `scheduleImmediate` refuses
+  visual saves while narration owns the heard checkpoint, including Pause.
+  Preserve that authority as required by this plan: assert checkpoint equality
+  during paused navigation and exact new generation offset on explicit Resume.
+  Replan one focused diagnosis of these corrected assertions before the full
+  spec. Also correct the earlier fixture explanation: multiple paragraph text
+  nodes are observed; the failing trace alone does not establish that highlighting
+  created them. No persistence or DOM-mapper production change is justified.
+
+- 2026-10-29 B1-browser-02 exposed a second test-fixture assumption: the
+  highlight/selection boundary splits paragraph text nodes, so measuring an
+  absolute code-point offset against only `firstChild` raised IndexSizeError.
+  Explicit bounded replan: map the expected offset across all paragraph text
+  nodes with a DOM TreeWalker, retain the same visible-range/persisted-offset
+  assertions, diagnose the single VCA case once, then renew the full spec.
+  The fixture change does not weaken geometry or change production owners.
+
+- 2026-10-29 B1-browser-01: 14 existing cases passed; the new case timed out
+  before navigation because it did not open the details panel that contains
+  passage controls. Preserved the entire failure trace/screenshot/context.
+  Correct only test setup by opening the existing details panel, then run the
+  full 15-case spec again. No production source or binary changed; browser-spec
+  format/lint/type checks renew without repeating unaffected runtime suites.
+
+- 2026-10-29 VCA-08 diagnostic: the child was in the exact Job (five owned
+  launcher/worker processes); Job accounting reached zero while the child's
+  handle was briefly unsignalled, then signalled within the diagnostic's bounded
+  wait. Thus the two previous immediate-exit failures do not prove an escaped
+  child under the Job implementation. Correct the assertion to observe actual
+  handle exit within the existing 2-second test watchdog plus 5-second cleanup,
+  preserving live-child readiness, identity, parent exit and finally containment.
+  A 60-second surviving child still fails. Keep suspended launch because code
+  inspection establishes the pre-assignment launcher race; the observed failures
+  did not independently prove that race. No timeout or production limit increases.
+
+- 2026-10-29 VCA-08 correction still failed the immediate descendant-exit
+  assertion. Explicit replan before further execution: run one instrumented
+  synthetic diagnostic to observe Job membership/accounting and process-handle
+  signalling around termination; do not guess another fix or repeat a suite.
+  The suspended-launch correction remains provisional pending that evidence.
+  TS combined run passed shared 210/EPUB 720 and 926 desktop cases; two existing
+  opening-state tests found a spurious second busy status on the first book.
+  Avoid starting a replacement barrier when there is no narrator to close;
+  an already pending/failed barrier remains unchanged across rapid replacements.
+
+- 2026-10-29 combined suites: Rust passed 141 default / 140 release-locked,
+  seven explicit ignores per variant. Python first combined run: 734 passed,
+  one failed; the real VCA-08 descendant still survived initial Job assignment.
+  Diagnosed startup race: a Python venv launcher can create its interpreter child
+  before Popen returns, earlier than stdin dispatch. Correction stays in CLI:
+  create suspended, assign the exact process handle to the Job, then locate and
+  verify the suspended primary thread's live process ownership before resuming.
+  No name-based termination or unverified PID authority. Rerun the affected CLI
+  file first to diagnose this failure, then renew Python's combined gate only
+  after that correction passes; retain both original red and combined failure.
+  TS static replanned-03 reached all green commands but its final snapshot raced
+  Rust executable linking and failed with PermissionError. The one unchanged
+  infrastructure retry after Rust became idle passed as host-retry-04. The
+  failed capture is not reconstructed or treated as a complete receipt.
+
+- 2026-10-29 TS static attempts: 01 found React ref-capture constraints; moved
+  restoration settlement into the existing layout-effect boundary using its
+  captured navigation revision. Attempt 02 passed lint and reached types,
+  exposing three Testing Library queries using Playwright's `exact` option.
+  Bounded replan: use exact name regexes and rerun current TS static leaves.
+  Added an exact persisted-offset assertion to the combined browser case before
+  its first execution. Python static replanned-03 passed all leaves (180 mypy
+  source files). No runtime suite has been rerun for these static corrections.
+
+- 2026-10-29 F1 static: Rust format/Clippy passed in both variants. Evidence
+  guard and 31 guard tests passed. Python static attempt 01 stopped at Ruff B009
+  on constant getattr; attempt 02 reached mypy and exposed the private Windows
+  Popen handle missing from portable stubs plus two non-exported module-mock
+  references. Explicit bounded replan after this second static failure: type
+  only the Windows handle capability through a private Protocol and patch the
+  imported subprocess module in tests, then rerun affected Python static leaves.
+  These are code/type corrections, not infrastructure retries; original receipts
+  remain immutable. No assertion, runtime limit or acceptance criterion relaxed.
+
+- 2026-10-29 M1-M3: implemented the nine corrections in their allowlisted owners.
+  D1-state-red-01 failed six intended assertions, with two controls passing;
+  D1-handoff-red-02 failed all three premature-replacement cases;
+  D1-placement-red-02 failed both immediate interior-settlement assertions.
+  First handoff/placement attempts exposed fixture errors (unstable external
+  snapshot / incorrect accessible name); fixed the fixtures, retained those
+  failed receipts, then obtained the intended reds. No production workaround
+  was used to obtain those reproductions.
+  D2-red-01 failed both dangling active-root and denied-metadata regressions.
+  D3-red-01 failed nine expected assertions (RAM, request/cancellation deadline,
+  actual surviving descendant); one proven-exit memory control passed. Its
+  exact-handle finally cleanup verified the synthetic descendant's exit.
+- 2026-10-29 implementation decisions: Settings uses existing stop/reset calls;
+  interrupted recovery settles only after verified teardown without refunding
+  its retry budget. App chains close/observed-containment before creating a new
+  narrator. Reader reuses bounded code-point reflow placement and suppresses
+  immediate passive resampling; unavailable/offscreen placement recovers to
+  block start. Paused presentation reflects released ownership. Compatibility
+  failures retain known language and future-version persistence protections.
+  Rust reuses owned-path metadata semantics and a test-only denied-access seam.
+  Benchmark memory requires successful inspection or proven handle exit;
+  generation/cancellation use one deadline. Outer measurement owns a Windows
+  Job Object attached before private stdin dispatch, with kill-on-close and
+  bounded active-process verification. Existing Python adapter taskkill depends
+  on a live parent and cannot establish this guarantee; native supervisor Job
+  ownership was inspected but is not a Python-callable owner. No dependency,
+  public contract, frozen benchmark or model change is introduced.
+- 2026-10-29 validation selection remains **EJECUTAR** F1/B1/N1 and current
+  independent review; **REUTILIZAR** historical PASS: none. Supplemental tests
+  cover the actual TTS client's deferred supervisor acknowledgement, bounded
+  geometry fallback and outer cleanup on success/error/interruption. Final
+  green will come from the combined suites, not another focused green run.
+
+- 2026-10-28 execution M0: verified branch/HEAD and clean entry state; read the
+  complete plan, AGENTS, bug skill, review/reuse policies and relevant authorities.
+  VAF R4/R5 and SAC reports are historical; VAF R5 manifest/receipt-map hashes
+  match their recorded identities. Inspected original F-TS-tests-01 (exit 1,
+  shared 210 / EPUB 720 pass) and F-Python-tests-01 (exit 0, 722 tests).
+  **EJECUTAR** all selected fast leaves: partial old identities do not prove the
+  complete install/discovery/environment closure, and fresh package tests are
+  cheaper than proving reuse. No historical runtime PASS is reused.
+  **NO APLICA** model/GPU/download/installer/quality gates for the stated scope.
+  D1/D2/D3 intended reds, final F1/B1/N1 and review remain **EJECUTAR/pending**.
+  Captures use ignored `tmp/evidence/verified-chat-audit-corrections/` with
+  distinct immutable before/after/log/result receipts; M0-host records normal
+  local PowerShell 7.6.5, Node 24.20.0, pnpm 11.15.1, uv 0.11.29,
+  Rust/Cargo 1.97.1 and Windows build 26200. The shell Python is 3.14.6;
+  project commands continue to use the locked uv project interpreter.
+
 - 2026-10-28: Revalidated nine findings on `ab6a609`; excluded engine-dependent
   indexing risk. Read repository plan/validation/testing authorities and current
   command definitions. Inspected VAF/SAC reports and retained receipts; performed
@@ -395,11 +589,12 @@ because archive bytes match.
 - 2026-10-28: Created the dedicated planning branch and this ExecPlan with the
   active-index entry. Documentation commit is authorized; production execution
   and acceptance remain pending.
-- [ ] M0 execution identity/readiness and final reuse dispositions.
-- [ ] M1 desktop regressions and minimal corrections.
-- [ ] M2 native removal regressions and correction.
-- [ ] M3 benchmark regressions and corrections.
-- [ ] M4 combined gates, exact-patch review and documentation closeout.
+- [x] M0 execution identity/readiness and final reuse dispositions.
+- [x] M1 desktop regressions and minimal corrections.
+- [x] M2 native removal regressions and correction.
+- [x] M3 benchmark regressions and corrections.
+- [x] M4 combined gates, R2 implementation approval and documented archive;
+  the separate R3 report records the final archive assessment.
 
 ## Discoveries and decisions
 
@@ -417,15 +612,32 @@ because archive bytes match.
 
 ## Final validation results
 
-Planning only: source, configuration, documentation, historical receipt and
-selected SHA-256 reads were performed. No tests, validation scripts, formatting,
-lint, type checking, builds, GPU/model work or application behavior were run.
-No historical gate is claimed as a fresh or fully approved reused PASS for the
-future implementation. The current plan's contents/links and exact Git diff are
-reviewed as text before the authorized documentation commit.
+VCA-01–09 are implemented and accepted by independent **VCA-R2-20261029 APPROVE**.
+R1-F1 was reproduced, minimally corrected and covered by the current full suite.
+The [execution ledger](../evidence/verified-chat-audit-corrections/execution-ledger.md)
+records exact commands, failed attempts, current receipts and omissions.
 
-All nine corrections, intended-red reproductions, current acceptance results,
-cleanup proof and independent implementation approval are **pending**. The final
-implementation report must list executed commands/results separately from each
-approved reused receipt, record omissions and limits, and archive this plan only
-after the stated acceptance criteria are satisfied.
+- **EJECUTAR / PASS:** current TypeScript format/lint/types and tests (shared 210,
+  EPUB 720, desktop 929, Node 110); Rust format, both Clippy/test variants
+  (141/140 pass, seven ignores each); default native and portable frontend
+  builds; affected browser spec (15); model-free WebView2/native supervisor
+  smoke and cleanup; evidence guard plus 31 tests.
+- **REUTILIZAR con prueba / R2-approved:** only this task's immutable
+  F-Python-renewed-02 (format/lint, mypy 180, pytest 735) and F-Python-build-01
+  (wheel/sdist). Original input snapshots, complete current deltas, independently
+  inspected consumers/discovery and unchanged host/dependency records establish
+  their independence from the later frontend correction. These are executed
+  task results retained into R2, not fresh R2 Python runs or VAF/SAC acceptance.
+- **NO APLICA:** models/GPU, real downloads, installation/uninstallation,
+  quality/listening benchmarks and frozen-result regeneration; their
+  responsibilities remain unchanged. No ignored test is claimed PASS. VCA-10
+  remains excluded. The check/check:portable leaves are covered without claiming
+  that either aggregate ran.
+- **BLOQUEADO:** no remaining implementation acceptance blocker in R2. The
+  archive-state verdict and final identity recheck are recorded separately in
+  [R3](../evidence/verified-chat-audit-corrections/review-R3.md).
+
+Canonical architecture, public contracts, local-only EPUB/TTS, memory-only audio,
+bounded cancellation and frozen authorities remain unchanged. Existing large
+frontend-chunk and pytest cache-write warnings remain recorded; they did not
+fail the selected gates. All task changes remain unstaged and uncommitted.

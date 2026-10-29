@@ -537,6 +537,71 @@ describe("hardware profile compatibility coordinator", () => {
     },
   );
 
+  it.each(["restored", "selected", "during-probe", "future-version"] as const)(
+    "VCA-04 preserves %s preferences across rejection and a later recheck",
+    async (scenario) => {
+      let rejectReport!: (error: Error) => void;
+      const detector = { detect: vi.fn(async () => completeReport()) };
+      const language = languagePreference(
+        scenario === "selected" ? "en" : "es",
+      );
+      const profile = preference(
+        scenario === "future-version"
+          ? { status: "unsupported-version" }
+          : { status: "missing" },
+      );
+      if (scenario === "future-version") {
+        vi.mocked(language.read).mockResolvedValue({
+          status: "unsupported-version",
+          language: "en",
+        });
+      }
+      const subject = new HardwareProfileCompatibilityCoordinator(
+        dependencies({
+          detector,
+          languagePreference: language,
+          preference: profile,
+        }),
+      );
+      await subject.ensureChecked();
+      if (scenario === "selected") await subject.selectLanguage("es");
+      detector.detect.mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectReport = reject;
+          }),
+      );
+      const probe = subject.check("explicit-recheck");
+      expect(subject.check("operating-system-resume")).toBe(probe);
+      if (scenario === "during-probe") await subject.selectLanguage("en");
+      rejectReport(new Error("synthetic host probe failure"));
+      await probe;
+      const expectedLanguage =
+        scenario === "future-version" || scenario === "during-probe"
+          ? "en"
+          : "es";
+      expect(subject.observe()).toMatchObject({
+        status: "failed",
+        language: expectedLanguage,
+        activeProfileId: undefined,
+        canPersistLanguage: scenario !== "future-version",
+        canPersistSelection: scenario !== "future-version",
+        languagePreferenceStatus:
+          scenario === "future-version" ? "unsupported-version" : "ready",
+      });
+      if (scenario === "future-version") {
+        expect(await subject.selectLanguage("es")).toBe(false);
+        expect(language.write).not.toHaveBeenCalled();
+      }
+      await subject.check("explicit-recheck");
+      expect(subject.observe()).toMatchObject({
+        status: "compatible",
+        language: expectedLanguage,
+      });
+      subject.close();
+    },
+  );
+
   it("preserves a newer language when the pending host probe fails", async () => {
     let rejectReport!: (error: Error) => void;
     const detector = { detect: vi.fn(async () => completeReport()) };

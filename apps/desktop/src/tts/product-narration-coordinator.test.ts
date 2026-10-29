@@ -515,6 +515,118 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each([
+    "language-success",
+    "profile-late-failure",
+    "cleanup-failure",
+  ] as const)(
+    "VCA-01 contains interrupted recovery before explicit restart: %s",
+    async (scenario) => {
+      const { client, coordinator, backend } = createHarness();
+      let settlePreparation!: () => void;
+      const prepare = vi
+        .spyOn(client, "prepare")
+        .mockRejectedValueOnce(
+          new TtsProcessClientError("tts-service-internal-failure"),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve, reject) => {
+              settlePreparation = () =>
+                scenario === "profile-late-failure"
+                  ? reject(
+                      new TtsProcessClientError("tts-service-internal-failure"),
+                    )
+                  : resolve(client.observe());
+            }),
+        );
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().recovery.canRecover);
+      coordinator.recover();
+      await settleUntil(() => prepare.mock.calls.length === 2);
+      const shutdown =
+        scenario === "cleanup-failure"
+          ? vi
+              .spyOn(client, "shutdown")
+              .mockRejectedValue(new Error("synthetic cleanup failure"))
+          : undefined;
+      const stopping = coordinator.stopForConfigurationChange();
+      coordinator.resetRecoveryEpisode();
+      expect(coordinator.observe().recovery.phase).toBe("recovering");
+      coordinator.start();
+      expect(prepare).toHaveBeenCalledTimes(2);
+      settlePreparation();
+      await stopping;
+      try {
+        expect(backend.active).toBeUndefined();
+        expect(coordinator.observe().metrics.retainedAudioUnitCount).toBe(0);
+        if (scenario === "cleanup-failure") {
+          expect(coordinator.observe().availability).toBe("unavailable");
+          coordinator.start();
+          expect(prepare).toHaveBeenCalledTimes(2);
+        } else {
+          await settleUntil(
+            () => coordinator.observe().availability === "available",
+          );
+          expect(coordinator.observe().recovery.phase).toBe("operational");
+          expect(prepare).toHaveBeenCalledTimes(2);
+          coordinator.start();
+          await settleUntil(
+            () => coordinator.observe().state?.phase === "playing",
+          );
+          expect(prepare).toHaveBeenCalledTimes(3);
+        }
+      } finally {
+        shutdown?.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
+  it("VCA-06 paused navigation releases loaded audio and preparation actions until explicit Resume", async () => {
+    const { coordinator, client, backend, prepareNarration } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    coordinator.setVolumePercent(35);
+    coordinator.pause();
+    expect(coordinator.observe().state!.readyMs).toBeGreaterThan(0);
+    await coordinator.beginExternalNavigation("chapter-navigation");
+    coordinator.settleExternalNavigation(END_LOCATOR);
+    await settleUntil(() => !coordinator.observe().navigation.settling);
+    try {
+      expect(coordinator.observe()).toMatchObject({
+        navigation: { playIntent: "paused" },
+        metrics: { retainedAudioUnitCount: 0 },
+        state: {
+          readyMs: 0,
+          progressValueMs: 0,
+          estimatedWaitMs: undefined,
+          allRemainingAudioReady: false,
+          resourceCeilingReached: false,
+          pauseContinuesPreparation: false,
+          canPlayAvailableAudio: false,
+          canPause: false,
+          canResume: true,
+          volumePercent: 35,
+          activePlaybackRatePercent: null,
+          pendingPlaybackRatePercent: null,
+        },
+      });
+      expect(backend.active).toBeUndefined();
+      expect(client.observe().retainedAudioUnits).toBe(0);
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      coordinator.resume();
+      await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        END_LOCATOR,
+      );
+    } finally {
+      await coordinator.close();
+    }
+  });
+
   it.each(["stop", "synthesis-failure"] as const)(
     "CHAT-AUDIT R1 captures final metrics without advancing an expired transition during %s",
     async (action) => {

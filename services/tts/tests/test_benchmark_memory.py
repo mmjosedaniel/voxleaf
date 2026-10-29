@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import ctypes
 from dataclasses import dataclass
+from unittest.mock import Mock
 
 import pytest
 
 from benchmarks.memory import (
+    CpuOnlyVramSampler,
     FrameworkVramTracker,
     ProcessResourceSample,
     ProcessTreeMemoryProbe,
@@ -15,6 +17,56 @@ from benchmarks.memory import (
     WindowsProcessResourceSampler,
     _load_windows_dll,
 )
+
+
+@pytest.mark.parametrize("failure", ["open", "read"])
+@pytest.mark.parametrize("single", [False, True])
+def test_vca03_failed_windows_inspection_cannot_be_zero(
+    failure: str,
+    single: bool,
+) -> None:
+    sampler = object.__new__(WindowsProcessResourceSampler)
+    kernel = Mock()
+    kernel.OpenProcess.return_value = 0 if failure == "open" else 123
+    kernel.WaitForSingleObject.return_value = 258  # live, not signalled
+    api = Mock()
+    api.GetProcessMemoryInfo.return_value = 0
+    sampler._kernel32 = kernel
+    sampler._psapi = api
+    inspect = sampler.process_working_set_bytes if single else sampler._working_set_bytes
+    with pytest.raises(RuntimeError, match="ram-unavailable"):
+        inspect(42)
+    assert kernel.CloseHandle.call_count == (0 if failure == "open" else 1)
+
+
+def test_vca03_live_inspection_failure_reaches_sampling_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sampler = object.__new__(WindowsProcessResourceSampler)
+    kernel = Mock()
+    kernel.OpenProcess.return_value = 0
+    sampler._kernel32 = kernel
+    sampler._vram_sampler = CpuOnlyVramSampler()
+    children: dict[int, int] = {}
+    monkeypatch.setattr(sampler, "_parent_by_pid", lambda: children)
+    probe = ProcessTreeMemoryProbe(root_pid=123, sampler=sampler, require_vram=False)
+    probe.start()  # An actually empty baseline remains valid.
+    children[456] = 123
+    with pytest.raises(RuntimeError, match="sampling-failed"):
+        probe.stop()
+
+
+def test_vca03_proven_exited_process_is_zero_and_closes_handle() -> None:
+    sampler = object.__new__(WindowsProcessResourceSampler)
+    kernel = Mock()
+    kernel.OpenProcess.return_value = 123
+    kernel.WaitForSingleObject.return_value = 0
+    api = Mock()
+    api.GetProcessMemoryInfo.return_value = 0
+    sampler._kernel32 = kernel
+    sampler._psapi = api
+    assert sampler.process_working_set_bytes(42) == 0
+    kernel.CloseHandle.assert_called_once_with(123)
 
 
 def test_windows_dll_loader_fails_closed_when_unavailable(

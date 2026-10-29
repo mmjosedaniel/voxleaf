@@ -23,6 +23,155 @@ async function fixtures() {
   }>;
 }
 
+test("VCA-06/09 paused next and previous place exact interior offsets without audio or stale preparation", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.setViewportSize({ width: 640, height: 480 });
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-vca.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"Synthetic garden 🌿 with quiet paths and ordinary details. ".repeat(140)}</p></body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="pause"]').click();
+  await page.locator('[data-narration-action="details-toggle"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared.length),
+    )
+    .toBeGreaterThan(12);
+  const offsets: number[] = await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").prepared.map(
+      (entry: { offset: number }) => entry.offset,
+    ),
+  );
+  const savedCheckpoint = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  const heardCheckpoint = await savedCheckpoint();
+  let previousIndex = 0;
+  let stoppedCalls: number | undefined;
+  const focus = page.getByRole("button", {
+    name: "Show table of contents",
+    exact: true,
+  });
+  expect(
+    await page.evaluate(() => {
+      const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+      return (
+        document.querySelector(".semantic-document p")!.getBoundingClientRect()
+          .height >
+        viewport.clientHeight * 3
+      );
+    }),
+  ).toBe(true);
+  for (const index of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 10]) {
+    const button = page.locator(
+      `[data-narration-action="${index > previousIndex ? "next" : "previous"}-passage"]`,
+    );
+    await focus.focus();
+    await page.evaluate(() => {
+      const text = document.querySelector(".semantic-document p")!.firstChild!;
+      const range = document.createRange();
+      range.setStart(text, 0);
+      range.setEnd(text, 9);
+      const selection = getSelection()!;
+      selection.removeAllRanges();
+      selection.addRange(range);
+    });
+    await button.evaluate((element: HTMLButtonElement) => element.click());
+    await expect(narration).toHaveAttribute(
+      "data-narration-navigation-settling",
+      "false",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate((offset) => {
+          const viewport =
+            document.querySelector<HTMLElement>(".reader-viewport")!;
+          const bounds = viewport.getBoundingClientRect();
+          const walker = document.createTreeWalker(
+            document.querySelector(".semantic-document p")!,
+            NodeFilter.SHOW_TEXT,
+          );
+          let remaining = offset;
+          for (
+            let node = walker.nextNode();
+            node !== null;
+            node = walker.nextNode()
+          ) {
+            const points = Array.from(node.textContent!);
+            if (remaining >= points.length) {
+              remaining -= points.length;
+              continue;
+            }
+            const utf16 = points.slice(0, remaining).join("").length;
+            const range = document.createRange();
+            range.setStart(node, utf16);
+            range.setEnd(node, utf16 + points[remaining]!.length);
+            const rect = range.getBoundingClientRect();
+            return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+          }
+          return false;
+        }, offsets[index]!),
+      )
+      .toBe(true);
+    expect(await savedCheckpoint()).toEqual(heardCheckpoint);
+    await expect(focus).toBeFocused();
+    expect(await page.evaluate(() => getSelection()?.toString())).toBe(
+      "Synthetic",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-play-intent",
+      "paused",
+    );
+    await expect(narration).toHaveAttribute("data-narration-playable-ms", "0");
+    await expect(narration).toHaveAttribute(
+      "data-narration-retained-units",
+      "0",
+    );
+    await expect(
+      page.locator('[data-narration-action="resume"]'),
+    ).toBeEnabled();
+    await expect(
+      page.locator('[data-narration-action="play-available"]'),
+    ).toHaveCount(0);
+    const calls = await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").calls,
+    );
+    if (stoppedCalls !== undefined) expect(calls).toBe(stoppedCalls);
+    stoppedCalls = calls;
+    previousIndex = index;
+  }
+  // The fixture deliberately caps retained observations at sixteen entries.
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").prepared.length = 0;
+  });
+  await page.locator('[data-narration-action="resume"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.offset),
+    )
+    .toBe(offsets[previousIndex]);
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").calls))
+    .toBeGreaterThan(stoppedCalls!);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
 test("CHAT-AUDIT shared fallback, hidden root, unknown language and loaded-session recheck", async ({
   page,
 }) => {
@@ -981,7 +1130,7 @@ async function installSyntheticService(
         calls: 0,
         blocked: false,
         failSynthesis: () => {},
-        prepared: [] as Array<{ text: string; spine: number }>,
+        prepared: [] as Array<{ text: string; spine: number; offset: number }>,
         workletEnded: false,
         workletFailed: false,
         workletMessages: [] as string[],
@@ -1257,6 +1406,7 @@ async function installSyntheticService(
                   observations.prepared.push({
                     text: segment.text,
                     spine: segment.sourceRange.start.spineItemIndex,
+                    offset: segment.sourceRange.start.textOffsetCodePoints,
                   });
                 if (observations.calls++ >= observations.holdAfter)
                   return new Promise((_resolve, reject) => {

@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import ctypes
+import os
+import subprocess
+import sys
+import threading
+import time
+from ctypes import wintypes
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
+from unittest.mock import Mock
 
 import pytest
 
+from benchmarks import cli
 from benchmarks.cli import (
     CommandError,
     _receipt_payload,
@@ -14,7 +23,139 @@ from benchmarks.cli import (
     parse_preflight_request,
 )
 from benchmarks.execution import run_measurement_worker
+from benchmarks.memory import _load_windows_dll
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
+
+
+@pytest.mark.parametrize("outcome", ["success", "error", "interruption"])
+def test_vca08_measurement_always_closes_ownership(
+    outcome: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    owner = Mock()
+    process = Mock()
+    process.returncode = 0
+    process.communicate.return_value = ('{"status":"pass"}', "")
+    process.poll.return_value = 0
+    if outcome != "success":
+        process.communicate.side_effect = (
+            OSError("synthetic") if outcome == "error" else KeyboardInterrupt()
+        )
+        process.poll.return_value = None
+    monkeypatch.setattr(cli, "_MeasurementJob", lambda: owner)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: process)
+    if outcome == "success":
+        result = cli._measure_process(("synthetic",), "{}")
+        assert result.stdout == '{"status":"pass"}'
+        assert result.returncode == 0
+        process.kill.assert_not_called()
+    else:
+        with pytest.raises(OSError if outcome == "error" else KeyboardInterrupt):
+            cli._measure_process(("synthetic",), "{}")
+        process.kill.assert_called_once()
+    owner.assign.assert_called_once_with(process)
+    owner.close.assert_called_once()
+    process.wait.assert_called_once()
+    for stream in (process.stdin, process.stdout, process.stderr):
+        stream.close.assert_called_once()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows measurement ownership")
+def test_vca08_outer_timeout_reaps_the_owned_worker_and_blocked_descendant(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    marker = tmp_path / "child.pid"
+    child_script = "import time; time.sleep(60)"
+    worker_script = (
+        "import pathlib, subprocess, sys, time; sys.stdin.read(); "
+        f"child = subprocess.Popen([sys.executable, '-c', {child_script!r}], "
+        "stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); "
+        "pathlib.Path(sys.argv[1]).write_text(str(child.pid)); time.sleep(60)"
+    )
+    processes: list[subprocess.Popen[str]] = []
+    original_popen = subprocess.Popen
+
+    def launch(args: object, **kwargs: Any) -> subprocess.Popen[str]:
+        del args
+        process = original_popen([sys.executable, "-c", worker_script, str(marker)], **kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    monkeypatch.setattr(cli, "MEASUREMENT_TIMEOUT_SECONDS", 2.0)
+    monkeypatch.setattr(cli, "run_local_preflight", lambda _request: None)
+    monkeypatch.setattr(cli, "_preflight_passed", lambda _receipt: True)
+    payload = valid_payload(tmp_path)
+    payload["candidatePython"] = sys.executable
+    results: list[tuple[dict[str, object], int]] = []
+    failures: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            results.append(cli._run_measurement_parent(payload))
+        except BaseException as error:
+            failures.append(error)
+
+    kernel = _load_windows_dll("kernel32")
+    kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+    kernel.WaitForSingleObject.restype = wintypes.DWORD
+    kernel.TerminateProcess.argtypes = (wintypes.HANDLE, wintypes.UINT)
+    kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+    kernel.QueryFullProcessImageNameW.argtypes = (
+        wintypes.HANDLE,
+        wintypes.DWORD,
+        wintypes.LPWSTR,
+        ctypes.POINTER(wintypes.DWORD),
+    )
+    kernel.GetProcessTimes.argtypes = (wintypes.HANDLE,) + (ctypes.POINTER(wintypes.FILETIME),) * 4
+    thread = threading.Thread(target=run)
+    child_handle = None
+    cleanup_deadline = time.monotonic() + 7  # 2-second watchdog + 5-second cleanup
+    thread.start()
+    try:
+        deadline = time.monotonic() + 2
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert marker.exists(), "synthetic descendant did not become ready"
+        child_handle = kernel.OpenProcess(
+            0x00100000 | 0x1000 | 0x0001, False, int(marker.read_text())
+        )
+        assert child_handle
+        image = ctypes.create_unicode_buffer(32_768)
+        length = wintypes.DWORD(len(image))
+        assert kernel.QueryFullProcessImageNameW(child_handle, 0, image, ctypes.byref(length))
+        assert Path(image.value).resolve() == Path(sys.executable).resolve()
+        times = [wintypes.FILETIME() for _ in range(4)]
+        assert kernel.GetProcessTimes(child_handle, *(ctypes.byref(value) for value in times))
+        assert times[0].dwHighDateTime > 0  # Capture creation identity before waiting.
+        assert kernel.WaitForSingleObject(child_handle, 0) == 258
+        thread.join(timeout=10)
+        assert not thread.is_alive()
+        assert not failures
+        assert results[0][1] == 2
+        assert results[0][0]["status"] == "fail"
+        assert processes[0].poll() is not None
+        # TerminateJobObject and process-object signalling are asynchronous.
+        # Observe actual exit within the existing cleanup bound, without sleeps.
+        remaining_ms = max(0, int((cleanup_deadline - time.monotonic()) * 1000))
+        assert kernel.WaitForSingleObject(child_handle, remaining_ms) == 0, (
+            "owned descendant outlived watchdog"
+        )
+    finally:
+        # Exact handles remain authoritative even if a PID is recycled.
+        if child_handle:
+            if kernel.WaitForSingleObject(child_handle, 0) == 258:
+                kernel.TerminateProcess(child_handle, 1)
+            assert kernel.WaitForSingleObject(child_handle, 5_000) == 0
+            kernel.CloseHandle(child_handle)
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+        thread.join(timeout=5)
 
 
 def valid_payload(tmp_path: Path) -> dict[str, object]:
