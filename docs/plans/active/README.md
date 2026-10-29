@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Static audit follow-up](static-audit-follow-up.md): planning-only corrections
+  for sixteen revalidated findings, with bounded scope and a deduplicated
+  validation/reuse strategy. Implementation has not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

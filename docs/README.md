@@ -17,6 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [static audit follow-up](plans/active/static-audit-follow-up.md) is a
+planning-only ExecPlan for sixteen revalidated findings. It specifies minimal
+corrections and distinguishes reusable evidence candidates from required fresh
+checks. Implementation and its validation have not started.
+
 The [completed revalidated audit corrections](plans/completed/revalidated-audit-corrections.md)
 resolve nine reader, EPUB and maintainer-tool findings. Directed failures,
 source/browser/native validation, resource cleanup and documentation checks pass.
