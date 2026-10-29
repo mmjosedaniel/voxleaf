@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import process from "node:process";
 import test, { after } from "node:test";
 
 import {
@@ -9,6 +19,8 @@ import {
   createStageReporter,
   assertHostileDevelopmentEnvironment,
   evaluateHostGate,
+  finalizeJourney,
+  createOrdinarySessionCloser,
   hostileReleaseEnvironment,
   isRetriableHostGateError,
   journeySteps,
@@ -24,6 +36,141 @@ import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+for (const mode of ["repeated-close", "failed-startup"]) {
+  test(`RAC-03 retains session-close failure after ${mode}`, async () => {
+    const profileDirectory = await mkdtemp(path.join(root, "session-profile-"));
+    const driverProcess = spawn(
+      process.execPath,
+      ["-e", "setInterval(() => {}, 1000)"],
+      { stdio: "ignore", windowsHide: true },
+    );
+    await once(driverProcess, "spawn");
+    let calls = 0;
+    const failure = new Error("synthetic-session-delete");
+    const close = createOrdinarySessionCloser({
+      client: {
+        async deleteSession() {
+          if (calls++ === 0) throw failure;
+        },
+      },
+      driverProcess,
+      profileDirectory,
+    });
+    try {
+      const firstError = await close().catch((error) => error);
+      assert(firstError instanceof AggregateError);
+      assert(firstError.errors.includes(failure));
+      assert(processTerminated(driverProcess));
+      if (mode === "repeated-close") {
+        await assert.rejects(close, (error) => error === firstError);
+        assert.equal(calls, 1);
+      } else {
+        let restored = false;
+        await assert.rejects(
+          () =>
+            finalizeJourney({
+              dataBackup: {
+                root: path.join(root, "unused-root"),
+                backup: path.join(root, "retained-backup"),
+              },
+              journeyError: firstError,
+              closeSession: async () => {},
+              uninstall: async () => {},
+              restoreData: async () => {
+                restored = true;
+              },
+            }),
+          (error) =>
+            error instanceof AggregateError &&
+            error.errors.includes(firstError),
+        );
+        assert.equal(restored, false);
+      }
+    } finally {
+      if (!processTerminated(driverProcess)) {
+        const exited = once(driverProcess, "exit");
+        driverProcess.kill();
+        await exited;
+      }
+      await rm(profileDirectory, { recursive: true, force: true });
+    }
+  });
+}
+
+for (const stage of [
+  "close",
+  "uninstall",
+  "absence",
+  "restore",
+  "success",
+  "journey-and-uninstall",
+]) {
+  test(`RAC-03 finalization preserves recovery data on uncertain ${stage}`, async () => {
+    const owned = await mkdtemp(path.join(root, "finalization-"));
+    const backup = path.join(owned, "backup");
+    const application = path.join(owned, "application");
+    await mkdir(backup);
+    await mkdir(application);
+    await writeFile(path.join(backup, "sentinel"), "original");
+    await writeFile(path.join(application, "sentinel"), "temporary");
+    const order = [];
+    const original =
+      stage === "journey-and-uninstall"
+        ? new Error("synthetic-journey")
+        : undefined;
+    const failure = new Error(`synthetic-${stage}`);
+    const finish = () =>
+      finalizeJourney({
+        dataBackup: { root: application, backup },
+        journeyError: original,
+        closeSession: async () => {
+          order.push("close");
+          if (stage === "close") throw failure;
+        },
+        uninstall: async () => {
+          order.push("uninstall");
+          if (stage === "uninstall" || stage === "journey-and-uninstall")
+            throw failure;
+          order.push("absence");
+          if (stage === "absence") throw failure;
+        },
+        restoreData: async () => {
+          order.push("restore");
+          if (stage === "restore") throw failure;
+          await rm(application, { recursive: true });
+          await rename(backup, application);
+        },
+      });
+    if (stage === "success") {
+      await finish();
+      assert.deepEqual(order, ["close", "uninstall", "absence", "restore"]);
+      assert.equal(
+        await readFile(path.join(application, "sentinel"), "utf8"),
+        "original",
+      );
+    } else {
+      await assert.rejects(finish, (error) => {
+        if (stage !== "restore") assert(!order.includes("restore"));
+        assert(error instanceof AggregateError);
+        assert(error.errors.includes(failure));
+        if (original) assert(error.errors.includes(original));
+        assert(error.message.includes(backup));
+        return true;
+      });
+      assert.equal(
+        await readFile(path.join(backup, "sentinel"), "utf8"),
+        "original",
+      );
+      assert.equal(
+        await readFile(path.join(application, "sentinel"), "utf8"),
+        "temporary",
+      );
+      assert(order.includes("uninstall"));
+      if (stage !== "restore") assert(!order.includes("restore"));
+    }
+  });
+}
 
 test("bounded download probe cancels at its first MiB without completing acquisition", async () => {
   let settle;

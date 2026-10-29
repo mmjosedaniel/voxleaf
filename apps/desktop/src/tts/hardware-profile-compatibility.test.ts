@@ -8,12 +8,14 @@ import {
 import type { NarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 import {
   HardwareProfileCompatibilityCoordinator,
+  CHATTERBOX_ACQUISITION_PROFILE_ID,
   chatterboxAcquisitionPresentation,
   type HardwareDevelopmentGatePort,
   type HardwareProfileDetectionPort,
 } from "./hardware-profile-compatibility";
 import {
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  HARDWARE_PROFILE_REGISTRY_V1,
   PIPER_CPU_FALLBACK_PROFILE_ID,
   PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
@@ -179,6 +181,56 @@ function dependencies(
 }
 
 describe("hardware profile compatibility coordinator", () => {
+  it.each(["available", "unavailable", "wrong-language"] as const)(
+    "RAC-04 reports CPU fallback independently of retained Chatterbox: %s",
+    async (fallback) => {
+      const report = completeReport();
+      const subject = new HardwareProfileCompatibilityCoordinator({
+        ...dependencies({
+          report:
+            fallback === "unavailable"
+              ? decodeHostProfileCompatibilityReportV1({
+                  ...report,
+                  providers: {
+                    ...report.providers,
+                    cpu: unavailableProvider(),
+                  },
+                })
+              : report,
+          preference: preference({
+            status: "ready",
+            profileId: CHATTERBOX_ACQUISITION_PROFILE_ID,
+          }),
+          languagePreference: languagePreference("es"),
+        }),
+        ...(fallback === "wrong-language"
+          ? {
+              registry: HARDWARE_PROFILE_REGISTRY_V1.filter(
+                (profile) =>
+                  profile.identity.profileId !== PIPER_ENGLISH_CPU_PROFILE_ID,
+              ),
+            }
+          : {}),
+      });
+      await subject.ensureChecked();
+      for (const language of ["en", "es", "en"] as const) {
+        await subject.selectLanguage(language);
+        expect(subject.observe()).toMatchObject({
+          activeProfileId: CHATTERBOX_ACQUISITION_PROFILE_ID,
+          fallbackAvailable:
+            fallback === "available" ||
+            (fallback === "wrong-language" && language === "es"),
+        });
+      }
+      await subject.resetLanguage();
+      expect(subject.observe()).toMatchObject({
+        activeProfileId: CHATTERBOX_ACQUISITION_PROFILE_ID,
+        language: "en",
+        fallbackAvailable: fallback === "available",
+      });
+      subject.close();
+    },
+  );
   it("CHAT-AUDIT R1 unknown CUDA free memory preserves Piper admission and continuation", async () => {
     let current = completeReport();
     const subject = new HardwareProfileCompatibilityCoordinator(

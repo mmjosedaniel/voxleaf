@@ -1,5 +1,37 @@
 # Testing strategy
 
+## Revalidated audit regressions
+
+The [RAC execution ledger](../plans/evidence/revalidated-audit-corrections/execution-ledger.md)
+records directed failures, current receipts and the independent acceptance review.
+Desktop and EPUB tests labelled `RAC` cover delayed publication handoff/current
+callbacks, Resume following, language-specific CPU fallback, primary-start
+preparation and ordinal street abbreviations. Python `-k rac` selects the new
+quality-session, retained-PCM and real smoke-main subprocess cases (and existing
+matching tests); the final unfiltered suite supplies all controls.
+
+`ordinary-chatterbox-release-host.node-test.mjs` exercises the production
+finalization helper with disposable backup/application roots. Failed session
+close, uninstall, stable-absence observation or restoration preserves recovery
+material and cannot report success. Cleanup still runs after an earlier journey
+failure; its error includes both failures and the local recovery location.
+Session-close rejection is surfaced even after driver teardown. These tests
+do not install or uninstall the user's application.
+
+The direct Chatterbox smoke now observes Python `open` write attempts for its
+existing audio extensions before adapter import, and prints PASS only after
+cleanup and zero observed attempts. Isolated synthetic subprocesses exercise
+load, synthesis and cleanup writes, including swallowed audit-hook exceptions,
+plus network attempts during cleanup. This is bounded Python event observation,
+not universal operating-system write auditing or a new real-inference result.
+
+The full `reader-narration-bugfixes.smoke.spec.ts` joins the real mounted reader,
+AudioContext and synthetic IPC for delayed handoff and mid-unit Pause/scroll/
+Resume before another audible segment. Its configured builds precede the final
+native build, both Rust variants and direct model-free native smoke. Shared
+`generate:check`, package preparation and all seven Node suites remain required;
+Windows-release imports ordinary and native-smoke consumes EPUB.
+
 ## Verified chat audit regressions
 
 The [VCA plan](../plans/completed/verified-chat-audit-corrections.md) groups the nine

@@ -324,7 +324,10 @@ def simulate_v5_playback(
 
         peak_complete = max(peak_complete, retained_complete_units)
         peak_active = max(peak_active, len(active))
-        peak_pcm = max(peak_pcm, retained_pcm_bytes)
+        peak_pcm = max(
+            peak_pcm,
+            retained_pcm_bytes + sum(unit.pcm_bytes for unit in completed_pending.values()),
+        )
         peak_buffer = max(peak_buffer, buffered)
         peak_reserved_seconds = max(peak_reserved_seconds, reserved_seconds())
         peak_reserved_bytes = max(peak_reserved_bytes, reserved_bytes())

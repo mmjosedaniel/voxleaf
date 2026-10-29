@@ -831,6 +831,7 @@ function hasEnglishTitleContext(
     previous -= 1;
   return (
     start - previous <= limit &&
+    !/^\p{N}$/u.test(sourceText(tokens[previous]) ?? "") &&
     (previous === wordEnd ||
       !/^\p{Lu}$/u.test(sourceText(tokens[previous + 1]) ?? ""))
   );

@@ -197,6 +197,62 @@ def test_single_evaluator_session_is_blinded_bounded_and_not_promotable(
     assert not session.exists()
 
 
+@pytest.mark.parametrize(
+    "candidates",
+    [
+        (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID),
+        (QWEN_V3_CANDIDATE_ID,),
+        (PIPER_CPU_CANDIDATE_ID,),
+    ],
+)
+def test_rac_02_rejected_ready_session_preserves_all_completed_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    candidates: tuple[str, ...],
+) -> None:
+    monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
+    raw_root = tmp_path / "raw"
+    session_id = "a" * 32
+    for candidate in candidates:
+        generate_candidate_audio(
+            _request(tmp_path, candidate),
+            session_id,
+            raw_root=raw_root,
+            adapter_builder=FakeQualityAdapter,
+        )
+    finalize_session(session_id, 1, raw_root=raw_root)
+    session = raw_root / "quality-v2" / session_id
+    scorecard = json.loads(
+        (session / "scorecards/evaluator-01.template.json").read_text(encoding="utf-8")
+    )
+    for sample in scorecard["samples"]:
+        sample["scores"] = {dimension: 4 for dimension in DIMENSIONS}
+        sample["meaningChangingDefect"] = False
+    submit_scorecard(session_id, scorecard, raw_root=raw_root)
+    before = {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    }
+
+    def unexpected_adapter() -> FakeQualityAdapter:
+        pytest.fail("ready session must be rejected before adapter construction")
+
+    with pytest.raises(QualitySessionError, match="invalid-metadata"):
+        generate_candidate_audio(
+            _request(tmp_path, candidates[0]),
+            session_id,
+            raw_root=raw_root,
+            adapter_builder=unexpected_adapter,
+        )
+    assert session.is_dir()
+    assert {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    } == before
+
+
 def test_generation_failure_removes_the_whole_disposable_session(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

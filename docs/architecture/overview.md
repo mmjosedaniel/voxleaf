@@ -1,5 +1,16 @@
 # Architecture overview
 
+Current public narration preparation shares ADR-0060's primary-start recovery
+authority with locator resolution, while exact auxiliary starts remain valid.
+Unknown starts with no addressable primary content fail as `invalid-start`.
+Current English preparation preserves ambiguous ordinal street `St.` forms;
+source text and locator spans remain unchanged. Reader trackers/restorers retain
+their instances while using current callbacks. A newly available narration
+coordinator receives the current visual location through its existing
+inactive-only start update. Resume follows the current audible range once;
+subsequent passive inspection keeps its existing authority. These corrections
+stay within the canonical system diagram's current boundaries.
+
 [ADR-0066](decisions/ADR-0066-bounded-orientation-and-silent-tail-corrections.md)
 defines the bounded JPEG orientation interpretation and silent-tail continuation
 correction. The [completed static-audit plan](../plans/completed/static-audit-corrections.md)

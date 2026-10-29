@@ -8,6 +8,7 @@ import type {
 } from "@voxleaf/epub";
 import {
   createSchemaVersion,
+  createIndex,
   decodeLocatorRangeV1,
   decodePersistedReadingStateV1,
   decodeReadingLocatorV1,
@@ -39,6 +40,7 @@ import {
 import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-restore-coordinator";
 import { READER_PREFERENCES_STORAGE_KEY } from "./persistence/reader-position-repository";
 import { DEFAULT_READER_PREFERENCES } from "./reader/reader-preferences";
+import { ReaderPublicationContent } from "./reader/ReaderPublication";
 import * as settingsDialog from "./settings/ReaderSettingsDialog";
 import type {
   LocalPublicationOpenFailureReason,
@@ -300,7 +302,8 @@ class ControlledNarrationCoordinator {
 
   public setVolumePercent(): void {}
 
-  public updateVisibleLocator(): void {}
+  public readonly updateVisibleLocator =
+    vi.fn<(locator: ReadingLocatorV1) => void>();
 
   public beginExternalNavigation(): Promise<void> {
     return Promise.resolve();
@@ -355,6 +358,149 @@ class ControlledNarrationCoordinator {
 }
 
 describe("App preference connection characterization", () => {
+  it.each([false, true])(
+    "RAC-01 Play uses B's current mounted locator after delayed A shutdown (scroll after release: %s)",
+    async (afterRelease) => {
+      const closing = deferred<void>();
+      const first = new ControlledNarrationCoordinator();
+      vi.spyOn(first, "close").mockReturnValue(closing.promise);
+      vi.spyOn(first, "observe").mockReturnValue({
+        ...narrationSnapshot("inactive"),
+        serviceState: "stopped",
+      });
+      const replacement = new ControlledNarrationCoordinator();
+      let current = testLocatorAt(0);
+      vi.spyOn(replacement, "updateVisibleLocator").mockImplementation(
+        (locator: ReadingLocatorV1) => {
+          current = locator;
+        },
+      );
+      const started: ReadingLocatorV1[] = [];
+      vi.spyOn(replacement, "start").mockImplementation(() => {
+        started.push(current);
+      });
+      const factory = vi
+        .fn()
+        .mockReturnValueOnce(first)
+        .mockReturnValue(replacement);
+      const frameCallbacks = new Set<() => void>();
+      let offset = 0;
+      let notify = () => {};
+      function Reader(props: ReadyPublicationContentProps): ReactElement {
+        const [environment] = useState(() => ({
+          viewportRect: () => ({ top: 0, right: 240, bottom: 100, left: 0 }),
+          blockRect: () => ({ top: 24, right: 220, bottom: 50, left: 0 }),
+          textDirection: () => "ltr" as const,
+          rangeAtPoint: () => {
+            const node = document.querySelector(
+              ".semantic-document p",
+            )?.firstChild;
+            if (!(node instanceof Text)) return undefined;
+            const range = document.createRange();
+            range.setStart(node, offset);
+            range.collapse(true);
+            return range;
+          },
+          schedule: (_root: HTMLElement, callback: () => void) => {
+            frameCallbacks.add(callback);
+            return () => {
+              frameCallbacks.delete(callback);
+            };
+          },
+          observe: (_root: HTMLElement, callback: () => void) => {
+            notify = callback;
+            return () => {};
+          },
+        }));
+        const [reflow] = useState(() => ({
+          viewportRect: environment.viewportRect,
+          rangeRect: environment.blockRect,
+          elementRect: environment.blockRect,
+          scrollBy: () => {},
+          schedule: environment.schedule,
+          observeViewport: () => () => {},
+        }));
+        return (
+          <ReaderPublicationContent
+            {...props}
+            visualLocatorEnvironment={environment}
+            reflowEnvironment={reflow}
+          />
+        );
+      }
+      const flush = () =>
+        act(() => {
+          for (let frame = 0; frame < 20 && frameCallbacks.size; frame++) {
+            const callbacks = [...frameCallbacks];
+            frameCallbacks.clear();
+            callbacks.forEach((callback) => callback());
+          }
+        });
+      const publication = (title: string) => {
+        const value = createTestPublication(title);
+        const located = {
+          ...TEST_LOCATED_BLOCK,
+          textLengthCodePoints: createIndex(TEST_TEXT.length),
+        };
+        return {
+          ...value,
+          locators: [located],
+          resolveLocator: (input: unknown) => ({
+            status: "exact" as const,
+            reason: "exact" as const,
+            locator: input as ReadingLocatorV1,
+            locatedBlock: located,
+          }),
+        };
+      };
+      const open = vi
+        .fn<LocalPublicationOpenFlow["open"]>()
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: publication("A"),
+        })
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: publication("B"),
+        });
+      const view = render(
+        <App
+          openFlow={createTestFlow(open)}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          createNarrationCoordinator={factory}
+          ReadyPublicationContent={Reader}
+        />,
+      );
+      try {
+        selectEpub("A.epub");
+        await waitFor(() =>
+          expect(document.querySelector(".semantic-document p")).not.toBeNull(),
+        );
+        flush();
+        await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+        selectEpub("B.epub");
+        await waitFor(() => expect(screen.getByText("B")).toBeInTheDocument());
+        flush();
+        offset = 7;
+        act(() => notify());
+        flush();
+        expect(factory).toHaveBeenCalledTimes(1);
+        await act(async () => closing.resolve());
+        await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+        if (afterRelease) {
+          offset = 13;
+          act(() => notify());
+          flush();
+        }
+        fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
+        expect(started).toEqual([testLocatorAt(afterRelease ? 13 : 7)]);
+      } finally {
+        closing.resolve();
+        view.unmount();
+      }
+    },
+  );
+
   it("VCA-05 waits for the real client's validated supervisor shutdown", async () => {
     const contained = deferred<void>();
     const serviceInstanceId = "service:vca-handoff";

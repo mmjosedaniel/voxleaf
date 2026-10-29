@@ -3,6 +3,19 @@
 This directory contains reviewable, content-safe authority and summaries for
 roadmap Milestone 6. It is not a production TTS service boundary.
 
+Current retained tooling rejects a finalized or invalid quality-session ID
+before taking ownership of generation cleanup. Completed audio, evaluator pages
+and submitted scorecards remain intact on that rejected invocation; a genuinely
+failed partial generation still removes its disposable session.
+
+The v5 playback replay's `peakRetainedPcmBytes` counts queued PCM plus completed
+payloads awaiting ordered release. Playable duration still counts only released
+audio, and reservation accounting includes pending payloads exactly once.
+Frozen historical results and scheduling/resource limits remain unchanged.
+The [RAC ledger](../../docs/plans/evidence/revalidated-audit-corrections/execution-ledger.md)
+records synthetic regressions and acceptance; these tooling corrections do not
+establish ordinary playback persistence or a product memory-limit violation.
+
 ## Authority
 
 - `candidates-v1.json` freezes candidate identities, roles, artifacts, licenses,

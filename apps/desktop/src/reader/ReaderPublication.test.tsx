@@ -1431,6 +1431,68 @@ describe("navigable publication reader", () => {
     );
   });
 
+  it("RAC-01 publishes passive positions and reflow settlement only to current callbacks", () => {
+    const publication = createPublication();
+    publication.resolveLocator = vi.fn((input: unknown) => ({
+      status: "exact" as const,
+      reason: "exact" as const,
+      locator: decodeReadingLocatorV1(input),
+      locatedBlock: OPENING_LOCATED_BLOCK,
+    }));
+    const mapper = new SemanticDomRangeMapper();
+    const visual = new ManualVisualLocatorEnvironment();
+    const reflow = new ManualReaderReflowEnvironment();
+    const oldActive = vi.fn();
+    const newActive = vi.fn();
+    const oldSettled = vi.fn();
+    const newSettled = vi.fn();
+    const oldNavigation = vi.fn();
+    const newNavigation = vi.fn();
+    visual.rects.set("Opening", { top: 10, right: 210, bottom: 50, left: 10 });
+    const props = {
+      publication,
+      domRangeMapper: mapper,
+      visualLocatorEnvironment: visual,
+      reflowEnvironment: reflow,
+    };
+    const view = render(
+      <ReaderPublicationContent
+        {...props}
+        preferences={DEFAULT_READER_PREFERENCES}
+        onActiveLocatorChange={oldActive}
+        onSettledLocatorChange={oldSettled}
+        onNavigationSettlement={oldNavigation}
+      />,
+    );
+    view.rerender(
+      <ReaderPublicationContent
+        {...props}
+        preferences={DEFAULT_READER_PREFERENCES}
+        onActiveLocatorChange={newActive}
+        onSettledLocatorChange={newSettled}
+        onNavigationSettlement={newNavigation}
+      />,
+    );
+    visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
+    act(() => visual.flush());
+    expect(newActive).toHaveBeenCalledOnce();
+    expect(oldActive).not.toHaveBeenCalled();
+    view.rerender(
+      <ReaderPublicationContent
+        {...props}
+        preferences={{ ...DEFAULT_READER_PREFERENCES, textScale: "large" }}
+        onActiveLocatorChange={newActive}
+        onSettledLocatorChange={newSettled}
+        onNavigationSettlement={newNavigation}
+      />,
+    );
+    act(() => reflow.flushAll());
+    expect(newSettled).toHaveBeenCalledOnce();
+    expect(newNavigation).toHaveBeenCalledOnce();
+    expect(oldSettled).not.toHaveBeenCalled();
+    expect(oldNavigation).not.toHaveBeenCalled();
+  });
+
   it("publishes the canonical locator only after preference reflow settles", () => {
     const reflowEnvironment = new ManualReaderReflowEnvironment();
     const onSettledLocatorChange = vi.fn();

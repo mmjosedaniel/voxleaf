@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Revalidated audit corrections](revalidated-audit-corrections.md): all nine reader, EPUB and maintainer-tool findings corrected and regression-tested. Shared/EPUB/desktop/Python/Node, browser, Rust, native smoke and cleanup gates pass. `RAC-R1-20261029` independently approves implementation and unchanged current-task evidence; the plan links the separate final archive assessment. No historical PASS, real-model measurement, GPU/download/listening campaign or personal installer journey is claimed. Changes remain unstaged and uncommitted.
+
 - [Verified chat audit corrections](verified-chat-audit-corrections.md): nine desktop, optional-removal and benchmark corrections accepted with intended-red regressions, combined host checks and Chromium/WebView2 proof. `VCA-R2-20261029` approves the exact implementation and two unchanged current-task Python receipts; R1's preference-overlap finding is resolved. The plan links the separate archive review. VCA-10, model/GPU/download/installer/quality campaigns and historical-result reuse remain excluded. Changes remain unstaged and uncommitted.
 
 - [Validated audit follow-up](validated-audit-follow-up.md): twelve retained reader, narration, benchmark and lifecycle findings corrected. Combined host checks, browser/native evidence, authorized Windows lifecycle and measured personal-state restoration pass. `VAF-R4-20261028` approves implementation and scoped reuse; the plan identifies the separate archive review. H5, real-model occurrence of H8 and new release/quality claims remain excluded. Changes remain unstaged and uncommitted.

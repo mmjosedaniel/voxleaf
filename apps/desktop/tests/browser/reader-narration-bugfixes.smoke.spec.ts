@@ -23,6 +23,169 @@ async function fixtures() {
   }>;
 }
 
+test("RAC-01 delayed handoff starts B at the passage observed during A shutdown", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.setViewportSize({ width: 640, height: 480 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  const open = async (replacement: boolean) =>
+    page.getByLabel("Open a book").setInputFiles({
+      name: replacement ? "synthetic-rac-b.epub" : "synthetic-rac-a.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 60 }, (_, i) => `<p>${replacement && i === 25 ? "Target passage for replacement." : `Synthetic ${replacement ? "replacement" : "original"} passage with quiet paths and ordinary details.`}</p>`).join("")}</body></html>`,
+        }),
+      ),
+    });
+  await open(false);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+  });
+  await open(true);
+  await expect(page.locator(".semantic-document p").nth(25)).toHaveText(
+    "Target passage for replacement.",
+  );
+  await expect(page.locator(".semantic-reader")).not.toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  await page.evaluate(async () => {
+    const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+    const target = document.querySelectorAll(".semantic-document p")[25]!;
+    viewport.scrollTop +=
+      target.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top -
+      24;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  await expect(page.locator('[data-narration-action="play"]')).toHaveCount(0);
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.prepared.length = 0;
+    state.deferShutdown = false;
+    state.releaseShutdown();
+  });
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.text),
+    )
+    .toBe("Target passage for replacement.");
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
+test("RAC-07 mid-unit Resume follows the active range once and preserves inspection", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.setViewportSize({ width: 640, height: 480 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-rac-resume.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${"<p>Synthetic passage with quiet paths and ordinary details.</p>".repeat(80)}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="pause"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+  const focus = page.getByRole("button", {
+    name: "Show table of contents",
+    exact: true,
+  });
+  await focus.focus();
+  await page.evaluate(() => {
+    const range = document.createRange();
+    const text = document.querySelector(".semantic-document p")!.firstChild!;
+    range.setStart(text, 0);
+    range.setEnd(text, 9);
+    getSelection()!.removeAllRanges();
+    getSelection()!.addRange(range);
+    const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+    viewport.scrollTop = viewport.scrollHeight;
+  });
+  const visible = () =>
+    page.evaluate(() => {
+      const highlight = CSS.highlights.get("voxleaf-narration-active");
+      const range = highlight?.values().next().value as Range | undefined;
+      if (!range) return false;
+      const rect = range.getBoundingClientRect();
+      const viewport = document
+        .querySelector(".reader-viewport")!
+        .getBoundingClientRect();
+      return rect.top >= viewport.top && rect.bottom <= viewport.bottom;
+    });
+  await expect.poll(visible).toBe(false);
+  await page
+    .locator('[data-narration-action="resume"]')
+    .evaluate((button: HTMLButtonElement) => button.click());
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect.poll(visible).toBe(true);
+  await expect(focus).toBeFocused();
+  expect(await page.evaluate(() => getSelection()?.toString())).toBe(
+    "Synthetic",
+  );
+  const playbackBefore = Number(
+    await narration.getAttribute("data-narration-playback-ms"),
+  );
+  await page.evaluate(() => {
+    const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+    viewport.scrollTop = viewport.scrollHeight;
+  });
+  await expect
+    .poll(() =>
+      narration.getAttribute("data-narration-playback-ms").then(Number),
+    )
+    .toBeGreaterThan(playbackBefore);
+  await expect.poll(visible).toBe(false);
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 test("VCA-06/09 paused next and previous place exact interior offsets without audio or stale preparation", async ({
   page,
 }) => {
@@ -1144,6 +1307,9 @@ async function installSyntheticService(
         service: 0,
         shutdownFailures: 0,
         shutdownCalls: 0,
+        deferShutdown: false,
+        shutdownPending: false,
+        releaseShutdown: () => {},
         requests: [] as Array<{
           service: number;
           generation: string;
@@ -1436,6 +1602,13 @@ async function installSyntheticService(
               }
               case "shutdown_tts_service":
                 observations.shutdownCalls += 1;
+                if (observations.deferShutdown) {
+                  observations.shutdownPending = true;
+                  await new Promise<void>((resolve) => {
+                    observations.releaseShutdown = resolve;
+                  });
+                  observations.shutdownPending = false;
+                }
                 if (observations.shutdownFailures > 0) {
                   observations.shutdownFailures -= 1;
                   throw "tts-service-internal-failure";

@@ -23,6 +23,7 @@ export interface ReaderNarrationSource {
     listener: (request: ProductNarrationNavigationRequest) => void,
   ): () => void;
   startAtLocator?(locator: ReadingLocatorV1): boolean;
+  updateVisibleLocator?(locator: ReadingLocatorV1): void;
 }
 
 export interface SegmentHighlightRect {
@@ -240,6 +241,8 @@ export class SegmentHighlightController {
     ((options?: ActiveVisualLocatorResumeOptions) => void) | undefined;
   #cancelScheduledSettle: (() => void) | undefined;
   #closed = false;
+  #lastPhase:
+    NonNullable<ProductNarrationSnapshot["state"]>["phase"] | undefined;
 
   public constructor(
     locatedBlocks: readonly PublicationLocatedBlock[],
@@ -321,6 +324,8 @@ export class SegmentHighlightController {
 
   public reconcile(snapshot: ProductNarrationSnapshot): void {
     const phase = snapshot.state?.phase;
+    const resumed = this.#lastPhase === "paused" && phase === "playing";
+    this.#lastPhase = phase;
     if (phase === "complete" && this.#active !== undefined) {
       this.#active.followEligible = false;
       this.#cancelPendingFollow();
@@ -332,6 +337,8 @@ export class SegmentHighlightController {
       (phase === undefined && this.#active !== undefined)
     ) {
       this.clear();
+    } else if (resumed && this.#active?.followEligible) {
+      this.refresh();
     }
   }
 
@@ -430,6 +437,7 @@ export class SegmentHighlightController {
     }
     this.#active = undefined;
     this.#activeKey = undefined;
+    this.#lastPhase = undefined;
     this.#environment.clearHighlight(
       SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
     );

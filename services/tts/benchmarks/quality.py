@@ -232,12 +232,10 @@ def generate_candidate_audio(
     """Generate one exact candidate's corpus into a known disposable session."""
 
     session = _session_path(session_id, raw_root=raw_root)
+    metadata = _load_staging_session(session) if session.exists() else None
     try:
-        metadata = (
-            _load_staging_session(session)
-            if session.exists()
-            else _new_session(session, request.profile)
-        )
+        if metadata is None:
+            metadata = _new_session(session, request.profile)
         commits = cast(dict[str, object], metadata["candidateCommits"])
         candidate_id = request.profile.candidate_id
         expected = tuple(cast(list[str], metadata["expectedCandidates"]))
