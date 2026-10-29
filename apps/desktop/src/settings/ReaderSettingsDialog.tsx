@@ -39,6 +39,7 @@ const FOCUSABLE_SELECTOR = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
@@ -140,10 +141,18 @@ function NarrationStartSettings({
 function focusableElements(root: HTMLElement): HTMLElement[] {
   return Array.from(
     root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(
-    (element) =>
-      !element.hidden && element.getAttribute("aria-hidden") !== "true",
-  );
+  ).filter((element) => {
+    if (
+      element.matches(":disabled") ||
+      element.closest('[hidden], [aria-hidden="true"]')
+    )
+      return false;
+    const closedDetails = element.closest("details:not([open])");
+    return (
+      closedDetails === null ||
+      closedDetails.querySelector("summary")?.contains(element) === true
+    );
+  });
 }
 
 function OptionalChatterboxSettings({
@@ -151,12 +160,14 @@ function OptionalChatterboxSettings({
   hardwareCompatibility,
   onActivate,
   onRemove,
+  onRecoveryEpisodeReset,
   disabled = false,
 }: Readonly<{
   client: OptionalChatterboxClient;
   hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
   onActivate: () => Promise<boolean>;
   onRemove: () => Promise<void>;
+  onRecoveryEpisodeReset: () => void;
   disabled?: boolean;
 }>): ReactElement {
   const compatibility = useHardwareCompatibilitySnapshot(hardwareCompatibility);
@@ -168,6 +179,7 @@ function OptionalChatterboxSettings({
       onActivate={onActivate}
       onRecheck={async () => {
         await hardwareCompatibility.check("explicit-recheck");
+        onRecoveryEpisodeReset();
         return chatterboxAcquisitionPresentation(
           hardwareCompatibility.observe(),
         ).allowed;
@@ -350,6 +362,7 @@ export function ReaderSettingsDialog({
               hardwareCompatibility={hardwareCompatibility}
               onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
+              onRecoveryEpisodeReset={onRecoveryEpisodeReset}
               disabled={narrationSelectionPending}
             />
             <NarrationStartSettings

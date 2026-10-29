@@ -14,6 +14,79 @@ static COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[cfg(windows)]
 #[test]
+fn vaf_cancelled_request_before_headers_preserves_diagnostic_and_cleans_staging() {
+    for cancel in [false, true] {
+        let root = TestRoot::new();
+        let manager = Arc::new(OptionalChatterboxManager::default());
+        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        DownloadAttempt::new(
+            &manager.last_download_error,
+            DownloadSource::GithubRelease,
+            1,
+            100,
+        )
+        .fail(
+            DownloadStage::Request,
+            DownloadFailureKind::InvalidUrl,
+            None,
+        );
+        let previous = *manager.last_download_error.lock().unwrap();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let cancelling_manager = Arc::clone(&manager);
+        let cancelling_root = root.0.clone();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut request = [0_u8; 1024];
+            assert!(stream.read(&mut request).unwrap() > 0);
+            if cancel {
+                cancelling_manager.cancel_at(&cancelling_root).unwrap();
+            }
+            // Close before any headers: the real pending send returns an error.
+            stream.shutdown(std::net::Shutdown::Both).unwrap();
+        });
+        let downloading_manager = Arc::clone(&manager);
+        DOWNLOAD_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |_destination, cancelled| {
+                let client = reqwest::blocking::Client::builder()
+                    .no_proxy()
+                    .timeout(Duration::from_secs(5))
+                    .build()
+                    .unwrap();
+                send_download_request(
+                    client.get(format!("http://{address}/")),
+                    cancelled,
+                    &DownloadAttempt::new(
+                        &downloading_manager.last_download_error,
+                        DownloadSource::GithubRelease,
+                        1,
+                        100,
+                    ),
+                )
+                .map(|_| ())
+            }));
+        });
+        let result = manager.download_at(&root.0);
+        server.join().unwrap();
+        assert!(!manager.operation.lock().unwrap().worker_active);
+        assert!(!staging_root(&root.0).exists());
+        if cancel {
+            assert_eq!(result.unwrap().state, OptionalProfileState::Absent);
+            assert_eq!(*manager.last_download_error.lock().unwrap(), previous);
+        } else {
+            assert_eq!(result, Err(OptionalProfileError::DownloadFailed));
+            let diagnostic = manager.last_download_error.lock().unwrap().unwrap();
+            assert_eq!(diagnostic.stage, DownloadStage::Request);
+            assert_eq!(diagnostic.kind, DownloadFailureKind::Request);
+        }
+    }
+}
+
+#[cfg(windows)]
+#[test]
 fn sac02_cancelled_blocked_response_read_preserves_diagnostic_and_cleans_staging() {
     for cancel in [false, true] {
         let root = TestRoot::new();

@@ -427,7 +427,6 @@ def generate_quality_session(
         for case_id in corpus.performance_order
     )
     sample_ids = [secrets.token_hex(16) for _ in cases]
-    secrets.SystemRandom().shuffle(sample_ids)
     samples: list[dict[str, str]] = []
     sensitive = (
         *(value for _language, case in cases for value in (case.text, case.privacy_canary)),
@@ -479,6 +478,7 @@ def generate_quality_session(
     ):
         shutil.rmtree(quality, ignore_errors=True)
         _fail("audio-limit")
+    secrets.SystemRandom().shuffle(samples)
     _write_json(
         quality / "private-map.json",
         {

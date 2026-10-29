@@ -1624,17 +1624,13 @@ fn download_artifact(
                 Some(&error),
             )
         })?;
-    let response = client
-        .get(artifact.url())
-        .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2")
-        .send()
-        .map_err(|error| {
-            diagnostic.fail(
-                DownloadStage::Request,
-                DownloadFailureKind::Request,
-                Some(&error),
-            )
-        })?;
+    let response = send_download_request(
+        client
+            .get(artifact.url())
+            .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2"),
+        cancelled,
+        &diagnostic,
+    )?;
     copy_download_response(
         artifact,
         response,
@@ -1643,6 +1639,24 @@ fn download_artifact(
         on_progress,
         diagnostic,
     )
+}
+
+fn send_download_request(
+    request: reqwest::blocking::RequestBuilder,
+    cancelled: &AtomicBool,
+    diagnostic: &DownloadAttempt<'_>,
+) -> Result<reqwest::blocking::Response, OptionalProfileError> {
+    request.send().map_err(|error| {
+        if cancelled.load(Ordering::Acquire) {
+            OptionalProfileError::Cancelled
+        } else {
+            diagnostic.fail(
+                DownloadStage::Request,
+                DownloadFailureKind::Request,
+                Some(&error),
+            )
+        }
+    })
 }
 
 fn copy_download_response(

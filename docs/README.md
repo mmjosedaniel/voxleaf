@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed validated-audit follow-up](plans/completed/validated-audit-follow-up.md)
+corrects twelve retained reader, narration, benchmark and lifecycle findings.
+Applicable combined checks, browser/native coverage, authorized Windows lifecycle
+and measured personal-state restoration pass with independent R4 approval. The
+plan records the final archive review and preserves the limits of its evidence.
+
 The [completed static-audit corrections](plans/completed/static-audit-corrections.md)
 resolve fifteen reader, narration, preference, native and validation-tool defects.
 Regression, browser, native, CPU/GPU and installer acceptance passed, including

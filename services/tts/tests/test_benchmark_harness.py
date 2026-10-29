@@ -805,3 +805,32 @@ def test_protocol_failure_cleanup_retries_failed_final_cleanup_without_resetting
 def test_protocol_failure_sink_errors_remain_unsuppressed(runner: str, typed: bool) -> None:
     with pytest.raises(RuntimeError, match="^synthetic-sink-failure$"):
         _run_cleanup_scenario(runner, typed=typed, sink_fails=True)
+
+
+@pytest.mark.parametrize("prefix_size", [0, MAX_DIAGNOSTIC_BYTES - 2, MAX_DIAGNOSTIC_BYTES + 10])
+@pytest.mark.parametrize("value", ["sensitive-value", "é漢🦊-canary"])
+def test_vaf_fragmented_diagnostics_cross_every_capture_boundary(
+    prefix_size: int, value: str
+) -> None:
+    capture = DiagnosticCapture(forbidden_values=(value,))
+    with capture:
+        sys.stdout.write("x" * prefix_size)
+        for character in value:
+            sys.stderr.write(character)
+    observation = capture.observation()
+    capture.discard()
+    assert observation.sensitive_value_observed
+    assert observation.bytes_observed == prefix_size + len(value.encode())
+    assert observation.truncated == (observation.bytes_observed > MAX_DIAGNOSTIC_BYTES)
+    assert value not in repr(observation)
+
+
+def test_vaf_diagnostic_nonmatch_and_discard_do_not_join_separate_captures() -> None:
+    capture = DiagnosticCapture(forbidden_values=("canary",), maximum_bytes=2)
+    with capture:
+        sys.stdout.write("x" * 100)
+        sys.stdout.write("can")
+    capture.discard()
+    with capture:
+        sys.stdout.write("ary")
+    assert not capture.observation().sensitive_value_observed

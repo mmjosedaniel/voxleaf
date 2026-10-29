@@ -29,6 +29,54 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it("VAF H11 keeps complete mark sequences across public one/many batches", async () => {
+    const source = `${"x".repeat(639)}か\u3099${"z".repeat(100)}e\u05b0`;
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-mark-open-failed");
+    const publication = opened.publication;
+    const before = JSON.stringify(publication.documents);
+    try {
+      for (const profile of [
+        "narration-v1",
+        "narration-bilingual-v2",
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const start = publication.defaultStartLocator!;
+        const language = profile === "narration-v1" ? "und" : "en";
+        const single = await collectPreparedSegments(
+          publication,
+          start,
+          1,
+          profile,
+          language,
+        );
+        const many = await collectPreparedSegments(
+          publication,
+          start,
+          16,
+          profile,
+          language,
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(single.segments.map((segment) => segment.text).join("")).toBe(
+          source,
+        );
+        for (const [index, segment] of single.segments.entries()) {
+          assertPublicSegment(publication, segment, index);
+          expect(/^\p{M}/u.test(segment.text)).toBe(false);
+        }
+      }
+      expect(JSON.stringify(publication.documents)).toBe(before);
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("SAC-08 drains silent tails at segment limits without skipping the following paragraph", async () => {
     const opened = await openEpubPublication(
       await buildMinimalEpubFixture({

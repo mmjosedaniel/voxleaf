@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Final, cast
 
 import pytest
@@ -44,6 +47,141 @@ LOCK_PATH: Final = (
     / "piper_1_4_2_cpu"
     / "uv.lock"
 )
+
+
+@pytest.mark.parametrize(
+    "module_name,version",
+    [
+        ("bilingual_quality", 8),
+        ("corrective_v9_quality", 9),
+        ("chatterbox_v10_quality", 10),
+        ("chatterbox_v11_quality", 11),
+        ("corrective_v12_quality", 12),
+    ],
+)
+def test_vaf_quality_shuffles_presentation_records_once_preserving_audio(
+    module_name: str,
+    version: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = importlib.import_module(f"benchmarks.{module_name}")
+    session = tmp_path / "session"
+    session.mkdir()
+    candidate = getattr(module, "CHATTERBOX_CANDIDATE_ID", "synthetic-candidate")
+    commit = "1" * 40
+    session_id = "a" * 32
+    (session / "machine.raw.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": f"tts-bilingual-raw-v{version}",
+                "candidateId": candidate,
+                "executionCommitSha": commit,
+                "status": "measured-awaiting-decision",
+                "decision": {"state": "pending-maintainer-decision"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    generated: list[str] = []
+    shuffles: list[int] = []
+
+    class Adapter:
+        def load(self) -> None:
+            pass
+
+        def close(self) -> None:
+            pass
+
+        def synthesize_for_quality(self, request: GenerationRequest) -> tuple[str, int]:
+            generated.append(request.case_id)
+            return request.case_id, 24_000
+
+    class Permutation:
+        def shuffle(self, values: list[object]) -> None:
+            shuffles.append(len(values))
+            values.reverse()
+
+    def write_wave(path: Path, waveform: str, _rate: int) -> None:
+        path.write_text(waveform, encoding="utf-8")
+
+    adapter = Adapter()
+    configuration = SimpleNamespace(artifact_root=tmp_path / "artifacts")
+    identifiers = iter(f"{index:032x}" for index in range(1, 20))
+    monkeypatch.setattr(module.secrets, "token_hex", lambda _size: next(identifiers))
+    monkeypatch.setattr(module.secrets, "SystemRandom", Permutation)
+    monkeypatch.setattr(module, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(module, "_write_wave", write_wave)
+    if version == 8:
+        monkeypatch.setattr(module, "_session_path", lambda _id: session)
+        monkeypatch.setattr(module, "_machine_passed", lambda *_args: True)
+        monkeypatch.setattr(module, "PiperEnglishAdapter", lambda *_args: adapter)
+        module.generate_quality_session(
+            SimpleNamespace(
+                eligible=True,
+                expected_commit_sha=commit,
+                profile=object(),
+                configuration=configuration,
+                candidate_python=Path(sys.executable),
+            ),
+            machine_session_id=session_id,
+        )
+    else:
+        monkeypatch.setattr(module, "_session", lambda *_args: session)
+        monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+        monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+        monkeypatch.setattr(
+            module,
+            "WindowsFirewallNetworkProbe",
+            lambda: SimpleNamespace(active=lambda _path: True),
+        )
+        if version == 12:
+            monkeypatch.setattr(module, "_candidate_python", lambda _id: Path(sys.executable))
+            monkeypatch.setattr(module, "_repository_ready", lambda *_args: True)
+            monkeypatch.setattr(module, "_validate_machine_under_service", lambda *_args: None)
+            monkeypatch.setattr(
+                module, "_adapter", lambda _id: (adapter, configuration.artifact_root, ("es", "en"))
+            )
+            module.generate_quality_session(
+                candidate_id=candidate,
+                authority_commit_sha=commit,
+                execution_commit_sha=commit,
+                machine_session_id=session_id,
+            )
+        else:
+            monkeypatch.setattr(
+                module.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(stdout=commit)
+            )
+            monkeypatch.setattr(
+                module,
+                "_candidate_configuration",
+                lambda _id: (adapter, configuration, Path(sys.executable)),
+            )
+            module.generate_quality_session(
+                candidate_id=candidate, expected_commit_sha=commit, machine_session_id=session_id
+            )
+    quality = session / "quality"
+    records = json.loads((quality / "private-map.json").read_text(encoding="utf-8"))["samples"]
+    languages = ("en",) if version == 8 else ("es", "en")
+    expected = [
+        case_id
+        for language in languages
+        for case_id in load_bilingual_corpus(CORPUS_PATH, language).performance_order
+    ]
+    assert generated == expected
+    assert shuffles == [len(expected)]
+    assert [record["caseId"] for record in records] == list(reversed(expected))
+    html = next(quality.glob("*.html")).read_text(encoding="utf-8")
+    positions = []
+    for record in records:
+        sample_id = record["sampleId"]
+        assert (quality / "audio" / f"{sample_id}.wav").read_text(encoding="utf-8") == record[
+            "caseId"
+        ]
+        if version != 8:
+            assert record["caseId"].startswith(record["language"] + "-")
+        positions.append(html.index(f'data-sample="{sample_id}"'))
+    assert positions == sorted(positions)
 
 
 def _small_profile(root: Path) -> PiperEnglishProfile:

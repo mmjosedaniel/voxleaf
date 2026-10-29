@@ -346,7 +346,7 @@ describe("reader Settings dialog", () => {
     expect(second.listeners.size).toBe(0);
   });
 
-  it("reads fresh hardware after the awaited explicit recheck before another render", async () => {
+  it("VAF H1 reconciles only after the optional explicit recheck settles", async () => {
     const hardware = hardwareSource();
     let finish!: () => void;
     const pending = new Promise<void>((resolve) => {
@@ -364,6 +364,7 @@ describe("reader Settings dialog", () => {
       }),
     );
     expect(hardware.check).toHaveBeenCalledWith("explicit-recheck");
+    expect(subject.onRecoveryEpisodeReset).not.toHaveBeenCalled();
     const fresh = Object.freeze({
       ...hardware.observe(),
       status: "unavailable" as const,
@@ -378,6 +379,27 @@ describe("reader Settings dialog", () => {
     });
     expect(subject.onActivateChatterbox).not.toHaveBeenCalled();
     expect(subject.download).not.toHaveBeenCalled();
+    expect(subject.onRecoveryEpisodeReset).toHaveBeenCalledOnce();
+  });
+
+  it("VAF H7 traps forward and reverse Tab at the last summary while checking", async () => {
+    const hardware = hardwareSource();
+    hardware.publish({ ...hardware.observe(), status: "checking" });
+    renderSettings({
+      hardwareCompatibility:
+        hardware as unknown as HardwareProfileCompatibilityCoordinator,
+    });
+    const dialog = screen.getByRole("dialog");
+    const close = screen.getByRole("button", { name: "Close Settings" });
+    const summary = within(dialog).getByText("Measured profile reasons");
+    expect(
+      screen.getByRole("button", { name: "Check compatibility again" }),
+    ).toBeDisabled();
+    summary.focus();
+    fireEvent.keyDown(summary, { key: "Tab" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(summary).toHaveFocus();
   });
 
   it("renders the frozen section order and keeps playback speed in the compact bar", () => {
@@ -410,18 +432,10 @@ describe("reader Settings dialog", () => {
     expect(screen.queryByText(/0\.0\.0/)).not.toBeInTheDocument();
   });
 
-  it("contains focus, closes with Escape, and performs no lifecycle action on open", () => {
+  it("focuses Close, closes with Escape, and performs no lifecycle action on open", () => {
     const subject = renderSettings();
     const dialog = screen.getByRole("dialog", { name: "Settings" });
     const close = screen.getByRole("button", { name: "Close Settings" });
-    expect(close).toHaveFocus();
-
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    const last = focusable.item(focusable.length - 1);
-    last.focus();
-    fireEvent.keyDown(dialog, { key: "Tab" });
     expect(close).toHaveFocus();
 
     expect(subject.ensureChecked).not.toHaveBeenCalled();

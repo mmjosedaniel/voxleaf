@@ -159,6 +159,52 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it.each([
+    [100, 1],
+    [100, 23],
+    [100, 24],
+    [75, 1],
+    [75, 17],
+    [75, 18],
+  ] as const)(
+    "VAF H8 completes truthful %i-percent PCM with %i frames",
+    (rate, frames) => {
+      const scheduler = makeReadyScheduler(
+        createManualClock(0),
+        { kind: "quick" },
+        rate,
+      );
+      const original = ownedUnit(segment(1).segmentId, 1);
+      const unit = {
+        ...original,
+        metadata: {
+          ...original.metadata,
+          sampleCountSamples: frames,
+          payloadBytes: frames * 4,
+        },
+        payload: new Uint8Array(frames * 4),
+      };
+      prepare(scheduler, [segment(1)], true);
+      expect(scheduler.beginSynthesis()).toBe(segment(1).segmentId);
+      expect(scheduler.acceptCompletedUnit(unit)).toBe("accepted");
+      expect(scheduler.observe()).toMatchObject({
+        playbackState: "playing",
+        playableSampleFrames: frames,
+        playableDurationMs: Math.floor(frames / 24),
+      });
+      expect(scheduler.consumeSampleFrames(frames)).toBe(frames);
+      expect(original.releaseCount).toBe(1);
+      expect(scheduler.observe()).toMatchObject({
+        playbackState: "complete",
+        playableSampleFrames: 0,
+        resourceSnapshot: {
+          audioSampleFrames: 0,
+          audioPayloadBytes: 0,
+          completeAudioUnits: 0,
+        },
+      });
+    },
+  );
   it.each([60_000, 120_000, 300_000, 600_000] as const)(
     "B01 preserves the %i target and permits capacity escape at startup and refill",
     (targetMs) => {

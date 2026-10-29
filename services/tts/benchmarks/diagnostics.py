@@ -23,6 +23,10 @@ class _BoundedDiagnosticWriter(io.StringIO):
     def __init__(self, forbidden_values: Iterable[str], maximum_bytes: int) -> None:
         super().__init__()
         self._forbidden_values = tuple(value for value in forbidden_values if value)
+        self._match_tail_limit = max(
+            (len(value) - 1 for value in self._forbidden_values), default=0
+        )
+        self._match_tail = ""
         self._maximum_bytes = maximum_bytes
         self._retained = bytearray()
         self._bytes_observed = 0
@@ -38,10 +42,16 @@ class _BoundedDiagnosticWriter(io.StringIO):
         if len(encoded) > remaining:
             self._truncated = True
 
-        retained_text = self._retained.decode("utf-8", errors="ignore")
+        # Only a forbidden-value-sized suffix can participate in a match
+        # crossing writes, including writes after the diagnostic prefix fills.
+        crossing = self._match_tail + value[: self._match_tail_limit]
         self._sensitive = self._sensitive or any(
-            forbidden in value or forbidden in retained_text for forbidden in self._forbidden_values
+            forbidden in value or forbidden in crossing for forbidden in self._forbidden_values
         )
+        if self._match_tail_limit:
+            self._match_tail = (self._match_tail + value[-self._match_tail_limit :])[
+                -self._match_tail_limit :
+            ]
         return len(value)
 
     def observation(self) -> DiagnosticObservation:
@@ -53,6 +63,7 @@ class _BoundedDiagnosticWriter(io.StringIO):
 
     def discard(self) -> None:
         self._retained.clear()
+        self._match_tail = ""
 
 
 class DiagnosticCapture(AbstractContextManager["DiagnosticCapture"]):

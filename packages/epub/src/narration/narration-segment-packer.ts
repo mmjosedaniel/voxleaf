@@ -133,13 +133,6 @@ interface CandidateBoundary {
 
 const UTF8_ENCODER = new TextEncoder();
 const SCENE_BREAK_ASTERISM = "\u2042";
-const COMBINING_MARK_RANGES = Object.freeze([
-  Object.freeze([0x0300, 0x036f] as const),
-  Object.freeze([0x1ab0, 0x1aff] as const),
-  Object.freeze([0x1dc0, 0x1dff] as const),
-  Object.freeze([0x20d0, 0x20ff] as const),
-  Object.freeze([0xfe20, 0xfe2f] as const),
-]);
 
 function fail(): never {
   throw new EpubArchiveError("internal-failure");
@@ -446,9 +439,7 @@ function firstCodePoint(value: string): number | undefined {
 }
 
 function isCombiningMarkCodePoint(codePoint: number): boolean {
-  return COMBINING_MARK_RANGES.some(
-    ([start, end]) => codePoint >= start && codePoint <= end,
-  );
+  return /^\p{M}$/u.test(String.fromCodePoint(codePoint));
 }
 
 function startsWithCombiningMark(

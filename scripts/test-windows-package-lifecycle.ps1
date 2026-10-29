@@ -76,6 +76,11 @@ foreach ($path in @($optionalRoots + $preferenceRoot + $unrelatedRoots)) {
 }
 
 $applicationProcess = $null
+$packageProcess = $null
+$installationAttempted = $false
+$uninstallAttempted = $false
+$recoveryJournal = Join-Path $sentinelDirectory "recovery.json"
+$ownsSentinelDirectory = $false
 $originalDataBackedUp = $false
 $dataState = New-LifecycleDataState $localAppDataRoot $dataRoot $backupRoot $quarantineRoot
 $matrixResults = [Collections.Generic.List[object]]::new()
@@ -84,9 +89,54 @@ $primaryFailure = $null
 $resultJson = $null
 $cleanupFailures = [Collections.Generic.List[string]]::new()
 
+function Write-RecoveryJournal {
+  $processes = @(
+    foreach ($process in @($applicationProcess, $packageProcess)) {
+      if ($null -ne $process) {
+        [ordered]@{ id = $process.Id; startedUtc = $process.StartTime.ToUniversalTime().ToString("o") }
+      }
+    }
+  )
+  [ordered]@{
+    runId = $runId
+    installRoot = $installRoot
+    installationOriginallyAbsent = $true
+    installationAttempted = $installationAttempted
+    uninstallAttempted = $uninstallAttempted
+    installer = $Installer
+    installerSha256 = (Get-FileHash -LiteralPath $Installer -Algorithm SHA256).Hash
+    data = $dataState
+    processes = $processes
+    restorationRequires = "Owned processes stopped and owned installation verified absent; never overwrite dataRoot."
+  } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $recoveryJournal -Encoding UTF8
+}
+
+function Stop-LifecycleProcess {
+  param($Process)
+  if ($null -ne $Process -and -not $Process.HasExited) {
+    # Keep the original process handle; never stop an unrelated reused PID.
+    $Process.Kill()
+    if (-not $Process.WaitForExit(10000)) { throw "windows-release-lifecycle-process-still-running" }
+  }
+}
+
 function Invoke-Installer {
-  $process = Start-Process -FilePath $Installer -ArgumentList "/S" -Wait -PassThru
-  if ($process.ExitCode -ne 0) {
+  Assert-ExactChildPath $localAppDataRoot $installRoot "windows-release-lifecycle-root-invalid"
+  if (-not $script:installationAttempted -and (Test-Path -LiteralPath $installRoot)) {
+    throw "windows-release-lifecycle-install-root-occupied"
+  }
+  $script:installationAttempted = $true
+  $script:uninstallAttempted = $false
+  Write-RecoveryJournal
+  # -Wait also waits for installer descendants. Capture PassThru immediately
+  # so a catchable interruption still leaves the original handle for cleanup.
+  Start-Process -FilePath $Installer -ArgumentList "/S" -WindowStyle Hidden -Wait -PassThru | ForEach-Object {
+    $script:packageProcess = $_
+    Write-RecoveryJournal
+  }
+  $exitCode = $script:packageProcess.ExitCode
+  $script:packageProcess = $null
+  if ($exitCode -ne 0) {
     throw "windows-release-lifecycle-installer-failed"
   }
 }
@@ -95,10 +145,34 @@ function Invoke-Uninstaller {
   param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
   $uninstaller = Join-Path $installRoot "uninstall.exe"
-  $process = Start-Process -FilePath $uninstaller -ArgumentList $Arguments -Wait -PassThru
-  if ($process.ExitCode -ne 0 -or (Test-Path -LiteralPath $installRoot)) {
+  if (-not $script:installationAttempted) { throw "windows-release-lifecycle-install-not-owned" }
+  Assert-ExactChildPath $localAppDataRoot $installRoot "windows-release-lifecycle-root-invalid"
+  Assert-NoReparsePoints $installRoot "windows-release-lifecycle-install-reparse"
+  $script:uninstallAttempted = $true
+  Write-RecoveryJournal
+  if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw "windows-release-lifecycle-uninstaller-missing" }
+  # NSIS normally relocates itself and returns before that copy finishes.
+  # Run our verified owned copy with _?= last to observe its real process/exit
+  # while allowing it to remove the original installation, including itself.
+  Assert-NoReparsePoints $sentinelDirectory "windows-release-lifecycle-temporary-reparse"
+  $ownedUninstaller = Join-Path $sentinelDirectory "owned-uninstall.exe"
+  Assert-ExactChildPath $sentinelDirectory $ownedUninstaller "windows-release-lifecycle-uninstaller-copy-root-invalid"
+  $uninstallerHash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash
+  Copy-Item -LiteralPath $uninstaller -Destination $ownedUninstaller -Force
+  if ((Get-FileHash -LiteralPath $ownedUninstaller -Algorithm SHA256).Hash -ne $uninstallerHash) {
+    throw "windows-release-lifecycle-uninstaller-copy-invalid"
+  }
+  $script:packageProcess = Start-Process -FilePath $ownedUninstaller -ArgumentList @($Arguments + "_?=$installRoot") -WindowStyle Hidden -PassThru
+  Write-RecoveryJournal
+  if (-not $script:packageProcess.WaitForExit(120000)) { throw "windows-release-lifecycle-uninstaller-timeout" }
+  $exitCode = $script:packageProcess.ExitCode
+  $script:packageProcess = $null
+  if ($exitCode -ne 0 -or (Test-Path -LiteralPath $installRoot)) {
     throw "windows-release-lifecycle-uninstall-failed"
   }
+  $script:installationAttempted = $false
+  $script:uninstallAttempted = $false
+  Write-RecoveryJournal
 }
 
 function Remove-TestDataRoot {
@@ -197,13 +271,15 @@ function Invoke-SilentScenario {
   })
 }
 
-New-Item -ItemType Directory -Path $sentinelDirectory -Force | Out-Null
-[IO.File]::WriteAllText($sentinel, "synthetic sentinel; not a real publication")
-$sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
-
 try {
+  New-Item -ItemType Directory -Path $sentinelDirectory | Out-Null
+  $ownsSentinelDirectory = $true
+  Write-RecoveryJournal
+  [IO.File]::WriteAllText($sentinel, "synthetic sentinel; not a real publication")
+  $sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
   Initialize-LifecycleDataOwnership $dataState
   $originalDataBackedUp = $dataState.BackupVerified
+  Write-RecoveryJournal
 
   Invoke-Installer
   $application = Join-Path $installRoot "voxleaf-desktop.exe"
@@ -216,12 +292,12 @@ try {
   }
 
   $applicationProcess = Start-Process -FilePath $application -WindowStyle Hidden -PassThru
+  Write-RecoveryJournal
   Start-Sleep -Seconds 5
   if ($applicationProcess.HasExited) {
     throw "windows-release-lifecycle-first-start-failed"
   }
-  Stop-Process -Id $applicationProcess.Id -Force
-  $applicationProcess.WaitForExit()
+  Stop-LifecycleProcess $applicationProcess
   $applicationProcess = $null
 
   Initialize-DataFixtures
@@ -257,22 +333,40 @@ try {
   $primaryFailure = $_
 } finally {
   try {
-    if ($null -ne $applicationProcess -and -not $applicationProcess.HasExited) {
-      Stop-Process -Id $applicationProcess.Id -Force -ErrorAction Stop
-      $applicationProcess.WaitForExit()
-    }
+    Stop-LifecycleProcess $applicationProcess
+    Stop-LifecycleProcess $packageProcess
+    $applicationProcess = $null
+    $packageProcess = $null
   } catch {
     $cleanupFailures.Add("windows-release-lifecycle-process-cleanup-failed")
   }
 
-  foreach ($failure in @(Complete-LifecycleData $dataState)) {
-    $cleanupFailures.Add($failure)
+  if ($cleanupFailures.Count -eq 0 -and $installationAttempted) {
+    try {
+      if ($uninstallAttempted) { throw "windows-release-lifecycle-uninstall-already-failed" }
+      if (Test-Path -LiteralPath $installRoot) { Invoke-Uninstaller @("/S") }
+      if (Test-Path -LiteralPath $installRoot) { throw "windows-release-lifecycle-install-retained" }
+      $installationAttempted = $false
+    } catch {
+      $cleanupFailures.Add("windows-release-lifecycle-install-cleanup-failed:$installRoot")
+      try { Stop-LifecycleProcess $packageProcess } catch { $cleanupFailures.Add("windows-release-lifecycle-package-process-cleanup-failed") }
+    }
   }
 
+  # Restored user data must never be exposed to a remaining test installation.
+  if ($cleanupFailures.Count -eq 0 -and -not $installationAttempted) {
+    foreach ($failure in @(Complete-LifecycleData $dataState)) { $cleanupFailures.Add($failure) }
+  }
   try {
-    if (Test-Path -LiteralPath $sentinelDirectory) {
+    if ($ownsSentinelDirectory -and (Test-Path -LiteralPath $sentinelDirectory)) {
+      Write-RecoveryJournal
       Assert-NoReparsePoints $sentinelDirectory "windows-release-lifecycle-temporary-reparse"
-      Remove-Item -LiteralPath $sentinelDirectory -Recurse -Force
+      if ($cleanupFailures.Count -eq 0) {
+        Assert-ExactChildPath $temporaryRoot $sentinelDirectory "windows-release-lifecycle-temporary-root-invalid"
+        Remove-Item -LiteralPath $sentinelDirectory -Recurse -Force
+      } else {
+        $cleanupFailures.Add("windows-release-lifecycle-recovery-preserved:$recoveryJournal")
+      }
     }
   } catch {
     $cleanupFailures.Add("windows-release-lifecycle-temporary-cleanup-failed:$sentinelDirectory")

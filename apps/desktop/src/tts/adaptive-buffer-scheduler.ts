@@ -1025,6 +1025,18 @@ export class AdaptiveBufferScheduler {
     if (this.#playbackState === "playing") {
       return;
     }
+    // A complete nonempty tail is playable even when its truthful displayed
+    // duration rounds below one millisecond. Frames remain the authority.
+    if (
+      this.#rangeComplete &&
+      this.#pendingSegments.length === 0 &&
+      this.#activeSynthesis === undefined &&
+      effectiveListeningDurationMs === 0
+    ) {
+      this.#playbackState = "playing";
+      this.#initialPlaybackStarted = true;
+      return;
+    }
     const target = createAdaptiveBufferThresholds(
       this.#initialPlaybackStarted
         ? ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs

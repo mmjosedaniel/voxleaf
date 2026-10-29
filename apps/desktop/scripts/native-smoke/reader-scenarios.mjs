@@ -560,6 +560,16 @@ export function createNativeReaderScenarios({
   async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
     setStage("native synchronization feasibility setup");
     await driver.setWindowRect(800, 400);
+    // Window-command completion can precede WebView resize/reflow delivery.
+    // Establish fixture readiness before sampling the offscreen precondition.
+    await waitForCondition(
+      driver,
+      "return innerWidth === 800 && innerHeight === 400;",
+      INTERACTION_TIMEOUT_MS,
+    );
+    await driver.execute(
+      "return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));",
+    );
     const proof = await driver.execute(
       `const highlights = CSS.highlights;
      if (

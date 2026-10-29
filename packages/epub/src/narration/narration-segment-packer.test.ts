@@ -195,17 +195,20 @@ describe("narration segment packer", () => {
     expect(joinedText(whitespacePacked)).toBe(whitespaceSource);
   });
 
-  it("uses a Unicode-safe hard split without separating a combining sequence", async () => {
-    const source = `${"x".repeat(639)}e\u0301${"z".repeat(100)}`;
-    const packed = await packBlock(paragraph([text(source)]), "und");
-    const first = packed.segments[0];
-    const second = packed.segments[1];
+  it.each(["\u0301", "\u3099", "\u05b0", "\u093e", "\u0488"])(
+    "VAF H11 uses a Unicode-safe hard split before %s",
+    async (mark) => {
+      const source = `${"x".repeat(639)}e${mark}${"z".repeat(100)}`;
+      const packed = await packBlock(paragraph([text(source)]), "und");
+      const first = packed.segments[0];
+      const second = packed.segments[1];
 
-    expect(first?.boundaryReason).toBe("hard-limit");
-    expect(first?.sourceSpan.endOffsetCodePoints).toBe(639);
-    expect(String(second?.text).startsWith("e\u0301")).toBe(true);
-    expect(joinedText(packed)).toBe(source);
-  });
+      expect(first?.boundaryReason).toBe("hard-limit");
+      expect(first?.sourceSpan.endOffsetCodePoints).toBe(639);
+      expect(String(second?.text).startsWith(`e${mark}`)).toBe(true);
+      expect(joinedText(packed)).toBe(source);
+    },
+  );
 
   it("splits one unprotected max-plus-one token at the latest legal hard boundary", async () => {
     const maximum = NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum;
@@ -232,20 +235,24 @@ describe("narration segment packer", () => {
     expect(joinedText(oversized)).toBe(oversizedSource);
   });
 
-  it("returns a fixed limit when one combining sequence cannot fit legally", async () => {
-    const maximum = NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum;
-    const exactSource = `e${"\u0301".repeat(maximum - 1)}`;
-    const canary = `e${"\u0301".repeat(maximum)}`;
-    const exact = await packBlock(paragraph([text(exactSource)]), "und");
+  it.each(["\u0301", "\u3099", "\u05b0", "\u093e", "\u0488"])(
+    "VAF H11 bounds an indivisible combining sequence with %s",
+    async (mark) => {
+      const maximum =
+        NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum;
+      const exactSource = `e${mark.repeat(maximum - 1)}`;
+      const canary = `e${mark.repeat(maximum)}`;
+      const exact = await packBlock(paragraph([text(exactSource)]), "und");
 
-    expect(exact.segments).toHaveLength(1);
-    expect(exact.segments[0]?.measurements.narrationCodePoints).toBe(maximum);
-    await expectContentFreeFailure(
-      () => packBlock(paragraph([text(canary)]), "und"),
-      "resource-limit-exceeded",
-      canary,
-    );
-  });
+      expect(exact.segments).toHaveLength(1);
+      expect(exact.segments[0]?.measurements.narrationCodePoints).toBe(maximum);
+      await expectContentFreeFailure(
+        () => packBlock(paragraph([text(canary)]), "und"),
+        "resource-limit-exceeded",
+        canary,
+      );
+    },
+  );
 
   it("enforces independent code-point, UTF-8-byte, source-span, and sentence ceilings", async () => {
     const exactSourceSpan = `${"\u200b".repeat(128)}${"x".repeat(639)}.`;

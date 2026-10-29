@@ -312,6 +312,38 @@ describe("narration normalization", () => {
     },
   );
 
+  it.each([
+    ["Baker St.", "Baker St."],
+    ["Oak Dr.", "Oak Dr."],
+    ["Meet at Baker St. Then turn.", "Meet at Baker St. Then turn."],
+    ["Oak Dr. North", "Oak Dr. North"],
+    ["Dr. Morgan", "Doctor Morgan"],
+    ["Mr. Reed", "Mister Reed"],
+    ["St. James Station", "Saint James Station"],
+    ["Dr. is ambiguous.", "Dr. is ambiguous."],
+    ["St.", "St."],
+  ])("VAF H6 preserves uncertain English context: %s", (source, expected) => {
+    const leaf = singleTextFixture(source, false);
+    const before = JSON.stringify(leaf.sourceTokens);
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "en",
+    );
+    expect(normalized.text).toBe(expected);
+    expect(JSON.stringify(leaf.sourceTokens)).toBe(before);
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+    if (source === expected) {
+      expect(
+        normalized.units.some((unit) =>
+          unit.boundaryProtections.includes("abbreviation-period"),
+        ),
+      ).toBe(true);
+    }
+  });
+
   describe("frozen bilingual v2 corpus", () => {
     for (const [index, corpusCase] of BILINGUAL_V2_CORPUS.entries()) {
       it(`normalizes frozen case ${index + 1}`, () => {
