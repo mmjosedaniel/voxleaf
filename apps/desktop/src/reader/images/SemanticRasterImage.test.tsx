@@ -79,6 +79,44 @@ function controlledVisibility(): {
 afterEach(cleanup);
 
 describe("semantic raster image", () => {
+  it("SAF-15 keeps decorative loading, ready and failed images unnamed and releases them", async () => {
+    const pending = deferred<PublicationRasterImageLoadResult>();
+    const visibility = controlledVisibility();
+    const { source, release } = createSource();
+    const { container, unmount } = render(
+      <SemanticRasterImageElement
+        resourceId={RESOURCE_ID}
+        alternativeText={"" as SensitivePublicationText}
+        loader={{ load: () => pending.promise }}
+        observeVisibility={visibility.observe}
+      />,
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    act(() => visibility.reveal());
+    await act(async () => {
+      pending.resolve({ status: "ready", source });
+      await pending.promise;
+    });
+    expect(container.querySelector("img")).toHaveAttribute("alt", "");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    fireEvent.error(container.querySelector("img")!);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(release).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(source.released).toBe(true);
+    expect(visibility.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("SAF-15 keeps a decorative unavailable placeholder out of the accessibility tree", () => {
+    render(
+      <SemanticRasterImageElement
+        resourceId={RESOURCE_ID}
+        alternativeText={"" as SensitivePublicationText}
+      />,
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("waits for visibility, renders a decoded local source, and releases it", async () => {
     const pending = deferred<PublicationRasterImageLoadResult>();
     const load = vi.fn<PublicationRasterImageLoadPort["load"]>(

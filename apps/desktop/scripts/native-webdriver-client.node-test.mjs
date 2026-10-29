@@ -23,6 +23,46 @@ import {
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
+test("SAF-13 aborts an active operation request while session cleanup stays independent", async () => {
+  let entered;
+  const requested = new Promise((resolve) => {
+    entered = resolve;
+  });
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const fake = await startServer(async ({ method, path }) => {
+    if (path === "/session")
+      return { body: { value: { sessionId: "saf-session" } } };
+    if (path.endsWith("/execute/sync")) {
+      entered();
+      await held;
+    }
+    if (method === "DELETE") return { body: { value: null } };
+    return { body: { value: true } };
+  });
+  const controller = new globalThis.AbortController();
+  const client = new WebDriverClient(fake.endpoint, {
+    requestTimeoutMs: 150,
+    signal: controller.signal,
+  });
+  try {
+    await client.createSession("synthetic.exe", "synthetic-profile");
+    const pending = client.execute("return true;");
+    const observed = pending.catch((error) => error);
+    await requested;
+    controller.abort();
+    const error = await observed;
+    assert.equal(error.code, "webdriver-operation-cancelled");
+    await client.deleteSession();
+    assert(fake.requests.some(({ method }) => method === "DELETE"));
+  } finally {
+    release();
+    await fake.stop();
+  }
+});
+
 test("resolves one absolute installed executable without accepting ambiguous paths", () => {
   assert.equal(
     resolveNativeSmokeExecutable(

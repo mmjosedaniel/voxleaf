@@ -540,23 +540,37 @@ def _assemble_staging(
 def _smoke_script(language: str) -> str:
     profile_name = "SPANISH_PROFILE" if language == "es" else "ENGLISH_PROFILE"
     text = (
-        "Esta es una prueba breve de narración local."
+        "Esta es una prueba [[literal]] de narración local."
         if language == "es"
-        else "This is a brief local narration test."
+        else "This is a [[literal]] local narration test."
     )
-    return (
-        "import socket;"
-        "blocked=lambda *a,**k: (_ for _ in ()).throw(RuntimeError('network-disabled'));"
-        "socket.socket=blocked;socket.create_connection=blocked;"
-        "from pathlib import Path;"
-        f"from voxleaf_tts.adapters.piper import PiperCpuTtsEngine,{profile_name};"
-        f"engine=PiperCpuTtsEngine(Path.cwd(),profile={profile_name});"
-        "engine.load();engine.warm();"
-        f"identity=engine.begin('request:release',{{'text':{text!r},'sessionId':'session:release','generationId':'generation:release','segmentId':'segment:release'}});"
-        "settled,result=engine.settle();"
-        "assert settled==identity and result.payload and result.sample_rate_hz==24000;"
-        "print(len(result.payload));engine.release_result();engine.cleanup()"
-    )
+    return f"""import socket
+blocked=lambda *a,**k: (_ for _ in ()).throw(RuntimeError('network-disabled'))
+socket.socket=blocked
+socket.create_connection=blocked
+from pathlib import Path
+from piper.voice import EspeakPhonemizer, _ESPEAK_PHONEMIZER_LOCK
+from voxleaf_tts.adapters.piper import PiperCpuTtsEngine,{profile_name}
+engine=PiperCpuTtsEngine(Path.cwd(),profile={profile_name})
+engine.load()
+engine.warm()
+voice=engine._voice
+assert voice is not None
+text={text!r}
+with _ESPEAK_PHONEMIZER_LOCK:
+    phonemizer=EspeakPhonemizer(voice.espeak_data_dir)
+    literal=phonemizer.phonemize(voice.config.espeak_voice,text,vowel_clusters=voice.config.vowel_clusters)
+assert voice.phonemize(text)==literal
+assert type(voice).phonemize(voice,text)!=literal
+ordinary='Una prueba local.' if {language!r}=='es' else 'An ordinary local test.'
+assert voice.phonemize(ordinary)==type(voice).phonemize(voice,ordinary)
+identity=engine.begin('request:release',{{'text':text,'sessionId':'session:release','generationId':'generation:release','segmentId':'segment:release'}})
+settled,result=engine.settle()
+assert settled==identity and result.payload and result.sample_rate_hz==24000
+print(len(result.payload))
+engine.release_result()
+engine.cleanup()
+"""
 
 
 def _offline_smoke(package_root: Path, language: str) -> int:

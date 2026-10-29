@@ -42,6 +42,122 @@ import {
 } from "./narration-work-controller.js";
 
 const DOCUMENT_ID = "document:narration-resource-bounds" as ContentDocumentId;
+
+it("SAF-10 bounds continued lexical context across long source windows and cancellation", async () => {
+  const highWater = createResourceHighWater();
+  const fixture = createNarrationPublication(
+    [`${"lower ".repeat(1_000)}Dr. Morgan.`],
+    { resourceObserver: highWater.observer },
+  );
+  let cursor = fixture.start;
+  let foundTitle = false;
+  try {
+    for (let count = 0; count < 128; count += 1) {
+      const result = await fixture.publication.prepareNarration({
+        startLocator: cursor,
+        maximumSegments: 8,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+      });
+      if (result.status !== "batch" && result.status !== "complete")
+        throw new Error(`synthetic-context-bounds:${result.status}`);
+      assertContentFreeMeasurements(result.measurements);
+      expect(result.measurements.sourceCodePointsInspected).toBeLessThanOrEqual(
+        4 * 6_011 +
+          NARRATION_V1_SOURCE_WINDOW_POLICY.sourceCodePointsInspectedHardMaximum,
+      );
+      foundTitle ||= result.segments.some((segment) =>
+        String(segment.text).includes("Doctor Morgan."),
+      );
+      if (result.status === "complete") break;
+      cursor = result.continuation;
+    }
+    expect(foundTitle).toBe(true);
+    expect(highWater.values().retainedSourceTokenCount).toBeLessThanOrEqual(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum,
+    );
+    expect(highWater.values().retainedPreparedSegmentCount).toBeLessThanOrEqual(
+      NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum,
+    );
+  } finally {
+    await fixture.publication.close();
+  }
+  expect(fixture.archive.closeCount).toBe(1);
+
+  const deferred = createDeferredYieldScheduler();
+  const cancellable = createNarrationPublication(
+    [`${"lower ".repeat(1_000)}Dr. Morgan.`],
+    { scheduler: deferred.scheduler },
+  );
+  const controller = new AbortController();
+  const active = cancellable.publication.prepareNarration({
+    startLocator: cancellable.start,
+    maximumSegments: 1,
+    profile: "narration-piper-v2",
+    defaultLanguage: "en",
+    signal: controller.signal,
+  });
+  await deferred.started;
+  controller.abort();
+  deferred.release();
+  expect(await active).toMatchObject({ status: "cancelled" });
+  const retry = await cancellable.publication.prepareNarration({
+    startLocator: cancellable.start,
+    maximumSegments: 1,
+    profile: "narration-piper-v2",
+    defaultLanguage: "en",
+  });
+  expect(retry.status).toBe("batch");
+  await cancellable.publication.close();
+  expect(cancellable.archive.closeCount).toBe(1);
+});
+
+it("SAF-10 discards warm lexical context on cancellation before retry", async () => {
+  const deferred = createDeferredYieldScheduler();
+  let hold = false;
+  const fixture = createNarrationPublication(
+    [`${"a".repeat(110)} Brown Dr. ${"Smith ".repeat(800)}.`],
+    { scheduler: () => (hold ? deferred.scheduler() : Promise.resolve()) },
+  );
+  try {
+    const first = await fixture.publication.prepareNarration({
+      startLocator: fixture.start,
+      maximumSegments: 1,
+      profile: "narration-piper-v2",
+      defaultLanguage: "en",
+    });
+    if (first.status !== "batch")
+      throw new Error("synthetic-warm-context-required");
+    expect(first.continuation.textOffsetCodePoints).toBe(117);
+    hold = true;
+    const controller = new AbortController();
+    const active = fixture.publication.prepareNarration({
+      startLocator: first.continuation,
+      maximumSegments: 1,
+      profile: "narration-piper-v2",
+      defaultLanguage: "en",
+      signal: controller.signal,
+    });
+    await deferred.started;
+    controller.abort();
+    deferred.release();
+    expect(await active).toMatchObject({ status: "cancelled" });
+    hold = false;
+    const retry = await fixture.publication.prepareNarration({
+      startLocator: first.continuation,
+      maximumSegments: 1,
+      profile: "narration-piper-v2",
+      defaultLanguage: "en",
+    });
+    if (retry.status !== "batch" && retry.status !== "complete")
+      throw new Error("synthetic-context-retry-required");
+    expect(String(retry.segments[0]?.text).startsWith("Dr. Smith")).toBe(true);
+    expect(retry.segments[0]?.sourceRange.start).toEqual(first.continuation);
+  } finally {
+    await fixture.publication.close();
+  }
+  expect(fixture.archive.closeCount).toBe(1);
+});
 const RESOURCE_SNAPSHOT_KEYS = Object.freeze([
   "activeRequestCount",
   "retainedNarrationCodePoints",

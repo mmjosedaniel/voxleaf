@@ -101,6 +101,14 @@ hardware gates, or the then-withheld Chatterbox release state. M011 Milestone
 
 ### Stable Settings transitions
 
+Natural narration completion permits changing Quick/Prepared startup without
+an additional Stop. Active, loading, persistence and recovery restrictions remain.
+A profile selection belongs to the publication that requested it: closing or
+replacing that publication invalidates pending work, including a selection
+crossing persistence. It cannot change or stop the replacement publication.
+After Stop, a new Play takes a fresh admission observation before choosing its
+service profile; continuation permission for a loaded service is insufficient.
+
 A language/profile change may temporarily disable affected controls, but it
 must keep the Settings structure, current values, and relevant optional-package
 management visible. An accessible polite status names only a phase the desktop
@@ -160,6 +168,10 @@ storage, active/inactive status, and a discoverable **Remove Chatterbox** action
 Removal affects only the exact optional runtime, model, removable cache, and
 staging roots after contained service cleanup; it does not delete preferences,
 reading progress, Piper, the desktop application, or EPUBs.
+
+Cache-only residue remains discoverable after restart and exposes the existing
+removal action. Cancellation accepted before rejected download headers preserves
+the previous bounded diagnostic and follows normal staging cleanup.
 
 Download cancellation states before confirmation that it deletes the current
 operation's incomplete staging and partial files, retains no resumable partial

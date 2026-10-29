@@ -615,10 +615,6 @@ def _aggregate(
         "languages": aggregates,
     }
     _write_json(quality / "quality.aggregate.json", aggregate)
-    try:
-        result_path.unlink()
-    except OSError:
-        _fail("result-cleanup")
     return aggregate
 
 
@@ -684,12 +680,26 @@ def derive_and_cleanup(
 ) -> dict[str, object]:
     """Validate review, write one content-safe result, and delete private evidence."""
 
+    session = _session(candidate_id, session_id)
+    output = output_path.resolve()
+    try:
+        output.relative_to((REPOSITORY_ROOT / "benchmarks" / "tts").resolve())
+    except ValueError:
+        _fail("output")
+    if output.is_relative_to(session) or output == result_path.resolve():
+        _fail("output")
+    try:
+        if not output.parent.is_dir() or output.is_dir():
+            _fail("output")
+        if output.exists() and output.samefile(result_path):
+            _fail("output")
+    except OSError:
+        _fail("output")
     aggregate = _aggregate(
         candidate_id=candidate_id,
         session_id=session_id,
         result_path=result_path,
     )
-    session = _session(candidate_id, session_id)
     private_map = _read(session / "quality" / "private-map.json")
     qualities = cast(list[dict[str, object]], aggregate["languages"])
     audits = {
@@ -783,12 +793,11 @@ def derive_and_cleanup(
             ],
         }
         validate_v12_qwen_quality_result(REPOSITORY_ROOT, summary)
-    output = output_path.resolve()
-    try:
-        output.relative_to((REPOSITORY_ROOT / "benchmarks" / "tts").resolve())
-    except ValueError:
-        _fail("output")
     _write_json(output, summary)
+    try:
+        result_path.unlink()
+    except OSError:
+        _fail("result-cleanup")
     shutil.rmtree(session)
     return {
         "status": "derived-and-private-evidence-removed",

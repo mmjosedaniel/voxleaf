@@ -25,6 +25,26 @@ import {
 
 afterEach(cleanup);
 
+it("SAF-15 passes decorative empty alt through the semantic renderer", () => {
+  const document = documentWith([
+    Object.freeze({
+      kind: "paragraph",
+      children: Object.freeze([
+        Object.freeze({
+          kind: "raster-image",
+          resourceId: "synthetic-decorative" as RasterImageResourceId,
+          alternativeText: publicationText(""),
+        }),
+      ]),
+    }),
+  ]);
+  const { container } = render(<SemanticDocumentContent document={document} />);
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  expect(
+    container.querySelector(".semantic-raster-placeholder"),
+  ).toHaveAttribute("aria-hidden", "true");
+});
+
 function publicationText(value: string): SensitivePublicationText {
   return value as SensitivePublicationText;
 }

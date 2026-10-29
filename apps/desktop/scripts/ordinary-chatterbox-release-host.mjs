@@ -509,8 +509,12 @@ export function createOrdinarySessionCloser({
       const errors = [];
       await client.deleteSession().catch((error) => errors.push(error));
       try {
-        if (!processTerminated(driverProcess)) driverProcess.kill();
-        await waitForProcessExit(driverProcess);
+        // A failed spawn never acquired a process. Do not mistake its null
+        // exit fields for an uncertain still-running driver.
+        if (driverProcess.pid !== undefined) {
+          if (!processTerminated(driverProcess)) driverProcess.kill();
+          await waitForProcessExit(driverProcess);
+        }
         await removeWebDriverProfile(profileDirectory);
       } catch (error) {
         errors.push(error);
@@ -554,6 +558,10 @@ async function createOrdinarySession({ executable, environment }) {
       windowsHide: true,
     },
   );
+  const started = new Promise((resolve, reject) => {
+    driverProcess.once("spawn", resolve);
+    driverProcess.once("error", reject);
+  });
   const client = new WebDriverClient(`http://127.0.0.1:${driverPort}`, {
     requestTimeoutMs: STARTUP_TIMEOUT_MS,
   });
@@ -563,6 +571,7 @@ async function createOrdinarySession({ executable, environment }) {
     profileDirectory,
   });
   try {
+    await started;
     await waitFor(
       () => client.isReady(),
       STARTUP_TIMEOUT_MS,
@@ -952,7 +961,15 @@ export async function finalizeJourney({
   }
 }
 
-export async function runJourney(options, environment = process.env) {
+export async function runJourney(
+  options,
+  environment = process.env,
+  {
+    runInstaller: install = runInstaller,
+    runUninstaller: uninstall = runUninstaller,
+    runPreflight: preflight = runPreflight,
+  } = {},
+) {
   const stages = createStageReporter();
   stages.mark("journey-preflight-artifact");
   await existingFile(options.installer, "installer-missing");
@@ -967,6 +984,20 @@ export async function runJourney(options, environment = process.env) {
   const hostileEnv = hostileReleaseEnvironment(environment, options);
   assertNoDevelopmentEnvironment(releaseEnv);
   assertHostileDevelopmentEnvironment(hostileEnv);
+  if (
+    !isAbsoluteWindowsPath(releaseEnv.VOXLEAF_TAURI_DRIVER_PATH) ||
+    !isAbsoluteWindowsPath(releaseEnv.VOXLEAF_EDGE_DRIVER_PATH)
+  ) {
+    fail("webdriver-path");
+  }
+  await existingFile(
+    releaseEnv.VOXLEAF_TAURI_DRIVER_PATH,
+    "webdriver-tauri-missing",
+  );
+  await existingFile(
+    releaseEnv.VOXLEAF_EDGE_DRIVER_PATH,
+    "webdriver-edge-missing",
+  );
   try {
     await access(options.installedRoot);
     fail("preexisting-install-root");
@@ -984,8 +1015,8 @@ export async function runJourney(options, environment = process.env) {
     stages.mark("journey-install");
     // Even a rejected installer may have created a partial installation.
     applicationInstalled = true;
-    await runInstaller(options.installer, releaseEnv);
-    const { artifact } = await runPreflight(options, environment);
+    await install(options.installer, releaseEnv);
+    const { artifact } = await preflight(options, environment);
     stages.mark("journey-ordinary-session");
     session = await createOrdinarySession({
       executable: artifact.executable,
@@ -1181,7 +1212,7 @@ export async function runJourney(options, environment = process.env) {
     await session.close();
     session = undefined;
     stages.mark("journey-uninstall");
-    await runUninstaller(options.installedRoot, releaseEnv);
+    await uninstall(options.installedRoot, releaseEnv);
     applicationInstalled = false;
   } catch (error) {
     journeyError = error;
@@ -1235,7 +1266,7 @@ export async function runJourney(options, environment = process.env) {
       },
       uninstall: async () => {
         if (applicationInstalled) {
-          await runUninstaller(options.installedRoot, releaseEnv);
+          await uninstall(options.installedRoot, releaseEnv);
         }
       },
     });

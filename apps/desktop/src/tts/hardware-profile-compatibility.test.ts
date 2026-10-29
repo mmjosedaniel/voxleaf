@@ -181,6 +181,180 @@ function dependencies(
 }
 
 describe("hardware profile compatibility coordinator", () => {
+  it("SAF-09 fails closed when restoring a cancelled write is denied", async () => {
+    let stored: string | null = null;
+    let current = true;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const base = createWebStorageHardwareProfilePreferenceRepository({
+      storage: () => ({
+        getItem: () => stored,
+        setItem: (_key, value) => {
+          stored = value;
+        },
+        removeItem: () => {
+          throw new Error("synthetic-restore-denied");
+        },
+      }),
+    });
+    const repository = {
+      read: base.read,
+      write: base.write,
+      writeReversible: async (id: string) => {
+        const result = await base.writeReversible!(id);
+        await barrier;
+        return result;
+      },
+    };
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ preference: repository }),
+    );
+    await subject.check("application-start");
+    const originalProfile = subject.activeProfileId();
+    const pending = subject.selectProfile(
+      CHATTERBOX_ACQUISITION_PROFILE_ID,
+      () => current,
+    );
+    await vi.waitFor(() => expect(stored).not.toBeNull());
+    current = false;
+    release();
+    await expect(pending).resolves.toBe(false);
+    expect(subject.activeProfileId()).toBe(originalProfile);
+    expect(subject.observe()).toMatchObject({
+      canPersistSelection: false,
+      preferenceStatus: "unavailable",
+    });
+    await expect(
+      subject.selectProfile(CHATTERBOX_ACQUISITION_PROFILE_ID),
+    ).resolves.toBe(false);
+    subject.close();
+  });
+
+  it.each(["missing", "ready", "malformed"] as const)(
+    "SAF-09 restores %s preference when persistence crosses invalidation",
+    async (initial) => {
+      const original =
+        initial === "missing"
+          ? null
+          : initial === "malformed"
+            ? "{"
+            : JSON.stringify({
+                schemaVersion: 1,
+                profileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+              });
+      let stored = original;
+      let current = true;
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const base = createWebStorageHardwareProfilePreferenceRepository({
+        storage: () => ({
+          getItem: () => stored,
+          setItem: (_key, value) => {
+            stored = value;
+          },
+          removeItem: () => {
+            stored = null;
+          },
+        }),
+      });
+      const write = async (profileId: string) => {
+        const result = await base.write(profileId);
+        await barrier;
+        return result;
+      };
+      const reversible = async (profileId: string) => {
+        const result = await base.writeReversible!(profileId);
+        await barrier;
+        return result;
+      };
+      const repository = {
+        read: base.read,
+        write: vi.fn(write),
+        writeReversible: vi.fn(reversible),
+      };
+      const subject = new HardwareProfileCompatibilityCoordinator(
+        dependencies({ preference: repository }),
+      );
+      await subject.check("application-start");
+      const before = subject.observe();
+      const selected = subject.selectProfile(
+        CHATTERBOX_ACQUISITION_PROFILE_ID,
+        () => current,
+      );
+      await vi.waitFor(() => expect(stored).not.toBe(original));
+      current = false;
+      release();
+      await expect(selected).resolves.toBe(false);
+      expect(stored).toBe(original);
+      expect(subject.observe()).toBe(before);
+      await expect(
+        subject.selectProfile(CHATTERBOX_ACQUISITION_PROFILE_ID),
+      ).resolves.toBe(true);
+      expect(subject.activeProfileId()).toBe(CHATTERBOX_ACQUISITION_PROFILE_ID);
+      expect(stored).toContain(CHATTERBOX_ACQUISITION_PROFILE_ID);
+      subject.close();
+    },
+  );
+
+  it("SAF-09 serializes a stale write and cannot overwrite a newer valid selection", async () => {
+    let stored = JSON.stringify({
+      schemaVersion: 1,
+      profileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+    });
+    let current = true;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const base = createWebStorageHardwareProfilePreferenceRepository({
+      storage: () => ({
+        getItem: () => stored,
+        setItem: (_key, value) => {
+          stored = value;
+        },
+        removeItem: () => {
+          stored = "";
+        },
+      }),
+    });
+    const repository = {
+      read: base.read,
+      write: base.write,
+      writeReversible: async (id: string) => {
+        const result = await base.writeReversible!(id);
+        await barrier;
+        return result;
+      },
+    };
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ preference: repository }),
+    );
+    await subject.check("application-start");
+    const stale = subject.selectProfile(
+      CHATTERBOX_ACQUISITION_PROFILE_ID,
+      () => current,
+    );
+    await vi.waitFor(() =>
+      expect(stored).toContain(CHATTERBOX_ACQUISITION_PROFILE_ID),
+    );
+    current = false;
+    await expect(
+      subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
+    ).resolves.toBe(false);
+    release();
+    await expect(stale).resolves.toBe(false);
+    await expect(
+      subject.selectProfile(CHATTERBOX_ACQUISITION_PROFILE_ID),
+    ).resolves.toBe(true);
+    expect(subject.activeProfileId()).toBe(CHATTERBOX_ACQUISITION_PROFILE_ID);
+    expect(stored).toContain(CHATTERBOX_ACQUISITION_PROFILE_ID);
+    subject.close();
+  });
+
   it.each(["available", "unavailable", "wrong-language"] as const)(
     "RAC-04 reports CPU fallback independently of retained Chatterbox: %s",
     async (fallback) => {

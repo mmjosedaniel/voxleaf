@@ -12,7 +12,10 @@ export type HardwareProfilePreferenceReadResult =
     }>;
 
 export type HardwareProfilePreferenceWriteResult =
-  | Readonly<{ status: "saved" }>
+  | Readonly<{
+      status: "saved";
+      restore?: () => HardwareProfilePreferenceWriteResult;
+    }>
   | Readonly<{
       status:
         | "invalid-profile"
@@ -24,11 +27,15 @@ export type HardwareProfilePreferenceWriteResult =
 export interface HardwareProfilePreferenceRepository {
   read(): Promise<HardwareProfilePreferenceReadResult>;
   write(profileId: string): Promise<HardwareProfilePreferenceWriteResult>;
+  writeReversible?(
+    profileId: string,
+  ): Promise<HardwareProfilePreferenceWriteResult>;
 }
 
 interface ProfilePreferenceStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 }
 
 export interface WebStorageHardwareProfilePreferenceRepositoryOptions {
@@ -185,6 +192,49 @@ export function createWebStorageHardwareProfilePreferenceRepository({
         return UNAVAILABLE;
       }
       return SAVED;
+    },
+
+    async writeReversible(
+      profileId: string,
+    ): Promise<HardwareProfilePreferenceWriteResult> {
+      const key = HARDWARE_PROFILE_AUTHORITY_V1.preference.storageKey;
+      let destination: ProfilePreferenceStorage;
+      let previous: string | null;
+      try {
+        destination = storage();
+        previous = destination.getItem(key);
+        if (
+          previous !== null &&
+          previous.length >
+            HARDWARE_PROFILE_AUTHORITY_V1.preference
+              .maximumEnvelopeUtf16CodeUnits
+        )
+          return OVER_LIMIT;
+        if (previous === null && destination.removeItem === undefined)
+          return UNAVAILABLE;
+      } catch {
+        return UNAVAILABLE;
+      }
+      const result = await this.write(profileId);
+      if (result.status !== "saved") return result;
+      const written = JSON.stringify({
+        schemaVersion: HARDWARE_PROFILE_AUTHORITY_V1.preference.schemaVersion,
+        profileId,
+      });
+      return Object.freeze({
+        status: "saved",
+        restore: () => {
+          try {
+            // A receipt never owns a later write, even from another storage client.
+            if (destination.getItem(key) !== written) return UNAVAILABLE;
+            if (previous === null) destination.removeItem!(key);
+            else destination.setItem(key, previous);
+            return SAVED;
+          } catch {
+            return UNAVAILABLE;
+          }
+        },
+      });
     },
   });
 }

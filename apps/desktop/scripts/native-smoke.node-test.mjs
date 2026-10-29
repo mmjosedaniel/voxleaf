@@ -1,20 +1,385 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { Buffer } from "node:buffer";
+import { execFile, spawn } from "node:child_process";
+import { once } from "node:events";
 import console from "node:console";
-import { readFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { createServer } from "node:http";
+import path from "node:path";
+import { setTimeout as wait } from "node:timers/promises";
 import process from "node:process";
 import test from "node:test";
 import { URL } from "node:url";
 import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
 
-import { createNativeResourceObservation } from "./native-smoke/resource-observation.mjs";
+import {
+  createNativeResourceObservation,
+  captureOwnedProcessTree,
+} from "./native-smoke/resource-observation.mjs";
+import {
+  cleanupNativeRun,
+  captureCurrentChildProcesses,
+  nativeOperationTimeout,
+  runNativeOperation,
+} from "./native-startup-smoke.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
-import { WebDriverClientError } from "./native-webdriver-client.mjs";
+import {
+  WebDriverClient,
+  WebDriverClientError,
+} from "./native-webdriver-client.mjs";
 import { openEpubPublication } from "@voxleaf/epub";
 import { buildMinimalEpubFixture } from "../../../packages/epub/test-support/epub-fixture.ts";
 import { chatterboxPlaybackSpeedParagraph } from "./native-smoke/narration-fixture.mjs";
+
+for (const stage of ["before", "during"]) {
+  test(`SAF-R1 does not adopt a root whose ChildProcess exits ${stage} inspection`, async () => {
+    const child = {
+      pid: 100,
+      exitCode: stage === "before" ? 0 : null,
+      signalCode: null,
+    };
+    const previous = [
+      { pid: 200, created: "original", executable: "synthetic", depth: 1 },
+    ];
+    const original = globalThis.structuredClone(previous);
+    let inspected = false;
+    let resolveInspection;
+    const inspection = new Promise((resolve) => {
+      resolveInspection = resolve;
+    });
+    const pending = captureCurrentChildProcesses(child, previous, async () => {
+      inspected = true;
+      return await inspection;
+    });
+    const rejected = assert.rejects(
+      pending,
+      /Native owned-process cleanup could not be verified/u,
+    );
+    if (stage === "during") {
+      assert.equal(inspected, true);
+      child.exitCode = 0;
+    }
+    resolveInspection([
+      { pid: 100, created: "reused", executable: "unrelated", depth: 0 },
+    ]);
+    await rejected;
+    if (stage === "before") assert.equal(inspected, false);
+    assert.deepEqual(previous, original);
+  });
+}
+
+function inspectSyntheticProcessSnapshot(fixture) {
+  return async (script) => {
+    const encoded = Buffer.from(JSON.stringify(fixture), "utf16le").toString(
+      "base64",
+    );
+    const setup = [
+      `$fixture=ConvertFrom-Json -InputObject ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encoded}')))`,
+      "function Get-CimInstance { foreach($item in $fixture.snapshot) { [pscustomobject]@{ProcessId=[int]$item.pid;ParentProcessId=[int]$item.parent;CreationDate=$(if($null -ne $item.created){[DateTime]::new([long]$item.created,[DateTimeKind]::Utc)}else{$null})} } }",
+      "function Get-Process { param([int]$Id); $items=@($fixture.opened | Where-Object {[int]$_.pid -eq $Id}); if($items.Count -ne 1){return}; $item=$items[0]; $process=[pscustomobject]@{Handle=1;StartTime=[DateTime]::new([long]$item.created,[DateTimeKind]::Utc);Path='C:\\synthetic\\owned.exe'}; Add-Member -InputObject $process -MemberType ScriptMethod -Name Dispose -Value {} -PassThru }",
+    ].join("; ");
+    return await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-Command", `${setup}; ${script}`],
+        { encoding: "utf8", timeout: 15_000, windowsHide: true },
+        (error, stdout) => {
+          if (error !== null)
+            reject(
+              new Error("Native owned-process cleanup could not be verified.", {
+                cause: error,
+              }),
+            );
+          else {
+            try {
+              resolve(JSON.parse(stdout));
+            } catch (error) {
+              reject(error);
+            }
+          }
+        },
+      );
+    });
+  };
+}
+
+for (const childTick of [3, 9]) {
+  test(
+    `SAF-R1 resolves overlapping CIM chronology at exact child tick ${childTick}`,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const snapshot = [
+        { pid: 100, parent: 1, created: "638000000000000000" },
+        { pid: 200, parent: 100, created: "638000000000000000" },
+      ];
+      const opened = [
+        { pid: 100, created: "638000000000000007" },
+        { pid: 200, created: `63800000000000000${childTick}` },
+      ];
+      const result = await captureOwnedProcessTree(
+        100,
+        [],
+        inspectSyntheticProcessSnapshot({ snapshot, opened }),
+      );
+      assert.deepEqual(
+        result.map(({ pid }) => pid).sort((a, b) => a - b),
+        childTick === 3 ? [100] : [100, 200],
+      );
+    },
+  );
+}
+
+for (const mode of [
+  "stale-parent",
+  "recycled-child",
+  "unknown-child",
+  "vanished-child",
+  "duplicate-child",
+]) {
+  test(
+    `SAF-R1 excludes ${mode} from process ownership`,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const origin = 638000000000000000n;
+      const ticks = (offset) => String(origin + BigInt(offset));
+      const snapshot = [
+        { pid: 100, parent: 1, created: ticks(0) },
+        { pid: 200, parent: 100, created: ticks(1000) },
+      ];
+      const opened = [
+        { pid: 100, created: ticks(7) },
+        { pid: 200, created: ticks(1009) },
+      ];
+      if (mode === "stale-parent") {
+        snapshot.push({ pid: 300, parent: 100, created: ticks(-1000) });
+        opened.push({ pid: 300, created: ticks(-991) });
+      } else if (mode === "recycled-child") {
+        snapshot.push(
+          { pid: 400, parent: 100, created: ticks(2000) },
+          { pid: 401, parent: 400, created: ticks(7000) },
+        );
+        opened.push(
+          { pid: 400, created: ticks(5009) },
+          { pid: 401, created: ticks(7003) },
+        );
+      } else if (mode === "unknown-child") {
+        snapshot.push({ pid: 500, parent: 100, created: null });
+        opened.push({ pid: 500, created: ticks(10009) });
+      } else if (mode === "vanished-child") {
+        snapshot.push({ pid: 700, parent: 100, created: ticks(2000) });
+      } else {
+        snapshot.push(
+          { pid: 800, parent: 100, created: ticks(2000) },
+          { pid: 800, parent: 100, created: ticks(5000) },
+        );
+        opened.push({ pid: 800, created: ticks(2009) });
+      }
+      const previous = [
+        {
+          pid: 600,
+          created: ticks(3333),
+          executable: "C:\\synthetic\\previous.exe",
+          depth: 2,
+        },
+      ];
+      const pending = captureOwnedProcessTree(
+        100,
+        previous,
+        inspectSyntheticProcessSnapshot({ snapshot, opened }),
+      );
+      if (mode !== "stale-parent") {
+        await assert.rejects(
+          pending,
+          /Native owned-process cleanup could not be verified/u,
+        );
+        return;
+      }
+      const result = await pending;
+      assert.deepEqual(
+        result.map(({ pid }) => pid).sort((left, right) => left - right),
+        [100, 200, 600],
+      );
+      assert.deepEqual(
+        result.find(({ pid }) => pid === 600),
+        previous[0],
+      );
+      assert.equal(result.find(({ pid }) => pid === 200).created, ticks(1009));
+    },
+  );
+}
+
+test(
+  "SAF-R1 rejects a root recycled between enumeration and handle acquisition",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const snapshot = [{ pid: 100, parent: 1, created: "638000000000000000" }];
+    const opened = [{ pid: 100, created: "638000000000002009" }];
+    await assert.rejects(
+      captureOwnedProcessTree(
+        100,
+        [],
+        inspectSyntheticProcessSnapshot({ snapshot, opened }),
+      ),
+      /Native owned-process cleanup could not be verified/u,
+    );
+  },
+);
+
+test("SAF-13 only accepts finite bounded operation deadlines", () => {
+  assert.equal(nativeOperationTimeout([]), 1_800_000);
+  assert.equal(nativeOperationTimeout(["--operation-timeout-ms=25"]), 25);
+  for (const value of ["0", "-1", "Infinity", "1800001", "abc"]) {
+    assert.throws(() =>
+      nativeOperationTimeout([`--operation-timeout-ms=${value}`]),
+    );
+  }
+  assert.throws(() =>
+    nativeOperationTimeout([
+      "--operation-timeout-ms=1",
+      "--operation-timeout-ms=2",
+    ]),
+  );
+});
+
+for (const mode of [
+  "deadline",
+  "session-creation-deadline",
+  "normal",
+  "cleanup-failure",
+  "uncertain-ownership",
+]) {
+  test(
+    `SAF-13 ${mode} settles owned work and cleans a real driver/app/worker tree`,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const owned = await mkdtemp(path.join(tmpdir(), "voxleaf-saf-native-"));
+      await writeFile(path.join(owned, "sentinel"), "owned scratch");
+      const workerCode = "setInterval(() => {}, 1000)";
+      const appCode = `const {spawn}=require('node:child_process'); const worker=spawn(process.execPath,['-e',${JSON.stringify(workerCode)}],{stdio:'ignore',windowsHide:true}); worker.once('spawn',()=>console.log('ready')); setInterval(()=>{},1000);`;
+      const driverCode = `const {spawn}=require('node:child_process'); const app=spawn(process.execPath,['-e',${JSON.stringify(appCode)}],{stdio:['ignore','pipe','inherit'],windowsHide:true}); app.stdout.pipe(process.stdout); setInterval(()=>{},1000);`;
+      const child = spawn(process.execPath, ["-e", driverCode], {
+        stdio: ["ignore", "pipe", "inherit"],
+        windowsHide: true,
+      });
+      const sentinel = spawn(process.execPath, ["-e", workerCode], {
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      let identities = [];
+      let settled = false;
+      let lateWork = false;
+      const primary = new Error("synthetic-operation-failure");
+      const cleanupFailure = new Error("synthetic-delete-failure");
+      let client;
+      let sessionCreationObserved = false;
+      const server =
+        mode === "session-creation-deadline"
+          ? createServer(() => {
+              sessionCreationObserved = true;
+            })
+          : undefined;
+      try {
+        await once(sentinel, "spawn");
+        await once(child.stdout, "data");
+        identities = await captureOwnedProcessTree(child.pid);
+        assert(identities.length >= 3);
+        if (mode === "uncertain-ownership") {
+          identities = identities.map((record) =>
+            record.pid === child.pid
+              ? { ...record, created: String(BigInt(record.created) + 10n) }
+              : record,
+          );
+        }
+        if (server !== undefined) {
+          server.listen(0, "127.0.0.1");
+          await once(server, "listening");
+        }
+        const result = await runNativeOperation({
+          timeoutMs: mode === "session-creation-deadline" ? 100 : 30,
+          work: async (signal) => {
+            try {
+              if (mode === "session-creation-deadline") {
+                client = new WebDriverClient(
+                  `http://127.0.0.1:${server.address().port}`,
+                  { signal },
+                );
+                await client.createSession("synthetic.exe", owned);
+                lateWork = true;
+              } else if (mode === "deadline") {
+                await wait(10_000, undefined, { signal });
+                lateWork = true;
+              } else if (mode === "cleanup-failure") throw primary;
+            } finally {
+              settled = true;
+            }
+          },
+          cleanup: async () => {
+            assert.equal(settled, true);
+            await cleanupNativeRun({
+              child,
+              temporaryDirectory: owned,
+              identities,
+              driver: client ?? {
+                async deleteSession() {
+                  if (mode === "cleanup-failure") throw cleanupFailure;
+                },
+              },
+            });
+          },
+        }).catch((error) => error);
+        assert.equal(lateWork, false);
+        assert.equal(sentinel.exitCode, null);
+        assert.equal(sentinel.signalCode, null);
+        for (const { pid } of identities) {
+          assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
+        }
+        if (mode === "normal") assert.equal(result, undefined);
+        else if (mode === "deadline") assert.equal(result.name, "AbortError");
+        else if (mode === "session-creation-deadline") {
+          assert.equal(sessionCreationObserved, true);
+          assert.equal(client.hasSession, false);
+          assert.equal(result.code, "webdriver-operation-cancelled");
+        } else if (mode === "uncertain-ownership") {
+          assert(result instanceof AggregateError);
+          assert(
+            result.errors.some((error) => error instanceof AggregateError),
+          );
+        } else {
+          assert(result instanceof AggregateError);
+          assert(result.errors.includes(primary));
+          assert(
+            result.errors.some((error) =>
+              error.errors?.includes(cleanupFailure),
+            ),
+          );
+        }
+        if (mode === "cleanup-failure" || mode === "uncertain-ownership")
+          await access(owned);
+        else await assert.rejects(access(owned), { code: "ENOENT" });
+      } finally {
+        if (server !== undefined) {
+          server.closeAllConnections();
+          server.close();
+          await once(server, "close");
+        }
+        if (child.exitCode === null && child.signalCode === null) {
+          const exited = once(child, "exit");
+          child.kill();
+          await exited;
+        }
+        if (sentinel.exitCode === null && sentinel.signalCode === null) {
+          const exited = once(sentinel, "exit");
+          sentinel.kill();
+          await exited;
+        }
+        await rm(owned, { recursive: true, force: true });
+      }
+    },
+  );
+}
 
 for (const language of ["es", "en"]) {
   test(`Chatterbox ${language} speed fixture has sentence boundaries throughout the six-rate matrix`, async () => {

@@ -17,7 +17,10 @@ import type {
 import type { XhtmlDocumentProjection } from "../document/xhtml-projector.js";
 import { createPublicationLocatorIndex } from "../locator/locator-index.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
-import { normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens } from "./narration-bilingual-normalizer.js";
+import {
+  normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens,
+  summarizeEnglishTitleContext,
+} from "./narration-bilingual-normalizer.js";
 import {
   normalizeNarrationSourceTokens,
   type NarrationNormalizedStream,
@@ -35,6 +38,58 @@ import {
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
+
+it.each([
+  ["las 14:30.", "las catorce treinta."],
+  ["Las 14:30.", "Las catorce treinta."],
+  ["LAS 14:30.", "LAS catorce treinta."],
+  ["14:30.", "las catorce treinta."],
+  ["Las 14:30:12.", "Las 14:30:12."],
+])(
+  "SAF-12 preserves the closed Spanish time article: %s",
+  (source, expected) => {
+    const leaf = singleTextFixture(source, false);
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "es",
+    );
+    expect(normalized.text).toBe(expected);
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+  },
+);
+
+it.each([
+  ["Brown ", "Dr. Smith", "Dr. Smith"],
+  ["brown ", "Dr. Smith", "Doctor Smith"],
+  ["a".repeat(128), "Dr. Smith", "Dr. Smith"],
+  ["A".repeat(128), "Dr. Smith", "Dr. Smith"],
+  [`${"a".repeat(128)} `, "Dr. Smith", "Dr. Smith"],
+  [`${"a".repeat(126)} `, "Dr. Smith", "Doctor Smith"],
+  ["8th ", "St. James", "St. James"],
+])(
+  "SAF-10 uses bounded complete predecessor context without emitting it",
+  (prefix, suffix, expected) => {
+    const full = singleTextFixture(prefix + suffix, false);
+    const cut = Array.from(prefix).length;
+    const preceding = summarizeEnglishTitleContext(
+      full.sourceTokens,
+      cut,
+      "en",
+    );
+    const tokens = full.sourceTokens.slice(cut);
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      tokens,
+      "en",
+      preceding,
+    );
+    expect(normalized.text).toBe(expected);
+    expect(JSON.stringify(preceding)).not.toContain(prefix);
+    expect(normalized.units[0]?.sourceSpan.startOffsetCodePoints).toBe(cut);
+  },
+);
 const TASK_3_1_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
   ({ category, id }) =>
     category === "whitespace" ||
@@ -1135,6 +1190,28 @@ describe("narration normalization", () => {
     >();
   });
 });
+
+it.each(["foreign", "code"] as const)(
+  "SAF-10 keeps incompatible %s lookbehind conservative",
+  (role) => {
+    const leaf = leafFor(
+      paragraph(
+        [
+          role === "foreign" ? text("brown ", "fr") : code("brown "),
+          text("Dr. Smith", "en"),
+        ],
+        "en",
+      ),
+    );
+    const preceding = summarizeEnglishTitleContext(leaf.sourceTokens, 6, "en");
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens.slice(6),
+      "en",
+      preceding,
+    );
+    expect(normalized.text).toBe("Dr. Smith");
+  },
+);
 
 function sensitive(value: string): SensitivePublicationText {
   return value as SensitivePublicationText;

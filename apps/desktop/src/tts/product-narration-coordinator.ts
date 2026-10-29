@@ -179,6 +179,7 @@ export interface ProductNarrationClock {
 export interface ProductNarrationProfileCompatibility {
   /** Settle the initial host/preference probe without starting a model. */
   ensureChecked?(): Promise<unknown>;
+  check?(trigger: "before-profile-start"): Promise<unknown>;
   activeProfileId?(): string | undefined;
   activeLanguage?(): NarrationLanguageV1;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
@@ -1589,6 +1590,20 @@ export class ProductNarrationCoordinator {
     try {
       switch (action.kind) {
         case "start-service": {
+          const expectedProfileId =
+            this.#profileCompatibility?.activeProfileId?.() ?? this.#profileId;
+          const expectedLanguage =
+            this.#profileCompatibility?.activeLanguage?.() ?? this.#language;
+          const freshObservation = this.#profileCompatibility?.check;
+          if (freshObservation !== undefined) {
+            await this.#profileCompatibility!.check!("before-profile-start");
+            if (
+              this.#closed ||
+              runToken !== this.#runToken ||
+              scheduler !== this.#scheduler
+            )
+              return;
+          }
           const selectedProfileId =
             this.#profileCompatibility?.activeProfileId?.();
           const profileId =
@@ -1611,16 +1626,40 @@ export class ProductNarrationCoordinator {
           }
           const hardwareAllowed =
             this.#profileCompatibility === undefined ||
-            (await this.#profileCompatibility.isProfileStartAllowed(
-              profileId,
-              "before-profile-start",
-              language,
-            ));
+            (freshObservation !== undefined
+              ? this.#profileCompatibility.isProfileCurrentlyAllowed(
+                  profileId,
+                ) === true &&
+                profileId === expectedProfileId &&
+                language === expectedLanguage
+              : await this.#profileCompatibility.isProfileStartAllowed(
+                  profileId,
+                  "before-profile-start",
+                  language,
+                ));
+          const selectionMatches = () =>
+            (this.#profileCompatibility?.activeProfileId === undefined ||
+              this.#profileCompatibility.activeProfileId() === profileId) &&
+            (this.#profileCompatibility?.activeLanguage === undefined ||
+              this.#profileCompatibility.activeLanguage() === language);
+          if (
+            this.#closed ||
+            runToken !== this.#runToken ||
+            scheduler !== this.#scheduler
+          )
+            return;
           const configurationAvailable =
             hardwareAllowed &&
+            selectionMatches() &&
             (await this.#client.profileConfigurationAvailability(profileId)) ===
               "available";
-          if (!configurationAvailable) {
+          if (
+            this.#closed ||
+            runToken !== this.#runToken ||
+            scheduler !== this.#scheduler
+          )
+            return;
+          if (!configurationAvailable || !selectionMatches()) {
             if (runToken === this.#runToken) {
               this.#availability = "unavailable";
               this.#fail(
@@ -1632,7 +1671,6 @@ export class ProductNarrationCoordinator {
             }
             return;
           }
-          if (runToken !== this.#runToken) return;
           scheduler.beginServiceStart();
           this.#publish();
           this.#profileId = profileId;

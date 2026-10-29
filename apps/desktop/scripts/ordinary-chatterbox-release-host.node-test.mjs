@@ -28,6 +28,7 @@ import {
   processTerminated,
   removeWebDriverProfile,
   releaseEnvironment,
+  runJourney,
   validateOrdinaryArtifact,
   waitForStableInstallRootAbsence,
 } from "./ordinary-chatterbox-release-host.mjs";
@@ -36,6 +37,92 @@ import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+for (const mode of ["missing-driver", "spawn-failure", "uncertain-cleanup"]) {
+  test(`SAF-01 ${mode} preserves synthetic original through the journey`, async () => {
+    const owned = await mkdtemp(path.join(root, "saf-journey-"));
+    const originalLocalData = process.env.LOCALAPPDATA;
+    process.env.LOCALAPPDATA = owned;
+    const dataRoot = path.join(owned, "com.voxleaf.desktop");
+    const backup = `${dataRoot}.ordinary-chatterbox-harness-backup-${process.pid}`;
+    const installer = path.join(owned, "synthetic-installer.exe");
+    const tauriDriver = path.join(owned, "synthetic-driver.exe");
+    const edgeDriver = path.join(owned, "synthetic-edge.exe");
+    await mkdir(dataRoot);
+    await writeFile(path.join(dataRoot, "sentinel"), "original");
+    await writeFile(installer, "not an installer");
+    await writeFile(edgeDriver, "synthetic prerequisite");
+    if (mode !== "missing-driver")
+      await writeFile(tauriDriver, "synthetic prerequisite");
+    let installed = false;
+    let uninstalled = false;
+    const cleanupError = new Error("synthetic-uninstall-uncertain");
+    const options = {
+      installedRoot: path.join(owned, "VoxLeaf"),
+      installer,
+      receipt: path.join(owned, "receipt.json"),
+      tauriDriver,
+      edgeDriver,
+      mode: "journey",
+    };
+    try {
+      const result = await runJourney(
+        options,
+        { ...process.env, USERPROFILE: owned },
+        {
+          runInstaller: async () => {
+            installed = true;
+            assert.equal(
+              await readFile(path.join(backup, "sentinel"), "utf8"),
+              "original",
+            );
+            await rm(tauriDriver);
+            await mkdir(dataRoot);
+            await writeFile(path.join(dataRoot, "sentinel"), "temporary");
+          },
+          runPreflight: async () => ({ artifact: { executable: installer } }),
+          runUninstaller: async () => {
+            uninstalled = true;
+            if (mode === "uncertain-cleanup") throw cleanupError;
+          },
+        },
+      ).catch((error) => error);
+      if (mode === "missing-driver") {
+        assert.match(result.message, /webdriver-tauri-missing/u);
+        assert.equal(installed, false);
+        assert.equal(uninstalled, false);
+      } else {
+        assert.equal(installed, true);
+        assert.equal(uninstalled, true);
+        if (mode === "uncertain-cleanup") {
+          assert(result instanceof AggregateError);
+          assert(result.errors.includes(cleanupError));
+          assert(result.errors.some((error) => error.code === "ENOENT"));
+          assert.equal(
+            await readFile(path.join(backup, "sentinel"), "utf8"),
+            "original",
+          );
+          assert.equal(
+            await readFile(path.join(dataRoot, "sentinel"), "utf8"),
+            "temporary",
+          );
+          return;
+        }
+        assert.equal(result.code, "ENOENT");
+      }
+      assert.equal(
+        await readFile(path.join(dataRoot, "sentinel"), "utf8"),
+        "original",
+      );
+      await assert.rejects(readFile(path.join(backup, "sentinel")), {
+        code: "ENOENT",
+      });
+    } finally {
+      if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+      else process.env.LOCALAPPDATA = originalLocalData;
+    }
+  });
+}
 
 for (const mode of ["repeated-close", "failed-startup"]) {
   test(`RAC-03 retains session-close failure after ${mode}`, async () => {

@@ -54,6 +54,7 @@ import type {
 } from "./tts/product-narration-coordinator";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./tts/operational-recovery";
 import { TtsProcessClient } from "./tts/process-client";
+import { CHATTERBOX_OPTIONAL_PROFILE_ID } from "./tts/optional-chatterbox-client";
 import type {
   HardwareCompatibilitySnapshotV1,
   HardwareProfileCompatibilityCoordinator,
@@ -695,6 +696,74 @@ describe("App preference connection characterization", () => {
     const current = () => observer.mock.calls.at(-1)![0];
     return { observer, current };
   }
+
+  it.each(["replacement", "failed-replacement", "unmount"] as const)(
+    "SAF-09 discards A's pending selection after %s",
+    async (transition) => {
+      const selection = deferred<void>();
+      const hardware = {
+        ensureChecked: vi.fn(async () => undefined),
+        check: vi.fn(async () => undefined),
+        selectProfile: vi.fn(async () => true),
+        close: vi.fn(),
+      } as unknown as HardwareProfileCompatibilityCoordinator;
+      const owners: ControlledNarrationCoordinator[] = [];
+      const settings = observeSettings();
+      let opens = 0;
+      const view = render(
+        <App
+          openFlow={createTestFlow(async () => {
+            opens += 1;
+            return opens === 2 && transition === "failed-replacement"
+              ? { status: "rejected", reason: "invalid-epub" }
+              : {
+                  status: "ready",
+                  publication: createTestPublication(`Owner ${opens}`),
+                };
+          })}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          hardwareCompatibilityCoordinator={hardware}
+          createNarrationCoordinator={() => {
+            const owner = new ControlledNarrationCoordinator();
+            owners.push(owner);
+            return owner as unknown as ProductNarrationCoordinator;
+          }}
+          ReadyPublicationContent={() => <article>Synthetic reader</article>}
+        />,
+      );
+      selectEpub();
+      await waitFor(() => expect(owners).toHaveLength(1));
+      const first = owners[0]!;
+      vi.spyOn(first, "stopForConfigurationChange").mockReturnValue(
+        selection.promise,
+      );
+      let pending!: Promise<boolean>;
+      act(() => {
+        pending = settings
+          .current()
+          .onSelectProfile(CHATTERBOX_OPTIONAL_PROFILE_ID);
+      });
+      if (transition === "unmount") view.unmount();
+      else {
+        selectEpub("replacement.epub");
+        if (transition === "replacement") {
+          await waitFor(() => expect(owners).toHaveLength(2));
+          act(() => owners[1]!.start());
+        } else await waitFor(() => expect(opens).toBe(2));
+      }
+      await act(async () => {
+        selection.resolve();
+        expect(await pending).toBe(false);
+      });
+      expect(hardware.selectProfile).not.toHaveBeenCalled();
+      expect(first.configurationEvents).toEqual([]);
+      if (transition === "replacement") {
+        expect(owners[1]!.configurationEvents).toEqual([]);
+        expect(owners[1]!.observe().navigation.playIntent).toBe("playing");
+      }
+      view.unmount();
+    },
+  );
 
   function pendingPreferences() {
     const readerRead = deferred<ReaderPreferencesReadResult>();

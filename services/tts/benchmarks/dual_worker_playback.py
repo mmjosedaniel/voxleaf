@@ -179,6 +179,7 @@ def simulate_v5_playback(
     peak_reserved_bytes = 0
     buffering = Fraction(0)
     underruns = 0
+    starving = False
     started = False
     startup_wall = Fraction(0)
     startup_playable = Fraction(0)
@@ -203,11 +204,13 @@ def simulate_v5_playback(
         return retained_pcm_bytes + pending_bytes + ACTIVE_PCM_BYTE_RESERVATION * len(active)
 
     def consume(seconds: Fraction) -> None:
-        nonlocal buffered, played, retained_complete_units, retained_pcm_bytes
+        nonlocal buffered, played, retained_complete_units, retained_pcm_bytes, starving
         remaining = seconds
         while remaining > 0 and queue:
             head = queue[0]
             consumed = min(head.remaining, remaining)
+            if consumed > 0:
+                starving = False
             head.remaining -= consumed
             remaining -= consumed
             buffered -= consumed
@@ -218,7 +221,7 @@ def simulate_v5_playback(
                 retained_pcm_bytes -= head.pcm_bytes
 
     def advance(to_nanoseconds: int) -> None:
-        nonlocal buffering, underruns, minimum_buffer, previous_ns
+        nonlocal buffering, underruns, minimum_buffer, previous_ns, starving
         if to_nanoseconds < previous_ns:
             raise DualWorkerBenchmarkError("invalid-output")
         if started:
@@ -227,7 +230,9 @@ def simulate_v5_playback(
             consume(min(elapsed, available))
             if elapsed > available:
                 buffering += elapsed - available
-                underruns += 1
+                if not starving:
+                    underruns += 1
+                    starving = True
             minimum_buffer = (
                 buffered
                 if minimum_buffer is None
@@ -335,7 +340,18 @@ def simulate_v5_playback(
     if not invalidated:
         if active or completed_pending or next_release != len(dispatches):
             raise DualWorkerBenchmarkError("invalid-output")
-        consume(buffered)
+        drain_seconds = buffered
+        if invalidation_nanoseconds is not None:
+            drain_seconds = min(
+                buffered,
+                Fraction(invalidation_nanoseconds - previous_ns, 1_000_000_000),
+            )
+        consume(drain_seconds)
+        discarded += buffered
+        queue.clear()
+        buffered = Fraction(0)
+        retained_complete_units = 0
+        retained_pcm_bytes = 0
     minimum_buffer = (
         Fraction(0)
         if minimum_buffer is None

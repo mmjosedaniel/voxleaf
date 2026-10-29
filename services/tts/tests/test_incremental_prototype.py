@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -220,3 +221,125 @@ def test_segment_and_safe_result_privacy_bounds_are_enforced() -> None:
     assert "artifactRoot" not in serialized
     assert "candidatePython" not in serialized
     assert "payload" not in serialized
+
+
+@pytest.mark.parametrize("stage", ["start", "submit", "audio", "identity", "close"])
+@pytest.mark.parametrize("cleanup_fails", [False, True])
+def test_saf_exception_terminates_owned_worker_and_stops_measurement(
+    stage: str, cleanup_fails: bool
+) -> None:
+    primary = PrototypeError("synthetic-failure")
+
+    class FailingWorker(FakePrototypeWorker):
+        termination_count = 0
+
+        def start(self) -> WorkerReady:
+            if stage == "start":
+                raise primary
+            return super().start()
+
+        def submit(self, segment: PrototypeSegment) -> None:
+            if stage == "submit":
+                raise primary
+            super().submit(segment)
+
+        def receive_audio(self) -> AudioUnit:
+            if stage == "audio":
+                raise primary
+            unit = super().receive_audio()
+            if stage == "identity":
+                return replace(unit, identity=replace(unit.identity, generation_id="obsolete"))
+            return unit
+
+        def close(self) -> WorkerStop:
+            if stage == "close":
+                raise primary
+            return super().close()
+
+        def terminate(self) -> WorkerStop:
+            self.termination_count += 1
+            self._active = None
+            self.stopped = True
+            if cleanup_fails:
+                raise PrototypeError("cleanup")
+            return WorkerStop(elapsed_ns=1, exited=True)
+
+    worker = FailingWorker()
+    memory = FakeMemoryProbe()
+    with pytest.raises(PrototypeError) as failure:
+        execute_prototype(
+            commit_sha="a" * 40,
+            host=_host(),
+            corpus=load_corpus(REPOSITORY_ROOT / "benchmarks/tts/corpus-v1.json"),
+            worker_factory=lambda: worker,
+            memory_probe=memory,
+            resource_sampler=ReleasedResourceSampler(),
+            sleeper=lambda seconds: None,
+            root_pid=123,
+        )
+    assert worker.termination_count == 1
+    assert worker.stopped
+    assert not memory.started
+    if stage != "identity":
+        assert failure.value is primary
+    else:
+        assert str(failure.value) == "tts-incremental-prototype:stale-output"
+
+
+def test_saf_success_releases_worker_ownership_without_double_termination() -> None:
+    class CountingWorker(FakePrototypeWorker):
+        stop_count = 0
+
+        def terminate(self) -> WorkerStop:
+            self.stop_count += 1
+            return super().terminate()
+
+        def close(self) -> WorkerStop:
+            self.stop_count += 1
+            return super().close()
+
+    workers = [CountingWorker() for _ in range(5)]
+    iterator = iter(workers)
+    result = execute_prototype(
+        commit_sha="a" * 40,
+        host=_host(),
+        corpus=load_corpus(REPOSITORY_ROOT / "benchmarks/tts/corpus-v1.json"),
+        worker_factory=lambda: next(iterator),
+        memory_probe=FakeMemoryProbe(),
+        resource_sampler=ReleasedResourceSampler(),
+        sleeper=lambda seconds: None,
+        root_pid=123,
+    )
+    assert result["passed"] is True
+    assert [worker.stop_count for worker in workers] == [1] * 5
+
+
+def test_saf_unconfirmed_termination_cannot_transfer_worker_ownership() -> None:
+    class UnconfirmedWorker(FakePrototypeWorker):
+        termination_count = 0
+
+        def terminate(self) -> WorkerStop:
+            self.termination_count += 1
+            if self.termination_count == 1:
+                return WorkerStop(elapsed_ns=1, exited=False)
+            self._active = None
+            self.stopped = True
+            return WorkerStop(elapsed_ns=1, exited=True)
+
+    worker = UnconfirmedWorker()
+    workers = iter([FakePrototypeWorker(), worker])
+    memory = FakeMemoryProbe()
+    with pytest.raises(PrototypeError, match="tts-incremental-prototype:cleanup"):
+        execute_prototype(
+            commit_sha="a" * 40,
+            host=_host(),
+            corpus=load_corpus(REPOSITORY_ROOT / "benchmarks/tts/corpus-v1.json"),
+            worker_factory=lambda: next(workers),
+            memory_probe=memory,
+            resource_sampler=ReleasedResourceSampler(),
+            sleeper=lambda seconds: None,
+            root_pid=123,
+        )
+    assert worker.termination_count == 2
+    assert worker.stopped
+    assert not memory.started

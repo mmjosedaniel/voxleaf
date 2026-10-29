@@ -515,6 +515,144 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["profile", "language"] as const)(
+    "SAF-14 rejects %s changes during native configuration observation",
+    async (change) => {
+      const profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      let selected = profileId;
+      let language: "en" | "es" = "en";
+      let release!: (value: "available") => void;
+      const pending = new Promise<"available">((resolve) => {
+        release = resolve;
+      });
+      const compatibility = {
+        activeProfileId: () => selected,
+        activeLanguage: () => language,
+        isProfileCurrentlyAllowed: () => true,
+        isProfileStartAllowed: vi.fn(async () => true),
+        check: vi.fn(async () => undefined),
+      };
+      const { coordinator, client, prepareNarration } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      try {
+        await coordinator.checkAvailability();
+        const configuration = vi
+          .spyOn(client, "profileConfigurationAvailability")
+          .mockReturnValue(pending);
+        coordinator.start();
+        await settleUntil(() => configuration.mock.calls.length === 1);
+        if (change === "profile")
+          selected = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+        else language = "es";
+        release("available");
+        await settleUntil(
+          () => coordinator.observe().availability === "unavailable",
+        );
+        expect(client.startedProfiles).toEqual([]);
+        expect(prepareNarration).not.toHaveBeenCalled();
+      } finally {
+        release("available");
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each([true, false])(
+    "SAF-14 refreshes new-start admission after Stop (capacity=%s)",
+    async (capacity) => {
+      const profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      let admitted = true;
+      let freshCapacity = true;
+      const compatibility = {
+        activeProfileId: () => (admitted ? profileId : undefined),
+        activeLanguage: () => "en" as const,
+        isProfileCurrentlyAllowed: () => admitted,
+        isProfileContinuationAllowed: () => true,
+        isProfileStartAllowed: vi.fn(async () => admitted),
+        check: vi.fn(async () => {
+          admitted = freshCapacity;
+        }),
+      };
+      const { coordinator, client, prepareNarration } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        admitted = false;
+        await coordinator.refreshSelectedProfile();
+        expect(coordinator.observe().state?.phase).toBe("playing");
+        await coordinator.stop();
+        const preparedBefore = prepareNarration.mock.calls.length;
+        freshCapacity = capacity;
+        compatibility.check.mockClear();
+        coordinator.start();
+        await settleUntil(() =>
+          capacity
+            ? client.startedProfiles.length === 2
+            : coordinator.observe().availability === "unavailable",
+        );
+        expect(compatibility.check).toHaveBeenCalledExactlyOnceWith(
+          "before-profile-start",
+        );
+        expect(client.startedProfiles).toHaveLength(capacity ? 2 : 1);
+        if (!capacity)
+          expect(prepareNarration).toHaveBeenCalledTimes(preparedBefore);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each(["stop", "close", "profile", "language"] as const)(
+    "SAF-14 rejects stale fresh admission on %s",
+    async (invalidate) => {
+      const profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      let selected = profileId;
+      let language: "en" | "es" = "en";
+      let release!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const compatibility = {
+        activeProfileId: () => selected,
+        activeLanguage: () => language,
+        isProfileCurrentlyAllowed: () => true,
+        isProfileStartAllowed: vi.fn(async () => true),
+        check: vi.fn(() => pending),
+      };
+      const { coordinator, client, prepareNarration } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      let cleanup: Promise<void> | undefined;
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => compatibility.check.mock.calls.length === 1);
+        if (invalidate === "stop") cleanup = coordinator.stop();
+        if (invalidate === "close") cleanup = coordinator.close();
+        if (invalidate === "profile")
+          selected = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+        if (invalidate === "language") language = "es";
+        release();
+        await cleanup;
+        if (invalidate === "profile" || invalidate === "language")
+          await settleUntil(
+            () => coordinator.observe().availability === "unavailable",
+          );
+        expect(client.startedProfiles).toEqual([]);
+        expect(prepareNarration).not.toHaveBeenCalled();
+      } finally {
+        release();
+        await coordinator.close();
+      }
+    },
+  );
+
   it.each([
     "language-success",
     "profile-late-failure",

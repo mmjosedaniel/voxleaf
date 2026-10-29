@@ -35,21 +35,27 @@ export function createNarrationSettingsActions(development: boolean) {
       hardware: Pick<HardwareSettings, "selectProfile">,
       coordinator: NarrationSettings | undefined,
       optional: Pick<OptionalChatterboxClient, "select">,
+      isCurrent?: () => boolean,
     ): Promise<boolean> {
+      if (isCurrent?.() === false) return false;
       // Packaged selection uses the native-owned optional package lifecycle;
       // the exact developer environment retains its explicit separate path.
       if (profileId === CHATTERBOX_OPTIONAL_PROFILE_ID && !development) {
         const snapshot = await optional.select();
-        if (snapshot.state !== "installed") {
+        if (isCurrent?.() === false || snapshot.state !== "installed") {
           return false;
         }
       }
       await stopForConfigurationChange(coordinator);
-      const selected = await hardware.selectProfile(profileId);
+      if (isCurrent?.() === false) return false;
+      const selected = await (isCurrent === undefined
+        ? hardware.selectProfile(profileId)
+        : hardware.selectProfile(profileId, isCurrent));
+      if (isCurrent?.() === false) return false;
       if (selected) {
         await coordinator?.refreshSelectedProfile();
       }
-      return selected;
+      return selected && isCurrent?.() !== false;
     },
     activateChatterbox(selectProfile: (profileId: string) => Promise<boolean>) {
       return selectProfile(CHATTERBOX_OPTIONAL_PROFILE_ID);

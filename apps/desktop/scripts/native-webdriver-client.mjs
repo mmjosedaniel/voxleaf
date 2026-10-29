@@ -95,14 +95,21 @@ export class WebDriverClient {
   #endpoint;
   #requestTimeoutMs;
   #sessionId;
+  #signal;
+  #requests = new Set();
 
-  constructor(endpoint, { requestTimeoutMs = 10_000 } = {}) {
+  constructor(endpoint, { requestTimeoutMs = 10_000, signal } = {}) {
     this.#endpoint = endpoint.replace(/\/+$/, "");
     this.#requestTimeoutMs = requestTimeoutMs;
+    this.#signal = signal;
   }
 
   get hasSession() {
     return this.#sessionId !== undefined;
+  }
+
+  async settleRequests() {
+    await Promise.allSettled([...this.#requests]);
   }
 
   async isReady() {
@@ -148,7 +155,8 @@ export class WebDriverClient {
 
     const sessionId = this.#sessionId;
     this.#sessionId = undefined;
-    await this.#request("DELETE", `/session/${sessionId}`);
+    // Cleanup has a fresh bounded channel even after operation cancellation.
+    await this.#request("DELETE", `/session/${sessionId}`, undefined, false);
   }
 
   async findElement(selector) {
@@ -238,8 +246,24 @@ export class WebDriverClient {
     return elementId;
   }
 
-  async #request(method, path, body) {
+  #request(method, path, body, observeOperation = true) {
+    const pending = this.#performRequest(method, path, body, observeOperation);
+    this.#requests.add(pending);
+    void pending.then(
+      () => this.#requests.delete(pending),
+      () => this.#requests.delete(pending),
+    );
+    return pending;
+  }
+
+  async #performRequest(method, path, body, observeOperation) {
     let response;
+    const operationSignal = observeOperation ? this.#signal : undefined;
+    const timeoutSignal = globalThis.AbortSignal.timeout(
+      observeOperation
+        ? this.#requestTimeoutMs
+        : Math.min(this.#requestTimeoutMs, 15_000),
+    );
 
     try {
       response = await globalThis.fetch(`${this.#endpoint}${path}`, {
@@ -249,13 +273,18 @@ export class WebDriverClient {
             ? undefined
             : { "content-type": "application/json" },
         method,
-        signal: globalThis.AbortSignal.timeout(this.#requestTimeoutMs),
+        signal:
+          operationSignal === undefined
+            ? timeoutSignal
+            : globalThis.AbortSignal.any([operationSignal, timeoutSignal]),
       });
     } catch (error) {
       throw new WebDriverClientError(
-        error?.name === "TimeoutError"
-          ? "webdriver-request-timeout"
-          : "webdriver-request-failed",
+        operationSignal?.aborted
+          ? "webdriver-operation-cancelled"
+          : error?.name === "TimeoutError"
+            ? "webdriver-request-timeout"
+            : "webdriver-request-failed",
       );
     }
 
@@ -264,7 +293,11 @@ export class WebDriverClient {
     try {
       payload = await response.json();
     } catch {
-      throw new WebDriverClientError("webdriver-response-invalid");
+      throw new WebDriverClientError(
+        operationSignal?.aborted
+          ? "webdriver-operation-cancelled"
+          : "webdriver-response-invalid",
+      );
     }
 
     if (!response.ok || payload?.value?.error !== undefined) {

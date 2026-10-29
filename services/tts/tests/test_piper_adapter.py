@@ -7,6 +7,7 @@ import json
 import os
 import struct
 import sys
+import threading
 import tomllib
 from collections.abc import Iterator
 from pathlib import Path, PureWindowsPath
@@ -63,6 +64,7 @@ CANDIDATE_LOCK: Final = (
     / "piper_1_4_2_cpu"
     / "uv.lock"
 )
+FAKE_ESPEAK_LOCK: Final = threading.Lock()
 
 
 class FakeAudioArray:
@@ -96,7 +98,14 @@ class FakeVoice:
             sample_rate=sample_rate,
             num_speakers=1,
             espeak_voice=espeak_voice,
+            vowel_clusters={("a", "i")},
         )
+        self.espeak_data_dir = Path("synthetic-espeak-data")
+
+    def phonemize(self, text: str) -> list[list[str]]:
+        # Model the upstream delimiter interpretation independently of the
+        # literal fake phonemizer installed through the adapter's importer.
+        return [list(text.replace("[[", "").replace("]]", ""))]
 
     def synthesize(
         self,
@@ -106,6 +115,7 @@ class FakeVoice:
     ) -> tuple[object, ...]:
         if self._failure is not None:
             raise self._failure
+        self._calls["last_phonemes"] = self.phonemize(text)
         generations = self._calls.setdefault("generations", [])
         assert isinstance(generations, list)
         generations.append(
@@ -204,6 +214,27 @@ def _adapter(
     )
     voice_module = ModuleType("piper.voice")
     voice_module.__dict__["PiperVoice"] = VoiceFactory
+
+    class EspeakPhonemizer:
+        def __init__(self, espeak_data_dir: str | Path) -> None:
+            assert FAKE_ESPEAK_LOCK.locked()
+            calls["phonemizer_data_dir"] = espeak_data_dir
+            calls["phonemizer_instance"] = self
+
+        def phonemize(
+            self,
+            voice: str,
+            text: str,
+            vowel_clusters: set[tuple[str, ...]] | None = None,
+        ) -> list[list[str]]:
+            assert FAKE_ESPEAK_LOCK.locked()
+            observations = calls.setdefault("phonemizer_calls", [])
+            assert isinstance(observations, list)
+            observations.append((voice, text, vowel_clusters))
+            return [list(text)]
+
+    voice_module.__dict__["EspeakPhonemizer"] = EspeakPhonemizer
+    voice_module.__dict__["_ESPEAK_PHONEMIZER_LOCK"] = FAKE_ESPEAK_LOCK
     config_module = ModuleType("piper.config")
     config_module.__dict__["SynthesisConfig"] = SynthesisConfig
     modules = {
@@ -260,6 +291,55 @@ def _segment(text: str = "Texto sintético local.") -> dict[str, object]:
         "generationId": "generation:test",
         "segmentId": "segment:test",
     }
+
+
+@pytest.mark.parametrize("profile", [SPANISH_PROFILE, ENGLISH_PROFILE])
+@pytest.mark.parametrize(
+    "text",
+    ["[[literal]]", "Before [[literal]] after.", "An unmatched [[ delimiter.", "Ordinary prose."],
+)
+def test_saf_literal_phonemization_preserves_text_voice_options_and_shared_lock(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    profile: PiperVoiceProfile,
+    text: str,
+) -> None:
+    original_method = FakeVoice.phonemize
+    adapter, calls, voice = _adapter(tmp_path, monkeypatch, profile=profile)
+    adapter.load()
+    adapter.warm()
+    adapter.begin("request:saf", _segment(text))
+    adapter.settle()
+    assert calls["last_phonemes"] == [list(text)]
+    assert calls["phonemizer_data_dir"] == voice.espeak_data_dir
+    assert calls["phonemizer_calls"] == [
+        (profile.expected_espeak_voice, profile.warm_text, voice.config.vowel_clusters),
+        (profile.expected_espeak_voice, text, voice.config.vowel_clusters),
+    ]
+    assert FakeVoice.phonemize is original_method
+    assert not FAKE_ESPEAK_LOCK.locked()
+    adapter.release_result()
+    adapter.cleanup()
+
+
+def test_saf_literal_phonemizers_are_owned_by_each_voice_instance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spanish_root, english_root = tmp_path / "spanish", tmp_path / "english"
+    spanish_root.mkdir()
+    english_root.mkdir()
+    spanish, es_calls, es_voice = _adapter(spanish_root, monkeypatch)
+    english, en_calls, en_voice = _adapter(english_root, monkeypatch, profile=ENGLISH_PROFILE)
+    spanish.load()
+    english.load()
+    spanish.warm()
+    english.warm()
+    assert es_calls["phonemizer_instance"] is not en_calls["phonemizer_instance"]
+    assert es_voice.phonemize("[[texto]]") == [list("[[texto]]")]
+    assert en_voice.phonemize("[[text]]") == [list("[[text]]")]
+    spanish.cleanup()
+    assert en_voice.phonemize("Still [[literal]].") == [list("Still [[literal]].")]
+    english.cleanup()
 
 
 def test_current_adapter_runtime_matches_the_locked_release_graph() -> None:

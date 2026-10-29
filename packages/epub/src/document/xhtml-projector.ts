@@ -355,9 +355,8 @@ export function contentDocumentIdForManifestIndex(
   return `document:${String(index)}` as ContentDocumentId;
 }
 
-function normalizeAlternativeText(value: string): string | undefined {
-  const normalized = value.replace(NORMAL_WHITESPACE, " ").trim();
-  return normalized.length === 0 ? undefined : normalized;
+function normalizeAlternativeText(value: string): string {
+  return value.replace(NORMAL_WHITESPACE, " ").trim();
 }
 
 function appendTextNode(

@@ -29,6 +29,110 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it("SAF-10 keeps title context across warm batches and cold reconstruction", async () => {
+    const source = `${"a".repeat(110)} Brown Dr. ${"Smith ".repeat(30)}.`;
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>${Array.from({ length: 7 }, (_, index) => `<p>Short paragraph ${index}.</p>`).join("")}<p id="context">${source}</p><p>Dr. Morgan arrived.</p><p lang="es">Dr. Morgan</p><p><code>Dr. Morgan</code></p></body></html>`,
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error("synthetic-context-open-failed");
+    const publication = opened.publication;
+    const before = JSON.stringify(publication.documents);
+    try {
+      const all = [];
+      for (const count of [1, 8, 16]) {
+        const collected = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          count,
+          "narration-piper-v2",
+          "en",
+        );
+        all.push(collected.segments);
+      }
+      expect(all[0]).toEqual(all[1]);
+      expect(all[1]).toEqual(all[2]);
+      const context = requiredBlock(publication, "context");
+      const contextSegments = all[0]!.filter(
+        (segment) =>
+          segment.sourceRange.start.anchor.value ===
+          context.startLocator.anchor.value,
+      );
+      expect(contextSegments[0]?.sourceRange.end.textOffsetCodePoints).toBe(
+        117,
+      );
+      expect(
+        contextSegments.some((segment) =>
+          String(segment.text).includes("Doctor"),
+        ),
+      ).toBe(false);
+      expect(
+        all[0]!.some((segment) =>
+          String(segment.text).includes("Doctor Morgan arrived."),
+        ),
+      ).toBe(true);
+      expect(
+        all[0]!.filter((segment) => String(segment.text) === "Dr. Morgan"),
+      ).toHaveLength(2);
+      const cold = await openEpubPublication(bytes);
+      if (!cold.ok) throw new Error("synthetic-cold-context-open-failed");
+      try {
+        const atCut = await cold.publication.prepareNarration({
+          startLocator: contextSegments[0]!.sourceRange.end,
+          maximumSegments: 16,
+          profile: "narration-piper-v2",
+          defaultLanguage: "en",
+        });
+        if (atCut.status !== "batch" && atCut.status !== "complete")
+          throw new Error("synthetic-cold-context-prepare-failed");
+        expect(
+          atCut.segments.filter(
+            (segment) =>
+              segment.sourceRange.start.anchor.value ===
+              context.startLocator.anchor.value,
+          ),
+        ).toEqual(contextSegments.slice(1));
+      } finally {
+        await cold.publication.close();
+      }
+      for (const [index, segment] of all[0]!.entries())
+        assertPublicSegment(publication, segment, index);
+      expect(JSON.stringify(publication.documents)).toBe(before);
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("SAF-12 keeps closed Spanish time articles and their source ranges", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>las 14:30.</p><p>Las 14:30.</p><p>LAS 14:30.</p><p>14:30.</p><p>Las 14:30:12.</p></body></html>',
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-time-open-failed");
+    try {
+      const result = await collectPreparedSegments(
+        opened.publication,
+        opened.publication.defaultStartLocator!,
+        1,
+        "narration-piper-v2",
+        "es",
+      );
+      expect(result.segments.map((segment) => String(segment.text))).toEqual([
+        "las catorce treinta.",
+        "Las catorce treinta.",
+        "LAS catorce treinta.",
+        "las catorce treinta.",
+        "Las 14:30:12.",
+      ]);
+      for (const [index, segment] of result.segments.entries())
+        assertPublicSegment(opened.publication, segment, index);
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
   it("VAF H11 keeps complete mark sequences across public one/many batches", async () => {
     const source = `${"x".repeat(639)}か\u3099${"z".repeat(100)}e\u05b0`;
     const opened = await openEpubPublication(

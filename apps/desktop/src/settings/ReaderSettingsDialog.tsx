@@ -93,7 +93,9 @@ function CoordinatorNarrationStartSettings({
 }>): ReactElement {
   const snapshot = useProductNarrationSnapshot(coordinator);
   const active =
-    snapshot.state !== undefined && snapshot.state.phase !== "stopped";
+    snapshot.state !== undefined &&
+    snapshot.state.phase !== "stopped" &&
+    snapshot.state.phase !== "complete";
   return (
     <NarrationStartPreferenceControls
       selection={snapshot.selection}

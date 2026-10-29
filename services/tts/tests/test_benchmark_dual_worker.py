@@ -345,3 +345,84 @@ def test_invalidation_discards_buffer_without_playing_stale_units() -> None:
 
     assert replay.discarded_valid_seconds > 0
     assert replay.stale_played_units == 0
+
+
+def _saf_timeline(
+    timings: tuple[tuple[str, int, int, int], ...],
+) -> tuple[DualDispatchObservation, ...]:
+    return tuple(
+        DualDispatchObservation(
+            dispatch_sequence=index,
+            occurrence_id=f"saf-{index}",
+            unit_id=f"unit-{index}",
+            source_sequence=index,
+            pass_index=1,
+            worker_role=role,  # type: ignore[arg-type]
+            attempt=1,
+            accepted_nanoseconds=start * 1_000_000_000,
+            completed_nanoseconds=end * 1_000_000_000,
+            status="completed",
+            failure_code=None,
+            sample_count=seconds * 24_000,
+            sample_rate_hz=24_000,
+            published_sequence=index,
+            head_of_line_wait_nanoseconds=0,
+        )
+        for index, (role, start, end, seconds) in enumerate(timings)
+    )
+
+
+def test_saf_counts_one_starvation_episode_across_unordered_completion_events() -> None:
+    replay = simulate_v5_playback(
+        _saf_timeline(
+            (
+                (GPU_WORKER_ROLE, 0, 1, 15),
+                (CPU_WORKER_ROLE, 1, 30, 2),
+                (GPU_WORKER_ROLE, 16, 20, 2),
+                (GPU_WORKER_ROLE, 20, 25, 2),
+            )
+        )
+    )
+    assert replay.underrun_count == 1
+    assert replay.buffering_seconds == 14
+    assert replay.played_seconds == 21
+    assert replay.buffering_seconds_per_minute == Fraction(40)
+
+
+def test_saf_resumed_ordered_audio_separates_starvation_episodes() -> None:
+    replay = simulate_v5_playback(
+        _saf_timeline(
+            (
+                (GPU_WORKER_ROLE, 0, 1, 15),
+                (CPU_WORKER_ROLE, 1, 20, 2),
+                (GPU_WORKER_ROLE, 20, 25, 2),
+                (CPU_WORKER_ROLE, 22, 26, 1),
+            )
+        )
+    )
+    assert replay.underrun_count == 2
+    assert replay.buffering_seconds == 7
+    assert replay.played_seconds == 20
+
+
+@pytest.mark.parametrize(
+    ("invalidation_ns", "played", "discarded"),
+    [
+        (0, Fraction(0), Fraction(0)),
+        (1_500_000_000, Fraction(1, 2), Fraction(19, 2)),
+        (11_000_000_000, Fraction(10), Fraction(0)),
+        (12_000_000_000, Fraction(10), Fraction(0)),
+        (None, Fraction(10), Fraction(0)),
+    ],
+)
+def test_saf_final_drain_stops_at_exact_invalidation(
+    invalidation_ns: int | None, played: Fraction, discarded: Fraction
+) -> None:
+    replay = simulate_v5_playback(
+        _saf_timeline(((GPU_WORKER_ROLE, 0, 1, 10),)),
+        invalidation_nanoseconds=invalidation_ns,
+    )
+    assert replay.played_seconds == played
+    assert replay.discarded_valid_seconds == discarded
+    assert replay.stale_played_units == 0
+    assert replay.buffering_seconds == 0
