@@ -6,7 +6,11 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans are currently listed.
+- [Verified chat audit corrections](verified-chat-audit-corrections.md):
+  planning complete for nine statically validated desktop, optional-removal
+  and benchmark defects. Minimal fixes, grouped regression coverage and
+  identity-bound evidence reuse are planned; implementation and validation
+  have not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
