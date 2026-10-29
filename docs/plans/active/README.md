@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-None.
+- [Revalidated audit corrections](revalidated-audit-corrections.md): planning-only
+  corrections for nine reader, EPUB and maintainer-tool findings, with minimal
+  regression coverage and explicit evidence-reuse decisions. Execution has not
+  been authorized or started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

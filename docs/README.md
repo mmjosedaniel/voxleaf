@@ -17,6 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [revalidated audit corrections plan](plans/active/revalidated-audit-corrections.md)
+defines nine pending reader, EPUB and maintainer-tool fixes with bounded changes
+and a deduplicated validation strategy. It is planning-only; implementation and
+test execution have not started.
+
 The [completed validated-audit follow-up](plans/completed/validated-audit-follow-up.md)
 corrects twelve retained reader, narration, benchmark and lifecycle findings.
 Applicable combined checks, browser/native coverage, authorized Windows lifecycle
