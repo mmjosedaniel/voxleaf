@@ -378,6 +378,7 @@ export class ProductNarrationCoordinator {
   #segmentationContext: string | undefined;
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #availabilityRevision = 0;
+  #configurationChanges = 0;
   #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
   #language = DEFAULT_NARRATION_LANGUAGE_V2;
   #selection: AdaptiveBufferStartMode = DEFAULT_NARRATION_START_PREFERENCE_V1;
@@ -483,6 +484,33 @@ export class ProductNarrationCoordinator {
 
   public observe(): ProductNarrationSnapshot {
     return this.#snapshot;
+  }
+
+  public beginConfigurationChange(): () => void {
+    this.#configurationChanges += 1;
+    this.#publish();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.#configurationChanges -= 1;
+      this.#publish();
+    };
+  }
+
+  public isHealthyLoadedProfile(profileId: string): boolean {
+    return (
+      !this.#closed &&
+      this.#configurationChanges === 0 &&
+      profileId === this.#profileId &&
+      this.#scheduler !== undefined &&
+      this.#recovery.observe().phase === "operational" &&
+      ["ready", "generating"].includes(this.#client.observe().state) &&
+      (this.#profileCompatibility?.activeLanguage?.() ??
+        DEFAULT_NARRATION_LANGUAGE_V2) === this.#language &&
+      this.#profileCompatibility?.isProfileContinuationAllowed?.(profileId) ===
+        true
+    );
   }
 
   public subscribeAudibleProgress(
@@ -618,15 +646,24 @@ export class ProductNarrationCoordinator {
       return false;
     }
     const result = await this.#startPreferenceRepository.write(selection);
-    if (this.#closed || result.status !== "saved") {
+    if (
+      this.#closed ||
+      result.status !== "saved" ||
+      isActivePhase(this.#snapshot.state)
+    ) {
       return false;
     }
-    this.#selection = Object.freeze({ ...selection });
-    this.#startPreferenceStatus = "ready";
-    this.#failure = undefined;
-    this.#preparationFailure = undefined;
-    this.#terminalState = undefined;
-    this.#publish();
+    if (this.#snapshot.state?.phase === "complete") {
+      this.#playIntent = "inactive";
+      await this.#stopActiveRun(this.#snapshot.state);
+    }
+    if (
+      this.#closed ||
+      this.#recovery.observe().phase !== "operational" ||
+      isActivePhase(this.#snapshot.state)
+    )
+      return false;
+    this.#publishStartSelection(selection);
     return true;
   }
 
@@ -640,16 +677,46 @@ export class ProductNarrationCoordinator {
       return false;
     }
     const result = await this.#startPreferenceRepository.reset();
-    if (this.#closed || result.status !== "saved") {
+    if (
+      this.#closed ||
+      result.status !== "saved" ||
+      isActivePhase(this.#snapshot.state)
+    ) {
       return false;
     }
-    this.#selection = DEFAULT_NARRATION_START_PREFERENCE_V1;
+    if (this.#snapshot.state?.phase === "complete") {
+      this.#playIntent = "inactive";
+      await this.#stopActiveRun(this.#snapshot.state);
+    }
+    if (
+      this.#closed ||
+      this.#recovery.observe().phase !== "operational" ||
+      isActivePhase(this.#snapshot.state)
+    )
+      return false;
+    this.#publishStartSelection(DEFAULT_NARRATION_START_PREFERENCE_V1);
+    return true;
+  }
+
+  #publishStartSelection(selection: AdaptiveBufferStartMode): void {
+    this.#selection = Object.freeze({ ...selection });
     this.#startPreferenceStatus = "ready";
     this.#failure = undefined;
     this.#preparationFailure = undefined;
-    this.#terminalState = undefined;
+    this.#terminalState =
+      this.#terminalState?.phase === "complete"
+        ? Object.freeze({
+            ...this.#terminalState,
+            mode: this.#selection,
+            targetMs:
+              selection.kind === "prepared"
+                ? selection.targetMs
+                : ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.quickStartMs,
+            activePlaybackRatePercent: null,
+            pendingPlaybackRatePercent: null,
+          })
+        : undefined;
     this.#publish();
-    return true;
   }
 
   public async setPlaybackRatePercent(
@@ -834,6 +901,7 @@ export class ProductNarrationCoordinator {
 
   public startAtVisibleLocator(): void {
     if (
+      this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
@@ -853,6 +921,7 @@ export class ProductNarrationCoordinator {
 
   public startAtLocator(locator: ReadingLocatorV1): boolean {
     if (
+      this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
@@ -917,6 +986,7 @@ export class ProductNarrationCoordinator {
 
   public start(): void {
     if (
+      this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
@@ -930,6 +1000,7 @@ export class ProductNarrationCoordinator {
 
   public recover(): void {
     if (
+      this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
@@ -1205,14 +1276,14 @@ export class ProductNarrationCoordinator {
     this.#publish();
   }
 
-  #stopActiveRun(): Promise<void> {
+  #stopActiveRun(completedState?: AdaptivePreparationUiState): Promise<void> {
     if (this.#recoveryOperation !== undefined) {
       return this.#recoveryOperation;
     }
     if (this.#stopOperation !== undefined) {
       return this.#stopOperation;
     }
-    const stop = this.#performStopActiveRun();
+    const stop = this.#performStopActiveRun(completedState);
     this.#stopOperation = stop;
     void stop.finally(() => {
       if (this.#stopOperation === stop) {
@@ -1222,9 +1293,11 @@ export class ProductNarrationCoordinator {
     return stop;
   }
 
-  async #performStopActiveRun(): Promise<void> {
+  async #performStopActiveRun(
+    completedState?: AdaptivePreparationUiState,
+  ): Promise<void> {
     if (this.#scheduler === undefined || this.#player === undefined) {
-      this.#terminalState = undefined;
+      this.#terminalState = completedState;
       this.#failure = undefined;
       this.#preparationFailure = undefined;
       this.#publish();
@@ -1240,6 +1313,9 @@ export class ProductNarrationCoordinator {
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
     const player = this.#player;
+    // A preference-only teardown retains the final heard highlight. A stopped
+    // or absent phase would clear it before the new consistent mode is published.
+    if (completedState !== undefined) this.#terminalState = completedState;
     this.#captureFinalMetrics(player);
     const transition = player.close();
     this.#playerAudibleUnsubscribe?.();
@@ -1336,7 +1412,7 @@ export class ProductNarrationCoordinator {
     this.#terminalState =
       this.#failure === "narration-preparation-failed"
         ? this.#stateFromActiveOwners()
-        : undefined;
+        : completedState;
     if (this.#failure !== "narration-preparation-failed") {
       this.#failure = undefined;
       this.#preparationFailure = undefined;
@@ -2210,7 +2286,8 @@ export class ProductNarrationCoordinator {
       this.#pendingNavigation === undefined &&
       currentBoundaryIndex !== undefined;
     return Object.freeze({
-      availability: this.#availability,
+      availability:
+        this.#configurationChanges > 0 ? "checking" : this.#availability,
       profileId: this.#profileId,
       language: this.#language,
       selection: this.#selection,

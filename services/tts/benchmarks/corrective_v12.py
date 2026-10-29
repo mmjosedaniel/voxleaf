@@ -277,6 +277,10 @@ def build_raw_result(
 ) -> dict[str, object]:
     """Build the private schema-closed result without waveform payloads."""
 
+    if run is not None and any(
+        observation.language not in ("es", "en") for observation in run.cancellation_observations
+    ):
+        _fail("observations")
     attempts = (
         [_attempt(observation) for observation in run.generation_observations]
         if run is not None
@@ -286,14 +290,14 @@ def build_raw_result(
         [
             {
                 "trialId": observation.trial_id,
-                "language": ("es" if index < 4 else "en"),
+                "language": observation.language,
                 "passed": True,
                 "stopNanoseconds": observation.stop_ns,
                 "cleanupNanoseconds": observation.cleanup_ns,
                 "staleUnits": observation.stale_frames,
                 "processesRemaining": 0,
             }
-            for index, observation in enumerate(run.cancellation_observations)
+            for observation in run.cancellation_observations
         ]
         if run is not None
         else []

@@ -502,6 +502,7 @@ class BenchmarkHarness:
             cleanup_ns=0,
             stale_frames=0,
             raw_session_removed=True,
+            language=request.language,
         )
 
     def _cleanup_after_protocol_failure(

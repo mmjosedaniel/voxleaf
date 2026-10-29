@@ -232,14 +232,15 @@ export function createNativeResourceObservation({
       "Native reader performance metrics were unavailable.",
     );
     const measurementQuery = [
+      "$ErrorActionPreference = 'Stop'",
       `$rootProcessId = ${String(rootProcessId)}`,
-      "$processes = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId",
+      "$processes = @(Get-CimInstance Win32_Process -ErrorAction Stop | Select-Object ProcessId, ParentProcessId)",
+      "if (-not ($processes | Where-Object { $_.ProcessId -eq $rootProcessId })) { throw 'Root process unavailable' }",
       "$processIds = [System.Collections.Generic.HashSet[int]]::new()",
       "[void]$processIds.Add($rootProcessId)",
       "do { $added = $false; foreach ($candidate in $processes) { if ($processIds.Contains([int]$candidate.ParentProcessId) -and $processIds.Add([int]$candidate.ProcessId)) { $added = $true } } } while ($added)",
-      "$measurement = Get-Process -Id @($processIds) -ErrorAction SilentlyContinue | Measure-Object -Property WorkingSet64 -Sum",
-      "$sum = $measurement.Sum",
-      "if ($null -eq $sum) { $sum = 0 }",
+      "$sum = [int64]0",
+      "foreach ($ownedId in $processIds) { try { $owned = Get-Process -Id $ownedId -ErrorAction Stop; $sum += $owned.WorkingSet64 } catch { $remaining = @(Get-CimInstance Win32_Process -Filter ('ProcessId = ' + $ownedId) -ErrorAction Stop); if ($ownedId -eq $rootProcessId -or $remaining.Count -ne 0) { throw 'Owned process memory unavailable' } } }",
       "[Console]::Out.Write([int64]$sum)",
     ].join("; ");
     const output = await executeText("powershell.exe", [

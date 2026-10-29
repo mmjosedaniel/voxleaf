@@ -24,6 +24,216 @@ async function fixtures() {
   }>;
 }
 
+test("MAF-04 closing Settings cannot admit Play during optional removal", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, false, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-maf-removal.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Synthetic removal passage.</p></body></html>',
+      }),
+    ),
+  });
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferRemoval = true;
+  });
+  const settings = await openSettings(page);
+  await settings.getByRole("button", { name: "Remove Chatterbox" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").removalPending),
+    )
+    .toBe(true);
+  try {
+    await closeSettings(page, settings);
+    const play = page.locator('[data-narration-action="play"]');
+    await expect(play).toBeDisabled();
+    await play.evaluate((button: HTMLButtonElement) => button.click());
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(0);
+  } finally {
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseRemoval(),
+    );
+  }
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(0);
+});
+
+test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitted owner", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  await installSyntheticService(
+    page,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+  );
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-maf-reselection.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>' +
+          "<p>Synthetic healthy loaded narration passage.</p>".repeat(60) +
+          "</body></html>",
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect(narration).toHaveAttribute(
+    "data-narration-profile",
+    "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  );
+  const owner = () =>
+    page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return {
+        service: state.service,
+        generation: state.lastGeneration,
+        shutdowns: state.shutdownCalls,
+        mutations: state.optionalMutations,
+      };
+    });
+  const before = await owner();
+  await page.evaluate(() => {
+    Reflect.get(
+      globalThis,
+      "__rnb",
+    ).hostReport.providers.cuda.availableDedicatedMemoryMiB.value = 0;
+  });
+  try {
+    const settings = await openSettings(page);
+    const radio = settings.getByRole("radio", { name: /Chatterbox/ });
+    await expect(radio).toBeChecked();
+    await radio.click();
+    await expect(radio).toBeEnabled();
+    expect(await owner()).toEqual(before);
+    await closeSettings(page, settings);
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    expect(errors).toEqual([]);
+  } finally {
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseOptionalSelection(),
+    );
+    await page.locator('[data-narration-action="stop"]').click();
+  }
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
+for (const targetMs of [120_000, 300_000, 600_000]) {
+  test(`MAF-11 completed Prepared ${targetMs} switches to Quick and restarts explicitly`, async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.name));
+    await installSyntheticService(page, true);
+    await page.goto("/");
+    await page.evaluate(
+      (target) =>
+        localStorage.setItem(
+          "voxleaf.narration.start-preference",
+          JSON.stringify({
+            schemaVersion: 1,
+            mode: "prepared",
+            preparedTargetMs: target,
+          }),
+        ),
+      targetMs,
+    );
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-maf-completion.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument:
+            '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic final short passage.</p></body></html>',
+        }),
+      ),
+    });
+    const narration = page.locator(".product-narration");
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "complete");
+    const heard = await page.evaluate(() =>
+      localStorage.getItem("voxleaf.reader.positions"),
+    );
+    const settings = await openSettings(page);
+    await expect(
+      settings.getByRole("radio", { name: /Prepared playback/ }),
+    ).toBeChecked();
+    await settings.getByRole("radio", { name: /Quick start/ }).click();
+    await expect(
+      settings.getByRole("radio", { name: /Quick start/ }),
+    ).toBeChecked();
+    await closeSettings(page, settings);
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("voxleaf.reader.positions"),
+      ),
+    ).toBe(heard);
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(1);
+    await page.locator('[data-narration-action="details-toggle"]').click();
+    await page.locator('[data-narration-action="visible-passage"]').click();
+    await expect
+      .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").service))
+      .toBe(2);
+    await expect(narration).toHaveAttribute("data-narration-phase", "complete");
+    expect(errors).toEqual([]);
+    const cleanupSettings = await openSettings(page);
+    await cleanupSettings
+      .getByRole("radio", { name: /Prepared playback/ })
+      .click();
+    await expect(
+      cleanupSettings.getByRole("radio", { name: /Prepared playback/ }),
+    ).toBeChecked();
+    await closeSettings(page, cleanupSettings);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = Reflect.get(globalThis, "__rnb");
+          return state.created - state.closed;
+        }),
+      )
+      .toBe(0);
+  });
+}
+
 test("SAF-09 an obsolete Chatterbox selection cannot replace B's playing Piper owner", async ({
   page,
 }) => {
@@ -290,7 +500,14 @@ test("RAC-07 mid-unit Resume follows the active range once and preserves inspect
   const playbackBefore = Number(
     await narration.getAttribute("data-narration-playback-ms"),
   );
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    // Drain the two-frame follow settlement and its one allowed correction;
+    // visible=true alone only observes the initial synchronous scroll.
+    for (let frame = 0; frame < 4; frame += 1) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    }
     const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
     viewport.scrollTop = viewport.scrollHeight;
   });
@@ -773,11 +990,11 @@ test("SAC-01 completed materialized narration releases chapter navigation withou
   const completedSettings = await openSettings(page);
   await completedSettings
     .getByRole("radio", { name: /Prepared playback/ })
-    .check();
+    .click();
   await expect(
     completedSettings.getByRole("radio", { name: /Prepared playback/ }),
   ).toBeChecked();
-  await completedSettings.getByRole("radio", { name: /Quick start/ }).check();
+  await completedSettings.getByRole("radio", { name: /Quick start/ }).click();
   await expect(
     completedSettings.getByRole("radio", { name: /Quick start/ }),
   ).toBeChecked();
@@ -1385,6 +1602,7 @@ async function installSyntheticService(
   quickStart = false,
   optionalRecheck = false,
   optionalSelection = false,
+  selectedChatterbox = false,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -1395,6 +1613,7 @@ async function installSyntheticService(
       quickStart,
       optionalRecheck,
       optionalSelection,
+      selectedChatterbox,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
@@ -1407,7 +1626,9 @@ async function installSyntheticService(
           "voxleaf.tts.profile-preference",
           JSON.stringify({
             schemaVersion: 1,
-            profileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+            profileId: selectedChatterbox
+              ? "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+              : "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
           }),
         );
       }
@@ -1441,6 +1662,9 @@ async function installSyntheticService(
         optionalMutations: [] as string[],
         optionalSelectionPending: false,
         releaseOptionalSelection: () => {},
+        deferRemoval: false,
+        removalPending: false,
+        releaseRemoval: () => {},
         lastGeneration: "",
         audioFrames: 24_000,
         holdAfter: Number.MAX_SAFE_INTEGER,
@@ -1714,6 +1938,11 @@ async function installSyntheticService(
               case "select_optional_chatterbox":
                 if (optionalSelection) {
                   observations.optionalMutations.push(command);
+                  if (
+                    observations.hostReport.providers.cuda
+                      .availableDedicatedMemoryMiB.value === 0
+                  )
+                    throw "tts-optional-profile-incompatible-host";
                   observations.optionalSelectionPending = true;
                   await new Promise<void>((resolve) => {
                     observations.releaseOptionalSelection = resolve;
@@ -1723,8 +1952,17 @@ async function installSyntheticService(
                 }
                 observations.optionalMutations.push(command);
                 throw "tts-service-unavailable";
-              case "download_optional_chatterbox":
               case "remove_optional_chatterbox":
+                if (observations.deferRemoval) {
+                  observations.removalPending = true;
+                  await new Promise<void>((resolve) => {
+                    observations.releaseRemoval = resolve;
+                  });
+                  observations.removalPending = false;
+                }
+                observations.optionalMutations.push(command);
+                throw "tts-optional-profile-cleanup-failed";
+              case "download_optional_chatterbox":
                 observations.optionalMutations.push(command);
                 throw "tts-service-unavailable";
               case "tts_profile_configuration_available":
@@ -1815,6 +2053,7 @@ async function installSyntheticService(
       quickStart,
       optionalRecheck,
       optionalSelection,
+      selectedChatterbox,
     },
   );
 }

@@ -325,6 +325,30 @@ def test_clean_eof_requires_completed_shutdown() -> None:
     assert run_service(io.BytesIO(), io.BytesIO()) == 1
 
 
+@pytest.mark.parametrize("text", ["\ud800", "\udfff"])
+def test_maf03_malformed_text_rejects_and_cleans_the_loaded_service(text: str) -> None:
+    engine = FakeTtsEngine()
+    commands = [load_raw(f"valid-{kind}.json") for kind in ("handshake", "load", "warm")]
+    malformed = load_raw("valid-synthesize.json")
+    cast(dict[str, object], malformed["segment"])["text"] = text
+    source = b"".join(
+        encode_frame(FrameKind.CONTROL, encode_control_message(message)) for message in commands
+    ) + encode_frame(FrameKind.CONTROL, json.dumps(malformed, ensure_ascii=True).encode("ascii"))
+    output = io.BytesIO()
+    assert run_service(io.BytesIO(source), output, engine) == 1
+    records: list[Frame] = []
+    reader = io.BytesIO(output.getvalue())
+    while (record := read_frame(reader)) is not None:
+        records.append(record)
+    assert control_from(records[-1])["kind"] == "protocolRejected"
+    assert control_from(records[-1])["reason"] == "invalid-utf8"
+    assert engine.observe().cleanup_count == 1
+    assert engine.observe().active_count == 0
+    assert engine.observe().retained_audio_units == 0
+    assert all(record.kind is FrameKind.CONTROL for record in records)
+    assert b"\\ud800" not in output.getvalue() and b"\\udfff" not in output.getvalue()
+
+
 @pytest.mark.parametrize("phase", ["load", "warm", "begin"])
 def test_clb03_preparation_and_begin_errors_are_canonical_without_work_identity(
     phase: str, monkeypatch: pytest.MonkeyPatch

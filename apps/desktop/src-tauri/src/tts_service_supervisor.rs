@@ -462,6 +462,10 @@ impl ExactRuntime {
     }
 
     fn command(&self) -> Result<Command, TtsNativeFailure> {
+        #[cfg(test)]
+        if let Some(command) = tests::maf_exact_command(self) {
+            return command;
+        }
         let service_source = child_process_path(&self.service_source);
         let service_site_packages = child_process_path(&self.service_site_packages);
         let python_path = if service_source == service_site_packages {
@@ -1084,6 +1088,7 @@ impl ServiceSession {
 }
 
 pub struct TtsServiceSupervisor {
+    admission: Mutex<()>,
     operation: Mutex<()>,
     lifecycle: Mutex<Lifecycle>,
     session: Mutex<Option<Arc<ServiceSession>>>,
@@ -1119,6 +1124,7 @@ impl TtsServiceSupervisor {
 
     fn with_child(child_configuration: ServiceChild) -> Self {
         Self {
+            admission: Mutex::new(()),
             operation: Mutex::new(()),
             lifecycle: Mutex::new(Lifecycle {
                 state: "stopped".to_owned(),
@@ -1158,6 +1164,7 @@ impl TtsServiceSupervisor {
         profile_id: &str,
         language: Option<&str>,
     ) -> Result<(), TtsNativeFailure> {
+        let _admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
         if self
             .session
@@ -1190,6 +1197,28 @@ impl TtsServiceSupervisor {
             Err(TryLockError::WouldBlock) => Err(TtsNativeFailure::Busy),
             Err(TryLockError::Poisoned(_)) => Err(TtsNativeFailure::InternalFailure),
         }
+    }
+
+    fn acquire_admission(&self) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
+        match self.admission.try_lock() {
+            Ok(guard) => Ok(guard),
+            Err(TryLockError::WouldBlock) => Err(TtsNativeFailure::Busy),
+            Err(TryLockError::Poisoned(_)) => Err(TtsNativeFailure::InternalFailure),
+        }
+    }
+
+    pub(crate) fn stop_for_optional_removal(
+        &self,
+    ) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
+        // Admission precedes operation/session locks. Interruption itself never
+        // acquires admission or operation, so a pending handshake stays cancellable.
+        let admission = self.acquire_admission()?;
+        self.force_stop()?;
+        *self
+            .child_configuration
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)? = ServiceChild::Unavailable;
+        Ok(admission)
     }
 
     fn active_session(&self) -> Result<Arc<ServiceSession>, TtsNativeFailure> {
@@ -1353,6 +1382,7 @@ impl TtsServiceSupervisor {
         if let Some(request) = &start_request_id {
             validate_start_request_id(request)?;
         }
+        let admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
         // Publish the spawned child under the same lock used by interruption.
         let mut slot = self
@@ -1383,6 +1413,7 @@ impl TtsServiceSupervisor {
             .contained_service_instance_id = None;
         *slot = Some(session.clone());
         drop(slot);
+        drop(admission);
         #[cfg(test)]
         tests::pause_start_after_publish();
         let handshake = json!({

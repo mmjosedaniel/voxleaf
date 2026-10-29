@@ -18,7 +18,7 @@ from benchmarks.chatterbox_v11_screen import (
     CorrectivePreflightReceipt,
     ScreenConditions,
 )
-from benchmarks.contracts import BenchmarkRun
+from benchmarks.contracts import BenchmarkRun, CancellationResponse
 from benchmarks.corrective_v12 import (
     V12PreflightReceipt,
     build_raw_result,
@@ -133,6 +133,49 @@ def test_v12_private_raw_is_schema_valid_and_decision_neutral() -> None:
     assert raw["decision"] == {"state": "pending-maintainer-decision"}
     attempts = cast(list[dict[str, object]], raw["attempts"])
     assert len(attempts) == 50
+
+
+def test_maf06_failed_spanish_trial_does_not_relabel_english_observations() -> None:
+    clock = FakeNanosecondClock()
+
+    class FailedSpanishCancellation(DeterministicFakeAdapter):
+        def cancel(self, request_id: str) -> CancellationResponse:
+            response = super().cancel(request_id)
+            return (
+                CancellationResponse(acknowledged=False, stop_mode=None)
+                if request_id == "cancel-es-1"
+                else response
+            )
+
+    result = BenchmarkHarness(
+        clock=clock, memory_probe=FakeMemoryProbe()
+    ).run_bilingual_full_protocol(
+        adapter_factory=lambda: FailedSpanishCancellation(clock, sample_rate_hz=24_000),
+        corpora=tuple(load_bilingual_corpus(CORPUS_PATH, language) for language in ("es", "en")),
+        role="balanced",
+    )
+    assert result.run is not None and result.failure is not None
+    assert result.failure.code == "cancellation-failed"
+    assert len(result.run.cancellation_observations) == 7
+    raw = build_raw_result(
+        receipt=_receipt(),
+        run=result.run,
+        minimum_available_ram_bytes=8 * 1024**3,
+        failure_code=result.failure.code,
+    )
+    trials = cast(list[dict[str, object]], raw["cancellationTrials"])
+    assert [trial["language"] for trial in trials] == ["es"] * 3 + ["en"] * 4
+    assert [trial["trialId"] for trial in trials[3:]] == [
+        value.trial_id for value in _run().cancellation_observations[4:]
+    ]
+    assert "cancellation-trials-incomplete" in cast(list[str], raw["observations"])
+    assert cast(dict[str, object], raw["audits"])["cleanup"] is False
+    validate_v12_raw_result(
+        REPOSITORY_ROOT,
+        raw,
+        ancestry_checker=lambda _a, _e: True,
+        authority_tree_checker=lambda _a: True,
+    )
 
 
 @pytest.fixture

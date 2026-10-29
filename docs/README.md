@@ -17,6 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed minimal audit corrections](plans/completed/minimal-audit-findings-corrections.md)
+resolve eleven reader, settings, native-lifecycle, Python protocol and maintainer
+findings. Directed reproductions, combined host checks, one Piper core generation,
+Chromium/WebView2 and owned cleanup pass. Independent `MAF-R1-20261029` approves
+implementation and scoped current-task evidence retention without findings;
+the plan links the separate final archive review. No historical PASS, model
+matrix, new performance/support claim or personal installer journey is claimed.
+
 The [completed static audit follow-up](plans/completed/static-audit-follow-up.md)
 resolves sixteen bounded corrections across reader, EPUB, Piper, optional-package
 lifecycle and maintainer tools. Directed failures, combined host validation and

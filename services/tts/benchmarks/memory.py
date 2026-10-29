@@ -23,6 +23,7 @@ _MAX_PATH: Final = 260
 _PDH_FMT_LARGE: Final = 0x00000400
 _PDH_MORE_DATA: Final = 0x800007D2
 _PDH_VALID_DATA: Final = 0
+_PDH_NEW_DATA: Final = 1
 _GPU_PROCESS_MEMORY_COUNTER: Final = r"\GPU Process Memory(*)\Dedicated Usage"
 GPU_PROCESS_SHARED_MEMORY_COUNTER: Final = r"\GPU Process Memory(*)\Shared Usage"
 _GPU_INSTANCE_PID = re.compile(r"^pid_([0-9]+)_")
@@ -216,7 +217,7 @@ class WindowsGpuProcessMemorySampler:
         totals: dict[int, int] = {}
         for instance_name, status, value in values:
             match = _GPU_INSTANCE_PID.match(instance_name)
-            if match is None or status != _PDH_VALID_DATA or value < 0:
+            if match is None or status not in (_PDH_VALID_DATA, _PDH_NEW_DATA) or value < 0:
                 continue
             pid = int(match.group(1))
             totals[pid] = totals.get(pid, 0) + value

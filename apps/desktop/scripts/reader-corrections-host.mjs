@@ -1,6 +1,6 @@
-import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { fileURLToPath, URL } from "node:url";
+import { runPortfolioArm } from "./bilingual-portfolio-host.mjs";
 
 // Sequential ownership of WebView2, audio and GPU; deliberately no Qwen arm.
 const arms = [
@@ -12,23 +12,26 @@ const arms = [
 const script = fileURLToPath(
   new URL("./native-startup-smoke.mjs", import.meta.url),
 );
-let failed = false;
 for (const [profile, language] of arms) {
-  const result = spawnSync(
-    process.execPath,
-    [
-      script,
-      "--adaptive-tts-exact-host",
-      "--exercise-reader-corrections",
-      "--exercise-playback-speeds",
-      `--tts-profile=${profile}`,
-      `--tts-language=${language}`,
-    ],
-    { stdio: "inherit", windowsHide: true, timeout: 30 * 60_000 },
-  );
-  process.stdout.write(
-    `reader-corrections-host:${profile}:${language}:exit=${String(result.status)}\n`,
-  );
-  if (result.status !== 0 || result.error) failed = true;
+  try {
+    await runPortfolioArm({
+      runner: script,
+      arguments_: [
+        "--adaptive-tts-exact-host",
+        "--exercise-reader-corrections",
+        "--exercise-playback-speeds",
+        `--tts-profile=${profile}`,
+        `--tts-language=${language}`,
+      ],
+    });
+    process.stdout.write(
+      `reader-corrections-host:${profile}:${language}:exit=0\n`,
+    );
+  } catch {
+    process.stderr.write(
+      `reader-corrections-host:${profile}:${language}:failed-or-cleanup-unconfirmed\n`,
+    );
+    process.exitCode = 1;
+    break;
+  }
 }
-process.exitCode = failed ? 1 : 0;

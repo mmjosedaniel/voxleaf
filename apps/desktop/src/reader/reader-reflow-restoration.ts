@@ -111,6 +111,17 @@ function browserRangeRect(range: Range): VisualLocatorRect | undefined {
       (typeof range.getBoundingClientRect === "function"
         ? range.getBoundingClientRect()
         : undefined);
+    if (
+      clientRect === null &&
+      rect !== undefined &&
+      rect !== null &&
+      rect.top === 0 &&
+      rect.right === 0 &&
+      rect.bottom === 0 &&
+      rect.left === 0
+    ) {
+      return undefined;
+    }
     return rect === undefined || rect === null ? undefined : finiteRect(rect);
   } catch {
     return undefined;

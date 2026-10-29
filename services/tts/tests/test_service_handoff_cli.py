@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import copy
+import os
+import subprocess
+import sys
+import threading
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 import pytest
 
+import benchmarks.service_handoff_cli as handoff
 from benchmarks.memory import ProcessResourceSample
 from benchmarks.service_handoff_authority import EXPECTED_CASE_IDS, PROFILE_SHA256
 from benchmarks.service_handoff_cli import (
@@ -18,6 +24,100 @@ from benchmarks.service_handoff_cli import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows host ownership boundary")
+@pytest.mark.parametrize(
+    "stage", ["first-gpu", "second-gpu", "resource", "thread", "thread-start", "cleanup"]
+)
+def test_maf05_setup_failure_reaps_the_identified_real_child(
+    stage: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_popen = subprocess.Popen
+    children: list[subprocess.Popen[str]] = []
+    acquired: list[Mock] = []
+    failure = handoff._fail("synthetic-setup")
+    for name in handoff.REQUIRED_ENVIRONMENT:
+        monkeypatch.setenv(name, "1")
+    monkeypatch.setattr(handoff, "_release_executable", lambda _root: Path(sys.executable))
+    monkeypatch.setattr(handoff, "_verify_firewall", lambda _python: None)
+    monkeypatch.setattr(handoff, "_execution_commit", lambda _root: "b" * 40)
+
+    def spawn(*args: object, **kwargs: object) -> subprocess.Popen[str]:
+        child = real_popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        children.append(child)
+        return child
+
+    def gpu(*args: object) -> Mock:
+        if stage == "first-gpu" or (stage == "second-gpu" and acquired):
+            raise failure
+        sampler = Mock()
+        if stage == "cleanup":
+            sampler.close.side_effect = OSError("synthetic private cleanup detail")
+        acquired.append(sampler)
+        return sampler
+
+    def resource(**kwargs: object) -> Mock:
+        if stage in {"resource", "cleanup"}:
+            raise failure
+        return Mock()
+
+    def thread(**kwargs: object) -> Mock:
+        if stage == "thread":
+            raise failure
+        value = Mock()
+        value.start.side_effect = failure
+        value.is_alive.return_value = False
+        return value
+
+    monkeypatch.setattr(subprocess, "Popen", spawn)
+    monkeypatch.setattr(handoff, "WindowsGpuProcessMemorySampler", gpu)
+    monkeypatch.setattr(handoff, "WindowsProcessResourceSampler", resource)
+    monkeypatch.setattr(threading, "Thread", thread)
+    try:
+        with pytest.raises(ServiceHandoffRunError) as captured:
+            handoff.run()
+        assert captured.value is failure
+        assert getattr(failure, "__notes__", []) == (
+            ["tts-service-handoff-run:cleanup-failed"] if stage == "cleanup" else []
+        )
+        assert len(children) == 1
+        # Popen retains the original Windows process handle; numeric PID reuse
+        # cannot redirect cleanup to an unrelated process.
+        assert children[0].poll() is not None
+        assert children[0].stdout is not None and children[0].stdout.closed
+        for sampler in acquired:
+            sampler.close.assert_called_once()
+    finally:
+        for child in children:
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=5)
+            if child.stdout is not None:
+                child.stdout.close()
+
+
+def test_maf05_cli_reports_cleanup_failure_without_replacing_or_exposing_primary(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    failure = handoff._fail("synthetic-private-detail")
+    failure.add_note("tts-service-handoff-run:cleanup-failed")
+    monkeypatch.setattr(handoff, "run", Mock(side_effect=failure))
+    assert handoff.main(["run"]) == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert (
+        output.err
+        == "Exact-host service handoff matrix failed.\nExact-host service handoff cleanup failed.\n"
+    )
 
 
 def _case(case_id: str) -> dict[str, object]:

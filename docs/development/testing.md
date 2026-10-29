@@ -1867,6 +1867,26 @@ Performance tests may be hardware-specific, but their input text and procedure m
 
 ## Fixtures
 
+The MAF regression group covers cooperative reader-wrapper cleanup, actual
+PowerShell enumeration/read failures, malformed direct Python UTF-8 text,
+optional removal versus native admission, partial host-runner initialization,
+v12 cancellation-language provenance, empty DOM range geometry, combining-mark
+numeric boundaries, updated valid PDH samples, healthy profile reselection and
+completed Prepared-to-Quick transitions. Its synthetic process tests preserve
+ordinary handle/Job ownership and use barriers instead of model timing.
+
+Reader wrapper arms advance only after terminal exit and cleanup acknowledgement.
+RAM observation fails when enumeration fails or a still-live owned process
+cannot be read; a verified exited child may disappear. Handoff setup failures
+retain the primary error and report cleanup failure separately without private
+exception details. v9/v11 evaluation and frozen optional v7 are outside this
+correction group.
+
+See the [MAF execution ledger](../plans/evidence/minimal-audit-findings-corrections/execution-ledger.md)
+for current host receipts, gate selection, failed attempts and artifact reuse.
+The Piper generator includes both offline voice smokes; do not repeat those
+smokes as separate acceptance runs after the same successful generation.
+
 Fixtures must be:
 
 - Synthetic and committed directly.

@@ -176,7 +176,7 @@ def test_process_tree_ids_includes_owner_and_transitive_descendants(
     assert sampler.process_tree_ids(10) == frozenset((10, 11, 12))
 
 
-def test_wddm_counter_aggregation_sums_adapter_instances_by_numeric_pid() -> None:
+def test_maf09_wddm_counter_aggregation_sums_valid_and_new_adapter_data() -> None:
     assert WindowsGpuProcessMemorySampler._aggregate(
         (
             ("pid_123_luid_0x1_0x2_phys_0", 0, 100),
@@ -184,8 +184,37 @@ def test_wddm_counter_aggregation_sums_adapter_instances_by_numeric_pid() -> Non
             ("pid_456_luid_0x1_0x2_phys_0", 0, 400),
             ("pid_private_luid_0x1_0x2_phys_0", 0, 999),
             ("pid_123_luid_0x1_0x2_phys_0", 1, 999),
+            ("pid_123_luid_0x1_0x2_phys_0", 2, 999),
+            ("pid_123_luid_0x1_0x2_phys_0", 1, -1),
         )
-    ) == {123: 300, 456: 400}
+    ) == {123: 1299, 456: 400}
+
+
+def test_maf09_new_data_reaches_owned_sampling_and_unavailable_stays_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sampler = object.__new__(WindowsGpuProcessMemorySampler)
+    sampler._last_collection_ns = None
+    sampler._bytes_by_pid = None
+    collect = Mock(
+        return_value=sampler._aggregate(
+            (
+                ("pid_123_luid_0x1_0x2_phys_0", 0, 100),
+                ("pid_123_luid_0x1_0x3_phys_1", 1, 200),
+                ("pid_456_luid_0x1_0x2_phys_0", 1, 400),
+                ("pid_999_luid_0x1_0x2_phys_0", 0, 900),
+                ("pid_123_luid_0x1_0x2_phys_0", 2, 999),
+            )
+        )
+    )
+    monkeypatch.setattr(sampler, "_collect", collect)
+    monkeypatch.setattr("benchmarks.memory.time.perf_counter_ns", lambda: 1)
+    assert sampler.sample(frozenset((123, 456, 777))) == (700, 2)
+    assert sampler.sample(frozenset((123,))) == (300, 1)
+    collect.assert_called_once()
+    sampler._last_collection_ns = None
+    collect.side_effect = RuntimeError("tts-benchmark-memory:wddm-unavailable")
+    assert sampler.sample(frozenset((123,))) == (None, 0)
 
 
 def test_balanced_probe_requires_both_positive_vram_signals() -> None:

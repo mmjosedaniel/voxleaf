@@ -555,6 +555,68 @@ pub(super) fn pause_start_after_publish() {
     });
 }
 
+thread_local! {
+    static MAF_EXACT_COMMAND: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+pub(super) fn maf_exact_command(
+    runtime: &ExactRuntime,
+) -> Option<Result<Command, TtsNativeFailure>> {
+    if !MAF_EXACT_COMMAND.with(|enabled| enabled.get()) {
+        return None;
+    }
+    assert!(runtime.python.is_file());
+    assert!(runtime.model_root.is_dir());
+    assert!(runtime.service_site_packages.is_dir());
+    let mut command = Command::new("powershell.exe");
+    command.args([
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "Start-Sleep -Seconds 60",
+    ]);
+    Some(Ok(command))
+}
+
+impl TtsServiceSupervisor {
+    pub(crate) fn maf_configure_installed(&self) -> Result<(), TtsNativeFailure> {
+        self.configure_profile(CHATTERBOX_PROFILE_ID, Some("es"))
+    }
+
+    pub(crate) fn maf_has_installed_configuration(&self) -> bool {
+        matches!(
+            *self.child_configuration.lock().unwrap(),
+            ServiceChild::Exact(_)
+        )
+    }
+
+    #[cfg(windows)]
+    pub(crate) fn maf_start_and_contain_installed(
+        self: &Arc<Self>,
+    ) -> (Result<Vec<Value>, TtsNativeFailure>, bool) {
+        let published = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let observed = Arc::clone(&published);
+        let supervisor = Arc::clone(self);
+        START_PUBLISHED_HOOK.with(|slot| *slot.borrow_mut() = Some(Box::new(move || {
+            let session = supervisor.active_session().unwrap();
+            assert!(session.process.lock().unwrap().is_some());
+            eprintln!("MAF04 owned benign process: pid={}, executable=powershell.exe, ownership=Child-handle-and-Job", session.process.lock().unwrap().as_ref().unwrap().child.id());
+            observed.store(true, Ordering::Release);
+            // Uses the actual owned Job and bounded process/thread teardown.
+            let _admission = supervisor.stop_for_optional_removal().unwrap();
+            assert!(session.process.lock().unwrap().is_none());
+            assert!(session.input.worker.lock().unwrap().is_none());
+        })));
+        MAF_EXACT_COMMAND.with(|enabled| enabled.set(true));
+        let result = self.start_owned(None);
+        MAF_EXACT_COMMAND.with(|enabled| enabled.set(false));
+        START_PUBLISHED_HOOK.with(|slot| slot.borrow_mut().take());
+        self.force_stop().unwrap();
+        assert!(self.session.lock().unwrap().is_none());
+        (result, published.load(Ordering::Acquire))
+    }
+}
+
 pub(super) fn pause_shutdown_after_busy() {
     SHUTDOWN_BUSY_HOOK.with(|slot| {
         if let Some(hook) = slot.borrow_mut().take() {
