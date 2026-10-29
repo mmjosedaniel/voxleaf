@@ -1642,6 +1642,40 @@ authorized. Do not rerun `pnpm.cmd package:windows` after these hash-bound
 receipts unless a new installer identity and both host journeys will be renewed
 again.
 
+## Validated audit follow-up regression coverage
+
+The [completed execution plan](../plans/completed/validated-audit-follow-up.md) and its
+[ledger](../plans/evidence/validated-audit-follow-up/execution-ledger.md) separate
+current validation from the historical results above. The added cases cover
+optional recheck/session reconciliation, keyboard focus during a pending probe,
+manual reading after completion, and valid synthetic PCM below one millisecond
+at direct and time-stretched rates. These PCM cases establish a contract edge;
+they do not claim occurrence in any real model output.
+
+Benchmark tooling regressions use synthetic adapters and deterministic sample
+permutations. Fragmented diagnostics are checked beyond the retained capture
+limit, missing runs cannot earn privacy/cleanup PASS, and displayed listening
+order follows the actual shuffled sample records. Historical maps, evaluations,
+corpus and quality decisions are unchanged; no model evaluation is implied.
+
+Compiled NSIS fixtures exercise independent preference-removal postconditions
+with locked files, inaccessible parents and reparse points. Lifecycle fault
+fixtures invoke the real PowerShell script under owned temporary roots. Before
+installation the script records the verified absent destination and recovery
+paths; cleanup removes the owned installation before restoring original data.
+Missing/failing uninstallers retain the backup and recovery journal. Forced
+termination or power loss requires journal-guided recovery. A personal existing
+installation still blocks the real lifecycle gate without separate authorization.
+An owned verified uninstaller copy runs with NSIS relocation disabled; its
+120-second wait and ten-second termination bound are exercised by the hanging
+uninstaller fixture. Failed cleanup is not retried automatically and cannot
+expose restored user data to an unverified installation.
+
+The native synchronization feasibility fixture waits for its requested viewport
+size and two rendering opportunities before measuring the offscreen target.
+The existing condition and WebDriver deadlines bound this readiness step. The
+target, highlight/follow assertions and product behavior are unchanged.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, M008

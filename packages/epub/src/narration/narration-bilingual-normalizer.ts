@@ -795,6 +795,47 @@ function enforceNumericLookahead(
   }
 }
 
+function hasEnglishTitleContext(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  start: number,
+  end: number,
+): boolean {
+  const limit =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+  let next = end;
+  while (
+    next - end < limit &&
+    isOrdinaryWhitespace(sourceText(tokens[next]) ?? "")
+  )
+    next += 1;
+  if (
+    next === end ||
+    next - end >= limit ||
+    languages[next] !== "en" ||
+    !isProseTextToken(tokens[next]) ||
+    !/^\p{Lu}$/u.test(sourceText(tokens[next]) ?? "")
+  )
+    return false;
+  let previous = start - 1;
+  while (
+    start - previous <= limit &&
+    isOrdinaryWhitespace(sourceText(tokens[previous]) ?? "")
+  )
+    previous -= 1;
+  const wordEnd = previous;
+  while (
+    start - previous <= limit &&
+    /^[\p{L}\p{M}]$/u.test(sourceText(tokens[previous]) ?? "")
+  )
+    previous -= 1;
+  return (
+    start - previous <= limit &&
+    (previous === wordEnd ||
+      !/^\p{Lu}$/u.test(sourceText(tokens[previous + 1]) ?? ""))
+  );
+}
+
 function findLexicalReplacements(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
@@ -887,7 +928,10 @@ function findLexicalReplacements(
         endIndexExclusive,
         form.kind,
         form.boundaryProtections,
-        form.narration,
+        (form.source === "Dr." || form.source === "St.") &&
+          !hasEnglishTitleContext(tokens, languages, index, endIndexExclusive)
+          ? undefined
+          : form.narration,
       );
       index = endIndexExclusive - 1;
       break;

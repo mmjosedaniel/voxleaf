@@ -975,6 +975,51 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it.each([
+    [100, 1],
+    [100, 23],
+    [100, 24],
+    [75, 1],
+    [75, 17],
+    [75, 18],
+  ] as const)(
+    "VAF H8 plays and releases %i-percent synthetic PCM with %i frames",
+    async (rate, frames) => {
+      const { coordinator, client, backend, intervals } = createHarness();
+      client.synthesisSampleFrames = frames;
+      const audible: ProductNarrationAudibleProgressObservation[] = [];
+      coordinator.subscribeAudibleProgress((event) => audible.push(event));
+      try {
+        await coordinator.checkAvailability();
+        await coordinator.setPlaybackRatePercent(rate);
+        coordinator.start();
+        await settleUntil(
+          () =>
+            backend.active !== undefined ||
+            coordinator.observe().failure !== undefined,
+        );
+        expect(coordinator.observe().failure).toBeUndefined();
+        expect(backend.active?.request.sampleCountSamples).toBe(frames);
+        backend.playedSampleFrames = frames;
+        backend.finish();
+        for (const tick of [...intervals]) tick();
+        expect(coordinator.observe()).toMatchObject({
+          state: { phase: "complete" },
+          metrics: {
+            retainedAudioUnitCount: 0,
+            acceptedAudioSampleFrames: frames,
+          },
+        });
+        expect(client.releaseCount).toBe(1);
+        expect(
+          audible.filter((event) => event.kind === "segment-completed"),
+        ).toHaveLength(1);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
   it.each([100, 75] as const)(
     "NCC-01 saves the heard end before terminal persistence at %s percent",
     async (rate) => {

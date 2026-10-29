@@ -549,6 +549,17 @@ Required interaction behavior:
   update; and
 - unchanged paragraph-leaf keyboard, pointer, and touch behavior.
 
+An explicit compatibility recheck in the optional Chatterbox section reconciles
+the loaded narration session after the fresh probe settles. An unchanged
+selection preserves the session; a changed selection contains the previous
+session without automatically starting another. Rechecking does not download
+or activate a package. While checking disables actions, disclosure summaries
+remain keyboard reachable and participate in the dialog's focus containment.
+
+After natural completion, the final highlight may remain visible, but it no
+longer follows or settles the reader location. Manual reading and appearance
+reflow retain the reader's chosen location until another narration action.
+
 ## Developer-only interface
 
 The synthetic raster safety probe and raw diagnostics are not normal reader

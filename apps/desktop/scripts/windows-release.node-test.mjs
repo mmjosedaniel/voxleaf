@@ -61,10 +61,169 @@ for ($index = 0; $index -lt $optionalRoots.Count; $index++) {
   },
 );
 
+for (const mode of [
+  "partial",
+  "post-install",
+  "first-start",
+  "interrupted",
+  "missing-uninstaller",
+  "failed-uninstaller",
+  "hanging-uninstaller",
+  "success",
+]) {
+  test(
+    `VAF H13 lifecycle owns partial installs and restores only after uninstall: ${mode}`,
+    {
+      skip: process.platform !== "win32",
+    },
+    async () => {
+      const root = await mkdtemp(
+        path.join(await realpath(os.tmpdir()), "voxleaf-vaf-lifecycle-"),
+      );
+      const quote = (value) => `'${value.replaceAll("'", "''")}'`;
+      try {
+        const source = String.raw`
+$ErrorActionPreference = 'Stop'
+$fixtureRoot = ${quote(root)}
+$fixtureMode = ${quote(mode)}
+$env:LOCALAPPDATA = Join-Path $fixtureRoot 'local'
+$env:TEMP = Join-Path $fixtureRoot 'temp'
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Path $env:LOCALAPPDATA,$env:TEMP -Force | Out-Null
+$fixtureInstallRoot = Join-Path $env:LOCALAPPDATA 'VoxLeaf'
+$fixtureDataRoot = Join-Path $env:LOCALAPPDATA 'com.voxleaf.desktop'
+New-Item -ItemType Directory -Path $fixtureDataRoot | Out-Null
+[IO.File]::WriteAllText((Join-Path $fixtureDataRoot 'original.marker'), 'original')
+$fixtureInstaller = Join-Path $fixtureRoot 'fixture-installer.exe'
+[IO.File]::WriteAllText($fixtureInstaller, 'not executable')
+$fixtureEvents = [Collections.Generic.List[string]]::new()
+$fixtureJournalSeen = [Collections.Generic.List[bool]]::new()
+function Start-Sleep { param($Seconds) }
+function Stop-Process { param($Id, [switch]$Force, $ErrorAction) $fixtureEvents.Add('stop') }
+function New-FixturePackageProcess {
+  param($ExitCode)
+  $process = [pscustomobject]@{ExitCode=$ExitCode; HasExited=$true; Id=0; StartTime=[DateTime]::UtcNow}
+  $process | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milliseconds) return $true }
+  return $process
+}
+function Start-Process {
+  param($FilePath, $ArgumentList, [switch]$Wait, [switch]$PassThru, $WindowStyle)
+  if ($FilePath -eq $fixtureInstaller) {
+    $fixtureEvents.Add('install')
+    $fixtureJournalSeen.Add(@(Get-ChildItem -LiteralPath $env:TEMP -Recurse -Filter 'recovery.json').Count -eq 1)
+    New-Item -ItemType Directory -Path $fixtureInstallRoot -Force | Out-Null
+    if ($fixtureMode -ne 'missing-uninstaller') { [IO.File]::WriteAllText((Join-Path $fixtureInstallRoot 'uninstall.exe'), 'synthetic') }
+    if ($fixtureMode -eq 'partial') { return New-FixturePackageProcess 1 }
+    if ($fixtureMode -eq 'interrupted') { throw [OperationCanceledException]::new('synthetic-interruption') }
+    if ($fixtureMode -ne 'post-install') {
+      [IO.File]::WriteAllText((Join-Path $fixtureInstallRoot 'voxleaf-desktop.exe'), 'synthetic')
+      $core = Join-Path $fixtureInstallRoot 'resources\tts\voxleaf-piper-core-v1'
+      New-Item -ItemType Directory -Path $core -Force | Out-Null
+      [IO.File]::WriteAllText((Join-Path $core 'runtime-manifest-v1.json'), '{}')
+    }
+    return New-FixturePackageProcess 0
+  }
+  if ($FilePath -eq (Join-Path $fixtureInstallRoot 'uninstall.exe') -or (Split-Path $FilePath -Leaf) -eq 'owned-uninstall.exe') {
+    $fixtureEvents.Add('uninstall')
+    if (Test-Path -LiteralPath (Join-Path $fixtureDataRoot 'original.marker')) { throw 'synthetic-restore-before-uninstall' }
+    if ($fixtureMode -eq 'hanging-uninstaller') {
+      if ($Wait) { $fixtureEvents.Add('unbounded-uninstall-wait') }
+      $process = [pscustomobject]@{HasExited=$false; ExitCode=0; Id=0; StartTime=[DateTime]::UtcNow}
+      $process | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value {
+        param($Milliseconds)
+        if ($Milliseconds -le 0 -or $Milliseconds -gt 120000) { throw 'synthetic-uninstall-deadline-invalid' }
+        $fixtureEvents.Add('bounded-uninstall-wait')
+        return $this.HasExited
+      }
+      $process | Add-Member -MemberType ScriptMethod -Name Kill -Value { $fixtureEvents.Add('kill-uninstaller'); $this.HasExited=$true }
+      return $process
+    }
+    if ((Split-Path $FilePath -Leaf) -eq 'owned-uninstall.exe' -and $ArgumentList[-1] -ne "_?=$fixtureInstallRoot") { throw 'synthetic-uninstall-root-argument' }
+    if ($fixtureMode -eq 'failed-uninstaller') { return New-FixturePackageProcess 1 }
+    foreach ($rootToRemove in @($fixtureInstallRoot)) {
+      Assert-ExactChildPath $env:LOCALAPPDATA $rootToRemove 'synthetic-root-invalid'
+      Assert-NoReparsePoints $rootToRemove 'synthetic-reparse'
+      Remove-Item -LiteralPath $rootToRemove -Recurse -Force
+    }
+    if ($ArgumentList -contains '/REMOVE_APP_DATA=1' -or $ArgumentList -contains '/REMOVE_CHATTERBOX_DATA=1') {
+      foreach ($optional in $optionalRoots) { if (Test-Path -LiteralPath $optional) { Remove-Item -LiteralPath $optional -Recurse -Force } }
+    }
+    if ($ArgumentList -contains '/REMOVE_APP_DATA=1' -or $ArgumentList -contains '/REMOVE_PREFERENCES_AND_RECOVERY=1') {
+      if (Test-Path -LiteralPath $preferenceRoot) { Remove-Item -LiteralPath $preferenceRoot -Recurse -Force }
+    }
+    return New-FixturePackageProcess 0
+  }
+  if ($FilePath -eq (Join-Path $fixtureInstallRoot 'voxleaf-desktop.exe')) {
+    $fixtureEvents.Add('start')
+    if ($fixtureMode -in @('failed-uninstaller','hanging-uninstaller')) { throw 'synthetic-after-install' }
+    $process = [pscustomobject]@{HasExited=($fixtureMode -eq 'first-start'); Id=0; StartTime=[DateTime]::UtcNow}
+    $process | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milliseconds) return $true }
+    $process | Add-Member -MemberType ScriptMethod -Name Kill -Value { $this.HasExited=$true }
+    return $process
+  }
+  throw 'synthetic-unexpected-process'
+}
+$fixtureFailure = $null
+try { & ${quote(path.join(repositoryRoot(), "scripts", "test-windows-package-lifecycle.ps1"))} -Installer $fixtureInstaller | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
+$blockedCleanup = $fixtureMode -in @('missing-uninstaller','failed-uninstaller','hanging-uninstaller')
+if ($fixtureMode -eq 'success') { if ($null -ne $fixtureFailure) { throw $fixtureFailure } }
+elseif ($null -eq $fixtureFailure) { throw 'synthetic-missing-primary-failure' }
+if ($fixtureMode -eq 'partial' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-failed') { throw 'synthetic-primary-failure-lost' }
+if ($fixtureMode -eq 'interrupted' -and $fixtureFailure -ne 'synthetic-interruption') { throw 'synthetic-interruption-lost' }
+if ($fixtureMode -eq 'hanging-uninstaller') {
+  if ($fixtureFailure -ne 'synthetic-after-install') { throw 'synthetic-primary-failure-lost' }
+  if ($fixtureEvents.Contains('unbounded-uninstall-wait') -or -not $fixtureEvents.Contains('bounded-uninstall-wait')) { throw 'synthetic-unbounded-uninstall' }
+  if (-not $fixtureEvents.Contains('kill-uninstaller')) { throw 'synthetic-uninstaller-not-stopped' }
+  if (@($fixtureEvents | Where-Object { $_ -eq 'uninstall' }).Count -ne 1) { throw 'synthetic-uninstall-retried' }
+}
+if ($blockedCleanup) {
+  if (-not (Test-Path -LiteralPath $fixtureInstallRoot)) { throw 'synthetic-unverified-install-deleted' }
+  if (Test-Path -LiteralPath (Join-Path $fixtureDataRoot 'original.marker')) { throw 'synthetic-unsafe-original-restoration' }
+  $backups = @(Get-ChildItem -LiteralPath $env:LOCALAPPDATA -Directory -Filter '.voxleaf-package-lifecycle-backup-*')
+  if ($backups.Count -ne 1 -or [IO.File]::ReadAllText((Join-Path $backups[0].FullName 'original.marker')) -ne 'original') { throw 'synthetic-original-backup-lost' }
+  if (@(Get-ChildItem -LiteralPath $env:TEMP -Recurse -Filter recovery.json).Count -ne 1) { throw 'synthetic-recovery-journal-lost' }
+} else {
+  if (Test-Path -LiteralPath $fixtureInstallRoot) { throw 'synthetic-owned-install-left-behind' }
+  if ([IO.File]::ReadAllText((Join-Path $fixtureDataRoot 'original.marker')) -ne 'original') { throw 'synthetic-original-not-restored' }
+  if (-not $fixtureEvents.Contains('uninstall')) { throw 'synthetic-uninstall-not-attempted' }
+  if (@(Get-ChildItem -LiteralPath $env:TEMP).Count -ne 0) { throw 'synthetic-temporary-root-left-behind' }
+}
+if ($fixtureJournalSeen.Count -eq 0 -or $fixtureJournalSeen.Contains($false)) { throw 'synthetic-preinstall-journal-missing' }
+Write-Output 'ownership-cleanup-order-and-recovery-verified'
+`;
+        const script = path.join(root, "fixture.ps1");
+        await writeFile(script, source);
+        const result = spawnSync(
+          "powershell.exe",
+          ["-NoProfile", "-NonInteractive", "-File", script],
+          {
+            encoding: "utf8",
+            timeout: 30_000,
+            windowsHide: true,
+            env: Object.fromEntries(
+              Object.entries(process.env).filter(
+                ([name]) => name.toLowerCase() !== "psmodulepath",
+              ),
+            ),
+          },
+        );
+        assert.equal(result.error, undefined);
+        assert.equal(result.status, 0, result.stderr || result.stdout);
+        assert.match(
+          result.stdout,
+          /ownership-cleanup-order-and-recovery-verified/,
+        );
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+}
+
 for (const lcf of [false, true]) {
   test(
     lcf
-      ? "LCF compiled NSIS reports incomplete cleanup of every optional root"
+      ? "VAF H9 and LCF compiled NSIS report incomplete independent data cleanup"
       : "CLB-01 compiled NSIS detects directories and each optional root",
     {
       skip: process.platform !== "win32",
@@ -78,7 +237,9 @@ for (const lcf of [false, true]) {
         /Function un\.OptionalChatterboxDataExists[\s\S]*?FunctionEnd/,
       )?.[0];
       assert.ok(directoryFunction && optionalFunction);
-      const root = await mkdtemp(path.join(os.tmpdir(), "voxleaf-nsis-clb-"));
+      const root = await mkdtemp(
+        path.join(await realpath(os.tmpdir()), "voxleaf-nsis-clb-"),
+      );
       try {
         const ownedRoot = path.join(root, "owned");
         const optionalRoots = [
@@ -224,16 +385,22 @@ SectionEnd
           };
           // Each literal root must participate in the final postcondition; there
           // is no .previous directory while testing cb/6 and the other roots.
-          for (const relative of optionalRoots) {
+          for (const relative of [
+            ...optionalRoots,
+            "EBWebView\\Default\\Local Storage",
+          ]) {
+            const removalFlag = relative.startsWith("EBWebView")
+              ? "/REMOVE_PREFERENCES_AND_RECOVERY=1"
+              : "/REMOVE_CHATTERBOX_DATA=1";
             const directory = path.join(ownedRoot, relative);
             await mkdir(directory, { recursive: true });
             const sentinel = path.join(directory, "locked.bin");
             await writeFile(sentinel, "synthetic");
             assert.equal(uninstall(), 0);
-            assert.equal(uninstall("/UPDATE", "/REMOVE_CHATTERBOX_DATA=1"), 0);
+            assert.equal(uninstall("/UPDATE", removalFlag), 0);
             assert.equal(await readFile(sentinel, "utf8"), "synthetic");
             const locked = runPowerShell(
-              `$ErrorActionPreference='Stop'; $handle=[IO.File]::Open(${quote(sentinel)}, 'Open', 'Read', 'Read'); try { $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { $handle.Dispose() }; exit $result`,
+              `$ErrorActionPreference='Stop'; $handle=[IO.File]::Open(${quote(sentinel)}, 'Open', 'Read', 'Read'); try { $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', ${quote(removalFlag)}, ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { $handle.Dispose() }; exit $result`,
             );
             assert.equal(
               locked.status,
@@ -241,12 +408,12 @@ SectionEnd
               `${relative}: ${locked.stderr || locked.stdout}`,
             );
             assert.equal(await readFile(sentinel, "utf8"), "synthetic");
-            assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+            assert.equal(uninstall(removalFlag), 0);
             await assert.rejects(readFile(sentinel), { code: "ENOENT" });
             await mkdir(path.dirname(directory), { recursive: true });
             await symlink(outside, directory, "junction");
             try {
-              assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1, relative);
+              assert.equal(uninstall(removalFlag), 1, relative);
               assert.equal(
                 await readFile(path.join(outside, "keep.bin"), "utf8"),
                 "synthetic",
@@ -257,8 +424,6 @@ SectionEnd
           }
           // Deny directory lookup under a test-owned parent, then restore its ACL
           // even if the child uninstaller fails. Access denied is not absence.
-          const deniedParent = path.join(ownedRoot, "tts", "cb");
-          await mkdir(path.join(deniedParent, "6"), { recursive: true });
           // Runners can bypass directory traversal ACLs. Remove that privilege
           // only from this short-lived fixture process and its uninstaller child.
           const attributeProbe = `
@@ -291,13 +456,26 @@ public static class LcfAttributes {
     } finally { CloseHandle(token); }
   }
 }`;
-          const denied = runPowerShell(
-            `$ErrorActionPreference='Stop'; $path=${quote(deniedParent)}; $original=Get-Acl -LiteralPath $path; $blocked=Get-Acl -LiteralPath $path; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes,ReadExtendedAttributes,ExecuteFile','ContainerInherit,ObjectInherit','None','Deny'); $blocked.AddAccessRule($rule); Add-Type ${quote(attributeProbe)}; [LcfAttributes]::RemoveTraverseBypass(); try { Set-Acl -LiteralPath $path -AclObject $blocked; $attributes=[LcfAttributes]::GetFileAttributesW((Join-Path $path '6')); $inspectionError=[Runtime.InteropServices.Marshal]::GetLastWin32Error(); if ($attributes -ne -1 -or $inspectionError -ne 5) { throw "expected-access-denied-inspection: attributes=$attributes error=$inspectionError" }; Write-Output 'inspection-error=5'; $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', '/REMOVE_CHATTERBOX_DATA=1', ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { Set-Acl -LiteralPath $path -AclObject $original }; exit $result`,
-          );
-          assert.equal(denied.status, 1, denied.stderr || denied.stdout);
-          assert.equal(denied.stderr, "");
-          assert.match(denied.stdout, /inspection-error=5/);
-          assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 0);
+          for (const [parent, child, flag] of [
+            ["tts\\cb", "6", "/REMOVE_CHATTERBOX_DATA=1"],
+            [
+              "EBWebView\\Default",
+              "Local Storage",
+              "/REMOVE_PREFERENCES_AND_RECOVERY=1",
+            ],
+          ]) {
+            const deniedParent = path.join(ownedRoot, parent);
+            await mkdir(path.join(deniedParent, child), { recursive: true });
+            const denied = runPowerShell(
+              `$ErrorActionPreference='Stop'; $path=${quote(deniedParent)}; $original=Get-Acl -LiteralPath $path; $blocked=Get-Acl -LiteralPath $path; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes,ReadExtendedAttributes,ExecuteFile','ContainerInherit,ObjectInherit','None','Deny'); $blocked.AddAccessRule($rule); Add-Type ${quote(attributeProbe)}; [LcfAttributes]::RemoveTraverseBypass(); try { Set-Acl -LiteralPath $path -AclObject $blocked; $attributes=[LcfAttributes]::GetFileAttributesW((Join-Path $path ${quote(child)})); $inspectionError=[Runtime.InteropServices.Marshal]::GetLastWin32Error(); if ($attributes -ne -1 -or $inspectionError -ne 5) { throw "expected-access-denied-inspection: attributes=$attributes error=$inspectionError" }; Write-Output 'inspection-error=5'; $result=(Start-Process -FilePath ${quote(path.join(root, "uninstall.exe"))} -ArgumentList @('/S', ${quote(flag)}, ${quote(`_?=${root}`)}) -Wait -PassThru -WindowStyle Hidden).ExitCode } finally { Set-Acl -LiteralPath $path -AclObject $original }; exit $result`,
+            );
+            assert.equal(denied.status, 1, denied.stderr || denied.stdout);
+            assert.equal(denied.stderr, "");
+            assert.match(denied.stdout, /inspection-error=5/);
+            assert.equal(uninstall(flag), 0);
+          }
+          await mkdir(preferences, { recursive: true });
+          await writeFile(path.join(preferences, "keep.bin"), "synthetic");
           assert.equal(
             await readFile(path.join(preferences, "keep.bin"), "utf8"),
             "synthetic",

@@ -1,13 +1,18 @@
 # Validated audit follow-up
 
-Status: **Planning only; implementation and acceptance have not started.**
+Status: **M0-M3 complete; implementation approved by VAF-R4-20261028 and archived. Final archive identities are recorded separately. Uncommitted.**
 Created: 2026-10-28. Planning base: `cd4d1603942e73fac51c06df6943d8f0466ed9d0`.
 Planning branch: `codex/validated-audit-follow-up`.
 
-The current authorization is to create this plan, its active-index entry, a
-branch and one local documentation commit. It does not authorize executing the
-plan, tests, builds, installation changes, downloads, push, PR or publication.
-The commands below are instructions for a separately authorized execution.
+The 2026-10-28 execution request supersedes planning-only authorization and
+authorizes H1-H4/H6-H13 implementation and the plan's host validations. It does
+not authorize staging, commit, push, PR, merge or publication. The pre-existing
+personal installation initially required separate removal/reinstallation
+permission. That permission was subsequently granted for this PC. Authorized L1
+now passes with the same identified package and verified measured restoration.
+Git permissions remain unchanged.
+Execution choices and immutable receipts are tracked in the
+[execution ledger](../evidence/validated-audit-follow-up/execution-ledger.md).
 
 ## Goal
 
@@ -165,7 +170,7 @@ campaign; use its evidence-reuse principles without imposing refactor roles.
 
 ## Milestones
 
-### M0: Freeze scope, recovery and evidence choices — not started
+### M0: Freeze scope, recovery and evidence choices — complete
 
 After execution authorization, recheck HEAD, branch, dirty/index state and the
 twelve triggers. Record exact owned paths and consumed dependencies, including
@@ -187,7 +192,7 @@ authorized; a suitable disposable account is an alternative. This planning
 request gives no such permission. Verify existing tool/runtime prerequisites
 before expensive preparation; do not install or download them by default.
 
-### M1: Implement bounded corrections and regressions — not started
+### M1: Implement bounded corrections and regressions — implemented
 
 **Desktop.** H1 connects the optional awaited recheck to the existing explicit
 recovery/reconciliation callback; do not duplicate stop/start logic. Test the
@@ -262,7 +267,7 @@ forced process termination or power loss, without promising automatic teardown.
 Do not delete arbitrary install trees or use a failed cleanup as permission to
 overwrite original data. Reuse the data companion's recovery invariants.
 
-### M2: Final combined checks and minimum host preparation — not started
+### M2: Final combined checks and minimum host preparation — complete
 
 Run the relevant fast leaves once after final source/test changes. Use them as
 the group's final green evidence; do not automatically rerun every focused
@@ -285,7 +290,7 @@ writes a historical tracked receipt: use its documented equivalent leaves and
 capture new evidence separately, as the SAC ledger did. Never overwrite that
 historical receipt to save a build.
 
-### M3: Independent acceptance and closeout — not started
+### M3: Independent acceptance and closeout — complete
 
 Finish the gate/reuse ledger and restoration checks, then freeze source, tests
 and maintained documentation. Supply the exact diff, closed path identities,
@@ -458,13 +463,30 @@ to prove H2's local request/cancellation race.
   and duplicate-gate ambiguity. The document guard's pnpm wrapper stopped before
   execution on an engine mismatch; its existing Node leaf passed. No toolchain
   changes or implementation execution followed.
-- [ ] M0 execution authorization, exact scope/reuse ledger and recovery setup.
-- [ ] M1 bounded regressions and corrections.
-- [ ] M2 final combined checks and required host work.
-- [ ] M3 independent exact-patch approval, documentation and archive.
+- [x] M0 execution authorization, exact scope/reuse ledger and recovery setup.
+- [x] M1 bounded regressions and corrections; see current execution ledger.
+- [x] Additional host authorization received; installer, space, inactive process
+  state and process-local Windows PowerShell module selection rechecked.
+- [x] M2 final combined checks, authorized L1, reinstatement and measured host
+  restoration; exact owned recovery material cleaned after verification.
+- [x] M3 independent implementation approval (`VAF-R4-20261028`), documentation
+  and archive. The final archive identity report is `VAF-R5-20261028`.
 
 ## Discoveries and decisions
 
+- N1 bounded replan after two failed uninstrumented attempts: the only failed
+  proof predicate is the fixture's initial offscreen target (`followed=false`);
+  an instrumented run passes. Timing/resize readiness is a hypothesis, not a
+  proven root cause. As permitted for browser/native divergence, add only an
+  exact viewport-size readiness check and two rendering opportunities in the
+  existing `native-smoke/reader-scenarios.mjs` owner before measuring. The
+  existing 15-second condition bound and WebDriver request deadline apply;
+  retain every proof assertion and target. Renew the native Node leaf, scoped
+  static checks and one uninstrumented N1 attempt. Further failure requires
+  another explicit replan, not repetition. No application rebuild is needed
+  because only the external fixture changes. Capture detailed local metadata
+  before/after this attempt to distinguish new effects from the unresolved
+  earlier coarse-digest discrepancy.
 - The twelve retained IDs are deliberately nonconsecutive; H5 remains outside
   the implementation batch rather than being silently renumbered or included.
 - Reuse tests and fixtures aggressively, but do not reuse acceptance across
@@ -484,15 +506,47 @@ to prove H2's local request/cancellation race.
 
 ## Final validation results
 
-**Implementation: NOT STARTED. Runtime acceptance: NOT RUN.**
-No test, lint, format, type, schema, build, browser, native, model, installer or
-benchmark command was executed for this planning task. Historical outcomes
-above are attributed to their original receipts; no result reuse is approved.
-The planning diff is limited to this file and the active-plan index, for a
-single authorized local documentation commit. Future results, cleanup evidence
-and independent Review ID must be recorded here before implementation closeout.
+**Required execution gates pass; implementation independently approved and archived.** Commands, failures,
+green leaves, fixture corrections and input identities are recorded in the
+[execution ledger](../evidence/validated-audit-follow-up/execution-ledger.md).
+Python (722), shared (210), EPUB (720), desktop (913), Node (110), both Rust
+configurations, static checks, browser coverage and default build have their
+scoped green receipts. N1 initially failed its offscreen-target precondition;
+after the bounded readiness replan above, `N1-native-replanned-03` passes the
+unchanged command and every original assertion. The diagnostic run is not its
+acceptance evidence.
+After separate authorization, `L1-lifecycle-authorized-01` passes installation,
+first start, repair and all six silent-option scenarios. Personal data stayed
+outside its deletion scope, while a synthetic pre-existing root exercised the
+real harness restoration. The same retained package was reinstalled; original
+program-file bytes, registration and shortcuts match. Personal data membership,
+main-stream file bytes, sizes, last-write times and attributes match the fresh
+pre-uninstall baseline. Owned recovery roots and native processes are absent.
+This proves the resumed operation's measured restoration, not every Windows
+metadata field or the unexplained earlier coarse-digest transition. No new
+release, clean-host/manual interactive claim or model-quality result is implied.
 
-Planning-only document checks ran in normal local PowerShell outside the sandbox:
+Independent review [VAF-R1-20261028](../evidence/validated-audit-follow-up/review-R1.md)
+returned BLOCKED and identified the missing H13 uninstall deadline. The new
+timeout regression fails before the correction and passes with the bounded
+owned-copy process; the full Windows leaf has been renewed. R1 also requires
+fresh full-spec B1 evidence instead of composing passes across spec identities.
+`B1-browser-final-03` now supplies all 14 passes on the final spec.
+[R2](../evidence/validated-audit-follow-up/review-R2.md) closed the H13 finding
+and B1 gap with no outstanding code findings. The native fixture/readiness
+correction and N1 evidence passed [R3's inspection](../evidence/validated-audit-follow-up/review-final.md),
+which remained blocked by the then-missing L1. The authorized L1, recovery
+evidence and implementation received **APPROVE** in
+[VAF-R4-20261028](../evidence/validated-audit-follow-up/review-R4.md), with no
+outstanding finding or required execution gate. The plan was then archived and
+incoming links maintained. The separate exact archive verdict and identities
+are recorded in [VAF-R5-20261028](../evidence/validated-audit-follow-up/review-R5.md).
+All
+changes remain unstaged and uncommitted. Historical evaluations, authorities,
+corpus, generated tracked files and pre-existing completed plans remain unchanged.
+
+Historical planning-only checks (before implementation authorization) ran in
+normal local PowerShell outside the sandbox:
 
 - `pnpm.cmd check:evidence`: stopped before the guard, exit 1. Repository expects
   pnpm 11.15.1; the current launcher reports 11.25.0. This is environment evidence,

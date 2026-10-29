@@ -226,6 +226,22 @@ FunctionEnd
   ${LABEL}_checked:
 !macroend
 
+; A missing ancestor proves absence. Inspect each existing ancestor before
+; looking beneath it, so a reparse point never supplies false absence evidence.
+!macro CheckPreferencesAncestor PATH LABEL
+  System::Call 'kernel32::GetFileAttributesW(w "${PATH}") i .R1 ?e'
+  Pop $R2
+  StrCmp $R1 -1 ${LABEL}_missing
+  IntOp $R2 $R1 & 0x400
+  StrCmp $R2 0 0 preferences_cleanup_failed
+  IntOp $R2 $R1 & 0x10
+  StrCmp $R2 0 preferences_cleanup_failed ${LABEL}_checked
+  ${LABEL}_missing:
+    StrCmp $R2 2 preferences_cleanup_checked
+    StrCmp $R2 3 preferences_cleanup_checked preferences_cleanup_failed
+  ${LABEL}_checked:
+!macroend
+
 !macro NSIS_HOOK_POSTUNINSTALL
   StrCmp $RemoveChatterboxData "1" 0 chatterbox_data_done
   ; Promotion residue is cleanup-only. Validate every ancestor and child.
@@ -417,4 +433,17 @@ FunctionEnd
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\EBWebView\Default"
   RMDir "$LOCALAPPDATA\com.voxleaf.desktop\EBWebView"
   preferences_data_done:
+  StrCmp $RemovePreferencesAndRecovery "1" 0 preferences_cleanup_checked
+  !insertmacro CheckPreferencesAncestor "$LOCALAPPDATA\com.voxleaf.desktop" preferences_product
+  !insertmacro CheckPreferencesAncestor "$LOCALAPPDATA\com.voxleaf.desktop\EBWebView" preferences_webview
+  !insertmacro CheckPreferencesAncestor "$LOCALAPPDATA\com.voxleaf.desktop\EBWebView\Default" preferences_default
+  StrCpy $R3 "0"
+  !insertmacro CheckOptionalDataAbsent "EBWebView\Default\Local Storage" preferences_storage
+  StrCmp $R3 "0" preferences_cleanup_checked
+  preferences_cleanup_failed:
+    SetErrorLevel 1
+    DetailPrint "Some preferences and recovery data was retained because safe cleanup could not complete."
+    IfSilent preferences_cleanup_checked
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Some preferences and recovery data could not be removed safely. Reinstall VoxLeaf to retry after resolving the file lock, access restriction or unsafe directory."
+  preferences_cleanup_checked:
 !macroend

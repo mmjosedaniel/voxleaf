@@ -95,7 +95,14 @@ function observation(
 }
 
 function narrationSnapshot(
-  phase: "buffering" | "failed" | "paused" | "playing" | "stopped" | undefined,
+  phase:
+    | "buffering"
+    | "complete"
+    | "failed"
+    | "paused"
+    | "playing"
+    | "stopped"
+    | undefined,
   failure?: ProductNarrationFailureCode,
 ): ProductNarrationSnapshot {
   return Object.freeze({
@@ -216,6 +223,52 @@ afterEach(() => {
 });
 
 describe("segment highlight controller", () => {
+  it("VAF H10 retains completed decoration without follow, navigation or settlement authority", () => {
+    const block = paragraph("Lifecycle");
+    const located = locatedBlock(0, block, 9);
+    const mapper = new SemanticDomRangeMapper();
+    const element = document.createElement("p");
+    element.textContent = "Lifecycle";
+    document.body.append(element);
+    const unregister = mapper.registerBlock(element, located);
+    const environment = new ManualHighlightEnvironment();
+    const resume = vi.fn();
+    const callbacks = {
+      navigateToLocator: vi.fn(),
+      settleLocator: vi.fn(),
+      suspendVisualSampling: vi.fn(() => resume),
+    };
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      callbacks,
+      environment,
+    );
+    controller.setRoot(element);
+    const range = sourceRange(located, 0, 9);
+    controller.accept(observation("segment-started", range));
+    controller.accept(observation("segment-completed", range));
+    expect(callbacks.settleLocator).toHaveBeenLastCalledWith(range.end);
+    controller.reconcile(narrationSnapshot("complete"));
+    callbacks.settleLocator.mockClear();
+    callbacks.suspendVisualSampling.mockClear();
+    environment.scrolls.length = 0;
+    environment.range = { top: 140, bottom: 160 };
+    controller.refresh();
+    environment.flush();
+    expect(environment.highlighted?.toString()).toBe("Lifecycle");
+    expect(environment.scrolls).toEqual([]);
+    expect(callbacks.settleLocator).not.toHaveBeenCalled();
+    unregister();
+    controller.refresh();
+    expect(callbacks.navigateToLocator).not.toHaveBeenCalled();
+    expect(callbacks.suspendVisualSampling).not.toHaveBeenCalled();
+    expect(environment.scheduled).toEqual([]);
+    controller.close();
+    mapper.close();
+    element.remove();
+  });
+
   it("highlights and follows one range without changing focus, selection, or publication DOM", () => {
     const block = paragraph("Synthetic audible passage.");
     const located = locatedBlock(0, block, 26);

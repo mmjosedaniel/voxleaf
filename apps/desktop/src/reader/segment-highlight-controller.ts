@@ -54,6 +54,7 @@ interface ActiveSegmentProjection {
   readonly sequence: number;
   readonly sourceRange: LocatorRangeV1;
   navigationRequested: boolean;
+  followEligible: boolean;
 }
 
 function finiteRect(value: {
@@ -297,7 +298,7 @@ export class SegmentHighlightController {
     }
     const key = segmentKey(observation);
     if (observation.kind === "segment-completed") {
-      if (key === this.#activeKey) {
+      if (key === this.#activeKey && this.#active?.followEligible) {
         this.#cancelScheduledSettle?.();
         this.#cancelScheduledSettle = undefined;
         this.#settleActive(observation.sourceRange.end);
@@ -312,6 +313,7 @@ export class SegmentHighlightController {
       sequence: observation.sequence,
       sourceRange: observation.sourceRange,
       navigationRequested: false,
+      followEligible: true,
     };
     this.#activeKey = key;
     this.refresh();
@@ -319,6 +321,10 @@ export class SegmentHighlightController {
 
   public reconcile(snapshot: ProductNarrationSnapshot): void {
     const phase = snapshot.state?.phase;
+    if (phase === "complete" && this.#active !== undefined) {
+      this.#active.followEligible = false;
+      this.#cancelPendingFollow();
+    }
     if (
       snapshot.failure !== undefined ||
       phase === "failed" ||
@@ -359,6 +365,7 @@ export class SegmentHighlightController {
       end.textOffsetCodePoints,
     );
     if (range === undefined || range.collapsed) {
+      if (!active.followEligible) return;
       this.#ensureVisualSamplingSuspended();
       if (!active.navigationRequested) {
         active.navigationRequested = true;
@@ -368,6 +375,13 @@ export class SegmentHighlightController {
     }
     const root = this.#root;
     if (root === undefined) {
+      return;
+    }
+    if (!active.followEligible) {
+      this.#environment.replaceHighlight(
+        SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
+        range,
+      );
       return;
     }
     if (
@@ -445,7 +459,7 @@ export class SegmentHighlightController {
   ): void {
     this.#cancelScheduledSettle = this.#environment.schedule(root, () => {
       this.#cancelScheduledSettle = undefined;
-      if (this.#activeKey !== expectedKey) {
+      if (this.#activeKey !== expectedKey || !this.#active?.followEligible) {
         return;
       }
       const viewport = this.#environment.viewportRect(root);

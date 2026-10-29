@@ -112,6 +112,88 @@ test("CHAT-AUDIT shared fallback, hidden root, unknown language and loaded-sessi
   await expect(narration).toHaveAttribute("data-narration-phase", "idle");
 });
 
+test("VAF optional recheck reconciles the loaded profile and traps keyboard focus while pending", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-vaf.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic first passage.</p><p>Synthetic second passage.</p></body></html>',
+      }),
+    ),
+  });
+  await page.locator('[data-narration-action="play"]').click();
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect(narration).toHaveAttribute("data-narration-profile", /piper/);
+  const settings = await openSettings(page);
+  for (const changed of [false, true]) {
+    await page.evaluate((changed) => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.deferProbe = true;
+      if (changed)
+        state.hostReport.providers.cuda.availableDedicatedMemoryMiB.value = 9216;
+    }, changed);
+    await settings
+      .getByRole("button", {
+        name: "Recheck device compatibility",
+        exact: true,
+      })
+      .click();
+    await expect(
+      settings.getByRole("button", { name: "Check compatibility again" }),
+    ).toBeDisabled();
+    const summary = settings.getByText("Measured profile reasons", {
+      exact: true,
+    });
+    await summary.focus();
+    await page.keyboard.press("Tab");
+    await expect(
+      settings.getByRole("button", { name: "Close Settings" }),
+    ).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(summary).toBeFocused();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").releaseProbe());
+    await expect(
+      settings.getByRole("button", { name: "Check compatibility again" }),
+    ).toBeEnabled();
+    await expect(
+      settings.locator(".hardware-compatibility").first(),
+    ).toHaveAttribute(
+      "data-compatibility-profile",
+      changed ? /chatterbox/ : /piper/,
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      changed ? "idle" : "playing",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-profile",
+      changed ? /chatterbox/ : /piper/,
+    );
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(1);
+  }
+  expect(
+    await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").optionalMutations,
+    ),
+  ).toEqual([]);
+  await closeSettings(page, settings);
+});
+
 for (const paused of [false, true])
   test(`CHAT-AUDIT failed synthesis removes dead controls and supports explicit recovery (paused=${paused})`, async ({
     page,
@@ -635,6 +717,18 @@ test("NLC real worklet retains the tail and natural completion releases manual s
   expect(manual).not.toEqual(heardEnd);
   await page.waitForTimeout(750);
   expect(await savedPosition()).toEqual(manual);
+  // Reflow refreshes the retained final highlight, but must keep manual reading.
+  const settings = await openSettings(page);
+  await settings.getByLabel("Text size").selectOption("large");
+  await closeSettings(page, settings);
+  await page.setViewportSize({ width: 780, height: 520 });
+  await expect
+    .poll(async () => (await savedPosition())?.anchor.anchorIndex)
+    .toBe(0);
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollTop))
+    .toBeLessThan(60);
+  expect((await savedPosition())?.anchor).toEqual(manual.anchor);
   await page.reload();
   await page.getByLabel("Open a book").setInputFiles(file);
   await expect(page.getByRole("status")).toHaveText(
@@ -840,6 +934,7 @@ async function installSyntheticService(
   holdFinalCompletion = false,
   auditWorkletFIFO = false,
   quickStart = false,
+  optionalRecheck = false,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -848,10 +943,24 @@ async function installSyntheticService(
       holdFinalCompletion,
       auditWorkletFIFO,
       quickStart,
+      optionalRecheck,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
       sessionStorage.setItem("nlc-initialized", "true");
+      if (optionalRecheck) {
+        Object.assign(hostReport, {
+          cudaComputeCapability: { status: "known", major: 12, minor: 0 },
+        });
+        localStorage.setItem(
+          "voxleaf.tts.profile-preference",
+          JSON.stringify({
+            schemaVersion: 1,
+            profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+          }),
+        );
+        hostReport.providers.cuda.availableDedicatedMemoryMiB.value = 0;
+      }
       if (!naturalCompletion && !quickStart)
         localStorage.setItem(
           "voxleaf.narration.start-preference",
@@ -864,6 +973,9 @@ async function installSyntheticService(
       const observations = {
         hostReport,
         probes: 0,
+        deferProbe: false,
+        releaseProbe: () => {},
+        optionalMutations: [] as string[],
         audioFrames: 24_000,
         holdAfter: Number.MAX_SAFE_INTEGER,
         calls: 0,
@@ -1081,7 +1193,40 @@ async function installSyntheticService(
             switch (command) {
               case "detect_host_profile_compatibility":
                 observations.probes += 1;
+                if (observations.deferProbe)
+                  await new Promise<void>((resolve) => {
+                    observations.releaseProbe = () => {
+                      observations.deferProbe = false;
+                      resolve();
+                    };
+                  });
                 return observations.hostReport;
+              case "optional_chatterbox_snapshot":
+                if (!optionalRecheck) throw "tts-service-unavailable";
+                return {
+                  profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+                  state: "failed",
+                  failure: "tts-optional-profile-incompatible-host",
+                  downloadedBytes: 0,
+                  downloadBytes: null,
+                  installedBytes: null,
+                  temporaryBytes: null,
+                  minimumFreeBytes: null,
+                  coldStartSeconds: null,
+                  minimumLogicalProcessors: 8,
+                  minimumTotalRamMiB: 24_576,
+                  minimumAvailableRamMiB: 4_096,
+                  measuredPeakDedicatedVramMiB: 3_644,
+                  minimumTotalDedicatedVramMiB: 5_632,
+                  minimumAvailableDedicatedVramMiB: 4_668,
+                  recommendedTotalDedicatedVramMiB: 7_680,
+                  licenseSummary: "Synthetic fixture",
+                };
+              case "select_optional_chatterbox":
+              case "download_optional_chatterbox":
+              case "remove_optional_chatterbox":
+                observations.optionalMutations.push(command);
+                throw "tts-service-unavailable";
               case "tts_profile_configuration_available":
                 return true;
               case "exact_tts_demo_available":
@@ -1159,6 +1304,7 @@ async function installSyntheticService(
       holdFinalCompletion,
       auditWorkletFIFO,
       quickStart,
+      optionalRecheck,
     },
   );
 }

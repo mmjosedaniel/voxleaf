@@ -19,7 +19,27 @@ from benchmarks.harness import (
     BenchmarkHarness,
 )
 from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
-from benchmarks.process_fake import ProcessFakeFactory
+from benchmarks.process_fake import ProcessFakeAdapter, ProcessFakeFactory
+
+
+class _VafDiagnosticAdapter(ProcessFakeAdapter):
+    def load(self) -> None:
+        super().load()
+        print("x" * 65_537, end="")
+        print("fragmented-", end="")
+        print("canary", end="")
+
+
+def test_vaf_fragmented_diagnostic_propagates_through_worker_and_cleans_up() -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        _VafDiagnosticAdapter, forbidden_values=("fragmented-canary",)
+    )
+    try:
+        with pytest.raises(AdapterOperationError, match="privacy"):
+            adapter.load()
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
 
 
 def _request(request_id: str = "process-request") -> GenerationRequest:

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Final, cast
 
+import pytest
 from jsonschema import Draft202012Validator
 
 from benchmarks.adapters.corrective_v9 import (
@@ -182,3 +183,18 @@ def test_isolated_worker_import_does_not_require_service_schema_validator() -> N
         timeout=20,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.parametrize("failure_code", [None, "privacy", "cleanup-failed", "crash"])
+@pytest.mark.parametrize("has_run", [True, False])
+def test_vaf_audits_require_successful_observation(failure_code: str | None, has_run: bool) -> None:
+    raw = _raw_payload(
+        receipt=_receipt(),
+        run=_run() if has_run else None,
+        minimum_available_ram_bytes=8 * 1024**3,
+        failure_code=failure_code,
+    )
+    audits = cast(dict[str, bool], raw["audits"])
+    assert audits["privacy"] == (has_run and failure_code is None)
+    assert audits["cleanup"] == (has_run and failure_code is None)
+    assert raw["decision"] == {"state": "pending-maintainer-decision"}

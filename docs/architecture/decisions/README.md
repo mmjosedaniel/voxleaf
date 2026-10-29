@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0067: Conservative English titles and Unicode marks](ADR-0067-conservative-english-titles-and-unicode-marks.md): prospective narration clarification; current validation is tracked in the validated audit follow-up plan.
+
 - [ADR-0065: Runtime admission, ownership and narration boundaries](ADR-0065-validated-runtime-and-narration-boundaries.md): exact CUDA/free-memory facts, private child loader, pending-start ownership, episode metrics and conservative EPUB/narration corrections; validation is in its active plan.
 
 - [ADR-0063: Default CUDA admission and Celsius numeric boundaries](ADR-0063-default-cuda-and-celsius-boundaries.md).

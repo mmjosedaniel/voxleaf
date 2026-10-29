@@ -273,7 +273,6 @@ def generate_quality_session(
     audio_root = quality / "audio"
     audio_root.mkdir(parents=True)
     sample_ids = [secrets.token_hex(16) for _ in corpus.performance_order]
-    secrets.SystemRandom().shuffle(sample_ids)
     samples: list[dict[str, str]] = []
     adapter = PiperEnglishAdapter(receipt.profile, receipt.configuration)
     sensitive_values = (
@@ -321,6 +320,7 @@ def generate_quality_session(
     if total_audio_bytes > MAXIMUM_SESSION_AUDIO_BYTES:
         shutil.rmtree(quality, ignore_errors=True)
         _fail("audio-limit")
+    secrets.SystemRandom().shuffle(samples)
     _write_json(
         quality / "private-map.json",
         {

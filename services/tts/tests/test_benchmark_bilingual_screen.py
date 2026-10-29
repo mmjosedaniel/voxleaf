@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
+
+import pytest
 
 from benchmarks.adapters.qwen_v8 import (
     QwenV8Configuration,
     load_qwen_v8_profile,
 )
-from benchmarks.bilingual_screen import ScreenPreflightReceipt, _machine_failures
+from benchmarks.bilingual_screen import ScreenPreflightReceipt, _machine_failures, _raw_payload
 from benchmarks.bilingual_screen_result import (
     build_preflight_rejection_summary,
     build_rejected_summary,
@@ -167,7 +169,12 @@ def test_machine_rejection_keeps_quality_not_admitted_and_content_safe() -> None
     }
 
 
-def test_cancellation_failure_does_not_relabel_completed_generations() -> None:
+@pytest.mark.parametrize("failure_code", [None, "privacy", "cleanup-failed", "crash"])
+@pytest.mark.parametrize("has_run", [True, False])
+def test_vaf_audits_and_cancellation_failure_do_not_relabel_completed_generations(
+    failure_code: str | None,
+    has_run: bool,
+) -> None:
     profile = load_qwen_v8_profile(REPOSITORY_ROOT, QWEN_SERENA_CANDIDATE_ID)
     receipt = ScreenPreflightReceipt(
         expected_commit_sha="1" * 40,
@@ -256,6 +263,20 @@ def test_cancellation_failure_does_not_relabel_completed_generations() -> None:
 
     assert "cancellation" in failures
     assert "first-attempt-failure" not in failures
+    raw = _raw_payload(
+        receipt=receipt,
+        run=run if has_run else None,
+        minimum_available_ram_bytes=8 * 1024**3,
+        failure_code=failure_code,
+    )
+    audits = cast(dict[str, bool], raw["audits"])
+    assert audits["privacy"] == (has_run and failure_code is None)
+    assert audits["cleanup"] == (has_run and failure_code is None)
+    summary = build_rejected_summary(raw)
+    gates = cast(dict[str, str], summary["gates"])
+    assert gates["privacy"] == ("pass" if audits["privacy"] else "fail")
+    assert gates["cleanup"] == ("pass" if audits["cleanup"] else "fail")
+    assert summary["status"] == "rejected"
 
 
 def test_preflight_model_api_rejection_records_no_fabricated_measurements() -> None:
