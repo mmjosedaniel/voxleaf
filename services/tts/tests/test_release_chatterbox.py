@@ -7,6 +7,7 @@ import shutil
 import zipfile
 import zlib
 from pathlib import Path
+from urllib import request as urllib_request
 
 import pytest
 
@@ -41,6 +42,51 @@ from voxleaf_tts.release_chatterbox import (
     write_successor_authority,
     write_successor_source_manifest,
 )
+
+
+@pytest.mark.parametrize("scenario", ["cache-file", "mkdir-denied", "cleanup-denied"])
+def test_saf_download_preparation_preserves_classified_failure_without_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str
+) -> None:
+    cache = tmp_path / "cache"
+    if scenario == "cache-file":
+        cache.write_bytes(b"unrelated-cache-file")
+    else:
+        original_mkdir = Path.mkdir
+
+        def mkdir(path: Path, *args: object, **kwargs: object) -> None:
+            if path == cache:
+                raise PermissionError("synthetic preparation denial")
+            original_mkdir(path, *args, **kwargs)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(Path, "mkdir", mkdir)
+        if scenario == "cleanup-denied":
+            original_unlink = Path.unlink
+
+            def unlink(path: Path, *args: object, **kwargs: object) -> None:
+                if path.parent == cache:
+                    raise PermissionError("synthetic cleanup denial")
+                original_unlink(path, *args, **kwargs)  # type: ignore[arg-type]
+
+            monkeypatch.setattr(Path, "unlink", unlink)
+
+    def no_download(*args: object, **kwargs: object) -> None:
+        pytest.fail("download attempted before preparation succeeded")
+
+    monkeypatch.setattr(urllib_request, "urlopen", no_download)
+    with pytest.raises(ReleaseChatterboxError, match="^chatterbox-package-download-failed$"):
+        release_chatterbox._download_artifact(
+            {
+                "filename": "synthetic.zip",
+                "sha256": "a" * 64,
+                "sizeBytes": 1,
+                "url": "https://invalid.example/synthetic.zip",
+            },
+            cache,
+        )
+    if scenario == "cache-file":
+        assert cache.read_bytes() == b"unrelated-cache-file"
+
 
 # Exact historical v3 raw blobs; self-contained unit authority, never live Git.
 _HISTORICAL_BLOBS = (

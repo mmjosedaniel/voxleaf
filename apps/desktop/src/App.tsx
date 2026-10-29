@@ -237,6 +237,7 @@ export function App({
     activeRestoration?.status === "ready" ? activeRestoration : undefined;
   const readyRestorationResult = readyRestoration?.result;
   const narrationCloseBarrier = useRef(Promise.resolve(true));
+  const profileSelectionOperation = useRef(0);
   const [narrationHandoff, setNarrationHandoff] = useState<
     "ready" | "pending" | "failed"
   >("ready");
@@ -490,6 +491,7 @@ export function App({
     const currentCleanup = { superseded: false };
     applicationCleanupToken.current = currentCleanup;
     return () => {
+      profileSelectionOperation.current += 1;
       queueMicrotask(() => {
         if (currentCleanup.superseded) {
           return;
@@ -517,6 +519,7 @@ export function App({
     }
 
     setSettingsOpen(false);
+    profileSelectionOperation.current += 1;
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
     containNarrationForReplacement();
@@ -632,6 +635,7 @@ export function App({
     [readyPublication, readyPublicationSequence],
   );
   const handleRenderingFailure = useCallback((): void => {
+    profileSelectionOperation.current += 1;
     readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
     containNarrationForReplacement();
@@ -643,17 +647,26 @@ export function App({
     readerPositionRestoreCoordinator,
   ]);
   const handleHardwareProfileSelection = useCallback(
-    (profileId: string): Promise<boolean> =>
-      narrationSettingsActions.selectProfile(
+    (profileId: string): Promise<boolean> => {
+      const operation = ++profileSelectionOperation.current;
+      const publication = readyPublication;
+      return narrationSettingsActions.selectProfile(
         profileId,
         hardwareCompatibilityCoordinator,
         narrationCoordinator,
         optionalChatterbox,
-      ),
+        () =>
+          profileSelectionOperation.current === operation &&
+          readerLifecycle.state.status === "ready" &&
+          readerLifecycle.state.publication === publication,
+      );
+    },
     [
       hardwareCompatibilityCoordinator,
       narrationCoordinator,
       optionalChatterbox,
+      readyPublication,
+      readerLifecycle,
     ],
   );
   const handleChatterboxRemoval = useCallback(

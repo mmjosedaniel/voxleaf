@@ -14,14 +14,139 @@ async function fixtures() {
     buildReaderRasterEpubFixture(options: {
       delayedViewport: boolean;
     }): Promise<Uint8Array>;
+    syntheticStaticPngBytes(): Uint8Array;
     buildMinimalEpubFixture(options: {
       chapterDocument: string;
       packageDocument?: string;
       navigationDocument?: string;
-      additionalEntries?: { name: string; content: string }[];
+      additionalEntries?: { name: string; content: string | Uint8Array }[];
     }): Promise<Uint8Array>;
   }>;
 }
+
+test("SAF-09 an obsolete Chatterbox selection cannot replace B's playing Piper owner", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  const open = async (book: string) =>
+    page.getByLabel("Open a book").setInputFiles({
+      name: `synthetic-saf-${book}.epub`,
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic ${book}</title></head><body>${`<p>Synthetic book ${book} passage with quiet paths and ordinary details.</p>`.repeat(60)}</body></html>`,
+        }),
+      ),
+    });
+  await open("A");
+  const settings = await openSettings(page);
+  await settings.getByRole("radio", { name: /Chatterbox/ }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").optionalSelectionPending,
+      ),
+    )
+    .toBe(true);
+  await closeSettings(page, settings);
+  await open("B");
+  await expect(page.locator(".semantic-document p").first()).toContainText(
+    "book B",
+  );
+  await page.locator('[data-narration-action="play"]').click();
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  const piper = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+  await expect(narration).toHaveAttribute("data-narration-profile", piper);
+  const owner = () =>
+    page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return {
+        service: state.service,
+        generation: state.lastGeneration,
+        shutdowns: state.shutdownCalls,
+        preference: localStorage.getItem("voxleaf.tts.profile-preference"),
+      };
+    });
+  const before = await owner();
+  expect(before.generation).not.toBe("");
+  await page.evaluate(async () => {
+    Reflect.get(globalThis, "__rnb").releaseOptionalSelection();
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").optionalSelectionPending,
+      ),
+    )
+    .toBe(false);
+  expect(await owner()).toEqual(before);
+  await expect(narration).toHaveAttribute("data-narration-profile", piper);
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
+test("SAF-15 decorative ready and unavailable rasters have no Chromium image role", async ({
+  page,
+}) => {
+  const fixture = await fixtures();
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-saf-decorative.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await fixture.buildMinimalEpubFixture({
+        packageDocument:
+          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:saf-decorative</dc:identifier><dc:title>Synthetic decorative images</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="image" href="images/cover.png" media-type="image/png"/><item id="broken" href="images/broken.png" media-type="image/png"/></manifest><spine><itemref idref="chapter"/></spine></package>',
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic images</title></head><body><p>Decorative <img src="../images/cover.png" alt=""/> and unavailable <img src="../images/broken.png" alt="  "/>.</p><p>Missing <img src="../images/cover.png"/> and named <img src="../images/cover.png" alt="Synthetic named image"/>.</p></body></html>',
+        additionalEntries: [
+          {
+            name: "EPUB/images/cover.png",
+            content: fixture.syntheticStaticPngBytes(),
+          },
+          { name: "EPUB/images/broken.png", content: Uint8Array.of(0, 1, 2) },
+        ],
+      }),
+    ),
+  });
+  const reader = page.locator(".semantic-document");
+  await expect(reader.locator("img")).toHaveCount(3);
+  await expect(reader.locator('img[alt=""]')).toHaveCount(1);
+  await expect(reader.locator(".semantic-raster-unavailable")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+  await expect(reader.getByRole("img")).toHaveCount(2);
+  await expect(
+    reader.getByRole("img", { name: "Publication image", exact: true }),
+  ).toBeVisible();
+  await expect(
+    reader.getByRole("img", { name: "Synthetic named image", exact: true }),
+  ).toBeVisible();
+  expect(
+    await reader
+      .locator('img[alt=""]')
+      .evaluate((image) => (image as HTMLImageElement).naturalWidth),
+  ).toBe(1);
+});
 
 test("RAC-01 delayed handoff starts B at the passage observed during A shutdown", async ({
   page,
@@ -645,6 +770,18 @@ test("SAC-01 completed materialized narration releases chapter navigation withou
   await page.locator('[data-narration-action="play"]').click();
   const narration = page.locator(".product-narration");
   await expect(narration).toHaveAttribute("data-narration-phase", "complete");
+  const completedSettings = await openSettings(page);
+  await completedSettings
+    .getByRole("radio", { name: /Prepared playback/ })
+    .check();
+  await expect(
+    completedSettings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeChecked();
+  await completedSettings.getByRole("radio", { name: /Quick start/ }).check();
+  await expect(
+    completedSettings.getByRole("radio", { name: /Quick start/ }),
+  ).toBeChecked();
+  await closeSettings(page, completedSettings);
   const highlightText = () =>
     page.evaluate(() =>
       Array.from(
@@ -1247,6 +1384,7 @@ async function installSyntheticService(
   auditWorkletFIFO = false,
   quickStart = false,
   optionalRecheck = false,
+  optionalSelection = false,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -1256,10 +1394,23 @@ async function installSyntheticService(
       auditWorkletFIFO,
       quickStart,
       optionalRecheck,
+      optionalSelection,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
       sessionStorage.setItem("nlc-initialized", "true");
+      if (optionalSelection) {
+        Object.assign(hostReport, {
+          cudaComputeCapability: { status: "known", major: 12, minor: 0 },
+        });
+        localStorage.setItem(
+          "voxleaf.tts.profile-preference",
+          JSON.stringify({
+            schemaVersion: 1,
+            profileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+          }),
+        );
+      }
       if (optionalRecheck) {
         Object.assign(hostReport, {
           cudaComputeCapability: { status: "known", major: 12, minor: 0 },
@@ -1288,6 +1439,9 @@ async function installSyntheticService(
         deferProbe: false,
         releaseProbe: () => {},
         optionalMutations: [] as string[],
+        optionalSelectionPending: false,
+        releaseOptionalSelection: () => {},
+        lastGeneration: "",
         audioFrames: 24_000,
         holdAfter: Number.MAX_SAFE_INTEGER,
         calls: 0,
@@ -1499,6 +1653,25 @@ async function installSyntheticService(
         cancellationContainment:
           "identity-invalidation-then-worker-termination",
       });
+      const installedOptional = () => ({
+        profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+        state: "installed",
+        failure: null,
+        downloadedBytes: 0,
+        downloadBytes: 1_073_741_824,
+        installedBytes: 2_147_483_648,
+        temporaryBytes: 3_221_225_472,
+        minimumFreeBytes: 4_294_967_296,
+        coldStartSeconds: 31,
+        minimumLogicalProcessors: 8,
+        minimumTotalRamMiB: 24_576,
+        minimumAvailableRamMiB: 4_096,
+        measuredPeakDedicatedVramMiB: 3_644,
+        minimumTotalDedicatedVramMiB: 5_632,
+        minimumAvailableDedicatedVramMiB: 4_668,
+        recommendedTotalDedicatedVramMiB: 7_680,
+        licenseSummary: "Synthetic fixture",
+      });
       Object.assign(window, {
         __TAURI_INTERNALS__: {
           invoke: async (
@@ -1517,6 +1690,7 @@ async function installSyntheticService(
                   });
                 return observations.hostReport;
               case "optional_chatterbox_snapshot":
+                if (optionalSelection) return installedOptional();
                 if (!optionalRecheck) throw "tts-service-unavailable";
                 return {
                   profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
@@ -1538,6 +1712,17 @@ async function installSyntheticService(
                   licenseSummary: "Synthetic fixture",
                 };
               case "select_optional_chatterbox":
+                if (optionalSelection) {
+                  observations.optionalMutations.push(command);
+                  observations.optionalSelectionPending = true;
+                  await new Promise<void>((resolve) => {
+                    observations.releaseOptionalSelection = resolve;
+                  });
+                  observations.optionalSelectionPending = false;
+                  return installedOptional();
+                }
+                observations.optionalMutations.push(command);
+                throw "tts-service-unavailable";
               case "download_optional_chatterbox":
               case "remove_optional_chatterbox":
                 observations.optionalMutations.push(command);
@@ -1568,6 +1753,7 @@ async function installSyntheticService(
                 ];
               case "synthesize_tts_segment": {
                 const segment = args!.segment;
+                observations.lastGeneration = segment.generationId;
                 if (observations.prepared.length < 16)
                   observations.prepared.push({
                     text: segment.text,
@@ -1628,6 +1814,7 @@ async function installSyntheticService(
       auditWorkletFIFO,
       quickStart,
       optionalRecheck,
+      optionalSelection,
     },
   );
 }

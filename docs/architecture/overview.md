@@ -1,5 +1,17 @@
 # Architecture overview
 
+The [static audit follow-up](../plans/completed/static-audit-follow-up.md) keeps
+profile-selection authority with the publication that requested it, including
+the persistence boundary. A new Play observes fresh admission before resolving
+its definitive profile; loaded-session continuation never admits a new child.
+Preparation carries only bounded lexical context across continuations, with
+language/role provenance and existing work limits. Piper receives unchanged
+canonical text through a voice-local literal espeak route serialized with the
+pinned engine's shared espeak state. Decorative empty alternative text remains
+empty through projection, loading, rendering and failure. These corrections
+preserve the canonical system diagram's component and persistence boundaries;
+their current validation status is recorded in the plan's ledger.
+
 Current public narration preparation shares ADR-0060's primary-start recovery
 authority with locator resolution, while exact auxiliary starts remain valid.
 Unknown starts with no addressable primary content fail as `invalid-start`.

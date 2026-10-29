@@ -738,6 +738,7 @@ fn owned_path_present(path: &Path) -> bool {
 
 fn retained_package_exists(root: &Path) -> bool {
     owned_path_present(&promotion_backup_root(root))
+        || owned_path_present(&profile_root(root).join("cache"))
         || owned_path_present(&retained_v6_package_root(root))
         || owned_path_present(&retained_v5_package_root(root))
         || owned_path_present(&retained_v3_package_root(root))
@@ -1671,6 +1672,7 @@ fn copy_download_response(
     on_progress: impl Fn(u64),
     mut diagnostic: DownloadAttempt<'_>,
 ) -> Result<(), OptionalProfileError> {
+    check_acquisition_cancellation(Some(cancelled))?;
     diagnostic.response(response.status(), response.content_length())?;
     let filename = destination
         .file_name()

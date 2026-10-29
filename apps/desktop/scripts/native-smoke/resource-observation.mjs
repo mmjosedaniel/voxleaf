@@ -1,9 +1,110 @@
 import { execFile as executeFile } from "node:child_process";
+import { Buffer } from "node:buffer";
 import { readdir as readDirectory } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { URL } from "node:url";
 import { assertNativeSmokeInvariants } from "../native-smoke-invariants.mjs";
+
+function inspectOwnedProcesses(script) {
+  return new Promise((resolve, reject) => {
+    executeFile(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", script],
+      { encoding: "utf8", timeout: 15_000, windowsHide: true },
+      (error, stdout) => {
+        if (error !== null)
+          reject(
+            new Error("Native owned-process cleanup could not be verified."),
+          );
+        else {
+          try {
+            resolve(JSON.parse(stdout));
+          } catch {
+            reject(
+              new Error("Native owned-process cleanup could not be verified."),
+            );
+          }
+        }
+      },
+    );
+  });
+}
+
+function encodedIdentities(records) {
+  return Buffer.from(JSON.stringify(records), "utf16le").toString("base64");
+}
+
+// Used only for this runner's captured child tree. Names or numeric PIDs alone
+// never authorize termination; a freshly opened handle must match both fields.
+export async function captureOwnedProcessTree(
+  rootProcessId,
+  previous = [],
+  inspect = inspectOwnedProcesses,
+) {
+  if (!Number.isSafeInteger(rootProcessId) || rootProcessId <= 0) {
+    throw new Error("Native owned-process cleanup could not be verified.");
+  }
+  const records = await inspect(
+    [
+      "$ErrorActionPreference='Stop'",
+      `$known=ConvertFrom-Json -InputObject ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedIdentities(previous)}')))`,
+      "$all=@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,CreationDate)",
+      "$owned=[Collections.Generic.Dictionary[int,object]]::new()",
+      "foreach($record in $known) { if($null -ne $record.pid) {$owned[[int]$record.pid]=$record} }",
+      "$pending=[Collections.Generic.Queue[object]]::new()",
+      `$roots=@($all | Where-Object {[int]$_.ProcessId -eq ${rootProcessId}}); if($roots.Count -ne 1 -or $roots[0].CreationDate -isnot [DateTime]) {throw 'root identity unavailable'}; $pending.Enqueue(@{pid=${rootProcessId};depth=0;created=$roots[0].CreationDate.ToUniversalTime().Ticks})`,
+      "$visited=[Collections.Generic.HashSet[int]]::new()",
+      "while($pending.Count -gt 0) {",
+      "$candidate=$pending.Dequeue(); $number=[int]$candidate.pid; if(-not $visited.Add($number)) {continue}",
+      "$rows=@($all | Where-Object {[int]$_.ProcessId -eq $number}); if($rows.Count -ne 1) {throw 'identity ambiguous'}",
+      "$process=Get-Process -Id $number -ErrorAction SilentlyContinue; if($null -eq $process) {throw 'identity unavailable'}",
+      "try {",
+      "$null=$process.Handle; $createdTicks=$process.StartTime.ToUniversalTime().Ticks; $created=$createdTicks.ToString(); $executable=$process.Path",
+      // CIM CreationDate has microsecond precision; StartTime retains 100-ns
+      // ticks. Compare the exact integer microsecond interval, not rounded
+      // floating-point timestamps or a permissive wall-clock tolerance.
+      "if(($createdTicks - ($createdTicks % 10)) -ne [long]$candidate.created) {throw 'identity changed'}",
+      "if($null -ne $candidate.parentCreated -and $createdTicks -lt [long]$candidate.parentCreated) {continue}",
+      "if([string]::IsNullOrEmpty($executable)) {throw 'identity unavailable'}",
+      "if($owned.ContainsKey($number) -and ($owned[$number].created -ne $created -or $owned[$number].executable -ne $executable)) {throw 'identity changed'}",
+      "$owned[$number]=@{pid=$number;created=$created;executable=$executable;depth=[int]$candidate.depth}",
+      "foreach($child in $all) {if([int]$child.ParentProcessId -eq $number) {if($child.CreationDate -isnot [DateTime]) {throw 'ancestry unavailable'}; $childCreated=$child.CreationDate.ToUniversalTime().Ticks; if(($childCreated + 9) -lt $createdTicks) {continue}; $pending.Enqueue(@{pid=[int]$child.ProcessId;depth=([int]$candidate.depth+1);created=$childCreated;parentCreated=$createdTicks})}}",
+      "} finally {$process.Dispose()}",
+      "}",
+      "ConvertTo-Json -InputObject @($owned.Values) -Compress",
+    ].join("; "),
+  );
+  if (
+    !Array.isArray(records) ||
+    !records.every(
+      (record) =>
+        Number.isSafeInteger(record.pid) &&
+        record.pid > 0 &&
+        typeof record.created === "string" &&
+        typeof record.executable === "string" &&
+        Number.isSafeInteger(record.depth),
+    ) ||
+    (previous.length === 0 &&
+      !records.some((record) => record.pid === rootProcessId))
+  ) {
+    throw new Error("Native owned-process cleanup could not be verified.");
+  }
+  return records;
+}
+
+export async function terminateOwnedProcesses(records) {
+  const result = await inspectOwnedProcesses(
+    [
+      "$ErrorActionPreference='Stop'",
+      `$known=ConvertFrom-Json -InputObject ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedIdentities(records)}')))`,
+      "foreach($record in ($known | Sort-Object depth -Descending)) { $process=Get-Process -Id ([int]$record.pid) -ErrorAction SilentlyContinue; if($null -eq $process){continue}; try {$null=$process.Handle; if($process.StartTime.ToUniversalTime().Ticks.ToString() -eq $record.created -and $process.Path -eq $record.executable){$process.Kill(); if(-not $process.WaitForExit(5000)){throw 'exit uncertain'}}} finally {$process.Dispose()} }",
+      "[Console]::Out.Write('true')",
+    ].join("; "),
+  );
+  if (result !== true)
+    throw new Error("Native owned-process cleanup could not be verified.");
+}
 
 export function createNativeResourceObservation({
   assert,
@@ -15,10 +116,13 @@ export function createNativeResourceObservation({
   now = () => Date.now(),
   setInterval = (...args) => globalThis.setInterval(...args),
   clearInterval = (timer) => globalThis.clearInterval(timer),
+  signal = () => undefined,
 }) {
+  const activeObservations = new Set();
   function executeText(file, args) {
-    return new Promise((resolve, reject) => {
-      execFile(file, args, { encoding: "utf8" }, (error, stdout) => {
+    const pending = new Promise((resolve, reject) => {
+      let child;
+      const finish = (error, stdout) => {
         if (error !== null) {
           reject(
             new Error("Native reader performance metrics were unavailable."),
@@ -26,8 +130,33 @@ export function createNativeResourceObservation({
           return;
         }
         resolve(stdout);
-      });
+      };
+      child = execFile(
+        file,
+        args,
+        {
+          encoding: "utf8",
+          windowsHide: true,
+          timeout: INTERACTION_TIMEOUT_MS,
+          signal: signal(),
+        },
+        (error, stdout) => {
+          if (
+            error?.code === "ABORT_ERR" &&
+            child?.exitCode === null &&
+            child?.signalCode === null
+          ) {
+            child.once("close", () => finish(error, stdout));
+          } else finish(error, stdout);
+        },
+      );
     });
+    activeObservations.add(pending);
+    void pending.then(
+      () => activeObservations.delete(pending),
+      () => activeObservations.delete(pending),
+    );
+    return pending;
   }
 
   function rounded(value) {
@@ -412,6 +541,9 @@ export function createNativeResourceObservation({
   }
 
   return {
+    async settleObservations() {
+      await Promise.allSettled([...activeObservations]);
+    },
     rounded,
     percentile95,
     generatedAudioFileCount,

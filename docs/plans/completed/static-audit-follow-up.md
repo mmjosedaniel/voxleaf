@@ -7,12 +7,19 @@ responsibility-preserving changes and a deduplicated validation schedule.
 The IDs below preserve their order in the audit, prefixed `SAF` to distinguish
 them from completed SAC, VAF, VCA and RAC work.
 
-**Planning only. Implementation and its validation have not started.** The
-current authorization is to write this ExecPlan, create
-`codex/static-audit-follow-up`, and commit its documentation. It does not
-authorize executing the plan, publishing a release, pushing, or opening a PR.
-Implementation requires a subsequent instruction. Future code commits also
-need their own authorization; this documentation commit is not that authority.
+**Execution authorized on 2026-10-29.** The user's subsequent instruction
+authorizes implementation and necessary validation through independent
+acceptance. It does not authorize commit, push, PR, merge or publication.
+The [execution ledger](../evidence/static-audit-follow-up/execution-ledger.md)
+records M0 identities, exact mutable paths, missing regressions, gate choices,
+original receipts, cleanup and current results.
+
+**Completed on 2026-10-29.** All sixteen corrections and their required host
+validation pass. [SAF-R2-20261029](../evidence/static-audit-follow-up/review-R2.md)
+approves implementation and scoped current-task evidence reuse after resolving
+R1's process-ownership finding. The separate archive assessment is
+[SAF-R3-20261029](../evidence/static-audit-follow-up/review-R3.md), outside its
+own manifest. Work remains unstaged and uncommitted.
 
 ## User-visible outcome
 
@@ -180,7 +187,10 @@ regenerate Chatterbox v7 source/acquisition/runtime authority for this patch.
 
 ### M0: Authorize execution and freeze the evidence/gate map
 
-**Status: not started.** After explicit implementation authorization, recheck
+**Status: complete.** Entry branch/HEAD/index/worktree and original input
+identities are captured in the ledger before production edits. Final Route B
+and one full Python suite are selected; no historical PASS is reused.
+After explicit implementation authorization, recheck
 HEAD, worktree/index, instructions and tool configuration. Preserve unrelated
 work. Close exact source/test/generated paths and capture original identities
 and discovered membership before editing. Start an execution ledger under
@@ -201,7 +211,9 @@ authorized merely by this plan.
 
 ### M1: Reader, preparation and literal Piper corrections
 
-**Status: not started.** Apply U1/U2/U3 in small reviewable changes, with one
+**Status: implemented; directed regressions pass.** U1/U2/U3 receipts and original
+failures are retained in the ledger. Combined/browser/core acceptance remains M3.
+Apply U1/U2/U3 in small reviewable changes, with one
 writer for overlapping files. Important missing regressions:
 
 - Complete-mode editing; active/persistence/recovery controls remain disabled.
@@ -224,7 +236,9 @@ finding. Keep final integration/host acceptance pending until M3.
 
 ### M2: Optional lifecycle and maintainer tools
 
-**Status: not started.** Apply U4/U5/U6 with bounded synthetic failure fixtures:
+**Status: implemented; directed regressions pass.** U4/U5/U6 source is frozen
+for M3. U5's original observer failures and diagnosed recovery are retained in
+the ledger. Apply U4/U5/U6 with bounded synthetic failure fixtures:
 
 - Separately test missing-driver rejection before backup, and asynchronous
   launch failure after prerequisites passed and a synthetic backup exists.
@@ -259,7 +273,13 @@ frozen scorecards and generated audio are not required fixtures.
 
 ### M3: One final integration batch and independent acceptance
 
-**Status: not started.** Finish cheap directed checks and static checks before
+**Status: complete.** Independent R2 approves the corrected implementation and
+current-task evidence. Review identified
+one U5 process ownership defect; its correction, directed red/green cases, 49
+affected Node checks and renewed native cleanup pass as recorded in the ledger.
+Fast checks,
+the single regenerated Piper core, final suites, browser/native validation and
+owned cleanup pass. Finish cheap directed checks and static checks before
 core regeneration. Regenerate the core once, then run final affected suite
 leaves against the final inputs. Browser hooks/builds precede the final native
 build; native gates use that identified executable, without a wrapper rebuild.
@@ -282,7 +302,8 @@ proof without importing refactor-only per-file ceremony or authority.
 Every future test/validation/build command runs from repository-root normal
 local PowerShell **outside the managed sandbox**. Commands are existing scripts
 or scoped invocations of their configured Vitest, Node, pytest and Cargo runners.
-The planning turn executes no implementation tests or benchmarks.
+The original planning turn executed no implementation tests or benchmarks;
+current execution is recorded separately in the ledger.
 
 ### Evidence actually inspected during planning
 
@@ -433,10 +454,11 @@ the full portfolio. Do not use a time budget to skip an applicable requirement.
   spawn-error regression and the narrow download-cancellation acceptance.
 - [x] 2026-10-29: Documentation guard, whitespace and relative-link inspection
   pass in local PowerShell outside the sandbox. No implementation/test executed.
-- [ ] M0: Subsequent implementation authorization, closed inputs and gate ledger.
-- [ ] M1: Reader/preparation/Piper corrections and directed regressions.
-- [ ] M2: Optional lifecycle/tool corrections and directed regressions.
-- [ ] M3: Combined host validation, cleanup, independent APPROVE and archive.
+- [x] M0: Subsequent implementation authorization, clean expected HEAD/index,
+  closed inputs/identities, missing regressions and gate ledger; Route B selected.
+- [x] M1: Reader/preparation/Piper corrections and directed regressions.
+- [x] M2: Optional lifecycle/tool corrections and directed regressions.
+- [x] M3: Combined host validation, cleanup, independent R2 APPROVE and archive.
 
 ## Discoveries and decisions
 
@@ -448,14 +470,23 @@ the full portfolio. Do not use a time budget to skip an applicable requirement.
   separate preceding `build` would duplicate it. Preserve generation order.
 - Core evidence cannot be carried over after changing its copied adapter;
   frozen Chatterbox v7 need not be rebuilt for a live Piper-only change.
-- This documentation-only task is exempt from runtime `change_reviewer`
-  acceptance. The future behavior patch is not exempt.
+- The original documentation-only planning task was exempt from runtime
+  `change_reviewer` acceptance. This authorized behavior patch requires current
+  independent APPROVE after implementation and host validation.
 
 ## Final validation results
 
-**Implementation: not started. No new behavior PASS, model measurement, browser
-run, native run, benchmark, installer journey or historical PASS reuse exists
-for this plan.** Required future results remain pending in M0-M3.
+**Implementation and runtime validation accepted by SAF-R2-20261029.**
+M0/M1/M2 directed regressions, final TypeScript/Python suites, bilingual core
+generation, 19 Chromium cases, frontend/native builds, both Rust variants and
+model-free WebView2 smoke/cleanup pass. The exact commands, original failures,
+counts and artifact identities are in the
+[execution ledger](../evidence/static-audit-follow-up/execution-ledger.md).
+No historical PASS is reused. [SAF-R1-20261029](../evidence/static-audit-follow-up/review-R1.md)
+requested one U5 parent-PID provenance correction, now implemented with matching
+directed and affected-host evidence. R2 approves the exact corrected patch;
+the separate R3 assessment covers archive/index/receipt documentation and
+unchanged runtime evidence. No commit is authorized.
 
 Planning-only checks on 2026-10-29:
 
@@ -471,5 +502,6 @@ Planning-only checks on 2026-10-29:
 - No application tests, guard test suite, build, model, browser or native runtime
   was executed. No historical PASS has been rebound to this plan.
 
-The authorized Git handoff contains only this plan and its two index entries.
-Its commit identity is reported separately; it does not accept implementation.
+The original planning Git handoff contained only this plan and its two index
+entries. That documentation commit did not accept implementation. Current work
+must remain uncommitted under the subsequent execution authorization.

@@ -34,6 +34,7 @@ from benchmarks.v11_authority import CANDIDATE_ID
 from benchmarks.v12_authority import (
     CHATTERBOX_CANDIDATE_ID,
     QWEN_SERENA_CANDIDATE_ID,
+    validate_v12_qwen_quality_result,
     validate_v12_raw_result,
 )
 
@@ -211,10 +212,10 @@ def test_v12_preflight_rejects_each_unacceptable_condition(
     assert receipt.failures == receipt.execution.failures == (reason,)
 
 
-def test_v12_private_quality_aggregate_is_language_specific_and_bounded(
+def _private_quality_fixture(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
+) -> tuple[Path, Path]:
     candidate_id = QWEN_SERENA_CANDIDATE_ID
     session_id = "a" * 32
     session = tmp_path / candidate_id / session_id
@@ -262,10 +263,17 @@ def test_v12_private_quality_aggregate_is_language_specific_and_bounded(
         encoding="utf-8",
     )
     monkeypatch.setattr(v12_quality, "RAW_ROOT", tmp_path)
+    return session, result_path
+
+
+def test_saf_v12_private_aggregation_retains_scorecard_until_summary_is_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session, result_path = _private_quality_fixture(tmp_path, monkeypatch)
 
     aggregate = v12_quality._aggregate(
-        candidate_id=candidate_id,
-        session_id=session_id,
+        candidate_id=QWEN_SERENA_CANDIDATE_ID,
+        session_id=session.name,
         result_path=result_path,
     )
 
@@ -280,7 +288,114 @@ def test_v12_private_quality_aggregate_is_language_specific_and_bounded(
             "wrongLanguageOutputs": 0,
         }
     ]
+    assert result_path.exists()
+
+
+@pytest.mark.parametrize(
+    "destination", ["outside", "scorecard", "private", "hardlink", "directory", "missing-parent"]
+)
+def test_saf_v12_rejects_destructive_destination_before_aggregation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, destination: str
+) -> None:
+    session, result_path = _private_quality_fixture(tmp_path, monkeypatch)
+    validator = validate_v12_qwen_quality_result
+    monkeypatch.setattr(
+        v12_quality,
+        "validate_v12_qwen_quality_result",
+        lambda _root, summary: validator(
+            REPOSITORY_ROOT,
+            summary,
+            ancestry_checker=lambda *_args: True,
+            authority_tree_checker=lambda *_args: True,
+        ),
+    )
+    monkeypatch.setattr(v12_quality, "REPOSITORY_ROOT", tmp_path)
+    output_root = tmp_path / "benchmarks/tts"
+    output_root.mkdir(parents=True)
+    if destination == "outside":
+        output = tmp_path / "outside.json"
+    elif destination == "scorecard":
+        output = output_root / "scorecard.json"
+        result_path.replace(output)
+        result_path = output
+    elif destination == "private":
+        # Exercise private-tree exclusion separately from output containment.
+        contained_session = tmp_path / "benchmarks/tts/private" / session.name
+        contained_session.parent.mkdir(parents=True)
+        session.rename(contained_session)
+        session = contained_session
+        monkeypatch.setattr(v12_quality, "_session", lambda *_args: session)
+        output = session / "summary.json"
+    elif destination == "hardlink":
+        output = output_root / "hardlink.json"
+        try:
+            output.hardlink_to(result_path)
+        except OSError:
+            pytest.skip("hardlinks unavailable on temporary volume")
+    elif destination == "directory":
+        output = output_root / "directory"
+        output.mkdir()
+    else:
+        output = output_root / "missing/summary.json"
+    original = result_path.read_bytes()
+    with pytest.raises(v12_quality.CorrectiveV12QualityError, match="output"):
+        v12_quality.derive_and_cleanup(
+            candidate_id=QWEN_SERENA_CANDIDATE_ID,
+            session_id=session.name,
+            result_path=result_path,
+            output_path=output,
+        )
+    assert result_path.read_bytes() == original
+    assert session.exists()
+    assert not (session / "quality/quality.aggregate.json").exists()
+
+
+def test_saf_v12_summary_write_failure_retains_retry_inputs_then_success_cleans(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session, result_path = _private_quality_fixture(tmp_path, monkeypatch)
+    validator = validate_v12_qwen_quality_result
+    monkeypatch.setattr(
+        v12_quality,
+        "validate_v12_qwen_quality_result",
+        lambda _root, summary: validator(
+            REPOSITORY_ROOT,
+            summary,
+            ancestry_checker=lambda *_args: True,
+            authority_tree_checker=lambda *_args: True,
+        ),
+    )
+    monkeypatch.setattr(v12_quality, "REPOSITORY_ROOT", tmp_path)
+    output = tmp_path / "benchmarks/tts/summary.json"
+    output.parent.mkdir(parents=True)
+    writer = v12_quality._write_json
+
+    def fail_summary(path: Path, value: object) -> None:
+        if path == output:
+            raise PermissionError("synthetic summary write failure")
+        writer(path, value)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(v12_quality, "_write_json", fail_summary)
+    with pytest.raises(PermissionError, match="synthetic summary write failure"):
+        v12_quality.derive_and_cleanup(
+            candidate_id=QWEN_SERENA_CANDIDATE_ID,
+            session_id=session.name,
+            result_path=result_path,
+            output_path=output,
+        )
+    assert result_path.exists()
+    assert (session / "quality/quality.aggregate.json").exists()
+    monkeypatch.setattr(v12_quality, "_write_json", writer)
+    result = v12_quality.derive_and_cleanup(
+        candidate_id=QWEN_SERENA_CANDIDATE_ID,
+        session_id=session.name,
+        result_path=result_path,
+        output_path=output,
+    )
+    assert result["privateSessionRemoved"] is True
+    assert output.exists()
     assert not result_path.exists()
+    assert not session.exists()
 
 
 def test_v12_candidate_quality_delegates_machine_schema_validation(

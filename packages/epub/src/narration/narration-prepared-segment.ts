@@ -35,6 +35,7 @@ import {
 import {
   normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens,
   type NarrationNormalizationLanguage as BilingualNarrationNormalizationLanguage,
+  type NarrationEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
 import { scanNarrationBoundaries } from "./narration-boundary-scanner.js";
 import {
@@ -54,6 +55,7 @@ type NarrationNormalizationProfile = "narration-v1" | "narration-bilingual-v2";
 
 interface NarrationPreparationOptions extends NarrationPackingOptions {
   readonly normalizationProfile?: NarrationNormalizationProfile;
+  readonly precedingEnglishTitleContext?: NarrationEnglishTitleContext;
 }
 
 interface StagedPreparedNarrationSegment {
@@ -330,6 +332,7 @@ export async function prepareNarrationSourceLeaf(
       ? normalizeBilingualNarrationSourceTokens(
           source.sourceTokens,
           defaultLanguage,
+          options.precedingEnglishTitleContext,
         )
       : normalizeNarrationSourceTokens(
           source.sourceTokens,

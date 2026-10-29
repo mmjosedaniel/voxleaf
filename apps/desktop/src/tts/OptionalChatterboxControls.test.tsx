@@ -46,6 +46,41 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("SAF-02 exposes removal for cache-only residue discovered after restart", async () => {
+    const invoke = vi.fn(async (command: string) =>
+      command === "remove_optional_chatterbox"
+        ? { ...snapshot("absent"), installedBytes: null }
+        : {
+            ...snapshot("failed"),
+            installedBytes: null,
+            failure: "tts-optional-profile-unavailable",
+          },
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const onRemove = vi.fn(async () => {
+      await client.remove();
+    });
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={onRemove}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Chatterbox" }),
+    );
+    await waitFor(() => expect(client.observe().state).toBe("absent"));
+    expect(onRemove).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("remove_optional_chatterbox", {
+      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+    });
+    expect(
+      screen.queryByRole("button", { name: "Remove Chatterbox" }),
+    ).not.toBeInTheDocument();
+  });
+
   it.each([
     "tts-optional-profile-download-failed",
     "tts-optional-profile-insufficient-space",

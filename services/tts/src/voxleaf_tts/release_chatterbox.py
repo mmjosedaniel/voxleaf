@@ -19,6 +19,7 @@ import subprocess
 import sys
 import zipfile
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, cast
@@ -153,6 +154,7 @@ def _download_artifact(artifact: Mapping[str, object], cache: Path) -> Path:
     expected_hash = _sha256(artifact["sha256"], "chatterbox-package-source-manifest-invalid")
     expected_size = _positive(artifact["sizeBytes"], "chatterbox-package-source-manifest-invalid")
     target = cache / filename
+    partial = cache / f".{filename}.partial-{os.getpid()}"
     if (
         target.is_file()
         and target.stat().st_size == expected_size
@@ -161,7 +163,6 @@ def _download_artifact(artifact: Mapping[str, object], cache: Path) -> Path:
         return target
     try:
         cache.mkdir(parents=True, exist_ok=True)
-        partial = cache / f".{filename}.partial-{os.getpid()}"
         partial.unlink(missing_ok=True)
         request = urllib_request.Request(
             _text(artifact["url"], "chatterbox-package-source-manifest-invalid"),
@@ -182,10 +183,12 @@ def _download_artifact(artifact: Mapping[str, object], cache: Path) -> Path:
         partial.replace(target)
         return target
     except ReleaseChatterboxError:
-        partial.unlink(missing_ok=True)
+        with suppress(OSError):
+            partial.unlink(missing_ok=True)
         raise
     except (OSError, TimeoutError):
-        partial.unlink(missing_ok=True)
+        with suppress(OSError):
+            partial.unlink(missing_ok=True)
         raise ReleaseChatterboxError("chatterbox-package-download-failed") from None
 
 

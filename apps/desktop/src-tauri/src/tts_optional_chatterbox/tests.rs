@@ -14,6 +14,210 @@ static COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[cfg(windows)]
 #[test]
+fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
+    for (headers, kind) in [
+        (
+            "HTTP/1.1 503 Service Unavailable\r\nContent-Length: 100\r\n\r\n",
+            DownloadFailureKind::HttpStatus,
+        ),
+        (
+            "HTTP/1.1 200 OK\r\nContent-Length: 101\r\n\r\n",
+            DownloadFailureKind::ContentLength,
+        ),
+    ] {
+        for cancel in [false, true] {
+            let root = TestRoot::new();
+            let manager = Arc::new(OptionalChatterboxManager::default());
+            manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+            DownloadAttempt::new(
+                &manager.last_download_error,
+                DownloadSource::GithubRelease,
+                1,
+                100,
+            )
+            .fail(
+                DownloadStage::Request,
+                DownloadFailureKind::InvalidUrl,
+                None,
+            );
+            let previous = *manager.last_download_error.lock().unwrap();
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let address = listener.local_addr().unwrap();
+            let cancelling_manager = Arc::clone(&manager);
+            let cancelling_root = root.0.clone();
+            let server = thread::spawn(move || {
+                let deadline = std::time::Instant::now() + Duration::from_secs(5);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                            assert!(std::time::Instant::now() < deadline);
+                            thread::sleep(Duration::from_millis(5));
+                        }
+                        Err(error) => panic!("loopback accept failed: {:?}", error.kind()),
+                    }
+                };
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                stream
+                    .set_write_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                let mut request = [0_u8; 1024];
+                assert!(stream.read(&mut request).unwrap() > 0);
+                if cancel {
+                    let acknowledged = cancelling_manager.cancel_at(&cancelling_root).unwrap();
+                    assert_eq!(acknowledged.state, OptionalProfileState::Downloading);
+                    assert!(
+                        cancelling_manager
+                            .operation
+                            .lock()
+                            .unwrap()
+                            .cancellation
+                            .as_ref()
+                            .unwrap()
+                            .load(Ordering::Acquire)
+                    );
+                }
+                // Rejected headers arrive only after cancellation was acknowledged.
+                stream.write_all(headers.as_bytes()).unwrap();
+            });
+            let downloading_manager = Arc::clone(&manager);
+            DOWNLOAD_HOOK.with(|slot| {
+                *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
+                    let client = reqwest::blocking::Client::builder()
+                        .no_proxy()
+                        .timeout(Duration::from_secs(5))
+                        .build()
+                        .unwrap();
+                    let diagnostic = DownloadAttempt::new(
+                        &downloading_manager.last_download_error,
+                        DownloadSource::GithubRelease,
+                        1,
+                        100,
+                    );
+                    let response = send_download_request(
+                        client.get(format!("http://{address}/")),
+                        cancelled,
+                        &diagnostic,
+                    )?;
+                    let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
+                    artifact.download_bytes = 100;
+                    copy_download_response(
+                        &artifact,
+                        response,
+                        destination,
+                        cancelled,
+                        |_| panic!("rejected headers cannot transfer bytes"),
+                        diagnostic,
+                    )
+                }));
+            });
+            let result = manager.download_at(&root.0);
+            server.join().unwrap();
+            assert!(!manager.operation.lock().unwrap().worker_active);
+            assert!(!staging_root(&root.0).exists());
+            assert!(!package_root(&root.0).exists());
+            if cancel {
+                assert_eq!(result.unwrap().state, OptionalProfileState::Absent);
+                assert_eq!(*manager.last_download_error.lock().unwrap(), previous);
+            } else {
+                assert_eq!(result, Err(OptionalProfileError::DownloadFailed));
+                let report = manager.last_download_error.lock().unwrap().unwrap();
+                assert_eq!(report.stage, DownloadStage::Response);
+                assert_eq!(report.kind, kind);
+                assert_eq!(report.received_bytes, 0);
+            }
+        }
+    }
+}
+
+#[test]
+fn saf02_cache_only_restart_retains_a_removal_route_without_admission() {
+    for withheld in [false, true] {
+        let root = TestRoot::new();
+        let cache = profile_root(&root.0).join("cache");
+        fs::create_dir_all(&cache).unwrap();
+        fs::write(cache.join("owned.bin"), b"synthetic cache").unwrap();
+        let sibling = profile_root(&root.0).join("unrelated");
+        fs::create_dir_all(&sibling).unwrap();
+        fs::write(sibling.join("keep.bin"), b"unrelated").unwrap();
+        let mut authority = exact_manifest().unwrap();
+        if withheld {
+            authority.availability = "withheld".to_owned();
+        }
+        let restarted = OptionalChatterboxManager::default();
+        let snapshot = restarted
+            .snapshot_with_manifest(&root.0, &authority)
+            .unwrap();
+        assert_eq!(snapshot.state, OptionalProfileState::Failed);
+        assert_eq!(snapshot.failure, Some("tts-optional-profile-unavailable"));
+        assert_eq!(snapshot.installed_bytes, None);
+        assert_eq!(
+            prepare_and_verify_installed_runtime(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        restarted.remove_with_manifest(&root.0, &authority).unwrap();
+        assert!(!cache.exists());
+        assert_eq!(fs::read(sibling.join("keep.bin")).unwrap(), b"unrelated");
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn saf02_restart_exposes_cache_left_after_partial_locked_removal() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    let cache = profile_root(&root.0).join("cache");
+    fs::create_dir_all(&package).unwrap();
+    fs::write(package.join("owned.bin"), b"synthetic package").unwrap();
+    fs::create_dir_all(&cache).unwrap();
+    let locked_path = cache.join("locked.bin");
+    fs::write(&locked_path, b"synthetic cache").unwrap();
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&locked_path)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    let removal = manager.remove_at(&root.0);
+    let package_removed = !package.exists();
+    let restarted = OptionalChatterboxManager::default();
+    let discovered = restarted.snapshot_at(&root.0).unwrap();
+    drop(lock);
+    let retry = restarted.remove_at(&root.0).unwrap();
+    assert_eq!(removal, Err(OptionalProfileError::CleanupFailed));
+    assert!(package_removed);
+    assert_eq!(discovered.state, OptionalProfileState::Failed);
+    assert_eq!(discovered.failure, Some("tts-optional-profile-unavailable"));
+    assert_eq!(retry.state, OptionalProfileState::Absent);
+    assert!(!cache.exists());
+}
+
+#[test]
+fn saf02_denied_cache_metadata_remains_discoverable_and_fails_closed() {
+    let root = TestRoot::new();
+    let cache = profile_root(&root.0).join("cache");
+    VCA_DENIED_METADATA.with(|slot| *slot.borrow_mut() = Some(cache.clone()));
+    let manager = OptionalChatterboxManager::default();
+    let discovered = manager.snapshot_at(&root.0).unwrap().state;
+    let removed = manager.remove_at(&root.0);
+    VCA_DENIED_METADATA.with(|slot| *slot.borrow_mut() = None);
+    assert_eq!(discovered, OptionalProfileState::Failed);
+    assert_eq!(removed, Err(OptionalProfileError::VerificationFailed));
+    assert_eq!(
+        OptionalChatterboxManager::default()
+            .snapshot_at(&root.0)
+            .unwrap()
+            .state,
+        OptionalProfileState::Absent
+    );
+}
+
+#[cfg(windows)]
+#[test]
 fn vaf_cancelled_request_before_headers_preserves_diagnostic_and_cleans_staging() {
     for cancel in [false, true] {
         let root = TestRoot::new();
@@ -1974,7 +2178,7 @@ fn retained_v2_v3_v5_and_v6_are_cleanup_only_and_survive_observation_and_cancell
 
 #[cfg(any(windows, unix))]
 #[test]
-fn vca02_owned_dangling_links_cannot_be_reported_as_removed() {
+fn saf02_vca02_owned_dangling_links_cannot_be_reported_as_removed() {
     for version in ["5", "6", "7", "3", "2", "legacy", "cache", "staging"] {
         let root = TestRoot::new();
         let outside = TestRoot::new();
@@ -2010,7 +2214,7 @@ fn vca02_owned_dangling_links_cannot_be_reported_as_removed() {
         fs::remove_dir(&retained).unwrap();
         #[cfg(unix)]
         fs::remove_file(&retained).unwrap();
-        if version != "cache" && version != "staging" {
+        if version != "staging" {
             assert_eq!(
                 discovered.unwrap().state,
                 OptionalProfileState::Failed,

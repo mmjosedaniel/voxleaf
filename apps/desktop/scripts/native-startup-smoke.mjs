@@ -5,7 +5,7 @@ import { access, mkdir, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { setTimeout as delay } from "node:timers/promises";
+import { setTimeout as wait } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
@@ -17,7 +17,11 @@ import {
   resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
-import { createNativeResourceObservation } from "./native-smoke/resource-observation.mjs";
+import {
+  createNativeResourceObservation,
+  captureOwnedProcessTree,
+  terminateOwnedProcesses,
+} from "./native-smoke/resource-observation.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
 import { buildOrientedRasterEpubFixture } from "../tests/fixtures/oriented-raster-epub-fixture.mjs";
 import {
@@ -41,6 +45,68 @@ const STARTUP_TIMEOUT_MS = 90_000;
 const OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS = 180_000;
 const OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS = 300_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
+const MAX_OPERATION_TIMEOUT_MS = 30 * 60 * 1_000;
+let operationSignal;
+
+function delay(milliseconds) {
+  return wait(milliseconds, undefined, { signal: operationSignal });
+}
+
+export function nativeOperationTimeout(arguments_) {
+  const values = arguments_.filter((value) =>
+    value.startsWith("--operation-timeout-ms="),
+  );
+  const value =
+    values.length === 0
+      ? MAX_OPERATION_TIMEOUT_MS
+      : Number(values[0].slice("--operation-timeout-ms=".length));
+  if (
+    values.length > 1 ||
+    !Number.isSafeInteger(value) ||
+    value <= 0 ||
+    value > MAX_OPERATION_TIMEOUT_MS
+  ) {
+    throw new Error("Native smoke operation deadline is invalid.");
+  }
+  return value;
+}
+
+export async function runNativeOperation({ timeoutMs, work, cleanup }) {
+  const controller = new globalThis.AbortController();
+  const timer = globalThis.setTimeout(
+    () =>
+      controller.abort(new Error("Native smoke operation deadline exceeded.")),
+    timeoutMs,
+  );
+  let failure;
+  let result;
+  try {
+    result = await work(controller.signal);
+  } catch (error) {
+    failure = error;
+  }
+  if (controller.signal.aborted && failure === undefined)
+    failure = controller.signal.reason;
+  globalThis.clearTimeout(timer);
+  // Work has settled before cleanup starts; its cancelled channel is never
+  // reused for DELETE, process inspection/termination, or scratch removal.
+  controller.abort();
+  try {
+    await cleanup();
+    if (process.connected)
+      process.send({ type: "voxleaf-native-cleanup", ok: true }, () => {});
+  } catch (error) {
+    if (process.connected)
+      process.send({ type: "voxleaf-native-cleanup", ok: false }, () => {});
+    throw new AggregateError(
+      [...(failure === undefined ? [] : [failure]), error],
+      "Native smoke cleanup failed.",
+      { cause: error },
+    );
+  }
+  if (failure !== undefined) throw failure;
+  return result;
+}
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
@@ -337,10 +403,13 @@ const {
   installNativeResourceInstrumentation,
   nativeResourceInstrumentation,
   inspectPerformanceLogs,
+  settleObservations,
 } = createNativeResourceObservation({
   assert,
   INTERACTION_TIMEOUT_MS,
   MEBIBYTE,
+  delay,
+  signal: () => operationSignal,
 });
 
 const {
@@ -350,6 +419,7 @@ const {
   exerciseNativeTtsProtocolProbe,
   exerciseNativeTtsServiceLifecycle,
 } = createNativeTtsScenarios({
+  delay,
   assert,
   waitForCondition,
   openReaderSettings,
@@ -384,6 +454,7 @@ const {
   replaceNativePublicationForCleanup,
   runNativeReaderPerformanceBenchmark,
 } = createNativeReaderScenarios({
+  delay,
   assert,
   waitForCondition,
   openReaderSettings,
@@ -563,6 +634,7 @@ async function waitForDriver(endpoint, child, spawnState) {
   const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   const readinessClient = new WebDriverClient(endpoint, {
     requestTimeoutMs: 500,
+    signal: operationSignal,
   });
 
   while (Date.now() < deadline) {
@@ -605,6 +677,7 @@ async function exerciseNativeTtsSupervisorHost() {
       {
         timeout: 30_000,
         windowsHide: true,
+        signal: operationSignal,
       },
       (error) => {
         if (error === null) {
@@ -907,17 +980,120 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 }
 
 async function stopChild(child) {
-  if (child.exitCode !== null || child.pid === undefined) {
+  if (
+    child.exitCode !== null ||
+    child.signalCode !== null ||
+    child.pid === undefined
+  ) {
     return;
   }
 
+  const observeExit = () =>
+    new Promise((resolve) => {
+      const finished = () => {
+        globalThis.clearTimeout(timer);
+        child.off("exit", finished);
+        resolve();
+      };
+      const timer = globalThis.setTimeout(finished, 5_000);
+      child.once("exit", finished);
+    });
+  let exited = observeExit();
   child.kill();
-  await Promise.race([once(child, "exit"), delay(5_000)]);
+  await exited;
 
-  if (child.exitCode === null) {
+  if (child.exitCode === null && child.signalCode === null) {
+    exited = observeExit();
     child.kill("SIGKILL");
-    await Promise.race([once(child, "exit"), delay(5_000)]);
+    await exited;
   }
+  assert(
+    child.exitCode !== null || child.signalCode !== null,
+    "Native owned-process cleanup could not be verified.",
+  );
+}
+
+export async function captureCurrentChildProcesses(
+  child,
+  previous = [],
+  capture = captureOwnedProcessTree,
+) {
+  const processId = child.pid;
+  const current = () =>
+    child.pid === processId &&
+    child.exitCode === null &&
+    child.signalCode === null;
+  assert(
+    Number.isSafeInteger(processId) && processId > 0 && current(),
+    "Native owned-process cleanup could not be verified.",
+  );
+  const observed = await capture(processId, previous);
+  assert(current(), "Native owned-process cleanup could not be verified.");
+  return observed;
+}
+
+export async function cleanupNativeRun({
+  driver,
+  child,
+  temporaryDirectory,
+  identities = [],
+}) {
+  const errors = [];
+  if (
+    child?.pid !== undefined &&
+    identities.length === 0 &&
+    (child.exitCode !== null || child.signalCode !== null)
+  ) {
+    errors.push(
+      new Error("Native owned-process cleanup could not be verified."),
+    );
+  }
+  await settleObservations();
+  await driver?.settleRequests?.();
+  const capture = async () => {
+    if (
+      child?.pid !== undefined &&
+      child.exitCode === null &&
+      child.signalCode === null
+    ) {
+      try {
+        identities = await captureCurrentChildProcesses(child, identities);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+  };
+  await capture();
+  try {
+    await driver?.deleteSession();
+  } catch (error) {
+    errors.push(error);
+  }
+  await capture();
+  let stopped = false;
+  try {
+    if (identities.length > 0) await terminateOwnedProcesses(identities);
+    if (child !== undefined) await stopChild(child);
+    stopped = true;
+  } catch (error) {
+    errors.push(error);
+  }
+  // Uncertain process ownership retains recovery material rather than deleting
+  // a profile that may still be in use.
+  if (stopped && errors.length === 0) {
+    try {
+      await rm(temporaryDirectory, {
+        force: true,
+        maxRetries: 5,
+        recursive: true,
+        retryDelay: 200,
+      });
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0)
+    throw new AggregateError(errors, "Native smoke cleanup failed.");
 }
 
 async function run() {
@@ -935,257 +1111,276 @@ async function run() {
   const temporaryDirectory = await mkdtemp(
     path.join(tmpdir(), "voxleaf-native-startup-"),
   );
-  const profileDirectory = path.join(temporaryDirectory, "webview-profile");
-  const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
-  const orientedFixturePath = path.join(
-    temporaryDirectory,
-    "synthetic-oriented.epub",
-  );
-  const dismissalFixturePath = path.join(
-    temporaryDirectory,
-    "invalid-replacement.epub",
-  );
-  const fileIngressFixturePaths = Object.freeze({
-    exactLimit: path.join(temporaryDirectory, "exact-limit.epub"),
-    overLimit: path.join(temporaryDirectory, "over-limit-file.epub"),
-    primary: fixturePath,
-    replacement: path.join(temporaryDirectory, "replacement.epub"),
-  });
-  const performanceFixturePaths = Object.freeze({
-    dismissal: dismissalFixturePath,
-    exact: path.join(temporaryDirectory, "exact.epub"),
-    overLimit: path.join(temporaryDirectory, "over-limit.epub"),
-    representative: path.join(temporaryDirectory, "representative.epub"),
-  });
-  const fixtureModuleUrl = pathToFileURL(
-    path.resolve(
-      desktopRoot,
-      "..",
-      "..",
-      "packages",
-      "epub",
-      "test-support",
-      "epub-fixture.ts",
-    ),
-  );
-  const {
-    buildEpubVersionEquivalenceFixture,
-    buildMinimalEpubFixture,
-    buildReaderLongChapterEpubFixture,
-    buildReaderNavigationEpubFixture,
-    buildReaderReflowEpubFixture,
-  } = await import(fixtureModuleUrl.href);
-  await mkdir(profileDirectory);
-  if (READER_PERFORMANCE_MODE) {
-    const [exact, overLimit, representative] = await Promise.all([
-      buildReaderLongChapterEpubFixture({
-        semanticBlockCount: 10_000,
-        deepTargetBlockIndex: 8_999,
-      }),
-      buildReaderLongChapterEpubFixture({
-        semanticBlockCount: 10_001,
-      }),
-      buildReaderNavigationEpubFixture(),
-    ]);
-    await Promise.all([
-      writeFile(performanceFixturePaths.exact, exact, { flag: "wx" }),
-      writeFile(performanceFixturePaths.overLimit, overLimit, { flag: "wx" }),
-      writeFile(performanceFixturePaths.representative, representative, {
-        flag: "wx",
-      }),
-    ]);
-  } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
-    const fixtureLanguage = ADAPTIVE_TTS_LANGUAGE;
-    const isEnglishFixture = fixtureLanguage === "en";
-    const boundedSyntheticSentence =
-      syntheticNarrationSentences(fixtureLanguage);
-    const piperExpansionRegressionSentence = isEnglishFixture
-      ? "Series 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 and 25%."
-      : "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
-    const syntheticParagraph = [
-      PIPER_CPU_FALLBACK_PROFILE_ID,
-      PIPER_ENGLISH_CPU_PROFILE_ID,
-    ].includes(ADAPTIVE_TTS_PROFILE_ID)
-      ? `${piperExpansionRegressionSentence} ${Array.from(
-          { length: 3 },
-          (_, index) =>
-            `${boundedSyntheticSentence} ${
-              isEnglishFixture ? "Part" : "Parte"
-            } ${String(index + 1)}.`,
-        ).join(" ")}`
-      : ADAPTIVE_TTS_PROFILE_ID === CHATTERBOX_BILINGUAL_PROFILE_ID
-        ? chatterboxPlaybackSpeedParagraph(fixtureLanguage)
-        : boundedSyntheticSentence;
-    const chapterParagraphs = (chapter) =>
-      Array.from(
-        { length: 96 },
-        (_, index) =>
-          `<p>${syntheticParagraph} ${
-            isEnglishFixture ? "Chapter" : "Cap&#237;tulo"
-          } ${String(chapter)}, ${
-            isEnglishFixture ? "section" : "secci&#243;n"
-          } ${String(index + 1)}.</p>`,
-      ).join("");
-    const firstSectionTitle = isEnglishFixture
-      ? "First section"
-      : "Primera secci&#243;n";
-    const secondSectionTitle = isEnglishFixture
-      ? "Second section"
-      : "Segunda secci&#243;n";
-    const adaptiveFixture = await buildMinimalEpubFixture({
-      packageDocument: `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:adaptive-synchronization-${fixtureLanguage}</dc:identifier><dc:title>Synthetic synchronized narration ${fixtureLanguage}</dc:title><dc:language>${fixtureLanguage}</dc:language><meta property="dcterms:modified">2026-07-30T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="chapter-two"/></spine></package>`,
-      navigationDocument:
-        '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">First synthetic section</a></li><li><a href="text/chapter-two.xhtml#chapter-two">Second synthetic section</a></li></ol></nav></body></html>',
-      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${firstSectionTitle}</title></head><body><h1 id="chapter-one">${firstSectionTitle}</h1>${chapterParagraphs(
-        1,
-      )}</body></html>`,
-      additionalEntries: [
-        Object.freeze({
-          name: "EPUB/text/chapter-two.xhtml",
-          content: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${secondSectionTitle}</title></head><body><h1 id="chapter-two">${secondSectionTitle}</h1>${chapterParagraphs(
-            2,
-          )}</body></html>`,
-          compression: "deflate",
-        }),
-      ],
-    });
-    await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
-  } else {
-    const [primaryFixture, replacementFixture] = await Promise.all([
-      buildEpubVersionEquivalenceFixture("2.0"),
-      buildReaderReflowEpubFixture({
-        paragraphCount: 4,
-        preservedPassageIndex: 2,
-      }),
-    ]);
-    await Promise.all([
-      writeFile(fixturePath, primaryFixture, { flag: "wx" }),
-      buildOrientedRasterEpubFixture().then((bytes) =>
-        writeFile(orientedFixturePath, bytes, { flag: "wx" }),
-      ),
-      writeFile(fileIngressFixturePaths.replacement, replacementFixture, {
-        flag: "wx",
-      }),
-      createSizedDisposableFile(
-        fileIngressFixturePaths.exactLimit,
-        MAX_LOCAL_EPUB_FILE_BYTES,
-      ),
-      createSizedDisposableFile(
-        fileIngressFixturePaths.overLimit,
-        MAX_LOCAL_EPUB_FILE_BYTES + 1,
-      ),
-    ]);
-  }
-  await writeFile(dismissalFixturePath, "not-an-epub", { flag: "wx" });
-
-  const driverPort = await reserveLoopbackPort();
-  const nativeDriverPort = await reserveLoopbackPort();
-  const endpoint = `http://127.0.0.1:${driverPort}`;
-  const tauriDriverPath = await resolveExecutablePath(
-    process.env.VOXLEAF_TAURI_DRIVER_PATH ?? "tauri-driver.exe",
-  );
-  const edgeDriverPath = await resolveExecutablePath(
-    process.env.VOXLEAF_EDGE_DRIVER_PATH ?? "msedgedriver.exe",
-  );
-  const child = spawn(
-    tauriDriverPath,
-    [
-      "--port",
-      String(driverPort),
-      "--native-port",
-      String(nativeDriverPort),
-      "--native-driver",
-      edgeDriverPath,
-    ],
-    {
-      cwd: desktopRoot,
-      env: process.env,
-      stdio: "ignore",
-      windowsHide: true,
-    },
-  );
-  const spawnState = { failed: false };
-  child.once("error", () => {
-    spawnState.failed = true;
-  });
-  const driver = new WebDriverClient(endpoint, {
-    requestTimeoutMs: STARTUP_TIMEOUT_MS,
-  });
-  let stage = "WebDriver startup";
-  let cleanupFailed = false;
-  const collectedBrowserLogs = [];
-  const collectedPerformanceLogs = [];
-
+  let child;
+  let driver;
+  let identities = [];
+  let stage = "fixture preparation";
   try {
-    if (!ADAPTIVE_TTS_EXACT_HOST_MODE) {
-      stage = "native TTS supervisor host matrix";
-      await exerciseNativeTtsSupervisorHost();
-    }
-    stage = "WebDriver startup";
-    await waitForDriver(endpoint, child, spawnState);
-    stage = "native WebView session creation";
-    await driver.createSession(executablePath, profileDirectory);
-    await Promise.all([
-      driver.executeCdp("Log.enable"),
-      driver.executeCdp("Runtime.enable"),
-      driver.executeCdp("Network.enable"),
-    ]);
+    await runNativeOperation({
+      timeoutMs: nativeOperationTimeout(process.argv.slice(2)),
+      work: async (signal) => {
+        operationSignal = signal;
+        const profileDirectory = path.join(
+          temporaryDirectory,
+          "webview-profile",
+        );
+        const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+        const orientedFixturePath = path.join(
+          temporaryDirectory,
+          "synthetic-oriented.epub",
+        );
+        const dismissalFixturePath = path.join(
+          temporaryDirectory,
+          "invalid-replacement.epub",
+        );
+        const fileIngressFixturePaths = Object.freeze({
+          exactLimit: path.join(temporaryDirectory, "exact-limit.epub"),
+          overLimit: path.join(temporaryDirectory, "over-limit-file.epub"),
+          primary: fixturePath,
+          replacement: path.join(temporaryDirectory, "replacement.epub"),
+        });
+        const performanceFixturePaths = Object.freeze({
+          dismissal: dismissalFixturePath,
+          exact: path.join(temporaryDirectory, "exact.epub"),
+          overLimit: path.join(temporaryDirectory, "over-limit.epub"),
+          representative: path.join(temporaryDirectory, "representative.epub"),
+        });
+        const fixtureModuleUrl = pathToFileURL(
+          path.resolve(
+            desktopRoot,
+            "..",
+            "..",
+            "packages",
+            "epub",
+            "test-support",
+            "epub-fixture.ts",
+          ),
+        );
+        const {
+          buildEpubVersionEquivalenceFixture,
+          buildMinimalEpubFixture,
+          buildReaderLongChapterEpubFixture,
+          buildReaderNavigationEpubFixture,
+          buildReaderReflowEpubFixture,
+        } = await import(fixtureModuleUrl.href);
+        await mkdir(profileDirectory);
+        if (READER_PERFORMANCE_MODE) {
+          const [exact, overLimit, representative] = await Promise.all([
+            buildReaderLongChapterEpubFixture({
+              semanticBlockCount: 10_000,
+              deepTargetBlockIndex: 8_999,
+            }),
+            buildReaderLongChapterEpubFixture({
+              semanticBlockCount: 10_001,
+            }),
+            buildReaderNavigationEpubFixture(),
+          ]);
+          await Promise.all([
+            writeFile(performanceFixturePaths.exact, exact, { flag: "wx" }),
+            writeFile(performanceFixturePaths.overLimit, overLimit, {
+              flag: "wx",
+            }),
+            writeFile(performanceFixturePaths.representative, representative, {
+              flag: "wx",
+            }),
+          ]);
+        } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+          const fixtureLanguage = ADAPTIVE_TTS_LANGUAGE;
+          const isEnglishFixture = fixtureLanguage === "en";
+          const boundedSyntheticSentence =
+            syntheticNarrationSentences(fixtureLanguage);
+          const piperExpansionRegressionSentence = isEnglishFixture
+            ? "Series 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 and 25%."
+            : "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
+          const syntheticParagraph = [
+            PIPER_CPU_FALLBACK_PROFILE_ID,
+            PIPER_ENGLISH_CPU_PROFILE_ID,
+          ].includes(ADAPTIVE_TTS_PROFILE_ID)
+            ? `${piperExpansionRegressionSentence} ${Array.from(
+                { length: 3 },
+                (_, index) =>
+                  `${boundedSyntheticSentence} ${
+                    isEnglishFixture ? "Part" : "Parte"
+                  } ${String(index + 1)}.`,
+              ).join(" ")}`
+            : ADAPTIVE_TTS_PROFILE_ID === CHATTERBOX_BILINGUAL_PROFILE_ID
+              ? chatterboxPlaybackSpeedParagraph(fixtureLanguage)
+              : boundedSyntheticSentence;
+          const chapterParagraphs = (chapter) =>
+            Array.from(
+              { length: 96 },
+              (_, index) =>
+                `<p>${syntheticParagraph} ${
+                  isEnglishFixture ? "Chapter" : "Cap&#237;tulo"
+                } ${String(chapter)}, ${
+                  isEnglishFixture ? "section" : "secci&#243;n"
+                } ${String(index + 1)}.</p>`,
+            ).join("");
+          const firstSectionTitle = isEnglishFixture
+            ? "First section"
+            : "Primera secci&#243;n";
+          const secondSectionTitle = isEnglishFixture
+            ? "Second section"
+            : "Segunda secci&#243;n";
+          const adaptiveFixture = await buildMinimalEpubFixture({
+            packageDocument: `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:adaptive-synchronization-${fixtureLanguage}</dc:identifier><dc:title>Synthetic synchronized narration ${fixtureLanguage}</dc:title><dc:language>${fixtureLanguage}</dc:language><meta property="dcterms:modified">2026-07-30T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="chapter-two"/></spine></package>`,
+            navigationDocument:
+              '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">First synthetic section</a></li><li><a href="text/chapter-two.xhtml#chapter-two">Second synthetic section</a></li></ol></nav></body></html>',
+            chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${firstSectionTitle}</title></head><body><h1 id="chapter-one">${firstSectionTitle}</h1>${chapterParagraphs(
+              1,
+            )}</body></html>`,
+            additionalEntries: [
+              Object.freeze({
+                name: "EPUB/text/chapter-two.xhtml",
+                content: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${secondSectionTitle}</title></head><body><h1 id="chapter-two">${secondSectionTitle}</h1>${chapterParagraphs(
+                  2,
+                )}</body></html>`,
+                compression: "deflate",
+              }),
+            ],
+          });
+          await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
+        } else {
+          const [primaryFixture, replacementFixture] = await Promise.all([
+            buildEpubVersionEquivalenceFixture("2.0"),
+            buildReaderReflowEpubFixture({
+              paragraphCount: 4,
+              preservedPassageIndex: 2,
+            }),
+          ]);
+          await Promise.all([
+            writeFile(fixturePath, primaryFixture, { flag: "wx" }),
+            buildOrientedRasterEpubFixture().then((bytes) =>
+              writeFile(orientedFixturePath, bytes, { flag: "wx" }),
+            ),
+            writeFile(fileIngressFixturePaths.replacement, replacementFixture, {
+              flag: "wx",
+            }),
+            createSizedDisposableFile(
+              fileIngressFixturePaths.exactLimit,
+              MAX_LOCAL_EPUB_FILE_BYTES,
+            ),
+            createSizedDisposableFile(
+              fileIngressFixturePaths.overLimit,
+              MAX_LOCAL_EPUB_FILE_BYTES + 1,
+            ),
+          ]);
+        }
+        await writeFile(dismissalFixturePath, "not-an-epub", { flag: "wx" });
 
-    stage = "application mount";
-    await waitForCondition(
-      driver,
-      `const root = document.querySelector("#root");
+        const driverPort = await reserveLoopbackPort();
+        const nativeDriverPort = await reserveLoopbackPort();
+        const endpoint = `http://127.0.0.1:${driverPort}`;
+        const tauriDriverPath = await resolveExecutablePath(
+          process.env.VOXLEAF_TAURI_DRIVER_PATH ?? "tauri-driver.exe",
+        );
+        const edgeDriverPath = await resolveExecutablePath(
+          process.env.VOXLEAF_EDGE_DRIVER_PATH ?? "msedgedriver.exe",
+        );
+        operationSignal.throwIfAborted();
+        child = spawn(
+          tauriDriverPath,
+          [
+            "--port",
+            String(driverPort),
+            "--native-port",
+            String(nativeDriverPort),
+            "--native-driver",
+            edgeDriverPath,
+          ],
+          {
+            cwd: desktopRoot,
+            env: process.env,
+            stdio: "ignore",
+            windowsHide: true,
+          },
+        );
+        const spawnState = { failed: false };
+        child.once("error", () => {
+          spawnState.failed = true;
+        });
+        driver = new WebDriverClient(endpoint, {
+          requestTimeoutMs: STARTUP_TIMEOUT_MS,
+          signal: operationSignal,
+        });
+        stage = "WebDriver startup";
+        const collectedBrowserLogs = [];
+        const collectedPerformanceLogs = [];
+
+        if (child.pid !== undefined)
+          identities = await captureCurrentChildProcesses(child);
+        if (!ADAPTIVE_TTS_EXACT_HOST_MODE) {
+          stage = "native TTS supervisor host matrix";
+          await exerciseNativeTtsSupervisorHost();
+        }
+        stage = "WebDriver startup";
+        await waitForDriver(endpoint, child, spawnState);
+        stage = "native WebView session creation";
+        await driver.createSession(executablePath, profileDirectory);
+        await Promise.all([
+          driver.executeCdp("Log.enable"),
+          driver.executeCdp("Runtime.enable"),
+          driver.executeCdp("Network.enable"),
+        ]);
+
+        stage = "application mount";
+        await waitForCondition(
+          driver,
+          `const root = document.querySelector("#root");
        const main = document.querySelector("main");
        return root?.childElementCount > 0 &&
          main !== null &&
          main.getClientRects().length > 0;`,
-    );
-    const rootMounted = await driver.execute(
-      `return document.querySelector("#root")?.childElementCount > 0;`,
-    );
-    assert(
-      (await driver.findElements(".application-bar-actions button")).length ===
-        0,
-      "Native Settings were available without an open publication.",
-    );
-    if (READER_PERFORMANCE_MODE) {
-      stage = "native reader performance and resource benchmark";
-      await runNativeReaderPerformanceBenchmark(
-        driver,
-        performanceFixturePaths,
-        child.pid,
-        (nextStage) => {
-          stage = nextStage;
-        },
-      );
-      return;
-    }
-    if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
-      stage = "adaptive exact-host profile setup publication";
-      await injectNativeFile(driver, fixturePath);
-      await waitForCondition(
-        driver,
-        `return document.querySelector("article.semantic-document") !== null;`,
-      );
-      stage = "native bilingual narration preference";
-      await openReaderSettings(driver);
-      await exerciseNarrationLanguagePreference(driver, ADAPTIVE_TTS_LANGUAGE);
-      stage = "adaptive exact-host profile selection";
-      const profileSelected = await selectAdaptiveTtsProfile(
-        driver,
-        ADAPTIVE_TTS_PROFILE_ID,
-        EXERCISE_EXACT_HOST_PROFILE_SWITCH,
-      );
-      await closeReaderSettings(driver);
-      if (!profileSelected) {
-        stage = "adaptive exact-host unavailable-profile assertions";
-        await delay(OBSERVATION_WINDOW_MS);
-        const browserLogs = await driver.getLogs("browser");
-        const performanceLogs = inspectPerformanceLogs(
-          await driver.getLogs("performance"),
         );
-        const externalLoadedResourceCount = await driver.execute(
-          `return performance.getEntriesByType("resource").filter((entry) => {
+        const rootMounted = await driver.execute(
+          `return document.querySelector("#root")?.childElementCount > 0;`,
+        );
+        assert(
+          (await driver.findElements(".application-bar-actions button"))
+            .length === 0,
+          "Native Settings were available without an open publication.",
+        );
+        if (READER_PERFORMANCE_MODE) {
+          stage = "native reader performance and resource benchmark";
+          await runNativeReaderPerformanceBenchmark(
+            driver,
+            performanceFixturePaths,
+            child.pid,
+            (nextStage) => {
+              stage = nextStage;
+            },
+          );
+          return;
+        }
+        if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+          stage = "adaptive exact-host profile setup publication";
+          await injectNativeFile(driver, fixturePath);
+          await waitForCondition(
+            driver,
+            `return document.querySelector("article.semantic-document") !== null;`,
+          );
+          stage = "native bilingual narration preference";
+          await openReaderSettings(driver);
+          await exerciseNarrationLanguagePreference(
+            driver,
+            ADAPTIVE_TTS_LANGUAGE,
+          );
+          stage = "adaptive exact-host profile selection";
+          const profileSelected = await selectAdaptiveTtsProfile(
+            driver,
+            ADAPTIVE_TTS_PROFILE_ID,
+            EXERCISE_EXACT_HOST_PROFILE_SWITCH,
+          );
+          await closeReaderSettings(driver);
+          if (!profileSelected) {
+            stage = "adaptive exact-host unavailable-profile assertions";
+            await delay(OBSERVATION_WINDOW_MS);
+            const browserLogs = await driver.getLogs("browser");
+            const performanceLogs = inspectPerformanceLogs(
+              await driver.getLogs("performance"),
+            );
+            const externalLoadedResourceCount = await driver.execute(
+              `return performance.getEntriesByType("resource").filter((entry) => {
              try {
                const url = new URL(entry.name);
                return !(
@@ -1200,253 +1395,258 @@ async function run() {
                return true;
              }
            }).length;`,
-        );
-        assert(
-          browserLogs.every((entry) => entry?.level !== "SEVERE") &&
-            performanceLogs.runtimeErrorCount === 0,
-          "Native application emitted a page or console error.",
-        );
-        assert(
-          externalLoadedResourceCount === 0 &&
-            performanceLogs.externalRequestCount === 0,
-          "Native application attempted an external request.",
-        );
-        console.log(
-          `Adaptive exact-host unavailable-profile matrix passed: ${JSON.stringify(
-            {
-              externalRequests: 0,
-              language: ADAPTIVE_TTS_LANGUAGE,
-              profileId: ADAPTIVE_TTS_PROFILE_ID,
-              reason: EXPECTED_UNAVAILABLE_PROFILE_REASON,
+            );
+            assert(
+              browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+                performanceLogs.runtimeErrorCount === 0,
+              "Native application emitted a page or console error.",
+            );
+            assert(
+              externalLoadedResourceCount === 0 &&
+                performanceLogs.externalRequestCount === 0,
+              "Native application attempted an external request.",
+            );
+            console.log(
+              `Adaptive exact-host unavailable-profile matrix passed: ${JSON.stringify(
+                {
+                  externalRequests: 0,
+                  language: ADAPTIVE_TTS_LANGUAGE,
+                  profileId: ADAPTIVE_TTS_PROFILE_ID,
+                  reason: EXPECTED_UNAVAILABLE_PROFILE_REASON,
+                },
+              )}`,
+            );
+            return;
+          }
+          await runAdaptiveTtsExactHostMatrix(
+            driver,
+            fixturePath,
+            child.pid,
+            (nextStage) => {
+              stage = nextStage;
             },
-          )}`,
-        );
-        return;
-      }
-      await runAdaptiveTtsExactHostMatrix(
-        driver,
-        fixturePath,
-        child.pid,
-        (nextStage) => {
+          );
+          return;
+        }
+
+        await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
           stage = nextStage;
-        },
-      );
-      return;
-    }
+        });
+        await exerciseNativeTtsServiceLifecycle(driver, (nextStage) => {
+          stage = nextStage;
+        });
 
-    await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
-      stage = nextStage;
-    });
-    await exerciseNativeTtsServiceLifecycle(driver, (nextStage) => {
-      stage = nextStage;
-    });
-
-    stage = "synthetic file injection";
-    const fileInput = await driver.findElement('input[type="file"]');
-    await driver.sendKeys(fileInput, fixturePath);
-    stage = "synthetic publication settlement";
-    await waitForCondition(
-      driver,
-      `const status = document.querySelector('[role="status"]');
+        stage = "synthetic file injection";
+        const fileInput = await driver.findElement('input[type="file"]');
+        await driver.sendKeys(fileInput, fixturePath);
+        stage = "synthetic publication settlement";
+        await waitForCondition(
+          driver,
+          `const status = document.querySelector('[role="status"]');
        return status !== null &&
          status.textContent !== "Validating and opening the selected EPUB.";`,
-    );
-    const openStatus = await driver.execute(
-      `return document.querySelector('[role="status"]')?.textContent ?? "";`,
-    );
-    const failureStageByStatus = Object.freeze({
-      "That EPUB exceeds VoxLeaf's safe processing limits.":
-        "synthetic resource-limit result",
-      "That EPUB uses features VoxLeaf does not support yet.":
-        "synthetic unsupported result",
-      "That file is not a valid supported EPUB.": "synthetic invalid result",
-      "This EPUB has no supported readable content.": "synthetic empty result",
-      "VoxLeaf could not open that EPUB because of an internal failure.":
-        "synthetic internal-failure result",
-      "VoxLeaf could not read that local file.":
-        "synthetic read-failure result",
-    });
+        );
+        const openStatus = await driver.execute(
+          `return document.querySelector('[role="status"]')?.textContent ?? "";`,
+        );
+        const failureStageByStatus = Object.freeze({
+          "That EPUB exceeds VoxLeaf's safe processing limits.":
+            "synthetic resource-limit result",
+          "That EPUB uses features VoxLeaf does not support yet.":
+            "synthetic unsupported result",
+          "That file is not a valid supported EPUB.":
+            "synthetic invalid result",
+          "This EPUB has no supported readable content.":
+            "synthetic empty result",
+          "VoxLeaf could not open that EPUB because of an internal failure.":
+            "synthetic internal-failure result",
+          "VoxLeaf could not read that local file.":
+            "synthetic read-failure result",
+        });
 
-    if (openStatus !== "The EPUB opened successfully.") {
-      stage = failureStageByStatus[openStatus] ?? "synthetic unexpected result";
-      throw new Error("Native synthetic publication did not open.");
-    }
+        if (openStatus !== "The EPUB opened successfully.") {
+          stage =
+            failureStageByStatus[openStatus] ?? "synthetic unexpected result";
+          throw new Error("Native synthetic publication did not open.");
+        }
 
-    stage = "synthetic publication readiness";
-    await waitForCondition(
-      driver,
-      `return Array.from(document.querySelectorAll("h2")).some(
+        stage = "synthetic publication readiness";
+        await waitForCondition(
+          driver,
+          `return Array.from(document.querySelectorAll("h2")).some(
          (heading) =>
            heading.textContent === "Synthetic EPUB version equivalence" &&
            heading.getClientRects().length > 0,
        );`,
-    );
-    stage = "native bilingual narration preference";
-    await openReaderSettings(driver);
-    await exerciseNarrationLanguagePreference(driver, "es");
-    await closeReaderSettings(driver);
-    stage = "synthetic raster image presentation";
-    await driver.execute(
-      `document.querySelector(".semantic-raster-host")
+        );
+        stage = "native bilingual narration preference";
+        await openReaderSettings(driver);
+        await exerciseNarrationLanguagePreference(driver, "es");
+        await closeReaderSettings(driver);
+        stage = "synthetic raster image presentation";
+        await driver.execute(
+          `document.querySelector(".semantic-raster-host")
          ?.scrollIntoView({ block: "center" });
        return true;`,
-    );
-    await waitForCondition(
-      driver,
-      `const image = document.querySelector('img[alt="Synthetic cover"]');
+        );
+        await waitForCondition(
+          driver,
+          `const image = document.querySelector('img[alt="Synthetic cover"]');
        return image !== null && image.getClientRects().length > 0;`,
-    );
-    const imageObservation = await driver.execute(
-      `const image = document.querySelector('img[alt="Synthetic cover"]');
+        );
+        const imageObservation = await driver.execute(
+          `const image = document.querySelector('img[alt="Synthetic cover"]');
        return {
          sourceIsLocalObjectUrl: image?.src.startsWith("blob:") === true,
          naturalWidth: image?.naturalWidth ?? 0,
          naturalHeight: image?.naturalHeight ?? 0,
        };`,
-    );
-    assert(
-      imageObservation?.sourceIsLocalObjectUrl === true &&
-        imageObservation.naturalWidth === 1 &&
-        imageObservation.naturalHeight === 1,
-      "Native publication raster image did not decode from a local object URL.",
-    );
+        );
+        assert(
+          imageObservation?.sourceIsLocalObjectUrl === true &&
+            imageObservation.naturalWidth === 1 &&
+            imageObservation.naturalHeight === 1,
+          "Native publication raster image did not decode from a local object URL.",
+        );
 
-    stage = "synthetic selection cleanup";
-    assert(
-      (await driver.execute(
-        `return document.querySelector('input[type="file"]')?.value ?? "";`,
-      )) === "",
-      "Native application did not clear the synthetic file selection.",
-    );
-    assert(
-      (await driver.execute(
-        `return document.body.textContent?.includes("synthetic.epub") ?? false;`,
-      )) === false,
-      "Native application exposed the synthetic fixture filename.",
-    );
+        stage = "synthetic selection cleanup";
+        assert(
+          (await driver.execute(
+            `return document.querySelector('input[type="file"]')?.value ?? "";`,
+          )) === "",
+          "Native application did not clear the synthetic file selection.",
+        );
+        assert(
+          (await driver.execute(
+            `return document.body.textContent?.includes("synthetic.epub") ?? false;`,
+          )) === false,
+          "Native application exposed the synthetic fixture filename.",
+        );
 
-    stage = "native file-ingress lifecycle matrix";
-    await exerciseNativeFileIngressMatrix(
-      driver,
-      fileIngressFixturePaths,
-      (nextStage) => {
-        stage = nextStage;
-      },
-    );
+        stage = "native file-ingress lifecycle matrix";
+        await exerciseNativeFileIngressMatrix(
+          driver,
+          fileIngressFixturePaths,
+          (nextStage) => {
+            stage = nextStage;
+          },
+        );
 
-    stage = "native reader interaction matrix";
-    await exerciseNativeReaderInteractionMatrix(driver, (nextStage) => {
-      stage = nextStage;
-    });
+        stage = "native reader interaction matrix";
+        await exerciseNativeReaderInteractionMatrix(driver, (nextStage) => {
+          stage = nextStage;
+        });
 
-    stage = "native synchronization feasibility";
-    await exerciseNativeSynchronizationFeasibility(driver, (nextStage) => {
-      stage = nextStage;
-    });
+        stage = "native synchronization feasibility";
+        await exerciseNativeSynchronizationFeasibility(driver, (nextStage) => {
+          stage = nextStage;
+        });
 
-    stage = "synthetic restoration seed navigation";
-    await openReaderContents(driver);
-    const restorationSeedLinks = await driver.findElements(
-      "button.reader-toc-link",
-    );
-    assert(
-      restorationSeedLinks.length >= 2,
-      "Native application did not persist the synthetic continuation locator.",
-    );
-    await driver.sendKeys(restorationSeedLinks[1], WEBDRIVER_ENTER);
-    await waitForCondition(
-      driver,
-      `return Array.from(document.querySelectorAll("h1")).some(
+        stage = "synthetic restoration seed navigation";
+        await openReaderContents(driver);
+        const restorationSeedLinks = await driver.findElements(
+          "button.reader-toc-link",
+        );
+        assert(
+          restorationSeedLinks.length >= 2,
+          "Native application did not persist the synthetic continuation locator.",
+        );
+        await driver.sendKeys(restorationSeedLinks[1], WEBDRIVER_ENTER);
+        await waitForCondition(
+          driver,
+          `return Array.from(document.querySelectorAll("h1")).some(
          (heading) =>
            heading.textContent === "Continuation" &&
            heading.getClientRects().length > 0,
        );`,
-    );
-    await waitForCondition(
-      driver,
-      `const serialized = localStorage.getItem("voxleaf.reader.positions");
+        );
+        await waitForCondition(
+          driver,
+          `const serialized = localStorage.getItem("voxleaf.reader.positions");
        if (serialized === null) {
          return false;
        }
        const envelope = JSON.parse(serialized);
        return envelope?.states?.[0]?.locator?.spineItemIndex === 1;`,
-    );
+        );
 
-    stage = "native restart preparation";
-    await delay(OBSERVATION_WINDOW_MS);
-    collectedBrowserLogs.push(...(await driver.getLogs("browser")));
-    collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
-    await driver.deleteSession();
+        stage = "native restart preparation";
+        await delay(OBSERVATION_WINDOW_MS);
+        collectedBrowserLogs.push(...(await driver.getLogs("browser")));
+        collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
+        await driver.deleteSession();
 
-    stage = "native restart session creation";
-    await driver.createSession(executablePath, profileDirectory);
-    await Promise.all([
-      driver.executeCdp("Log.enable"),
-      driver.executeCdp("Runtime.enable"),
-      driver.executeCdp("Network.enable"),
-    ]);
-    await driver.setWindowRect(320, 640);
-    await waitForCondition(
-      driver,
-      `const root = document.querySelector("#root");
+        stage = "native restart session creation";
+        await driver.createSession(executablePath, profileDirectory);
+        await Promise.all([
+          driver.executeCdp("Log.enable"),
+          driver.executeCdp("Runtime.enable"),
+          driver.executeCdp("Network.enable"),
+        ]);
+        await driver.setWindowRect(320, 640);
+        await waitForCondition(
+          driver,
+          `const root = document.querySelector("#root");
        const main = document.querySelector("main");
        return root?.childElementCount > 0 &&
          main !== null &&
          main.getClientRects().length > 0;`,
-    );
-    stage = "synthetic restart file injection";
-    const restartFileInput = await driver.findElement('input[type="file"]');
-    await driver.execute(
-      `document.querySelector('input[type="file"]')
+        );
+        stage = "synthetic restart file injection";
+        const restartFileInput = await driver.findElement('input[type="file"]');
+        await driver.execute(
+          `document.querySelector('input[type="file"]')
          ?.focus({ preventScroll: true });
        return true;`,
-    );
-    await driver.sendKeys(restartFileInput, fixturePath);
-    stage = "synthetic saved-position restoration";
-    const restorationObservation =
-      await observeSavedPositionRestoration(driver);
-    if (restorationObservation?.status === "pending") {
-      stage =
-        restorationObservation.savedContinuation &&
-        restorationObservation.continuationVisible &&
-        restorationObservation.readerBusy
-          ? restorationObservation.continuationAligned
-            ? "synthetic restoration pending after destination alignment"
-            : restorationObservation.documentScrolled
-              ? "synthetic restoration pending after destination adjustment"
-              : "synthetic restoration pending before destination alignment"
-          : "synthetic restoration pending before destination materialization";
-      throw new Error("Native saved-position restoration remained pending.");
-    }
-    if (restorationObservation?.status !== "exact") {
-      stage =
-        restorationObservation?.savedContinuation === true
-          ? "synthetic saved-position restoration result"
-          : "synthetic saved-position persistence result";
-      throw new Error(
-        "Native saved-position restoration reached an unexpected safe state.",
-      );
-    }
-    assert(
-      (await driver.execute(
-        `return Array.from(document.querySelectorAll("h1")).some(
+        );
+        await driver.sendKeys(restartFileInput, fixturePath);
+        stage = "synthetic saved-position restoration";
+        const restorationObservation =
+          await observeSavedPositionRestoration(driver);
+        if (restorationObservation?.status === "pending") {
+          stage =
+            restorationObservation.savedContinuation &&
+            restorationObservation.continuationVisible &&
+            restorationObservation.readerBusy
+              ? restorationObservation.continuationAligned
+                ? "synthetic restoration pending after destination alignment"
+                : restorationObservation.documentScrolled
+                  ? "synthetic restoration pending after destination adjustment"
+                  : "synthetic restoration pending before destination alignment"
+              : "synthetic restoration pending before destination materialization";
+          throw new Error(
+            "Native saved-position restoration remained pending.",
+          );
+        }
+        if (restorationObservation?.status !== "exact") {
+          stage =
+            restorationObservation?.savedContinuation === true
+              ? "synthetic saved-position restoration result"
+              : "synthetic saved-position persistence result";
+          throw new Error(
+            "Native saved-position restoration reached an unexpected safe state.",
+          );
+        }
+        assert(
+          (await driver.execute(
+            `return Array.from(document.querySelectorAll("h1")).some(
            (heading) =>
              heading.textContent === "Continuation" &&
              heading.getClientRects().length > 0,
          );`,
-      )) === true,
-      "Native application did not restore the synthetic continuation locator.",
-    );
-    assert(
-      (await driver.execute(
-        `return document.activeElement ===
+          )) === true,
+          "Native application did not restore the synthetic continuation locator.",
+        );
+        assert(
+          (await driver.execute(
+            `return document.activeElement ===
            document.querySelector('input[type="file"]');`,
-      )) === true,
-      "Native saved-position restoration moved keyboard focus.",
-    );
-    assert(
-      (await driver.execute(
-        `const reader = document.querySelector(".semantic-reader");
+          )) === true,
+          "Native saved-position restoration moved keyboard focus.",
+        );
+        assert(
+          (await driver.execute(
+            `const reader = document.querySelector(".semantic-reader");
          const serialized = localStorage.getItem(
            "voxleaf.reader.preferences",
          );
@@ -1463,46 +1663,47 @@ async function run() {
            reader.dataset.readerContentWidth === "narrow" &&
            reader.dataset.readerTheme === "system" &&
            document.documentElement.scrollWidth <= window.innerWidth;`,
-      )) === true,
-      "Native reader preferences were not persisted or restored.",
-    );
+          )) === true,
+          "Native reader preferences were not persisted or restored.",
+        );
 
-    stage = "synthetic publication replacement cleanup";
-    await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
-    assert(
-      (await driver.findElements('img[alt="Synthetic cover"]')).length === 0,
-      "Native publication raster image remained mounted after close.",
-    );
+        stage = "synthetic publication replacement cleanup";
+        await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
+        assert(
+          (await driver.findElements('img[alt="Synthetic cover"]')).length ===
+            0,
+          "Native publication raster image remained mounted after close.",
+        );
 
-    stage = "SAC-09 oriented JPEG decode and release";
-    await injectNativeFile(driver, orientedFixturePath);
-    for (const alt of [
-      "Synthetic orientation six",
-      "Synthetic orientation eight",
-    ]) {
-      await waitForCondition(
-        driver,
-        `const target = document.querySelector('img[alt="${alt}"]') ??
+        stage = "SAC-09 oriented JPEG decode and release";
+        await injectNativeFile(driver, orientedFixturePath);
+        for (const alt of [
+          "Synthetic orientation six",
+          "Synthetic orientation eight",
+        ]) {
+          await waitForCondition(
+            driver,
+            `const target = document.querySelector('img[alt="${alt}"]') ??
           document.querySelector('[role="img"][aria-label^="${alt}."]');
         if (target === null) return false;
         target.scrollIntoView({ block: "center" });
         return true;`,
-      );
-      await waitForCondition(
-        driver,
-        `const image = document.querySelector('img[alt="${alt}"]');
+          );
+          await waitForCondition(
+            driver,
+            `const image = document.querySelector('img[alt="${alt}"]');
         return image !== null && image.src.startsWith("blob:") && image.naturalWidth === 2 && image.naturalHeight === 3;`,
-      );
-    }
-    await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
-    assert(
-      (await driver.findElements('img[alt^="Synthetic orientation"]'))
-        .length === 0,
-      "Native oriented raster image remained mounted after close.",
-    );
+          );
+        }
+        await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
+        assert(
+          (await driver.findElements('img[alt^="Synthetic orientation"]'))
+            .length === 0,
+          "Native oriented raster image remained mounted after close.",
+        );
 
-    const externalLoadedResourceCount = await driver.execute(
-      `return performance.getEntriesByType("resource").filter((entry) => {
+        const externalLoadedResourceCount = await driver.execute(
+          `return performance.getEntriesByType("resource").filter((entry) => {
          try {
            const url = new URL(entry.name);
            return !(
@@ -1517,69 +1718,58 @@ async function run() {
            return true;
          }
        }).length;`,
-    );
+        );
 
-    await delay(OBSERVATION_WINDOW_MS);
-    collectedBrowserLogs.push(...(await driver.getLogs("browser")));
-    collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
-    const performanceLogs = inspectPerformanceLogs(collectedPerformanceLogs);
+        await delay(OBSERVATION_WINDOW_MS);
+        collectedBrowserLogs.push(...(await driver.getLogs("browser")));
+        collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
+        const performanceLogs = inspectPerformanceLogs(
+          collectedPerformanceLogs,
+        );
 
-    stage = "startup assertions";
-    assert(rootMounted === true, "Native application root did not mount.");
-    assert(
-      (await driver.execute(
-        `return document.querySelector("main")?.getClientRects().length > 0;`,
-      )) === true,
-      "Native application main landmark is not visible.",
-    );
-    assert(
-      collectedBrowserLogs.every((entry) => entry?.level !== "SEVERE") &&
-        performanceLogs.runtimeErrorCount === 0,
-      "Native application emitted a page or console error.",
-    );
-    assert(
-      externalLoadedResourceCount === 0 &&
-        performanceLogs.externalRequestCount === 0,
-      "Native application attempted an external request.",
-    );
+        stage = "startup assertions";
+        assert(rootMounted === true, "Native application root did not mount.");
+        assert(
+          (await driver.execute(
+            `return document.querySelector("main")?.getClientRects().length > 0;`,
+          )) === true,
+          "Native application main landmark is not visible.",
+        );
+        assert(
+          collectedBrowserLogs.every((entry) => entry?.level !== "SEVERE") &&
+            performanceLogs.runtimeErrorCount === 0,
+          "Native application emitted a page or console error.",
+        );
+        assert(
+          externalLoadedResourceCount === 0 &&
+            performanceLogs.externalRequestCount === 0,
+          "Native application attempted an external request.",
+        );
 
-    console.log(
-      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication replacement cleanup completed, no errors, no external requests.",
-    );
+        console.log(
+          "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication replacement cleanup completed, no errors, no external requests.",
+        );
+      },
+      cleanup: async () => {
+        await cleanupNativeRun({
+          driver,
+          child,
+          temporaryDirectory,
+          identities,
+        });
+      },
+    });
   } catch (error) {
     console.error(
       `${runLabel} failed during ${stage} [${failureCode(error)}].`,
     );
     process.exitCode = 1;
-  } finally {
-    if (driver.hasSession) {
-      try {
-        await driver.deleteSession();
-      } catch {
-        cleanupFailed = true;
-      }
-    }
-    try {
-      await stopChild(child);
-    } catch {
-      cleanupFailed = true;
-    }
-    try {
-      await rm(temporaryDirectory, {
-        force: true,
-        maxRetries: 5,
-        recursive: true,
-        retryDelay: 200,
-      });
-    } catch {
-      cleanupFailed = true;
-    }
-
-    if (cleanupFailed) {
-      console.error(`${runLabel} cleanup failed.`);
-      process.exitCode = 1;
-    }
   }
 }
 
-await run();
+if (
+  process.argv[1] !== undefined &&
+  pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
+) {
+  await run();
+}

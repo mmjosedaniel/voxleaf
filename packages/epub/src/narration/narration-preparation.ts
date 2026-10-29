@@ -38,6 +38,10 @@ import {
   type PreparedNarrationBlock,
 } from "./narration-prepared-segment.js";
 import {
+  summarizeEnglishTitleContext,
+  type NarrationEnglishTitleContext,
+} from "./narration-bilingual-normalizer.js";
+import {
   prepareNarrationSourceWindow,
   type NarrationSourceWindowFailure,
   type NarrationSourceWindowLeafEvent,
@@ -72,6 +76,10 @@ interface MutablePreparationMeasurements {
 export interface NarrationPreparationCheckpoint {
   context?: string;
   continuation?: ReadingLocatorV1;
+  englishTitleContext?: Readonly<{
+    continuation: ReadingLocatorV1;
+    summary: NarrationEnglishTitleContext;
+  }>;
   readonly source: NarrationSourceTraversalCheckpoint;
 }
 
@@ -571,6 +579,38 @@ function observeSourceWindow(
   }
 }
 
+function titleContextAt(
+  leaf: NarrationSourceTokenLeafEvent,
+  continuation: ReadingLocatorV1,
+  defaultLanguage: "und" | "es" | "en",
+  preceding: NarrationEnglishTitleContext | undefined,
+  operation: MutablePreparationMeasurements,
+): NonNullable<NarrationPreparationCheckpoint["englishTitleContext"]> {
+  const end =
+    continuation.textOffsetCodePoints - leaf.sourceStartOffsetCodePoints;
+  if (
+    end < 0 ||
+    end > leaf.sourceTokens.length ||
+    !sameLocatorBlock(continuation, leaf.locatedBlock.startLocator)
+  )
+    return fail();
+  const inspected = Math.min(
+    end,
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum,
+  );
+  operation.work.charge(inspected);
+  observeSourceWindow(operation, inspected, 0);
+  return Object.freeze({
+    continuation,
+    summary: summarizeEnglishTitleContext(
+      leaf.sourceTokens,
+      end,
+      defaultLanguage,
+      preceding,
+    ),
+  });
+}
+
 /**
  * Runs one bounded public preparation request over immutable publication state.
  * Callers own publication-level concurrency and linked-close cancellation.
@@ -602,6 +642,9 @@ export async function prepareNarrationBatch(
       delete checkpoint.source.leaf;
       delete checkpoint.source.structural;
     }
+    let titleContext = warm ? checkpoint.englishTitleContext : undefined;
+    let returnedTitleContext: NarrationPreparationCheckpoint["englishTitleContext"];
+    delete checkpoint.englishTitleContext;
     delete checkpoint.continuation;
     checkpoint.context = context;
     let cursor =
@@ -640,6 +683,11 @@ export async function prepareNarrationBatch(
     operation.work.charge(derivation.workUnitCount);
     let sourceComplete = false;
     const segmentPolicy = narrationSegmentPolicy(request.profile);
+    const retainTitleContext =
+      request.defaultLanguage === "en" &&
+      (request.profile === "narration-bilingual-v2" ||
+        request.profile === "narration-chatterbox-v1" ||
+        request.profile === "narration-piper-v2");
 
     while (candidates.lookahead === undefined && !sourceComplete) {
       const window = await prepareNarrationSourceWindow(
@@ -688,6 +736,17 @@ export async function prepareNarrationBatch(
         }
         let leaf = tokenLeafFromWindow(event);
         while (true) {
+          const precedingTitleContext =
+            titleContext !== undefined &&
+            sameLocatorPosition(
+              titleContext.continuation,
+              createBlockLocatorAtOffset(
+                leaf.locatedBlock,
+                leaf.sourceStartOffsetCodePoints,
+              ),
+            )
+              ? titleContext.summary
+              : undefined;
           const retained = retainedCandidateMeasurements(candidates);
           const remainingSegmentEntries =
             NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum -
@@ -724,6 +783,9 @@ export async function prepareNarrationBatch(
               signal,
               scheduler,
               operationWorkBudget: operation.work,
+              ...(precedingTitleContext === undefined
+                ? {}
+                : { precedingEnglishTitleContext: precedingTitleContext }),
             }),
           );
           operation.checkpointCount = addSafe(
@@ -758,11 +820,28 @@ export async function prepareNarrationBatch(
             ) {
               break;
             }
+            if (retainTitleContext)
+              returnedTitleContext = titleContextAt(
+                leaf,
+                segment.sourceRange.end,
+                request.defaultLanguage,
+                precedingTitleContext,
+                operation,
+              );
           }
           nextCursor = nextLeafStart(leaf, prepared, stable);
           if (candidates.lookahead !== undefined) {
             break;
           }
+          titleContext = retainTitleContext
+            ? titleContextAt(
+                leaf,
+                nextCursor,
+                request.defaultLanguage,
+                precedingTitleContext,
+                operation,
+              )
+            : undefined;
           if (!prepared.complete) {
             leaf = tokenLeafFromWindow(
               event,
@@ -818,6 +897,8 @@ export async function prepareNarrationBatch(
         measurements,
       });
       checkpoint.continuation = finalSegment.sourceRange.end;
+      if (returnedTitleContext !== undefined)
+        checkpoint.englishTitleContext = returnedTitleContext;
       const retained = retainedCandidateMeasurements(candidates);
       observeResourceSnapshot(resourceObserver, {
         activeRequestCount: 1,

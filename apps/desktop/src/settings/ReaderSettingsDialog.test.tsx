@@ -200,6 +200,53 @@ function hardwareSource() {
 }
 
 describe("reader Settings dialog", () => {
+  it.each(["complete", "stopped", "playing", "failed"] as const)(
+    "SAF-03 startup changes after %s preserve activity restrictions",
+    async (phase) => {
+      const source = narrationSource();
+      source.publish({
+        ...source.observe(),
+        state: { phase } as NonNullable<ProductNarrationSnapshot["state"]>,
+      });
+      renderSettings({
+        narrationCoordinator: source as unknown as ProductNarrationCoordinator,
+      });
+      const prepared = screen.getByRole("radio", { name: /Prepared playback/ });
+      if (phase === "complete" || phase === "stopped") {
+        expect(prepared).toBeEnabled();
+        fireEvent.click(prepared);
+        expect(source.setSelection).toHaveBeenCalledWith({
+          kind: "prepared",
+          targetMs: 60_000,
+        });
+      } else {
+        expect(prepared).toBeDisabled();
+        expect(source.setSelection).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it.each(["loading", "unavailable"] as const)(
+    "SAF-03 completion retains %s persistence restriction",
+    (restriction) => {
+      const source = narrationSource();
+      source.publish({
+        ...source.observe(),
+        state: { phase: "complete" } as NonNullable<
+          ProductNarrationSnapshot["state"]
+        >,
+        startPreferenceStatus: restriction === "loading" ? "loading" : "ready",
+        canPersistStartPreference: restriction !== "unavailable",
+      });
+      renderSettings({
+        narrationCoordinator: source as unknown as ProductNarrationCoordinator,
+      });
+      expect(
+        screen.getByRole("radio", { name: /Prepared playback/ }),
+      ).toBeDisabled();
+    },
+  );
+
   it("observes narration replacement and fallback transitions only while Settings is open", async () => {
     const first = narrationSource();
     const second = narrationSource();

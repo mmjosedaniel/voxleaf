@@ -755,9 +755,11 @@ def execute_prototype(
     normal_units = 0
     released_units = 0
     first_audio_ns = 0
+    owned_worker: PrototypeWorker | None = None
+    primary_error: BaseException | None = None
     memory_probe.start()
     try:
-        normal = worker_factory()
+        normal = owned_worker = worker_factory()
         ready_observations.append(normal.start())
         normal_started = time.perf_counter_ns()
         for sequence, case_id in enumerate(
@@ -778,6 +780,8 @@ def execute_prototype(
             released_units += 1
             gate.invalidate()
         normal_stop = normal.close()
+        if normal_stop.exited:
+            owned_worker = None
         cleanup_observations.append(normal_stop.elapsed_ns)
         if not normal_stop.exited or not queue.empty:
             raise PrototypeError("cleanup")
@@ -798,7 +802,7 @@ def execute_prototype(
             )
         )
 
-        accepted = worker_factory()
+        accepted = owned_worker = worker_factory()
         ready_observations.append(accepted.start())
         accepted_segment = _segment(corpus, "es-narrative-target", "accepted", 1)
         gate.activate(accepted_segment.identity)
@@ -807,6 +811,9 @@ def execute_prototype(
         gate.invalidate()
         invalidation_ns = time.perf_counter_ns() - invalidation_started
         accepted_stop = accepted.terminate()
+        if not accepted_stop.exited:
+            raise PrototypeError("cleanup")
+        owned_worker = None
         cleanup_observations.append(accepted_stop.elapsed_ns)
         for late in accepted_stop.late_units:
             if gate.accepts(late):
@@ -822,7 +829,7 @@ def execute_prototype(
             )
         )
 
-        after_first = worker_factory()
+        after_first = owned_worker = worker_factory()
         ready_observations.append(after_first.start())
         first = _segment(corpus, "es-punctuation-dialogue-short", "after-first", 1)
         gate.activate(first.identity)
@@ -840,6 +847,9 @@ def execute_prototype(
         gate.invalidate()
         invalidation_ns = time.perf_counter_ns() - invalidation_started
         after_first_stop = after_first.terminate()
+        if not after_first_stop.exited:
+            raise PrototypeError("cleanup")
+        owned_worker = None
         cleanup_observations.append(after_first_stop.elapsed_ns)
         for late in after_first_stop.late_units:
             if gate.accepts(late):
@@ -855,7 +865,7 @@ def execute_prototype(
             )
         )
 
-        near_hard = worker_factory()
+        near_hard = owned_worker = worker_factory()
         ready_observations.append(near_hard.start())
         near_hard_segment = _segment(corpus, "es-narrative-target", "near-hard", 1)
         gate.activate(near_hard_segment.identity)
@@ -866,6 +876,9 @@ def execute_prototype(
         gate.invalidate()
         invalidation_ns = time.perf_counter_ns() - invalidation_started
         near_hard_stop = near_hard.terminate()
+        if not near_hard_stop.exited:
+            raise PrototypeError("cleanup")
+        owned_worker = None
         cleanup_observations.append(near_hard_stop.elapsed_ns)
         for late in near_hard_stop.late_units:
             if gate.accepts(late):
@@ -882,7 +895,7 @@ def execute_prototype(
             )
         )
 
-        cleanup_worker = worker_factory()
+        cleanup_worker = owned_worker = worker_factory()
         ready_observations.append(cleanup_worker.start())
         cleanup_segment = _segment(corpus, "es-narrative-target", "cleanup", 1)
         gate.activate(cleanup_segment.identity)
@@ -891,6 +904,9 @@ def execute_prototype(
         gate.invalidate()
         invalidation_ns = time.perf_counter_ns() - invalidation_started
         cleanup_stop = cleanup_worker.terminate()
+        if not cleanup_stop.exited:
+            raise PrototypeError("cleanup")
+        owned_worker = None
         cleanup_observations.append(cleanup_stop.elapsed_ns)
         for late in cleanup_stop.late_units:
             if gate.accepts(late):
@@ -905,8 +921,27 @@ def execute_prototype(
                 resources_released=_resources_released(resource_sampler, owner_pid),
             )
         )
+    except BaseException as error:
+        primary_error = error
+        raise
     finally:
-        memory = memory_probe.stop()
+        cleanup_error: Exception | None = None
+        try:
+            if owned_worker is not None and not owned_worker.terminate().exited:
+                raise PrototypeError("cleanup")
+        except Exception as error:
+            cleanup_error = error
+        try:
+            memory = memory_probe.stop()
+        except Exception:
+            retained_error = primary_error or cleanup_error
+            if retained_error is None:
+                raise
+            retained_error.add_note("tts-incremental-prototype:measurement-cleanup-failed")
+        if cleanup_error is not None:
+            if primary_error is None:
+                raise cleanup_error
+            primary_error.add_note("tts-incremental-prototype:worker-cleanup-failed")
 
     if len(ready_observations) != 5 or first_audio_ns <= 0:
         raise PrototypeError("observation")

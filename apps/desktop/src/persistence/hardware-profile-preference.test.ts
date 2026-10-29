@@ -13,6 +13,9 @@ function memoryStorage(initial?: string) {
     setItem: vi.fn((_key: string, next: string) => {
       value = next;
     }),
+    removeItem: vi.fn(() => {
+      value = null;
+    }),
     value: () => value,
   };
 }
@@ -31,6 +34,41 @@ function repository(
 }
 
 describe("hardware profile preference repository", () => {
+  it.each([undefined, "{", '{"schemaVersion":1,"profileId":"prior"}'])(
+    "SAF-09 reversible writes restore exact prior state %s",
+    async (initial) => {
+      const storage = memoryStorage(initial);
+      const subject = repository(storage);
+      const saved = await subject.writeReversible!("new-profile");
+      expect(saved.status).toBe("saved");
+      expect(storage.value()).toContain("new-profile");
+      if (saved.status !== "saved") throw new Error("expected-saved");
+      expect(saved.restore!()).toEqual({ status: "saved" });
+      expect(storage.value()).toBe(initial ?? null);
+    },
+  );
+
+  it("SAF-09 rollback preserves a newer external preference", async () => {
+    const storage = memoryStorage();
+    const subject = repository(storage);
+    const saved = await subject.writeReversible!("obsolete-profile");
+    await subject.write("newer-profile");
+    if (saved.status !== "saved") throw new Error("expected-saved");
+    expect(saved.restore!()).toEqual({ status: "unavailable" });
+    expect(storage.value()).toContain("newer-profile");
+  });
+
+  it("SAF-09 rollback reports storage failure without discarding its current bytes", async () => {
+    const storage = memoryStorage();
+    const saved = await repository(storage).writeReversible!("new-profile");
+    storage.removeItem.mockImplementation(() => {
+      throw new Error("synthetic-storage-failure");
+    });
+    if (saved.status !== "saved") throw new Error("expected-saved");
+    expect(saved.restore!()).toEqual({ status: "unavailable" });
+    expect(storage.value()).toContain("new-profile");
+  });
+
   it("stores only one bounded profile ID under the fixed key", async () => {
     const storage = memoryStorage();
     const subject = repository(storage);

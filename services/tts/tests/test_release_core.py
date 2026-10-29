@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import socket
+import sys
+import threading
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -39,6 +44,80 @@ def test_core_sync_reinstalls_the_current_local_voxleaf_package(
     _sync_core_environment(tmp_path)
 
     assert observed[-2:] == ["--reinstall-package", "voxleaf-tts"]
+
+
+@pytest.mark.parametrize("language", ["es", "en"])
+@pytest.mark.parametrize("literal_route", [False, True])
+def test_saf_core_smoke_requires_literal_delimiter_route_not_only_pcm(
+    monkeypatch: pytest.MonkeyPatch, language: str, literal_route: bool
+) -> None:
+    instances: list[SmokeEngine] = []
+    shared_lock = threading.Lock()
+
+    class Voice:
+        espeak_data_dir = Path("synthetic-espeak")
+        config = SimpleNamespace(espeak_voice=language, vowel_clusters={("a", "i")})
+
+        def phonemize(self, text: str) -> list[list[str]]:
+            return [list(text.replace("[[", "").replace("]]", ""))]
+
+    class LiteralPhonemizer:
+        def __init__(self, _data: Path) -> None:
+            assert shared_lock.locked()
+
+        def phonemize(self, voice: str, text: str, **_kwargs: object) -> list[list[str]]:
+            assert shared_lock.locked()
+            assert voice == language
+            return [list(text)]
+
+    class SmokeEngine:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            self._voice = Voice()
+            if literal_route:
+                self._voice.phonemize = lambda text: [list(text)]  # type: ignore[method-assign]
+            self.last_text = ""
+            instances.append(self)
+
+        def load(self) -> None:
+            pass
+
+        def warm(self) -> None:
+            pass
+
+        def begin(self, _request: str, segment: dict[str, object]) -> str:
+            self.last_text = cast(str, segment["text"])
+            return "identity"
+
+        def settle(self) -> tuple[str, object]:
+            return "identity", SimpleNamespace(payload=b"synthetic-pcm", sample_rate_hz=24_000)
+
+        def release_result(self) -> None:
+            pass
+
+        def cleanup(self) -> None:
+            pass
+
+    adapter_module = ModuleType("voxleaf_tts.adapters.piper")
+    adapter_module.__dict__.update(
+        PiperCpuTtsEngine=SmokeEngine, SPANISH_PROFILE=object(), ENGLISH_PROFILE=object()
+    )
+    voice_module = ModuleType("piper.voice")
+    voice_module.__dict__.update(
+        EspeakPhonemizer=LiteralPhonemizer, _ESPEAK_PHONEMIZER_LOCK=shared_lock
+    )
+    monkeypatch.setitem(sys.modules, "voxleaf_tts.adapters.piper", adapter_module)
+    monkeypatch.setitem(sys.modules, "piper.voice", voice_module)
+    # The generated script installs an offline socket guard in its own process;
+    # restore these process globals when exercising it with synthetic modules.
+    monkeypatch.setattr(socket, "socket", socket.socket)
+    monkeypatch.setattr(socket, "create_connection", socket.create_connection)
+    script = release_core._smoke_script(language)
+    if literal_route:
+        exec(script, {})
+        assert "[[" in instances[0].last_text and "]]" in instances[0].last_text
+    else:
+        with pytest.raises(AssertionError):
+            exec(script, {})
 
 
 def _sha256(value: bytes) -> str:

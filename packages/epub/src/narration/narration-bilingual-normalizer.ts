@@ -795,11 +795,88 @@ function enforceNumericLookahead(
   }
 }
 
+/** Constant-size, content-free lookbehind for a continued source leaf. */
+export interface NarrationEnglishTitleContext {
+  readonly trailingWhitespace: number;
+  readonly wordLength: number;
+  readonly wordInitialUppercase: boolean;
+  readonly precededByNumber: boolean;
+  readonly complete: boolean;
+}
+
+export function summarizeEnglishTitleContext(
+  tokens: readonly NarrationSourceToken[],
+  endIndexExclusive: number,
+  defaultLanguage: NarrationNormalizationLanguage,
+  preceding?: NarrationEnglishTitleContext,
+): NarrationEnglishTitleContext {
+  const limit =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+  const begin = Math.max(0, endIndexExclusive - limit);
+  let state: NarrationEnglishTitleContext =
+    begin === 0 && preceding !== undefined
+      ? preceding
+      : {
+          trailingWhitespace: 0,
+          wordLength: 0,
+          wordInitialUppercase: false,
+          precededByNumber: false,
+          complete:
+            begin === 0 && tokens[0]?.sourceSpan.startOffsetCodePoints === 0,
+        };
+  for (let index = begin; index < endIndexExclusive; index += 1) {
+    const token = tokens[index];
+    const value = sourceText(token) ?? "";
+    if (
+      token === undefined ||
+      !isProseTextToken(token) ||
+      effectiveLanguage(token.textContext, defaultLanguage) !== "en"
+    ) {
+      state = {
+        trailingWhitespace: 0,
+        wordLength: 0,
+        wordInitialUppercase: false,
+        precededByNumber: false,
+        complete: false,
+      };
+    } else if (isOrdinaryWhitespace(value)) {
+      state = {
+        ...state,
+        trailingWhitespace: Math.min(limit + 1, state.trailingWhitespace + 1),
+      };
+    } else if (/^[\p{L}\p{M}]$/u.test(value)) {
+      const extendsWord =
+        state.trailingWhitespace === 0 && state.wordLength > 0;
+      state = {
+        trailingWhitespace: 0,
+        wordLength: Math.min(limit + 1, extendsWord ? state.wordLength + 1 : 1),
+        wordInitialUppercase: extendsWord
+          ? state.wordInitialUppercase
+          : /^\p{Lu}$/u.test(value),
+        precededByNumber:
+          state.trailingWhitespace === 0 && state.precededByNumber,
+        complete: state.trailingWhitespace > 0 || state.complete,
+      };
+    } else {
+      state = {
+        trailingWhitespace: 0,
+        wordLength: 0,
+        wordInitialUppercase: false,
+        precededByNumber: /^\p{N}$/u.test(value),
+        complete: true,
+      };
+    }
+  }
+  return Object.freeze(state);
+}
+
 function hasEnglishTitleContext(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
   start: number,
   end: number,
+  defaultLanguage: NarrationNormalizationLanguage,
+  preceding?: NarrationEnglishTitleContext,
 ): boolean {
   const limit =
     NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
@@ -817,23 +894,17 @@ function hasEnglishTitleContext(
     !/^\p{Lu}$/u.test(sourceText(tokens[next]) ?? "")
   )
     return false;
-  let previous = start - 1;
-  while (
-    start - previous <= limit &&
-    isOrdinaryWhitespace(sourceText(tokens[previous]) ?? "")
-  )
-    previous -= 1;
-  const wordEnd = previous;
-  while (
-    start - previous <= limit &&
-    /^[\p{L}\p{M}]$/u.test(sourceText(tokens[previous]) ?? "")
-  )
-    previous -= 1;
+  const previous = summarizeEnglishTitleContext(
+    tokens,
+    start,
+    defaultLanguage,
+    preceding,
+  );
   return (
-    start - previous <= limit &&
-    !/^\p{N}$/u.test(sourceText(tokens[previous]) ?? "") &&
-    (previous === wordEnd ||
-      !/^\p{Lu}$/u.test(sourceText(tokens[previous + 1]) ?? ""))
+    previous.complete &&
+    previous.trailingWhitespace + previous.wordLength + 1 <= limit &&
+    !previous.precededByNumber &&
+    (previous.wordLength === 0 || !previous.wordInitialUppercase)
   );
 }
 
@@ -841,6 +912,8 @@ function findLexicalReplacements(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
   existingReplacements: readonly (PlannedReplacement | undefined)[],
+  defaultLanguage: NarrationNormalizationLanguage,
+  preceding?: NarrationEnglishTitleContext,
 ): readonly (PlannedReplacement | undefined)[] {
   enforceNumericLookahead(tokens);
   const replacements = [...existingReplacements];
@@ -930,7 +1003,14 @@ function findLexicalReplacements(
         form.kind,
         form.boundaryProtections,
         (form.source === "Dr." || form.source === "St.") &&
-          !hasEnglishTitleContext(tokens, languages, index, endIndexExclusive)
+          !hasEnglishTitleContext(
+            tokens,
+            languages,
+            index,
+            endIndexExclusive,
+            defaultLanguage,
+            preceding,
+          )
           ? undefined
           : form.narration,
       );
@@ -1563,6 +1643,7 @@ function validateNormalizedStream(
 function normalizeNarrationSourceTokensInternal(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
+  preceding?: NarrationEnglishTitleContext,
 ): NarrationNormalizedStream {
   if (
     defaultLanguage !== "es" &&
@@ -1592,6 +1673,8 @@ function normalizeNarrationSourceTokensInternal(
     tokens,
     languages,
     symbolReplacements,
+    defaultLanguage,
+    preceding,
   );
   const punctuationPlan = findPunctuationPlan(tokens);
   const provisional = tokens.map((token, index) => {
@@ -1638,9 +1721,14 @@ function normalizeNarrationSourceTokensInternal(
 export function normalizeNarrationSourceTokens(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
+  preceding?: NarrationEnglishTitleContext,
 ): NarrationNormalizedStream {
   try {
-    return normalizeNarrationSourceTokensInternal(tokens, defaultLanguage);
+    return normalizeNarrationSourceTokensInternal(
+      tokens,
+      defaultLanguage,
+      preceding,
+    );
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {
       throw error;

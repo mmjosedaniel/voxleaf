@@ -10,6 +10,7 @@ import math
 import os
 import sys
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from types import ModuleType
@@ -140,11 +141,14 @@ class _VoiceConfig(Protocol):
     sample_rate: int
     num_speakers: int
     espeak_voice: str
+    vowel_clusters: set[tuple[str, ...]] | None
 
 
 class _PiperVoice(Protocol):
     session: _OnnxSession
     config: _VoiceConfig
+    espeak_data_dir: str | Path
+    phonemize: Callable[[str], list[list[str]]]
 
     def synthesize(
         self,
@@ -165,8 +169,23 @@ class _PiperVoiceFactory(Protocol):
     ) -> _PiperVoice: ...
 
 
+class _EspeakPhonemizer(Protocol):
+    def phonemize(
+        self,
+        voice: str,
+        text: str,
+        vowel_clusters: set[tuple[str, ...]] | None = None,
+    ) -> list[list[str]]: ...
+
+
+class _EspeakPhonemizerFactory(Protocol):
+    def __call__(self, espeak_data_dir: str | Path) -> _EspeakPhonemizer: ...
+
+
 class _PiperVoiceModule(Protocol):
     PiperVoice: _PiperVoiceFactory
+    EspeakPhonemizer: _EspeakPhonemizerFactory
+    _ESPEAK_PHONEMIZER_LOCK: AbstractContextManager[object]
 
 
 class _SynthesisConfigFactory(Protocol):
@@ -419,6 +438,24 @@ class PiperCpuTtsEngine:
                 or voice.config.espeak_voice != self._profile.expected_espeak_voice
             ):
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE)
+            # Publication text is literal: the upstream [[...]] convenience
+            # parser is not part of VoxLeaf's narration contract. Keep this
+            # binding local to the loaded voice and serialize against upstream
+            # callers because espeak's native voice state is shared.
+            voice_config = voice.config
+            phonemizer_lock = voice_module._ESPEAK_PHONEMIZER_LOCK
+            with phonemizer_lock:
+                phonemizer = voice_module.EspeakPhonemizer(voice.espeak_data_dir)
+
+            def phonemize_literal(text: str) -> list[list[str]]:
+                with phonemizer_lock:
+                    return phonemizer.phonemize(
+                        voice_config.espeak_voice,
+                        text,
+                        vowel_clusters=voice_config.vowel_clusters,
+                    )
+
+            voice.phonemize = phonemize_literal
             synthesis_config = config_module.SynthesisConfig(
                 speaker_id=None,
                 noise_scale=NOISE_SCALE,

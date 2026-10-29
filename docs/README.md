@@ -17,10 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [static audit follow-up](plans/active/static-audit-follow-up.md) is a
-planning-only ExecPlan for sixteen revalidated findings. It specifies minimal
-corrections and distinguishes reusable evidence candidates from required fresh
-checks. Implementation and its validation have not started.
+The [completed static audit follow-up](plans/completed/static-audit-follow-up.md)
+resolves sixteen bounded corrections across reader, EPUB, Piper, optional-package
+lifecycle and maintainer tools. Directed failures, combined host validation and
+owned cleanup pass. Independent R2 approves the corrected implementation and
+scoped current-task evidence reuse; the plan links the separate archive review.
+No historical PASS, new support claim or personal installer journey is claimed.
 
 The [completed revalidated audit corrections](plans/completed/revalidated-audit-corrections.md)
 resolve nine reader, EPUB and maintainer-tool findings. Directed failures,

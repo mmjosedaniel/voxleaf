@@ -1,6 +1,6 @@
 import console from "node:console";
 import { Buffer } from "node:buffer";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -14,6 +14,7 @@ const PREFLIGHT_ONLY_ARGUMENT = "--preflight-only";
 const LIFECYCLE_ONLY_ARGUMENT = "--lifecycle-only";
 const ARM_TIMEOUT_MS = 30 * 60 * 1_000;
 const PROCESS_CLEANUP_TIMEOUT_MS = 15_000;
+const RUNNER_CLEANUP_TIMEOUT_MS = 90_000;
 
 export const PORTFOLIO_PLAYBACK_RATE_PERCENTS = Object.freeze([
   100, 95, 90, 85, 80, 75,
@@ -102,6 +103,7 @@ export function nativeRunnerArguments({
   exercisePlaybackSpeeds = false,
 }) {
   const arguments_ = [
+    `--operation-timeout-ms=${ARM_TIMEOUT_MS}`,
     "--adaptive-tts-exact-host",
     "--exercise-profile-switch",
     `--tts-profile=${profileId}`,
@@ -130,6 +132,7 @@ function powershellText(script) {
     {
       encoding: "utf8",
       windowsHide: true,
+      timeout: PROCESS_CLEANUP_TIMEOUT_MS,
     },
   );
   if (result.status !== 0 || result.error) {
@@ -230,6 +233,63 @@ async function assertProcessCleanup(executable, baselineProcessIds) {
   throw new Error("Exact bilingual portfolio process cleanup failed.");
 }
 
+export async function runPortfolioArm({
+  runner,
+  arguments_ = [],
+  environment = process.env,
+  timeoutMs = ARM_TIMEOUT_MS,
+  assertCleanup = async () => undefined,
+}) {
+  const child = spawn(
+    process.execPath,
+    [runner, ...arguments_, `--operation-timeout-ms=${timeoutMs}`],
+    {
+      env: environment,
+      stdio: ["ignore", "inherit", "inherit", "ipc"],
+      windowsHide: true,
+    },
+  );
+  let cleanupConfirmed = false;
+  let supervisionFailure;
+  child.on("message", (message) => {
+    if (message?.type === "voxleaf-native-cleanup")
+      cleanupConfirmed = message.ok === true;
+  });
+  // The operation deadline is cooperative. This later watchdog is only a
+  // bounded failed-cleanup safeguard; it never turns uncertain cleanup into PASS.
+  const watchdog = globalThis.setTimeout(() => {
+    supervisionFailure = new Error(
+      "Exact bilingual portfolio runner cleanup was not confirmed.",
+    );
+    child.kill();
+  }, timeoutMs + RUNNER_CLEANUP_TIMEOUT_MS);
+  let failure;
+  try {
+    const exitCode = await new Promise((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", resolve);
+    });
+    if (supervisionFailure !== undefined) throw supervisionFailure;
+    if (exitCode !== 0 || !cleanupConfirmed)
+      throw new Error(
+        "Exact bilingual portfolio runner failed or cleanup was not confirmed.",
+      );
+  } catch (error) {
+    failure = error;
+  } finally {
+    globalThis.clearTimeout(watchdog);
+  }
+  try {
+    await assertCleanup();
+  } catch (error) {
+    failure = new AggregateError(
+      [...(failure === undefined ? [] : [failure]), error],
+      "Exact bilingual portfolio process cleanup failed.",
+    );
+  }
+  if (failure !== undefined) throw failure;
+}
+
 async function run() {
   const arms = selectPortfolioArms(process.argv.slice(2));
   const preflightOnly = process.argv.includes(PREFLIGHT_ONLY_ARGUMENT);
@@ -248,35 +308,23 @@ async function run() {
   const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
   const nativeRunner = path.join(scriptDirectory, "native-startup-smoke.mjs");
   if (lifecycleOnly) {
-    const result = spawnSync(process.execPath, [nativeRunner], {
-      env: modelFreeLifecycleEnvironment(process.env),
-      stdio: "inherit",
-      timeout: ARM_TIMEOUT_MS,
-      windowsHide: true,
+    await runPortfolioArm({
+      runner: nativeRunner,
+      environment: modelFreeLifecycleEnvironment(process.env),
     });
-    if (result.status !== 0 || result.error) {
-      throw new Error("Exact bilingual portfolio lifecycle matrix failed.");
-    }
     console.log("Exact bilingual portfolio lifecycle matrix passed.");
     return;
   }
   for (const arm of arms) {
     const python = process.env[arm.requiredEnvironment[1]];
     const baselineProcessIds = processIdsForExecutable(python);
-    const result = spawnSync(
-      process.execPath,
-      [nativeRunner, ...nativeRunnerArguments(arm)],
-      {
-        env: process.env,
-        stdio: "inherit",
-        timeout: ARM_TIMEOUT_MS,
-        windowsHide: true,
-      },
-    );
-    if (result.status !== 0 || result.error) {
-      throw new Error("Exact bilingual portfolio packaged matrix failed.");
-    }
-    await assertProcessCleanup(python, baselineProcessIds);
+    await runPortfolioArm({
+      runner: nativeRunner,
+      arguments_: nativeRunnerArguments(arm).filter(
+        (argument) => !argument.startsWith("--operation-timeout-ms="),
+      ),
+      assertCleanup: () => assertProcessCleanup(python, baselineProcessIds),
+    });
   }
   console.log("Exact bilingual portfolio packaged matrix passed.");
 }

@@ -119,6 +119,7 @@ export function SemanticRasterImageElement({
       : FIXED_LOADING_PRESENTATION,
   );
   const label = alternativeText ?? DEFAULT_IMAGE_LABEL;
+  const decorative = alternativeText === "";
 
   useEffect(() => {
     if (loader === undefined) {
@@ -200,10 +201,13 @@ export function SemanticRasterImageElement({
         className={`semantic-raster-placeholder${
           unavailable ? " semantic-raster-unavailable" : ""
         }`}
-        role="img"
-        aria-label={`${label}. Image ${
-          unavailable ? "unavailable" : "loading"
-        }.`}
+        role={decorative ? undefined : "img"}
+        aria-hidden={decorative ? true : undefined}
+        aria-label={
+          decorative
+            ? undefined
+            : `${label}. Image ${unavailable ? "unavailable" : "loading"}.`
+        }
         lang={language}
         dir={direction}
       >

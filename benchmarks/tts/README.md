@@ -3,6 +3,17 @@
 This directory contains reviewable, content-safe authority and summaries for
 roadmap Milestone 6. It is not a production TTS service boundary.
 
+The [SAF ledger](../../docs/plans/evidence/static-audit-follow-up/execution-ledger.md)
+tracks corrections to retained tooling. Prototype workers remain owned from
+before startup until confirmed shutdown, and exceptional cleanup preserves the
+primary failure while stopping measurement. V12 summary generation validates
+its destination and retains the scorecard until successful output, allowing a
+retry after a write failure; output cannot alias inputs or live inside the
+private session subsequently removed. Playback simulation counts starvation
+episodes and applies final-drain invalidation at its exact rational instant.
+Existing buffering thresholds and historical results are unchanged; the
+invalidation option has no current report consumer.
+
 Current retained tooling rejects a finalized or invalid quality-session ID
 before taking ownership of generation cleanup. Completed audio, evaluator pages
 and submitted scorecards remain intact on that rejected invocation; a genuinely

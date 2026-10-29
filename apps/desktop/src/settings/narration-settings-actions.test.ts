@@ -93,6 +93,47 @@ function fixture(development = false) {
 }
 
 describe("narration settings actions", () => {
+  it.each(["optional", "stop", "commit", "refresh"] as const)(
+    "SAF-09 ignores an invalidated selection after %s",
+    async (stage) => {
+      const f = fixture();
+      let current = true;
+      const barrier = deferred<never>();
+      if (stage === "optional")
+        f.steps.optional.mockReturnValue(barrier.promise);
+      if (stage === "stop") f.steps.stop.mockReturnValue(barrier.promise);
+      if (stage === "commit") f.steps.profile.mockReturnValue(barrier.promise);
+      if (stage === "refresh") f.steps.refresh.mockReturnValue(barrier.promise);
+      const pending = f.actions.selectProfile(
+        CHATTERBOX_OPTIONAL_PROFILE_ID,
+        f.hardware,
+        f.coordinator,
+        f.optional,
+        () => current,
+      );
+      if (stage !== "optional")
+        await vi.waitFor(() => expect(f.steps.stop).toHaveBeenCalledOnce());
+      if (stage === "commit")
+        await vi.waitFor(() => expect(f.steps.profile).toHaveBeenCalledOnce());
+      if (stage === "refresh")
+        await vi.waitFor(() => expect(f.steps.refresh).toHaveBeenCalledOnce());
+      current = false;
+      barrier.resolve(
+        (stage === "optional"
+          ? { ...new OptionalChatterboxClient().observe(), state: "installed" }
+          : stage === "commit"
+            ? true
+            : undefined) as never,
+      );
+      await expect(pending).resolves.toBe(false);
+      if (stage === "optional") expect(f.steps.stop).not.toHaveBeenCalled();
+      if (stage === "optional" || stage === "stop")
+        expect(f.steps.profile).not.toHaveBeenCalled();
+      if (stage === "refresh") expect(f.steps.refresh).toHaveBeenCalledOnce();
+      else expect(f.steps.refresh).not.toHaveBeenCalled();
+    },
+  );
+
   it.each(["profile", "language", "remove", "reset"] as const)(
     "%s awaits stop and propagates rejection",
     async (kind) => {

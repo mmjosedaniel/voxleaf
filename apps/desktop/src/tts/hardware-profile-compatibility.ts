@@ -324,6 +324,7 @@ export class HardwareProfileCompatibilityCoordinator {
   #languageSelection: NarrationLanguagePreferenceReadResult | undefined;
   #lastReport: HostProfileCompatibilityReportV1 | undefined;
   #lastNativeGate = false;
+  #profileWriteActive = false;
 
   public constructor(
     dependencies: HardwareProfileCompatibilityDependencies = {},
@@ -443,9 +444,16 @@ export class HardwareProfileCompatibilityCoordinator {
     );
   }
 
-  public async selectProfile(profileId: string): Promise<boolean> {
+  public async selectProfile(
+    profileId: string,
+    isCurrent?: () => boolean,
+  ): Promise<boolean> {
     if (
       this.#closed ||
+      this.#profileWriteActive ||
+      isCurrent?.() === false ||
+      (isCurrent !== undefined &&
+        this.#preferenceRepository.writeReversible === undefined) ||
       !this.#snapshot.profiles.some(
         (profile) =>
           profile.profileId === profileId &&
@@ -456,29 +464,48 @@ export class HardwareProfileCompatibilityCoordinator {
       return false;
     }
 
-    const result = await this.#preferenceRepository.write(profileId);
-    if (this.#closed || result.status !== "saved") {
-      return false;
+    this.#profileWriteActive = true;
+    try {
+      const language = this.#snapshot.language;
+      const result = await (isCurrent === undefined
+        ? this.#preferenceRepository.write(profileId)
+        : this.#preferenceRepository.writeReversible!(profileId));
+      if (result.status !== "saved") return false;
+      const selected = this.#snapshot.profiles.find(
+        (profile) =>
+          profile.profileId === profileId &&
+          admittedForLanguage(profile, this.#snapshot.language),
+      );
+      if (
+        this.#closed ||
+        isCurrent?.() === false ||
+        language !== this.#snapshot.language ||
+        selected === undefined
+      ) {
+        if (isCurrent !== undefined && result.restore?.().status !== "saved") {
+          this.#snapshot = Object.freeze({
+            ...this.#snapshot,
+            canPersistSelection: false,
+            preferenceStatus: "unavailable",
+          });
+          this.#publish();
+        }
+        return false;
+      }
+      this.#profileSelection = Object.freeze({ status: "ready", profileId });
+      this.#snapshot = Object.freeze({
+        ...this.#snapshot,
+        status: statusFor(selected, this.#snapshot.profiles),
+        reason: undefined,
+        activeProfileId: profileId,
+        selectionSource: "preference",
+        preferenceStatus: "used",
+      });
+      this.#publish();
+      return true;
+    } finally {
+      this.#profileWriteActive = false;
     }
-    this.#profileSelection = Object.freeze({ status: "ready", profileId });
-    const selected = this.#snapshot.profiles.find(
-      (profile) =>
-        profile.profileId === profileId &&
-        admittedForLanguage(profile, this.#snapshot.language),
-    );
-    if (selected === undefined) {
-      return false;
-    }
-    this.#snapshot = Object.freeze({
-      ...this.#snapshot,
-      status: statusFor(selected, this.#snapshot.profiles),
-      reason: undefined,
-      activeProfileId: profileId,
-      selectionSource: "preference",
-      preferenceStatus: "used",
-    });
-    this.#publish();
-    return true;
   }
 
   public async selectLanguage(language: NarrationLanguageV1): Promise<boolean> {

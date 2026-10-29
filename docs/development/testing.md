@@ -1,5 +1,43 @@
 # Testing strategy
 
+## Static audit follow-up regressions
+
+The [SAF execution ledger](../plans/evidence/static-audit-follow-up/execution-ledger.md)
+records current results and input identities for sixteen bounded corrections.
+Directed `SAF`/`saf` cases extend the existing Vitest, Node, pytest and Cargo
+suites; the selector also matches existing `safe` controls, whose counts remain
+separate from newly added regressions. The final batch uses one complete
+`test:typescript` route and one complete `test:python` suite. No earlier PASS is
+accepted merely because a historical source manifest matches.
+
+Coverage includes completed-mode Settings, publication-owned profile persistence,
+fresh Stop-to-Play admission, warm/cold preparation and context bounds, closed
+capitalized Spanish time articles, decorative image accessibility, literal
+per-voice Piper phonemization, cache-only restart cleanup and cancelled rejected
+headers. Historical/tool tests cover exceptional worker teardown, retryable
+quality output, starvation/final-drain accounting and download preparation errors.
+Host tests use synthetic original data, real benign child processes and loopback
+requests to exercise post-preflight launch errors and cooperative deadline cleanup.
+They preserve unrelated sentinels and do not run a personal installation journey.
+
+The native runner accepts `--operation-timeout-ms=N`, a positive integer at most
+`1800000`, also its default. Expiry aborts active requests and polling, waits for
+their settlement, then performs independently bounded cleanup. The portfolio
+requires the runner's IPC cleanup confirmation and terminal exit and checks
+cleanup after failures too. Process checks bind creation time and executable
+identity, including parent-child creation ordering and enumeration-to-handle
+matching. A capture must also remain bound to the original live ChildProcess
+across its await. Uncertain ancestry/capture retains scratch and fails; a proven
+older unrelated child is excluded. This covers deliberate
+deadline handling and does not establish recovery after arbitrary runner death.
+
+Core preparation uses `package:piper-core:write-manifest` once after fast checks;
+that command already builds and runs both offline voice smokes, including the
+delimiter route assertion. Follow it with `package:piper-core:check`. Final native
+startup invokes `node apps/desktop/scripts/native-startup-smoke.mjs` directly on
+the identified native build, avoiding the wrapper's redundant rebuild. Optional
+Chatterbox v7 is not regenerated for the live Piper-only adapter correction.
+
 ## Revalidated audit regressions
 
 The [RAC execution ledger](../plans/evidence/revalidated-audit-corrections/execution-ledger.md)

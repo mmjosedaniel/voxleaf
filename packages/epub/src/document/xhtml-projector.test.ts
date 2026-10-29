@@ -43,6 +43,37 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("SAF-15 preserves present empty image alt separately from missing alt", async () => {
+    await withArchive(
+      xhtml(
+        '<h:p><h:img src="../images/cover.png"/><h:img src="../images/cover.png" alt=""/><h:img src="../images/cover.png" alt=" &#10; "/><h:img src="../images/cover.png" alt=" Cover "/></h:p>',
+      ),
+      {},
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        const block = document.blocks[0];
+        if (block?.kind !== "paragraph")
+          throw new Error("expected synthetic paragraph");
+        const images = block.children.filter(
+          (inline) => inline.kind === "raster-image",
+        );
+        expect(images).toHaveLength(4);
+        expect(images.map((image) => image.alternativeText)).toEqual([
+          undefined,
+          "",
+          "",
+          "Cover",
+        ]);
+        expect(images[0]).not.toHaveProperty("alternativeText");
+        expect(images[1]).toHaveProperty("alternativeText", "");
+      },
+    );
+  });
+
   it("SAC-13 preserves literal and encoded opaque fragments but flattens real queries", async () => {
     await withArchive(
       xhtml(
