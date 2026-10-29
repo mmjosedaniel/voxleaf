@@ -113,11 +113,11 @@ class ManualReaderReflowEnvironment implements ReaderReflowEnvironment {
     return { top: 0, right: 240, bottom: 100, left: 0 };
   }
 
-  rangeRect(): VisualLocatorRect {
+  rangeRect(): VisualLocatorRect | undefined {
     return { top: 24, right: 120, bottom: 40, left: 10 };
   }
 
-  elementRect(): VisualLocatorRect {
+  elementRect(): VisualLocatorRect | undefined {
     return { top: 24, right: 120, bottom: 40, left: 10 };
   }
 
@@ -189,7 +189,8 @@ class ManualSegmentHighlightEnvironment implements SegmentHighlightEnvironment {
 }
 
 function narrationSnapshot(
-  phase: "playing" | "preparing" | "stopped" | "complete" | undefined,
+  phase:
+    "playing" | "preparing" | "paused" | "stopped" | "complete" | undefined,
 ): ProductNarrationSnapshot {
   return Object.freeze({
     availability: "available",
@@ -216,8 +217,11 @@ function narrationSnapshot(
             resourceCeilingReached: false,
             pauseContinuesPreparation: false,
             canPause: phase === "playing",
-            canResume: false,
-            canStop: phase === "playing" || phase === "preparing",
+            canResume: phase === "paused",
+            canStop:
+              phase === "playing" ||
+              phase === "preparing" ||
+              phase === "paused",
             volumePercent: 100,
             playbackRate: 1,
             selectedPlaybackRatePercent: 100,
@@ -246,7 +250,11 @@ function narrationSnapshot(
     recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent:
-        phase === "playing" || phase === "preparing" ? "playing" : "inactive",
+        phase === "playing" || phase === "preparing"
+          ? "playing"
+          : phase === "paused"
+            ? "paused"
+            : "inactive",
       settling: phase === "preparing",
       canGoPrevious: false,
       canGoNext: false,
@@ -958,6 +966,137 @@ describe("navigable publication reader", () => {
       CONTINUATION_LOCATED_BLOCK.startLocator,
       "chapter-navigation",
     );
+  });
+
+  it.each(["visible", "missing", "offscreen"])(
+    "VCA-09 waits for interior range placement and ignores superseded navigation (%s geometry)",
+    (geometry) => {
+      const publication = createPublication();
+      vi.mocked(publication.resolveLocator).mockImplementation((input) => {
+        const locator = decodeReadingLocatorV1(input);
+        return {
+          status: "exact",
+          reason: "exact",
+          locator,
+          locatedBlock: OPENING_LOCATED_BLOCK,
+        };
+      });
+      const source = new ManualReaderNarrationSource();
+      const environment = new ManualReaderReflowEnvironment();
+      if (geometry === "missing") {
+        vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+        vi.spyOn(environment, "elementRect").mockReturnValue(undefined);
+      } else if (geometry === "offscreen") {
+        vi.spyOn(environment, "rangeRect").mockReturnValue({
+          top: 1000,
+          bottom: 1020,
+          left: 0,
+          right: 100,
+        });
+      }
+      const settled = vi.fn();
+      render(
+        <ReaderPublicationContent
+          publication={publication}
+          narrationSource={source}
+          reflowEnvironment={environment}
+          onSettledLocatorChange={settled}
+        />,
+      );
+      const focus = screen.getByRole("button", {
+        name: "Show table of contents",
+      });
+      focus.focus();
+      const target = (offset: number) =>
+        decodeReadingLocatorV1({
+          ...OPENING_LOCATED_BLOCK.startLocator,
+          textOffsetCodePoints: offset,
+        });
+      act(() =>
+        source.requestNavigation({ event: "next-segment", locator: target(5) }),
+      );
+      expect(settled).not.toHaveBeenCalled();
+      act(() =>
+        source.requestNavigation({
+          event: "previous-segment",
+          locator: target(3),
+        }),
+      );
+      act(() => environment.flushAll());
+      expect(settled).toHaveBeenCalledExactlyOnceWith(
+        target(geometry === "visible" ? 3 : 0),
+        "narration-boundary",
+      );
+      expect(focus).toHaveFocus();
+    },
+  );
+
+  it("VCA-R1 settles paused interior navigation across preference reflow and resumes passive observations", () => {
+    const publication = createPublication();
+    vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+      status: "exact",
+      reason: "exact",
+      locator: decodeReadingLocatorV1(input),
+      locatedBlock: OPENING_LOCATED_BLOCK,
+    }));
+    const source = new ManualReaderNarrationSource();
+    vi.spyOn(source, "observe").mockReturnValue(narrationSnapshot("paused"));
+    const mapper = new SemanticDomRangeMapper();
+    const reflow = new ManualReaderReflowEnvironment();
+    const visual = new ManualVisualLocatorEnvironment();
+    visual.rects.set("Opening", { top: 10, right: 210, bottom: 50, left: 10 });
+    const settled = vi.fn();
+    const observed = vi.fn();
+    const props = {
+      publication,
+      narrationSource: source,
+      domRangeMapper: mapper,
+      reflowEnvironment: reflow,
+      visualLocatorEnvironment: visual,
+      onSettledLocatorChange: settled,
+      onActiveLocatorChange: observed,
+    };
+    const rendered = render(
+      <ReaderPublicationContent
+        {...props}
+        preferences={DEFAULT_READER_PREFERENCES}
+      />,
+    );
+    const target = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 3,
+    });
+    act(() =>
+      source.requestNavigation({ event: "next-segment", locator: target }),
+    );
+    expect(settled).not.toHaveBeenCalled();
+    rendered.rerender(
+      <ReaderPublicationContent
+        {...props}
+        preferences={{ ...DEFAULT_READER_PREFERENCES, textScale: "large" }}
+      />,
+    );
+    expect(settled).not.toHaveBeenCalled();
+    act(() => reflow.flushAll());
+    expect(settled).toHaveBeenCalledExactlyOnceWith(
+      target,
+      "narration-boundary",
+    );
+    expect(source.observe().state?.phase).toBe("paused");
+    expect(source.observe().navigation.playIntent).toBe("paused");
+    expect(source.startLocators).toEqual([]);
+
+    visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 5);
+    act(() => {
+      visual.notify();
+      visual.flush();
+    });
+    expect(observed).toHaveBeenCalledExactlyOnceWith({
+      ...target,
+      textOffsetCodePoints: 5,
+    });
+    expect(settled).toHaveBeenCalledTimes(1);
+    expect(source.startLocators).toEqual([]);
   });
 
   it("routes narration-boundary requests through the same focus-safe reader placement", () => {

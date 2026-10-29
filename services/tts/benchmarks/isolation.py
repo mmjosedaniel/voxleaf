@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import signal
 import subprocess
+import time
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -240,10 +241,11 @@ class IsolationTimeouts:
 
 
 class _ProcessGeneration(Iterator[AudioChunk]):
-    def __init__(self, owner: IsolatedBenchmarkAdapter, request_id: str) -> None:
+    def __init__(self, owner: IsolatedBenchmarkAdapter, request_id: str, deadline: float) -> None:
         self._owner = owner
         self._request_id = request_id
         self._complete = False
+        self._deadline = deadline
 
     def __iter__(self) -> _ProcessGeneration:
         return self
@@ -251,7 +253,12 @@ class _ProcessGeneration(Iterator[AudioChunk]):
     def __next__(self) -> AudioChunk:
         if self._complete or self._owner.was_cancelled(self._request_id):
             raise StopIteration
-        response = self._owner.receive(self._owner.timeouts.request_seconds)
+        remaining = self._deadline - time.monotonic()
+        if remaining <= 0:
+            self._owner.abort("timeout")
+        response = self._owner.receive(remaining)
+        if time.monotonic() > self._deadline:
+            self._owner.abort("timeout")
         if response[0] == "chunk" and len(response) == 2:
             chunk = response[1]
             if isinstance(chunk, AudioChunk) and chunk.request_id == self._request_id:
@@ -401,8 +408,9 @@ class IsolatedBenchmarkAdapter:
             raise AdapterOperationError("invalid-request")
         self._ensure_loaded()
         self._active_request_id = request.request_id
+        deadline = time.monotonic() + self.timeouts.request_seconds
         self._send(("generate", request))
-        return _ProcessGeneration(self, request.request_id)
+        return _ProcessGeneration(self, request.request_id, deadline)
 
     def generate_batch(
         self,

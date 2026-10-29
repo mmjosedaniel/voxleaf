@@ -34,8 +34,10 @@ import {
   type ReaderPreferencesV1,
 } from "./reader-preferences";
 import {
+  BROWSER_READER_REFLOW_ENVIRONMENT,
   ReaderReflowRestorer,
   type ReaderReflowEnvironment,
+  type ReaderReflowRestorationResult,
 } from "./reader-reflow-restoration";
 import {
   SegmentHighlightController,
@@ -284,9 +286,17 @@ export function ReaderPublicationContent({
     },
     [onInitialRestorationSettled],
   );
-  const [pendingInitialSettlement, setPendingInitialSettlement] = useState<
-    ReaderInitialRestorationSettlement | undefined
+  const [pendingRestoration, setPendingRestoration] = useState<
+    | {
+        readonly result: ReaderReflowRestorationResult;
+        readonly navigationRevision: number;
+      }
+    | undefined
   >(undefined);
+  const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
+  const pendingNavigationReason = useRef<ReaderUserNavigationEvent | undefined>(
+    undefined,
+  );
   const [reflowRestorer] = useState(
     () =>
       new ReaderReflowRestorer(
@@ -302,26 +312,16 @@ export function ReaderPublicationContent({
             if (result.reason === "preference") {
               notifySettlement("reflow", result.locator);
             } else if (result.reason === "restoration") {
-              setPendingInitialSettlement(
-                Object.freeze({
-                  status:
-                    result.placement === "unavailable"
-                      ? "unavailable"
-                      : "settled",
-                  locator: result.locator,
-                }),
-              );
+              setPendingRestoration({
+                result,
+                navigationRevision: coordinator.state.navigationRevision,
+              });
             }
           },
         },
       ),
   );
   useStrictModeSafeResourceCleanup(reflowRestorer);
-  useLayoutEffect(() => {
-    if (pendingInitialSettlement !== undefined) {
-      completeInitialRestoration(pendingInitialSettlement);
-    }
-  }, [completeInitialRestoration, pendingInitialSettlement]);
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
@@ -351,14 +351,10 @@ export function ReaderPublicationContent({
   const focusContentsAfterOpen = useRef(false);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
-  const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
-  const pendingNavigationReason = useRef<ReaderUserNavigationEvent | undefined>(
-    undefined,
-  );
   const programmaticNavigationRequest = useRef(0);
-  const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
-    undefined,
-  );
+  const resumeProgrammaticNavigationRef = useRef<
+    ReturnType<ActiveVisualLocatorTracker["suspend"]> | undefined
+  >(undefined);
   const [segmentHighlightController] = useState(
     () =>
       new SegmentHighlightController(
@@ -468,8 +464,56 @@ export function ReaderPublicationContent({
     }
     const resume = resumeProgrammaticNavigationRef.current;
     resumeProgrammaticNavigationRef.current = undefined;
-    resume?.();
+    resume?.({ requestSample: false });
   }, [coordinator, notifySettlement, visualLocatorTracker]);
+  useLayoutEffect(() => {
+    if (pendingRestoration === undefined) return;
+    const { result, navigationRevision } = pendingRestoration;
+    if (navigationRevision !== coordinator.state.navigationRevision) return;
+    if (navigationRevision === 0) {
+      completeInitialRestoration({
+        status: result.placement === "unavailable" ? "unavailable" : "settled",
+        locator: result.locator,
+      });
+      return;
+    }
+    if (pendingPositionSaveRevision.current !== navigationRevision) return;
+    // A mounted block is not proof of exact placement. Preserve a visible
+    // interior range even when bottom-of-document clamping prevents alignment.
+    const resolved = publication.resolveLocator(result.locator);
+    const range =
+      resolved === undefined
+        ? undefined
+        : activeDomRangeMapper.rangeFor(
+            resolved.locatedBlock,
+            result.locator.textOffsetCodePoints,
+          );
+    const environment = reflowEnvironment ?? BROWSER_READER_REFLOW_ENVIRONMENT;
+    const rect = range === undefined ? undefined : environment.rangeRect(range);
+    const root = readerViewportRef.current;
+    const viewport = root === null ? undefined : environment.viewportRect(root);
+    const visible =
+      rect !== undefined &&
+      viewport !== undefined &&
+      rect.top >= viewport.top &&
+      rect.bottom <= viewport.bottom;
+    if (
+      resolved !== undefined &&
+      (result.placement !== "exact-range" || (!result.aligned && !visible))
+    ) {
+      coordinator.updateActiveVisualLocator(resolved.locatedBlock.startLocator);
+      destinationRef.current?.scrollIntoView?.({ block: "start" });
+    }
+    finishProgrammaticNavigation();
+  }, [
+    activeDomRangeMapper,
+    completeInitialRestoration,
+    coordinator,
+    finishProgrammaticNavigation,
+    pendingRestoration,
+    publication,
+    reflowEnvironment,
+  ]);
   const focusDestination = useCallback(
     (destination: HTMLElement): void => {
       destination.scrollIntoView?.({ block: "start" });
@@ -491,6 +535,15 @@ export function ReaderPublicationContent({
         handledNavigationRevision.current !== state.navigationRevision
       ) {
         handledNavigationRevision.current = state.navigationRevision;
+        if (
+          coordinator.state.activeLocator.textOffsetCodePoints > 0 &&
+          reflowRestorer.preserve(
+            coordinator.state.activeLocator,
+            "restoration",
+          )
+        ) {
+          return;
+        }
         focusDestination(element);
         finishProgrammaticNavigation();
       }
@@ -499,6 +552,8 @@ export function ReaderPublicationContent({
       attemptInitialRestoration,
       finishProgrammaticNavigation,
       focusDestination,
+      coordinator,
+      reflowRestorer,
       state.navigationRevision,
     ],
   );
@@ -618,7 +673,15 @@ export function ReaderPublicationContent({
       }
       const intent = coordinator.setPreference(preference, value);
       if (intent !== undefined) {
-        reflowRestorer.preserve(intent.locator, "preference");
+        // Reflow replaces the pending placement, so retain its navigation
+        // settlement and sampling release when a passage is still settling.
+        reflowRestorer.preserve(
+          intent.locator,
+          pendingPositionSaveRevision.current ===
+            coordinator.state.navigationRevision
+            ? "restoration"
+            : "preference",
+        );
         onPreferencesChange?.(intent.next);
       }
     },

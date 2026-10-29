@@ -437,10 +437,15 @@ class BenchmarkHarness:
         try:
             with capture:
                 if trial_id != "before-dispatch":
+                    deadline = self._clock.now_ns() + REQUEST_TIMEOUT_NS
                     chunks = adapter.generate(request)
                     if trial_id not in ("accepted-before-audio",):
                         while True:
+                            if self._clock.now_ns() >= deadline:
+                                _fail("timeout", request.request_id)
                             chunk = next(chunks)
+                            if self._clock.now_ns() > deadline:
+                                _fail("timeout", request.request_id)
                             expected_format = _validate_chunk(
                                 chunk,
                                 request_id=request.request_id,

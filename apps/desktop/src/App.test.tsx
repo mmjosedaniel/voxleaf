@@ -293,7 +293,9 @@ class ControlledNarrationCoordinator {
   public resetRecoveryEpisode(): void {}
 
   public close(): Promise<void> {
-    return this.stop();
+    return this.stop().then(() => {
+      this.#publish({ ...this.#snapshot, serviceState: "stopped" });
+    });
   }
 
   public setVolumePercent(): void {}
@@ -353,6 +355,172 @@ class ControlledNarrationCoordinator {
 }
 
 describe("App preference connection characterization", () => {
+  it("VCA-05 waits for the real client's validated supervisor shutdown", async () => {
+    const contained = deferred<void>();
+    const serviceInstanceId = "service:vca-handoff";
+    const state = (value: string) => ({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      kind: "state",
+      serviceInstanceId,
+      state: value,
+    });
+    const client = new TtsProcessClient(async <T,>(command: string) => {
+      if (command === "start_tts_service")
+        return [
+          state("handshaking"),
+          {
+            schemaVersion: 1,
+            protocolVersion: 1,
+            kind: "handshakeAccepted",
+            serviceInstanceId,
+          },
+          state("unloaded"),
+          {
+            schemaVersion: 1,
+            protocolVersion: 1,
+            kind: "capabilities",
+            serviceInstanceId,
+            report: {
+              schemaVersion: 1,
+              capabilities: {
+                localSpeechGeneration: "unknown",
+                streamingGeneration: "unsupported",
+                generationCancellation: "unsupported",
+                hardwareAcceleration: "unknown",
+                cpuFallback: "unsupported",
+              },
+            },
+            cancellationContainment:
+              "identity-invalidation-then-worker-termination",
+          },
+        ] as T;
+      if (command === "shutdown_tts_service") {
+        await contained.promise;
+        return [state("stopping"), state("stopped")] as T;
+      }
+      throw new Error("unexpected synthetic command");
+    });
+    await client.start();
+    const first = new ControlledNarrationCoordinator();
+    const snapshot = {
+      ...narrationSnapshot("inactive"),
+      serviceState: client.observe().state,
+    };
+    vi.spyOn(first, "observe").mockImplementation(() => snapshot);
+    vi.spyOn(first, "close").mockImplementation(async () => {
+      await client.shutdown();
+      snapshot.serviceState = client.observe().state;
+    });
+    const factory = vi
+      .fn()
+      .mockReturnValueOnce(first)
+      .mockImplementation(() => new ControlledNarrationCoordinator());
+    const view = render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        createNarrationCoordinator={factory}
+      />,
+    );
+    try {
+      selectEpub();
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+      selectEpub("replacement.epub");
+      await waitFor(() => expect(client.observe().state).toBe("stopping"));
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole("button", { name: /^Play$/ }),
+      ).not.toBeInTheDocument();
+      await act(async () => contained.resolve());
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+      expect(client.observe()).toMatchObject({
+        state: "stopped",
+        serviceInstanceId: undefined,
+        retainedAudioUnits: 0,
+      });
+    } finally {
+      contained.resolve();
+      await client.shutdown();
+      view.unmount();
+    }
+  });
+
+  it.each(["success", "rejected", "uncontained"] as const)(
+    "VCA-05 waits for A containment across A-to-B-to-C replacement: %s",
+    async (outcome) => {
+      const closing = deferred<void>();
+      void closing.promise.catch(() => undefined);
+      const first = new ControlledNarrationCoordinator();
+      const replacement = new ControlledNarrationCoordinator();
+      vi.spyOn(first, "close").mockReturnValue(closing.promise);
+      vi.spyOn(first, "observe").mockReturnValue({
+        ...narrationSnapshot("inactive"),
+        serviceState: outcome === "uncontained" ? "stopping" : "stopped",
+      });
+      const play = vi.spyOn(replacement, "start");
+      const factory = vi
+        .fn()
+        .mockReturnValueOnce(first)
+        .mockReturnValue(replacement);
+      const open = vi
+        .fn<LocalPublicationOpenFlow["open"]>()
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: createTestPublication("A"),
+        })
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: createTestPublication("B"),
+        })
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: createTestPublication("C"),
+        });
+      const view = render(
+        <App
+          openFlow={createTestFlow(open)}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          createNarrationCoordinator={factory}
+        />,
+      );
+      selectEpub("A.epub");
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+      selectEpub("B.epub");
+      await waitFor(() => expect(open).toHaveBeenCalledTimes(2));
+      selectEpub("C.epub");
+      await waitFor(() => expect(open).toHaveBeenCalledTimes(3));
+      try {
+        expect(factory).toHaveBeenCalledTimes(1);
+        expect(
+          screen.queryByRole("button", { name: /^Play$/ }),
+        ).not.toBeInTheDocument();
+      } finally {
+        await act(async () =>
+          outcome === "rejected"
+            ? closing.reject(new Error("synthetic close failure"))
+            : closing.resolve(),
+        );
+      }
+      if (outcome === "success") {
+        await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+        expect(factory.mock.calls[1]![0].book.metadata.title).toBe("C");
+        expect(play).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
+        expect(play).toHaveBeenCalledTimes(1);
+      } else {
+        expect(factory).toHaveBeenCalledTimes(1);
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+          "Narration could not be stopped",
+        );
+      }
+      view.unmount();
+    },
+  );
+
   const savedReaderPreferences = Object.freeze({
     ...DEFAULT_READER_PREFERENCES,
     textScale: "large" as const,
@@ -404,6 +572,9 @@ describe("App preference connection characterization", () => {
     vi.spyOn(narrator, "observe").mockImplementation(() => {
       events.push("observe");
       return snapshot;
+    });
+    vi.spyOn(narrator, "close").mockImplementation(async () => {
+      snapshot = { ...snapshot, serviceState: "stopped" };
     });
     vi.spyOn(narrator, "subscribe").mockImplementation((listener) => {
       events.push("subscribe");

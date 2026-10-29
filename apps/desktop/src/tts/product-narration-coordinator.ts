@@ -1324,6 +1324,8 @@ export class ProductNarrationCoordinator {
         this.#recovery.markPlaybackAndPreparationReleased();
         this.#recovery.markServiceContained();
         this.#recovery.markCleanupFailed("cleanup-failed");
+      } else if (this.#recovery.observe().phase === "recovering") {
+        this.#recovery.markRecoveryFailed();
       }
       this.#publish();
       return;
@@ -1340,6 +1342,11 @@ export class ProductNarrationCoordinator {
     }
     this.#scheduler = undefined;
     this.#player = undefined;
+    if (this.#recovery.observe().phase === "recovering") {
+      // Explicit interruption completed the same verified containment boundary.
+      // Keep the spent attempt; only an explicit Settings action resets it.
+      this.#recovery.markRecoverySucceeded();
+    }
     this.#publish();
   }
 
@@ -1428,11 +1435,25 @@ export class ProductNarrationCoordinator {
       return undefined;
     }
     return Object.freeze({
-      ...state,
+      mode: this.#selection,
       phase: "paused",
+      readyMs: 0,
+      targetMs: state.targetMs,
+      progressValueMs: 0,
+      estimatedWaitMs: undefined,
+      lowBuffer: false,
+      allRemainingAudioReady: false,
+      resourceCeilingReached: false,
+      pauseContinuesPreparation: false,
+      canPlayAvailableAudio: false,
       canPause: false,
       canResume: true,
       canStop: true,
+      volumePercent: this.#volumePercent,
+      playbackRate: this.#playbackRatePercent / 100,
+      selectedPlaybackRatePercent: this.#playbackRatePercent,
+      activePlaybackRatePercent: null,
+      pendingPlaybackRatePercent: null,
     });
   }
 

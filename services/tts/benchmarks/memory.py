@@ -322,6 +322,8 @@ class WindowsProcessResourceSampler:
         self._kernel32.OpenProcess.restype = wintypes.HANDLE
         self._kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
         self._kernel32.CloseHandle.restype = wintypes.BOOL
+        self._kernel32.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        self._kernel32.WaitForSingleObject.restype = wintypes.DWORD
         self._psapi.GetProcessMemoryInfo.argtypes = (
             wintypes.HANDLE,
             ctypes.POINTER(_ProcessMemoryCountersEx),
@@ -334,26 +336,8 @@ class WindowsProcessResourceSampler:
         """Return one process working set without including its descendants."""
 
         if process_id <= 0:
-            return 0
-        handle = self._kernel32.OpenProcess(
-            _PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ,
-            False,
-            process_id,
-        )
-        if not handle:
-            return 0
-        counters = _ProcessMemoryCountersEx()
-        counters.cb = ctypes.sizeof(_ProcessMemoryCountersEx)
-        try:
-            if not self._psapi.GetProcessMemoryInfo(
-                handle,
-                ctypes.byref(counters),
-                counters.cb,
-            ):
-                return 0
-            return int(counters.WorkingSetSize)
-        finally:
-            self._kernel32.CloseHandle(handle)
+            raise RuntimeError("tts-benchmark-memory:invalid-root")
+        return self._working_set_bytes(process_id)
 
     def _parent_by_pid(self) -> dict[int, int]:
         snapshot = self._kernel32.CreateToolhelp32Snapshot(_TH32CS_SNAPPROCESS, 0)
@@ -393,10 +377,15 @@ class WindowsProcessResourceSampler:
         return self._descendants(root_pid, self._parent_by_pid()) | frozenset((root_pid,))
 
     def _working_set_bytes(self, pid: int) -> int:
-        access = _PROCESS_QUERY_INFORMATION | _PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ
+        access = (
+            _PROCESS_QUERY_INFORMATION
+            | _PROCESS_QUERY_LIMITED_INFORMATION
+            | _PROCESS_VM_READ
+            | 0x00100000
+        )
         process = self._kernel32.OpenProcess(access, False, pid)
         if not process:
-            return 0
+            raise RuntimeError("tts-benchmark-memory:ram-unavailable")
         counters = _ProcessMemoryCountersEx()
         counters.cb = ctypes.sizeof(_ProcessMemoryCountersEx)
         try:
@@ -407,7 +396,12 @@ class WindowsProcessResourceSampler:
                     counters.cb,
                 )
             )
-            return int(counters.WorkingSetSize) if succeeded else 0
+            if succeeded:
+                return int(counters.WorkingSetSize)
+            # Only an observed exit of this exact handle proves zero residency.
+            if self._kernel32.WaitForSingleObject(process, 0) == 0:
+                return 0
+            raise RuntimeError("tts-benchmark-memory:ram-unavailable")
         finally:
             self._kernel32.CloseHandle(process)
 

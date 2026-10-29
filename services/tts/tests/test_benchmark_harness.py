@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import sys
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
@@ -15,6 +16,7 @@ from benchmarks import harness, harness_corpus, harness_errors
 from benchmarks.contracts import (
     AdapterCapabilities,
     ArtifactSummary,
+    AudioChunk,
     BenchmarkCorpus,
     BenchmarkFailure,
     BenchmarkRunResult,
@@ -61,6 +63,36 @@ SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summa
 V3_SCHEMA_PATH: Final = (
     REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v3.schema.json"
 )
+
+
+def test_vca07_cancellation_preparation_has_one_request_deadline() -> None:
+    clock = FakeNanosecondClock()
+
+    class SlowMedia(DeterministicFakeAdapter):
+        def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+            for sequence in range(3):
+                clock.advance(70_000_000_000)
+                yield AudioChunk(
+                    request_id=request.request_id,
+                    sequence=sequence,
+                    sample_count=1,
+                    sample_rate_hz=24_000,
+                    channels=1,
+                    sample_format="float32",
+                    end_of_output=False,
+                )
+
+    adapter = SlowMedia(clock)
+    request = GenerationRequest(
+        request_id="vca-deadline", case_id="synthetic", phase="cancellation", text="Synthetic."
+    )
+    runner = BenchmarkHarness(clock=clock, memory_probe=FakeMemoryProbe())
+    with pytest.raises(RuntimeError, match="tts-benchmark:timeout:vca-deadline"):
+        runner.observe_cancellation(
+            adapter, request, "after-five-media-seconds", forbidden_values=()
+        )
+    assert adapter.cancelled_request_ids == {request.request_id}
+    assert clock.now_ns() < 150_000_000_000
 
 
 def _synthetic_corpus(bilingual: bool) -> dict[str, object]:
