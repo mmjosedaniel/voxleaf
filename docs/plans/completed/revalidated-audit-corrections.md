@@ -7,11 +7,17 @@ their existing owners. Add only missing regression assertions, reuse existing
 fixtures and trustworthy independent evidence, and execute each required final
 validation leaf at most once on its final inputs.
 
-**Status: planning only; implementation and execution are not authorized yet.**
-The user requested this ExecPlan on 2026-10-29 and explicitly prohibited its
-execution. No source, test, configuration, dependency or generated-file change
-belongs to this planning step. No tests, checks, builds, model runs, installer
-actions, commit or publication are part of it.
+**Status: implemented and accepted on 2026-10-29; M0–M3 complete.**
+Independent [RAC-R1-20261029](../evidence/revalidated-audit-corrections/review-R1.md)
+approves all nine corrections and the attributed host evidence, with no findings.
+The separate [RAC-R2-20261029 report](../evidence/revalidated-audit-corrections/review-R2.md)
+records the assessment of this archived documentation state; its verdict is
+owned by that report.
+The current instruction authorizes RAC-01 through RAC-09 and their acceptance
+checks. Commit, push, PR and merge remain prohibited. The planning commit is
+`618d6af472c7dfe73b123a91c4c7018f4e0d0da9`; execution entered on that exact HEAD
+and branch with an empty index and clean worktree. No intervening change
+invalidates the statically revalidated findings.
 
 ## User-visible outcome
 
@@ -26,7 +32,7 @@ actions, commit or publication are part of it.
   retain backups after uncertain cleanup, observe the smoke's audio-write
   counter, and count all retained completed PCM in the historical simulation.
 
-These are prospective corrections. Tooling findings do not establish that
+These are bounded corrections. Tooling findings do not establish that
 ordinary playback persists audio, that personal data was corrupted, or that
 the current player exceeds its memory limit.
 
@@ -37,8 +43,10 @@ The audit used `7a6f28fe3d1d4205d857da5df353a0cae819a0b3`. Both commits have tre
 `8b48d8792dd09687d7022b03c22d37af5016919a`; the source comparison is empty.
 Planning branch: `codex/revalidated-audit-corrections`.
 
-The nine findings were checked by source/contract inspection and independent
-readers. They have **not** been reproduced by new executions. IDs below preserve
+The nine findings were initially checked by source/contract inspection and
+independent readers, then reproduced by directed regression runs during M1.
+The execution ledger distinguishes those failures and subsequent acceptance.
+IDs below preserve
 their order in this audit; they are not the similarly named H/VCA IDs in older
 completed plans.
 
@@ -68,7 +76,7 @@ adapters, DSP, scheduling limits, acquisition policy and NSIS behavior. Do not
 recompute frozen results or edit completed plans to make old evidence look new.
 
 The plan does not authorize a real user-data/installer journey, publication,
-commit, push or PR. Future implementation authorization permits the bounded
+commit, push, PR or merge. Current implementation authorization permits the bounded
 source work and applicable ordinary test gates; separately assess any newly
 required mutation of the user's installed application or personal data.
 
@@ -138,7 +146,12 @@ real books and personal data. Never record private recovery paths in Git.
 
 ### M0: Freeze scope and select the smallest valid evidence graph
 
-**Status: not started; requires execution authorization.**
+**Status: complete.** See the [execution ledger](../evidence/revalidated-audit-corrections/execution-ledger.md)
+for mutable scope, entry identities and every gate decision. No historical PASS
+is reused: select the fallback `test:typescript` route, fresh evidence tests,
+fresh Rust format, and all other required leaves. Original receipts remain
+retrievable, but complete environment/discovery equivalence is not established;
+executing the small candidates is cheaper than reconstructing missing proof.
 
 Recheck HEAD/worktree, the nine triggers, command definitions and test discovery.
 Capture source/test/configuration membership before edits. Recover the original
@@ -149,7 +162,12 @@ directed failing regressions are the necessary new before-change evidence.
 
 ### M1: Minimal corrections and focused regressions
 
-**Status: not started.**
+**Status: complete.** All nine corrections have directed failure evidence and
+passing final source suites. RAC-01 required two small internal callback setters
+to register the retained owners during layout without violating React's refs
+rule. RAC-03 additionally retains a failed session-close promise across repeated
+close and startup cleanup; its affected Node leaves were renewed after that
+follow-up. See the ledger for failed attempts, diagnosis and exact receipts.
 
 For each group, add the missing assertions first, establish the intended failure
 on unchanged production code, then apply the local correction. Use synthetic
@@ -174,7 +192,10 @@ the real DOM, AudioContext and IPC fixture; no private EPUB, model or download.
 
 ### M2: Final integration with deduplicated gates
 
-**Status: not started.**
+**Status: complete.** Final
+source suites, the complete 17-case browser spec, standalone frontend/default
+native builds, both Rust variants, native smoke, resource cleanup and
+documentation guard/tests pass.
 
 Finish fast source checks before browser/native preparation. Run the gate graph
 below once on the final relevant inputs. Directed intermediate greens are for
@@ -190,7 +211,10 @@ N1. This avoids a later browser hook changing assets after native acceptance.
 
 ### M3: Independent review, documentation and closeout
 
-**Status: not started.**
+**Status: complete.** RAC-R1-20261029 approves the exact implementation and
+current-task evidence continuation, with no actionable findings. Documentation,
+indexes and archive are maintained. The separate R2 report binds the final
+archival state and renewed documentation guard to current identities.
 
 Request `change_reviewer` on the exact final patch and attributed host receipts
 under the existing review workflow. Include reused leaves and their complete
@@ -209,7 +233,7 @@ separately authorized.
 
 ## Testing and benchmark strategy
 
-All future validation commands run in normal local PowerShell outside the
+All validation commands run in normal local PowerShell outside the
 managed sandbox, from repository-root cwd unless a filter changes it. The
 planning step runs none of them. Commands below are configured scripts or scoped
 invocations of their already configured runners; re-read configuration at M0.
@@ -361,10 +385,11 @@ asset reuse is not reuse of a runtime PASS.
   candidates after tracing imports, retained shared generation checking, and
   ordered browser builds before final native acceptance. This is plan review,
   not runtime acceptance.
-- [ ] M0: Execution authorization, exact mutable scope and reuse ledger.
-- [ ] M1: Intended failures, minimal corrections and preserved controls.
-- [ ] M2: Final deduplicated host validation and verified cleanup.
-- [ ] M3: Current independent APPROVE, maintained docs and archive.
+- [x] M0: Execution authorization, exact mutable scope and reuse ledger.
+- [x] M1: Intended failures, minimal corrections and preserved controls.
+- [x] M2: Final deduplicated host validation and verified cleanup.
+- [x] M3: Implementation APPROVE, maintained docs and archive; final archival
+  assessment is recorded separately in RAC-R2-20261029.
 
 ## Discoveries and decisions
 
@@ -376,17 +401,29 @@ asset reuse is not reuse of a runtime PASS.
 - Shared, guard-test and unchanged Node leaves are candidates, not preapproved
   savings. Changed EPUB/desktop/Python/browser/native artifacts need new proof.
 - Keep this plan's RAC IDs distinct from unrelated historical H/VCA IDs.
-- This planning-only documentation is exempt from runtime change review. The
-  future behavior patch requires the named independent reviewer and host evidence.
+- The original planning-only documentation was exempt from runtime change review.
+  The implemented behavior patch requires the named independent reviewer and
+  host evidence before acceptance.
 
 ## Final validation results
 
-**Implementation not started. No new test, check, build, benchmark, installer,
-model or runtime-smoke command has been executed for this plan.**
+**Implementation accepted by RAC-R1-20261029.** The [execution ledger](../evidence/revalidated-audit-corrections/execution-ledger.md)
+records the original failures and fresh local PowerShell receipts. Current source
+results include shared 210, EPUB 723, desktop 935, Python 749, all seven Node
+suites, and Chromium 17 passing cases. The ordinary/Windows-release Node leaves
+were renewed after the RAC-03 follow-up: 52 pass. Type/lint/format checks,
+wheel/sdist, frontend/default native builds and Rust 141/140 tests pass; seven
+explicit ignores remain in each Rust variant. Direct native WebView2 smoke and
+its resource cleanup pass on the final binary. Documentation guard and 31 guard
+tests pass. Independent R1 finds no actionable issue and explicitly approves
+unchanged current-task receipt continuation. No historical PASS is reused, and neither
+aggregate `check` nor `check:portable` has run. No new real-model, installer or
+benchmark result is claimed. Exact commands, retained failures and the bounded
+current-task continuation proof are in the execution ledger. The separate R2
+report records current archive/index identities and the renewed guard.
 
-Planning evidence consists of source/test/document reads, read-only Git and
-receipt comparisons, and independent planning feedback. It does not satisfy any
-future implementation gate. No prior result has yet been approved for reuse.
-The final implementation report must replace this pending status with exact
-executed commands/outcomes, separately attributed reused receipts, the new review
-ID, cleanup results and remaining limitations.
+The canonical diagram remains accurate without a topology change. Completed
+M005, frozen authorities/results, locks, models, DSP, public contracts and
+resource limits are preserved. No app/driver/synthetic-child process, new native
+scratch directory or preview listener remains. All edits stay unstaged and
+uncommitted on the planning HEAD; no push, PR or merge was performed.

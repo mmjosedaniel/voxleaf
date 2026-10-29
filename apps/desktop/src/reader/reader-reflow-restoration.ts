@@ -268,7 +268,7 @@ export class ReaderReflowRestorer {
   readonly #visualLocator: ReaderReflowVisualLocator;
   readonly #environment: ReaderReflowEnvironment;
   readonly #currentLocator: () => ReadingLocatorV1;
-  readonly #onRestored: (result: ReaderReflowRestorationResult) => void;
+  #onRestored: (result: ReaderReflowRestorationResult) => void;
   #root: HTMLElement | undefined;
   #cancelViewportObservation: (() => void) | undefined;
   #cancelScheduledFrame: (() => void) | undefined;
@@ -291,6 +291,12 @@ export class ReaderReflowRestorer {
       options.environment ?? BROWSER_READER_REFLOW_ENVIRONMENT;
     this.#currentLocator = options.currentLocator;
     this.#onRestored = options.onRestored ?? NOOP;
+  }
+
+  public setOnRestored(
+    callback: (result: ReaderReflowRestorationResult) => void,
+  ): void {
+    if (!this.#closed) this.#onRestored = callback;
   }
 
   public get restoring(): boolean {

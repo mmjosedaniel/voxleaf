@@ -201,6 +201,20 @@ export function ReaderPublicationContent({
   narrationSource,
   segmentHighlightEnvironment,
 }: ReaderPublicationContentProps): ReactElement {
+  const externalCallbacks = useRef({
+    onActiveLocatorChange,
+    onNavigationSettlement,
+    onSettledLocatorChange,
+    onInitialRestorationSettled,
+  });
+  useLayoutEffect(() => {
+    externalCallbacks.current = {
+      onActiveLocatorChange,
+      onNavigationSettlement,
+      onSettledLocatorChange,
+      onInitialRestorationSettled,
+    };
+  });
   const [coordinator] = useState(
     () =>
       new ReaderNavigationCoordinator(publication, {
@@ -214,16 +228,19 @@ export function ReaderPublicationContent({
       locator = coordinator.state.activeLocator,
     ): void => {
       if (coordinator.state.contentStatus === "chapter-too-large") {
-        onNavigationSettlement?.(
+        externalCallbacks.current.onNavigationSettlement?.(
           { status: "unavailable", reason: "chapter-too-large" },
           reason,
         );
         return;
       }
-      onNavigationSettlement?.({ status: "settled", locator }, reason);
-      onSettledLocatorChange?.(locator, reason);
+      externalCallbacks.current.onNavigationSettlement?.(
+        { status: "settled", locator },
+        reason,
+      );
+      externalCallbacks.current.onSettledLocatorChange?.(locator, reason);
     },
-    [coordinator, onNavigationSettlement, onSettledLocatorChange],
+    [coordinator],
   );
   useEffect(() => {
     if (
@@ -253,13 +270,16 @@ export function ReaderPublicationContent({
           ? {}
           : { environment: visualLocatorEnvironment }),
         initialLocator: coordinator.state.activeLocator,
-        onLocator: (locator) => {
-          if (coordinator.updateActiveVisualLocator(locator)) {
-            onActiveLocatorChange?.(locator);
-          }
-        },
+        onLocator: () => undefined,
       }),
   );
+  useLayoutEffect(() => {
+    visualLocatorTracker.setOnLocator((locator) => {
+      if (coordinator.updateActiveVisualLocator(locator)) {
+        externalCallbacks.current.onActiveLocatorChange?.(locator);
+      }
+    });
+  }, [coordinator, visualLocatorTracker]);
   useStrictModeSafeResourceCleanup(visualLocatorTracker);
   const [initialVisualLocatorResume] = useState(() =>
     initialRestorationRequired ? visualLocatorTracker.suspend() : undefined,
@@ -282,9 +302,9 @@ export function ReaderPublicationContent({
       const resume = initialVisualLocatorResumeRef.current;
       initialVisualLocatorResumeRef.current = undefined;
       resume?.({ requestSample: false });
-      onInitialRestorationSettled?.(settlement);
+      externalCallbacks.current.onInitialRestorationSettled?.(settlement);
     },
-    [onInitialRestorationSettled],
+    [],
   );
   const [pendingRestoration, setPendingRestoration] = useState<
     | {
@@ -308,19 +328,21 @@ export function ReaderPublicationContent({
             ? {}
             : { environment: reflowEnvironment }),
           currentLocator: () => coordinator.state.activeLocator,
-          onRestored: (result) => {
-            if (result.reason === "preference") {
-              notifySettlement("reflow", result.locator);
-            } else if (result.reason === "restoration") {
-              setPendingRestoration({
-                result,
-                navigationRevision: coordinator.state.navigationRevision,
-              });
-            }
-          },
         },
       ),
   );
+  useLayoutEffect(() => {
+    reflowRestorer.setOnRestored((result) => {
+      if (result.reason === "preference") {
+        notifySettlement("reflow", result.locator);
+      } else if (result.reason === "restoration") {
+        setPendingRestoration({
+          result,
+          navigationRevision: coordinator.state.navigationRevision,
+        });
+      }
+    });
+  }, [coordinator, notifySettlement, reflowRestorer]);
   useStrictModeSafeResourceCleanup(reflowRestorer);
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
@@ -328,6 +350,11 @@ export function ReaderPublicationContent({
   );
   const getSnapshot = useCallback(() => coordinator.state, [coordinator]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  useLayoutEffect(() => {
+    if (coordinator.state.contentStatus === "render") {
+      narrationSource?.updateVisibleLocator?.(coordinator.state.activeLocator);
+    }
+  }, [coordinator, narrationSource]);
   const leafSnapshot = useSyncExternalStore(
     paragraphLeafController.subscribe,
     paragraphLeafController.getSnapshot,

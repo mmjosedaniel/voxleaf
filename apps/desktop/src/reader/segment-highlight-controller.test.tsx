@@ -269,7 +269,7 @@ describe("segment highlight controller", () => {
     element.remove();
   });
 
-  it("highlights and follows one range without changing focus, selection, or publication DOM", () => {
+  it("RAC-07 highlights and follows on Resume once without changing focus, selection, or publication DOM", () => {
     const block = paragraph("Synthetic audible passage.");
     const located = locatedBlock(0, block, 26);
     const mapper = new SemanticDomRangeMapper();
@@ -348,17 +348,32 @@ describe("segment highlight controller", () => {
     expect(settled).toEqual([0]);
     expect(resume).toHaveBeenCalledWith({ requestSample: false });
 
+    controller.reconcile(narrationSnapshot("playing"));
+    controller.reconcile(narrationSnapshot("paused"));
+    environment.scrolls.length = 0;
+    environment.range = { top: 140, bottom: 160 };
+    controller.reconcile(narrationSnapshot("playing"));
+    expect(environment.scrolls).toHaveLength(1);
+    environment.flush();
+    expect(document.activeElement).toBe(focusOwner);
+    expect(selection.getRangeAt(0).toString()).toBe("audible");
+    environment.range = { top: 140, bottom: 160 };
+    controller.reconcile(narrationSnapshot("playing"));
+    controller.reconcile(narrationSnapshot("playing"));
+    expect(environment.scrolls).toHaveLength(1);
+    expect(settled).toEqual([0, 0]);
+
     controller.accept(observation("progress", range));
     controller.accept(observation("segment-completed", range));
     expect(environment.highlighted?.toString()).toBe("Synthetic");
-    expect(settled).toEqual([0, 9]);
+    expect(settled).toEqual([0, 0, 9]);
 
     environment.range = { top: 24, bottom: 40 };
     controller.accept(
       observation("segment-started", sourceRange(located, 10, 17), 1),
     );
     expect(environment.highlighted?.toString()).toBe("audible");
-    expect(settled).toEqual([0, 9, 10]);
+    expect(settled).toEqual([0, 0, 9, 10]);
     expect(document.activeElement).toBe(focusOwner);
     expect(selection.getRangeAt(0).toString()).toBe("audible");
 

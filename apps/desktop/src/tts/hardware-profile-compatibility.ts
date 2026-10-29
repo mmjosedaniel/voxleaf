@@ -527,9 +527,12 @@ export class HardwareProfileCompatibilityCoordinator {
           : replacement.profileId !== this.#snapshot.activeProfileId
             ? "recommendation"
             : this.#snapshot.selectionSource,
-      fallbackAvailable:
-        replacement?.supportState === "supported" &&
-        replacement.role === "cpu-fallback",
+      fallbackAvailable: this.#snapshot.profiles.some(
+        (profile) =>
+          profile.supportState === "supported" &&
+          profile.role === "cpu-fallback" &&
+          admittedForLanguage(profile, language),
+      ),
       language,
       languagePreferenceStatus: "ready",
       languageReason:

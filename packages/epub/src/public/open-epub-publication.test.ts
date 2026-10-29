@@ -139,7 +139,7 @@ describe("public privacy-safe EPUB opening", () => {
     }
   });
 
-  it("CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
+  it("RAC-06 / CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
     const result = await openEpubPublication(
       await buildMinimalEpubFixture({
         packageDocument: minimalPackageDocument()
@@ -171,12 +171,24 @@ describe("public privacy-safe EPUB opening", () => {
           spineItemIndex: 99,
         }),
       ).toThrow(EpubArchiveError);
+      expect(
+        await result.publication.prepareNarration({
+          startLocator: {
+            ...auxiliary,
+            spineItemId: "spine:missing",
+            spineItemIndex: 99,
+          },
+          profile: "narration-v1",
+          defaultLanguage: "und",
+          maximumSegments: 1,
+        }),
+      ).toMatchObject({ status: "invalid-start" });
     } finally {
       await result.publication.close();
     }
   });
   it.each(["2.0", "3.0"] as const)(
-    "CLB-04 selects primary start without reindexing auxiliary content in EPUB %s",
+    "RAC-06 / CLB-04 selects primary start without reindexing auxiliary content in EPUB %s",
     async (version) => {
       for (const emptyPrimary of [false, true]) {
         const packageDocument = (
@@ -241,6 +253,35 @@ describe("public privacy-safe EPUB opening", () => {
           expect(recovered.reason).toBe("book-start");
           expect(recovered.locator).toEqual(primary.startLocator);
           expect(publication.defaultStartLocator).toEqual(primary.startLocator);
+          const prepared = await publication.prepareNarration({
+            startLocator: {
+              ...auxiliary.startLocator,
+              spineItemId: "spine:missing",
+              spineItemIndex: 99,
+            },
+            profile: "narration-v1",
+            defaultLanguage: "und",
+            maximumSegments: 1,
+          });
+          expect(prepared.status).toBe("batch");
+          if (prepared.status !== "batch")
+            throw new Error("synthetic-preparation-failed");
+          expect(prepared.start.resolutionReason).toBe("book-start");
+          expect(prepared.segments[0]!.sourceRange.start).toEqual(
+            primary.startLocator,
+          );
+          const exactAuxiliary = await publication.prepareNarration({
+            startLocator: auxiliary.startLocator,
+            profile: "narration-v1",
+            defaultLanguage: "und",
+            maximumSegments: 1,
+          });
+          expect(exactAuxiliary.status).toBe("batch");
+          if (exactAuxiliary.status !== "batch")
+            throw new Error("synthetic-preparation-failed");
+          expect(exactAuxiliary.segments[0]!.sourceRange.start).toEqual(
+            auxiliary.startLocator,
+          );
         } finally {
           await publication.close();
         }

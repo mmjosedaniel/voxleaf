@@ -212,6 +212,40 @@ def test_playback_replay_uses_exact_order_and_all_simultaneous_bounds() -> None:
     )
 
 
+def test_rac_08_retained_peak_includes_completed_pending_ordered_release() -> None:
+    dispatches = tuple(
+        DualDispatchObservation(
+            dispatch_sequence=index,
+            occurrence_id=f"rac-{index}",
+            unit_id=f"unit-{index}",
+            source_sequence=index,
+            pass_index=1,
+            worker_role=role,
+            attempt=1,
+            accepted_nanoseconds=start * 1_000_000_000,
+            completed_nanoseconds=end * 1_000_000_000,
+            status="completed",
+            failure_code=None,
+            sample_count=samples,
+            sample_rate_hz=24_000,
+            published_sequence=index,
+            head_of_line_wait_nanoseconds=0,
+        )
+        for index, (role, start, end, samples) in enumerate(
+            (
+                (GPU_WORKER_ROLE, 0, 1, 480_000),
+                (CPU_WORKER_ROLE, 0, 30, 2_400),
+                (GPU_WORKER_ROLE, 1, 2, 480_000),
+                (GPU_WORKER_ROLE, 2, 3, 480_000),
+            )
+        )
+    )
+    replay = simulate_v5_playback(dispatches)
+    assert replay.peak_retained_pcm_bytes == 5_760_000
+    assert replay.as_raw()["peakRetainedPcmBytes"] == 5_760_000
+    assert replay.peak_reserved_pcm_bytes <= MAXIMUM_PCM_BYTES
+
+
 def test_playback_rejects_active_overlap_duration_and_capacity_overrun() -> None:
     base = DualDispatchObservation(
         dispatch_sequence=0,

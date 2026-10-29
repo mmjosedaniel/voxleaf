@@ -284,6 +284,7 @@ class OpenedPublicationHandle implements OpenedPublication {
         this.#narrationYieldScheduler,
         this.#narrationResourceObserver,
         this.#narrationCheckpoint,
+        this.#defaultStartBlock ?? null,
       );
       if (result.status !== "batch" && result.status !== "complete") {
         delete this.#narrationCheckpoint.continuation;

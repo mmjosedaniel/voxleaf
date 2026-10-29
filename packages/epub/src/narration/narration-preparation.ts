@@ -18,6 +18,7 @@ import type {
 } from "../document/narration-model.js";
 import {
   createBlockLocatorAtOffset,
+  type LocatedSemanticBlock,
   type PublicationLocatorIndex,
 } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
@@ -580,6 +581,7 @@ export async function prepareNarrationBatch(
   scheduler: NarrationYieldScheduler,
   resourceObserver?: NarrationPreparationResourceObserver,
   checkpoint: NarrationPreparationCheckpoint = { source: {} },
+  defaultStartBlock?: LocatedSemanticBlock | null,
 ): Promise<NarrationPreparationResult> {
   try {
     const signal = request.signal ?? new AbortController().signal;
@@ -587,6 +589,7 @@ export async function prepareNarrationBatch(
       locatorIndex,
       request.startLocator,
       createEpubProcessingBudget({ signal }),
+      defaultStartBlock,
     );
     const targetBlock = resolution.locatedBlock;
     const canonicalLocator = resolution.locator;

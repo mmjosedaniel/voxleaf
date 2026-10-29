@@ -250,6 +250,48 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     },
   );
 
+  it("RAC-09 preserves ordinal streets through current English profiles and source ranges", async () => {
+    const source = "Walk along 8th St. North. Walk along 21st St. North.";
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-open-failed");
+    const publication = opened.publication;
+    const before = JSON.stringify(publication.documents);
+    try {
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const result = await publication.prepareNarration({
+          startLocator: publication.defaultStartLocator!,
+          profile,
+          defaultLanguage: "en",
+          maximumSegments: 16,
+        });
+        if (result.status !== "complete")
+          throw new Error("synthetic-preparation-failed");
+        expect(result.segments.map((segment) => segment.text).join(" ")).toBe(
+          "Walk along 8th St. North. Walk along twenty-first St. North.",
+        );
+        expect(result.segments[0]!.sourceRange.start).toEqual(
+          publication.defaultStartLocator,
+        );
+        expect(
+          result.segments.at(-1)!.sourceRange.end.textOffsetCodePoints,
+        ).toBe(source.length);
+        result.segments.forEach((segment, index) =>
+          assertPublicSegment(publication, segment, index),
+        );
+      }
+      expect(JSON.stringify(publication.documents)).toBe(before);
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("keeps the dedicated fixture provenance explicit and deterministic", async () => {
     expect(NARRATION_INTEGRATION_FIXTURE_PROVENANCE).toEqual({
       kind: "repository-authored-synthetic",

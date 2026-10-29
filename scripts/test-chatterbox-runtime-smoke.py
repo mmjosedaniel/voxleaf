@@ -9,14 +9,36 @@ import json
 import math
 import os
 import socket
+import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
+
+
+def install_audio_write_observation(
+    observed: dict[str, object], save: Callable[[], None] | None = None
+) -> None:
+    """Count and reject recognized Python audio-file write attempts, even if caught."""
+
+    def audit(event: str, arguments: tuple[object, ...]) -> None:
+        if event == "open" and isinstance(arguments[0], (str, bytes)):
+            name = os.fsdecode(arguments[0]).lower()
+            mode = arguments[1]
+            flags = arguments[2]
+            writing = (isinstance(mode, str) and any(flag in mode for flag in "wax+")) or (
+                isinstance(flags, int) and bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT))
+            )
+            if writing and name.endswith((".wav", ".pcm", ".mp3", ".ogg", ".flac")):
+                observed["audioFilesWritten"] = int(observed["audioFilesWritten"]) + 1
+                if save is not None:
+                    save()
+                raise AssertionError("native-audio-persistence-disabled")
+
+    sys.addaudithook(audit)
 
 
 def install_native_observation(receipt_path: Path, private_origins: list[str]) -> None:
     """Opt-in native-harness observer; never installs in ordinary product startup."""
-    from voxleaf_tts.chatterbox_adapter import ChatterboxMultilingualTtsEngine
-
     observed: dict[str, object] = {
         "privateDllOrigins": private_origins,
         "networkAttempts": 0,
@@ -35,24 +57,9 @@ def install_native_observation(receipt_path: Path, private_origins: list[str]) -
     socket.socket.connect_ex = deny_network
     socket.create_connection = deny_network
 
-    def audit(event: str, arguments: tuple[object, ...]) -> None:
-        if event == "open" and isinstance(arguments[0], (str, bytes)):
-            name = os.fsdecode(arguments[0]).lower()
-            mode = arguments[1]
-            flags = arguments[2]
-            writing = (
-                isinstance(mode, str) and any(flag in mode for flag in "wax+")
-            ) or (
-                isinstance(flags, int)
-                and bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT))
-            )
-            if writing and name.endswith((".wav", ".pcm", ".mp3", ".ogg", ".flac")):
-                observed["audioFilesWritten"] = int(observed["audioFilesWritten"]) + 1
-                save()
-                raise AssertionError("native-audio-persistence-disabled")
+    install_audio_write_observation(observed, save)
+    from voxleaf_tts.chatterbox_adapter import ChatterboxMultilingualTtsEngine
 
-    sys_module = __import__("sys")
-    sys_module.addaudithook(audit)
     original_load = ChatterboxMultilingualTtsEngine.load
 
     def observe_load(engine: object) -> None:
@@ -84,9 +91,7 @@ def install_native_observation(receipt_path: Path, private_origins: list[str]) -
                 )
                 if dtypes:
                     observed["activationDtypes"] = dtypes
-                    observed["autocastEnabledAtForward"] = torch.is_autocast_enabled(
-                        "cuda"
-                    )
+                    observed["autocastEnabledAtForward"] = torch.is_autocast_enabled("cuda")
                     save()
             return original_forward(*args, **kwargs)
 
@@ -117,6 +122,8 @@ def main() -> None:
     socket.socket.connect_ex = deny_network
     socket.create_connection = deny_network
 
+    observed: dict[str, object] = {"audioFilesWritten": 0}
+    install_audio_write_observation(observed)
     from voxleaf_tts.chatterbox_adapter import ChatterboxMultilingualTtsEngine
     from voxleaf_tts.protocol import MAX_AUDIO_PAYLOAD_BYTES
 
@@ -177,25 +184,26 @@ def main() -> None:
         assert not engine.has_active_operation
         assert not engine.can_settle
         assert engine.capabilities().local_speech_generation != "supported"
-        assert network_attempts == 0
-        print(
-            json.dumps(
-                {
-                    "result": "pass",
-                    "language": args.language,
-                    "versions": versions,
-                    "load_and_warm_seconds": round(ready_seconds, 3),
-                    "pcm_bytes": payload_bytes,
-                    "torch_peak_reserved_bytes": torch_peak_reserved_bytes,
-                    "audio_seconds": payload_bytes / (24000 * 4),
-                    "cancel_ms": round(cancel_ms, 3),
-                    "network_attempts": network_attempts,
-                    "audio_files_written": 0,
-                }
-            )
-        )
     finally:
         engine.cleanup()
+    assert network_attempts == 0
+    assert observed["audioFilesWritten"] == 0
+    print(
+        json.dumps(
+            {
+                "result": "pass",
+                "language": args.language,
+                "versions": versions,
+                "load_and_warm_seconds": round(ready_seconds, 3),
+                "pcm_bytes": payload_bytes,
+                "torch_peak_reserved_bytes": torch_peak_reserved_bytes,
+                "audio_seconds": payload_bytes / (24000 * 4),
+                "cancel_ms": round(cancel_ms, 3),
+                "network_attempts": network_attempts,
+                "audio_files_written": observed["audioFilesWritten"],
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

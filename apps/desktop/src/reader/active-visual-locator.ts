@@ -324,7 +324,7 @@ export class ActiveVisualLocatorTracker {
   readonly #publication: OpenedPublication;
   readonly #mapper: SemanticDomRangeMapper;
   readonly #environment: ActiveVisualLocatorEnvironment;
-  readonly #onLocator: (locator: ReadingLocatorV1) => void;
+  #onLocator: (locator: ReadingLocatorV1) => void;
   readonly #locatedBlocksByElement = new Map<
     HTMLElement,
     PublicationLocatedBlock
@@ -351,6 +351,10 @@ export class ActiveVisualLocatorTracker {
       options.environment ?? BROWSER_ACTIVE_VISUAL_LOCATOR_ENVIRONMENT;
     this.#onLocator = options.onLocator;
     this.#lastLocator = options.initialLocator;
+  }
+
+  public setOnLocator(callback: (locator: ReadingLocatorV1) => void): void {
+    if (!this.#closed) this.#onLocator = callback;
   }
 
   public get registrationCount(): number {

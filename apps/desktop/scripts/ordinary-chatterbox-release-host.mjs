@@ -492,6 +492,35 @@ async function reserveLoopbackPort() {
   return address.port;
 }
 
+class SessionCleanupError extends AggregateError {
+  constructor(errors) {
+    super(errors, "ordinary-chatterbox-release-host:session-close");
+  }
+}
+
+export function createOrdinarySessionCloser({
+  client,
+  driverProcess,
+  profileDirectory,
+}) {
+  let closing;
+  return () => {
+    closing ??= (async () => {
+      const errors = [];
+      await client.deleteSession().catch((error) => errors.push(error));
+      try {
+        if (!processTerminated(driverProcess)) driverProcess.kill();
+        await waitForProcessExit(driverProcess);
+        await removeWebDriverProfile(profileDirectory);
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length > 0) throw new SessionCleanupError(errors);
+    })();
+    return closing;
+  };
+}
+
 async function createOrdinarySession({ executable, environment }) {
   const tauriDriver = environment.VOXLEAF_TAURI_DRIVER_PATH;
   const edgeDriver = environment.VOXLEAF_EDGE_DRIVER_PATH;
@@ -528,6 +557,11 @@ async function createOrdinarySession({ executable, environment }) {
   const client = new WebDriverClient(`http://127.0.0.1:${driverPort}`, {
     requestTimeoutMs: STARTUP_TIMEOUT_MS,
   });
+  const close = createOrdinarySessionCloser({
+    client,
+    driverProcess,
+    profileDirectory,
+  });
   try {
     await waitFor(
       () => client.isReady(),
@@ -544,20 +578,16 @@ async function createOrdinarySession({ executable, environment }) {
       "application-startup",
     );
   } catch (error) {
-    await client.deleteSession().catch(() => undefined);
-    if (!processTerminated(driverProcess)) driverProcess.kill();
-    await waitForProcessExit(driverProcess).catch(() => undefined);
-    await removeWebDriverProfile(profileDirectory);
+    try {
+      await close();
+    } catch (cleanupError) {
+      throw new SessionCleanupError([error, cleanupError]);
+    }
     throw error;
   }
   return Object.freeze({
     client,
-    async close() {
-      await client.deleteSession().catch(() => undefined);
-      if (!processTerminated(driverProcess)) driverProcess.kill();
-      await waitForProcessExit(driverProcess);
-      await removeWebDriverProfile(profileDirectory);
-    },
+    close,
   });
 }
 
@@ -888,6 +918,40 @@ export async function runPreflight(options, environment = process.env) {
   });
 }
 
+export async function finalizeJourney({
+  dataBackup,
+  closeSession,
+  uninstall,
+  journeyError,
+  restoreData = restoreApplicationData,
+}) {
+  const cleanupErrors = [];
+  try {
+    await closeSession();
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+  try {
+    await uninstall();
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+  const priorCleanupFailed = journeyError instanceof SessionCleanupError;
+  if (cleanupErrors.length === 0 && !priorCleanupFailed) {
+    try {
+      await restoreData(dataBackup);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+  if (cleanupErrors.length > 0 || priorCleanupFailed) {
+    throw new AggregateError(
+      [...(journeyError === undefined ? [] : [journeyError]), ...cleanupErrors],
+      `ordinary-chatterbox-release-host:recovery-required:${dataBackup.backup ?? dataBackup.root}`,
+    );
+  }
+}
+
 export async function runJourney(options, environment = process.env) {
   const stages = createStageReporter();
   stages.mark("journey-preflight-artifact");
@@ -913,12 +977,14 @@ export async function runJourney(options, environment = process.env) {
   const dataBackup = await backupApplicationData();
   let session;
   let applicationInstalled = false;
+  let journeyError;
   let journeyReceipt;
   let corrections;
   try {
     stages.mark("journey-install");
-    await runInstaller(options.installer, releaseEnv);
+    // Even a rejected installer may have created a partial installation.
     applicationInstalled = true;
+    await runInstaller(options.installer, releaseEnv);
     const { artifact } = await runPreflight(options, environment);
     stages.mark("journey-ordinary-session");
     session = await createOrdinarySession({
@@ -1118,6 +1184,7 @@ export async function runJourney(options, environment = process.env) {
     await runUninstaller(options.installedRoot, releaseEnv);
     applicationInstalled = false;
   } catch (error) {
+    journeyError = error;
     // Only fixed paths inside the isolated test root are inspected. Preserve
     // content-free failure evidence before the finally block restores user data.
     const downloadDiagnostic = session?.client.hasSession
@@ -1160,17 +1227,18 @@ export async function runJourney(options, environment = process.env) {
     );
     throw error;
   } finally {
-    try {
-      await session?.close();
-    } finally {
-      try {
+    await finalizeJourney({
+      dataBackup,
+      journeyError,
+      closeSession: async () => {
+        await session?.close();
+      },
+      uninstall: async () => {
         if (applicationInstalled) {
           await runUninstaller(options.installedRoot, releaseEnv);
         }
-      } finally {
-        await restoreApplicationData(dataBackup);
-      }
-    }
+      },
+    });
   }
   if (journeyReceipt === undefined) fail("journey-receipt");
   await writeFile(

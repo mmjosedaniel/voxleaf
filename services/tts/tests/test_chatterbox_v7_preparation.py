@@ -83,6 +83,83 @@ assert 'inputs_embeds' not in receipt.read_text()
     assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
 
 
+@pytest.mark.parametrize("stage", ["none", "load", "synthesis", "cleanup", "network-cleanup"])
+@pytest.mark.parametrize("swallow", [False, True])
+def test_rac_05_real_main_observes_writes_before_reporting_pass(
+    tmp_path: Path, stage: str, swallow: bool
+) -> None:
+    program = r"""
+import array, importlib.metadata, json, os, pathlib, runpy, socket, sys, types
+script, root, stage, swallow = sys.argv[1:]
+root = pathlib.Path(root); swallow = swallow == 'True'
+os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', NUMBA_CACHE_DIR=str(root/'cache'))
+def attempt(current):
+    if stage != current: return
+    try:
+        if current == 'network-cleanup': socket.create_connection(('unused.invalid', 443))
+        else: (root/'forbidden.wav').write_bytes(b'synthetic')
+    except AssertionError:
+        if not swallow: raise
+class Engine:
+    def __init__(self, *args): self.has_active_operation = self.can_settle = False
+    def load(self): attempt('load')
+    def warm(self): pass
+    def begin(self, request, segment):
+        self.identity = request
+        self.has_active_operation = self.can_settle = True
+        return request
+    def settle(self):
+        attempt('synthesis')
+        return self.identity, types.SimpleNamespace(
+            sample_rate_hz=24000, channel_count=1,
+            payload=array.array('f', [0.25, -0.25]).tobytes())
+    def release_result(self): pass
+    def cancel(self, identity): self.has_active_operation = self.can_settle = False
+    def capabilities(self): return types.SimpleNamespace(local_speech_generation='unknown')
+    def cleanup(self):
+        (root/'cleanup-called').write_text('yes')
+        attempt('cleanup'); attempt('network-cleanup')
+adapter=types.ModuleType('voxleaf_tts.chatterbox_adapter')
+adapter.ChatterboxMultilingualTtsEngine=Engine
+protocol=types.ModuleType('voxleaf_tts.protocol'); protocol.MAX_AUDIO_PAYLOAD_BYTES=1920000
+sys.modules['voxleaf_tts']=types.ModuleType('voxleaf_tts')
+sys.modules['voxleaf_tts.chatterbox_adapter']=adapter; sys.modules['voxleaf_tts.protocol']=protocol
+torch=types.ModuleType('torch'); torch.cuda=types.SimpleNamespace(max_memory_reserved=lambda:0)
+sys.modules['torch']=torch
+versions={'certifi':'2026.10.19','pillow':'13.0.0','filelock':'4.2.1','setuptools':'84.1.0','msgpack':'1.2.3'}
+importlib.metadata.version=lambda name:versions.get(name,'synthetic')
+sys.argv=[script,'--models',str(root),'--language','en','--package-version','7']
+runpy.run_path(script, run_name='__main__')
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            program,
+            str(repository_root() / "scripts/test-chatterbox-runtime-smoke.py"),
+            str(tmp_path),
+            stage,
+            str(swallow),
+        ],
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+    assert (tmp_path / "cleanup-called").exists()
+    if stage == "none":
+        assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+        receipt = json.loads(result.stdout)
+        assert receipt["result"] == "pass"
+        assert receipt["audio_files_written"] == receipt["network_attempts"] == 0
+    else:
+        assert result.returncode != 0
+        assert b'"result": "pass"' not in result.stdout
+        assert not (tmp_path / "forbidden.wav").exists()
+    assert b"This test verifies" not in result.stdout + result.stderr
+
+
 def test_v7_is_an_independent_one_pin_hashed_successor() -> None:
     root = repository_root()
     pins = []
