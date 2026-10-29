@@ -572,12 +572,110 @@ fn installed_host_integrity_diagnostic() {
 
 type DownloadHook = Box<dyn FnOnce(&Path, &AtomicBool) -> Result<(), OptionalProfileError>>;
 thread_local! {
+    static MAF_DISCOVERY_INPUTS: std::cell::RefCell<Option<(PathBuf, OptionalPackageManifest)>> = const { std::cell::RefCell::new(None) };
+    static MAF_AFTER_SERVICE_STOP: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static SNAPSHOT_IDLE_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static HASH_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static BEFORE_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static AFTER_COMMIT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static DOWNLOAD_HOOK: std::cell::RefCell<Option<DownloadHook>> = const { std::cell::RefCell::new(None) };
     static CLEANUP_LOCK: std::cell::RefCell<Option<File>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn maf_discovery_inputs() -> Option<(PathBuf, OptionalPackageManifest)> {
+    MAF_DISCOVERY_INPUTS.with(|slot| slot.borrow().clone())
+}
+
+pub(super) fn maf_after_service_stop() {
+    if let Some(hook) = MAF_AFTER_SERVICE_STOP.with(|slot| slot.borrow_mut().take()) {
+        hook();
+    }
+}
+
+struct MafDiscoveryGuard;
+
+impl Drop for MafDiscoveryGuard {
+    fn drop(&mut self) {
+        MAF_DISCOVERY_INPUTS.with(|slot| slot.borrow_mut().take());
+        MAF_AFTER_SERVICE_STOP.with(|slot| slot.borrow_mut().take());
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn maf_04_removal_excludes_verified_configuration_and_real_spawn() {
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    let authority = write_runtime(&package);
+    let _guard = MafDiscoveryGuard;
+    MAF_DISCOVERY_INPUTS.with(|slot| *slot.borrow_mut() = Some((root.0.clone(), authority)));
+    let supervisor = Arc::new(crate::tts_service_supervisor::TtsServiceSupervisor::default());
+    let (stopped, observed_stop) = std::sync::mpsc::sync_channel(1);
+    let (release, released) = std::sync::mpsc::sync_channel(1);
+    let removing_supervisor = Arc::clone(&supervisor);
+    let removing_root = root.0.clone();
+    let removing = thread::spawn(move || {
+        let _guard = MafDiscoveryGuard;
+        MAF_AFTER_SERVICE_STOP.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                stopped.send(()).unwrap();
+                released.recv_timeout(Duration::from_secs(15)).unwrap();
+            }))
+        });
+        OptionalChatterboxManager::default()
+            .remove_after_service_stop(&removing_root, &removing_supervisor)
+    });
+    observed_stop.recv_timeout(Duration::from_secs(15)).unwrap();
+    // The package still exists: this ordering can genuinely launch a child.
+    assert!(package.join("runtime/python.exe").is_file());
+    let configured = supervisor.maf_configure_installed();
+    let (started, published) = supervisor.maf_start_and_contain_installed();
+    release.send(()).unwrap();
+    let removed = removing.join().unwrap();
+    assert!(removed.is_ok());
+    assert!(!package.exists());
+    assert_eq!(
+        configured,
+        Err(crate::tts_service_protocol::TtsNativeFailure::Busy)
+    );
+    assert_eq!(
+        started,
+        Err(crate::tts_service_protocol::TtsNativeFailure::Busy)
+    );
+    assert!(!published);
+}
+
+#[test]
+fn maf_04_removal_revokes_previously_verified_configuration() {
+    let root = TestRoot::new();
+    let package = package_root(&root.0);
+    let authority = write_runtime(&package);
+    let _guard = MafDiscoveryGuard;
+    MAF_DISCOVERY_INPUTS.with(|slot| *slot.borrow_mut() = Some((root.0.clone(), authority)));
+    let supervisor = crate::tts_service_supervisor::TtsServiceSupervisor::default();
+    supervisor.maf_configure_installed().unwrap();
+    assert!(supervisor.maf_has_installed_configuration());
+    OptionalChatterboxManager::default()
+        .remove_after_service_stop(&root.0, &supervisor)
+        .unwrap();
+    assert!(!package.exists());
+    // This tests revocation, not a fabricated spawn from a deleted executable.
+    assert!(!supervisor.maf_has_installed_configuration());
+}
+
+#[cfg(windows)]
+#[test]
+fn maf_04_published_start_remains_interruptible_before_handshake() {
+    let root = TestRoot::new();
+    let authority = write_runtime(&package_root(&root.0));
+    let _guard = MafDiscoveryGuard;
+    MAF_DISCOVERY_INPUTS.with(|slot| *slot.borrow_mut() = Some((root.0.clone(), authority)));
+    let supervisor = Arc::new(crate::tts_service_supervisor::TtsServiceSupervisor::default());
+    supervisor.maf_configure_installed().unwrap();
+    let (started, published) = supervisor.maf_start_and_contain_installed();
+    assert!(published);
+    assert!(started.is_err());
+    assert!(!supervisor.maf_has_installed_configuration());
 }
 
 pub(super) fn run_snapshot_idle_hook() {
@@ -991,7 +1089,7 @@ fn removal_failure_is_reported_and_can_be_retried_after_repair() {
 }
 
 #[test]
-fn lcf_removal_stops_before_deletion_when_termination_is_unverified() {
+fn maf_04_removal_stops_before_deletion_when_termination_is_unverified() {
     let root = TestRoot::new();
     let package = package_root(&root.0);
     fs::create_dir_all(&package).unwrap();
@@ -1131,7 +1229,7 @@ fn clb05_locked_backup_is_retained_until_successful_retry() {
 
 #[cfg(windows)]
 #[test]
-fn removal_can_retry_after_a_windows_sharing_violation() {
+fn maf_04_removal_can_retry_after_a_windows_sharing_violation() {
     use std::os::windows::fs::OpenOptionsExt;
     let root = TestRoot::new();
     let package = package_root(&root.0);
@@ -1144,8 +1242,9 @@ fn removal_can_retry_after_a_windows_sharing_violation() {
         .open(&path)
         .unwrap();
     let manager = OptionalChatterboxManager::default();
+    let supervisor = crate::tts_service_supervisor::TtsServiceSupervisor::default();
     assert_eq!(
-        manager.remove_at(&root.0),
+        manager.remove_after_service_stop(&root.0, &supervisor),
         Err(OptionalProfileError::CleanupFailed)
     );
     assert_eq!(
@@ -1154,7 +1253,10 @@ fn removal_can_retry_after_a_windows_sharing_violation() {
     );
     drop(lock);
     assert_eq!(
-        manager.remove_at(&root.0).unwrap().state,
+        manager
+            .remove_after_service_stop(&root.0, &supervisor)
+            .unwrap()
+            .state,
         OptionalProfileState::Absent
     );
     assert!(!package.exists());

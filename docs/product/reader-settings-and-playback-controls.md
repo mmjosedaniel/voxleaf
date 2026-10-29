@@ -594,6 +594,21 @@ reasons, not developer telemetry.
 
 ## Acceptance summary
 
+Configuration actions contain Play until their asynchronous work settles,
+including when Settings is closed during optional-package removal. Native
+removal excludes configuration/spawn admission, verifies service termination,
+and revokes the previously verified runtime before deleting package files.
+Failed termination prevents deletion; failed deletion remains retryable.
+
+Selecting an already loaded, healthy Chatterbox profile preserves that owner
+when its admitted continuation remains valid. Fresh starts, changed profiles
+or languages, failed owners and explicit compatibility rechecks retain their
+existing admission rules.
+
+After natural completion, changing Prepared/Quick preferences releases the
+completed mode-dependent player/scheduler before publishing the new selection.
+The final heard checkpoint is preserved and playback requires an explicit Play.
+
 M010.2 is complete only when deterministic, Chromium, packaged WebView2, and
 exact-host evidence prove:
 

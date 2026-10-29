@@ -16,6 +16,7 @@ import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  BROWSER_READER_REFLOW_ENVIRONMENT,
   MAX_REFLOW_SETTLE_FRAMES,
   ReaderReflowRestorer,
   type ReaderReflowEnvironment,
@@ -276,6 +277,48 @@ afterEach(() => {
 });
 
 describe("reader reflow restoration", () => {
+  it("MAF-07 falls back to the block when a range has absent all-zero geometry", () => {
+    const harness = createHarness();
+    const range = document.createRange();
+    Object.defineProperties(range, {
+      getClientRects: { value: () => ({ item: () => null }) },
+      getBoundingClientRect: { value: () => new DOMRect(0, 0, 0, 0) },
+    });
+    vi.spyOn(harness.mapper, "rangeFor").mockReturnValue(range);
+    vi.spyOn(harness.environment, "rangeRect").mockImplementation(
+      BROWSER_READER_REFLOW_ENVIRONMENT.rangeRect,
+    );
+    harness.restorer.preserve(locatorAt(4), "restoration");
+    harness.environment.flushAll();
+    expect(harness.results[0]).toMatchObject({
+      locator: locatorAt(4),
+      placement: "block-start",
+      aligned: true,
+    });
+    expect(harness.environment.scrollAdjustments).toEqual([46]);
+    harness.restorer.close();
+  });
+
+  it.each([true, false])(
+    "MAF-07 keeps a meaningful zero-width caret (client rect %s)",
+    (clientRect) => {
+      const range = document.createRange();
+      const rect = new DOMRect(20, 40, 0, 16);
+      Object.defineProperties(range, {
+        getClientRects: {
+          value: () => ({ item: () => (clientRect ? rect : null) }),
+        },
+        getBoundingClientRect: { value: () => rect },
+      });
+      expect(BROWSER_READER_REFLOW_ENVIRONMENT.rangeRect(range)).toEqual({
+        top: 40,
+        bottom: 56,
+        left: 20,
+        right: 20,
+      });
+    },
+  );
+
   it("aligns the exact canonical range after preference reflow without stealing focus", () => {
     const harness = createHarness();
     expect(harness.mapper.registrationCount).toBe(1);

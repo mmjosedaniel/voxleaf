@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import process from "node:process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { URL } from "node:url";
+import { fileURLToPath, pathToFileURL, URL } from "node:url";
 import test from "node:test";
 
 import {
@@ -13,6 +15,119 @@ import {
   selectPortfolioArms,
   runPortfolioArm,
 } from "./bilingual-portfolio-host.mjs";
+
+for (const mode of [
+  "normal",
+  "deadline",
+  "cleanup-failure",
+  "missing-confirmation",
+]) {
+  test(
+    "MAF-01 reader wrapper confirms cleanup before advancing: " + mode,
+    async () => {
+      const owned = await mkdtemp(path.join(tmpdir(), "voxleaf-maf-reader-"));
+      const runner = path.join(owned, "runner.mjs");
+      const preload = path.join(owned, "preload.mjs");
+      const events = path.join(owned, "events.jsonl");
+      const nativeModule = new URL(
+        "./native-startup-smoke.mjs",
+        import.meta.url,
+      ).href;
+      const wrapper = fileURLToPath(
+        new URL("./reader-corrections-host.mjs", import.meta.url),
+      );
+      await writeFile(
+        runner,
+        [
+          "import {appendFile} from 'node:fs/promises';",
+          "import process from 'node:process';",
+          "import {setTimeout as wait} from 'node:timers/promises';",
+          "import {runNativeOperation,nativeOperationTimeout} from " +
+            JSON.stringify(nativeModule) +
+            ";",
+          "const mode=" + JSON.stringify(mode) + ";",
+          "const record=async(kind)=>appendFile(" +
+            JSON.stringify(events) +
+            ",JSON.stringify({kind,args:process.argv.slice(2)})+'\\n');",
+          "await record('start');",
+          "if(mode==='missing-confirmation') await record('cleanup');",
+          "else try { await runNativeOperation({",
+          "timeoutMs:nativeOperationTimeout(process.argv.slice(2)),",
+          "work:async(signal)=>{if(mode==='deadline')await wait(10000,undefined,{signal});},",
+          "cleanup:async()=>{await wait(30);await record('cleanup');if(mode==='cleanup-failure')throw new Error('synthetic-cleanup');}",
+          "}); }catch{process.exitCode=1;}",
+        ].join("\n"),
+      );
+      // Redirect only this wrapper's native runner; child supervision stays real.
+      await writeFile(
+        preload,
+        [
+          "import childProcess from 'node:child_process';",
+          "import {syncBuiltinESMExports} from 'node:module';",
+          "for(const name of ['spawn','spawnSync']) {",
+          "const original=childProcess[name];",
+          "childProcess[name]=(file,args,options)=>{",
+          "if(args?.[0]?.endsWith('native-startup-smoke.mjs')) {",
+          "args=[" +
+            JSON.stringify(runner) +
+            ",...args.slice(1).filter(v=>!v.startsWith('--operation-timeout-ms=')),'--operation-timeout-ms=1000'];",
+          "if(name==='spawnSync')options={...options,timeout:1000};",
+          "} return original(file,args,options); };",
+          "} syncBuiltinESMExports();",
+        ].join("\n"),
+      );
+      try {
+        const code = await new Promise((resolve, reject) => {
+          execFile(
+            process.execPath,
+            ["--import", pathToFileURL(preload).href, wrapper],
+            { windowsHide: true, timeout: 15_000 },
+            (error) => {
+              if (error !== null && typeof error.code !== "number")
+                reject(error);
+              else resolve(error?.code ?? 0);
+            },
+          );
+        });
+        const records = (await readFile(events, "utf8"))
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line));
+        const starts = records.filter((record) => record.kind === "start");
+        assert.equal(code, mode === "normal" ? 0 : 1);
+        assert.equal(starts.length, mode === "normal" ? 4 : 1);
+        assert.deepEqual(
+          records.map((record) => record.kind),
+          Array.from({ length: starts.length }, () => [
+            "start",
+            "cleanup",
+          ]).flat(),
+        );
+        assert.ok(
+          starts.every(
+            (record) =>
+              record.args.includes("--exercise-reader-corrections") &&
+              record.args.includes("--exercise-playback-speeds"),
+          ),
+        );
+        if (mode === "normal")
+          assert.deepEqual(
+            starts.map((record) =>
+              record.args.find((arg) => arg.startsWith("--tts-language=")),
+            ),
+            [
+              "--tts-language=es",
+              "--tts-language=en",
+              "--tts-language=es",
+              "--tts-language=en",
+            ],
+          );
+      } finally {
+        await rm(owned, { recursive: true, force: true });
+      }
+    },
+  );
+}
 
 test("freezes the six exact bilingual portfolio arms", () => {
   assert.equal(BILINGUAL_PORTFOLIO_ARMS.length, 6);

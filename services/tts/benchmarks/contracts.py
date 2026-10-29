@@ -196,6 +196,7 @@ class CancellationObservation:
     cleanup_ns: int
     stale_frames: int
     raw_session_removed: bool
+    language: str | None = None
 
 
 @dataclass(frozen=True)

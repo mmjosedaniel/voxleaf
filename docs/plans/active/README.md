@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Minimal audit findings corrections](minimal-audit-findings-corrections.md):
-  planning-only correction scope for all eleven revalidated findings, with
-  minimal implementation boundaries and an evidence-aware validation strategy.
-  Execution has not started.
+No active implementation plans are currently listed.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

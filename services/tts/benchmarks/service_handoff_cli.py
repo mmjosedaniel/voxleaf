@@ -325,32 +325,34 @@ def run() -> Mapping[str, object]:
         encoding="utf-8",
         errors="strict",
     )
-    if process.stdout is None:
-        process.kill()
-        raise _fail("native-output")
-
-    dedicated_gpu = WindowsGpuProcessMemorySampler()
-    shared_gpu = WindowsGpuProcessMemorySampler(GPU_PROCESS_SHARED_MEMORY_COUNTER)
-    dedicated_sampler = WindowsProcessResourceSampler(vram_sampler=dedicated_gpu)
-    shared_sampler = WindowsProcessResourceSampler(vram_sampler=shared_gpu)
-    lines: queue.SimpleQueue[str] = queue.SimpleQueue()
-    reader = threading.Thread(
-        target=_read_lines,
-        args=(process.stdout, lines),
-        name="voxleaf-service-handoff-output",
-        daemon=True,
-    )
-    reader.start()
-    native_result: Mapping[str, object] | None = None
-    peak_ram = 0
-    peak_dedicated = 0
-    peak_shared = 0
-    peak_allocations = 0
-    listener_count = 0
-    external_connection_count = 0
-    cleanup_observations = 0
-    network_observations: set[str] = set()
+    dedicated_gpu: WindowsGpuProcessMemorySampler | None = None
+    shared_gpu: WindowsGpuProcessMemorySampler | None = None
+    reader: threading.Thread | None = None
+    primary_error: BaseException | None = None
     try:
+        if process.stdout is None:
+            raise _fail("native-output")
+        dedicated_gpu = WindowsGpuProcessMemorySampler()
+        shared_gpu = WindowsGpuProcessMemorySampler(GPU_PROCESS_SHARED_MEMORY_COUNTER)
+        dedicated_sampler = WindowsProcessResourceSampler(vram_sampler=dedicated_gpu)
+        shared_sampler = WindowsProcessResourceSampler(vram_sampler=shared_gpu)
+        lines: queue.SimpleQueue[str] = queue.SimpleQueue()
+        reader = threading.Thread(
+            target=_read_lines,
+            args=(process.stdout, lines),
+            name="voxleaf-service-handoff-output",
+            daemon=True,
+        )
+        reader.start()
+        native_result: Mapping[str, object] | None = None
+        peak_ram = 0
+        peak_dedicated = 0
+        peak_shared = 0
+        peak_allocations = 0
+        listener_count = 0
+        external_connection_count = 0
+        cleanup_observations = 0
+        network_observations: set[str] = set()
         while process.poll() is None or reader.is_alive() or not lines.empty():
             sample = dedicated_sampler.sample(process.pid)
             shared = shared_sampler.sample(process.pid)
@@ -407,13 +409,38 @@ def run() -> Mapping[str, object]:
             listener_count=listener_count,
             external_connection_count=external_connection_count,
         )
+    except BaseException as error:
+        primary_error = error
+        raise
     finally:
-        if process.poll() is None:
-            process.kill()
+        cleanup_failed = False
+        try:
+            if process.poll() is None:
+                process.kill()
             process.wait(timeout=5)
-        process.stdout.close()
-        dedicated_gpu.close()
-        shared_gpu.close()
+        except (OSError, subprocess.SubprocessError):
+            cleanup_failed = True
+        if reader is not None and reader.ident is not None:
+            reader.join(timeout=1)
+        reader_alive = reader is not None and reader.is_alive()
+        cleanup_failed = cleanup_failed or reader_alive
+        # Closing a buffered stream while its reader still blocks can hang.
+        if process.stdout is not None and not reader_alive:
+            try:
+                process.stdout.close()
+            except OSError:
+                cleanup_failed = True
+        for sampler in (dedicated_gpu, shared_gpu):
+            if sampler is not None:
+                try:
+                    sampler.close()
+                except (OSError, RuntimeError):
+                    cleanup_failed = True
+        if cleanup_failed:
+            if primary_error is not None:
+                primary_error.add_note("tts-service-handoff-run:cleanup-failed")
+            else:
+                raise _fail("cleanup-failed")
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
@@ -425,8 +452,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return 2
     try:
         result = run()
-    except (OSError, RuntimeError, subprocess.SubprocessError):
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print("Exact-host service handoff matrix failed.", file=sys.stderr)
+        if "tts-service-handoff-run:cleanup-failed" in getattr(error, "__notes__", ()):
+            print("Exact-host service handoff cleanup failed.", file=sys.stderr)
         return 1
     print(json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":")))
     print("Exact-host service handoff matrix passed.", file=sys.stderr)

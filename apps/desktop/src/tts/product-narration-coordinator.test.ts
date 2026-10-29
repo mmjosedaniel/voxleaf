@@ -22,6 +22,11 @@ import { bindNarrationPositionPersistence } from "../persistence/narration-posit
 import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
 import { ReaderPositionRestoreCoordinator } from "../persistence/reader-position-restore-coordinator";
 import { createWebStorageReaderPositionRepository } from "../persistence/reader-position-repository";
+import { createNarrationSettingsActions } from "../settings/narration-settings-actions";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "./optional-chatterbox-client";
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
 import { bindHardwareCompatibilityChecks } from "./hardware-compatibility-check-binding";
@@ -3031,6 +3036,154 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().selection).toEqual({ kind: "quick" });
     await coordinator.close();
   });
+
+  it.each([60_000, 120_000, 300_000, 600_000] as const)(
+    "MAF-11 reconciles completed Prepared %s to Quick without losing the heard end or auto-playing",
+    async (targetMs) => {
+      const { coordinator, client, backend, intervals, prepareNarration } =
+        createHarness();
+      const heard: ProductNarrationAudibleProgressObservation[] = [];
+      coordinator.subscribeAudibleProgress((event) => heard.push(event));
+      await coordinator.checkAvailability();
+      expect(
+        await coordinator.setSelection({ kind: "prepared", targetMs }),
+      ).toBe(true);
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      backend.finish();
+      for (const tick of [...intervals]) tick();
+      expect(coordinator.observe().state?.phase).toBe("complete");
+      const finalHeard = heard.at(-1);
+      expect(finalHeard).toMatchObject({
+        kind: "segment-completed",
+        sourceRange: SOURCE_RANGE,
+      });
+      try {
+        const phases: Array<string | undefined> = [];
+        const unsubscribe = coordinator.subscribe(() =>
+          phases.push(coordinator.observe().state?.phase),
+        );
+        await expect(coordinator.setSelection({ kind: "quick" })).resolves.toBe(
+          true,
+        );
+        unsubscribe();
+        expect(phases.every((phase) => phase === "complete")).toBe(true);
+        expect(coordinator.observe().state).toMatchObject({
+          phase: "complete",
+          mode: { kind: "quick" },
+          targetMs: 15_000,
+        });
+        for (const tick of [...intervals]) tick();
+        expect(coordinator.observe().selection).toEqual({ kind: "quick" });
+        expect(coordinator.observe().failure).toBeUndefined();
+        expect(client.synthesized).toHaveLength(1);
+        expect(heard.at(-1)).toBe(finalHeard);
+        coordinator.startAtVisibleLocator();
+        await settleUntil(
+          () => client.synthesized.length === 2 && backend.active !== undefined,
+        );
+        expect(coordinator.observe().state?.phase).toBe("playing");
+        expect(prepareNarration).toHaveBeenCalledTimes(2);
+      } finally {
+        // Restore a coherent selection before disposing an intentionally red run.
+        await coordinator.setSelection({ kind: "prepared", targetMs });
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each(["start", "visible", "locator"] as const)(
+    "MAF-04 contains %s throughout pending optional removal and releases after failure",
+    async (start) => {
+      const { coordinator, client } = createHarness();
+      await coordinator.checkAvailability();
+      let release!: () => void;
+      const removal = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const optional = {
+        remove: vi.fn(async () => {
+          await removal;
+          throw new Error("synthetic removal failure");
+        }),
+      };
+      const pending = createNarrationSettingsActions(false).removeChatterbox(
+        coordinator,
+        optional,
+      );
+      const rejected = expect(pending).rejects.toThrow(
+        "synthetic removal failure",
+      );
+      try {
+        await settleUntil(() => optional.remove.mock.calls.length === 1);
+        if (start === "start") coordinator.start();
+        else if (start === "visible") coordinator.startAtVisibleLocator();
+        else coordinator.startAtLocator(START_LOCATOR);
+        await Promise.resolve();
+        expect(coordinator.observe().availability).not.toBe("available");
+        expect(client.startedProfiles).toHaveLength(0);
+      } finally {
+        release();
+        await rejected;
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each(["healthy", "absent", "failed", "language-changed"] as const)(
+    "MAF-10 reselection admits only an existing healthy same-profile owner: %s",
+    async (owner) => {
+      let freeCapacity = true;
+      let language: "en" | "es" = "en";
+      const compatibility = {
+        activeProfileId: () => CHATTERBOX_OPTIONAL_PROFILE_ID,
+        activeLanguage: () => language,
+        isProfileCurrentlyAllowed: () => freeCapacity,
+        isProfileContinuationAllowed: () => true,
+        isProfileStartAllowed: vi.fn(async () => freeCapacity),
+      };
+      const { coordinator, client } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      const hardware = { selectProfile: vi.fn(async () => true) };
+      const optional = {
+        select: vi.fn(async () => ({
+          ...new OptionalChatterboxClient().observe(),
+          state: "failed" as const,
+        })),
+      };
+      try {
+        await coordinator.checkAvailability();
+        if (owner !== "absent") {
+          coordinator.start();
+          await settleUntil(
+            () => coordinator.observe().state?.phase === "playing",
+          );
+        }
+        if (owner === "failed") client.state = "failed";
+        if (owner === "language-changed") language = "es";
+        freeCapacity = false;
+        const before = client.observe();
+        const selected = await createNarrationSettingsActions(
+          false,
+        ).selectProfile(
+          CHATTERBOX_OPTIONAL_PROFILE_ID,
+          hardware,
+          coordinator,
+          optional,
+        );
+        expect(selected).toBe(owner === "healthy");
+        expect(optional.select).toHaveBeenCalledTimes(
+          owner === "healthy" ? 0 : 1,
+        );
+        expect(hardware.selectProfile).not.toHaveBeenCalled();
+        expect(client.shutdownCount).toBe(0);
+        expect(client.observe()).toEqual(before);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
 
   it("hydrates a saved start preference before availability becomes actionable", async () => {
     const repository: NarrationStartPreferenceRepository = {

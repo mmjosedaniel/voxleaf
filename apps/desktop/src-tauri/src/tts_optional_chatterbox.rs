@@ -2219,9 +2219,11 @@ impl OptionalChatterboxManager {
         root: &Path,
         supervisor: &crate::tts_service_supervisor::TtsServiceSupervisor,
     ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
-        supervisor
-            .force_stop()
+        let _admission = supervisor
+            .stop_for_optional_removal()
             .map_err(|_| OptionalProfileError::CleanupFailed)?;
+        #[cfg(test)]
+        tests::maf_after_service_stop();
         self.remove_at(root)
     }
 
@@ -2300,6 +2302,10 @@ impl OptionalChatterboxManager {
 
 pub(crate) fn discover_installed_chatterbox_runtime()
 -> Result<Option<InstalledChatterboxRuntime>, OptionalProfileError> {
+    #[cfg(test)]
+    if let Some((root, manifest)) = tests::maf_discovery_inputs() {
+        return prepare_and_verify_installed_runtime(&root, &manifest).map(Some);
+    }
     let manifest = exact_manifest()?;
     if manifest.availability != "downloadable" {
         return Ok(None);

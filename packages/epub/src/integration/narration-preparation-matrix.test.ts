@@ -29,6 +29,59 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it("MAF-08 preserves marked numeric source across bounded public continuations", async () => {
+    const source = "cafe\u03018 café8 8\u0301 か\u30998 8\u20dd. "
+      .repeat(40)
+      .trim();
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>' +
+          source +
+          "</p></body></html>",
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-mark-open-failed");
+    const publication = opened.publication;
+    const before = JSON.stringify(publication.documents);
+    try {
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const single = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          1,
+          profile,
+          "en",
+        );
+        const many = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          16,
+          profile,
+          "en",
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(single.segments.map((segment) => segment.text).join("")).toBe(
+          source,
+        );
+        expect(single.segments.length).toBeGreaterThan(1);
+        expect(
+          single.segments.at(-1)?.sourceRange.end.textOffsetCodePoints,
+        ).toBe(Array.from(source).length);
+        for (const [index, segment] of single.segments.entries()) {
+          assertPublicSegment(publication, segment, index);
+          expect(/^\p{M}/u.test(segment.text)).toBe(false);
+        }
+      }
+      expect(JSON.stringify(publication.documents)).toBe(before);
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("SAF-10 keeps title context across warm batches and cold reconstruction", async () => {
     const source = `${"a".repeat(110)} Brown Dr. ${"Smith ".repeat(30)}.`;
     const bytes = await buildMinimalEpubFixture({

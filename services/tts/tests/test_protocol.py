@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 import struct
-from collections.abc import Buffer, Callable
+from collections.abc import Buffer, Callable, Mapping
 from pathlib import Path
 from typing import Final, cast
 
@@ -229,6 +229,29 @@ def test_control_decoder_enforces_text_bytes_and_audio_arithmetic() -> None:
     metadata = load_fixture("valid-audio-metadata.json")
     metadata["payloadBytes"] = 19_196
     assert reason_from(lambda: encode_control_message(metadata)) is ProtocolReason.FORMAT_MISMATCH
+
+
+@pytest.mark.parametrize("text", ["\ud800", "\udfff", "Synthetic \ud800 text"])
+def test_maf03_escaped_surrogate_is_a_content_free_protocol_rejection(text: str) -> None:
+    message = load_fixture("valid-synthesize.json")
+    cast(dict[str, object], message["segment"])["text"] = text
+    payload = json.dumps(message, ensure_ascii=True).encode("ascii")
+    assert reason_from(lambda: decode_control_payload(payload)) is ProtocolReason.INVALID_UTF8
+
+
+def test_maf03_valid_astral_text_retains_exact_utf8_bound() -> None:
+    message = load_fixture("valid-synthesize.json")
+    segment = cast(dict[str, object], message["segment"])
+    segment["text"] = "😀" * 512
+    decoded = decode_control_payload(json.dumps(message, ensure_ascii=True).encode("ascii"))
+    assert cast(Mapping[str, object], decoded["segment"])["text"] == segment["text"]
+    segment["text"] = "😀" * 513
+    assert (
+        reason_from(
+            lambda: decode_control_payload(json.dumps(message, ensure_ascii=True).encode("ascii"))
+        )
+        is ProtocolReason.OVER_LIMIT
+    )
 
 
 def test_control_decoder_enforces_exact_identifier_code_point_and_byte_bounds() -> None:

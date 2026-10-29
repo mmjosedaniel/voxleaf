@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openEpubPublication } from "@voxleaf/epub";
 
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
 import { closeSettings, openSettings } from "./settings-helpers";
@@ -6,6 +7,105 @@ import { closeSettings, openSettings } from "./settings-helpers";
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
+
+test("MAF-07 restores an empty line-break range using its actual block geometry", async ({
+  page,
+}) => {
+  const fixtureModule = (await import(
+    new URL(
+      "../../../../packages/epub/test-support/epub-fixture.ts",
+      import.meta.url,
+    ).href
+  )) as {
+    buildMinimalEpubFixture(options: {
+      chapterDocument: string;
+    }): Promise<Uint8Array>;
+  };
+  const paragraphs =
+    "<p>Synthetic surrounding passage with ordinary words.</p>".repeat(40);
+  const bytes = await fixtureModule.buildMinimalEpubFixture({
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>' +
+      paragraphs +
+      '<p id="empty"><br/></p>' +
+      paragraphs +
+      "</body></html>",
+  });
+  const opened = await openEpubPublication(bytes);
+  if (!opened.ok) throw new Error("synthetic-reflow-open-failed");
+  const locator = opened.publication.locators.find(
+    (block) => block.startLocator.anchor.value === "empty",
+  )?.startLocator;
+  await opened.publication.close();
+  if (locator === undefined) throw new Error("synthetic-reflow-target-missing");
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.name));
+  await page.goto("/");
+  await page.evaluate(
+    ({ key, locator }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          schemaVersion: 1,
+          states: [
+            {
+              schemaVersion: 1,
+              bookIdentity: locator.bookIdentity,
+              locator,
+              preferences: {},
+            },
+          ],
+        }),
+      );
+    },
+    { key: POSITION_STORAGE_KEY, locator },
+  );
+  try {
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-empty-range.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(bytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored.",
+    );
+    const target = page.locator(".semantic-document p").nth(40);
+    const geometry = await target.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(true);
+      const rect = range.getBoundingClientRect();
+      return {
+        rectangles: range.getClientRects().length,
+        bounds: [rect.top, rect.right, rect.bottom, rect.left],
+        height: element.getBoundingClientRect().height,
+      };
+    });
+    expect(geometry.rectangles).toBe(0);
+    expect(geometry.bounds).toEqual([0, 0, 0, 0]);
+    expect(geometry.height).toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        target.evaluate((element, inset) => {
+          const viewport = document.querySelector(
+            '[data-reader-scroll-owner="true"]',
+          )!;
+          return Math.abs(
+            element.getBoundingClientRect().top -
+              viewport.getBoundingClientRect().top -
+              inset,
+          );
+        }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX),
+      )
+      .toBeLessThan(1);
+    expect(pageErrors).toEqual([]);
+  } finally {
+    await page.evaluate(
+      (key) => localStorage.removeItem(key),
+      POSITION_STORAGE_KEY,
+    );
+  }
+});
 
 interface PassageSignature {
   readonly blockIndex: number;

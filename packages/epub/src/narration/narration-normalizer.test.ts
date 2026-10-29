@@ -40,6 +40,29 @@ import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
 
 it.each([
+  ["cafe\u03018", "cafe\u03018"],
+  ["café8", "café8"],
+  ["8\u0301", "8\u0301"],
+  ["か\u30998", "か\u30998"],
+  ["8\u20dd", "8\u20dd"],
+  ["8", "eight"],
+])(
+  "MAF-08 preserves numeric tokens adjacent to Unicode marks: %s",
+  (source, expected) => {
+    const leaf = singleTextFixture(source, false);
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "en",
+    );
+    expect(normalized.text).toBe(expected);
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+  },
+);
+
+it.each([
   ["las 14:30.", "las catorce treinta."],
   ["Las 14:30.", "Las catorce treinta."],
   ["LAS 14:30.", "LAS catorce treinta."],

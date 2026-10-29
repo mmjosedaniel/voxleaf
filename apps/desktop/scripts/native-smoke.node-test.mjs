@@ -17,6 +17,7 @@ import { JSDOM } from "jsdom";
 import {
   createNativeResourceObservation,
   captureOwnedProcessTree,
+  terminateOwnedProcesses,
 } from "./native-smoke/resource-observation.mjs";
 import {
   cleanupNativeRun,
@@ -523,6 +524,74 @@ const metricsFailure = {
 const narrationFailure = {
   message: "Native synchronized narration proof failed.",
 };
+
+for (const fault of ["enumeration", "live-read", "exited", "none"]) {
+  test(
+    "MAF-02 actual PowerShell rejects incomplete RAM observation: " + fault,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const child = spawn(
+        process.execPath,
+        ["-e", "setInterval(()=>{},1000)"],
+        {
+          stdio: "ignore",
+          windowsHide: true,
+        },
+      );
+      let identities = [];
+      try {
+        await once(child, "spawn");
+        identities = await captureOwnedProcessTree(child.pid);
+        const root = identities.find((record) => record.pid === child.pid);
+        assert.ok(root?.created && root.executable && root.depth === 0);
+        if (fault === "exited") {
+          const exited = once(child, "exit");
+          child.kill();
+          await exited;
+        }
+        const setup = [
+          "$mafChild=" + child.pid + "; $mafRoot=" + process.pid,
+          "$mafRows=@(CimCmdlets\\Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -eq $mafRoot -or $_.ProcessId -eq $mafChild})",
+          ...(fault === "exited"
+            ? [
+                "$mafRows+= [pscustomobject]@{ProcessId=$mafChild;ParentProcessId=$mafRoot}",
+              ]
+            : []),
+          "function Get-CimInstance { [CmdletBinding()]param([Parameter(Position=0)][string]$ClassName,[string]$Filter); if($Filter) { CimCmdlets\\Get-CimInstance $ClassName -Filter $Filter -ErrorAction Stop; return }; " +
+            (fault === "enumeration"
+              ? "Write-Error 'synthetic enumeration failure';"
+              : "") +
+            " $mafRows }",
+          "function Get-Process { [CmdletBinding()]param([int[]]$Id); foreach($mafId in $Id) { if($mafId -eq $mafChild -and '" +
+            fault +
+            "' -eq 'live-read') { Write-Error 'synthetic read failure' } else { Microsoft.PowerShell.Management\\Get-Process -Id $mafId -ErrorAction $ErrorActionPreference } } }",
+        ].join("; ");
+        const observation = resources({
+          INTERACTION_TIMEOUT_MS: 15_000,
+          execFile: (file, args, options, callback) =>
+            execFile(
+              file,
+              [...args.slice(0, -1), setup + "; " + args.at(-1)],
+              options,
+              callback,
+            ),
+        });
+        const pending = observation.processWorkingSetBytes(process.pid);
+        if (fault === "enumeration" || fault === "live-read")
+          await assert.rejects(pending, metricsFailure);
+        else assert.ok((await pending) > 0);
+      } finally {
+        if (identities.length > 0) await terminateOwnedProcesses(identities);
+        if (child.exitCode === null && child.signalCode === null) {
+          const exited = once(child, "exit");
+          child.kill();
+          await exited;
+        }
+        assert.ok(child.exitCode !== null || child.signalCode !== null);
+      }
+    },
+  );
+}
 
 test("calculation boundaries preserve nearest-rank p95 and signed DOM deltas", () => {
   const { rounded, percentile95, memoryDelta } = resources();

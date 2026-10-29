@@ -277,7 +277,11 @@ def _semantic_validate(message: Mapping[str, object]) -> None:
     if kind == "synthesize":
         segment = cast(dict[str, object], message["segment"])
         text = cast(str, segment["text"])
-        if len(text.encode("utf-8")) > MAX_NARRATION_UTF8_BYTES:
+        try:
+            text_bytes = text.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ProtocolFailure(ProtocolReason.INVALID_UTF8) from None
+        if len(text_bytes) > MAX_NARRATION_UTF8_BYTES:
             raise ProtocolFailure(ProtocolReason.OVER_LIMIT)
         book_identity = cast(dict[str, object], segment["bookIdentity"])
         source_range = cast(dict[str, object], segment["sourceRange"])

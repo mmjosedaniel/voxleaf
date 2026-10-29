@@ -8,15 +8,24 @@ reuse existing fixtures and verified artifacts, and run the smallest sufficient
 set of current checks. This is a cross-milestone correction plan, not a refactor
 or a new product milestone.
 
-**Status: planned; implementation and validation have not started.** The current
-authorization covers this document, its active-index entry, a local branch and
-one documentation commit only. It does not execute the plan or authorize push,
-PR, merge, release, installation, downloads or changes to personal state.
+**Status: implemented, host-validated and archived under M4.** Implementation
+review [MAF-R1-20261029](../evidence/minimal-audit-findings-corrections/review-R1.md)
+is APPROVE. The separate `MAF-R2-20261029` report in the
+[review evidence](../evidence/minimal-audit-findings-corrections/)
+records the authoritative final documentary verdict and identity recheck.
+The 2026-10-29 execution instruction
+authorizes all eleven corrections and the plan's necessary host validation and
+generation, superseding the earlier planning-only restriction. It does not
+authorize commit, push, PR, merge, publication, installation, downloads, tool
+updates or changes to personal state. See the
+[execution ledger](../evidence/minimal-audit-findings-corrections/execution-ledger.md).
 
 Planning base: `cdeb3630bca3a61126a83cb261e5d341d33277e0`, initially clean `main`.
 Plan branch: `codex/minimal-audit-findings-corrections`.
-Future execution must record its actual starting HEAD and clean/dirty ownership;
-the planning base is not a fabricated test baseline.
+Execution started at the exact plan commit
+`2f6a80b7b19be6cc62b7706bd85e9be96a1a2b8e`, with clean worktree and empty index.
+HEAD remains unchanged; implementation and documentation are uncommitted.
+The planning base is not a fabricated test baseline.
 
 ## User-visible outcome
 
@@ -151,7 +160,8 @@ numeric syntax. MAF-02/09 must not convert unknown metrics into passing zeros.
 
 ### M0: Freeze scope, reproduction paths and evidence decisions
 
-Status: **Not started**.
+Status: **Complete**. Exact plan HEAD, clean entry, allowlist, original receipts,
+tools and reused artifact identities are recorded in the execution ledger.
 
 Record actual HEAD, clean/dirty paths, literal owners, input/discovery identities
 and available original receipts before any source or regression edit. Read the
@@ -164,7 +174,9 @@ baseline simply because this is a new task.
 
 ### M1: Add the missing regressions and preserve intended failures
 
-Status: **Not started**.
+Status: **Complete**. Directed intended failures cover all eleven findings.
+F2 used generated PowerShell faults; F4 used the permitted installed-runtime
+ordering with real benign processes in both feature modes. See the ledger.
 
 Use synthetic input and the existing test suites. Tag new directed cases `MAF`
 (Python/Rust `maf`) so filtered runs are auditable. Record test discovery/counts;
@@ -179,7 +191,8 @@ fault conditions. F7 needs real DOM geometry in Chromium, not only jsdom mocks.
 
 ### M2: Apply minimal corrections in the four bounded units
 
-Status: **Not started**.
+Status: **Implemented and host-validated**. Directed green, combined suites,
+browser integration, native build and current native smoke pass.
 
 Fix only each reproduced cause and run its directed green/controls. Shared
 files have one writer. Prefer the existing arm runner, observation types,
@@ -189,7 +202,9 @@ do not accept a unit with unresolved lifecycle/cleanup evidence.
 
 ### M3: One combined validation and affected artifact generation
 
-Status: **Not started**.
+Status: **Complete**. Existing core inputs are verified; one generator run,
+combined suites, browser integration, native build/smoke and resource checks
+pass. No historical test PASS is reused.
 
 Freeze the combined source patch. Run applicable fast static checks before
 package/native preparation, rebuild only invalidated outputs, then execute
@@ -201,7 +216,11 @@ later correction; any pending combined/host gate prevents final acceptance.
 
 ### M4: Independent acceptance and documentation closeout
 
-Status: **Not started**.
+Status: **Implementation APPROVE; documentary closeout recorded**. R1 independently
+accepted all eleven corrections with no findings. Maintained behavior/testing
+documentation and indexes are updated, and this plan is archived. Final
+documentary acceptance and identity freshness are recorded by the separate
+R2 report linked above; moving the plan alone does not establish acceptance.
 
 Delegate to `change_reviewer` (GPT-6 Astra high) under the existing workflow.
 Supply exact current diff/path identities, all eleven dispositions and normal
@@ -216,7 +235,8 @@ a new immutable review of the final documentary patch and identities. The new
 report may retain unaffected runtime receipts only through the explicit reuse
 proof; the pre-archive APPROVE is not approval of changed final bytes. Keep each
 report outside its own identity manifest. New implementation commits/publication
-require their own authorization; this turn's documentation commit does not grant it.
+require their own authorization; the planning commit does not grant it. This
+execution explicitly excludes all commits, push, PR, merge and publication.
 
 ## Testing and benchmark strategy
 
@@ -368,13 +388,23 @@ benchmark callers and frozen external result schemas.
 
 ## Progress log
 
+- 2026-10-29: Execution starts at exact plan HEAD
+  `2f6a80b7b19be6cc62b7706bd85e9be96a1a2b8e`, on the requested branch with
+  empty index and clean worktree. The ledger freezes mutable paths and initial
+  gate dispositions before source/test edits; read-only investigations cover
+  host observation, Python and native lifecycle. No historical PASS is reused.
+- 2026-10-29: All eleven causes reproduced, corrections implemented, combined
+  host gates passed and cleanup verified. `MAF-R1-20261029` independently
+  approves the implementation, scoped current-task evidence retention and
+  exclusions without findings. M4 archives this plan, updates maintained indexes
+  and requests the distinct R2 review of the exact final documentary identities.
 - 2026-10-29: Read-only review consolidated eleven findings and revalidated their
   scope. F2/F4 remain conditional; F6's v9/v11 extension was refuted. No tests ran.
 - 2026-10-29: Planning inspected current configuration, product/architecture
   boundaries, SAF/RAC/VCA ledgers and available SAF original receipts. Partial
   identity matches were recorded only as historical reference, not reuse approval.
 - 2026-10-29: Created this plan and active-index entry on the requested local
-  branch. All execution milestones M0-M4 remain **Not started**.
+  branch. At that planning checkpoint all milestones M0-M4 were **Not started**.
 
 ## Discoveries and decisions
 
@@ -393,17 +423,26 @@ benchmark callers and frozen external result schemas.
 
 ## Final validation results
 
-**Planning only.** No production/test/generated file was changed, and no test,
-build, benchmark, model, installer or implementation milestone was executed by
-this planning task. The local documentation branch/commit is separate from
-future behavior acceptance.
+All eleven corrections are implemented and reproduced. MAF-02's partial RAM
+observation and MAF-04's permitted native interleaving are demonstrated on this
+host. Directed red/green receipts and the combined validation map are retained
+in the [execution ledger](../evidence/minimal-audit-findings-corrections/execution-ledger.md).
 
-MAF-01 through MAF-11: **pending reproduction/correction/acceptance**.
-Historical result reuse: **none approved**. Artifact reuse: **candidates
-identified; verify identities at execution**. Independent implementation review:
-**not requested yet because no implementation patch exists**.
+Current combined passes: 210 shared, 749 EPUB, 984 desktop and 151 Node tests;
+806 Python tests; 148/147 Rust tests with seven explicit ignored cases per mode.
+All applicable lint, type and format leaves pass on their recorded inputs.
+Piper core was generated once with both offline voice smokes and checked.
+All nine selected Chromium cases pass, including existing final-highlight and
+reflow controls. Wheel/sdist and the native release build pass. N1 validates the
+current executable, with zero external requests, no new processes/temp roots
+and unchanged binary identity. Documentary checks pass. Independent R1 approves
+all eleven corrections without findings; the separate R2 report governs final
+archival acceptance. The execution ledger maps commands, failed receipts,
+current-session retention and resource cleanup.
 
-At execution closeout replace this pending record with exact commands/outcomes,
-the complete leaf-to-receipt map, new immutable review ID, cleanup/restoration
-results, diagram/M005 check and remaining limits. Do not copy historical counts
-above into current acceptance.
+No historical test result is reused. Existing source archives/voices and matching
+EdgeDriver were hash verified as artifacts. Frozen optional v7, v9/v11, public
+contracts, dependencies and versions remain unchanged. The diagram's owners and
+M005 preparation boundary still match; neither document needs amendment.
+The ledger records failed attempts, invalidations and the bounded browser-stage
+replans. No new performance, GPU/quality, installer or clean-host claim is made.
