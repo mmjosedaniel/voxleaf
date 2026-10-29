@@ -500,7 +500,14 @@ test("RAC-07 mid-unit Resume follows the active range once and preserves inspect
   const playbackBefore = Number(
     await narration.getAttribute("data-narration-playback-ms"),
   );
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    // Drain the two-frame follow settlement and its one allowed correction;
+    // visible=true alone only observes the initial synchronous scroll.
+    for (let frame = 0; frame < 4; frame += 1) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    }
     const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
     viewport.scrollTop = viewport.scrollHeight;
   });

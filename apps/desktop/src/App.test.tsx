@@ -1558,6 +1558,11 @@ describe("desktop reader lifecycle surface", () => {
     try {
       selectEpub();
       await waitFor(() => expect(owners).toHaveLength(1));
+      // Construction occurs during render; visibility checks need the new
+      // owner's committed effect, after the initial ownerless binding.
+      await waitFor(() =>
+        expect(hardware.ensureChecked).toHaveBeenCalledTimes(2),
+      );
       cycle();
       await act(async () => pending[0]!());
       expect(owners[0]!.configurationEvents).toEqual(["refresh"]);

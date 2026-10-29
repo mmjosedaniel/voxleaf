@@ -17,6 +17,7 @@ separately below and must not be scheduled for execution.
 ## Completed plans
 
 - [Minimal audit findings corrections](minimal-audit-findings-corrections.md): all eleven findings reproduced and corrected, including the conditional RAM-observation and removal/spawn cases. Combined host validation, one Piper generation with both voices, Chromium/WebView2 and owned cleanup pass. `MAF-R1-20261029` approves implementation and scoped evidence retention without findings; the plan links the distinct final archive review. v9/v11, optional v7, public contracts and dependencies remain unchanged; no historical PASS or new performance/support claim is reused.
+  The [PR #286 CI follow-up](../evidence/minimal-audit-findings-corrections/ci-follow-up.md) records subsequent fixture-settlement failures and their separately reviewed correction.
 
 - [Static audit follow-up](static-audit-follow-up.md): all sixteen bounded reader, EPUB, Piper, optional-lifecycle and maintainer-tool corrections accepted. Directed red/green evidence, combined host checks, bilingual core smokes, Chromium/WebView2 and owned cleanup pass. `SAF-R2-20261029` approves the corrected implementation and scoped current-task evidence reuse after resolving the process-ownership finding. The plan links its separate archive review. Historical PASS reuse, broader model/download/install campaigns and new support claims remain excluded. Changes remain unstaged and uncommitted.
 
