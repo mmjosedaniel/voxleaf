@@ -247,6 +247,8 @@ signing limitations. The static security scan and its limits remain in the
 
 ## Plans
 
+- [Eight revalidated findings: minimal corrections](plans/active/eight-finding-minimal-corrections.md): planning complete, implementation not started; eight bounded corrections, a proposed consistent RAM policy and a minimal affected-test strategy with evidence-reuse conditions.
+
 - [Six verified audit corrections](plans/completed/six-finding-audit-corrections.md): completed bounded scene metadata, Unicode adjacency, inert table/definition projection, snapshot disclosure, loaded-duration and action/poll ordering corrections; selected host checks and independent implementation approval, with separate final archival review.
 
 - [Documentation consistency and historical tooling](plans/completed/documentation-consistency-and-historical-tooling.md): completed current-version/tooling reconciliation and maintained-index cleanup; documentary validation and protected-history preservation recorded separately from runtime acceptance.
