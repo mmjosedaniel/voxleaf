@@ -164,6 +164,7 @@ class BoundedDualWorkerController:
         released: list[DualAudioUnit] = []
         next_claim = 0
         next_release = 0
+        release_time = 0
         peak_active = 0
         peak_gpu = 0
         peak_cpu = 0
@@ -308,7 +309,8 @@ class BoundedDualWorkerController:
                     self.invalidate(runtime, active)
                     break
 
-                release_time = completion.completed_nanoseconds
+                # Completion collection may go backwards in time (GPU tie-break).
+                # Only released source predecessors advance the release frontier.
                 while next_release in pending:
                     ordered = pending.pop(next_release)
                     ordered_audio = ordered.audio

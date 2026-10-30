@@ -43,6 +43,12 @@ FIXTURE_ROOT: Final = (
 HEADER: Final = struct.Struct(">4sHBBI")
 
 
+def test_efc_08_integer_conversion_limit_is_malformed_json() -> None:
+    payload = b'{"value":' + b"9" * 5000 + b"}"
+    assert len(payload) < MAX_CONTROL_PAYLOAD_BYTES
+    assert reason_from(lambda: decode_control_payload(payload)) is ProtocolReason.MALFORMED_JSON
+
+
 class FragmentedReader(io.BytesIO):
     """A binary reader that returns at most one small fragment per read."""
 

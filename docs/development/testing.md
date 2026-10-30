@@ -1,5 +1,29 @@
 # Testing strategy
 
+## Eight-finding minimal corrections
+
+The [EFC plan](../plans/completed/eight-finding-minimal-corrections.md) selects
+bounded EPUB, mounted-reader/settings, Python, native, browser and package
+checks in G0–G10. `EFC-` and `efc_` identify directed regressions. They cover
+same-node ref churn with three mounted blocks, preflight-failure reconciliation,
+effective 7,042-MiB admission, terminal surrogates, oversized JSON integers,
+concrete executor cancellation/startup containment and worker completion times.
+
+Qwen tests model the pinned prefill and final sampled-token seam: 250 steps
+without EOS may decode 249 codec frames. Duration alone cannot establish
+completion. The development adapter observes the talker's returned sequence
+before the SDK discards EOS, restores the original callable even on failure,
+and rejects missing completion through the existing service failure boundary.
+The tests cover short success, EOS at the cap, exhaustion and absent evidence;
+rejection publishes no audio/end-of-segment or successful completion.
+
+Piper regeneration uses `package:piper-core:write-manifest` once, including its
+offline ES/EN smokes, then checks its output. The frozen optional Chatterbox
+runtime is not repackaged: this batch does not claim to patch its frozen decoder.
+Historical worker tests use benign local children, not real model benchmarks.
+The ledger distinguishes host execution, verified asset reuse, exclusions and
+independent exact-patch review; older PASS summaries are not current acceptance.
+
 ## Six-finding correction coverage
 
 `SFA-01` through `SFA-06` cases in the existing EPUB and desktop suites cover

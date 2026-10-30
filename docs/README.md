@@ -17,6 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed eight-finding corrections](plans/completed/eight-finding-minimal-corrections.md)
+resolve reader registration churn, optional compatibility recovery, RAM policy,
+internal Unicode/control decoding and historical/development TTS boundaries.
+Selected host tests, one Piper regeneration, browser/native smoke and owned
+cleanup pass. Independent EFC-R2-20261030 approves implementation and scoped
+current-task evidence retention; the plan records the separate archive review.
+No model support promotion, frozen Chatterbox repackaging or publication occurs.
+
 The [completed minimal audit corrections](plans/completed/minimal-audit-findings-corrections.md)
 resolve eleven reader, settings, native-lifecycle, Python protocol and maintainer
 findings. Directed reproductions, combined host checks, one Piper core generation,
@@ -246,6 +254,8 @@ signing limitations. The static security scan and its limits remain in the
 - [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded TypeScript/Python/Rust refactors, independent host validation, risk-based unit/batch gates, immutable evidence reuse, preparation and retry policy, and authorized Git stewardship.
 
 ## Plans
+
+- [Eight revalidated findings: minimal corrections](plans/completed/eight-finding-minimal-corrections.md): eight accepted corrections with selected host checks and independent EFC-R2 approval. ADR-0068 aligns effective RAM policy at 7,042 MiB without changing frozen acquisition bytes.
 
 - [Six verified audit corrections](plans/completed/six-finding-audit-corrections.md): completed bounded scene metadata, Unicode adjacency, inert table/definition projection, snapshot disclosure, loaded-duration and action/poll ordering corrections; selected host checks and independent implementation approval, with separate final archival review.
 

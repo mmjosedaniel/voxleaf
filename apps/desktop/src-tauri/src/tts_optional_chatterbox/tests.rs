@@ -12,6 +12,14 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+#[test]
+fn efc_06_discloses_effective_ram_without_changing_frozen_floor() {
+    let manifest = exact_manifest().unwrap();
+    assert_eq!(manifest.requirements.minimum_available_ram_mi_b, 4096);
+    let snapshot = snapshot_from(&manifest, OptionalProfileState::Absent, 0, None);
+    assert_eq!(snapshot.minimum_available_ram_mi_b, 7042);
+}
+
 #[cfg(windows)]
 #[test]
 fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {

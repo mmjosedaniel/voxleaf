@@ -24,6 +24,47 @@ async function fixtures() {
   }>;
 }
 
+test("EFC-07 successful Settings recheck clears obsolete native preflight failure", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-efc-recheck.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Local synthetic compatibility passage.</p></body></html>',
+      }),
+    ),
+  });
+  const settings = await openSettings(page);
+  const recheck = settings.getByRole("button", {
+    name: "Recheck device compatibility",
+    exact: true,
+  });
+  await expect(recheck).toBeVisible();
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.hostReport.providers.cuda.availableDedicatedMemoryMiB.value = 9216;
+    state.optionalRecovered = true;
+  });
+  await recheck.click();
+  await expect(
+    settings.getByRole("button", { name: "Review Chatterbox download" }),
+  ).toBeEnabled();
+  await expect(recheck).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").optionalMutations,
+    ),
+  ).toEqual([]);
+  await closeSettings(page, settings);
+});
+
 test("SFA-EPUB renders and narrates separate table cells and definition entries in order", async ({
   page,
 }) => {
@@ -1721,6 +1762,7 @@ async function installSyntheticService(
         deferProbe: false,
         releaseProbe: () => {},
         optionalMutations: [] as string[],
+        optionalRecovered: false,
         optionalSelectionPending: false,
         releaseOptionalSelection: () => {},
         deferRemoval: false,
@@ -1975,6 +2017,8 @@ async function installSyntheticService(
                   });
                 return observations.hostReport;
               case "optional_chatterbox_snapshot":
+                if (observations.optionalRecovered)
+                  return { ...installedOptional(), state: "absent" };
                 if (optionalSelection) return installedOptional();
                 if (!optionalRecheck) throw "tts-service-unavailable";
                 return {

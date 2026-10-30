@@ -14,6 +14,9 @@ import {
 } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render } from "@testing-library/react";
+import { createElement } from "react";
+import { SemanticDocumentContent } from "./SemanticDocument";
 
 import {
   ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX,
@@ -26,6 +29,7 @@ import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 const DOCUMENT_ID = "document:active-visual-locator" as ContentDocumentId;
 
 afterEach(() => {
+  cleanup();
   document.body.replaceChildren();
 });
 
@@ -170,6 +174,80 @@ interface TrackerHarness {
   readonly tracker: ActiveVisualLocatorTracker;
   close(): void;
 }
+
+it("EFC-01 mounted destination switches keep measured registrations bounded", () => {
+  const blocks = [0, 1, 2].map((index) =>
+    locatedBlock(paragraph(`Mounted ${index}`), index, 9),
+  );
+  const { publication } = createPublication(blocks);
+  const environment = new TestVisualLocatorEnvironment();
+  const tracker = new ActiveVisualLocatorTracker(
+    publication,
+    new SemanticDomRangeMapper(),
+    { environment, onLocator: vi.fn() },
+  );
+  const semantic = {
+    id: DOCUMENT_ID,
+    location: { kind: "non-spine" as const },
+    blocks: blocks.map((value) => value.block),
+  };
+  const readerRef = (root: HTMLElement | null) => tracker.setRoot(root);
+  const destinationRef = vi.fn();
+  const content = (index: number) =>
+    createElement(SemanticDocumentContent, {
+      document: semantic,
+      locatedBlocks: blocks,
+      visualLocatorTracker: tracker,
+      readerRef,
+      destinationBlock: blocks[index]!.block,
+      destinationRef,
+    });
+  const subject = render(content(0));
+  const elements = Array.from(subject.container.querySelectorAll("p"));
+  expect(elements).toHaveLength(3);
+  elements.forEach((element, index) =>
+    environment.rects.set(element, rect(index * 25, index * 25 + 25)),
+  );
+  act(() => environment.flush());
+  const baseline = environment.measuredElements.length;
+  for (let index = 0; index < 20; index += 1)
+    subject.rerender(content(index % 2));
+  environment.measuredElements.length = 0;
+  act(() => environment.flush());
+  expect(environment.measuredElements).toHaveLength(baseline);
+  expect(destinationRef).toHaveBeenLastCalledWith(elements[1]);
+  subject.unmount();
+  expect(tracker.registrationCount).toBe(0);
+  tracker.close();
+});
+
+it("EFC-01 keeps one ordered entry through repeated same-node ref churn", () => {
+  const blocks = [0, 1, 2].map((index) =>
+    locatedBlock(paragraph(`Block ${index}`), index, 7),
+  );
+  const harness = createHarness(blocks);
+  const { tracker, elements, environment } = harness;
+  elements.forEach((element, index) =>
+    environment.rects.set(element, rect(index * 25, index * 25 + 25)),
+  );
+  environment.flush();
+  const baseline = environment.measuredElements.length;
+  for (let index = 0; index < 20; index += 1) {
+    const target = index % 2;
+    const unregister = tracker.registerBlock(
+      elements[target]!,
+      blocks[target]!,
+    );
+    unregister();
+    tracker.registerBlock(elements[target]!, blocks[target]!);
+  }
+  environment.measuredElements.length = 0;
+  environment.flush();
+  expect(environment.measuredElements.length).toBe(baseline);
+  expect(tracker.registrationCount).toBe(3);
+  expect(harness.emitted.at(-1)?.anchor.anchorIndex).toBe(0);
+  harness.close();
+});
 
 function createPublication(
   locatedBlocks: readonly PublicationLocatedBlock[],

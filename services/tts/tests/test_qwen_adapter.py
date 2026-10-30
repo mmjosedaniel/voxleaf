@@ -37,6 +37,8 @@ from voxleaf_tts.adapters.qwen import (
     QwenVoiceProfile,
 )
 from voxleaf_tts.engine import EngineFailure, EngineFailureCode
+from voxleaf_tts.protocol import FrameKind, decode_control_payload
+from voxleaf_tts.service import ModelFreeTtsService
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CANDIDATE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v8.json"
@@ -107,6 +109,29 @@ class FakeModel:
         self._waveform = waveform if waveform is not None else FakeSamples([0.0, 0.25, -0.25, 0.5])
         self._sample_rate = sample_rate
         self._failure = failure
+        self.steps = 3
+        self.completed = True
+        self.observe_completion = True
+        self.model = SimpleNamespace(
+            config=SimpleNamespace(talker_config=SimpleNamespace(codec_eos_token_id=2150)),
+            talker=SimpleNamespace(generate=self._talker_generate),
+        )
+
+    def _talker_generate(self) -> SimpleNamespace:
+        # Pinned talker: the first (prefill) hidden entry has no codec IDs.
+        # Remaining entries encode preceding samples; sequences retain the final EOS.
+        tokens = [1] * self.steps
+        if self.completed:
+            tokens[-1] = 2150
+
+        class Sequences:
+            shape = (1, len(tokens))
+
+            def __getitem__(self, index: tuple[int, int]) -> SimpleNamespace:
+                assert index == (0, -1)
+                return SimpleNamespace(item=lambda: tokens[-1])
+
+        return SimpleNamespace(sequences=Sequences(), hidden_states=(None, *tokens[:-1]))
 
     @staticmethod
     def get_supported_speakers() -> tuple[str, ...]:
@@ -120,6 +145,8 @@ class FakeModel:
         generations.append(kwargs)
         if self._failure is not None:
             raise self._failure
+        if self.observe_completion:
+            self.model.talker.generate()
         return ([self._waveform], self._sample_rate)
 
 
@@ -231,6 +258,61 @@ def _segment(text: str = "Texto sintético local.") -> dict[str, object]:
         "generationId": "generation:test",
         "segmentId": "segment:test",
     }
+
+
+@pytest.mark.parametrize("completion", ["exhausted", "missing", "short", "eos-at-limit"])
+def test_efc_04_requires_eos_before_sdk_discards_completion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, completion: str
+) -> None:
+    adapter, _calls, model = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    adapter.warm()
+    original_generate = model.model.talker.generate
+    model.steps = 3 if completion == "short" else MAX_SERVICE_CODEC_TOKENS
+    model.completed = completion in {"short", "eos-at-limit"}
+    model.observe_completion = completion != "missing"
+    # Exhaustion and EOS at the limit can decode the same 249 frames.
+    model._waveform = FakeSamples([0.0] * ((model.steps - 1) * CODEC_SAMPLES_PER_TOKEN))
+    adapter.begin("request:completion", _segment())
+    if model.completed:
+        _identity, result = adapter.settle()
+        assert len(result.payload) == len(model._waveform) * 4
+        adapter.release_result()
+    else:
+        with pytest.raises(EngineFailure) as caught:
+            adapter.settle()
+        assert caught.value.code is EngineFailureCode.FAILURE
+        assert adapter._retained_result is None
+    assert model.model.talker.generate == original_generate
+    adapter.cleanup()
+
+
+def test_efc_04_service_does_not_publish_exhausted_segment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, calls, model = _adapter(tmp_path, monkeypatch)
+    service = ModelFreeTtsService(adapter)
+    fixtures = REPOSITORY_ROOT / "packages/shared/fixtures/contracts/tts-protocol-control/v1"
+    for kind in ("handshake", "load", "warm"):
+        service.handle_control(
+            decode_control_payload((fixtures / f"valid-{kind}.json").read_bytes())
+        )
+    model.completed = False
+    model.steps = MAX_SERVICE_CODEC_TOKENS
+    model._waveform = FakeSamples([0.0] * (249 * CODEC_SAMPLES_PER_TOKEN))
+    service.handle_control(
+        decode_control_payload((fixtures / "valid-synthesize.json").read_bytes())
+    )
+    records = service.settle_active()
+    assert all(record.kind is FrameKind.CONTROL for record in records)
+    assert [decode_control_payload(record.payload)["kind"] for record in records] == [
+        "error",
+        "state",
+    ]
+    assert decode_control_payload(records[0].payload)["reason"] == "engine-failure"
+    assert adapter._retained_result is None and adapter._model is None
+    assert calls["cleaned"] is True
 
 
 def test_frozen_constants_match_v8_bilingual_manifest_and_candidate_lock() -> None:

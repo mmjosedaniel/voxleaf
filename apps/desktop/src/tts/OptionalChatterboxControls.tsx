@@ -308,7 +308,7 @@ export function OptionalChatterboxControls({
           <button
             type="button"
             disabled={disabled || pending}
-            onClick={() => run(onRecheck)}
+            onClick={() => run(() => client.recheckCompatibility(onRecheck))}
           >
             Recheck device compatibility
           </button>
@@ -425,7 +425,7 @@ export function OptionalChatterboxControls({
             onClick={() =>
               run(
                 recheckCompatibility
-                  ? onRecheck
+                  ? () => client.recheckCompatibility(onRecheck)
                   : retryAcquisition
                     ? () => client.select()
                     : () => client.refresh(),

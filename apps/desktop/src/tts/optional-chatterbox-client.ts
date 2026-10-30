@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { calculateProfileCapacityRequirementMiB } from "./hardware-profile-authority";
+import { HARDWARE_PROFILE_REGISTRY_V1 } from "./hardware-profile-registry";
 
 import {
   decodeDownloadDiagnostic,
@@ -7,6 +9,10 @@ import {
 
 export const CHATTERBOX_OPTIONAL_PROFILE_ID =
   "chatterbox-multilingual-v3-cuda-bf16-default-v4" as const;
+
+const chatterboxRequirements = HARDWARE_PROFILE_REGISTRY_V1.find(
+  (entry) => entry.identity.profileId === CHATTERBOX_OPTIONAL_PROFILE_ID,
+)!.requirements;
 
 export type OptionalChatterboxState =
   | "absent"
@@ -90,7 +96,13 @@ const INITIAL_SNAPSHOT: OptionalChatterboxSnapshot = Object.freeze({
   coldStartSeconds: undefined,
   minimumLogicalProcessors: 8,
   minimumTotalRamMiB: 24_576,
-  minimumAvailableRamMiB: 4_096,
+  minimumAvailableRamMiB: Math.max(
+    chatterboxRequirements.minimumAvailableRamMiB ?? 0,
+    calculateProfileCapacityRequirementMiB(
+      "ram",
+      chatterboxRequirements.measuredPeakRamMiB,
+    ),
+  ),
   measuredPeakDedicatedVramMiB: 3_644,
   minimumTotalDedicatedVramMiB: 5_632,
   minimumAvailableDedicatedVramMiB: 4_668,
@@ -240,6 +252,19 @@ export class OptionalChatterboxClient {
     return this.#call("select_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
+  }
+
+  public async recheckCompatibility(
+    check: () => Promise<boolean>,
+  ): Promise<OptionalChatterboxSnapshot> {
+    const generation = ++this.#actionGeneration;
+    ++this.#nextRequestId;
+    const allowed = await check();
+    if (!allowed || generation !== this.#actionGeneration) {
+      return this.#snapshot;
+    }
+    // Start a fresh observation after the probe, not an older coalesced poll.
+    return this.#call("optional_chatterbox_snapshot");
   }
 
   public async download(): Promise<OptionalChatterboxSnapshot> {

@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0068: Align Chatterbox effective available-RAM admission](ADR-0068-align-chatterbox-effective-ram-admission.md): preserve the existing 7,042-MiB fresh-start requirement in native acquisition and disclosure while retaining immutable package floors and loaded-session continuation.
+
 - [ADR-0067: Conservative English titles and Unicode marks](ADR-0067-conservative-english-titles-and-unicode-marks.md): prospective narration clarification; current validation is tracked in the validated audit follow-up plan.
 
 - [ADR-0065: Runtime admission, ownership and narration boundaries](ADR-0065-validated-runtime-and-narration-boundaries.md): exact CUDA/free-memory facts, private child loader, pending-start ownership, episode metrics and conservative EPUB/narration corrections; validation is in its active plan.

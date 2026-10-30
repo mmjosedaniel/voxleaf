@@ -3,6 +3,8 @@ import {
   type HostProfileCompatibilityReportV1,
 } from "@voxleaf/shared";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { OptionalChatterboxClient } from "./optional-chatterbox-client";
 
 import {
   HARDWARE_PROFILE_AUTHORITY_V1,
@@ -167,6 +169,59 @@ function firstReason(
 }
 
 describe("hardware profile matcher v1", () => {
+  it("EFC-06 keeps native policy inputs and fallback disclosure aligned with renderer authority", () => {
+    const native = readFileSync(
+      "src-tauri/src/tts_optional_chatterbox.rs",
+      "utf8",
+    );
+    const constant = (name: string) =>
+      Number(
+        native
+          .match(new RegExp(`const ${name}: u64 = ([\\d_]+);`))![1]!
+          .replaceAll("_", ""),
+      );
+    const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
+      (entry) => entry.identity.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID,
+    )!;
+    expect(constant("CHATTERBOX_MEASURED_PEAK_RAM_MIB")).toBe(
+      profile.requirements.measuredPeakRamMiB,
+    );
+    const margin = HARDWARE_PROFILE_AUTHORITY_V1.safetyMargins.ram;
+    expect(constant("RAM_RESERVE_MINIMUM_MIB")).toBe(margin.minimumMiB);
+    expect(constant("RAM_RESERVE_PERCENT")).toBe(
+      (margin.percentageNumerator * 100) / margin.percentageDenominator,
+    );
+    expect(
+      new OptionalChatterboxClient().observe().minimumAvailableRamMiB,
+    ).toBe(
+      calculateProfileCapacityRequirementMiB(
+        "ram",
+        profile.requirements.measuredPeakRamMiB,
+      ),
+    );
+  });
+  it.each([4095, 4096, 7041, 7042])(
+    "EFC-06 preserves effective fresh RAM boundary at %s MiB",
+    (available) => {
+      const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
+        (entry) => entry.identity.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID,
+      )!;
+      const result = matchHardwareProfilesV1({
+        report: report((value) => ({
+          ...value,
+          memory: {
+            ...value.memory,
+            availablePhysicalMiB: knownQuantity(available),
+          },
+        })),
+        registry: [profile],
+        nativeDevelopmentGate: false,
+      });
+      expect(result.profiles[0]?.state).toBe(
+        available >= 7042 ? "compatible" : "incompatible",
+      );
+    },
+  );
   it("CHAT-AUDIT F01 restricts Chatterbox to known default CUDA 12.0 without falsifying BF16 or CPU facts", () => {
     for (const [capability, state] of [
       [undefined, "unknown"],

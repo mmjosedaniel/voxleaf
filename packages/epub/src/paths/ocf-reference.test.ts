@@ -7,6 +7,15 @@ import type { OcfReference } from "./ocf-reference.js";
 import { EpubPathError } from "./path-error.js";
 
 describe("OCF references", () => {
+  it("EFC-05 rejects terminal unpaired surrogates in paths and fragments", () => {
+    for (const reference of ["end\ud800", "#end\ud800", "\udfff", "\ud800x"]) {
+      expect(() => parseOcfReference(reference)).toThrow(EpubPathError);
+    }
+    expect(parseOcfReference("😀.xhtml#😀")).toEqual({
+      relativePath: "😀.xhtml",
+      fragment: "😀",
+    });
+  });
   it("keeps document references distinct from archive entry paths", () => {
     const reference = parseOcfReference("chapter.xhtml");
 

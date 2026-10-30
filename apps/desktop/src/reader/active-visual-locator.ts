@@ -391,6 +391,9 @@ export class ActiveVisualLocatorTracker {
     }
     const previous = this.#locatedBlocksByElement.get(element);
     if (previous === undefined) {
+      // Remove the previous registration before this element becomes current again.
+      // The stale counter keeps ordinary append and chapter teardown scan-free.
+      this.#compactRegisteredElements();
       this.#insertInSourceOrder(
         isLeafBlock(locatedBlock)
           ? this.#leafElements

@@ -381,13 +381,38 @@ class QwenSerenaTtsEngine:
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
         try:
             with _discard_process_stdout():
-                waveforms, sample_rate = model.generate_custom_voice(
-                    text=text,
-                    language=self._profile.language,
-                    speaker=self._profile.speaker,
-                    instruct=self._profile.instruction,
-                    **SERVICE_GENERATION_SETTINGS,
-                )
+                # qwen-tts 0.1.1 discards the final sampled token before decoding.
+                # Prefill contributes no codec frame, so duration cannot prove EOS.
+                talker = model.model.talker
+                generate = talker.generate
+                eos = model.model.config.talker_config.codec_eos_token_id
+                completed = False
+
+                def observe_completion(*args: Any, **kwargs: Any) -> Any:
+                    nonlocal completed
+                    result = generate(*args, **kwargs)
+                    sequences = result.sequences
+                    completed = (
+                        len(sequences.shape) == 2
+                        and sequences.shape[0] == 1
+                        and 0 < sequences.shape[1] <= MAX_SERVICE_CODEC_TOKENS
+                        and sequences[0, -1].item() == eos
+                    )
+                    return result
+
+                talker.generate = observe_completion
+                try:
+                    waveforms, sample_rate = model.generate_custom_voice(
+                        text=text,
+                        language=self._profile.language,
+                        speaker=self._profile.speaker,
+                        instruct=self._profile.instruction,
+                        **SERVICE_GENERATION_SETTINGS,
+                    )
+                finally:
+                    talker.generate = generate
+                if not completed:
+                    raise EngineFailure(EngineFailureCode.FAILURE)
             if (
                 type(sample_rate) is not int
                 or sample_rate != SAMPLE_RATE_HZ

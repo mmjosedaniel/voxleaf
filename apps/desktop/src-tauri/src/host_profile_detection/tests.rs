@@ -283,6 +283,38 @@ fn optional_download_gate_accepts_every_exact_numeric_threshold() {
 }
 
 #[test]
+fn efc_06_effective_available_ram_boundaries_keep_other_gates() {
+    for available in [4095, 4096, 7041, 7042] {
+        let mut snapshot = threshold_optional_snapshot();
+        snapshot.memory = ProbeValue::Known(NativeMemory {
+            total_bytes: mebibytes(24_576),
+            available_bytes: mebibytes(available),
+        });
+        assert_eq!(
+            optional_cuda_bf16_profile_admitted_from_report(
+                normalize_snapshot(snapshot),
+                8,
+                24_576,
+                7042,
+                5_632,
+                4_668
+            ),
+            available >= 7042
+        );
+    }
+    let mut snapshot = threshold_optional_snapshot();
+    snapshot.memory = ProbeValue::Unknown;
+    assert!(!optional_cuda_bf16_profile_admitted_from_report(
+        normalize_snapshot(snapshot),
+        8,
+        24_576,
+        7042,
+        5_632,
+        4_668
+    ));
+}
+
+#[test]
 fn optional_download_gate_rejects_one_below_every_numeric_threshold() {
     let mut insufficient = threshold_optional_snapshot();
     insufficient.logical_processor_count = ProbeValue::Known(7);

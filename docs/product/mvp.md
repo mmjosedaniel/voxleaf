@@ -390,6 +390,14 @@ Remaining channel and regression work:
 
 ## Target acceptance criteria
 
+Current Chatterbox acquisition and fresh-start policy requires 7,042 MiB of
+available RAM, derived from the measured peak plus the existing reserve under
+[ADR-0068](../architecture/decisions/ADR-0068-align-chatterbox-effective-ram-admission.md).
+The frozen package's 4,096-MiB floor is not the effective application gate.
+Healthy loaded-session continuation retains ADR-0065's distinct requirements.
+An explicit successful compatibility recheck refreshes optional-package state;
+download and activation remain separate user actions.
+
 ### Privacy
 
 - Book contents are not sent over the network.
