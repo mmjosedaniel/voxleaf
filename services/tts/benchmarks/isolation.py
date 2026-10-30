@@ -415,12 +415,18 @@ class IsolatedBenchmarkAdapter:
     def generate_batch(
         self,
         request: BatchGenerationRequest,
+        *,
+        require_loaded: bool = False,
     ) -> tuple[BatchAudioUnit, ...]:
         """Run one bounded complete-waveform batch in the isolated worker."""
 
         if self._active_request_id is not None:
             raise AdapterOperationError("invalid-request")
-        self._ensure_loaded()
+        if require_loaded:
+            if not self._loaded:
+                raise AdapterOperationError("invalid-request")
+        else:
+            self._ensure_loaded()
         request_id = f"batch-{request.call_index}"
         self._active_request_id = request_id
         self._send(("generate-batch", request))

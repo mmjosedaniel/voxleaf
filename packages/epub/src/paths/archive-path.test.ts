@@ -9,6 +9,17 @@ import type { ArchiveEntryPath } from "./archive-path.js";
 import { EpubPathError } from "./path-error.js";
 
 describe("archive entry paths", () => {
+  it("EFC-05 rejects unpaired surrogates and preserves astral paths", () => {
+    for (const path of ["EPUB/end\ud800", "EPUB/\udfff", "EPUB/\ud800x"]) {
+      expectPathError(
+        () => parseArchiveEntryPath(path, "file"),
+        "unsafe-entry",
+      );
+    }
+    expect(parseArchiveEntryPath("EPUB/\ud83d\ude00.xhtml", "file")).toBe(
+      "EPUB/😀.xhtml",
+    );
+  });
   it("preserves a valid case-sensitive file path", () => {
     expect(parseArchiveEntryPath("EPUB/Text/Chapter-01.xhtml", "file")).toBe(
       "EPUB/Text/Chapter-01.xhtml",

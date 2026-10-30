@@ -6,10 +6,12 @@ Resolve EFC-01 through EFC-08 with the smallest changes that establish their
 specific invariants. This is a cross-milestone bug-fix plan, not a refactor,
 new-model integration, broad audit or release campaign.
 
-**Status: planning complete; implementation and implementation validation have
-not started.** The 2026-10-30 request authorizes this plan, its documentation
-links, a new branch and one local planning commit. It does not authorize
-executing the milestones, pushing, publishing, merging or releasing anything.
+**Status: M0–M3 complete; implementation approved by EFC-R2-20261030.** The follow-up 2026-10-30
+request authorizes M0–M3 implementation, regressions, selected host validation,
+artifact regeneration and documentation. No commit, push, PR, merge or publication
+is authorized. Execution starts at planning commit
+`f4e3b585114a1fda0e3bd9e72b8c31a007121d5a` on the planned branch with a clean
+worktree and index.
 
 Planning branch: `codex/eight-finding-minimal-corrections`. Source base:
 `0bc34ec3ee8a2601fe2c529bad996081e2ae1462`. Entry worktree/index were clean.
@@ -204,7 +206,7 @@ reading M005 and replanning that responsibility.
 
 ### M0: Freeze decisions and selected checks
 
-**Status: not started; requires implementation authorization.** Recheck HEAD,
+**Status: complete.** Rechecked HEAD,
 worktree, tools and original receipt availability. Freeze exact mutable paths,
 EFC-04 exhaustion mechanism and EFC-06 policy implementation. Map each selected
 test to its assertion and transitive inputs. Record `EJECUTAR`, `REUTILIZAR con
@@ -213,7 +215,7 @@ baseline context; do not repeat a whole-repository baseline.
 
 ### M1: Add discriminating regressions, then make the bounded corrections
 
-**Status: not started.** Group new failing cases by runtime rather than running
+**Status: complete; all eight accepted by EFC-R2-20261030.** Group new failing cases by runtime rather than running
 one full suite per finding. Use names containing `EFC-` (Vitest) or `efc_`
 (pytest/Rust) for directed red execution on unmodified production owners.
 Preserve each intended failure; repair fixture/environment faults separately.
@@ -236,7 +238,7 @@ the counterexample and resolve its disposition without silently removing scope.
 
 ### M2: Validate final source and regenerate only the invalidated artifact
 
-**Status: not started.** Run fast affected lint/types before package preparation.
+**Status: complete.** Run fast affected lint/types before package preparation.
 Run final selected deterministic gates once after their last relevant edit.
 EFC-08 invalidates the assembled Piper core: reuse verified downloads/voices,
 then run `package:piper-core:write-manifest` once, including its built-in ES/EN
@@ -246,7 +248,10 @@ acceptance. Run one selected browser invocation and one final native smoke/build
 
 ### M3: Independent acceptance and documentary closeout
 
-**Status: not started.** After source writing stops, delegate the exact patch,
+**Status: complete.** Independent EFC-R2-20261030 approved the implementation;
+the final archive identity review is recorded separately as EFC-R3-20261030 in
+the [evidence directory](../evidence/eight-finding-minimal-corrections/).
+After source writing stops, delegate the exact patch,
 requirements, input identities and host receipts to one `change_reviewer`
 (GPT-6 Astra high), following the existing workflow. The reviewer neither edits
 nor runs tests. Resolve concrete findings and obtain a new immutable APPROVE for
@@ -372,6 +377,96 @@ blocked pending a separately defined bounded check; no full portfolio by default
 
 ## Progress log
 
+- Independent `EFC-R2-20261030`: APPROVE for the corrected patch, no remaining
+  findings. Reviewer verified 77 path identities, empty index, source/receipt
+  equality and the bounded R1 correction; explicitly retained unaffected
+  current-task checks. All EFC-01–08 have accepted dispositions.
+- Archived after R2 behavioral acceptance and updated maintained indexes and
+  incoming links. Final documentary patch is bound to the separate immutable
+  EFC-R3-20261030 review. No production/test/artifact change accompanies archival.
+
+- Independent `EFC-R1-20261030`: CHANGES_REQUESTED, one P2 (EFC-R1-F01).
+  Real completion times expose a controller assumption: a later-collected CPU
+  completion could reset ordered-release time below an already released GPU
+  predecessor. Review accepted the other seven findings and unchanged gate
+  closures. Source writing remained stopped throughout review.
+- Added a real threaded-runtime/controller/export regression with collection
+  order 0,2,1 and completion times 300,200,1500. Host red observed waits 0,0,0
+  instead of 0,100,0. Correction retains a frontier updated only by ordered
+  releases, so later-source collection cannot overcount predecessor waiting.
+  `dual_worker_controller.py` is added as the necessary EFC-03 consumer owner.
+  No schema/frozen evidence, Piper payload or native input is affected.
+- R1 correction validation: 57 affected controller/runtime/CLI/result/authority
+  tests passed, along with Python lint, types and format. R1-F01 red remains
+  retained. Independent R2 is required for the corrected patch; no unrelated
+  rebuild or model benchmark was repeated.
+
+- M2 complete: Piper regenerated exactly once; built-in offline ES/EN smokes,
+  package checker and inventory checker pass. Only protocol.py changed in the
+  generated payload; Chatterbox and the release inventory stay unchanged.
+- G7: host-profile 25 passed and optional-profile 60 passed/2 exact-host ignored,
+  in each feature mode. Clippy passes both modes. Final format/lint/type gates
+  pass; runtime test rechecked after its annotation/import-only correction.
+- G8: EFC-01 and canonical restoration passed initially. EFC-07 initially timed
+  out because its fixture did not open a book before looking for Settings;
+  retained screenshot/trace and corrected fixture. Only EFC-07 was rerun, PASS.
+  Configured browser preparation hooks ran on both invocations; no hidden retry.
+- G9: one final `pnpm.cmd test:native-startup` build/smoke passed, with zero new
+  owned processes or scratch roots. Existing unrelated scratch was preserved.
+  Native binary SHA-256:
+  `27cb0659c3d1228844f0518a652749e01b3a96cdf0976e8581f3998f6edd8e34`.
+- Reviewed the canonical diagram against this patch: topology, process, memory,
+  local-only inference, cancellation and persistence boundaries are unchanged.
+  M005 preparation remains untouched. ADR-0068 documents the prospective RAM
+  policy. No Qwen support promotion or Chatterbox frozen-decoder repair claimed.
+
+- G1 host red groups: EPUB 2 expected failures; desktop 3 expected failures
+  with 4 renderer threshold controls passing; Python 8 expected failures with
+  2 completed-Qwen controls passing; native 1 expected failure per feature mode.
+  Reader measurements grew from 5 to 28 under churn. The benign isolated child
+  test observed a second lazy load after cancellation. Worker timestamps became
+  collection time 9000 rather than 300/200. Both malformed integer tests leaked
+  CPython's conversion ValueError. Captures retain these failures.
+- M1: all eight production corrections implemented; mounted caller, superseding
+  actions, Qwen service cleanup, actual benign-child startup handoff and parity
+  regressions added. No frozen Chatterbox/benchmark authority was edited.
+- G3: 97 tests PASS. G5: 151 tests PASS; one pre-existing pytest cache write
+  warning is retained (tests executed normally on the host). G4 initially had
+  162 passes/3 fixture failures: jsdom transformed an import URL to a non-file
+  URL, and two older tests still expected no post-Recheck snapshot call. Fixed
+  those test assumptions; the two affected files passed all 40 tests. No
+  production change resulted from those fixture corrections.
+- Fast checks caught a missing required matcher flag and an invariant dict
+  type in new tests; corrected types pass. Lint/format failures are retained
+  with their bounded fixes. No suite was repeated without a concrete change.
+- G0 verified all four cached Piper downloads and six voice artifacts against
+  the existing source manifest. Verified the inspected Qwen 0.1.1 and
+  Transformers 4.57.3 source hashes against installed RECORD entries. No assets
+  acquired and no model inference used for Qwen. Piper generation started once
+  after fast checks; its command includes ES/EN offline smokes.
+
+- 2026-10-30 execution: verified branch and planning HEAD; no pre-existing
+  changes. Read repository instructions, the complete plan and relevant product,
+  topology, protocol, capacity, historical-worker and review authorities.
+- M0: G0–G10 remain EJECUTAR with the selections above; G5 adds
+  `test_benchmark_dual_worker_runtime.py`. Historical runtime results are not
+  reused. Unrelated suites/model portfolios remain NO APLICA. Local source,
+  voice and tool reuse requires their existing verification, not historical PASS.
+- M0 tool inspection (host): PATH selected pnpm 11.25.0 and Node 24.20.0;
+  existing Node 24.18.0 and its Corepack shim will provide pinned pnpm 11.15.1.
+  Rust 1.97.1 matches the toolchain; uv is 0.11.29. No tools installed.
+- EFC-04 inspection: qwen-tts 0.1.1 talker prefill emits `codec_ids=None`;
+  later forwards supply the preceding sampled token. The high-level code stacks
+  only non-None codes then discards EOS and decodes. Therefore 250 generation
+  steps can yield 249 codec frames (478080 samples), including exhaustion.
+  Chosen seam: temporarily observe the existing talker's `generate` return,
+  checking the last sampled token in its single sequence against configured EOS
+  before the SDK discards that information. Restore the callable in `finally`;
+  missing/ambiguous completion fails closed. No duration heuristic or SDK edits.
+- EFC-06 decision: retain 7042 MiB, derived from measured 4994 plus the greater
+  of 2048 and rounded-up 25%, bounded below by the immutable manifest floor.
+  Frozen acquisition bytes and valid loaded-session continuation stay unchanged.
+
 - 2026-10-30: Revalidated eight findings against source/callers and historical
   changes; recorded the RAM policy correction and restricted scopes. No tests.
 - 2026-10-30: Inspected previous SFA/MAF/VCA/RAC plans/reports and selected raw
@@ -401,9 +496,32 @@ blocked pending a separately defined bounded check; no full portfolio by default
 
 ## Final validation results
 
-**Implementation: NOT STARTED.** No production/test files changed, no new
-regression or acceptance gate executed, no runtime result accepted for reuse,
-no package/model acquisition or regeneration, and no deployment/publication.
+**Implementation and selected host checks complete; independent implementation review APPROVE.** See the execution progress above
+and [execution ledger](../evidence/eight-finding-minimal-corrections/execution-ledger.md)
+for commands, current results, identities and remaining gates. No historical
+runtime PASS has been reused. No commit, push, PR, merge or publication occurred.
+
+Final dispositions: EFC-01 through EFC-08 accepted. EFC-03 additionally resolves
+the independently discovered ordered-wait consumer gap (R1-F01). Qwen completion
+is proven at the pinned sampled-EOS seam, not inferred from sample count.
+EFC-06 preserves 7042 MiB and the immutable 4096-MiB package floor. EFC-08
+intentionally excludes the frozen optional Chatterbox service closure.
+
+Host evidence: 97 EPUB tests, 165 selected desktop tests across disclosed runs,
+151 initial selected Python tests plus 57 fresh affected historical-consumer
+tests after R1, 25 native host-profile and 60 optional-profile passes per feature
+mode (2 ignored per mode), three browser scenarios, one Piper generation with
+offline ES/EN, package/inventory checks, one final native startup build/smoke,
+format/lint/types and documentary checks. Preserve initial red and fixture
+failures; no failed command is relabelled as passing.
+
+Independent review: [EFC-R1-20261030](../evidence/eight-finding-minimal-corrections/review-R1.md)
+requested one correction; [EFC-R2-20261030](../evidence/eight-finding-minimal-corrections/review-R2.md)
+approved all eight and explicitly approved unchanged current-task gate retention.
+The final archive review ID is **EFC-R3-20261030**; its immutable report is stored
+separately outside its own identity closure. No blocking limitation remains in
+the accepted scope. No model portfolio, hosted CI, support promotion, installer
+journey, live acquisition or frozen-runtime repair is claimed.
 
 Planning-only validation, 2026-10-30, normal local PowerShell outside the managed
 sandbox:
@@ -415,6 +533,6 @@ sandbox:
 - Runtime tests executed: zero. Historical results remain historical, with no
   new runtime acceptance or result reuse claimed.
 
-The requested local planning commit must contain only this file,
-`docs/plans/active/README.md` and `docs/README.md`. Planning review/commit does
-not constitute future exact-patch `change_reviewer` approval.
+The earlier planning commit covered only this file and the two documentation
+indexes. It does not constitute exact-patch `change_reviewer` approval. This
+execution creates no additional commit.

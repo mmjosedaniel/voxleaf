@@ -407,7 +407,11 @@ describe("optional Chatterbox controls", () => {
       screen.getByRole("button", { name: "Recheck device compatibility" }),
     );
     await waitFor(() => expect(onRecheck).toHaveBeenCalledOnce());
-    expect(invoke).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenLastCalledWith(
+      "optional_chatterbox_snapshot",
+      undefined,
+    );
   });
 
   it("SFA-03 shows snapshot disclosure and starts only after the explicit Download action", async () => {
@@ -597,7 +601,11 @@ describe("optional Chatterbox controls", () => {
       screen.getByRole("button", { name: "Recheck device compatibility" }),
     );
     await waitFor(() => expect(onRecheck).toHaveBeenCalledTimes(1));
-    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenLastCalledWith(
+      "optional_chatterbox_snapshot",
+      undefined,
+    );
   });
 
   it("explains cleanup recovery and retries removal without restarting", async () => {

@@ -39,6 +39,41 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it.each([false, true])(
+    "EFC-07 recheck preserves superseding actions (allowed=%s)",
+    async (allowed) => {
+      const probe = deferred();
+      const invoke = vi.fn(async (command: string) =>
+        snapshot(
+          command === "remove_optional_chatterbox" ? "absent" : "installed",
+        ),
+      );
+      const client = new OptionalChatterboxClient(invoke);
+      const recheck = client.recheckCompatibility(async () => {
+        await probe.promise;
+        return allowed;
+      });
+      await client.remove();
+      probe.resolve(undefined);
+      await recheck;
+      expect(client.observe().state).toBe("absent");
+      expect(invoke.mock.calls.map(([command]) => command)).toEqual([
+        "remove_optional_chatterbox",
+      ]);
+    },
+  );
+
+  it("EFC-07 continued incompatibility retains the actionable failure", async () => {
+    const invoke = vi.fn(async () => {
+      throw "tts-optional-profile-incompatible-host";
+    });
+    const client = new OptionalChatterboxClient(invoke);
+    await client.download();
+    const failed = client.observe();
+    await client.recheckCompatibility(async () => false);
+    expect(client.observe()).toBe(failed);
+    expect(invoke).toHaveBeenCalledOnce();
+  });
   it.each(["success", "failure"])(
     "SFA-06 publishes download %s after confirming polls and rejects an outstanding stale poll",
     async (outcome) => {

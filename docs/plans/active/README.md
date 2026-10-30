@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Eight revalidated findings: minimal corrections](eight-finding-minimal-corrections.md):
-  planning complete; implementation not started. Covers bounded reader,
-  Chatterbox admission/recovery, path/protocol and historical/development TTS
-  corrections, with selected tests and explicit evidence-reuse conditions.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

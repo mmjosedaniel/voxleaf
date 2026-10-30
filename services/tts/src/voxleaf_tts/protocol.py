@@ -319,7 +319,7 @@ def decode_control_payload(payload: bytes) -> Mapping[str, FrozenJson]:
         )
     except ProtocolFailure:
         raise
-    except (json.JSONDecodeError, RecursionError):
+    except (ValueError, RecursionError):
         raise ProtocolFailure(ProtocolReason.MALFORMED_JSON) from None
 
     message = _read_supported_versions(value)

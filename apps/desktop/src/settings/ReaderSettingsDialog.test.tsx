@@ -200,6 +200,61 @@ function hardwareSource() {
 }
 
 describe("reader Settings dialog", () => {
+  it.each(["select", "download"] as const)(
+    "EFC-07 reconciles cached %s preflight failure after mounted Recheck",
+    async (action) => {
+      const hardware = hardwareSource();
+      hardware.check.mockImplementation(async () => {
+        hardware.publish({
+          ...hardware.observe(),
+          status: "compatible",
+          profiles: [
+            {
+              profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+              role: "standard",
+              supportState: "supported",
+              state: "compatible",
+              reason: undefined,
+            },
+          ],
+        });
+      });
+      const native = vi.fn(async (command: string) => {
+        if (command !== "optional_chatterbox_snapshot")
+          throw "tts-optional-profile-incompatible-host";
+        return {
+          ...new OptionalChatterboxClient().observe(),
+          state: "absent",
+          failure: null,
+        };
+      });
+      const client = new OptionalChatterboxClient(native);
+      const subject = renderSettings({
+        hardwareCompatibility:
+          hardware as unknown as HardwareProfileCompatibilityCoordinator,
+      });
+      subject.rerenderSettings({ optionalChatterbox: client });
+      await act(async () => {
+        await client.refresh();
+        await client[action]();
+      });
+      expect(client.observe().state).toBe("failed");
+      native.mockClear();
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Recheck device compatibility",
+        }),
+      );
+      await waitFor(() => expect(client.observe().state).toBe("absent"));
+      expect(
+        screen.getByRole("button", { name: "Review Chatterbox download" }),
+      ).toBeEnabled();
+      expect(native.mock.calls.map(([command]) => command)).toEqual([
+        "optional_chatterbox_snapshot",
+      ]);
+      expect(subject.onActivateChatterbox).not.toHaveBeenCalled();
+    },
+  );
   it.each(["complete", "stopped", "playing", "failed"] as const)(
     "SAF-03 startup changes after %s preserve activity restrictions",
     async (phase) => {

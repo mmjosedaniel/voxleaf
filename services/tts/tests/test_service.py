@@ -84,6 +84,27 @@ def make_ready(
     return service, selected_engine
 
 
+def test_efc_08_loaded_service_rejects_large_integer_and_cleans_up() -> None:
+    engine = FakeTtsEngine()
+    source = b"".join(
+        encode_frame(FrameKind.CONTROL, encode_control_message(load_raw(f"valid-{kind}.json")))
+        for kind in ("handshake", "load", "warm")
+    ) + encode_frame(FrameKind.CONTROL, b'{"value":' + b"9" * 5000 + b"}")
+    output = io.BytesIO()
+    assert run_service(io.BytesIO(source), output, engine) == 1
+    records: list[Frame] = []
+    reader = io.BytesIO(output.getvalue())
+    while (record := read_frame(reader)) is not None:
+        records.append(record)
+    assert control_from(records[-1])["kind"] == "protocolRejected"
+    assert control_from(records[-1])["reason"] == "malformed-json"
+    assert engine.observe().cleanup_count == 1
+    assert engine.observe().active_count == 0
+    assert engine.observe().retained_audio_units == 0
+    assert all(record.kind is FrameKind.CONTROL for record in records)
+    assert b"9999999999" not in output.getvalue()
+
+
 def test_handshake_load_warm_health_and_shutdown_are_closed_and_bounded() -> None:
     service, engine = make_ready()
     health = service.handle_control(load_control("valid-health.json"))

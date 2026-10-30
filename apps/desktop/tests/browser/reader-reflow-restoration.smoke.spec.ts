@@ -8,6 +8,71 @@ const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
 
+test("EFC-01 same-chapter destination ref churn keeps geometry work bounded", async ({
+  page,
+}) => {
+  const fixture = (await import(
+    new URL(
+      "../../../../packages/epub/test-support/epub-fixture.ts",
+      import.meta.url,
+    ).href
+  )) as {
+    buildMinimalEpubFixture(options: {
+      chapterDocument: string;
+    }): Promise<Uint8Array>;
+  };
+  const bytes = await fixture.buildMinimalEpubFixture({
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p id="a">Alpha passage <a href="#b">Go beta</a></p><p id="b">Beta passage <a href="#a">Go alpha</a></p><p>Third mounted passage.</p></body></html>',
+  });
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-ref-churn.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  });
+  await expect(page.locator(".semantic-document p")).toHaveCount(3);
+  await page.evaluate(() => {
+    const original = Element.prototype.getBoundingClientRect;
+    Reflect.set(globalThis, "__efcMeasurements", 0);
+    Element.prototype.getBoundingClientRect = function () {
+      if (this.matches(".semantic-document p"))
+        Reflect.set(
+          globalThis,
+          "__efcMeasurements",
+          Reflect.get(globalThis, "__efcMeasurements") + 1,
+        );
+      return original.call(this);
+    };
+  });
+  const sample = () =>
+    page.evaluate(async () => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      Reflect.set(globalThis, "__efcMeasurements", 0);
+      document
+        .querySelector('[data-reader-scroll-owner="true"]')!
+        .dispatchEvent(new Event("scroll"));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      return Reflect.get(globalThis, "__efcMeasurements") as number;
+    });
+  await page.getByRole("button", { name: "Go beta", exact: true }).click();
+  const baseline = await sample();
+  for (let index = 0; index < 20; index += 1) {
+    await page
+      .getByRole("button", {
+        name: index % 2 === 0 ? "Go alpha" : "Go beta",
+        exact: true,
+      })
+      .click();
+  }
+  expect(await sample()).toBeLessThanOrEqual(baseline + 2);
+  expect(baseline).toBeGreaterThan(0);
+});
+
 test("MAF-07 restores an empty line-break range using its actual block geometry", async ({
   page,
 }) => {

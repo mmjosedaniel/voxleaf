@@ -385,12 +385,26 @@ impl OptionalProfileError {
     }
 }
 
+// Current application policy (ADR-0068), above the immutable package floor.
+// Parity with the renderer registry/authority is asserted by EFC-06 tests.
+const CHATTERBOX_MEASURED_PEAK_RAM_MIB: u64 = 4_994;
+const RAM_RESERVE_MINIMUM_MIB: u64 = 2_048;
+const RAM_RESERVE_PERCENT: u64 = 25;
+
+fn effective_available_ram_mib(requirements: &OptionalRequirements) -> u64 {
+    let reserve = RAM_RESERVE_MINIMUM_MIB
+        .max((CHATTERBOX_MEASURED_PEAK_RAM_MIB * RAM_RESERVE_PERCENT).div_ceil(100));
+    requirements
+        .minimum_available_ram_mi_b
+        .max(CHATTERBOX_MEASURED_PEAK_RAM_MIB + reserve)
+}
+
 fn host_is_admitted(manifest: &OptionalPackageManifest) -> bool {
     let requirements = &manifest.requirements;
     crate::host_profile_detection::optional_cuda_bf16_profile_admitted(
         requirements.minimum_logical_processors,
         requirements.minimum_total_ram_mi_b,
-        requirements.minimum_available_ram_mi_b,
+        effective_available_ram_mib(requirements),
         requirements.minimum_total_dedicated_vram_mi_b,
         requirements.minimum_available_dedicated_vram_mi_b,
     )
@@ -625,7 +639,7 @@ fn snapshot_from(
         cold_start_seconds: measurements.map(|value| value.cold_start_seconds),
         minimum_logical_processors: requirements.minimum_logical_processors,
         minimum_total_ram_mi_b: requirements.minimum_total_ram_mi_b,
-        minimum_available_ram_mi_b: requirements.minimum_available_ram_mi_b,
+        minimum_available_ram_mi_b: effective_available_ram_mib(requirements),
         measured_peak_dedicated_vram_mi_b: requirements.measured_peak_dedicated_vram_mi_b,
         minimum_total_dedicated_vram_mi_b: requirements.minimum_total_dedicated_vram_mi_b,
         minimum_available_dedicated_vram_mi_b: requirements.minimum_available_dedicated_vram_mi_b,
