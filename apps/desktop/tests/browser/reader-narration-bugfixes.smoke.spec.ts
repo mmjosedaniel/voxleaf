@@ -24,6 +24,67 @@ async function fixtures() {
   }>;
 }
 
+test("SFA-EPUB renders and narrates separate table cells and definition entries in order", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  await installSyntheticService(page, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-sfa-structure.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Synthetic</title></head><body><table><tr><td id="ten">10</td><td id="twenty"><em>20</em></td></tr></table><dl><dt id="term">Term</dt><dd id="definition">Definition</dd></dl></body></html>',
+      }),
+    ),
+  });
+  const viewport = page.getByRole("region", {
+    name: "Publication reading viewport",
+  });
+  await expect(viewport.locator("p")).toHaveText([
+    "10",
+    "20",
+    "Term",
+    "Definition",
+  ]);
+  await expect(viewport.locator("em")).toHaveText("20");
+  await page.locator('[data-narration-action="play"]').click();
+  try {
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          Reflect.get(globalThis, "__rnb").prepared.map(
+            (entry: { text: string }) => entry.text,
+          ),
+        ),
+      )
+      .toEqual(["10", "20", "Term", "Definition"]);
+    expect(
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").requests.map(
+          (entry: { anchor: number }) => entry.anchor,
+        ),
+      ),
+    ).toEqual([0, 1, 2, 3]);
+    expect(errors).toEqual([]);
+  } finally {
+    await page.locator('[data-narration-action="stop"]').click();
+  }
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 test("MAF-04 closing Settings cannot admit Play during optional removal", async ({
   page,
 }) => {

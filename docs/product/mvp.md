@@ -170,6 +170,21 @@ without requiring Python or Rust to be removed from the test computer.
 
 ## Current implemented flow
 
+Loaded-audio labels report whole available seconds, or minutes and remaining
+seconds, without rounding up: 61,000 ms is **1 minute 1 second**. Approximate
+waiting estimates and prepared targets keep their existing wording and policy.
+Chatterbox setup discloses the current snapshot's exact download, installed,
+temporary and required-free bytes; v2 startup/resource observations are
+historical, not measurements or guarantees for the current package. A preflight
+failure remains visible even when a progress poll completed during the action.
+
+Adjacent table cells and definition entries are projected as separate safe
+paragraphs, including minified XHTML. They retain source order and supported
+inline formatting, without promising table layout. Recognized silent scene
+ornaments deliver the existing scene transition between buffered spoken units;
+they produce neither spoken ornament nor a startup/final delay. Unannotated
+numeric tokens adjoining Unicode letters remain intact during normalization.
+
 The current correction patch selects the first addressable primary spine
 content for a new book (ADR-0060), preserving explicit auxiliary links and valid
 saved auxiliary positions. If primary content has no addressable block, the

@@ -58,6 +58,9 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                         Err(error) => panic!("loopback accept failed: {:?}", error.kind()),
                     }
                 };
+                // Windows inherits the listener's nonblocking mode on accept.
+                // Restore blocking I/O so the bounded timeouts govern request reads.
+                stream.set_nonblocking(false).unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(5)))
                     .unwrap();

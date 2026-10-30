@@ -4,6 +4,7 @@ import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 import type { AdaptiveBufferStartMode } from "./adaptive-buffer-scheduler";
 import type { AdaptivePreparationUiState } from "./adaptive-preparation";
 import {
+  formatLoadedDuration,
   formatPreparationDuration,
   loadedAudioStatusText,
   preparationTargetLabel,
@@ -34,7 +35,7 @@ function estimateText(estimatedWaitMs: number | undefined): string {
 }
 
 function primaryStatus(state: AdaptivePreparationUiState): string {
-  const ready = formatPreparationDuration(state.readyMs);
+  const ready = formatLoadedDuration(state.readyMs);
   const target = preparationTargetLabel(state.targetMs);
   if (state.canPlayAvailableAudio) {
     return `Preparation reached its memory capacity — ${ready} of ${target} ready. Play the available audio to continue.`;

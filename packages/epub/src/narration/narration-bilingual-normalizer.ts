@@ -353,9 +353,7 @@ function isWordContextCodePoint(value: string | undefined): boolean {
     return false;
   }
   const code = value.charCodeAt(0);
-  return (
-    isSpanishWordCodePoint(value) || isAsciiDigit(code) || /\p{M}/u.test(value)
-  );
+  return isAsciiDigit(code) || /[\p{L}\p{M}]/u.test(value);
 }
 
 function hasSameLanguage(

@@ -23,10 +23,22 @@ export function preparationTargetLabel(targetMs: number): string {
   return match?.label ?? formatPreparationDuration(targetMs);
 }
 
+export function formatLoadedDuration(durationMs: number): string {
+  const seconds = Math.max(0, Math.floor(durationMs / 1_000));
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  const secondsLabel = `${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`;
+  if (minutes === 0) return secondsLabel;
+  const minutesLabel = `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  return remainingSeconds === 0
+    ? minutesLabel
+    : `${minutesLabel} ${secondsLabel}`;
+}
+
 export function loadedAudioStatusText(
   state: AdaptivePreparationUiState,
 ): string {
-  const loaded = formatPreparationDuration(state.readyMs);
+  const loaded = formatLoadedDuration(state.readyMs);
   const target = preparationTargetLabel(state.targetMs);
   const rate = (state.selectedPlaybackRatePercent / 100).toFixed(2);
   const loadedAtRate = `${loaded} ready at ${rate}×`;

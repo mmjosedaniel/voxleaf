@@ -809,6 +809,16 @@ export async function prepareNarrationBatch(
               prepared.measurements.narrationUtf8Bytes,
             ),
           });
+          if (prepared.disposition === "scene-break") {
+            const lastIndex = candidates.segments.length - 1;
+            const previous = candidates.segments[lastIndex];
+            if (previous !== undefined) {
+              candidates.segments[lastIndex] = Object.freeze({
+                ...previous,
+                boundaryReason: "scene-break",
+              });
+            }
+          }
           const stable = stableSegments(leaf, prepared);
           for (const segment of stable) {
             if (!segmentIsAtOrAfterStart(segment, canonicalLocator)) {

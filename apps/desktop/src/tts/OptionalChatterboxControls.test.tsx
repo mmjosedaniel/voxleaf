@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -15,9 +16,20 @@ import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+function deferred() {
+  let resolve!: (value: unknown) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<unknown>((accept, fail) => {
+    resolve = accept;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
 
 function snapshot(
   state: "absent" | "confirming" | "downloading" | "failed" | "installed",
@@ -46,6 +58,94 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("SFA-06 unmount releases the pending action subscription and timer", async () => {
+    vi.useFakeTimers();
+    const download = deferred();
+    const invoke = vi.fn((command: string) =>
+      command === "download_optional_chatterbox"
+        ? download.promise
+        : Promise.resolve(snapshot("confirming")),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const unsubscribe = vi.fn();
+    const subscribe = client.subscribe.bind(client);
+    vi.spyOn(client, "subscribe").mockImplementation((listener) => {
+      const release = subscribe(listener);
+      return () => {
+        release();
+        unsubscribe();
+      };
+    });
+    const subject = render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Download Chatterbox" }),
+    );
+    const releases = unsubscribe.mock.calls.length;
+    subject.unmount();
+    expect(unsubscribe.mock.calls.length).toBeGreaterThan(releases);
+    const calls = invoke.mock.calls.length;
+    await act(async () => {
+      download.reject("tts-optional-profile-incompatible-host");
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(invoke).toHaveBeenCalledTimes(calls);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(subject.container).toBeEmptyDOMElement();
+  });
+
+  it("SFA-06 shows a preflight rejection after a confirming poll and releases polling on unmount", async () => {
+    vi.useFakeTimers();
+    const download = deferred();
+    const invoke = vi.fn((command: string) =>
+      command === "download_optional_chatterbox"
+        ? download.promise
+        : Promise.resolve(snapshot("confirming")),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const subject = render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Download Chatterbox" }),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+    expect(client.observe().state).toBe("confirming");
+    await act(async () => {
+      download.reject("tts-optional-profile-incompatible-host");
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "does not currently meet the Chatterbox requirements",
+    );
+    expect(
+      screen.getByRole("button", { name: "Recheck device compatibility" }),
+    ).toBeEnabled();
+    const calls = invoke.mock.calls.length;
+    subject.unmount();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(invoke).toHaveBeenCalledTimes(calls);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("SAF-02 exposes removal for cache-only residue discovered after restart", async () => {
     const invoke = vi.fn(async (command: string) =>
       command === "remove_optional_chatterbox"
@@ -310,7 +410,7 @@ describe("optional Chatterbox controls", () => {
     expect(invoke).toHaveBeenCalledOnce();
   });
 
-  it("shows measured disclosure and starts only after the explicit Download action", async () => {
+  it("SFA-03 shows snapshot disclosure and starts only after the explicit Download action", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "optional_chatterbox_snapshot") {
         return snapshot("confirming");
@@ -340,18 +440,21 @@ describe("optional Chatterbox controls", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/24.00 GiB RAM total/)).toBeInTheDocument();
     expect(
-      screen.getByText(/13,271,159,574 bytes \(13.27 GB \/ 12.36 GiB\)/),
+      screen.getByText(/3,221,225,472 bytes \(3.22 GB \/ 3.00 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,236,500,113 bytes \(8.24 GB \/ 7.67 GiB\)/),
+      screen.getByText(/2,147,483,648 bytes \(2.15 GB \/ 2.00 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,240,055,749 bytes \(8.24 GB \/ 7.67 GiB\)/),
+      screen.getByText(/1,073,741,824 bytes \(1.07 GB \/ 1.00 GiB\)/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Historical v2 observations, not current v5 measurements/,
+        /Historical v2 observations, not current package measurements/,
       ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/4,294,967,296 bytes \(4.29 GB \/ 4.00 GiB\)/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/generally more natural and expressive than Piper/),

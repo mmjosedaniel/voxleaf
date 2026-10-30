@@ -5,6 +5,16 @@ import {
   OptionalChatterboxClient,
 } from "./optional-chatterbox-client";
 
+function deferred() {
+  let resolve!: (value: unknown) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<unknown>((accept, fail) => {
+    resolve = accept;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
+
 function snapshot(state: string) {
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
@@ -29,6 +39,60 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it.each(["success", "failure"])(
+    "SFA-06 publishes download %s after confirming polls and rejects an outstanding stale poll",
+    async (outcome) => {
+      const download = deferred();
+      const poll = deferred();
+      let deferPoll = false;
+      const client = new OptionalChatterboxClient((command) =>
+        command === "download_optional_chatterbox"
+          ? download.promise
+          : deferPoll
+            ? poll.promise
+            : Promise.resolve(snapshot("confirming")),
+      );
+      await client.select();
+      const action = client.download();
+      await client.refresh();
+      expect(client.observe().state).toBe("confirming");
+      deferPoll = true;
+      const stale = client.refresh();
+      if (outcome === "success") download.resolve(snapshot("installed"));
+      else download.reject("tts-optional-profile-incompatible-host");
+      await action;
+      const terminal = client.observe();
+      expect(terminal.state).toBe(
+        outcome === "success" ? "installed" : "failed",
+      );
+      if (outcome === "failure")
+        expect(terminal.failure).toBe("tts-optional-profile-incompatible-host");
+      poll.resolve(snapshot("confirming"));
+      await stale;
+      expect(client.observe()).toBe(terminal);
+    },
+  );
+
+  it.each(["cancel", "remove", "select"] as const)(
+    "SFA-06 newer %s suppresses obsolete download publication",
+    async (action) => {
+      const download = deferred();
+      const client = new OptionalChatterboxClient((command) =>
+        command === "download_optional_chatterbox"
+          ? download.promise
+          : Promise.resolve(snapshot("absent")),
+      );
+      const obsolete = client.download();
+      await client[action]();
+      const current = client.observe();
+      download.reject("tts-optional-profile-incompatible-host");
+      await expect(obsolete).resolves.toMatchObject({
+        failure: "tts-optional-profile-busy",
+      });
+      expect(client.observe()).toBe(current);
+    },
+  );
+
   it("deduplicates overlapping snapshot refreshes", async () => {
     let resolveRefresh: ((value: unknown) => void) | undefined;
     const refresh = new Promise<unknown>((resolve) => {

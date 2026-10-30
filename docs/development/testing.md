@@ -1,5 +1,22 @@
 # Testing strategy
 
+## Six-finding correction coverage
+
+`SFA-01` through `SFA-06` cases in the existing EPUB and desktop suites cover
+public scene metadata across batches/windows and cold continuation, Unicode
+numeric adjacency, inert table/definition boundaries, snapshot disclosure,
+whole-second loaded labels and action/poll interleavings. Strict ingestion
+budgets use the existing projector test seam; the public opener has no policy
+override. The coordinator regression joins real public preparation to the
+actual player with controlled timers, preserving ellipsis and terminal behavior.
+Optional setup tests use synthetic native promises and fake polling timers.
+
+The `SFA-EPUB` browser scenario checks rendered ordered paragraphs/formatting
+and the corresponding synthetic synthesis requests. Pair it with the existing
+canonical passage/restoration scenario; exact scene timing belongs to the
+deterministic seam. This selected coverage does not establish model quality,
+real package acquisition, reader performance or a full browser-matrix result.
+
 ## Static audit follow-up regressions
 
 The [SAF execution ledger](../plans/evidence/static-audit-follow-up/execution-ledger.md)

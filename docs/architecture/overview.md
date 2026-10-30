@@ -1,5 +1,25 @@
 # Architecture overview
 
+The six-finding corrections preserve this topology and the public contracts.
+Safe XHTML projection treats `table`, `tr`, `td`, `th`, `dl`, `dt` and `dd` as
+inert block boundaries, emitting ordered paragraphs without table-layout or
+definition-list semantics. Current fragments and source ranges resolve against
+those separated blocks. Previously stored generated block indices can differ;
+the existing exact/nearest-valid locator resolver remains the recovery policy,
+with no persistence migration or promise of identical old indices.
+
+Public narration preparation retains recognized silent scene boundaries on
+the preceding returned spoken segment using its existing bounded lookahead.
+The desktop still owns timing, terminal-ellipsis precedence, cancellation and
+the no-delay-after-buffering/completion rules. Unicode letters and combining
+marks protect numeric lexical adjacency; the Spanish dehyphenation alphabet
+remains separate. Neither correction changes source text or locator spans.
+
+Optional-package client actions have their own generation, independent of
+progress polling. Only a newer user action supersedes an action result; terminal
+publication invalidates earlier polls. Storage disclosure consumes the current
+native snapshot, while model-load observations remain explicitly historical.
+
 The [static audit follow-up](../plans/completed/static-audit-follow-up.md) keeps
 profile-selection authority with the publication that requested it, including
 the persistence boundary. A new Play observes fresh admission before resolving

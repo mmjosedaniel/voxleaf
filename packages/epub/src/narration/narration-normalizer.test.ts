@@ -39,6 +39,22 @@ import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
 
+it.each(["ø8", "8ø", "字8", "8字", "𐐀8", "8𐐀", "8"])(
+  "SFA-02 protects Unicode lexical adjacency: %s",
+  (source) => {
+    const leaf = singleTextFixture(source, false);
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "en",
+    );
+    expect(normalized.text).toBe(source === "8" ? "eight" : source);
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+  },
+);
+
 it.each([
   ["cafe\u03018", "cafe\u03018"],
   ["café8", "café8"],

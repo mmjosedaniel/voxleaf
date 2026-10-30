@@ -37,14 +37,14 @@ function displayMiB(value: number): string {
 const CANCELLATION_SCOPE_COPY =
   "Cancelling download or verification removes only this operation's incomplete staging and partial files. It cannot resume later and never removes a verified installed package.";
 
-const CHATTERBOX_DISCLOSURE = Object.freeze({
-  transfer: "8,240,055,749 bytes (8.24 GB / 7.67 GiB)",
-  installed: "8,236,500,113 bytes (8.24 GB / 7.67 GiB)",
-  temporary: "13,271,159,574 bytes (13.27 GB / 12.36 GiB)",
-  preflight: "20,000,000,000 bytes (20 GB / 18.63 GiB)",
-});
+function displayStorageMeasurement(value: number | undefined): string {
+  if (value === undefined) return "measured size pending";
+  return `${value.toLocaleString("en-US")} bytes (${(value / 1_000_000_000).toFixed(2)} GB / ${displayBytes(value)})`;
+}
 
-function ChatterboxDisclosure(): ReactElement {
+function ChatterboxDisclosure({
+  snapshot,
+}: Readonly<{ snapshot: OptionalChatterboxSnapshot }>): ReactElement {
   return (
     <div className="optional-chatterbox-disclosure">
       <p>
@@ -52,10 +52,12 @@ function ChatterboxDisclosure(): ReactElement {
         voice preference varies by listener.
       </p>
       <p>
-        Download: {CHATTERBOX_DISCLOSURE.transfer}. Installed local storage:{" "}
-        {CHATTERBOX_DISCLOSURE.installed}. Temporary storage during setup:{" "}
-        {CHATTERBOX_DISCLOSURE.temporary}. Free storage required before setup:{" "}
-        {CHATTERBOX_DISCLOSURE.preflight}.
+        Download: {displayStorageMeasurement(snapshot.downloadBytes)}. Installed
+        local storage: {displayStorageMeasurement(snapshot.installedBytes)}.
+        Temporary storage during setup:{" "}
+        {displayStorageMeasurement(snapshot.temporaryBytes)}. Free storage
+        required before setup:{" "}
+        {displayStorageMeasurement(snapshot.minimumFreeBytes)}.
       </p>
       <p>
         Installed storage is disk space, not permanent RAM or VRAM. Loading and
@@ -68,11 +70,11 @@ function ChatterboxDisclosure(): ReactElement {
         fixed countdown or a made-up percentage for that work.
       </p>
       <p>
-        Historical v2 observations, not current v5 measurements or guarantees:
-        Quick audible start was 39.966 seconds (Spanish) and 33.905 seconds
-        (English); direct cold runs were 29.61 and 82.34 seconds; working-set
-        peaks were 4,861,247,488 and 4,896,034,816 bytes; VRAM peaks were 3,711
-        and 3,731 MiB.
+        Historical v2 observations, not current package measurements or
+        guarantees: Quick audible start was 39.966 seconds (Spanish) and 33.905
+        seconds (English); direct cold runs were 29.61 and 82.34 seconds;
+        working-set peaks were 4,861,247,488 and 4,896,034,816 bytes; VRAM peaks
+        were 3,711 and 3,731 MiB.
       </p>
     </div>
   );
@@ -296,7 +298,9 @@ export function OptionalChatterboxControls({
         downloadRequested={downloadRequested}
         active={active}
       />
-      {snapshot.state === "absent" ? <ChatterboxDisclosure /> : null}
+      {snapshot.state === "absent" ? (
+        <ChatterboxDisclosure snapshot={snapshot} />
+      ) : null}
       {!acquisitionAllowed &&
       (snapshot.state === "absent" || snapshot.state === "confirming") ? (
         <div>
@@ -339,7 +343,7 @@ export function OptionalChatterboxControls({
             {snapshot.coldStartSeconds ?? "a measured number of"} seconds;
             actual startup varies and can exceed one minute.
           </p>
-          <ChatterboxDisclosure />
+          <ChatterboxDisclosure snapshot={snapshot} />
           <p>
             GPU: Historical v2 profile: Chatterbox measured{" "}
             {displayMiB(snapshot.measuredPeakDedicatedVramMiB)} VRAM. VoxLeaf
