@@ -70,6 +70,48 @@ function handlers() {
 }
 
 describe("adaptive preparation controls", () => {
+  it.each([
+    [59_999, "59 seconds"],
+    [60_000, "1 minute"],
+    [60_001, "1 minute"],
+    [61_000, "1 minute 1 second"],
+    [119_999, "1 minute 59 seconds"],
+    [120_000, "2 minutes"],
+    [120_001, "2 minutes"],
+  ] as const)(
+    "SFA-05 reports only loaded whole seconds at %i ms",
+    (readyMs, label) => {
+      const state = createAdaptivePreparationUiState({
+        mode: { kind: "prepared", targetMs: 120_000 },
+        scheduler: observation({
+          targetBufferMs: 120_000,
+          playableSampleFrames: readyMs * 24,
+          playableDurationMs: readyMs,
+          effectiveListeningDurationMs: readyMs,
+        }),
+        estimatedWaitMs: 61_000,
+      });
+      const callbacks = handlers();
+      render(
+        <AdaptivePreparationControls
+          selection={{ kind: "prepared", targetMs: 120_000 }}
+          state={state}
+          {...callbacks}
+        />,
+      );
+      expect(screen.getByRole("status")).toHaveTextContent(
+        `Preparing audio — ${label} of 2 minutes ready. Estimated wait: about 2 minutes.`,
+      );
+      expect(
+        screen.getByText(
+          `Playable audio loaded: ${label} ready at 1.00×. Starts at 2 minutes.`,
+        ),
+      ).toBeInTheDocument();
+      expect(callbacks.onStart).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+    },
+  );
+
   it("B01 reports capacity with truthful loaded and requested duration", () => {
     const state = createAdaptivePreparationUiState({
       mode: { kind: "prepared", targetMs: 600_000 },

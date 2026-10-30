@@ -198,7 +198,7 @@ export class OptionalChatterboxClient {
   readonly #listeners = new Set<() => void>();
   #snapshot = INITIAL_SNAPSHOT;
   #nextRequestId = 0;
-  #lastAppliedRequestId = 0;
+  #actionGeneration = 0;
   #refreshInFlight: Promise<OptionalChatterboxSnapshot> | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
@@ -264,6 +264,10 @@ export class OptionalChatterboxClient {
     command: string,
     args?: Record<string, unknown>,
   ): Promise<OptionalChatterboxSnapshot> {
+    const isRefresh = command === "optional_chatterbox_snapshot";
+    const actionGeneration = isRefresh
+      ? this.#actionGeneration
+      : ++this.#actionGeneration;
     const requestId = ++this.#nextRequestId;
     let result: OptionalChatterboxSnapshot;
     try {
@@ -275,18 +279,21 @@ export class OptionalChatterboxClient {
         failure: decodeFailure(error) ?? "optional-profile-operation-failed",
       });
     }
-    if (requestId !== this.#nextRequestId) {
+    if (
+      actionGeneration !== this.#actionGeneration ||
+      (isRefresh && requestId !== this.#nextRequestId)
+    ) {
       return Object.freeze({
         ...this.#snapshot,
         state: "failed",
         failure: "tts-optional-profile-busy",
       });
     }
-    if (requestId >= this.#lastAppliedRequestId) {
-      this.#lastAppliedRequestId = requestId;
-      this.#snapshot = result;
-      this.#publish();
-    }
+    // Polls may report progress without superseding the pending user action.
+    // Its terminal publication invalidates every poll started before it.
+    if (!isRefresh) ++this.#nextRequestId;
+    this.#snapshot = result;
+    this.#publish();
     return result;
   }
 

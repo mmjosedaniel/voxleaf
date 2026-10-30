@@ -7,10 +7,10 @@ subsequent verification, with the smallest changes to their existing owners.
 Use focused regressions and existing evidence to avoid redundant validation.
 This is a cross-milestone bug-fix plan, not a refactor campaign.
 
-**Status: planning only; implementation and test execution are not authorized
-yet.** The current request authorizes this ExecPlan, its branch and a
-documentation-only commit. It does not authorize executing the milestones,
-push, PR, merge or release. The preceding audit ran no tests.
+**Status: implementation complete and independently approved.** On 2026-10-29 the user authorized
+SFA-01 through SFA-06 and the selected validation. No commit, push, PR, merge,
+installation or tool/dependency update is authorized. The preceding audit ran
+no tests; current execution evidence is recorded below.
 
 Planning base: `186f6929e47ee56838cdf746a4b271b3b9ea8ffa`, initially clean `main`.
 Plan branch: `codex/six-finding-audit-corrections`.
@@ -202,7 +202,9 @@ must continue to resolve through canonical EPUB locations.
 
 ### M0 — Freeze scope and evidence decisions
 
-**Status: not started; awaits implementation authorization.**
+**Status: complete.** Entry HEAD is the plan commit
+`200144dd29709536b189cb593fe53e927a991dc4`, on the named branch, with a clean
+worktree and empty index. No pre-existing work was present.
 
 Record implementation HEAD, clean/index status, any pre-existing work and the
 actual changed-path allowlist. Read the receipts below, inspect current tools
@@ -212,7 +214,7 @@ is required merely to repeat the historical audit.
 
 ### M1 — Establish regressions and make the bounded corrections
 
-**Status: not started.**
+**Status: complete.**
 
 Add compact synthetic cases to existing suites, labelled `SFA-01` through
 `SFA-06`. Run just the new cases against unchanged production once per package
@@ -234,7 +236,7 @@ Required regression assertions:
 
 ### M2 — Consolidated integration and documentation
 
-**Status: not started.**
+**Status: complete.**
 
 Run selected static/type and deterministic gates, then one focused Chromium
 invocation and one packaged model-free native smoke. Add one browser scenario
@@ -251,7 +253,8 @@ current documentation and system diagram with the final patch.
 
 ### M3 — Independent acceptance and closeout
 
-**Status: not started.**
+**Status: implementation APPROVE in SFA-R1-20261029; archival assessment
+recorded separately in SFA-R2-20261029.**
 
 After implementation is authorized, delegate the exact patch and host receipts
 to `change_reviewer` (GPT-6 Astra high) under the change-review policy. The
@@ -265,8 +268,7 @@ runtime evidence; never refresh an old approval's hashes.
 
 Archive this plan and update indexes only when implementation and all required
 acceptance are complete. A review does not authorize Git mutations. The current
-request authorizes only the planning commit; later implementation commits or
-publication require their own applicable user authorization.
+implementation authorization prohibits commit, push, PR and merge.
 
 ## Testing and benchmark strategy
 
@@ -310,7 +312,8 @@ or interpret NO APLICA as REUTILIZAR.
 
 ### Selected future gates
 
-All execution below is **pending**. Run from the repository root in normal local
+This table is the selected execution contract; actual outcomes are recorded
+in Final validation results and the execution ledger. Run from the repository root in normal local
 PowerShell outside the managed automation sandbox. Stop on a nonzero exit;
 record the command, code identities, environment and actual result. No package
 installation, tool update, driver download or model acquisition is assumed.
@@ -418,7 +421,7 @@ execution, retaining content-safe receipts outside tracked documentation.
 - This documentation-only planning change changes no runtime or contract;
   independent behavioral review is reserved for M3's implementation patch.
 
-## Final validation results
+## Historical planning validation
 
 **Implementation: not started. Tests, builds, benchmarks and model execution:
 not run for this planning task.** G0-G9 are future work and have no current PASS.
@@ -439,3 +442,107 @@ Renew these documentation checks after the final status update and inspect the
 exact staged patch before the authorized commit. No test result is newly claimed
 or accepted for reuse at planning time; that decision belongs to the eventual
 implementation's exact inputs and independent review.
+
+## Execution decisions and results
+
+- 2026-10-29: M0 confirmed the exact planning HEAD, clean worktree and empty
+  index. Applied `investigate-bug`; source writing remains with the director.
+  Seven production owners and adjacent tests are the closed implementation
+  scope. Documentation is limited to this plan, current overview/product/testing
+  guidance, indexes and concise evidence/review records.
+- G0-host passed outside the sandbox: PowerShell 7.6.5, Node 24.20.0 (within
+  declared engines; the `.nvmrc` CI pin remains 24.18.0), pnpm 11.15.1 through
+  the existing offline Corepack shim, Rust/Cargo 1.97.1, uv 0.11.29, and matching
+  WebView2/EdgeDriver 156.0.4314.50. `package:piper-core:check` passed without
+  regeneration or acquisition. No dependencies or tools were installed.
+- Read MAF execution/review and CI follow-up receipts and original local result
+  files. Do not reuse historical test results: the receipts do not establish
+  complete gate-time installed dependency/worker/environment closure for this
+  execution. G5R runs only the two affected retention candidates; the isolated
+  guard suite will run once. Other Python/Rust/shared/Node/model suites are
+  outside scope, not reused PASSes. Existing core and driver are artifact reuse
+  only; the current frontend/native executable will be rebuilt by G7.
+- G2-epub-red: 12 intended failures and one control passed. G2-desktop-red:
+  reproduced disclosure, loaded-duration and action/poll ordering failures.
+  Its coordinator fixture mismatched publication identity and its ETA input
+  used a nonexistent property. Directed repairs, still against unchanged
+  production, yielded G2-scene-fixture-red (600 ms instead of 1,200 ms; ellipsis
+  control passes) and G2-desktop-fixture-red (five rounding failures, two exact
+  minute controls pass). Original receipts remain retained.
+- The public opener accepts only cancellation options, not stricter policy
+  overrides. Budget coverage uses the existing internal projector boundary:
+  exact four-block admission and three-block no-partial-result rejection.
+  Public opener coverage separately verifies ordered text, exact source ranges
+  and internal fragment targets. No public testing option was added.
+- Consolidated G5 passed 186 tests; G5R passed 40 playback-policy/PCM tests.
+  G4 passed five files and 241 tests but one new matrix expectation incorrectly
+  assumed 10/20 expand to words. Existing normalization deliberately preserves
+  these tokens. Corrected that fixture and the browser expectation, retaining
+  separate ordered values. G4-matrix-final passed all 18 matrix tests. One
+  intervening matrix run was redundant because an edit script failed on UTF-8
+  decoding before writing; retain G4-matrix-repair as failed evidence.
+- G3 formatting/lint passed. Type checking found the invalid budget option and
+  test-only Promise.withResolvers unavailable in the configured ES library.
+  Corrected tests to the existing promise-constructor pattern and budget seam;
+  EPUB and desktop type checks pass. A scoped formatter attempt detected the
+  two rewritten files; G3-desktop-final formats them and passes lint/types.
+  Renew the two final matrix/browser fixture inputs before browser execution.
+- All raw receipts, before/after input hashes and failure output are retained
+  under ignored `tmp/evidence/six-finding-audit-corrections/`. No raw evidence,
+  EPUB, audio, private paths or model payload enters tracked documentation.
+
+## Final validation results
+
+Implementation is present in the seven authorized owners. G1/G3/G4/G5/G5R,
+G6 and G7 pass; 31 isolated evidence-guard tests also pass. G8-docs-R1 passed
+the current evidence guard, whitespace and all 131 local links; G8 is renewed
+after archival. G9 implementation acceptance is **APPROVE**, no findings, in
+[SFA-R1-20261029](../evidence/six-finding-audit-corrections/review-R1.md).
+The final archived patch has a distinct
+[SFA-R2-20261029 assessment](../evidence/six-finding-audit-corrections/review-R2.md);
+that report records its exact verdict and identity recheck. Full commands, failed attempts,
+input identities, result retention and limitations are in the
+[execution ledger](../evidence/six-finding-audit-corrections/execution-ledger.md).
+
+G6 passed both selected Chromium scenarios. G7 rebuilt the native executable
+once with its configured frontend hook and passed the model-free WebView2
+matrix. Current binary SHA-256 is
+`b28b2923a22c22153187041b1a18260832ddee60f73a8bcb75e0b2fe19a3478c`.
+No errors/external requests or new owned processes/scratch roots remained;
+pre-existing roots were preserved. Final tool/artifact inspection verified the
+matching retained driver and no preview listener, with the Git index empty.
+Historical test results were not reused. Core/driver artifact reuse and
+unchanged current-task gate retention are separate, explicit ledger decisions.
+
+The App-scoped optional client has no disposal API. Preserve its existing
+ownership: Settings unmount removes subscription/polling, including while an
+action is pending; it does not cancel an otherwise current App action. Newer
+user actions invalidate obsolete publication. No public disposal method or
+App lifecycle redesign is added to satisfy an assumed boundary.
+The current system diagram was reviewed: component/process/persistence topology
+and public contracts remain unchanged. Completed M005 and frozen authorities
+retain their original bytes. The new scene metadata uses existing bounded
+lookahead, and the seven inert structural tags use the existing entry/exit
+flush path; traversal complexity, reader rendering/batching/geometry and
+restoration algorithms are unchanged. Reader performance suites are outside
+scope, with no new performance claim.
+
+
+### Independent acceptance and archival
+
+- 2026-10-29: `change_reviewer` (GPT-6 Astra high) issued SFA-R1-20261029
+  APPROVE with no findings. Its before/after comparison matched all 1,443
+  paths, and the director independently rechecked that closure before archival.
+  The reviewer accepted the existing public budget and App-scoped lifecycle
+  boundaries, bounded metadata/structural changes and scoped current-task result
+  retention. It compared 250 generated dependency/installed-lock inputs without
+  drift. Historical test results remain excluded from reuse.
+- Archived this plan only after implementation acceptance. Updated active,
+  completed and documentation indexes; saved R1 unchanged. These documentary
+  changes require fresh R2 assessment, not altered R1 hashes. Final R2's linked
+  report is the authority for the archived patch, with renewed G8 evidence.
+- No runtime or test input changes during archival; no runtime suite/build is
+  repeated for Markdown-only drift. HEAD and empty index remain unchanged.
+  No commit, push, PR or merge is performed. No acceptance-blocking limitation
+  remains in the implemented scope; the ledger retains unexecuted model,
+  acquisition, installer, full-suite, performance and hosted-CI limits.

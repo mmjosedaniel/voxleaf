@@ -48,6 +48,9 @@ const BLOCK_BOUNDARY_ELEMENTS = new Set([
   "details",
   "dialog",
   "div",
+  "dl",
+  "dt",
+  "dd",
   "figcaption",
   "figure",
   "footer",
@@ -57,6 +60,10 @@ const BLOCK_BOUNDARY_ELEMENTS = new Set([
   "pre",
   "section",
   "summary",
+  "table",
+  "tr",
+  "td",
+  "th",
 ]);
 const OMITTED_XHTML_ELEMENTS = new Set([
   "audio",

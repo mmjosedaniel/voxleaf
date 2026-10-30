@@ -247,6 +247,8 @@ signing limitations. The static security scan and its limits remain in the
 
 ## Plans
 
+- [Six verified audit corrections](plans/completed/six-finding-audit-corrections.md): completed bounded scene metadata, Unicode adjacency, inert table/definition projection, snapshot disclosure, loaded-duration and action/poll ordering corrections; selected host checks and independent implementation approval, with separate final archival review.
+
 - [Documentation consistency and historical tooling](plans/completed/documentation-consistency-and-historical-tooling.md): completed current-version/tooling reconciliation and maintained-index cleanup; documentary validation and protected-history preservation recorded separately from runtime acceptance.
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.

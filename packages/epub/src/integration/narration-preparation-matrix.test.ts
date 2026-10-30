@@ -29,6 +29,170 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it.each(["***", "⁂"])(
+    "SFA-01 retains scene metadata across batches and source windows: %s",
+    async (ornament) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${ornament}</p><p id="a">A.</p><p>${"\u00a0".repeat(4_200)}</p><p>${ornament}</p><p>${ornament}</p><p id="b">B.</p><blockquote><p>***</p></blockquote><ul><li>⁂</li></ul><p id="ellipsis">Wait...</p><p>${ornament}</p><p id="last">Last.</p><p>${ornament}</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error("synthetic-scene-open-failed");
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      try {
+        const single = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          1,
+        );
+        const many = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          16,
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(single.segments.map(({ text }) => text)).toEqual([
+          "A.",
+          "B.",
+          "***",
+          "⁂",
+          "Wait...",
+          "Last.",
+        ]);
+        expect(
+          single.segments.map(({ boundaryReason }) => boundaryReason),
+        ).toEqual([
+          "scene-break",
+          "paragraph",
+          "paragraph",
+          "paragraph",
+          "scene-break",
+          "scene-break",
+        ]);
+        for (const [index, segment] of single.segments.entries()) {
+          assertPublicSegment(publication, segment, index);
+          const cold = await openEpubPublication(bytes);
+          if (!cold.ok) throw new Error("synthetic-scene-cold-open-failed");
+          try {
+            const continuation = await collectPreparedSegments(
+              cold.publication,
+              segment.sourceRange.end,
+              1,
+            );
+            expect(continuation.segments).toEqual(
+              single.segments.slice(index + 1),
+            );
+          } finally {
+            await cold.publication.close();
+          }
+        }
+        const afterScene = await collectPreparedSegments(
+          publication,
+          requiredBlock(publication, "b").startLocator,
+          1,
+        );
+        expect(afterScene.segments).toEqual(single.segments.slice(1));
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it("SFA-02 preserves Unicode numeric tokens and exact ranges in public one/many batches", async () => {
+    const source = "ø8 8ø 字8 8字 𐐀8. ".repeat(50).trim();
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error("synthetic-unicode-open-failed");
+    try {
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const one = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          1,
+          profile,
+          "en",
+        );
+        const many = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          16,
+          profile,
+          "en",
+        );
+        expect(one.segments).toEqual(many.segments);
+        expect(one.segments.map(({ text }) => text).join("")).toBe(source);
+        expect(one.segments.length).toBeGreaterThan(1);
+        let offset = 0;
+        for (const [index, segment] of one.segments.entries()) {
+          assertPublicSegment(opened.publication, segment, index);
+          expect(segment.sourceRange.start.textOffsetCodePoints).toBe(offset);
+          offset += Array.from(segment.text).length;
+          expect(segment.sourceRange.end.textOffsetCodePoints).toBe(offset);
+        }
+        expect(offset).toBe(Array.from(source).length);
+      }
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
+  it("SFA-04 publicly resolves separated cells and definitions", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Synthetic</title></head><body><table><tr><th id="header">Values</th></tr><tr><td id="ten">10</td><td id="twenty"><em>20</em></td></tr></table><dl><dt id="term">Term</dt><dd id="definition"><p id="nested">Definition</p></dd></dl></body></html>',
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error("synthetic-structure-open-failed");
+    try {
+      const publication = opened.publication;
+      const prepared = await collectPreparedSegments(
+        publication,
+        publication.defaultStartLocator!,
+        1,
+        "narration-piper-v2",
+        "en",
+      );
+      expect(prepared.segments.map(({ text }) => text)).toEqual([
+        "Values",
+        "10",
+        "20",
+        "Term",
+        "Definition",
+      ]);
+      for (const [index, id] of [
+        "header",
+        "ten",
+        "twenty",
+        "term",
+        "nested",
+      ].entries()) {
+        const block = requiredBlock(publication, id);
+        expect(prepared.segments[index]?.sourceRange.start).toEqual(
+          block.startLocator,
+        );
+        expect(prepared.segments[index]?.sourceRange.end).toEqual(
+          blockEndLocator(block),
+        );
+        expect(
+          publication.resolveTarget({
+            documentId: block.documentId,
+            fragment: id,
+          }),
+        ).toMatchObject({ status: "exact", locator: block.startLocator });
+        assertPublicSegment(publication, prepared.segments[index]!, index);
+      }
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
   it("MAF-08 preserves marked numeric source across bounded public continuations", async () => {
     const source = "cafe\u03018 café8 8\u0301 か\u30998 8\u20dd. "
       .repeat(40)

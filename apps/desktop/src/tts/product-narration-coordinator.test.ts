@@ -430,6 +430,7 @@ function createHarness(
     readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
     readonly playbackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
     readonly serviceClient?: ProductNarrationServiceClient;
+    readonly publication?: OpenedPublication;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -444,7 +445,8 @@ function createHarness(
     options.prepareNarration ??
       (async () => options.result ?? completeResult()),
   );
-  const publication = createPublication(prepareNarration);
+  const publication =
+    options.publication ?? createPublication(prepareNarration);
   const intervals: Array<() => void> = [];
   const dependencies: ProductNarrationCoordinatorDependencies = {
     client: options.serviceClient ?? client,
@@ -495,7 +497,7 @@ function createHarness(
   };
   const coordinator = new ProductNarrationCoordinator(
     publication,
-    START_LOCATOR,
+    publication.defaultStartLocator ?? START_LOCATOR,
     dependencies,
   );
   return {
@@ -1995,6 +1997,67 @@ describe("product narration coordinator", () => {
         }
       } finally {
         await coordinator.close();
+      }
+    },
+  );
+
+  it.each(["A.", "Wait..."])(
+    "SFA-01 delivers real prepared scene metadata to the player after %s",
+    async (firstText) => {
+      const { buildMinimalEpubFixture } = await vi.importActual<{
+        buildMinimalEpubFixture(options: {
+          chapterDocument: string;
+        }): Promise<Uint8Array>;
+      }>("../../../../packages/epub/test-support/epub-fixture.ts");
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>***</p><p>${firstText}</p><p>***</p><p>B.</p><p>⁂</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-scene-open-failed");
+      let harness: ReturnType<typeof createHarness> | undefined;
+      try {
+        const prepared = await opened.publication.prepareNarration({
+          startLocator: opened.publication.defaultStartLocator!,
+          profile: "narration-v1",
+          defaultLanguage: "und",
+          maximumSegments: 16,
+        });
+        if (prepared.status !== "complete")
+          throw new Error("synthetic-scene-prepare-failed");
+        harness = createHarness({ publication: opened.publication });
+        const {
+          coordinator,
+          client,
+          backend,
+          intervals,
+          transitionTimers,
+          clock,
+        } = harness;
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await vi.waitFor(() => expect(client.synthesized).toHaveLength(2));
+        expect(backend.active?.request.sequence).toBe(0);
+        expect(transitionTimers.timers).toHaveLength(0);
+        backend.finish();
+        intervals[0]?.();
+        const delay = firstText === "Wait..." ? 900 : 1_200;
+        expect(transitionTimers.timers).toHaveLength(1);
+        expect(transitionTimers.timers[0]?.delayMs).toBe(delay);
+        clock.advance(delay);
+        transitionTimers.run(transitionTimers.timers[0]!);
+        intervals[0]?.();
+        expect(backend.active?.request.sequence).toBe(1);
+        backend.finish();
+        intervals[0]?.();
+        expect(coordinator.observe()).toMatchObject({
+          state: { phase: "complete" },
+          metrics: { intentionalWaitMs: delay, underrunCount: 0 },
+        });
+        expect(transitionTimers.timers).toHaveLength(1);
+      } finally {
+        await harness?.coordinator.close();
+        await opened.publication.close();
       }
     },
   );

@@ -55,6 +55,61 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it.each([
+    [59_999, "59 seconds"],
+    [60_000, "1 minute"],
+    [60_001, "1 minute"],
+    [61_000, "1 minute 1 second"],
+    [119_999, "1 minute 59 seconds"],
+    [120_000, "2 minutes"],
+    [120_001, "2 minutes"],
+  ] as const)(
+    "SFA-05 compact loaded label at %i ms preserves target and start ownership",
+    (readyMs, label) => {
+      const current: ProductNarrationSnapshot = {
+        ...snapshot(),
+        selection: { kind: "prepared", targetMs: 120_000 },
+        state: {
+          mode: { kind: "prepared", targetMs: 120_000 },
+          phase: "preparing",
+          readyMs,
+          targetMs: 120_000,
+          progressValueMs: Math.min(readyMs, 120_000),
+          estimatedWaitMs: undefined,
+          lowBuffer: false,
+          allRemainingAudioReady: false,
+          resourceCeilingReached: false,
+          pauseContinuesPreparation: false,
+          canPlayAvailableAudio: false,
+          canPause: false,
+          canResume: false,
+          canStop: true,
+          volumePercent: 100,
+          playbackRate: 1,
+          selectedPlaybackRatePercent: 100,
+          activePlaybackRatePercent: null,
+          pendingPlaybackRatePercent: null,
+        },
+      };
+      const coordinator = {
+        subscribe: vi.fn(() => () => undefined),
+        observe: () => current,
+        checkAvailability: vi.fn(async () => undefined),
+        start: vi.fn(),
+        pause: vi.fn(),
+        resume: vi.fn(),
+        stop: vi.fn(async () => undefined),
+      } as unknown as ProductNarrationCoordinator;
+      render(<ProductNarrationControls coordinator={coordinator} />);
+      expect(
+        screen.getByText(
+          `Playable audio loaded: ${label} ready at 1.00×. Starts at 2 minutes.`,
+        ),
+      ).toBeInTheDocument();
+      expect(coordinator.start).not.toHaveBeenCalled();
+    },
+  );
+
   it("B01 keeps one capacity action across details and dispatches only eligible clicks", () => {
     let current: ProductNarrationSnapshot = Object.freeze({
       ...snapshot(),

@@ -43,6 +43,68 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("SFA-04 enforces exact and over-limit block budgets without partial projection", async () => {
+    const chapter = xhtml(
+      "<h:table><h:tr><h:td>10</h:td><h:td>20</h:td></h:tr></h:table><h:dl><h:dt>Term</h:dt><h:dd>Definition</h:dd></h:dl>",
+    );
+    await withArchive(
+      chapter,
+      { policy: { maxSemanticBlocks: 4 } },
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        expect(document.blocks).toHaveLength(4);
+        expect(archive.budget.getSnapshot().semanticBlockCount).toBe(4);
+      },
+    );
+    await expectProjectionError(
+      chapter,
+      { policy: { maxSemanticBlocks: 3 } },
+      "resource-limit-exceeded",
+    );
+  });
+
+  it.each(["", " \n "])(
+    "SFA-04 delimits inert tables and definitions with source whitespace %j",
+    async (gap) => {
+      await withArchive(
+        xhtml(
+          `<h:table lang="en"><h:tr><h:th>Header</h:th></h:tr><h:tr><h:td>10</h:td>${gap}<h:td><h:em>20</h:em></h:td><h:td><h:p>Nested</h:p><h:p>Paragraph</h:p></h:td><h:td hidden="">Hidden</h:td></h:tr></h:table>${gap}<h:dl><h:dt>Term</h:dt>${gap}<h:dd><h:strong>Definition</h:strong></h:dd><h:dd/></h:dl>`,
+        ),
+        {},
+        async (archive) => {
+          const document = await projectXhtmlDocument(
+            archive,
+            createPackageDocument(),
+            CHAPTER_PATH,
+          );
+          expect(document.blocks.map((block) => block.kind)).toEqual(
+            Array(7).fill("paragraph"),
+          );
+          expect(document.blocks).toMatchObject([
+            { language: "en", children: [{ text: "Header" }] },
+            { language: "en", children: [{ text: "10" }] },
+            {
+              language: "en",
+              children: [{ kind: "emphasis", children: [{ text: "20" }] }],
+            },
+            { children: [{ text: "Nested" }] },
+            { children: [{ text: "Paragraph" }] },
+            { children: [{ text: "Term" }] },
+            {
+              children: [
+                { kind: "strong", children: [{ text: "Definition" }] },
+              ],
+            },
+          ]);
+        },
+      );
+    },
+  );
+
   it("SAF-15 preserves present empty image alt separately from missing alt", async () => {
     await withArchive(
       xhtml(

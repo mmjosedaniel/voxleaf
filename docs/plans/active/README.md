@@ -6,9 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Six verified audit corrections](six-finding-audit-corrections.md): planning
-  only; six bounded EPUB/narration/desktop fixes with a focused validation and
-  evidence-reuse strategy. Implementation has not started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
