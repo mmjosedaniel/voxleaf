@@ -25,6 +25,8 @@ with its quotation-policy finding resolved. The plan records separate archival
 assessment R7-R3-20261030 and the preserved Piper host-resource limitation.
 The [PR #289 CI follow-up](plans/evidence/seven-finding-minimal-corrections/ci-follow-up.md)
 records the historical v6 fixture correction separately from that acceptance.
+The subsequent [Windows cancellation-fixture follow-up](plans/evidence/seven-finding-minimal-corrections/ci-cancellation-fixture-follow-up.md)
+records a deterministic repair for a stale test observation after cleanup.
 
 The [completed eight-finding corrections](plans/completed/eight-finding-minimal-corrections.md)
 resolve reader registration churn, optional compatibility recovery, RAM policy,

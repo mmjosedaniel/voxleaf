@@ -274,6 +274,7 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
             let address = listener.local_addr().unwrap();
             let cancelling_manager = Arc::clone(&manager);
             let cancelling_root = root.0.clone();
+            let (completed, completion) = std::sync::mpsc::sync_channel(1);
             let server = thread::spawn(move || {
                 let deadline = std::time::Instant::now() + Duration::from_secs(5);
                 let mut stream = loop {
@@ -298,21 +299,36 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                 let mut request = [0_u8; 1024];
                 assert!(stream.read(&mut request).unwrap() > 0);
                 if cancel {
-                    let acknowledged = cancelling_manager.cancel_at(&cancelling_root).unwrap();
-                    assert_eq!(acknowledged.state, OptionalProfileState::Downloading);
-                    assert!(
+                    let cancellation = Arc::clone(
                         cancelling_manager
                             .operation
                             .lock()
                             .unwrap()
                             .cancellation
                             .as_ref()
+                            .unwrap(),
+                    );
+                    let acknowledged = cancelling_manager.cancel_at(&cancelling_root).unwrap();
+                    assert_eq!(acknowledged.state, OptionalProfileState::Downloading);
+                    // Force the CI interleaving: cleanup finishes before the
+                    // server inspects cancellation or publishes error headers.
+                    completion.recv_timeout(Duration::from_secs(5)).unwrap();
+                    assert!(cancellation.load(Ordering::Acquire));
+                    assert!(
+                        cancelling_manager
+                            .operation
+                            .lock()
                             .unwrap()
-                            .load(Ordering::Acquire)
+                            .cancellation
+                            .is_none()
                     );
                 }
                 // Rejected headers arrive only after cancellation was acknowledged.
-                stream.write_all(headers.as_bytes()).unwrap();
+                let sent = stream.write_all(headers.as_bytes());
+                if !cancel {
+                    sent.unwrap();
+                }
+                // Cancellation may have already closed the peer before this write.
             });
             let downloading_manager = Arc::clone(&manager);
             DOWNLOAD_HOOK.with(|slot| {
@@ -347,6 +363,9 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                 }));
             });
             let result = manager.download_at(&root.0);
+            if cancel {
+                completed.send(()).unwrap();
+            }
             server.join().unwrap();
             assert!(!manager.operation.lock().unwrap().worker_active);
             assert!(!staging_root(&root.0).exists());
