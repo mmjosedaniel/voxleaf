@@ -332,6 +332,7 @@ export class SegmentHighlightController {
     }
     if (
       snapshot.failure !== undefined ||
+      snapshot.navigation.settling ||
       phase === "failed" ||
       phase === "stopped" ||
       (phase === undefined && this.#active !== undefined)
