@@ -1,9 +1,13 @@
 # Change Review Report
 
-Review ID: **R7-CI-R1-20261031**  
-Task ID: historical v6 CI correction — PR #289  
-Verdict: **APPROVE**  
-Base commit and reviewed HEAD: `68d8667e7421732bba5a8d6b16c621760f49c7fb`  
+Review ID: **R7-CI-R1-20261031**
+
+Task ID: historical v6 CI correction — PR #289
+
+Verdict: **APPROVE**
+
+Base commit and reviewed HEAD: `68d8667e7421732bba5a8d6b16c621760f49c7fb`
+
 Reviewer: independent `change_reviewer`, GPT-6 Astra high; read only, no tests.
 
 ## Reviewed identities
