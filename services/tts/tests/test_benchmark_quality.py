@@ -209,7 +209,10 @@ def test_rac_02_rejected_ready_session_preserves_all_completed_bytes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     candidates: tuple[str, ...],
+    benchmark_v6_repository: Path,
 ) -> None:
+    if PIPER_CPU_CANDIDATE_ID in candidates:
+        monkeypatch.setattr("benchmarks.cli.REPOSITORY_ROOT", benchmark_v6_repository)
     monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
     raw_root = tmp_path / "raw"
     session_id = "a" * 32
@@ -372,7 +375,9 @@ def test_v3_quality_session_is_single_candidate_and_identity_bound(
 def test_v6_quality_preserves_and_applies_one_classification_correction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    benchmark_v6_repository: Path,
 ) -> None:
+    monkeypatch.setattr("benchmarks.cli.REPOSITORY_ROOT", benchmark_v6_repository)
     monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
     raw_root = tmp_path / "raw"
     session_id = "6" * 32

@@ -1,5 +1,17 @@
 # Testing strategy
 
+## Historical v6 benchmark authority
+
+Model-free v6 adapter and quality tests use the `benchmark_v6_repository`
+fixture to materialize the frozen authorities in a temporary repository. The
+normalizer snapshot retains the exact bytes and SHA-256 from authority commit
+`9a2f74845853e84635b419a4e65170c9a2c207ee`; all other authorities are copied and
+hash-checked from their unchanged repository files. No Git history, model,
+network or normalization execution is needed by these tests. The real production
+loader still checks the frozen profile and each authority, and negative controls
+reject current, tampered and missing normalizer bytes. See the
+[CI follow-up](../plans/evidence/seven-finding-minimal-corrections/ci-follow-up.md).
+
 ## Eight-finding minimal corrections
 
 The [EFC plan](../plans/completed/eight-finding-minimal-corrections.md) selects
