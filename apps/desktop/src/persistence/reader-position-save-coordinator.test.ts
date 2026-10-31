@@ -210,6 +210,80 @@ function deferredWrite() {
 }
 
 describe("reader position save coordinator", () => {
+  it.each(["position", "preferences"] as const)(
+    "R7-06 close includes %s queued in the drain completion microtask gap",
+    async (kind) => {
+      const first = deferredWrite();
+      const second = deferredWrite();
+      const write = vi
+        .fn<ReaderPositionRepository["writePosition"]>()
+        .mockImplementationOnce(() => first.promise)
+        .mockImplementationOnce(() => second.promise);
+      const preferenceWrite = vi
+        .fn<ReaderPositionRepository["writePreferences"]>()
+        .mockImplementationOnce(() => first.promise)
+        .mockImplementationOnce(() => second.promise);
+      const repository = createRepository(
+        kind === "position" ? write : undefined,
+        kind === "preferences" ? preferenceWrite : undefined,
+      );
+      const { coordinator } = createHarness(repository);
+      const queue = (secondValue: boolean) => {
+        if (kind === "position")
+          coordinator.scheduleImmediate(locatorAt(secondValue ? 2 : 1));
+        else
+          coordinator.savePreferences({
+            ...DEFAULT_READER_PREFERENCES,
+            textScale: secondValue ? "large" : "standard",
+          });
+      };
+      queue(false);
+      const flushing = coordinator.flush();
+      first.resolve({ status: "saved" });
+      // A's async loop resumes before us; its .finally reaction is behind us.
+      await Promise.resolve();
+      queue(true);
+      const closing = coordinator.close();
+      let closed = false;
+      void closing.then(() => {
+        closed = true;
+      });
+      for (let index = 0; index < 8; index += 1) await Promise.resolve();
+      const selectedWrite = kind === "position" ? write : preferenceWrite;
+      expect(selectedWrite).toHaveBeenCalledTimes(2);
+      expect(closed).toBe(false);
+      second.resolve({ status: "saved" });
+      await Promise.all([flushing, closing, coordinator.flush()]);
+      expect(closed).toBe(true);
+      expect(coordinator.close()).toBe(closing);
+      if (kind === "position")
+        expect(write.mock.calls[1]?.[0].locator).toEqual(locatorAt(2));
+      else expect(preferenceWrite.mock.calls[1]?.[0].textScale).toBe("large");
+    },
+  );
+
+  it.each([false, true])(
+    "R7-06 immediate writes and failure settlement remain quiescent (failure: %s)",
+    async (failure) => {
+      const repository = createRepository();
+      if (failure)
+        repository.writePosition.mockRejectedValueOnce(
+          new Error("synthetic storage failure"),
+        );
+      const { coordinator } = createHarness(repository);
+      coordinator.scheduleImmediate(locatorAt(1));
+      const first = coordinator.flush();
+      await Promise.resolve();
+      coordinator.scheduleImmediate(locatorAt(2));
+      await Promise.all([first, coordinator.flush(), coordinator.close()]);
+      expect(
+        repository.writePosition.mock.calls.map(
+          ([state]) => state.locator.textOffsetCodePoints,
+        ),
+      ).toEqual([1, 2]);
+    },
+  );
+
   it("CLB-04 initializes saving from the package-owned default", async () => {
     const repository = createRepository();
     const initial = locatorAt(2);

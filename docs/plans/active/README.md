@@ -6,11 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Seven-finding minimal corrections](seven-finding-minimal-corrections.md):
-  planning-only corrections for failed-cleanup ownership, interruptible optional
-  download, benchmark teardown, audible reflow, quotation continuation, save
-  completion and atomic native profile start. Includes bounded future gates and
-  evidence-reuse decisions; execution has not been authorized or started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

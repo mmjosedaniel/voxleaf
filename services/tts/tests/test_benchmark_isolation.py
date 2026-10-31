@@ -24,6 +24,68 @@ from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
 from benchmarks.process_fake import ProcessFakeAdapter, ProcessFakeFactory
 
 
+@pytest.mark.parametrize("failure", ["join", "close", "survives"])
+def test_r7_03_retains_failed_teardown_and_blocks_replacement(
+    monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
+    adapter.load()
+    process = adapter._process
+    assert process is not None
+    original_join = process.join
+    original_close = process.close
+    original_alive = process.is_alive
+    original_kill = process.kill
+    original_pid = process.pid
+    assert original_pid is not None
+    # Stop the benign child first, so the survival simulation never targets a
+    # fabricated or reused PID. All injected process methods are restored below.
+    process.kill()
+    process.join(5)
+    assert not process.is_alive()
+
+    def fail(*_args: object) -> None:
+        raise OSError("synthetic teardown failure")
+
+    try:
+        if failure == "join":
+            monkeypatch.setattr(process, "is_alive", lambda: True)
+            monkeypatch.setattr(process, "join", fail)
+        elif failure == "close":
+            monkeypatch.setattr(process, "close", fail)
+        else:
+            monkeypatch.setattr(process, "is_alive", lambda: True)
+            monkeypatch.setattr(process, "kill", lambda: None)
+        # The retained process is already dead; do not issue OS tree termination.
+        monkeypatch.setattr("benchmarks.isolation.subprocess.run", lambda *_a, **_k: None)
+        monkeypatch.setattr("benchmarks.isolation.os.killpg", lambda *_a: None, raising=False)
+        cleanup_error: Exception | None = None
+        try:
+            adapter.cancel("r7-owned")
+        except Exception as error:
+            cleanup_error = error
+        assert adapter._process is process
+        assert isinstance(cleanup_error, AdapterOperationError)
+        assert cleanup_error.code == "cleanup-failed"
+        assert adapter.was_cancelled("r7-owned")
+        assert not adapter._loaded
+        with pytest.raises(AdapterOperationError, match="cleanup-failed"):
+            adapter.load()
+        assert adapter._process is process
+    finally:
+        monkeypatch.setattr(process, "join", original_join)
+        monkeypatch.setattr(process, "close", original_close)
+        monkeypatch.setattr(process, "is_alive", original_alive)
+        monkeypatch.setattr(process, "kill", original_kill)
+        lost_owner = adapter._process is None
+        adapter.close()
+        # The pre-fix implementation loses its reference; release our test owner.
+        if lost_owner:
+            process.close()
+    assert adapter._process is None
+    adapter.close()
+
+
 @pytest.mark.parametrize("elapsed", [70.0, 121.0])
 def test_vca07_receives_only_the_remaining_request_deadline(
     monkeypatch: pytest.MonkeyPatch,

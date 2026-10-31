@@ -1,3 +1,8 @@
+import { isApostropheContext } from "./narration-normalizer.js";
+import {
+  summarizeQuotationContext,
+  type NarrationQuotationContext,
+} from "./narration-quotation-context.js";
 import {
   createIndex,
   createOperationalErrorV1,
@@ -38,6 +43,7 @@ import {
   type PreparedNarrationBlock,
 } from "./narration-prepared-segment.js";
 import {
+  isApostropheContext as isBilingualApostropheContext,
   summarizeEnglishTitleContext,
   type NarrationEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
@@ -79,6 +85,10 @@ export interface NarrationPreparationCheckpoint {
   englishTitleContext?: Readonly<{
     continuation: ReadingLocatorV1;
     summary: NarrationEnglishTitleContext;
+  }>;
+  quotationContext?: Readonly<{
+    continuation: ReadingLocatorV1;
+    summary: NarrationQuotationContext;
   }>;
   readonly source: NarrationSourceTraversalCheckpoint;
 }
@@ -642,6 +652,9 @@ export async function prepareNarrationBatch(
       delete checkpoint.source.leaf;
       delete checkpoint.source.structural;
     }
+    let quotationContext = warm ? checkpoint.quotationContext : undefined;
+    let returnedQuotationContext: NarrationPreparationCheckpoint["quotationContext"];
+    delete checkpoint.quotationContext;
     let titleContext = warm ? checkpoint.englishTitleContext : undefined;
     let returnedTitleContext: NarrationPreparationCheckpoint["englishTitleContext"];
     delete checkpoint.englishTitleContext;
@@ -747,6 +760,49 @@ export async function prepareNarrationBatch(
             )
               ? titleContext.summary
               : undefined;
+          const precedingQuotationContext =
+            quotationContext !== undefined &&
+            sameLocatorPosition(
+              quotationContext.continuation,
+              createBlockLocatorAtOffset(
+                leaf.locatedBlock,
+                leaf.sourceStartOffsetCodePoints,
+              ),
+            )
+              ? quotationContext.summary
+              : undefined;
+          let quotationEnd = 0;
+          let quotationSummary = precedingQuotationContext;
+          const quotationContextAt = (
+            continuation: ReadingLocatorV1,
+          ): NonNullable<
+            NarrationPreparationCheckpoint["quotationContext"]
+          > => {
+            const end =
+              continuation.textOffsetCodePoints -
+              leaf.sourceStartOffsetCodePoints;
+            if (
+              end < quotationEnd ||
+              end > leaf.sourceTokens.length ||
+              !sameLocatorBlock(continuation, leaf.locatedBlock.startLocator)
+            )
+              return fail();
+            operation.work.charge(end - quotationEnd);
+            observeSourceWindow(operation, end - quotationEnd, 0);
+            quotationSummary = summarizeQuotationContext(
+              leaf.sourceTokens,
+              quotationEnd,
+              end,
+              request.profile === "narration-bilingual-v2" ||
+                request.profile === "narration-chatterbox-v1" ||
+                request.profile === "narration-piper-v2"
+                ? isBilingualApostropheContext
+                : isApostropheContext,
+              quotationSummary,
+            );
+            quotationEnd = end;
+            return Object.freeze({ continuation, summary: quotationSummary });
+          };
           const retained = retainedCandidateMeasurements(candidates);
           const remainingSegmentEntries =
             NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum -
@@ -783,6 +839,9 @@ export async function prepareNarrationBatch(
               signal,
               scheduler,
               operationWorkBudget: operation.work,
+              ...(precedingQuotationContext === undefined
+                ? {}
+                : { precedingQuotationContext }),
               ...(precedingTitleContext === undefined
                 ? {}
                 : { precedingEnglishTitleContext: precedingTitleContext }),
@@ -830,6 +889,9 @@ export async function prepareNarrationBatch(
             ) {
               break;
             }
+            returnedQuotationContext = quotationContextAt(
+              segment.sourceRange.end,
+            );
             if (retainTitleContext)
               returnedTitleContext = titleContextAt(
                 leaf,
@@ -843,6 +905,7 @@ export async function prepareNarrationBatch(
           if (candidates.lookahead !== undefined) {
             break;
           }
+          quotationContext = quotationContextAt(nextCursor);
           titleContext = retainTitleContext
             ? titleContextAt(
                 leaf,
@@ -907,6 +970,8 @@ export async function prepareNarrationBatch(
         measurements,
       });
       checkpoint.continuation = finalSegment.sourceRange.end;
+      if (returnedQuotationContext !== undefined)
+        checkpoint.quotationContext = returnedQuotationContext;
       if (returnedTitleContext !== undefined)
         checkpoint.englishTitleContext = returnedTitleContext;
       const retained = retainedCandidateMeasurements(candidates);

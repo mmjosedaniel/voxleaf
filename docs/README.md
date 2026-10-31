@@ -17,10 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [seven-finding correction plan](plans/active/seven-finding-minimal-corrections.md)
-defines minimal fixes and selected validation for the latest static findings.
-It distinguishes reusable preparation from historical test outcomes.
-This is planning only; implementation and its acceptance remain pending.
+The [completed seven-finding corrections](plans/completed/seven-finding-minimal-corrections.md)
+restore cleanup ownership, interruptible optional downloads, benchmark teardown,
+audible reflow, quotation continuation, save completion and native profile binding.
+Selected host gates pass; independent R7-R2-20261030 approves the implementation
+with its quotation-policy finding resolved. The plan records separate archival
+assessment R7-R3-20261030 and the preserved Piper host-resource limitation.
 
 The [completed eight-finding corrections](plans/completed/eight-finding-minimal-corrections.md)
 resolve reader registration churn, optional compatibility recovery, RAM policy,

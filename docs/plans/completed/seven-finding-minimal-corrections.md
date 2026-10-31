@@ -7,11 +7,9 @@ smallest cohesive changes and the smallest sufficient set of current checks.
 This is a correctness task across M005/M009/M010/M011 and benchmark tooling,
 not a behavior-preserving refactor campaign.
 
-**Planning only, 2026-10-30.** The user authorized this ExecPlan, its branch and
-its documentation commit, explicitly excluding execution. Implementation,
-regression execution, builds, model runs and implementation acceptance have
-not started. Later execution requires authorization; this plan does not grant
-push, PR, merge, release or publication authority.
+**Execution authorized, 2026-10-30.** The user explicitly superseded the earlier
+planning-only restriction and authorized M0–M3 implementation and selected host
+validation. Commit, push, PR, merge, release and publication remain unauthorized.
 
 ## User-visible outcome
 
@@ -231,7 +229,7 @@ contracts; a new durable policy or dependency requires a recorded decision.
 
 ## Milestones
 
-### M0: Freeze the bounded execution order — not started
+### M0: Freeze the bounded execution order — complete
 
 After execution authorization, verify HEAD/worktree/index and exact mutable paths;
 preserve unrelated changes. Inspect tools and original receipt availability,
@@ -239,7 +237,7 @@ freeze the gate selections below and capture execution-time input/environment
 identities. Confirm the seven regression mechanisms, including native-only R7-07.
 No whole-repository baseline or model run is required to begin.
 
-### M1: Add discriminating regressions and minimal fixes — not started
+### M1: Add discriminating regressions and minimal fixes — complete
 
 Group new red cases by EPUB, desktop, Python and native feature mode before
 changing their production owners. Use `R7-` / `r7_` test names to select only
@@ -248,7 +246,7 @@ fixture errors from defect reproductions. Implement the seven bounded correction
 if a claimed trigger cannot be demonstrated, resolve the evidence before editing
 that owner. No implementation unit is individually claimed accepted before M3.
 
-### M2: Validate the consolidated patch — not started
+### M2: Validate the consolidated patch — complete
 
 Run each selected final file/module suite once after its last relevant edit.
 Refresh EPUB/shared exports before desktop consumers. Fast checks precede
@@ -256,7 +254,7 @@ browser/native/model work. Build the current native application once through
 G7, reuse that exact binary for G8, and reuse verified runtime/model assets.
 Run only invalidated gates again after a correction; preserve all failures.
 
-### M3: Independent acceptance and documentary closeout — not started
+### M3: Independent acceptance and documentary closeout — complete
 
 Freeze source/tests/docs and supply the exact patch, closed input identities,
 requirements, command outcomes and any proposed reuse to one `change_reviewer`
@@ -322,9 +320,9 @@ or additional production owner invalidates this gate selection: record the
 affected invariant and smallest added gate before continuing. Never manufacture
 execution-time identities afterwards or refresh an old report's hashes.
 
-### Selected future commands
+### Selected execution commands
 
-All execution below is **future work** in normal local PowerShell outside the
+All execution below uses normal local PowerShell outside the
 managed sandbox, from repository root unless the command selects a package.
 These use current scripts or their configured Vitest/pytest/Cargo/Node leaves;
 no new command alias is proposed. Pin existing supported Node and pnpm 11.15.1;
@@ -400,6 +398,43 @@ This planning commit has no runtime rollback requirement.
 
 ## Progress log
 
+- Closeout: R7-R2-20261030 independently APPROVES all seven corrections after
+  resolving R7-R1-F1. Final G3:251, G4:217, Chromium:2 and rebuilt native/Piper
+  gates pass. Final binary SHA-256 is
+  `d29ab5bfc6706a713c6528c50d5c6dc882963d7e9f7e36c01907f43cceb22ce3`.
+  Original Python/Rust/Node/Chatterbox current-task receipts are retained with
+  independent unchanged-input review. No historical runtime PASS is reused.
+  Owned cleanup passed and the pre-existing Piper resource directory is restored.
+  Archived this plan and updated active/completed/documentation indexes.
+  Final archival assessment is identified separately as R7-R3-20261030; its
+  immutable report is stored alongside R1/R2. No Git/publication action occurred.
+
+
+- Execution M0/M1: added directed red cases before the seven production fixes;
+  fixture errors and semantic failures are distinguished in the execution ledger.
+  R7-07 demonstrates native binding drift in both modes, not ordinary UI clicks.
+- Consolidated gates: EPUB 248, desktop 217, Python 17 and both selected native
+  modules pass; format/lint/types pass. Chromium two cases and one current
+  model-free native build pass. Chatterbox ES/EN plus 13,091 runtime-file checks
+  pass; owned scratch and processes are cleaned.
+- G8 diagnosis: selected rate 75 was loaded, but availability was unavailable
+  before creating audio. The adjacent pre-existing Piper resource manifest is
+  `0da4a9c3fe15abae39c260de79f3b75c08afbca5b1ab9cac9b868bdf77b87b77`,
+  whereas the current trusted and freshly verified package manifest is
+  `526447762ae3eb26383dbc095cdc8350b50546ed4259497915cade936f85d324`.
+  Native discovery rejects that mismatch before runtime start. Preserve the
+  old directory, stage and verify the 2,023-file current package temporarily,
+  allow one corrected-condition attempt, and restore the original directory
+  in finally. This fixes host preparation, not product admission policy.
+
+
+- 2026-10-30 execution: confirmed clean worktree/index, requested branch and
+  HEAD `79bcb814d57c3b8016c1c1315684c1eb158e2a59`. No pre-existing changes.
+  Selected G0–G10 remain the bounded gate set; no historical runtime PASS is
+  adopted. Host readiness found PATH selecting pnpm 11.25.0; use the existing
+  pinned Corepack installation for 11.15.1 before any gate. Raw captures and
+  resource journal belong under ignored `tmp/evidence/seven-finding-minimal-corrections/`.
+
 - 2026-10-30: Revalidated seven findings statically on `499338f`; documented
   R7-07's native-only concurrency condition and the limits of R7-03/R7-04.
 - 2026-10-30: Inspected project/planning/review instructions, relevant product,
@@ -417,6 +452,28 @@ This planning commit has no runtime rollback requirement.
 
 ## Discoveries and decisions
 
+- Independent R7-R1-20261030 requests one correction (R7-R1-F1): quote-summary
+  apostrophe classification disagrees with narration-v1's closed character set.
+  The first short public fixture passed because packing hid the boundary. A
+  longer final sentence makes the suffix boundary observable: neutral/Spanish
+  fail complete 1/8/16 equivalence, bilingual passes. The summary now calls each
+  selected normalizer's existing apostrophe predicate (private module exports,
+  no package API change). Preserve both failed and nondiscriminating captures.
+  This production EPUB correction invalidates G3/G4/G7/G8: renew those gates,
+  their compiled exports/binary and relevant G2 checks. Python/Rust/G9 inputs
+  remain unchanged; their original current-task receipts are retained.
+
+
+- G8's first host attempt timed out in the saved-0.75x scenario, with verified
+  binary identity and complete owned cleanup. The runner exposed no failed
+  predicate/state. Before another host attempt, allow a bounded content-free
+  diagnostic in `scripts/native-smoke/tts-scenarios.mjs` and focused regressions
+  in `scripts/native-smoke.node-test.mjs`; renew the configured Node leaf and
+  TypeScript format/lint. No timeout relaxation, assertion removal or automatic
+  retry is authorized by this expansion. A diagnostic replay must be identified
+  separately from a corrected-condition acceptance run.
+
+
 - Earlier green suites did not cover these precise failure/interleaving cases.
   Most affected results cannot be recycled; reuse verified preparation and
   fixtures, retain provably unaffected leaves, and avoid unrelated suites.
@@ -431,19 +488,29 @@ This planning commit has no runtime rollback requirement.
 
 ## Final validation results
 
-**Planning only; implementation not executed.** Source/caller/test and historical
-receipt inspection support this work order. Runtime tests, regression runs,
-format/lint/type commands and browser/native/model runs: **not run**. Future
-implementation gates G0-G10 remain pending. Historical outcomes remain
-historical; no complete cross-task runtime-result reuse is approved.
+M0–M3 implementation scope is complete and independently accepted by
+[R7-R2-20261030](../evidence/seven-finding-minimal-corrections/review-R2.md).
+The [execution ledger](../evidence/seven-finding-minimal-corrections/execution-ledger.md)
+and [host receipts](../evidence/seven-finding-minimal-corrections/host-receipts.md)
+record exact commands, original failures, corrected fixtures, renewed checks,
+retained current-task evidence and selected exclusions. Final archival assessment:
+`R7-R3-20261030`, with a separate report/identity table in the evidence directory.
 
-Planning documentation inspection, normal local PowerShell outside the sandbox:
-222 local targets resolved, 12 required sections present and selected Vitest
-files present. `git diff --check` passed for the tracked documentation changes;
-the staged whitespace check must also include the new plan before commit.
-
-The present patch contains this ExecPlan and its two index links only. It is
-exempt from feature/bug `change_reviewer` acceptance as planning documentation;
-the eventual behavioral patch requires the independent review in M3. The
-authorized commit contains only the reviewed planning documents; no
-implementation success is claimed.
+- R7-01–R7-07: corrected and accepted; R7-07 remains native-concurrency-only.
+- EPUB251, desktop217, Python17, optional64 in each mode, supervisor33/32,
+  Node45, Chromium2, model-free native, Piper EN and Chatterbox ES/EN: pass.
+  Explicitly ignored exact-host cases in module runs remain distinguished from
+  the separately executed selected G9 case.
+- Relevant format/lint/types, evidence retention, whitespace and local links pass.
+  All executed acceptance commands used normal local PowerShell outside sandbox.
+- R1-F1's neutral/Spanish apostrophe mismatch was reproduced and corrected with
+  existing normalizer predicates. R2 finds no remaining actionable findings.
+- Package/tool/driver artifacts were reused after verification. No historical
+  test outcome or new hardware/listening/performance/support claim is adopted.
+- G8's obsolete adjacent Piper resources were preserved and restored; acceptance
+  used a verified temporary copy of the current package. Running that executable
+  later against the restored obsolete resources is not claimed to provide Piper.
+  This is a preserved host-preparation limitation, not an unverified source fix.
+- Python's nonfatal cache-permission warning is retained. Hosted CI and excluded
+  aggregate/full portfolios were not run. Index stays empty, HEAD/branch unchanged;
+  commit, push, PR, merge and publication remain unauthorized and unperformed.

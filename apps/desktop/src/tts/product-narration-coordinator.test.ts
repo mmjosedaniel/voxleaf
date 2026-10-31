@@ -3551,6 +3551,128 @@ describe("product narration coordinator", () => {
     },
   );
 
+  it.each([false, true])(
+    "R7-01 retains failed operational cleanup on explicit recheck (persistent: %s)",
+    async (persistent) => {
+      const { coordinator, client, backend, intervals } = createHarness();
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const shutdown = vi
+        .spyOn(client, "shutdown")
+        .mockRejectedValue(new Error("synthetic cleanup failure"));
+      try {
+        backend.active!.callbacks.failed();
+        intervals[0]?.();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "contained",
+        );
+        if (!persistent) shutdown.mockRestore();
+        coordinator.resetRecoveryEpisode();
+        await settleUntil(
+          () => coordinator.observe().availability !== "checking",
+        );
+        expect(client.startedProfiles).toHaveLength(1);
+        if (persistent) {
+          expect(coordinator.observe().availability).toBe("unavailable");
+          coordinator.start();
+          await Promise.resolve();
+          expect(client.startedProfiles).toHaveLength(1);
+        } else {
+          expect(client.observe().state).toBe("stopped");
+          expect(coordinator.observe().recovery.phase).toBe("operational");
+          coordinator.start();
+          await settleUntil(() => client.startedProfiles.length === 2);
+        }
+      } finally {
+        shutdown.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
+  it("R7-01 failed recovery retains service ownership across recheck", async () => {
+    const { coordinator, client, backend, intervals } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    backend.active!.callbacks.failed();
+    intervals[0]?.();
+    await settleUntil(() => coordinator.observe().recovery.canRecover);
+    const prepare = vi
+      .spyOn(client, "prepare")
+      .mockRejectedValue(new Error("synthetic recovery failure"));
+    const shutdown = vi
+      .spyOn(client, "shutdown")
+      .mockRejectedValue(new Error("synthetic cleanup failure"));
+    try {
+      coordinator.recover();
+      await settleUntil(
+        () => coordinator.observe().recovery.phase === "unavailable",
+      );
+      coordinator.resetRecoveryEpisode();
+      await settleUntil(
+        () => coordinator.observe().availability !== "checking",
+      );
+      expect(coordinator.observe().availability).toBe("unavailable");
+      expect(client.startedProfiles).toHaveLength(2);
+      shutdown.mockRestore();
+      coordinator.resetRecoveryEpisode();
+      await settleUntil(
+        () => coordinator.observe().recovery.phase === "operational",
+      );
+      expect(client.observe().state).toBe("stopped");
+      expect(client.startedProfiles).toHaveLength(2);
+    } finally {
+      prepare.mockRestore();
+      shutdown.mockRestore();
+      await coordinator.close();
+    }
+  });
+
+  it.each(["reject", "delay"] as const)(
+    "R7-01 recheck cannot bypass backend cleanup: %s",
+    async (mode) => {
+      const { coordinator, backend, client, intervals } = createHarness();
+      let settle!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        settle = resolve;
+      });
+      vi.spyOn(backend, "close").mockImplementation(() =>
+        mode === "reject"
+          ? Promise.reject(new Error("synthetic backend failure"))
+          : pending,
+      );
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      backend.active!.callbacks.failed();
+      intervals[0]?.();
+      coordinator.resetRecoveryEpisode();
+      if (mode === "reject") {
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "contained",
+        );
+        coordinator.resetRecoveryEpisode();
+        await settleUntil(
+          () => coordinator.observe().availability !== "checking",
+        );
+        expect(coordinator.observe().availability).toBe("unavailable");
+      } else {
+        for (let i = 0; i < 20; i += 1) await Promise.resolve();
+        coordinator.start();
+        expect(client.startedProfiles).toHaveLength(1);
+        settle();
+        await settleUntil(
+          () => coordinator.observe().recovery.phase === "operational",
+        );
+      }
+      expect(client.startedProfiles).toHaveLength(1);
+      settle();
+      await coordinator.close();
+    },
+  );
+
   it("prioritizes failed cleanup over a preparation diagnostic", async () => {
     const { coordinator, client } = createHarness({
       prepareNarration: vi

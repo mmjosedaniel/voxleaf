@@ -296,6 +296,7 @@ class IsolatedBenchmarkAdapter:
         self._process: BaseProcess | None = None
         self._connection: _WorkerConnection | None = None
         self._loaded = False
+        self._cleanup_pending = False
         self._active_request_id: str | None = None
         self._cancelled_request_ids: set[str] = set()
 
@@ -312,6 +313,10 @@ class IsolatedBenchmarkAdapter:
         return self._placement_evidence
 
     def _start(self) -> None:
+        if self._cleanup_pending:
+            raise AdapterOperationError("cleanup-failed")
+        if self._process is not None and self.worker_pid is None:
+            self._terminate_worker()
         if self.worker_pid is not None:
             return
         parent, child = self._context.Pipe(duplex=True)
@@ -468,43 +473,50 @@ class IsolatedBenchmarkAdapter:
     def _terminate_worker(self) -> None:
         process = self._process
         connection = self._connection
-        self._process = None
-        self._connection = None
+        self._cleanup_pending = True
         self._loaded = False
         self._placement_evidence = None
         self._active_request_id = None
-        if connection is not None:
-            with suppress(Exception):
+        try:
+            if connection is not None:
                 connection.close()
-        if process is None:
-            return
-        pid = process.pid
-        if process.is_alive() and pid is not None:
-            if os.name == "nt":
-                with suppress(Exception):
-                    subprocess.run(
-                        ("taskkill", "/PID", str(pid), "/T", "/F"),
-                        check=False,
-                        capture_output=True,
-                        timeout=self.timeouts.termination_seconds,
-                        creationflags=0x08000000,
+                self._connection = None
+            if process is None:
+                self._cleanup_pending = False
+                return
+            pid = process.pid
+            if process.is_alive() and pid is not None:
+                if os.name == "nt":
+                    with suppress(Exception):
+                        subprocess.run(
+                            ("taskkill", "/PID", str(pid), "/T", "/F"),
+                            check=False,
+                            capture_output=True,
+                            timeout=self.timeouts.termination_seconds,
+                            creationflags=0x08000000,
+                        )
+                else:
+                    killpg = cast(
+                        Callable[[int, int], None] | None,
+                        os.__dict__.get("killpg"),
                     )
-            else:
-                killpg = cast(
-                    Callable[[int, int], None] | None,
-                    os.__dict__.get("killpg"),
-                )
-                if killpg is not None:
-                    with suppress(OSError):
-                        killpg(pid, signal.SIGTERM)
-            process.join(self.timeouts.termination_seconds)
-        if process.is_alive():
-            process.kill()
-            process.join(self.timeouts.termination_seconds)
-        process.close()
+                    if killpg is not None:
+                        with suppress(OSError):
+                            killpg(pid, signal.SIGTERM)
+                process.join(self.timeouts.termination_seconds)
+            if process.is_alive():
+                process.kill()
+                process.join(self.timeouts.termination_seconds)
+            if process.is_alive():
+                raise AdapterOperationError("cleanup-failed")
+            process.close()
+            self._process = None
+            self._cleanup_pending = False
+        except Exception:
+            raise AdapterOperationError("cleanup-failed") from None
 
     def close(self) -> None:
-        if self.worker_pid is None:
+        if self._cleanup_pending or self.worker_pid is None:
             self._terminate_worker()
             return
         try:

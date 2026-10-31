@@ -429,6 +429,10 @@ impl ExactRuntime {
     }
 
     fn for_profile(profile_id: &str, language: Option<&str>) -> Result<Self, TtsNativeFailure> {
+        #[cfg(test)]
+        if let Some(runtime) = tests::r7_profile(profile_id, language) {
+            return runtime;
+        }
         match profile_id {
             QWEN_SERENA_PROFILE_ID if language.is_none_or(|value| value == "es") => {
                 #[cfg(feature = "release-locked-runtime")]
@@ -969,7 +973,9 @@ impl ServiceSession {
         start_request_id: Option<String>,
     ) -> Result<Arc<Self>, TtsNativeFailure> {
         #[cfg(test)]
-        if let Some(session) = tests::spawn_session_hook(&service_instance_id, &start_request_id) {
+        if let Some(session) =
+            tests::spawn_session_hook(child_configuration, &service_instance_id, &start_request_id)
+        {
             return Ok(session);
         }
         let mut process = ChildProcess::spawn(child_configuration)?;
@@ -1159,6 +1165,7 @@ impl TtsServiceSupervisor {
         }
     }
 
+    #[cfg(test)]
     fn configure_profile(
         &self,
         profile_id: &str,
@@ -1166,6 +1173,14 @@ impl TtsServiceSupervisor {
     ) -> Result<(), TtsNativeFailure> {
         let _admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
+        self.configure_profile_locked(profile_id, language)
+    }
+
+    fn configure_profile_locked(
+        &self,
+        profile_id: &str,
+        language: Option<&str>,
+    ) -> Result<(), TtsNativeFailure> {
         if self
             .session
             .lock()
@@ -1379,11 +1394,25 @@ impl TtsServiceSupervisor {
         &self,
         start_request_id: Option<String>,
     ) -> Result<Vec<Value>, TtsNativeFailure> {
+        self.start_selected(None, None, start_request_id)
+    }
+
+    fn start_selected(
+        &self,
+        profile_id: Option<&str>,
+        language: Option<&str>,
+        start_request_id: Option<String>,
+    ) -> Result<Vec<Value>, TtsNativeFailure> {
         if let Some(request) = &start_request_id {
             validate_start_request_id(request)?;
         }
         let admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
+        if let Some(profile_id) = profile_id {
+            self.configure_profile_locked(profile_id, language)?;
+        }
+        #[cfg(test)]
+        tests::r7_after_selection();
         // Publish the spawned child under the same lock used by interruption.
         let mut slot = self
             .session
@@ -1934,13 +1963,7 @@ pub async fn start_tts_service(
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
     blocking(move || {
-        if let Some(request) = &start_request_id {
-            validate_start_request_id(request)?;
-        }
-        if let Some(profile_id) = profile_id {
-            supervisor.configure_profile(&profile_id, language.as_deref())?;
-        }
-        supervisor.start_owned(start_request_id)
+        supervisor.start_selected(profile_id.as_deref(), language.as_deref(), start_request_id)
     })
     .await
 }

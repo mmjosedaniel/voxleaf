@@ -1,3 +1,4 @@
+import { isApostropheContext } from "./narration-normalizer.js";
 import {
   createIndex,
   decodeBookV1,
@@ -7,6 +8,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
+import { summarizeQuotationContext } from "./narration-quotation-context.js";
 import type {
   ArchiveInventory,
   OpenedEpubArchive,
@@ -42,6 +44,40 @@ import {
 } from "./narration-work-controller.js";
 
 const DOCUMENT_ID = "document:narration-resource-bounds" as ContentDocumentId;
+
+it("R7-05 quotation checkpoint has fixed content-free shape regardless of nesting", () => {
+  const token = (text: string, index: number) => ({
+    kind: "text" as const,
+    text: text as SensitivePublicationText,
+    sourceSpan: {
+      startOffsetCodePoints: createIndex(index),
+      endOffsetCodePoints: createIndex(index + 1),
+    },
+    textContext: { inlineContainers: [] },
+  });
+  const tokens = Array.from({ length: 4096 }, (_, index) => token("“", index));
+  const summary = summarizeQuotationContext(
+    tokens,
+    0,
+    tokens.length,
+    isApostropheContext,
+  );
+  expect(summary).toEqual({
+    straightDoubleOpen: false,
+    closings: { "”": 4096, "’": 0, "»": 0, "›": 0 },
+  });
+  expect(Object.keys(summary)).toHaveLength(2);
+  expect(Object.isFrozen(summary.closings)).toBe(true);
+  expect(
+    summarizeQuotationContext(
+      [token("”", 0)],
+      0,
+      1,
+      isApostropheContext,
+      summary,
+    ).closings["”"],
+  ).toBe(4095);
+});
 
 it("SAF-10 bounds continued lexical context across long source windows and cancellation", async () => {
   const highWater = createResourceHighWater();

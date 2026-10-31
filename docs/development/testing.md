@@ -1908,6 +1908,23 @@ Performance tests may be hardware-specific, but their input text and procedure m
 
 ## Fixtures
 
+The R7 regression group uses manual microtasks for save-drain completion, explicit
+containment failures for recheck admission, and authoritative audible settlement
+while preference reflow is pending. The browser case controls animation frames
+and audio completion through the production reader/player path. Public EPUB
+cases compare full text/ranges at batch sizes 1/8/16 and fresh continuations for
+straight, curly and guillemet quotes crossing the source-window boundary in five
+profile/language branches. Fixed-size quotation state remains work-accounted.
+
+Native acquisition tests use real stalled loopback headers/body and require
+accepted cancellation, task settlement and staging cleanup within two seconds.
+This fixture budget is not a universal transfer/disk performance promise. A
+barrier-controlled command-helper race proves profile binding in both native
+feature modes; it does not establish concurrent starts from the ordinary UI.
+Benchmark teardown fixtures retain benign process ownership across injected
+join/close/survival failures and clean their owned child after injection ends.
+
+
 The MAF regression group covers cooperative reader-wrapper cleanup, actual
 PowerShell enumeration/read failures, malformed direct Python UTF-8 text,
 optional removal versus native admission, partial host-runner initialization,

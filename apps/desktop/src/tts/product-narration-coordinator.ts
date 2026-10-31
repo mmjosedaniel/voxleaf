@@ -1019,36 +1019,42 @@ export class ProductNarrationCoordinator {
 
   /**
    * Explicit compatibility work starts a new bounded failure episode. It
-   * never starts narration and is ignored while containment is still active.
+   * never starts narration and joins containment before resetting the episode.
    */
   public resetRecoveryEpisode(): void {
     if (this.#closed || this.#recoveryResetPending) {
       return;
     }
     if (
+      this.#recoveryOperation !== undefined ||
       this.#stopOperation !== undefined ||
-      (this.#recovery.observe().phase === "contained" &&
+      (this.#recovery.observe().phase !== "operational" &&
         (this.#player !== undefined || this.#scheduler !== undefined))
     ) {
       this.#recoveryResetPending = true;
       this.#availability = "checking";
       this.#publish();
-      const stop = this.#stopOperation ?? this.#stopActiveRun();
-      void stop.finally(() => {
+      const containment = this.#recoveryOperation;
+      const resetAfterCleanup = async (): Promise<void> => {
+        if (containment !== undefined) await containment;
+        if (this.#closed) return;
         if (
-          !this.#closed &&
-          this.#stopOperation === undefined &&
-          this.#recoveryResetPending
+          this.#stopOperation !== undefined ||
+          this.#player !== undefined ||
+          this.#scheduler !== undefined
         ) {
-          this.#recoveryResetPending = false;
-          if (this.#player !== undefined || this.#scheduler !== undefined) {
-            this.#availability = "unavailable";
-            this.#publish();
-            return;
-          }
-          this.resetRecoveryEpisode();
+          await (this.#stopOperation ?? this.#stopActiveRun());
         }
-      });
+        if (this.#closed) return;
+        this.#recoveryResetPending = false;
+        if (this.#player !== undefined || this.#scheduler !== undefined) {
+          this.#availability = "unavailable";
+          this.#publish();
+          return;
+        }
+        this.resetRecoveryEpisode();
+      };
+      void resetAfterCleanup();
       return;
     }
     try {
@@ -2137,8 +2143,10 @@ export class ProductNarrationCoordinator {
       cleanupFailure ??= "cleanup-failed";
     }
 
-    this.#scheduler = undefined;
-    this.#player = undefined;
+    if (cleanupFailure === undefined) {
+      this.#scheduler = undefined;
+      this.#player = undefined;
+    }
     if (this.#operation === operation) {
       this.#operation = undefined;
     }

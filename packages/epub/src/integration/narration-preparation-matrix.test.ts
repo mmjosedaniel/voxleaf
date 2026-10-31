@@ -29,6 +29,136 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it.each(
+    (
+      [
+        ["narration-v1", "und"],
+        ["narration-v1", "es"],
+        ["narration-bilingual-v2", "en"],
+        ["narration-piper-v2", "en"],
+        ["narration-chatterbox-v1", "es"],
+      ] as const
+    ).flatMap(([profile, language]) =>
+      [0, 1, 2].map(
+        (quotationKind) => [profile, language, quotationKind] as const,
+      ),
+    ),
+  )(
+    "R7-05 carries quotation context through public batches/windows: %s/%s/quote-%s",
+    async (profile, language, quotationKind) => {
+      const sentence =
+        "A simple synthetic sentence with several ordinary words continues through a quiet passage and reaches the same clearly described destination at the end. ";
+      const pairs = [
+        ['"', '"'],
+        ["“", "”"],
+        ["«", "»"],
+      ];
+      const paragraphs = [
+        pairs[quotationKind]!,
+        ...pairs.filter((_, index) => index !== quotationKind),
+      ]
+        .map(
+          ([open, close], index) =>
+            `<p>${open}${sentence.repeat(index === 0 ? 29 : 4)}End.${close} After.</p>`,
+        )
+        .join("");
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic quotes</title></head><body>${paragraphs}<p>“Unmatched opening. ${sentence.repeat(3)}</p><p>Unmatched closing.”</p><p>“Before <code>“literal”</code> after.”</p><p>«Before <span lang="es">“Otro.”</span> after.»</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error("synthetic-quotation-open-failed");
+      try {
+        const all = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          16,
+          profile,
+          language,
+        );
+        for (const batchSize of [1, 8]) {
+          const compared = await collectPreparedSegments(
+            opened.publication,
+            opened.publication.defaultStartLocator!,
+            batchSize,
+            profile,
+            language,
+          );
+          expect(compared.segments).toEqual(all.segments);
+        }
+        const continuation = all.segments[1]!.sourceRange.end;
+        const cold = await openEpubPublication(bytes);
+        if (!cold.ok) throw new Error("synthetic-quotation-cold-open-failed");
+        try {
+          const resumed = await collectPreparedSegments(
+            cold.publication,
+            continuation,
+            8,
+            profile,
+            language,
+          );
+          expect(resumed.segments).toEqual(all.segments.slice(2));
+        } finally {
+          await cold.publication.close();
+        }
+      } finally {
+        await opened.publication.close();
+      }
+    },
+    30_000,
+  );
+
+  it.each([
+    ["narration-v1", "und"],
+    ["narration-v1", "es"],
+    ["narration-bilingual-v2", "en"],
+  ] as const)(
+    "R7-R1 preserves each normalizer's single-quote policy: %s/%s",
+    async (profile, language) => {
+      const sentence =
+        "A synthetic passage continues with ordinary words to the next sentence. ";
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>‘Alpha α’β. ${sentence.repeat(6)}End.’ ${"Ordinary synthetic words continue through the final passage ".repeat(8)}after.</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error("synthetic-apostrophe-open-failed");
+      try {
+        const all = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          16,
+          profile,
+          language,
+        );
+        for (const size of [1, 8]) {
+          const batched = await collectPreparedSegments(
+            opened.publication,
+            opened.publication.defaultStartLocator!,
+            size,
+            profile,
+            language,
+          );
+          expect(batched.segments).toEqual(all.segments);
+        }
+        const cold = await openEpubPublication(bytes);
+        if (!cold.ok) throw new Error("synthetic-apostrophe-cold-failed");
+        try {
+          const resumed = await collectPreparedSegments(
+            cold.publication,
+            all.segments[1]!.sourceRange.end,
+            8,
+            profile,
+            language,
+          );
+          expect(resumed.segments).toEqual(all.segments.slice(2));
+        } finally {
+          await cold.publication.close();
+        }
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+
   it.each(["***", "⁂"])(
     "SFA-01 retains scene metadata across batches and source windows: %s",
     async (ornament) => {
