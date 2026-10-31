@@ -17,6 +17,15 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed minimal playback corrections](plans/completed/minimal-playback-audit-corrections.md)
+terminate retired worklets, contain native processor errors through explicit
+recovery and keep speed labels synchronized after paused navigation. Selected
+host gates and restored resources pass; independent MPA-R1-20261030 approves the
+implementation and scoped current-task evidence retention without findings.
+The plan links its separate final archival assessment and preserved limitations.
+The [PR #290 CI follow-up](plans/evidence/minimal-playback-audit-corrections/ci-follow-up.md)
+records the subsequent paused-navigation highlight correction and its evidence.
+
 The [completed seven-finding corrections](plans/completed/seven-finding-minimal-corrections.md)
 restore cleanup ownership, interruptible optional downloads, benchmark teardown,
 audible reflow, quotation continuation, save completion and native profile binding.

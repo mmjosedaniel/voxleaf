@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+No approved implementation plans are currently pending.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

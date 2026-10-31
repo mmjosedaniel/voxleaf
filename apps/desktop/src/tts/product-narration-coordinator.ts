@@ -727,11 +727,13 @@ export class ProductNarrationCoordinator {
       return false;
     }
     try {
-      this.#player?.setPlaybackRatePercent(playbackRatePercent);
+      if (this.#pausedNavigationState === undefined)
+        this.#player?.setPlaybackRatePercent(playbackRatePercent);
     } catch {
       return false;
     }
     this.#playbackRatePercent = playbackRatePercent;
+    this.#updateRetainedPlaybackRate();
     this.#publish();
     const result =
       await this.#playbackPreferenceRepository.write(playbackRatePercent);
@@ -761,16 +763,37 @@ export class ProductNarrationCoordinator {
       return false;
     }
     try {
-      this.#player?.setPlaybackRatePercent(
-        DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1,
-      );
+      if (this.#pausedNavigationState === undefined)
+        this.#player?.setPlaybackRatePercent(
+          DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1,
+        );
     } catch {
       return false;
     }
     this.#playbackRatePercent = DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1;
+    this.#updateRetainedPlaybackRate();
     this.#playbackPreferenceStatus = "ready";
     this.#publish();
     return true;
+  }
+
+  #updateRetainedPlaybackRate(): void {
+    const selection = {
+      playbackRate: this.#playbackRatePercent / 100,
+      selectedPlaybackRatePercent: this.#playbackRatePercent,
+    };
+    if (this.#terminalState !== undefined) {
+      this.#terminalState = Object.freeze({
+        ...this.#terminalState,
+        ...selection,
+      });
+    }
+    if (this.#pausedNavigationState !== undefined) {
+      this.#pausedNavigationState = Object.freeze({
+        ...this.#pausedNavigationState,
+        ...selection,
+      });
+    }
   }
 
   async #hydrateStartPreference(): Promise<void> {
@@ -2254,7 +2277,7 @@ export class ProductNarrationCoordinator {
     const player = this.#player;
     const playerObservation =
       this.#failure === undefined ? player?.synchronize() : player?.observe();
-    let state = this.#terminalState;
+    let state = this.#pausedNavigationState ?? this.#terminalState;
     if (
       state === undefined &&
       scheduler !== undefined &&

@@ -1964,3 +1964,18 @@ Fixtures must be:
 - Small enough for fast deterministic tests.
 
 Do not use copyrighted commercial books.
+
+## Minimal playback audit coverage
+
+`MPA-` regressions extend the real registered-worklet, paired-port backend and
+coordinator fixtures. They cover terminal disposal versus reusable Stop/end,
+processor errors before/during/between units, stale-node isolation and paused
+navigation selection/reset/storage failure. The selected controls suite remains
+an unchanged consumer gate. Chromium adds slow/direct/slow context reuse and an
+injected native error reaching explicit recovery, alongside the retained NLC
+completion and FIFO race scenarios. Its pinned browser maps `onprocessorerror`
+to `ErrorEvent("error")`; the injection asserts that the handler was invoked.
+It does not demonstrate an ordinary-input crash. One fresh packaged Piper EN
+speed arm complements these tests. See the
+[execution plan](../plans/completed/minimal-playback-audit-corrections.md) for exact
+commands, preserved failed fixture diagnostics and evidence reuse limits.

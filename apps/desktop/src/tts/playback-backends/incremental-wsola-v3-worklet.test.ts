@@ -78,6 +78,58 @@ function render(input: Float32Array, ratePercent: number): Float32Array {
 }
 
 describe("real incremental WSOLA processor", () => {
+  it.each(["idle", "active", "paused"])(
+    "MPA-01 terminal disposal rejects later work while %s",
+    (state) => {
+      const processor = createProcessor();
+      const arm = {
+        type: "arm",
+        input: new Float32Array(4800).fill(0.5),
+        ratePercent: 75,
+        unitSequence: 1,
+      };
+      if (state !== "idle") {
+        send(processor, arm);
+        send(processor, { type: "start" });
+        quantum(processor);
+        if (state === "paused") send(processor, { type: "pause" });
+      }
+      send(processor, { type: "dispose" });
+      expect(processor.process([], [])).toBe(false);
+      processor.port.postMessage.mockClear();
+      send(processor, { ...arm, unitSequence: 2 });
+      send(processor, { type: "start" });
+      send(processor, { type: "resume" });
+      send(processor, { type: "dispose" });
+      const output = new Float32Array(128).fill(1);
+      expect(processor.process([], [[output]])).toBe(false);
+      expect(output.every((sample) => sample === 0)).toBe(true);
+      expect(processor.port.postMessage).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["stop", "end"])(
+    "MPA-01 ordinary %s permits another unit",
+    (action) => {
+      const processor = createProcessor();
+      for (let sequence = 1; sequence <= 2; sequence += 1) {
+        send(processor, {
+          type: "arm",
+          input: new Float32Array(16).fill(0.5),
+          ratePercent: 75,
+          unitSequence: sequence,
+        });
+        send(processor, { type: "start" });
+        if (action === "stop" && sequence === 1)
+          send(processor, { type: "stop" });
+        else expect(quantum(processor).some((sample) => sample > 0)).toBe(true);
+      }
+      expect(processor.port.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "ended", unitSequence: 2 }),
+      );
+    },
+  );
+
   it.each([75, 80, 85, 90, 95])(
     "retains late content after silence at %i percent",
     (rate) => {

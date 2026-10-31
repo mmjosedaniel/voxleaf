@@ -30,6 +30,9 @@ export async function createIncrementalWsolaV3Node(
         return;
       }
       closed = true;
+      node.onprocessorerror = null;
+      node.port.onmessage = null;
+      node.port.postMessage({ type: "dispose" });
       node.disconnect();
       node.port.close();
     },

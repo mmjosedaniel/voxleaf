@@ -487,6 +487,60 @@ describe("segment highlight controller", () => {
     root.remove();
   });
 
+  it("MPA-CI releases the paused highlight and pending follow when navigation starts", () => {
+    const block = paragraph("Navigation");
+    const located = locatedBlock(0, block, 10);
+    const mapper = new SemanticDomRangeMapper();
+    const element = document.createElement("p");
+    element.textContent = "Navigation";
+    document.body.append(element);
+    mapper.registerBlock(element, located);
+    const environment = new ManualHighlightEnvironment();
+    const resume = vi.fn();
+    const callbacks = {
+      navigateToLocator: vi.fn(),
+      settleLocator: vi.fn(),
+      suspendVisualSampling: () => resume,
+    };
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      callbacks,
+      environment,
+    );
+    controller.setRoot(element);
+    controller.accept(
+      observation("segment-started", sourceRange(located, 0, 10)),
+    );
+    const paused = narrationSnapshot("paused");
+    controller.reconcile(paused);
+    expect(environment.highlighted?.toString()).toBe("Navigation");
+    expect(environment.scheduled).toHaveLength(1);
+    const staleFollow = environment.scheduled[0]!;
+    environment.scrolls.length = 0;
+
+    controller.reconcile({
+      ...paused,
+      navigation: { ...paused.navigation, settling: true },
+    });
+    expect(environment.highlighted).toBeUndefined();
+    expect(environment.scheduled).toHaveLength(0);
+    expect(resume).toHaveBeenCalledExactlyOnceWith({ requestSample: false });
+    // A mapper refresh or already queued callback cannot reclaim placement.
+    controller.refresh();
+    staleFollow();
+    controller.reconcile(paused);
+    controller.refresh();
+    expect(environment.highlighted).toBeUndefined();
+    expect(environment.scrolls).toHaveLength(0);
+    expect(callbacks.navigateToLocator).not.toHaveBeenCalled();
+    expect(callbacks.settleLocator).not.toHaveBeenCalled();
+
+    controller.close();
+    mapper.close();
+    element.remove();
+  });
+
   it("retains the latest heard highlight while paused or buffering and clears every terminal path", () => {
     const block = paragraph("Lifecycle");
     const located = locatedBlock(0, block, 9);

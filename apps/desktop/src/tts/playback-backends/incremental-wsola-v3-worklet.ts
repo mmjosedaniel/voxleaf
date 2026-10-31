@@ -18,7 +18,7 @@ interface UnitMessage {
   readonly unitSequence?: number;
 }
 
-type WorkletMessage = ArmMessage | UnitMessage;
+type WorkletMessage = ArmMessage | UnitMessage | { readonly type: "dispose" };
 
 interface AudioWorkletPort {
   onmessage: ((event: MessageEvent<WorkletMessage>) => void) | null;
@@ -63,6 +63,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   readonly #referenceOverlap = new Float32Array(OVERLAP_FRAMES);
 
   #active = false;
+  #disposed = false;
   #analysisFrame = 0;
   #armed = false;
   #ended = true;
@@ -87,6 +88,12 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   }
 
   #handleMessage(message: WorkletMessage): void {
+    if (this.#disposed) return;
+    if (message.type === "dispose") {
+      this.#disposed = true;
+      this.#releaseUnit();
+      return;
+    }
     if (message.type === "arm") {
       this.#arm(message);
       return;
@@ -291,6 +298,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     outputs: readonly Float32Array[][],
   ): boolean {
     const output = outputs[0]?.[0];
+    if (this.#disposed) {
+      output?.fill(0);
+      return false;
+    }
     if (output === undefined) {
       return true;
     }

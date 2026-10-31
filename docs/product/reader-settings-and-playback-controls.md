@@ -633,3 +633,11 @@ exact-host evidence prove:
 - PCM, queues, work, and persistence remain bounded; and
 - no private EPUB, generated audio, model artifact, secret, or private host
   detail enters the repository or diagnostics.
+
+The time-stretch node receives terminal disposal when retired; ordinary unit
+Stop/end keeps an admitted node reusable. A native processor failure invalidates
+that node and enters the existing explicit recovery flow when playback needs it.
+After paused navigation, selecting or successfully resetting speed updates both
+the selector and the zero-loaded-audio label, including during cleanup. A failed
+preference write does not roll back the already applied in-memory selection.
+Resume remains explicit and active-unit rates remain boundary-deferred.
