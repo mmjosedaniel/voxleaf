@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Minimal playback audit corrections](minimal-playback-audit-corrections.md):
-  planning only; terminal worklet disposal, processor-error handling and paused
-  speed-label synchronization. Implementation and validation are not authorized
-  to start yet. The plan records prior evidence and the selected minimal gates.
+No approved implementation plans are currently pending.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

@@ -7,11 +7,10 @@ small changes to the existing desktop owners. Reuse existing regression
 fixtures, select the smallest meaningful acceptance set, and distinguish
 historical results from evidence for the eventual patch.
 
-**Status: planning only; implementation and validation are not started.**
-The user authorized this ExecPlan, a new branch and its documentation commit.
-The user explicitly prohibited executing the plan now. No production/test
-change, test, build, model run, installation, push or PR is authorized by this
-planning step.
+**Status: accepted and archived after independent MPA-R1-20261030 APPROVE.**
+Execution was separately authorized on 2026-10-30. Git commit, push, PR and merge
+remain unauthorized. The original planning-only instruction is superseded only
+for implementation, validation and archival after acceptance.
 
 Task ID: `MPA-20261030`. Inspected source:
 `33284dd534467e2b3845624a3748c0c495d7018e`, initially clean `main`.
@@ -158,7 +157,7 @@ handling are unchanged; use existing repository-authored synthetic fixtures.
 
 ### 1. Establish directed regressions
 
-Status: **not started**.
+Status: **complete**.
 
 After execution is separately authorized, capture the actual HEAD, clean/dirty
 paths, index, tools and gate input identities. Preserve unrelated user work.
@@ -182,7 +181,7 @@ assertion to manufacture the desired red result.
 
 ### 2. Apply the bounded corrections
 
-Status: **not started**.
+Status: **complete**.
 
 Implement MPA-01/02 together in the three backend files, then MPA-03 in the
 coordinator. Leave DSP and policy unchanged. Run the combined static and selected
@@ -191,7 +190,7 @@ desktop suite after each edit. A failure renews only its affected gate.
 
 ### 3. Verify browser and packaged integration
 
-Status: **not started**.
+Status: **complete**.
 
 Extend the existing browser seam with at most two cohesive `MPA-` scenarios:
 slow/direct/slow reuse plus paused-navigation labels, and injected processor
@@ -208,7 +207,7 @@ adding a separate native synthetic-worklet runner would broaden this small fix.
 
 ### 4. Document and obtain independent acceptance
 
-Status: **not started**.
+Status: **complete**.
 
 Freeze the final patch and concise evidence, then delegate one independent
 `change_reviewer` (GPT-6 Astra high), as required by project instructions.
@@ -358,6 +357,23 @@ models. Current planning authorizes no runtime rollback or host mutation.
   checkpoint and prepared this plan plus its active-index entry for the
   user-requested documentation commit. Execution remains explicitly deferred.
 
+- 2026-10-30 execution: branch and HEAD match the user-supplied plan commit
+  `f2936b76b181ad748c7096ef1184961e242b6487`; worktree/index initially empty.
+  Read the SFA/R7 original receipts and preparation scripts. No historical
+  runtime PASS reused. G0-packages ran once because current generated exports
+  lacked complete equivalence proof; exit 0.
+- G1-red ran the exact directed command in normal local PowerShell: 14
+  assertion failures, 2 passing Stop/end reuse controls, 184 skipped. All three
+  findings reproduced without fixture/setup failure. Raw immutable receipts
+  are in `tmp/evidence/minimal-playback-audit-corrections/`.
+- MPA-03 pending cleanup also rejects selection through the already closed
+  player. Within the planned coordinator boundary, skip that retired owner
+  during paused navigation and publish the retained paused snapshot; update
+  only selected fields, preserving active/pending rate authority elsewhere.
+- Added exactly two MPA browser scenarios to the existing bundled-worklet seam.
+  Error injection proves event handling, not an ordinary-input processor crash.
+  Source edits remain within the four planned production files and four tests.
+
 ## Discoveries and decisions
 
 - The original five findings reduce to two unconditional source-level defects
@@ -377,16 +393,92 @@ models. Current planning authorizes no runtime rollback or host mutation.
 
 ## Final validation results
 
-| Item | Result at planning closeout |
+| Gate | Current result |
 | --- | --- |
-| Finding verification | Static only, qualified above; not runtime reproduction. |
-| Historical review | Original SFA/R7 receipts and selected hashes inspected; no historical runtime PASS accepted for the future patch. |
-| Production/test edits | None. |
-| G0-G7 and implementation milestones | Not executed. |
-| New implementation acceptance/review | Not requested or claimed; pending future execution. |
-| Planning scope | This ExecPlan and active-index entry only; branch/commit authorized, push/PR/implementation deferred. |
+| Initial identity | Requested branch/HEAD confirmed; no pre-existing changes; index remains empty. |
+| G0 | Prior SFA/R7 receipts inspected; one workspace-export build passes; no historical runtime PASS reused. |
+| G1 | Exact directed command: 14 assertion failures, 2 passing controls, 184 skipped; preserved without fixture/setup failures. |
+| G2 | Format, lint, desktop typecheck pass; all renewed only after browser-fixture edits. |
+| G3 | One combined four-file execution: 214 tests pass. Runtime/unit-test inputs unchanged since that run. |
+| G4 | Original invocation: three pass, one fixture failure. Corrected isolated MPA-02 passes. Both intermediate diagnostics preserved; exact source comparison retains the other three cases. |
+| G5 | Existing core integrity check and one current desktop build pass. No model/package regeneration. |
+| G6 | One Piper EN WebView2 speed arm passes. All six speeds, explicit latest-selection boundary behavior, cancellation and cleanup exercised. |
+| Cleanup | Five created AudioContexts closed; zero retained/discarded units, generated audio files or external requests. No new owned process/scratch root remains. Original full adjacent-resource tree restored byte-for-byte. |
+| G7 | Documentation/evidence and diff checks run on the frozen review patch; exact receipts are in the execution ledger. |
+| R1 | MPA-R1-20261030 APPROVE; no findings. Individual current-task evidence retention independently accepted. |
+| Architecture | Canonical diagram reviewed: existing owners, processes, local inference, bounded PCM and persistence boundaries unchanged; no diagram or frozen-authority edit required. |
+| Scope limits | No natural processor exception, heap/CPU retention measurement, new listening/support claim, historical full-suite PASS or additional model arm claimed. |
 
-At actual execution closeout, replace pending entries with exact host commands,
-outcomes, immutable receipt references, reuse decisions, tested identities,
-cleanup/restoration results and the current independent review ID. An omitted
-or pending gate is never a PASS.
+See [execution ledger](../evidence/minimal-playback-audit-corrections/execution-ledger.md)
+for commands, outcomes and immutable receipt digests. Raw evidence is ignored
+under `tmp/evidence/minimal-playback-audit-corrections/`. Preserved old adjacent
+Piper resources remain old after restoration; this task's temporary preparation
+does not make that original local resource tree current.
+
+### G4 bounded diagnostic revision
+
+The first selected browser invocation passed MPA-01/03, NLC and FIFO; MPA-02
+failed to reach recovery. One isolated diagnostic retained the same failure
+and proved that the handler existed but a generic `Event` did not invoke it
+(handler still installed; no dispose/close). Stop/review of this stage found a
+fixture mismatch: Web Audio 1.1 specifies `ErrorEvent` for processorerror.
+The isolated case now injects that platform event type and asserts handler
+admission/disposal as well as product recovery. Production is unchanged.
+Both failed attempts and their Playwright artifacts are preserved separately.
+This explicitly revises G4 to renew only its MPA-02 case after correcting the
+fixture; the three passing cases and G3 are retained subject to exact dependency
+comparison. Formatting, lint and desktop typecheck inputs change (tsconfig includes tests).
+Source: https://www.w3.org/TR/webaudio-1.1/#dom-audioworkletnode-onprocessorerror
+
+
+G4 diagnosis correction: ErrorEvent with the specification name also did not
+invoke the handler. This disproves the earlier event-class-only hypothesis;
+that attempt is retained as `G4-error-corrected`, not accepted. Chromium's
+`audio_worklet_node.h` binds `onprocessorerror` to `kError`; its `.cc` dispatches
+an ErrorEvent with the `error` type (new upstream code gates the specification
+name behind AudioWorkletProcessorErrorEventType). The current fixture must
+inject `ErrorEvent("error")` for this pinned Chromium. This is a test-platform
+mapping, not a production fallback or natural-input crash. The production
+handler property supports the browser's own mapping. G4 execution remains
+stopped until this evidence-backed fixture revision is prepared; then renew
+only MPA-02. No production gate is invalidated by these test-only diagnostics.
+Sources:
+[Chromium handler binding](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h),
+[Chromium native dispatch](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc).
+
+### Current execution ledger (2026-10-30)
+
+G2 initial checks passed; G3 passed 214/214 across the four selected files.
+G4's three unchanged cases passed on the original invocation; only MPA-02 was
+renewed after the diagnosed Chromium event-name mismatch, passing in
+`G4-error-platform`. The source embedded in the original Playwright trace is
+compared to its original SHA-256 and to the final spec outside MPA-02; shared
+fixtures and other cases are unchanged. G2-format/lint/types-renewed all pass.
+G5-core passes (`piper-core-release:current`); G5-build passes with one build,
+executable SHA-256 `1c6adae31c5743ba880cb5cef3e0b2b3be9726ed025bd3037845422860e8ba06`.
+G6-piper-en completed with exit 0 in host session 81609. Exact resource/driver/executable
+identities and the ownership/restoration journal are under the ignored run
+root. The existing runner has a 30-minute operation timeout; inspect its latest
+stage/process identity if no stage progress for five minutes, without relaunch.
+Initial observed stage: Piper EN selected, six speed choices visible. No prior
+native PASS reused. Normal host PowerShell is used for every acceptance command.
+Tauri-driver does not accept --version; Cargo's installed metadata identifies
+2.0.6, and the binary SHA-256 is recorded. This read-only readiness query did
+not start a driver or invalidate a gate. WebView2/EdgeDriver both 156.0.4314.50.
+
+- G6 closeout: all selected runtime work passed, no owned leftovers, complete
+  original resource-tree identity restored. Source/config/lock identities match
+  G3/G5/G6 receipts; only the isolated G4 error test and documentation changed
+  after G3. Original source from G4 trace matches its recorded SHA-256, and all
+  text outside MPA-02 matches final spec exactly. No repeat of passing cases.
+
+## Acceptance and archival
+
+Independent **MPA-R1-20261030 APPROVE** accepted the exact implementation and
+identified evidence reuse without findings. All selected host gates and owned
+cleanup passed. The plan was then moved to completed and maintained indexes
+updated. [Immutable review reports](../evidence/minimal-playback-audit-corrections/review-reports.md)
+retain implementation approval and the separate final archival assessment.
+Runtime/source/test/config inputs remain identical; only documentation changes
+follow R1. Archival checks are recorded as G7-archive-evidence/diff/links. No
+commit, push, PR or merge was performed or authorized by this acceptance.

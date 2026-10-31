@@ -24,6 +24,194 @@ async function fixtures() {
   }>;
 }
 
+test("MPA-01/03 real worklet slow/direct/slow reuse and paused-navigation labels", async ({
+  page,
+}) => {
+  test.setTimeout(45_000);
+  await installSyntheticService(
+    page,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+  );
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-mpa.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${"<p>Synthetic playback passage.</p>".repeat(24)}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  const speed = page.getByLabel("Playback speed", { exact: true });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  await speed.selectOption("75");
+  await page.locator('[data-narration-action="play"]').click();
+  try {
+    for (let cycle = 1; cycle <= 2; cycle += 1) {
+      await expect(narration).toHaveAttribute(
+        "data-narration-active-rate-percent",
+        "75",
+      );
+      await speed.selectOption("100");
+      await expect(narration).toHaveAttribute(
+        "data-narration-active-rate-percent",
+        "100",
+      );
+      expect(
+        await page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").workletLifecycle,
+        ),
+      ).toEqual(Array.from({ length: cycle }, () => ["dispose", "close"]));
+      await speed.selectOption("75");
+    }
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "75",
+    );
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").created),
+    ).toBe(1);
+    await page.locator('[data-narration-action="pause"]').click();
+    await page.locator('[data-narration-action="details-toggle"]').click();
+    await page.locator('[data-narration-action="next-passage"]').click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-navigation-settling",
+      "false",
+    );
+    const service = await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").service,
+    );
+    await speed.selectOption("100");
+    await expect(page.locator(".product-narration-loaded")).toContainText(
+      "0 seconds ready at 1.00×",
+    );
+    await speed.selectOption("75");
+    await expect(page.locator(".product-narration-loaded")).toContainText(
+      "0 seconds ready at 0.75×",
+    );
+    await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(service);
+    await page.locator('[data-narration-action="resume"]').click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "75",
+    );
+  } finally {
+    await page.locator('[data-narration-action="stop"]').click();
+  }
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("MPA-02 injected native processorerror reaches explicit product recovery", async ({
+  page,
+}) => {
+  await installSyntheticService(
+    page,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+  );
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-mpa-error.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${"<p>Synthetic recovery passage.</p>".repeat(24)}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-active-rate-percent",
+    "75",
+  );
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  const injection = await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    const node = state.workletNodes[0];
+    // Pinned Chromium dispatches ErrorEvent('error') through onprocessorerror.
+    const handlerBefore = typeof node.onprocessorerror;
+    node.dispatchEvent(new ErrorEvent("error"));
+    node.dispatchEvent(new ErrorEvent("error"));
+    return {
+      handlerBefore,
+      handlerAfter: typeof node.onprocessorerror,
+      lifecycle: state.workletLifecycle,
+    };
+  });
+  expect(injection).toEqual({
+    handlerBefore: "function",
+    handlerAfter: "object",
+    lifecycle: [["dispose", "close"]],
+  });
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "recovery-available",
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-failure",
+    "audio-playback-failed",
+  );
+  await expect(narration).toHaveAttribute("data-narration-retained-units", "0");
+  expect(
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return { service: state.service, contexts: state.created - state.closed };
+    }),
+  ).toEqual({ service: 1, contexts: 0 });
+  await page.locator('[data-narration-action="recover"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").workletNodes[0].dispatchEvent(
+      new ErrorEvent("error"),
+    ),
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "operational",
+  );
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 test("EFC-07 successful Settings recheck clears obsolete native preflight failure", async ({
   page,
 }) => {
@@ -1705,6 +1893,7 @@ async function installSyntheticService(
   optionalRecheck = false,
   optionalSelection = false,
   selectedChatterbox = false,
+  mpaPlayback = false,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -1716,6 +1905,7 @@ async function installSyntheticService(
       optionalRecheck,
       optionalSelection,
       selectedChatterbox,
+      mpaPlayback,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
@@ -1778,6 +1968,8 @@ async function installSyntheticService(
         workletEnded: false,
         workletFailed: false,
         workletMessages: [] as string[],
+        workletNodes: [] as AudioWorkletNode[],
+        workletLifecycle: [] as string[][],
         failedDeliveredToSequence: -1,
         releaseWorkletMessages: () => {},
         tailMinimum: 0,
@@ -1882,6 +2074,22 @@ async function installSyntheticService(
             options?: AudioWorkletNodeOptions,
           ) {
             super(context, name, options);
+            if (mpaPlayback) {
+              observations.workletNodes.push(this);
+              const lifecycle: string[] = [];
+              observations.workletLifecycle.push(lifecycle);
+              const postMessage = this.port.postMessage.bind(this.port);
+              this.port.postMessage = (message, transfer = []) => {
+                if (message.type === "dispose") lifecycle.push("dispose");
+                if (Array.isArray(transfer)) postMessage(message, transfer);
+                else postMessage(message, transfer);
+              };
+              const close = this.port.close.bind(this.port);
+              this.port.close = () => {
+                lifecycle.push("close");
+                close();
+              };
+            }
             this.port.addEventListener("message", (event) => {
               if (event.data.type === "ended") observations.ended += 1;
             });
@@ -2119,7 +2327,9 @@ async function installSyntheticService(
                   anchor: segment.sourceRange.start.anchor.anchorIndex,
                 });
                 const pcm = new Float32Array(
-                  observations.synthesized++ === 0 || auditWorkletFIFO
+                  observations.synthesized++ === 0 ||
+                    auditWorkletFIFO ||
+                    mpaPlayback
                     ? 48_000
                     : 1_200,
                 );
@@ -2159,6 +2369,7 @@ async function installSyntheticService(
       optionalRecheck,
       optionalSelection,
       selectedChatterbox,
+      mpaPlayback,
     },
   );
 }

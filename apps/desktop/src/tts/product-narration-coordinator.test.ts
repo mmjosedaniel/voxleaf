@@ -29,6 +29,7 @@ import {
 } from "./optional-chatterbox-client";
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
+import { loadedAudioStatusText } from "./adaptive-preparation-presentation";
 import { bindHardwareCompatibilityChecks } from "./hardware-compatibility-check-binding";
 import type { HardwareCompatibilitySnapshotV1 } from "./hardware-profile-compatibility";
 import {
@@ -522,6 +523,91 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each([
+    ["settled", "select"],
+    ["settled", "reset"],
+    ["settled", "write-failure"],
+    ["pending", "select"],
+    ["pending", "reset"],
+    ["pending", "write-failure"],
+  ] as const)(
+    "MPA-03 %s paused navigation keeps selection and loaded label consistent on %s",
+    async (timing, action) => {
+      const repository: NarrationPlaybackPreferenceRepository = {
+        read: async () => ({ status: "missing", playbackRatePercent: 100 }),
+        write: async () => ({
+          status: action === "write-failure" ? "unavailable" : "saved",
+        }),
+        reset: async () => ({ status: "saved" }),
+      };
+      const { coordinator, client, backend } = createHarness({
+        playbackPreferenceRepository: repository,
+      });
+      let release!: () => void;
+      try {
+        await coordinator.checkAvailability();
+        if (action === "reset") await coordinator.setPlaybackRatePercent(75);
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        coordinator.pause();
+        const shutdown = client.shutdown.bind(client);
+        const barrier = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        if (timing === "pending")
+          vi.spyOn(client, "shutdown").mockImplementation(async () => {
+            await barrier;
+            return shutdown();
+          });
+        const navigation =
+          coordinator.beginExternalNavigation("chapter-navigation");
+        coordinator.settleExternalNavigation(END_LOCATOR);
+        if (timing === "settled") {
+          await navigation;
+          await settleUntil(() => !coordinator.observe().navigation.settling);
+        }
+        const starts = client.startedProfiles.length;
+        expect(
+          await (action === "reset"
+            ? coordinator.resetPlaybackPreference()
+            : coordinator.setPlaybackRatePercent(75)),
+        ).toBe(action !== "write-failure");
+        const rate = action === "reset" ? 100 : 75;
+        const assertPaused = () => {
+          expect(coordinator.observe()).toMatchObject({
+            playbackRatePercent: rate,
+            navigation: { playIntent: "paused" },
+            state: {
+              phase: "paused",
+              readyMs: 0,
+              playbackRate: rate / 100,
+              selectedPlaybackRatePercent: rate,
+              activePlaybackRatePercent: null,
+              pendingPlaybackRatePercent: null,
+            },
+          });
+          expect(loadedAudioStatusText(coordinator.observe().state!)).toContain(
+            `0 seconds ready at ${(rate / 100).toFixed(2)}×`,
+          );
+          expect(client.startedProfiles).toHaveLength(starts);
+        };
+        assertPaused();
+        release();
+        await navigation;
+        await settleUntil(() => !coordinator.observe().navigation.settling);
+        assertPaused();
+        coordinator.resume();
+        await settleUntil(() => backend.active !== undefined);
+        expect(backend.active!.request.playbackRate).toBe(rate / 100);
+      } finally {
+        release?.();
+        await coordinator.close();
+      }
+    },
+  );
+
   it.each(["profile", "language"] as const)(
     "SAF-14 rejects %s changes during native configuration observation",
     async (change) => {

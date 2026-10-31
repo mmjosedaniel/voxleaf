@@ -29,6 +29,7 @@ import {
   type TransitionPauseScheduler,
 } from "./pcm-playback";
 import type { PlaybackTransitionPauseMs } from "./playback-transition-policy";
+import { createIncrementalWsolaV3Node } from "./playback-backends/incremental-wsola-v3";
 
 const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-playback-1",
@@ -410,6 +411,7 @@ class FakeWsolaPort {
 }
 
 class FakeWsolaNode {
+  onprocessorerror: (() => void) | null = null;
   readonly port = new FakeWsolaPort();
   connectCount = 0;
   disconnectCount = 0;
@@ -422,6 +424,156 @@ class FakeWsolaNode {
     this.disconnectCount += 1;
   }
 }
+
+it.each([false, true])(
+  "MPA-01 real factory delivers terminal disposal across paired ports (cancelled=%s)",
+  async (cancelled) => {
+    const channel = new MessageChannel();
+    let processor!: {
+      process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean;
+    };
+    vi.resetModules();
+    vi.stubGlobal(
+      "AudioWorkletProcessor",
+      class {
+        port = channel.port2;
+      },
+    );
+    vi.stubGlobal(
+      "registerProcessor",
+      (_name: string, Type: new () => typeof processor) => {
+        processor = new Type();
+      },
+    );
+    const node = { port: channel.port1, connect: vi.fn(), disconnect: vi.fn() };
+    vi.stubGlobal(
+      "AudioWorkletNode",
+      class {
+        constructor() {
+          return node;
+        }
+      },
+    );
+    let finishModule!: () => void;
+    const context = Object.assign(new FakeAudioContext(), {
+      audioWorklet: {
+        addModule: () =>
+          new Promise<void>((resolve) => {
+            finishModule = resolve;
+          }),
+      },
+    });
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+    );
+    try {
+      await import("./playback-backends/incremental-wsola-v3-worklet");
+      const closed = new Promise<void>((resolve) =>
+        channel.port2.once("close", resolve),
+      );
+      if (cancelled) {
+        const preparation = backend.preparePlaybackRate(75);
+        backend.releasePlaybackRatePreparation();
+        finishModule();
+        await preparation;
+        expect(backend.isPlaybackRatePrepared(75)).toBe(false);
+      } else {
+        const creation = createIncrementalWsolaV3Node(
+          context as unknown as AudioContext,
+        );
+        finishModule();
+        const created = await creation;
+        created.close();
+        created.close();
+      }
+      await closed;
+      expect(node.disconnect).toHaveBeenCalledOnce();
+      expect(processor.process([], [])).toBe(false);
+    } finally {
+      await backend.close();
+      channel.port1.close();
+      channel.port2.close();
+      vi.unstubAllGlobals();
+    }
+  },
+);
+
+it.each(["before", "during", "between"])(
+  "MPA-02 native processorerror %s units invalidates its owner only",
+  async (timing) => {
+    const context = new FakeAudioContext();
+    const nodes: FakeWsolaNode[] = [];
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+      async () => {
+        const node = new FakeWsolaNode();
+        nodes.push(node);
+        return {
+          node: node as unknown as AudioWorkletNode,
+          close: () => {
+            node.disconnect();
+            node.port.close();
+          },
+        };
+      },
+    );
+    const request = {
+      sequence: 1,
+      payload: new Uint8Array(64),
+      sampleRateHz: 24_000,
+      channelCount: 1,
+      sampleFormat: "float32-le",
+      sampleCountSamples: 16,
+      startSampleFrame: 0,
+      volumePercent: 100,
+      playbackRate: 0.75,
+    } as const;
+    const callbacks = { ended: vi.fn(), failed: vi.fn() };
+    try {
+      await backend.preparePlaybackRate(75);
+      const node = nodes[0]!;
+      if (timing !== "before") backend.start(request, callbacks);
+      if (timing === "between")
+        node.port.emit({ type: "ended", unitSequence: 1 });
+      const lateError = node.onprocessorerror;
+      const lateMessage = node.port.onmessage;
+      lateError?.();
+      lateError?.();
+      expect(backend.isPlaybackRatePrepared(75)).toBe(false);
+      expect(callbacks.failed).toHaveBeenCalledTimes(
+        timing === "during" ? 1 : 0,
+      );
+      expect(callbacks.ended).toHaveBeenCalledTimes(
+        timing === "between" ? 1 : 0,
+      );
+      await expect(backend.preparePlaybackRate(75)).rejects.toMatchObject({
+        code: "playback-failure",
+      });
+      expect(() => backend.start(request, callbacks)).toThrow(PcmPlaybackError);
+      expect(nodes).toHaveLength(1);
+      backend.releasePlaybackRatePreparation();
+      expect(node.onprocessorerror).toBeNull();
+      await backend.preparePlaybackRate(75);
+      backend.start({ ...request, sequence: 2 }, callbacks);
+      lateError?.();
+      lateMessage?.({
+        data: { type: "failed", unitSequence: 1 },
+      } as MessageEvent);
+      lateMessage?.({
+        data: { type: "ended", unitSequence: 1 },
+      } as MessageEvent);
+      expect(callbacks.failed).toHaveBeenCalledTimes(
+        timing === "during" ? 1 : 0,
+      );
+      nodes[1]!.port.emit({ type: "ended", unitSequence: 2 });
+      expect(callbacks.ended).toHaveBeenCalledTimes(
+        timing === "between" ? 2 : 1,
+      );
+    } finally {
+      await backend.close();
+    }
+  },
+);
 
 function segment(
   index: number,
