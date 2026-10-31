@@ -726,6 +726,72 @@ test("RAC-01 delayed handoff starts B at the passage observed during A shutdown"
     .toBe(0);
 });
 
+test("PSC-03 primary Play after Stop starts at the passively inspected paragraph", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-psc-stop-play.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 60 }, (_, i) => `<p>${i === 25 ? "Target passage B for fresh Play." : "Synthetic passage A with quiet paths and ordinary details."}</p>`).join("")}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="pause"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+  await page.evaluate(async () => {
+    // Finish the initial highlight/follow settlement before passive inspection.
+    for (let frame = 0; frame < 4; frame += 1)
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+    const target = document.querySelectorAll(".semantic-document p")[25]!;
+    viewport.scrollTop +=
+      target.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top -
+      24;
+    // Scroll delivery plus the visual-locator tracker's scheduled sample.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  await expect(page.locator(".semantic-document p").nth(25)).toBeInViewport();
+  await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").prepared.length = 0;
+  });
+  // No further scroll or navigation action supplies another visible sample.
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.text),
+    )
+    .toBe("Target passage B for fresh Play.");
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 test("RAC-07 mid-unit Resume follows the active range once and preserves inspection", async ({
   page,
 }) => {

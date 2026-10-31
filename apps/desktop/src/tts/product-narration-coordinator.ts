@@ -727,7 +727,7 @@ export class ProductNarrationCoordinator {
       return false;
     }
     try {
-      if (this.#pausedNavigationState === undefined)
+      if (this.#identity !== undefined)
         this.#player?.setPlaybackRatePercent(playbackRatePercent);
     } catch {
       return false;
@@ -763,7 +763,7 @@ export class ProductNarrationCoordinator {
       return false;
     }
     try {
-      if (this.#pausedNavigationState === undefined)
+      if (this.#identity !== undefined)
         this.#player?.setPlaybackRatePercent(
           DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1,
         );
@@ -1218,13 +1218,22 @@ export class ProductNarrationCoordinator {
   }
 
   public resume(): void {
+    if (
+      this.#closed ||
+      this.#configurationChanges > 0 ||
+      this.#pendingNavigation !== undefined ||
+      this.#stopOperation !== undefined ||
+      (this.#scheduler !== undefined && this.#identity === undefined) ||
+      this.#recovery.observe().phase !== "operational"
+    ) {
+      return;
+    }
     try {
       if (
         this.#scheduler === undefined &&
         this.#playIntent === "paused" &&
         this.#pendingNavigation === undefined
       ) {
-        this.#playIntent = "playing";
         this.start();
         return;
       }

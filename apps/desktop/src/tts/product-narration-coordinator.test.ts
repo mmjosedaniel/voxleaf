@@ -15,6 +15,15 @@ import {
 } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { ProductNarrationControls } from "./ProductNarrationControls";
 
 import type { NarrationStartPreferenceRepository } from "../persistence/narration-start-preference";
 import type { NarrationPlaybackPreferenceRepository } from "../persistence/narration-playback-preference";
@@ -523,6 +532,209 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("PSC-01 ignores Resume while paused navigation releases its retired player", async () => {
+    const { coordinator, client, backend, prepareNarration } = createHarness();
+    let release!: () => void;
+    const resume = vi.spyOn(AdaptivePcmPlayer.prototype, "resume");
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      coordinator.pause();
+      coordinator.resume();
+      expect(resume).toHaveBeenCalledTimes(1);
+      coordinator.pause();
+      resume.mockClear();
+      const shutdown = client.shutdown.bind(client);
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vi.spyOn(client, "shutdown").mockImplementation(async () => {
+        await barrier;
+        return shutdown();
+      });
+      const navigation =
+        coordinator.beginExternalNavigation("chapter-navigation");
+      coordinator.settleExternalNavigation(END_LOCATOR);
+      expect(backend.closed).toBe(true);
+      coordinator.resume();
+      expect(resume).not.toHaveBeenCalled();
+      expect(coordinator.observe()).toMatchObject({
+        failure: undefined,
+        recovery: { phase: "operational" },
+        navigation: { playIntent: "paused", settling: true },
+      });
+      expect(backend.active).toBeUndefined();
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      release();
+      await navigation;
+      await settleUntil(() => !coordinator.observe().navigation.settling);
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      coordinator.resume();
+      await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        END_LOCATOR,
+      );
+    } finally {
+      release?.();
+      await coordinator.close();
+      resume.mockRestore();
+    }
+  });
+
+  it("PSC-02 rejected ownerless Resume retains paused intent through availability checks", async () => {
+    const { coordinator, client, prepareNarration } = createHarness();
+    let release!: (value: "available" | "unavailable") => void;
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      coordinator.pause();
+      await coordinator.beginExternalNavigation("chapter-navigation");
+      coordinator.settleExternalNavigation(END_LOCATOR);
+      await settleUntil(() => !coordinator.observe().navigation.settling);
+      vi.spyOn(client, "exactDemoAvailability").mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          }),
+      );
+      const checking = coordinator.refreshSelectedProfile();
+      await settleUntil(() => typeof release === "function");
+      expect(coordinator.observe().availability).toBe("checking");
+      coordinator.resume();
+      expect(coordinator.observe().navigation.playIntent).toBe("paused");
+      release("unavailable");
+      await checking;
+      coordinator.resume();
+      expect(coordinator.observe().navigation.playIntent).toBe("paused");
+      await coordinator.refreshSelectedProfile();
+      expect(coordinator.observe().availability).toBe("available");
+      expect(prepareNarration).toHaveBeenCalledTimes(1);
+      expect(coordinator.observe().navigation.playIntent).toBe("paused");
+      coordinator.resume();
+      await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        END_LOCATOR,
+      );
+    } finally {
+      release?.("available");
+      await coordinator.close();
+    }
+  });
+
+  it("PSC-03 primary Play after Stop prepares visible B without another viewport sample", async () => {
+    const rangeB = sourceRange(20, 40);
+    const { coordinator, prepareNarration } = createHarness({
+      prepareNarration: async (request) =>
+        completeSegments([
+          decodeReadingLocatorV1(request.startLocator).textOffsetCodePoints ===
+          20
+            ? preparedSegment("Synthetic passage B.", rangeB)
+            : preparedSegment("Synthetic passage A."),
+        ]),
+    });
+    const sink = {
+      beginNarration: vi.fn(),
+      finishNarration: vi.fn(async () => undefined),
+      flush: vi.fn(async () => undefined),
+      recordHeardCheckpoint: vi.fn(),
+    };
+    const unbind = bindNarrationPositionPersistence(coordinator, sink);
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      coordinator.pause();
+      coordinator.updateVisibleLocator(rangeB.start);
+      await coordinator.stop();
+      expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
+      expect(sink.recordHeardCheckpoint).toHaveBeenLastCalledWith(
+        expect.objectContaining({ locator: START_LOCATOR }),
+      );
+      expect(sink.finishNarration).toHaveBeenCalledOnce();
+      render(createElement(ProductNarrationControls, { coordinator }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Play" }));
+        await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      });
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        rangeB.start,
+      );
+    } finally {
+      cleanup();
+      unbind();
+      await coordinator.close();
+    }
+  });
+
+  it.each(["saved", "unavailable"] as const)(
+    "PSC-04 ordinary Stop accepts speed selection while cleanup is pending (%s)",
+    async (status) => {
+      const write = vi.fn(async () => ({ status }));
+      const { coordinator, client, backend } = createHarness({
+        playbackPreferenceRepository: {
+          read: async () => ({ status: "missing", playbackRatePercent: 100 }),
+          write,
+          reset: async () => ({ status: "saved" }),
+        },
+      });
+      let release!: () => void;
+      const applyRate = vi.spyOn(
+        AdaptivePcmPlayer.prototype,
+        "setPlaybackRatePercent",
+      );
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        const shutdown = client.shutdown.bind(client);
+        const barrier = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        vi.spyOn(client, "shutdown").mockImplementation(async () => {
+          await barrier;
+          return shutdown();
+        });
+        const stopping = coordinator.stop();
+        expect(backend.closed).toBe(true);
+        render(createElement(ProductNarrationControls, { coordinator }));
+        applyRate.mockClear();
+        await act(async () => {
+          fireEvent.change(
+            screen.getByRole("combobox", { name: "Playback speed" }),
+            {
+              target: { value: "75" },
+            },
+          );
+          await Promise.resolve();
+          await Promise.resolve();
+        });
+        expect(applyRate).not.toHaveBeenCalled();
+        expect(write).toHaveBeenCalledWith(75);
+        expect(
+          screen.getByRole("combobox", { name: "Playback speed" }),
+        ).toHaveValue("75");
+        expect(coordinator.observe().playbackPreferenceStatus).toBe(
+          status === "saved" ? "ready" : "unavailable",
+        );
+        cleanup();
+        release();
+        await stopping;
+        coordinator.start();
+        await settleUntil(() => backend.active !== undefined);
+        expect(backend.active!.request.playbackRate).toBe(0.75);
+      } finally {
+        cleanup();
+        release?.();
+        await coordinator.close();
+        applyRate.mockRestore();
+      }
+    },
+  );
+
   it.each([
     ["settled", "select"],
     ["settled", "reset"],

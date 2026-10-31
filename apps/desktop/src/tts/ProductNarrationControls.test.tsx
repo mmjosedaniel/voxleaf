@@ -55,6 +55,60 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it("PSC-01 disables Resume until paused navigation settles", () => {
+    let current: ProductNarrationSnapshot = {
+      ...snapshot(),
+      navigation: {
+        ...snapshot().navigation,
+        playIntent: "paused",
+        settling: true,
+      },
+      state: {
+        mode: { kind: "quick" },
+        phase: "paused",
+        readyMs: 0,
+        targetMs: 15_000,
+        progressValueMs: 0,
+        estimatedWaitMs: undefined,
+        lowBuffer: false,
+        allRemainingAudioReady: false,
+        resourceCeilingReached: false,
+        pauseContinuesPreparation: false,
+        canPlayAvailableAudio: false,
+        canPause: false,
+        canResume: true,
+        canStop: true,
+        volumePercent: 100,
+        playbackRate: 1,
+        selectedPlaybackRatePercent: 100,
+        activePlaybackRatePercent: null,
+        pendingPlaybackRatePercent: null,
+      },
+    };
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: () => current,
+      checkAvailability: vi.fn(async () => undefined),
+      resume: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+    const subject = render(
+      <ProductNarrationControls coordinator={coordinator} />,
+    );
+    const resume = screen.getByRole("button", { name: "Resume" });
+    expect(resume).toBeDisabled();
+    fireEvent.click(resume);
+    expect(coordinator.resume).not.toHaveBeenCalled();
+    current = {
+      ...current,
+      navigation: { ...current.navigation, settling: false },
+    };
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(resume).toBeEnabled();
+    expect(coordinator.resume).not.toHaveBeenCalled();
+    fireEvent.click(resume);
+    expect(coordinator.resume).toHaveBeenCalledOnce();
+  });
+
   it.each([
     [59_999, "59 seconds"],
     [60_000, "1 minute"],
@@ -263,7 +317,8 @@ describe("product narration controls", () => {
       "details-toggle",
     );
     fireEvent.click(play);
-    expect(coordinator.start).toHaveBeenCalledOnce();
+    expect(coordinator.startAtVisibleLocator).toHaveBeenCalledOnce();
+    expect(coordinator.start).not.toHaveBeenCalled();
     fireEvent.click(detailToggle);
     expect(
       screen.getByRole("button", { name: "Hide narration details" }),
@@ -319,7 +374,7 @@ describe("product narration controls", () => {
 
     expect(coordinator.goToPreviousBoundary).toHaveBeenCalledOnce();
     expect(coordinator.goToNextBoundary).toHaveBeenCalledOnce();
-    expect(coordinator.startAtVisibleLocator).toHaveBeenCalledOnce();
+    expect(coordinator.startAtVisibleLocator).toHaveBeenCalledTimes(2);
     expect(group.textContent).not.toContain("Private");
   });
 

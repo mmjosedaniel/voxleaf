@@ -2,10 +2,13 @@
 
 Date: 2026-10-31. Task ID: PSC-20261031.
 
-Status: **Planning only; implementation and execution are not authorized yet.**
-The current authorization covers this document, its active-index entry, a local
-branch and a documentation commit. It does not cover fixes, test execution,
-push, pull request, merge or release.
+Status: **Complete; independently approved in PSC-R2-20261031.**
+The final archival assessment is retained separately in the
+[immutable review reports](../evidence/minimal-playback-state-corrections/review-reports.md).
+The user's 2026-10-31 execution instruction supersedes the original planning-only
+restriction for implementation, host validation and independent review. Staging,
+commit, push, pull request, merge and publication remain unauthorized. The
+original planning observations below remain historical evidence.
 
 Planning base: `602157f3138a53a340ae4854f803e90209327f8a` on `main`.
 Planning branch: `codex/minimal-playback-state-plan`.
@@ -36,8 +39,11 @@ of affected gates instead of repeating validation for each finding.
 
 ## Current state
 
-All four findings are supported by static control-flow evidence at the planning
-base. None has been reproduced by executing tests in this task.
+Original planning observation: all four findings were supported by static
+control-flow evidence at the planning base; none had then been reproduced by
+executing tests. Execution now reproduces all four and implements their localized
+corrections. Current receipts and acceptance are maintained in the
+[execution ledger](../evidence/minimal-playback-state-corrections/execution-ledger.md).
 
 | ID / severity | Trigger and evidence | Existing coverage gap |
 | --- | --- | --- |
@@ -75,7 +81,7 @@ notes in `docs/product/reader-settings-and-playback-controls.md` and
 `docs/development/testing.md`, this plan and its indexes. Keep concise new
 evidence under `docs/plans/evidence/minimal-playback-state-corrections/` and raw
 receipts under ignored `tmp/evidence/minimal-playback-state-corrections/`.
-Creating those execution records is future work.
+Those execution records are now created under the authorized execution scope.
 
 Do not change PCM terminal guards, DSP, rate arithmetic, scheduler limits,
 EPUB preparation, public schemas, Python, Rust, package builders, models,
@@ -142,7 +148,7 @@ update it only if an actual boundary change is separately approved.
 
 ## Milestones
 
-### 1. Establish the baseline and four regressions — not started
+### 1. Establish the baseline and four regressions — complete
 
 After execution authorization, inspect HEAD, dirty paths, installed inputs and
 the original receipts below. Resolve baseline reuse before changing its test
@@ -152,14 +158,14 @@ without arbitrary delays or real model dependencies. Add `PSC-` regressions and
 run G1 once against unchanged production. Require the expected behavioral
 failures; a setup error is not reproduction. Retain all receipts.
 
-### 2. Apply the localized corrections — not started
+### 2. Apply the localized corrections — complete
 
 Implement PSC-01 through PSC-04 together in the two expected production owners.
 Extend existing assertions only where needed. Add the mounted-reader Stop/Play
 browser regression described below. Run the final focused unit group and static
 checks before native preparation. Do not run the same group after every finding.
 
-### 3. Validate the combined patch — not started
+### 3. Validate the combined patch — complete
 
 Run selected Chromium cases, one current desktop build and one packaged Piper
 EN speed/lifecycle arm. Reuse verified package/driver artifacts, with current
@@ -167,7 +173,7 @@ integrity and discovery checks. Restore host resources and verify cleanup.
 Record each gate as **EJECUTAR**, **REUTILIZAR CON PRUEBA**, **NO APLICA** or
 **BLOQUEADO**, with actual receipts and any limitations.
 
-### 4. Review and close out — not started
+### 4. Review and close out — complete
 
 Freeze documentation and provide the exact current patch, base, changed/supporting
 path identities, commands and host receipts to independent `change_reviewer`
@@ -328,6 +334,49 @@ aggregate remains failed even if independent passing cases qualify for retention
 
 ## Progress log
 
+- 2026-10-31: PSC-R2-20261031 APPROVE resolves R1's evidence blocker with no
+  production finding. All required implementation, validation and cleanup gates
+  pass. Archived the plan and updated active/completed/documentation indexes and
+  incoming testing link. Final archival assessment is recorded separately as
+  PSC-R3-20261031; runtime evidence remains bound to unchanged production/tests.
+  Index empty; no staging, commit, push, PR, merge or publication performed.
+
+- 2026-10-31: Independent PSC-R1-20261031 reports BLOCKED solely for incomplete
+  installed-input proof on the proposed 49 unit/three browser case reuse; no
+  production defect. Renewed precisely those cases: 49/49 and 3/3 pass, with
+  complete before/after installed library/browser, source and export identities.
+  Only generated Vitest results/Chromium log outputs change. R1 accepts existing
+  final-revision static/build/native evidence; no extra build/model run occurs.
+  The original report and all failures remain preserved. R2 assessment pending.
+
+- 2026-10-31: Final selected static checks and Chromium coverage pass, retaining
+  only independently assessable unchanged current-task cases. G5 package check
+  and one current build pass; G6 Piper EN passes all six rates, synchronization
+  and cancellation. Full original resources, binary identity, scratch/process
+  ownership and firewall preservation are verified. No audio persisted or
+  external request observed. Final diagram review finds no boundary change.
+
+- 2026-10-31: G1 produced six expected assertion failures for all four PSC
+  findings on unchanged production. Inline ordinary Resume and heard-save
+  control assertions passed before the failing assertions. Applied localized
+  coordinator/control corrections and added the mounted Chromium journey.
+- 2026-10-31: G2 initially passed 209/210; an old control assertion still required
+  primary Play to call internal `start()`. Updated it to the approved fresh-Play
+  route; its file passed 15/15. G3 then exposed three new-test typing errors
+  (unknown public locator input and unsupported Testing Library `exact` options).
+  Corrected those test-only issues; renewed the two affected suites (161/161).
+  Retain the other three unchanged G2 files subject to independent dependency
+  proof. All original failures remain separate receipts; no aggregate is relabelled.
+
+- 2026-10-31 execution: branch and HEAD exactly match planning commit
+  `3cdab0b32e087a135eedf6822f033794295b9af2`; index/worktree initially clean.
+  Reviewed original MPA/R7 evidence before editing baseline inputs. G0 records
+  matching MPA receipt/input digests and 251 matching generated exports. Historical
+  runtime PASS reuse is declined: installed metadata does not prove complete
+  library bytes/environment. Fresh G0 baseline (the five G2 files) passes 204
+  tests on normal local PowerShell. Raw records use the new PSC evidence root.
+  G1–G8 remain EJECUTAR; unchanged DSP/Python/Rust/model matrices remain NO APLICA.
+
 - 2026-10-31: Rechecked the four retained static findings and their callers at
   `602157f3138a53a340ae4854f803e90209327f8a`; retained both exclusions.
 - 2026-10-31: Inspected MPA/R7 reports, original local MPA receipts/logs,
@@ -341,6 +390,20 @@ aggregate remains failed even if independent passing cases qualify for retention
 - Implementation milestones 1–4 and all runtime acceptance remain pending.
 
 ## Discoveries and decisions
+
+- Execution G4 bounded replanning after two distinct failures: the first shell
+  invocation lost regex quotes through the Windows `.cmd` shim and never reached
+  Playwright (exit 255). Its one infrastructure retry uses PowerShell `--%` to
+  preserve the exact filter. That invocation passed the three existing cases;
+  the new PSC case failed its precondition: at its copied 640x480 viewport the
+  paragraph was outside the screen, as the retained screenshot/trace confirms.
+  Remove only that new case's viewport override and use configured 1280x720,
+  retaining the actual-visibility and B-first-preparation assertions. Rerun only
+  PSC-03, then renew static checks consumed by the changed browser source.
+  Preserve the original three passing cases by exact test/helper equivalence;
+  neither failed aggregate becomes PASS and the infrastructure retry budget
+  remains spent. No layout production change or additional browser matrix is
+  authorized by this fixture correction.
 
 - Keep all four confirmed static findings in scope. PSC-01 and PSC-02 have
   different failure windows: a retained closed owner versus no owner and a
@@ -359,6 +422,20 @@ aggregate remains failed even if independent passing cases qualify for retention
   review. Future implementation requires G8 and all applicable host evidence.
 
 ## Final validation results
+
+Execution: PSC-01–04 implemented with six deterministic regressions. Fresh G0
+baseline passes 204/204; G1 retains six intended failures; final affected unit
+coverage is 210/210 (161 final coordinator/control results and 49 fresh reader/save
+results requested by R1). Final format/lint/types pass. Chromium coverage is four
+selected cases (one corrected PSC fixture pass and three fresh controls requested
+by R1). Current package check, one desktop build, Piper EN WebView2 and G6
+cleanup pass. G7 evidence, whitespace and 79 pre-archive local links pass; final
+archive checks renew documentation evidence. G8 PSC-R2-20261031 APPROVE accepts
+the implementation and evidence, with no findings. Final archival review is
+retained separately. Exact commands, original failures, identities and reuse
+reasoning are in the execution ledger and its retrievable raw receipts.
+
+### Original planning validation record
 
 **Planning deliverable only.** Repository instructions, relevant code/contracts,
 test commands and historical evidence were inspected. The source/export

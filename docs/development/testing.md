@@ -1,5 +1,23 @@
 # Testing strategy
 
+## Playback state correction coverage
+
+`PSC-01` through `PSC-04` extend the coordinator/control suites with deferred
+cleanup and availability promises. They cover early Resume, rejected ownerless
+Resume with an explicit later retry, mounted primary Play after Stop at a distinct
+visible segment, heard-checkpoint preservation, and speed selection during Stop
+with both successful and failed storage. Existing loaded-session Resume, recovery,
+navigation, future-storage-version and boundary-deferred rate cases remain controls.
+
+The mounted `PSC-03` Chromium journey scrolls to a distinct synthetic paragraph
+while paused, stops and uses primary Play without another viewport action. Run
+the focused G0–G8 selection in the
+[PSC plan](../plans/completed/minimal-playback-state-corrections.md): one combined
+unit group, static checks, four filtered Chromium cases, one current desktop
+build and one six-rate Piper EN WebView2 arm. This does not add a listening-quality,
+performance-support or broader platform claim. Receipts retain original failures
+and independently assessed evidence reuse.
+
 ## Historical v6 benchmark authority
 
 Model-free v6 adapter and quality tests use the `benchmark_v6_repository`
