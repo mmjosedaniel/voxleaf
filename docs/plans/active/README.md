@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No approved implementation plans are currently pending.
+- [Minimal playback state corrections](minimal-playback-state-corrections.md):
+  planning only; four static findings covering Resume admission, fresh Play
+  targeting and speed selection during Stop. Implementation and tests have not
+  started and require separate execution authorization.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
