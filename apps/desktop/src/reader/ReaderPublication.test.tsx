@@ -1493,6 +1493,67 @@ describe("navigable publication reader", () => {
     expect(oldNavigation).not.toHaveBeenCalled();
   });
 
+  it.each(["segment-started", "segment-completed"] as const)(
+    "R7-04 audible %s supersedes pending preference restoration",
+    (kind) => {
+      const updates = vi.spyOn(
+        ReaderNavigationCoordinator.prototype,
+        "updateActiveVisualLocator",
+      );
+      const publication = createPublication({
+        includeOpeningLinkLocator: true,
+      });
+      const source = new ManualReaderNarrationSource();
+      const reflow = new ManualReaderReflowEnvironment();
+      const highlight = new ManualSegmentHighlightEnvironment();
+      const settled = vi.fn();
+      const props = {
+        publication,
+        narrationSource: source,
+        reflowEnvironment: reflow,
+        segmentHighlightEnvironment: highlight,
+        onSettledLocatorChange: settled,
+      };
+      const rendered = render(
+        <ReaderPublicationContent
+          {...props}
+          preferences={DEFAULT_READER_PREFERENCES}
+        />,
+      );
+      const range = entireLocatedBlockRange(OPENING_LINK_LOCATED_BLOCK);
+      if (kind === "segment-completed") act(() => source.start(range, 1));
+      rendered.rerender(
+        <ReaderPublicationContent
+          {...props}
+          preferences={{ ...DEFAULT_READER_PREFERENCES, textScale: "large" }}
+        />,
+      );
+      act(() => {
+        if (kind === "segment-started") source.start(range, 1);
+        else
+          source.emit({
+            kind,
+            observedAtMs: 500,
+            sessionId: "session:reader-highlight",
+            generationId: "generation:reader-highlight",
+            segmentId: "segment:reader-highlight-1",
+            sequence: 1,
+            sourceRange: range,
+            playedSampleFrames: 24_000,
+            sampleCountSamples: 24_000,
+          });
+      });
+      act(() => reflow.flushAll());
+      expect(settled).not.toHaveBeenCalled();
+      const navigation = updates.mock.contexts.at(-1) as
+        ReaderNavigationCoordinator | undefined;
+      expect(navigation?.state.activeLocator).toEqual(
+        kind === "segment-started" ? range.start : range.end,
+      );
+      expect(highlight.highlighted?.toString()).toBe("Move to Continue");
+    },
+  );
+
   it("publishes the canonical locator only after preference reflow settles", () => {
     const reflowEnvironment = new ManualReaderReflowEnvironment();
     const onSettledLocatorChange = vi.fn();

@@ -1,5 +1,22 @@
 # Architecture overview
 
+Seven-finding corrections retain the existing owners and public contracts.
+Operational cleanup keeps failed scheduler/player ownership until verified;
+compatibility recheck joins or retries that cleanup before admitting Play.
+Optional acquisition owns one abortable, joined request/body task inside the
+existing worker, with bounded streaming and the existing staging/promotion owner.
+Native profile selection and child publication share one admitted operation;
+this closes a native concurrency race without asserting an ordinary-UI trigger.
+
+Audible advancement cancels an older pending preference restoration before the
+reader accepts its locator. Save drains release ownership synchronously with
+empty-queue observation; flush/close join accepted latest values to quiescence.
+Narration preparation carries only fixed-shape quotation counters/parity at the
+exact continuation, reconstructs them on cold requests, and accounts incremental
+source work. It retains no prior prose and changes no M005 limits or schemas.
+Benchmark cleanup separately retains its process until termination and handle
+release are verified. These changes do not alter the canonical system topology.
+
 The six-finding corrections preserve this topology and the public contracts.
 Safe XHTML projection treats `table`, `tr`, `td`, `th`, `dl`, `dt` and `dd` as
 inert block boundaries, emitting ordered paragraphs without table-layout or

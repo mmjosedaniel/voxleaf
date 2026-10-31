@@ -24,9 +24,11 @@ use tauri::{AppHandle, Manager, State};
 use zip::ZipArchive;
 
 mod download_diagnostic;
+mod download_transfer;
 use download_diagnostic::{
     DownloadAttempt, DownloadDiagnostic, DownloadFailureKind, DownloadStage,
 };
+use download_transfer::{TransferAbort, TransferResponse};
 
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
 const PACKAGE_ID: &str = "voxleaf-chatterbox-v7";
@@ -423,6 +425,7 @@ struct Operation {
 pub(crate) struct OptionalChatterboxManager {
     operation: Mutex<Operation>,
     last_download_error: Mutex<Option<DownloadDiagnostic>>,
+    transfer_abort: TransferAbort,
 }
 
 fn exact_manifest() -> Result<OptionalPackageManifest, OptionalProfileError> {
@@ -1599,10 +1602,11 @@ fn download_artifact(
     source: DownloadSource,
     maximum_redirects: usize,
     destination: &Path,
-    cancelled: &AtomicBool,
+    transfer: (&AtomicBool, &TransferAbort),
     on_progress: impl Fn(u64),
     diagnostic: DownloadAttempt<'_>,
 ) -> Result<(), OptionalProfileError> {
+    let (cancelled, transfer_abort) = transfer;
     #[cfg(test)]
     if let Some(result) = tests::run_download_hook(destination, cancelled) {
         return result;
@@ -1621,7 +1625,9 @@ fn download_artifact(
             None,
         ));
     }
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(30))
+        .read_timeout(std::time::Duration::from_secs(30))
         .redirect(reqwest::redirect::Policy::custom(move |attempt| {
             if !redirect_allowed(
                 source,
@@ -1649,6 +1655,7 @@ fn download_artifact(
             .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2"),
         cancelled,
         &diagnostic,
+        transfer_abort,
     )?;
     copy_download_response(
         artifact,
@@ -1660,27 +1667,18 @@ fn download_artifact(
     )
 }
 
-fn send_download_request(
-    request: reqwest::blocking::RequestBuilder,
+fn send_download_request<'a>(
+    request: reqwest::RequestBuilder,
     cancelled: &AtomicBool,
     diagnostic: &DownloadAttempt<'_>,
-) -> Result<reqwest::blocking::Response, OptionalProfileError> {
-    request.send().map_err(|error| {
-        if cancelled.load(Ordering::Acquire) {
-            OptionalProfileError::Cancelled
-        } else {
-            diagnostic.fail(
-                DownloadStage::Request,
-                DownloadFailureKind::Request,
-                Some(&error),
-            )
-        }
-    })
+    transfer_abort: &'a TransferAbort,
+) -> Result<TransferResponse<'a>, OptionalProfileError> {
+    download_transfer::start(request, cancelled, transfer_abort, diagnostic)
 }
 
 fn copy_download_response(
     artifact: &impl DownloadIdentity,
-    mut response: reqwest::blocking::Response,
+    mut response: TransferResponse<'_>,
     destination: &Path,
     cancelled: &AtomicBool,
     on_progress: impl Fn(u64),
@@ -2061,7 +2059,7 @@ impl OptionalChatterboxManager {
                     DownloadSource::GithubRelease,
                     manifest.limits.maximum_redirects,
                     &runtime_downloads.join(&part.filename),
-                    &cancellation,
+                    (&cancellation, &self.transfer_abort),
                     |downloaded| {
                         self.set_operation(
                             OptionalProfileState::Downloading,
@@ -2089,7 +2087,7 @@ impl OptionalChatterboxManager {
                     DownloadSource::HuggingFace,
                     manifest.limits.maximum_redirects,
                     &model_downloads.join(&model.filename),
-                    &cancellation,
+                    (&cancellation, &self.transfer_abort),
                     |downloaded| {
                         self.set_operation(
                             OptionalProfileState::Downloading,
@@ -2192,6 +2190,14 @@ impl OptionalChatterboxManager {
             };
             if let Some(cancellation) = &operation.cancellation {
                 cancellation.store(true, Ordering::Release);
+                if let Some(abort) = self
+                    .transfer_abort
+                    .lock()
+                    .map_err(|_| OptionalProfileError::CleanupFailed)?
+                    .as_ref()
+                {
+                    abort();
+                }
             }
             // Claim cleanup before releasing command admission. A concurrent
             // Download must not acquire the Confirming operation being cancelled.

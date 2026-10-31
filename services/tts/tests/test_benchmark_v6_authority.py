@@ -16,6 +16,7 @@ from benchmarks.adapters.manifest import (
     PIPER_CPU_CANDIDATE_ID,
     PROFILE_V6_CONFIGURATION_SHA256,
     PROFILE_V6_SHA256,
+    AdapterConfigurationError,
     CandidateConfiguration,
     CpuFallbackEvaluationAuthority,
     load_v6_candidate_profile,
@@ -49,8 +50,8 @@ SUMMARY_SCHEMA_PATH: Final = (
 RESULT_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "cpu-fallback-result-v6.json"
 
 
-def _configuration(root: Path) -> CandidateConfiguration:
-    profile = load_v6_candidate_profile(REPOSITORY_ROOT, PIPER_CPU_CANDIDATE_ID)
+def _configuration(root: Path, repository: Path) -> CandidateConfiguration:
+    profile = load_v6_candidate_profile(repository, PIPER_CPU_CANDIDATE_ID)
     return CandidateConfiguration(
         candidate_id=profile.candidate_id,
         artifact_root=root.resolve(),
@@ -62,8 +63,10 @@ def _configuration(root: Path) -> CandidateConfiguration:
     )
 
 
-def test_v6_profile_binds_exact_candidate_lock_corpus_and_schemas() -> None:
-    profile = load_v6_candidate_profile(REPOSITORY_ROOT, PIPER_CPU_CANDIDATE_ID)
+def test_v6_profile_binds_exact_candidate_lock_corpus_and_schemas(
+    benchmark_v6_repository: Path,
+) -> None:
+    profile = load_v6_candidate_profile(benchmark_v6_repository, PIPER_CPU_CANDIDATE_ID)
     authority = profile.authority
     assert hashlib.sha256(PROFILE_PATH.read_bytes()).hexdigest() == PROFILE_V6_SHA256
     assert profile.role == "compatibility"
@@ -88,6 +91,23 @@ def test_v6_profile_binds_exact_candidate_lock_corpus_and_schemas() -> None:
         )
         Draft202012Validator.check_schema(schema)
         Draft202012Validator(schema, registry=schema_registry())
+
+
+@pytest.mark.parametrize("replacement", ["current", "tampered", "missing"])
+def test_v6_authority_rejects_changed_or_missing_normalizer(
+    benchmark_v6_repository: Path,
+    replacement: str,
+) -> None:
+    relative = Path("packages/epub/src/narration/narration-normalizer.ts")
+    target = benchmark_v6_repository / relative
+    if replacement == "current":
+        target.write_bytes((REPOSITORY_ROOT / relative).read_bytes())
+    elif replacement == "tampered":
+        target.write_bytes(target.read_bytes() + b"\n// altered authority\n")
+    else:
+        target.unlink()
+    with pytest.raises(AdapterConfigurationError, match="^tts-benchmark-adapter:authority$"):
+        load_v6_candidate_profile(benchmark_v6_repository, PIPER_CPU_CANDIDATE_ID)
 
 
 def test_v6_corpus_declares_exact_sizes_and_orders_each_case_once() -> None:
@@ -116,9 +136,10 @@ def test_v6_cancellation_cases_are_frozen_and_resolvable() -> None:
 def test_v6_adapter_forces_cpu_and_publishes_bounded_sample_chunks(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    benchmark_v6_repository: Path,
 ) -> None:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
-    profile = load_v6_candidate_profile(REPOSITORY_ROOT, PIPER_CPU_CANDIDATE_ID)
+    profile = load_v6_candidate_profile(benchmark_v6_repository, PIPER_CPU_CANDIDATE_ID)
     calls: dict[str, object] = {}
 
     class Samples:
@@ -194,7 +215,7 @@ def test_v6_adapter_forces_cpu_and_publishes_bounded_sample_chunks(
     )
     adapter = PiperCpuAdapter(
         profile,
-        _configuration(tmp_path),
+        _configuration(tmp_path, benchmark_v6_repository),
         importer=lambda name: {
             "onnxruntime": onnxruntime,
             "piper.voice": voice_module,
@@ -232,9 +253,11 @@ def test_v6_adapter_forces_cpu_and_publishes_bounded_sample_chunks(
     adapter.close()
 
 
-def test_v6_factory_dispatch_and_raw_journal_are_closed(tmp_path: Path) -> None:
-    profile = load_v6_candidate_profile(REPOSITORY_ROOT, PIPER_CPU_CANDIDATE_ID)
-    adapter = CandidateAdapterFactory(profile, _configuration(tmp_path))()
+def test_v6_factory_dispatch_and_raw_journal_are_closed(
+    tmp_path: Path, benchmark_v6_repository: Path
+) -> None:
+    profile = load_v6_candidate_profile(benchmark_v6_repository, PIPER_CPU_CANDIDATE_ID)
+    adapter = CandidateAdapterFactory(profile, _configuration(tmp_path, benchmark_v6_repository))()
     assert isinstance(adapter, PiperCpuAdapter)
 
     authority = profile.authority

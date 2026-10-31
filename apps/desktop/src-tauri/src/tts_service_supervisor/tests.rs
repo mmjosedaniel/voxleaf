@@ -4,6 +4,8 @@ use super::*;
 mod packaged_chatterbox;
 
 thread_local! {
+    static R7_SELECTION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+    static R7_SPAWNED: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
     static CHATTERBOX_OBSERVER: std::cell::RefCell<Option<(PathBuf, PathBuf, PathBuf)>> = const { std::cell::RefCell::new(None) };
     static START_PUBLISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static SHUTDOWN_BUSY_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
@@ -18,15 +20,100 @@ type ControlWriteHook = Box<dyn FnMut(&Value) -> Result<(), TtsNativeFailure>>;
 type ReceiveHook = Box<dyn FnMut(Duration) -> Result<Frame, TtsNativeFailure>>;
 
 pub(super) fn spawn_session_hook(
+    configuration: &ServiceChild,
     id: &str,
     start_request_id: &Option<String>,
 ) -> Option<Arc<ServiceSession>> {
     SYNTHETIC_COMMAND_SESSION.get().then(|| {
+        if let ServiceChild::Exact(runtime) = configuration {
+            R7_SPAWNED.with(|slot| {
+                *slot.borrow_mut() = Some(runtime.runtime_environment[0].1.to_owned())
+            });
+        }
         let (mut session, _sender) = channel_session();
         session.service_instance_id = id.to_owned();
         session.start_request_id = start_request_id.clone();
         Arc::new(session)
     })
+}
+
+pub(super) fn r7_profile(
+    profile: &str,
+    language: Option<&str>,
+) -> Option<Result<ExactRuntime, TtsNativeFailure>> {
+    let binding = match (profile, language) {
+        ("r7-es", Some("es")) => "r7-es:es",
+        ("r7-en", Some("en")) => "r7-en:en",
+        _ => return None,
+    };
+    Some(Ok(ExactRuntime {
+        python: PathBuf::new(),
+        model_root: PathBuf::new(),
+        service_source: PathBuf::new(),
+        service_site_packages: PathBuf::new(),
+        service_module: "synthetic",
+        runtime_environment: vec![("synthetic", binding)],
+        numba_cache_root: None,
+    }))
+}
+
+pub(super) fn r7_after_selection() {
+    R7_SELECTION.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().take() {
+            hook();
+        }
+    });
+}
+
+#[test]
+fn r7_07_command_selection_and_spawn_are_one_admitted_operation() {
+    let supervisor = Arc::new(TtsServiceSupervisor::with_child(ServiceChild::Fake(
+        NORMAL_SCENARIO,
+    )));
+    let (a_selected, selected) = mpsc::sync_channel(1);
+    let (resume_a, resumed_a) = mpsc::sync_channel(1);
+    let a_owner = Arc::clone(&supervisor);
+    let a = thread::spawn(move || {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        R7_SELECTION.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                a_selected.send(()).unwrap();
+                resumed_a.recv_timeout(Duration::from_secs(5)).unwrap();
+            }))
+        });
+        let result = a_owner.start_selected(Some("r7-es"), Some("es"), Some("start:r7-a".into()));
+        (result, R7_SPAWNED.with(|slot| slot.borrow_mut().take()))
+    });
+    selected.recv_timeout(Duration::from_secs(5)).unwrap();
+    let (b_event, event) = mpsc::channel();
+    let (resume_b, resumed_b) = mpsc::sync_channel(1);
+    let b_owner = Arc::clone(&supervisor);
+    let b = thread::spawn(move || {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        let configured = b_event.clone();
+        R7_SELECTION.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                configured.send(()).unwrap();
+                resumed_b.recv_timeout(Duration::from_secs(5)).unwrap();
+            }))
+        });
+        let result = b_owner.start_selected(Some("r7-en"), Some("en"), Some("start:r7-b".into()));
+        b_event.send(()).ok();
+        result
+    });
+    event.recv_timeout(Duration::from_secs(5)).unwrap();
+    resume_a.send(()).unwrap();
+    let (a_result, binding) = a.join().unwrap();
+    resume_b.send(()).ok();
+    let b_result = b.join().unwrap();
+    supervisor.force_stop().unwrap();
+    assert!(a_result.is_ok());
+    assert_eq!(binding.as_deref(), Some("r7-es:es"));
+    assert!(matches!(
+        b_result,
+        Err(TtsNativeFailure::Busy | TtsNativeFailure::InvalidState)
+    ));
+    assert!(supervisor.session.lock().unwrap().is_none());
 }
 
 pub(super) fn command_clock() -> Option<Instant> {

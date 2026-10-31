@@ -1,3 +1,4 @@
+import type { NarrationQuotationContext } from "./narration-quotation-context.js";
 import {
   createIndex,
   decodeReadingLocatorV1,
@@ -56,6 +57,7 @@ type NarrationNormalizationProfile = "narration-v1" | "narration-bilingual-v2";
 interface NarrationPreparationOptions extends NarrationPackingOptions {
   readonly normalizationProfile?: NarrationNormalizationProfile;
   readonly precedingEnglishTitleContext?: NarrationEnglishTitleContext;
+  readonly precedingQuotationContext?: NarrationQuotationContext;
 }
 
 interface StagedPreparedNarrationSegment {
@@ -333,10 +335,12 @@ export async function prepareNarrationSourceLeaf(
           source.sourceTokens,
           defaultLanguage,
           options.precedingEnglishTitleContext,
+          options.precedingQuotationContext,
         )
       : normalizeNarrationSourceTokens(
           source.sourceTokens,
           defaultLanguage === "en" ? fail() : defaultLanguage,
+          options.precedingQuotationContext,
         )) as unknown as NarrationNormalizedStream;
     const scan = scanNarrationBoundaries(source, normalized);
     const packed = await packNarrationBoundaryScan(scan, options);

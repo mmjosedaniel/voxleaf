@@ -437,13 +437,13 @@ export class ReaderPositionSaveCoordinator {
     if (this.#positionDrain !== undefined) {
       return;
     }
-    const drain = this.#drainPositions();
-    this.#positionDrain = drain;
-    void drain.finally(() => {
-      if (this.#positionDrain === drain) {
-        this.#positionDrain = undefined;
-      }
+    // Publish ownership before entering the async loop, including a
+    // repository that throws synchronously. Release it in the loop's turn.
+    let settle!: () => void;
+    this.#positionDrain = new Promise<void>((resolve) => {
+      settle = resolve;
     });
+    void this.#drainPositions().then(settle);
   }
 
   async #drainPositions(): Promise<void> {
@@ -464,6 +464,7 @@ export class ReaderPositionSaveCoordinator {
         this.#writingLocator = undefined;
       }
     }
+    this.#positionDrain = undefined;
   }
 
   #queueLatestPreferences(): void {
@@ -496,13 +497,13 @@ export class ReaderPositionSaveCoordinator {
     if (this.#preferencesDrain !== undefined) {
       return;
     }
-    const drain = this.#drainPreferences();
-    this.#preferencesDrain = drain;
-    void drain.finally(() => {
-      if (this.#preferencesDrain === drain) {
-        this.#preferencesDrain = undefined;
-      }
+    // Publish ownership before entering the async loop, including a
+    // repository that throws synchronously. Release it in the loop's turn.
+    let settle!: () => void;
+    this.#preferencesDrain = new Promise<void>((resolve) => {
+      settle = resolve;
     });
+    void this.#drainPreferences().then(settle);
   }
 
   async #drainPreferences(): Promise<void> {
@@ -521,14 +522,17 @@ export class ReaderPositionSaveCoordinator {
         this.#writingPreferences = undefined;
       }
     }
+    this.#preferencesDrain = undefined;
   }
 
-  #currentDrain(): Promise<void> {
-    const drains = [this.#positionDrain, this.#preferencesDrain].filter(
-      (drain): drain is Promise<void> => drain !== undefined,
-    );
-    return drains.length === 0
-      ? Promise.resolve()
-      : Promise.all(drains).then(() => undefined);
+  async #currentDrain(): Promise<void> {
+    // A later flush can publish a successor while an earlier drain settles.
+    // Close joins that successor too, until both queues have become quiescent.
+    while (
+      this.#positionDrain !== undefined ||
+      this.#preferencesDrain !== undefined
+    ) {
+      await Promise.all([this.#positionDrain, this.#preferencesDrain]);
+    }
   }
 }

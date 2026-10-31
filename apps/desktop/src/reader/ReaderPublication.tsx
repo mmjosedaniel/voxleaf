@@ -417,8 +417,20 @@ export function ReaderPublicationContent({
         }
       },
       settleLocator: (locator: ReadingLocatorV1) => {
+        // Audible settlement supersedes the older preference capture. Hold
+        // sampling while cancel() releases its own suspension.
+        const resume = visualLocatorTracker.suspend();
+        const current = coordinator.state.activeLocator;
+        if (
+          current.spineItemIndex !== locator.spineItemIndex ||
+          current.anchor.anchorIndex !== locator.anchor.anchorIndex ||
+          current.textOffsetCodePoints !== locator.textOffsetCodePoints
+        ) {
+          reflowRestorer.cancel();
+        }
         visualLocatorTracker.setCurrentLocator(locator);
         coordinator.updateActiveVisualLocator(locator);
+        resume({ requestSample: false });
       },
       suspendVisualSampling: () => visualLocatorTracker.suspend(),
     };

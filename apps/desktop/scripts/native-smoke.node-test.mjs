@@ -1231,3 +1231,46 @@ test("fresh helper imports perform no process, filesystem, hardware, timer, or c
     ),
   );
 });
+
+for (const diagnosticFails of [false, true]) {
+  test(`R7-G8 saved-rate diagnostics preserve failure and cleanup (${diagnosticFails})`, async () => {
+    const failure = new Error("controlled-predicate-timeout");
+    const scripts = [];
+    const logged = [];
+    const originalError = console.error;
+    console.error = (message) => logged.push(message);
+    try {
+      const subject = createNativeTtsScenarios({
+        EXERCISE_READER_CORRECTIONS: true,
+        injectNativeFile: async () => {},
+        waitForCondition: async () => {
+          throw failure;
+        },
+      });
+      await assert.rejects(
+        subject.runAdaptiveTtsExactHostMatrix(
+          {
+            execute: async (script) => {
+              scripts.push(script);
+              if (script.includes("const owner =")) {
+                if (diagnosticFails) throw new Error("diagnostic-unavailable");
+                return { availability: "checking", created: 0, closed: 0 };
+              }
+              return true;
+            },
+          },
+          "synthetic.epub",
+          1,
+          () => {},
+        ),
+        (error) => error === failure,
+      );
+      assert.match(scripts.at(-1), /RateCorrection\?\.restore/u);
+      assert.match(scripts.at(-1), /playbackRatePercent: 100/u);
+      assert.equal(logged.length, diagnosticFails ? 0 : 1);
+      if (!diagnosticFails) assert.match(logged[0], /^READER_RATE_FAILURE /u);
+    } finally {
+      console.error = originalError;
+    }
+  });
+}

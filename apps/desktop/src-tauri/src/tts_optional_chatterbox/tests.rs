@@ -12,6 +12,226 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+thread_local! {
+    static R7_TRANSFER_PUBLICATION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn r7_before_transfer_publication() {
+    R7_TRANSFER_PUBLICATION.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().take() {
+            hook();
+        }
+    });
+}
+
+#[cfg(windows)]
+#[test]
+fn r7_02_cancel_before_transfer_handle_publication_joins_and_cleans() {
+    let root = TestRoot::new();
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    let cancelling = Arc::clone(&manager);
+    let cancel_root = root.0.clone();
+    R7_TRANSFER_PUBLICATION.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            cancelling.cancel_at(&cancel_root).unwrap();
+        }))
+    });
+    let downloading = Arc::clone(&manager);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move |_destination, cancelled| {
+            let client = reqwest::Client::builder().no_proxy().build().unwrap();
+            let diagnostic = DownloadAttempt::new(
+                &downloading.last_download_error,
+                DownloadSource::GithubRelease,
+                1,
+                100,
+            );
+            send_download_request(
+                client.get("http://127.0.0.1:9/"),
+                cancelled,
+                &diagnostic,
+                &downloading.transfer_abort,
+            )
+            .map(|_| ())
+        }))
+    });
+    let began = std::time::Instant::now();
+    assert!(manager.download_at(&root.0).is_ok());
+    assert!(began.elapsed() < Duration::from_secs(2));
+    assert!(manager.transfer_abort.lock().unwrap().is_none());
+    assert!(!manager.operation.lock().unwrap().worker_active);
+    assert!(!staging_root(&root.0).exists());
+}
+
+#[test]
+fn r7_02_normal_transfer_verifies_bytes_and_releases_task() {
+    let root = TestRoot::new();
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        stream.set_nonblocking(false).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        stream
+            .set_write_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        let mut request = [0; 1024];
+        assert!(stream.read(&mut request).unwrap() > 0);
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\ntest")
+            .unwrap();
+    });
+    let diagnostic_slot = Mutex::new(None);
+    let abort = TransferAbort::default();
+    let cancelled = AtomicBool::new(false);
+    let diagnostic = DownloadAttempt::new(&diagnostic_slot, DownloadSource::GithubRelease, 1, 4);
+    let client = reqwest::Client::builder()
+        .no_proxy()
+        .read_timeout(Duration::from_secs(5))
+        .build()
+        .unwrap();
+    let response = send_download_request(
+        client.get(format!("http://{address}/")),
+        &cancelled,
+        &diagnostic,
+        &abort,
+    )
+    .unwrap();
+    let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
+    artifact.sha256 = encode_sha256(Sha256::digest(b"test"));
+    artifact.download_bytes = 4;
+    let destination = root.0.join("complete.bin");
+    let result = copy_download_response(
+        &artifact,
+        response,
+        &destination,
+        &cancelled,
+        |_| {},
+        diagnostic,
+    );
+    server.join().unwrap();
+    result.unwrap();
+    assert_eq!(fs::read(destination).unwrap(), b"test");
+    assert!(abort.lock().unwrap().is_none());
+    assert!(diagnostic_slot.lock().unwrap().is_none());
+}
+
+#[cfg(windows)]
+#[test]
+fn r7_02_cancellation_settles_stalled_headers_with_owned_cleanup() {
+    r7_stalled_transfer(false);
+}
+
+#[cfg(windows)]
+#[test]
+fn r7_02_cancellation_settles_stalled_body_with_owned_cleanup() {
+    r7_stalled_transfer(true);
+}
+
+#[cfg(windows)]
+fn r7_stalled_transfer(body: bool) {
+    {
+        let root = TestRoot::new();
+        let manager = Arc::new(OptionalChatterboxManager::default());
+        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        let retained = retained_v6_package_root(&root.0);
+        fs::create_dir_all(&retained).unwrap();
+        fs::write(retained.join("keep.bin"), b"retained").unwrap();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let address = listener.local_addr().unwrap();
+        let cancelling = Arc::clone(&manager);
+        let cancel_root = root.0.clone();
+        let (done, finished) = std::sync::mpsc::channel();
+        let server = thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            let mut stream = loop {
+                match listener.accept() {
+                    Ok((stream, _)) => break stream,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        assert!(std::time::Instant::now() < deadline);
+                        thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("loopback accept: {:?}", error.kind()),
+                }
+            };
+            stream.set_nonblocking(false).unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            stream
+                .set_write_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut request = [0; 1024];
+            assert!(stream.read(&mut request).unwrap() > 0);
+            if body {
+                stream
+                    .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nx")
+                    .unwrap();
+            }
+            // For the body arm, wait for the production copy owner to consume x.
+            if body {
+                while cancelling.operation.lock().unwrap().downloaded_bytes == 0 {
+                    assert!(std::time::Instant::now() < deadline);
+                    thread::sleep(Duration::from_millis(1));
+                }
+            }
+            let started = std::time::Instant::now();
+            cancelling.cancel_at(&cancel_root).unwrap();
+            let completed = finished.recv_timeout(Duration::from_secs(4)).is_ok();
+            (completed, started.elapsed())
+        });
+        let downloading = Arc::clone(&manager);
+        DOWNLOAD_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
+                let client = reqwest::Client::builder()
+                    .no_proxy()
+                    .timeout(Duration::from_secs(3))
+                    .build()
+                    .unwrap();
+                let diagnostic = DownloadAttempt::new(
+                    &downloading.last_download_error,
+                    DownloadSource::GithubRelease,
+                    1,
+                    100,
+                );
+                let response = send_download_request(
+                    client.get(format!("http://{address}/")),
+                    cancelled,
+                    &diagnostic,
+                    &downloading.transfer_abort,
+                )?;
+                let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
+                artifact.download_bytes = 100;
+                copy_download_response(
+                    &artifact,
+                    response,
+                    destination,
+                    cancelled,
+                    |count| {
+                        downloading.operation.lock().unwrap().downloaded_bytes = count;
+                    },
+                    diagnostic,
+                )
+            }))
+        });
+        let result = manager.download_at(&root.0);
+        done.send(()).unwrap();
+        let (completed, elapsed) = server.join().unwrap();
+        assert!(result.is_ok());
+        assert!(!manager.operation.lock().unwrap().worker_active);
+        assert!(!staging_root(&root.0).exists());
+        assert_eq!(fs::read(retained.join("keep.bin")).unwrap(), b"retained");
+        assert!(
+            completed && elapsed < Duration::from_secs(2),
+            "cancellation: {elapsed:?}"
+        );
+    }
+}
+
 #[test]
 fn efc_06_discloses_effective_ram_without_changing_frozen_floor() {
     let manifest = exact_manifest().unwrap();
@@ -54,6 +274,7 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
             let address = listener.local_addr().unwrap();
             let cancelling_manager = Arc::clone(&manager);
             let cancelling_root = root.0.clone();
+            let (completed, completion) = std::sync::mpsc::sync_channel(1);
             let server = thread::spawn(move || {
                 let deadline = std::time::Instant::now() + Duration::from_secs(5);
                 let mut stream = loop {
@@ -78,26 +299,41 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                 let mut request = [0_u8; 1024];
                 assert!(stream.read(&mut request).unwrap() > 0);
                 if cancel {
-                    let acknowledged = cancelling_manager.cancel_at(&cancelling_root).unwrap();
-                    assert_eq!(acknowledged.state, OptionalProfileState::Downloading);
-                    assert!(
+                    let cancellation = Arc::clone(
                         cancelling_manager
                             .operation
                             .lock()
                             .unwrap()
                             .cancellation
                             .as_ref()
+                            .unwrap(),
+                    );
+                    let acknowledged = cancelling_manager.cancel_at(&cancelling_root).unwrap();
+                    assert_eq!(acknowledged.state, OptionalProfileState::Downloading);
+                    // Force the CI interleaving: cleanup finishes before the
+                    // server inspects cancellation or publishes error headers.
+                    completion.recv_timeout(Duration::from_secs(5)).unwrap();
+                    assert!(cancellation.load(Ordering::Acquire));
+                    assert!(
+                        cancelling_manager
+                            .operation
+                            .lock()
                             .unwrap()
-                            .load(Ordering::Acquire)
+                            .cancellation
+                            .is_none()
                     );
                 }
                 // Rejected headers arrive only after cancellation was acknowledged.
-                stream.write_all(headers.as_bytes()).unwrap();
+                let sent = stream.write_all(headers.as_bytes());
+                if !cancel {
+                    sent.unwrap();
+                }
+                // Cancellation may have already closed the peer before this write.
             });
             let downloading_manager = Arc::clone(&manager);
             DOWNLOAD_HOOK.with(|slot| {
                 *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
-                    let client = reqwest::blocking::Client::builder()
+                    let client = reqwest::Client::builder()
                         .no_proxy()
                         .timeout(Duration::from_secs(5))
                         .build()
@@ -112,6 +348,7 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                         client.get(format!("http://{address}/")),
                         cancelled,
                         &diagnostic,
+                        &downloading_manager.transfer_abort,
                     )?;
                     let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
                     artifact.download_bytes = 100;
@@ -126,6 +363,9 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
                 }));
             });
             let result = manager.download_at(&root.0);
+            if cancel {
+                completed.send(()).unwrap();
+            }
             server.join().unwrap();
             assert!(!manager.operation.lock().unwrap().worker_active);
             assert!(!staging_root(&root.0).exists());
@@ -266,7 +506,7 @@ fn vaf_cancelled_request_before_headers_preserves_diagnostic_and_cleans_staging(
         let downloading_manager = Arc::clone(&manager);
         DOWNLOAD_HOOK.with(|slot| {
             *slot.borrow_mut() = Some(Box::new(move |_destination, cancelled| {
-                let client = reqwest::blocking::Client::builder()
+                let client = reqwest::Client::builder()
                     .no_proxy()
                     .timeout(Duration::from_secs(5))
                     .build()
@@ -280,6 +520,7 @@ fn vaf_cancelled_request_before_headers_preserves_diagnostic_and_cleans_staging(
                         1,
                         100,
                     ),
+                    &downloading_manager.transfer_abort,
                 )
                 .map(|_| ())
             }));
@@ -346,12 +587,23 @@ fn sac02_cancelled_blocked_response_read_preserves_diagnostic_and_cleans_staging
         let downloading_manager = Arc::clone(&manager);
         DOWNLOAD_HOOK.with(|slot| {
             *slot.borrow_mut() = Some(Box::new(move |destination, cancelled| {
-                let client = reqwest::blocking::Client::builder()
+                let client = reqwest::Client::builder()
                     .no_proxy()
                     .timeout(Duration::from_millis(500))
                     .build()
                     .unwrap();
-                let response = client.get(format!("http://{address}/")).send().unwrap();
+                let attempt = DownloadAttempt::new(
+                    &downloading_manager.last_download_error,
+                    DownloadSource::GithubRelease,
+                    1,
+                    100,
+                );
+                let response = send_download_request(
+                    client.get(format!("http://{address}/")),
+                    cancelled,
+                    &attempt,
+                    &downloading_manager.transfer_abort,
+                )?;
                 let mut artifact = runtime_artifact("0".repeat(64)).parts.remove(0);
                 artifact.download_bytes = 100;
                 copy_download_response(
@@ -523,7 +775,7 @@ fn download_diagnostic_records_real_rejection_but_not_cancellation() {
             DownloadSource::GithubRelease,
             2,
             &root.0.join("part"),
-            &cancelled,
+            (&cancelled, &TransferAbort::default()),
             |_| {},
             DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 10)
         ),
@@ -540,7 +792,7 @@ fn download_diagnostic_records_real_rejection_but_not_cancellation() {
             DownloadSource::GithubRelease,
             2,
             &root.0.join("part"),
-            &cancelled,
+            (&cancelled, &TransferAbort::default()),
             |_| {},
             DownloadAttempt::new(&slot, DownloadSource::GithubRelease, 1, 10)
         ),

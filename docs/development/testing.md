@@ -1,5 +1,17 @@
 # Testing strategy
 
+## Historical v6 benchmark authority
+
+Model-free v6 adapter and quality tests use the `benchmark_v6_repository`
+fixture to materialize the frozen authorities in a temporary repository. The
+normalizer snapshot retains the exact bytes and SHA-256 from authority commit
+`9a2f74845853e84635b419a4e65170c9a2c207ee`; all other authorities are copied and
+hash-checked from their unchanged repository files. No Git history, model,
+network or normalization execution is needed by these tests. The real production
+loader still checks the frozen profile and each authority, and negative controls
+reject current, tampered and missing normalizer bytes. See the
+[CI follow-up](../plans/evidence/seven-finding-minimal-corrections/ci-follow-up.md).
+
 ## Eight-finding minimal corrections
 
 The [EFC plan](../plans/completed/eight-finding-minimal-corrections.md) selects
@@ -1907,6 +1919,23 @@ Report separately:
 Performance tests may be hardware-specific, but their input text and procedure must be reproducible.
 
 ## Fixtures
+
+The R7 regression group uses manual microtasks for save-drain completion, explicit
+containment failures for recheck admission, and authoritative audible settlement
+while preference reflow is pending. The browser case controls animation frames
+and audio completion through the production reader/player path. Public EPUB
+cases compare full text/ranges at batch sizes 1/8/16 and fresh continuations for
+straight, curly and guillemet quotes crossing the source-window boundary in five
+profile/language branches. Fixed-size quotation state remains work-accounted.
+
+Native acquisition tests use real stalled loopback headers/body and require
+accepted cancellation, task settlement and staging cleanup within two seconds.
+This fixture budget is not a universal transfer/disk performance promise. A
+barrier-controlled command-helper race proves profile binding in both native
+feature modes; it does not establish concurrent starts from the ordinary UI.
+Benchmark teardown fixtures retain benign process ownership across injected
+join/close/survival failures and clean their owned child after injection ends.
+
 
 The MAF regression group covers cooperative reader-wrapper cleanup, actual
 PowerShell enumeration/read failures, malformed direct Python UTF-8 text,

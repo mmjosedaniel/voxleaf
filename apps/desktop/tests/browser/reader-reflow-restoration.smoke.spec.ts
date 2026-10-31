@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openEpubPublication } from "@voxleaf/epub";
+import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
 import { closeSettings, openSettings } from "./settings-helpers";
@@ -7,6 +8,208 @@ import { closeSettings, openSettings } from "./settings-helpers";
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
+
+test("R7-04 audible advancement supersedes a pending typography restoration", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  const fixture = (await import(
+    new URL(
+      "../../../../packages/epub/test-support/epub-fixture.ts",
+      import.meta.url,
+    ).href
+  )) as {
+    buildMinimalEpubFixture(options: {
+      chapterDocument: string;
+    }): Promise<Uint8Array>;
+  };
+  const bytes = await fixture.buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>${Array.from({ length: 18 }, (_, i) => `<p id="p${i}">Synthetic passage ${i} contains ordinary words for controlled reader placement and audible advancement.</p>`).join("")}</body></html>`,
+  });
+  const opened = await openEpubPublication(bytes);
+  if (!opened.ok) throw new Error("r7-browser-fixture");
+  const initial = opened.publication.locators[5]!.startLocator;
+  await opened.publication.close();
+  await page.addInitScript(
+    ({ report, initial, key }) => {
+      localStorage.clear();
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          schemaVersion: 1,
+          states: [
+            {
+              schemaVersion: 1,
+              bookIdentity: initial.bookIdentity,
+              locator: initial,
+              preferences: {},
+            },
+          ],
+        }),
+      );
+      const control = {
+        hold: false,
+        frames: new Map<number, FrameRequestCallback>(),
+        next: 100000,
+        advance: () => {},
+        starts: 0,
+      };
+      Reflect.set(globalThis, "__r7", control);
+      const raf = requestAnimationFrame.bind(globalThis);
+      const cancel = cancelAnimationFrame.bind(globalThis);
+      globalThis.requestAnimationFrame = (callback) => {
+        if (!control.hold) return raf(callback);
+        const id = control.next++;
+        control.frames.set(id, callback);
+        return id;
+      };
+      globalThis.cancelAnimationFrame = (id) => {
+        control.frames.delete(id);
+        cancel(id);
+      };
+      const Original = AudioContext;
+      globalThis.AudioContext = class extends Original {
+        override createBufferSource() {
+          const source = super.createBufferSource();
+          Object.defineProperty(source, "onended", {
+            configurable: true,
+            set: (callback: ((event: Event) => void) | null) => {
+              if (callback) {
+                control.starts += 1;
+                control.advance = () => callback(new Event("ended"));
+              }
+            },
+          });
+          return source;
+        }
+      };
+      const state = (state: string) => ({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        kind: "state",
+        serviceInstanceId: "service:r7",
+        state,
+      });
+      const capabilities = {
+        schemaVersion: 1,
+        protocolVersion: 1,
+        kind: "capabilities",
+        serviceInstanceId: "service:r7",
+        report: {
+          schemaVersion: 1,
+          capabilities: {
+            localSpeechGeneration: "unknown",
+            streamingGeneration: "unsupported",
+            generationCancellation: "unsupported",
+            hardwareAcceleration: "unknown",
+            cpuFallback: "unsupported",
+          },
+        },
+        cancellationContainment:
+          "identity-invalidation-then-worker-termination",
+      };
+      Reflect.set(window, "__TAURI_INTERNALS__", {
+        invoke: async (command: string) => {
+          switch (command) {
+            case "detect_host_profile_compatibility":
+              return report;
+            case "tts_profile_configuration_available":
+              return true;
+            case "exact_tts_demo_available":
+              return false;
+            case "start_tts_service":
+              return [
+                state("handshaking"),
+                {
+                  schemaVersion: 1,
+                  protocolVersion: 1,
+                  kind: "handshakeAccepted",
+                  serviceInstanceId: "service:r7",
+                },
+                state("unloaded"),
+                capabilities,
+              ];
+            case "prepare_tts_service":
+              return [
+                state("loading"),
+                state("warming"),
+                state("ready"),
+                capabilities,
+              ];
+            case "synthesize_tts_segment":
+              return new ArrayBuffer(24_000 * 4);
+            case "shutdown_tts_service":
+              return [state("stopping"), state("stopped")];
+            default:
+              throw "tts-service-unavailable";
+          }
+        },
+      });
+    },
+    { report, initial, key: POSITION_STORAGE_KEY },
+  );
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-r7-reflow.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  });
+  await expect(page.getByRole("status")).toHaveText(
+    "Reading position restored.",
+  );
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__r7").starts))
+    .toBe(1);
+  const settings = await openSettings(page);
+  const proof = await page.evaluate(async () => {
+    const control = Reflect.get(globalThis, "__r7");
+    control.hold = true;
+    const select =
+      document.querySelector<HTMLSelectElement>("select#reader-text-scale") ??
+      Array.from(document.querySelectorAll("select")).find((element) =>
+        Array.from(element.options).some(
+          (option) => option.value === "extra-large",
+        ),
+      )!;
+    select.value = "large";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+    const pending = control.frames.size;
+    const root = document.querySelector<HTMLElement>(
+      '[data-reader-scroll-owner="true"]',
+    )!;
+    const before = root.scrollTop;
+    control.advance();
+    // Complete A is an exact audible settlement even during inter-unit delay.
+    await Promise.resolve();
+    for (let round = 0; round < 16; round += 1) {
+      const frames = [...control.frames.entries()] as Array<
+        [number, FrameRequestCallback]
+      >;
+      control.frames.clear();
+      for (const [, callback] of frames) callback(performance.now());
+      await Promise.resolve();
+    }
+    control.hold = false;
+    const highlight = (
+      CSS as typeof CSS & { highlights: HighlightRegistry }
+    ).highlights.get("voxleaf-narration-active");
+    return {
+      pending,
+      before,
+      after: root.scrollTop,
+      highlighted: highlight !== undefined,
+    };
+  });
+  expect(proof.pending).toBeGreaterThan(0);
+  expect(proof.highlighted).toBe(true);
+  expect(Math.abs(proof.after - proof.before)).toBeLessThan(1);
+  await closeSettings(page, settings);
+  await page.locator('[data-narration-action="stop"]').click();
+  expect(errors).toEqual([]);
+});
 
 test("EFC-01 same-chapter destination ref churn keeps geometry work bounded", async ({
   page,

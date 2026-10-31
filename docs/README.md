@@ -17,6 +17,17 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed seven-finding corrections](plans/completed/seven-finding-minimal-corrections.md)
+restore cleanup ownership, interruptible optional downloads, benchmark teardown,
+audible reflow, quotation continuation, save completion and native profile binding.
+Selected host gates pass; independent R7-R2-20261030 approves the implementation
+with its quotation-policy finding resolved. The plan records separate archival
+assessment R7-R3-20261030 and the preserved Piper host-resource limitation.
+The [PR #289 CI follow-up](plans/evidence/seven-finding-minimal-corrections/ci-follow-up.md)
+records the historical v6 fixture correction separately from that acceptance.
+The subsequent [Windows cancellation-fixture follow-up](plans/evidence/seven-finding-minimal-corrections/ci-cancellation-fixture-follow-up.md)
+records a deterministic repair for a stale test observation after cleanup.
+
 The [completed eight-finding corrections](plans/completed/eight-finding-minimal-corrections.md)
 resolve reader registration churn, optional compatibility recovery, RAM policy,
 internal Unicode/control decoding and historical/development TTS boundaries.

@@ -2505,6 +2505,7 @@ export function createNativeTtsScenarios({
       `,
         STARTUP_TIMEOUT_MS,
       );
+      setStage("reader corrections deferred worklet preparation");
       const startedAt = now();
       await driver.click(
         await driver.findElement('[data-narration-action="play"]'),
@@ -2517,6 +2518,7 @@ export function createNativeTtsScenarios({
       `,
         4 * STARTUP_TIMEOUT_MS,
       );
+      setStage("reader corrections pause before deferred worklet");
       await driver.click(
         await driver.findElement('[data-narration-action="pause"]'),
       );
@@ -2534,6 +2536,7 @@ export function createNativeTtsScenarios({
           audible: CSS.highlights?.has("voxleaf-narration-active") === true
         };
       `);
+      setStage("reader corrections deferred worklet resolution");
       await waitForCondition(
         driver,
         `return globalThis.__voxleafRateCorrection.resolved === true;`,
@@ -2547,6 +2550,7 @@ export function createNativeTtsScenarios({
         remainedPaused && paused.audible === false,
         "Native synchronized narration proof failed.",
       );
+      setStage("reader corrections resumed audible playback");
       await driver.click(
         await driver.findElement('[data-narration-action="resume"]'),
       );
@@ -2581,6 +2585,28 @@ export function createNativeTtsScenarios({
           stopAndContextCleanupMs: now() - stopAt,
         })}`,
       );
+    } catch (error) {
+      try {
+        const observation = await driver.execute(`
+          const owner = document.querySelector(".product-narration");
+          const rate = globalThis.__voxleafRateCorrection;
+          return {
+            availability: owner?.getAttribute("data-narration-availability") ?? null,
+            selectedRate: owner?.getAttribute("data-narration-selected-rate-percent") ?? null,
+            phase: owner?.getAttribute("data-narration-phase") ?? null,
+            failure: owner?.getAttribute("data-narration-failure") ?? null,
+            serviceState: owner?.getAttribute("data-narration-service-state") ?? null,
+            pending: rate?.pending ?? false,
+            resolved: rate?.resolved ?? false,
+            created: rate?.created ?? 0,
+            closed: rate?.closed ?? 0
+          };
+        `);
+        console.error(`READER_RATE_FAILURE ${JSON.stringify(observation)}`);
+      } catch {
+        // Observation failure must not hide the original failed gate.
+      }
+      throw error;
     } finally {
       await driver.execute(`
         globalThis.__voxleafRateCorrection?.release?.();

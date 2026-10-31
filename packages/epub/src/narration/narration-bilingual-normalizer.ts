@@ -1,3 +1,4 @@
+import type { NarrationQuotationContext } from "./narration-quotation-context.js";
 import { EpubArchiveError } from "../archive/archive-error.js";
 
 /*
@@ -1029,7 +1030,7 @@ function punctuationEntry(
   return Object.freeze({ role, boundaryProtections });
 }
 
-function isApostropheContext(
+export function isApostropheContext(
   tokens: readonly NarrationSourceToken[],
   index: number,
 ): boolean {
@@ -1062,10 +1063,15 @@ function findFirstSignificantProseToken(
 
 function findPunctuationPlan(
   tokens: readonly NarrationSourceToken[],
+  preceding?: NarrationQuotationContext,
 ): readonly (PunctuationPlanEntry | undefined)[] {
   const plan = new Array<PunctuationPlanEntry | undefined>(tokens.length);
   const unmatchedOpenings = new Map<string, number[]>();
-  let straightDoubleQuoteOpening: number | undefined;
+  let straightDoubleQuoteOpening: number | undefined =
+    preceding?.straightDoubleOpen === true ? -1 : undefined;
+  const priorClosings = new Map<string, number>(
+    Object.entries(preceding?.closings ?? {}),
+  );
   const firstSignificant = findFirstSignificantProseToken(tokens);
 
   const pushOpening = (closing: string, index: number): void => {
@@ -1079,7 +1085,10 @@ function findPunctuationPlan(
   const closeOpening = (closing: string): boolean => {
     const openings = unmatchedOpenings.get(closing);
     if (openings === undefined || openings.length === 0) {
-      return false;
+      const count = priorClosings.get(closing) ?? 0;
+      if (count === 0) return false;
+      priorClosings.set(closing, count - 1);
+      return true;
     }
     openings.pop();
     return true;
@@ -1193,7 +1202,10 @@ function findPunctuationPlan(
     }
   }
 
-  if (straightDoubleQuoteOpening !== undefined) {
+  if (
+    straightDoubleQuoteOpening !== undefined &&
+    straightDoubleQuoteOpening >= 0
+  ) {
     plan[straightDoubleQuoteOpening] = punctuationEntry(
       "quotation",
       MALFORMED_PUNCTUATION_PROTECTION,
@@ -1644,6 +1656,7 @@ function normalizeNarrationSourceTokensInternal(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
   preceding?: NarrationEnglishTitleContext,
+  precedingQuotationContext?: NarrationQuotationContext,
 ): NarrationNormalizedStream {
   if (
     defaultLanguage !== "es" &&
@@ -1676,7 +1689,10 @@ function normalizeNarrationSourceTokensInternal(
     defaultLanguage,
     preceding,
   );
-  const punctuationPlan = findPunctuationPlan(tokens);
+  const punctuationPlan = findPunctuationPlan(
+    tokens,
+    precedingQuotationContext,
+  );
   const provisional = tokens.map((token, index) => {
     let textContext = contextCopies.get(token.textContext);
     if (textContext === undefined) {
@@ -1722,12 +1738,14 @@ export function normalizeNarrationSourceTokens(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
   preceding?: NarrationEnglishTitleContext,
+  precedingQuotationContext?: NarrationQuotationContext,
 ): NarrationNormalizedStream {
   try {
     return normalizeNarrationSourceTokensInternal(
       tokens,
       defaultLanguage,
       preceding,
+      precedingQuotationContext,
     );
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {
