@@ -2028,3 +2028,21 @@ Successful opt-in private quality outputs retain their existing policy. The
 Windows RAM probe preserves zero as an observed minimum, so stop reports the
 existing memory-unavailable result. No model execution or real memory exhaustion
 is used by these tests; product audio persistence and runtime adapters are unchanged.
+
+## Visible locator and Unicode compound coverage
+
+The [VUC plan](../plans/completed/visible-locator-unicode-compound-corrections.md)
+adds the mid-unit Pause/inspect B/Resume-follow A/Stop/Play composition. Its
+Chromium regression verifies sampled B, settled visible A, the next prepared
+source range, heard checkpoint preservation and closed audio contexts. Existing
+RAC-07 passive inspection, PSC-03 B-first Play and R7-04 reflow cases remain
+separate controls. Settled follow updates the visible narration start without
+turning it into a passive persistence write.
+
+Numeric regressions preserve unsupported Unicode numeric compounds through the
+existing separator guards in the mutable normalizer. They cover Arabic-Indic,
+fullwidth, supplementary-plane and non-decimal numbers, numeric prefixes/suffixes,
+letter/punctuation controls, source mapping, code and foreign-language isolation.
+The public matrix checks all three current profiles, multiple segments,
+one/many batching, exact endpoints and immutable displayed documents. Accepted
+grammar, frozen profiles, bounds and cancellation policy remain unchanged.

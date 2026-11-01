@@ -356,6 +356,10 @@ function isWordContextCodePoint(value: string | undefined): boolean {
   return /[\p{L}\p{M}\p{N}]/u.test(value);
 }
 
+function isNumericContextCodePoint(value: string | undefined): boolean {
+  return value !== undefined && /^\p{N}$/u.test(value);
+}
+
 function hasSameLanguage(
   languages: readonly NarrationNormalizationLanguage[],
   startIndex: number,
@@ -456,7 +460,7 @@ function isExactCelsiusForm(
   const attachedNumericSyntax =
     /[+−-]/u.test(before ?? "") ||
     (/[.,/:]/u.test(before ?? "") &&
-      isAsciiDigit(sourceText(tokens[startIndex - 2])?.charCodeAt(0) ?? -1));
+      isNumericContextCodePoint(sourceText(tokens[startIndex - 2])));
   return (
     !attachedNumericSyntax &&
     !isWordContextCodePoint(before) &&
@@ -635,13 +639,9 @@ function matchesLexicalForm(
       form.kind === "date") &&
     (/[+−-]/u.test(before) ||
       (/[.,/:]/u.test(before) &&
-        isAsciiDigit(
-          sourceText(tokens[startIndex - 2])?.charCodeAt(0) ?? -1,
-        )) ||
+        isNumericContextCodePoint(sourceText(tokens[startIndex - 2]))) ||
       (/[.,/:-]/u.test(after) &&
-        isAsciiDigit(
-          sourceText(tokens[endIndexExclusive + 1])?.charCodeAt(0) ?? -1,
-        )));
+        isNumericContextCodePoint(sourceText(tokens[endIndexExclusive + 1]))));
   if (
     endIndexExclusive > tokens.length ||
     attachedCompound ||

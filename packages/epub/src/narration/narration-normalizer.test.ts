@@ -244,6 +244,51 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 
 describe("narration normalization", () => {
   it.each([
+    ["es", "١,20 °C", "١,20 °C"],
+    ["en", "１.20 °C", "１.20 °C"],
+    ["en", "𝟙/20 °C", "𝟙/20 °C"],
+    ["es", "²:20 °C", "²:20 °C"],
+    ["es", "١,20 EUR", "١,20 EUR"],
+    ["es", "20 EUR/１", "20 EUR/１"],
+    ["en", "𝟙/25 %", "𝟙/25 %"],
+    ["es", "25 %:²", "25 %:²"],
+    ["en", "１:14:30", "１:14:30"],
+    ["es", "14:30:𝟙", "14:30:𝟙"],
+    ["es", "١/24/07/2026", "١/24/07/2026"],
+    ["es", "24/07/2026/١", "24/07/2026/١"],
+    ["en", "²/2026-07-24", "²/2026-07-24"],
+    ["en", "2026-07-24-１", "2026-07-24-１"],
+    ["en", "a,20 °C", "a,twenty degrees Celsius"],
+    ["es", "a,25 %", "a,veinticinco por ciento"],
+    ["en", "14:30,a", "fourteen thirty,a"],
+  ] as const)(
+    "VUC-02 preserves Unicode numeric compounds without widening grammar: %s %s",
+    (language, source, expected) => {
+      const leaf = singleTextFixture(source, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        language,
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+      for (const protectedLeaf of [
+        singleTextFixture(source, true),
+        leafFor(paragraph([text(source, "fr")])),
+      ]) {
+        expect(
+          normalizeBilingualNarrationSourceTokens(
+            protectedLeaf.sourceTokens,
+            language,
+          ).text,
+        ).toBe(source);
+      }
+    },
+  );
+
+  it.each([
     ["8١", "8١"],
     ["١8", "١8"],
     ["8１", "8１"],
