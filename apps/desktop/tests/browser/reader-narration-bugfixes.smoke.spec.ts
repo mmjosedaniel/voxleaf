@@ -826,6 +826,123 @@ test("PSC-03 primary Play after Stop starts at the passively inspected paragraph
     .toBe(0);
 });
 
+test("VUC-01 Resume follow then Stop and fresh Play uses the visible heard passage", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-vuc-resume.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 60 }, (_, i) => `<p>${i === 25 ? "Inspected passage B for fresh Play." : "Synthetic passage A with quiet paths and ordinary details."}</p>`).join("")}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  const settleFrames = () =>
+    page.evaluate(async () => {
+      for (let frame = 0; frame < 4; frame += 1)
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+    });
+  const savedCheckpoint = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  await page.locator('[data-narration-action="play"]').click();
+  try {
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await settleFrames();
+    await page.locator('[data-narration-action="pause"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+    await settleFrames();
+    const firstRange = await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").prepared[0].sourceRange,
+    );
+    await expect.poll(savedCheckpoint).toEqual(firstRange.start);
+    const created = await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").created,
+    );
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => {
+      const viewport = document.querySelector<HTMLElement>(".reader-viewport")!;
+      const target = document.querySelectorAll(".semantic-document p")[25]!;
+      viewport.scrollTop +=
+        target.getBoundingClientRect().top -
+        viewport.getBoundingClientRect().top -
+        24;
+    });
+    await settleFrames();
+    await expect(page.locator(".semantic-document p").nth(25)).toBeInViewport();
+    // The preview leaf follows the sampled locator, not merely scroll geometry.
+    await expect(page.locator(".paragraph-leaf")).toHaveAttribute(
+      "data-leaf-state",
+      "preview",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const host = document.querySelector<HTMLElement>(
+            ".paragraph-leaf-host",
+          )!;
+          const root = host.parentElement!;
+          const target = document.querySelectorAll(".semantic-document p")[25]!;
+          return Math.abs(
+            Number.parseFloat(
+              host.style.getPropertyValue("--paragraph-leaf-top"),
+            ) -
+              (target.getBoundingClientRect().top -
+                root.getBoundingClientRect().top),
+          );
+        }),
+      )
+      .toBeLessThan(1);
+    await page.locator('[data-narration-action="resume"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await settleFrames();
+    await expect(page.locator(".semantic-document p").first()).toBeInViewport();
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").created),
+    ).toBe(created);
+    await page.locator('[data-narration-action="stop"]').click();
+    await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+    // No successor segment or inspected B may replace the heard checkpoint.
+    expect(await savedCheckpoint()).toEqual(firstRange.start);
+    await page.evaluate(() => {
+      Reflect.get(globalThis, "__rnb").prepared.length = 0;
+    });
+    // No new scroll/sample repairs the product locator between Stop and Play.
+    await page.locator('[data-narration-action="play"]').click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").prepared[0]?.sourceRange,
+        ),
+      )
+      .toEqual(firstRange);
+  } finally {
+    await page.locator('[data-narration-action="stop"]').click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = Reflect.get(globalThis, "__rnb");
+          return state.created - state.closed;
+        }),
+      )
+      .toBe(0);
+  }
+});
+
 test("RAC-07 mid-unit Resume follows the active range once and preserves inspection", async ({
   page,
 }) => {
@@ -2125,7 +2242,12 @@ async function installSyntheticService(
         calls: 0,
         blocked: false,
         failSynthesis: () => {},
-        prepared: [] as Array<{ text: string; spine: number; offset: number }>,
+        prepared: [] as Array<{
+          text: string;
+          sourceRange: NarrationSegmentV1["sourceRange"];
+          spine: number;
+          offset: number;
+        }>,
         workletEnded: false,
         workletFailed: false,
         workletMessages: [] as string[],
@@ -2469,6 +2591,7 @@ async function installSyntheticService(
                 if (observations.prepared.length < 16)
                   observations.prepared.push({
                     text: segment.text,
+                    sourceRange: segment.sourceRange,
                     spine: segment.sourceRange.start.spineItemIndex,
                     offset: segment.sourceRange.start.textOffsetCodePoints,
                   });

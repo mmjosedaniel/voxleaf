@@ -2,14 +2,17 @@
 
 Task ID: VUC-20261101.
 
-Status: planning only; implementation and validation have not started.
+Status: M0-M3 complete on 2026-11-01; implementation accepted by independent
+review VUC-R1-20261101. Final archival assessment is retained in the
+[immutable review reports](../evidence/visible-locator-unicode-compound-corrections/review-reports.md).
 Planning base: clean `main` at
 `f5330909b1a22cd7cb7f91f5a7ff17a731c8b013`.
 Plan branch: `codex/visible-locator-unicode-compound-plan`.
 
-The user authorized this ExecPlan, its local branch and documentation commit.
-Do not implement it or execute its test/build/host commands without separate
-execution authorization. No push, PR, merge or release is authorized.
+The user authorized implementation and the necessary verifications on 2026-11-01.
+Execution starts on the expected branch at plan commit
+`353d0bf5534b428e716f228795fc84e63e7158d9`, with a clean worktree and index.
+No commit, push, PR, merge or publication is authorized.
 
 ## Goal
 
@@ -31,6 +34,10 @@ synchronization; a descriptive filename avoids assigning a misleading milestone.
   and exact source locations remain unchanged.
 
 ## Current state
+
+The following is the original planning snapshot, preserved to explain the
+discriminating reproductions. Both residual cases are now corrected and accepted;
+the progress log and final results record execution against the plan commit.
 
 Three static review passes ended with these two P2 findings. The third added no
 finding. Both remain static findings, not executed reproductions. Current code,
@@ -183,7 +190,7 @@ wiring. M005 evidence does not establish new audio, quality or hardware claims.
 
 ## Milestones
 
-### M0: Reconfirm scope and prepare only necessary inputs — not started
+### M0: Reconfirm scope and prepare only necessary inputs — complete
 
 After execution authorization, record actual HEAD, status, tool identities and
 task-owned paths. Preserve unrelated work. Re-read the two source branches and
@@ -195,7 +202,7 @@ matching their complete input/output membership and hashes; otherwise use the
 configured package build. Do not run a full green baseline. The discriminating
 red cases in M1 establish the missing behavior before either production edit.
 
-### M1: Reproduce the missing cases — not started
+### M1: Reproduce the missing cases — complete
 
 - Add one `VUC-01` browser case using the existing synthetic service, long audio
   unit and distinct A/B paragraphs. Let the initial follow settle, Pause and
@@ -224,14 +231,14 @@ Require failures at the intended preservation/start-location assertions.
 Harness/setup/timeout failures are not reproduction evidence. If a case already
 passes, investigate the premise before modifying production or widening scope.
 
-### M2: Apply the two bounded corrections — not started
+### M2: Apply the two bounded corrections — complete
 
 Implement only the settlement forwarding and numeric-context checks described
 above. Rebuild changed EPUB exports before desktop consumers. Run the selected
 final deterministic/static/browser gates once on the combined patch; do not also
 repeat every individual red command after the full applicable suites pass.
 
-### M3: Native integration, independent review and closeout — not started
+### M3: Native integration, independent review and closeout — complete
 
 After fast gates pass, verify existing Piper assets and native host readiness,
 build one current executable and run one existing Piper EN integration arm.
@@ -365,6 +372,47 @@ libraries and browser/driver bytes; do not repeat PSC's missing-identity mistake
 
 ## Progress log
 
+- 2026-11-01: Independent VUC-R1-20261101 APPROVE, no findings. The reviewer
+  verified 418 path identities and 124 receipt digests before/after, approved
+  current-task evidence retention and prepared-asset reuse, and confirmed native
+  cleanup. Archived this plan and updated documentation/testing indexes after
+  approval. Archival changes require renewed document checks and a separate
+  current-state assessment, retained in the linked immutable review reports.
+  No commit, push, PR, merge or publication was performed.
+- 2026-11-01: G8 passes the single Piper EN arm with zero generated-audio files,
+  retained units, external requests or stale playback. All six audio contexts
+  close; no new process/scratch remains. Full original adjacent resources are
+  restored byte-for-byte and the task backup is absent. Installed before/after
+  snapshots match all 24,009 entries. M3 awaits document gates and independent
+  review of the frozen current patch; no archive or Git mutation yet. G9 evidence,
+  whitespace and Markdown-link checks pass (82 links before ledger closeout).
+- 2026-11-01: M2 complete: G3 passes 232 EPUB cases; G4 passes 50 reader/save
+  cases; G5 passes exactly four Chromium cases. Format, lint and both typechecks
+  pass. Retained the initial desktop type failure, corrected only the fixture's
+  source-range type and renewed its affected static gates. Public VUC rows now
+  also force multiple segments and compare one/many batching and source bytes.
+  The runtime patch remains two production files, with no grammar/owner changes.
+- 2026-11-01: Piper core integrity passes; built one current native executable.
+  Renewed only core integrity and G5 to add missing tool/renderer-byte capture;
+  original receipts remain separate, without retrospective identity claims.
+  G8 is running with 2,023 verified staged files, a full restoration journal,
+  original adjacent resources preserved, and one Piper EN arm. Native operation
+  retains the versioned 30-minute limit; inspect progress at five minutes and
+  preserve the active session rather than relaunching. Cleanup/review pending.
+- 2026-11-01: M0-M1 complete. G0 built current exports; G1 selected 19 new rows
+  and reproduced 16 preservation failures. G2's first fixture attempt failed
+  at viewport setup and is retained. Its one bounded retry used PSC-03 viewport
+  handling and failed at the intended first prepared range (B anchor 25 rather
+  than visible A anchor 0), after sampling/follow/heard-save controls passed.
+  Both production files were still unchanged for these runs. Applied only the
+  planned locator forwarding/effect dependency and three numeric-context guards.
+- 2026-11-01: Execution authorized separately from the planning commit. Branch,
+  full HEAD and clean worktree/index match the request. Current settlement still
+  omits the product visible-locator update, and all three numeric checks across
+  separators still use ASCII digits. RAC-07/PSC-03/R7-04 and NLC/CHAT/SFA/F4
+  controls remain present; neither residual finding is already fixed.
+  Gate decisions and current receipts will be recorded in the
+  [execution ledger](../evidence/visible-locator-unicode-compound-corrections/execution-ledger.md).
 - 2026-11-01: Re-read current code and existing tests at `f5330909b1a22cd7cb7f91f5a7ff17a731c8b013`;
   confirmed the two static cases and excluded the withdrawn recovery suspicion.
 - 2026-11-01: Compared RAC/PSC/R7 and NLC/CHAT/SFA/F4 corrections with their exact
@@ -388,21 +436,21 @@ libraries and browser/driver bytes; do not repeat PSC's missing-identity mistake
 - Four selected browser cases and one native integration arm cover the affected
   synchronization responsibilities. The prior six-rate portfolio, R8 raster
   native arm and model matrices add no required proof for this bounded patch.
-- Independent review is required for future implementation. The present plan
-  and index contain no runtime/contract change and qualify for the documentation
-  exemption; a planning commit is not implementation acceptance.
+- Independent review is required for this implementation. The original planning
+  commit qualified for the documentation exemption; it is not implementation
+  acceptance. Current execution evidence must receive its own review.
 
 ## Final validation results
 
-Planning only. Static source/test/history inspection and read-only receipt/hash
-comparisons are complete; their limits are recorded above. Planning-document
-inspection resolved all 34 local Markdown links, and `git diff --check` passed
-in host PowerShell. No test, build, lint/type, model, evidence-runner or native
-command in G0-G9 has been executed for this task. The implementation's final
-documentation gate still needs its own current evidence.
-
-Implementation, discriminating reproductions, final host gates, cleanup and
-independent acceptance are pending separate execution authorization. Record
-actual commands/results, reused immutable receipts and review IDs here only
-after that work occurs. Keep this plan active until all applicable obligations
-are satisfied; its local documentation commit does not mark either bug fixed.
+The [execution ledger](../evidence/visible-locator-unicode-compound-corrections/execution-ledger.md)
+records exact commands, results, original failures and bounded renewals. G0-G9
+pass at their defined boundaries: both red reproductions discriminate unchanged
+production; 232 EPUB and 50 reader/persistence cases, exactly four Chromium cases,
+format/lint/two typechecks, current core integrity, one executable build and one
+Piper EN native arm pass. Native resources are restored and cleanup verified.
+All executions used normal local PowerShell outside the managed sandbox.
+Independent VUC-R1-20261101 APPROVE has no findings and accepts evidence retention
+and artifact reuse; no historical runtime PASS supplies acceptance. Final
+archival document checks and assessment are retained in the linked review record.
+Both findings are resolved; no blocked gate, unrelated change or Git/publication
+action remains. Native timing evidence is limited to the recorded host/arm.

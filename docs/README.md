@@ -17,6 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [visible-locator and Unicode-compound corrections](plans/completed/visible-locator-unicode-compound-corrections.md)
+keep fresh Play aligned with settled Resume follow and preserve unsupported
+Unicode numeric compounds across existing separators. Focused unit/public,
+Chromium, static and one Piper EN native check pass with verified restoration
+and cleanup. Independent VUC-R1-20261101 approves without findings; the plan links
+its final archival assessment. Heard persistence, accepted grammar and component
+ownership remain unchanged. Historical PASS results are not reused as acceptance.
+
 The [eight revalidated findings plan](plans/completed/eight-revalidated-findings-minimal-corrections.md)
 implements minimal EPUB, reader/admission and maintainer-tool corrections,
 including PNG orientation confirmed in Chromium and WebView2. Selected

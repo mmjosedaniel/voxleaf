@@ -430,6 +430,7 @@ export function ReaderPublicationContent({
         }
         visualLocatorTracker.setCurrentLocator(locator);
         coordinator.updateActiveVisualLocator(locator);
+        narrationSource?.updateVisibleLocator?.(locator);
         resume({ requestSample: false });
       },
       suspendVisualSampling: () => visualLocatorTracker.suspend(),
@@ -439,6 +440,7 @@ export function ReaderPublicationContent({
   }, [
     completeInitialRestoration,
     coordinator,
+    narrationSource,
     notifySettlement,
     reflowRestorer,
     segmentHighlightController,

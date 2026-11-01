@@ -230,12 +230,22 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
   );
 
   it.each([
-    ["en", "8١ ١8 8１ １8 8𝟙 𝟙8."],
-    ["es", "1/24/07/2026 24/07/2026/1."],
-    ["en", "1/2026-07-24 2026-07-24/1."],
+    ["F4-01/02", "en", "8١ ١8 8１ １8 8𝟙 𝟙8."],
+    ["F4-01/02", "es", "1/24/07/2026 24/07/2026/1."],
+    ["F4-01/02", "en", "1/2026-07-24 2026-07-24/1."],
+    [
+      "VUC-02",
+      "es",
+      "١,20 °C ١/24/07/2026 24/07/2026/١ 20 EUR/１. ".repeat(20).trim(),
+    ],
+    [
+      "VUC-02",
+      "en",
+      "𝟙/20 °C ²/25 % 14:30:𝟙 2026-07-24-１. ".repeat(20).trim(),
+    ],
   ] as const)(
-    "F4-01/02 preserves public numeric expressions and exact endpoints: %s %s",
-    async (language, source) => {
+    "%s preserves public numeric expressions and exact endpoints: %s %s",
+    async (id, language, source) => {
       const opened = await openEpubPublication(
         await buildMinimalEpubFixture({
           chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${language}"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
@@ -243,6 +253,7 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
       );
       if (!opened.ok) throw new Error("synthetic-numeric-open-failed");
       try {
+        const before = JSON.stringify(opened.publication.documents);
         for (const profile of [
           "narration-bilingual-v2",
           "narration-piper-v2",
@@ -256,6 +267,16 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
             language,
           );
           expect(result.segments.map(({ text }) => text).join("")).toBe(source);
+          const many = await collectPreparedSegments(
+            opened.publication,
+            opened.publication.defaultStartLocator!,
+            16,
+            profile,
+            language,
+          );
+          expect(result.segments).toEqual(many.segments);
+          if (id === "VUC-02")
+            expect(result.segments.length).toBeGreaterThan(1);
           let offset = 0;
           for (const [index, segment] of result.segments.entries()) {
             assertPublicSegment(opened.publication, segment, index);
@@ -265,6 +286,7 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
           }
           expect(offset).toBe(Array.from(source).length);
         }
+        expect(JSON.stringify(opened.publication.documents)).toBe(before);
       } finally {
         await opened.publication.close();
       }
