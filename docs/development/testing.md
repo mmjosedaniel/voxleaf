@@ -18,6 +18,12 @@ build and one six-rate Piper EN WebView2 arm. This does not add a listening-qual
 performance-support or broader platform claim. Receipts retain original failures
 and independently assessed evidence reuse.
 
+The [PR #291 follow-up](../plans/evidence/minimal-playback-state-corrections/ci-follow-up.md)
+adds App-level visible-Play coverage to the directed selection. Native startup
+diagnostics distinguish initial process ownership capture and preserve up to
+eight nested fixed error codes, including cleanup failures, without exposing
+raw driver errors or paths.
+
 ## Historical v6 benchmark authority
 
 Model-free v6 adapter and quality tests use the `benchmark_v6_repository`

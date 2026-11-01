@@ -377,7 +377,8 @@ describe("App preference connection characterization", () => {
         },
       );
       const started: ReadingLocatorV1[] = [];
-      vi.spyOn(replacement, "start").mockImplementation(() => {
+      const internalStart = vi.spyOn(replacement, "start");
+      vi.spyOn(replacement, "startAtVisibleLocator").mockImplementation(() => {
         started.push(current);
       });
       const factory = vi
@@ -495,6 +496,7 @@ describe("App preference connection characterization", () => {
         }
         fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
         expect(started).toEqual([testLocatorAt(afterRelease ? 13 : 7)]);
+        expect(internalStart).not.toHaveBeenCalled();
       } finally {
         closing.resolve();
         view.unmount();
@@ -608,7 +610,8 @@ describe("App preference connection characterization", () => {
         ...narrationSnapshot("inactive"),
         serviceState: outcome === "uncontained" ? "stopping" : "stopped",
       });
-      const play = vi.spyOn(replacement, "start");
+      const play = vi.spyOn(replacement, "startAtVisibleLocator");
+      const internalStart = vi.spyOn(replacement, "start");
       const factory = vi
         .fn()
         .mockReturnValueOnce(first)
@@ -658,6 +661,7 @@ describe("App preference connection characterization", () => {
         expect(play).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
         expect(play).toHaveBeenCalledTimes(1);
+        expect(internalStart).not.toHaveBeenCalled();
       } else {
         expect(factory).toHaveBeenCalledTimes(1);
         expect(await screen.findByRole("alert")).toHaveTextContent(

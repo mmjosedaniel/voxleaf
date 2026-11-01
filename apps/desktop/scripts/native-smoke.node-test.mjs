@@ -24,6 +24,7 @@ import {
   captureCurrentChildProcesses,
   nativeOperationTimeout,
   runNativeOperation,
+  nativeSmokeFailureCodes,
 } from "./native-startup-smoke.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
@@ -34,6 +35,43 @@ import {
 import { openEpubPublication } from "@voxleaf/epub";
 import { buildMinimalEpubFixture } from "../../../packages/epub/test-support/epub-fixture.ts";
 import { chatterboxPlaybackSpeedParagraph } from "./native-smoke/narration-fixture.mjs";
+
+test("PSC-CI preserves fixed startup and cleanup codes without exposing error text", () => {
+  const failure = new AggregateError(
+    [
+      new Error("Tauri WebDriver exited before startup."),
+      new AggregateError(
+        [new Error("Native owned-process cleanup could not be verified.")],
+        "Native smoke cleanup failed.",
+      ),
+      new Error("private path and publication text"),
+    ],
+    "Native smoke cleanup failed.",
+  );
+  assert.deepEqual(nativeSmokeFailureCodes(failure), [
+    "native-cleanup-failed",
+    "tauri-driver-exited",
+    "unexpected-error",
+    "native-process-ownership-unverified",
+  ]);
+});
+
+test("PSC-CI bounds nested failure diagnostics and tolerates cyclic causes", () => {
+  const failure = new Error("private path and publication text");
+  failure.cause = failure;
+  assert.deepEqual(nativeSmokeFailureCodes(failure), ["unexpected-error"]);
+  const aggregate = new AggregateError(
+    [
+      ...Array.from({ length: 7 }, () => failure),
+      new Error("Tauri WebDriver exited before startup."),
+    ],
+    "Native smoke cleanup failed.",
+  );
+  assert.deepEqual(nativeSmokeFailureCodes(aggregate), [
+    "native-cleanup-failed",
+    "unexpected-error",
+  ]);
+});
 
 for (const stage of ["before", "during"]) {
   test(`SAF-R1 does not adopt a root whose ChildProcess exits ${stage} inspection`, async () => {

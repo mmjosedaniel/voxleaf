@@ -202,6 +202,11 @@ const WEBDRIVER_SPACE = "\uE00D";
 const WEBDRIVER_PAGE_DOWN = "\uE00F";
 const WEBDRIVER_END = "\uE010";
 const FIXED_FAILURE_CODES = new Map([
+  ["Native smoke cleanup failed.", "native-cleanup-failed"],
+  [
+    "Native owned-process cleanup could not be verified.",
+    "native-process-ownership-unverified",
+  ],
   ["Tauri WebDriver exited before startup.", "tauri-driver-exited"],
   ["Tauri WebDriver did not become ready.", "tauri-driver-timeout"],
   [
@@ -499,6 +504,23 @@ function failureCode(error) {
     return "unexpected-error";
   }
   return FIXED_FAILURE_CODES.get(error.message) ?? "unexpected-error";
+}
+
+export function nativeSmokeFailureCodes(error) {
+  const pending = [error];
+  const codes = new Set();
+  // Keep diagnostics bounded even for cyclic causes or large aggregates. Only
+  // fixed codes escape; raw errors can contain paths, driver data or book text.
+  for (let index = 0; index < pending.length; index++) {
+    const current = pending[index];
+    codes.add(failureCode(current));
+    if (current instanceof AggregateError) {
+      pending.push(...current.errors.slice(0, 8 - pending.length));
+    } else if (current instanceof Error && current.cause !== undefined) {
+      if (pending.length < 8) pending.push(current.cause);
+    }
+  }
+  return [...codes];
 }
 
 async function openReaderSettings(driver) {
@@ -1303,7 +1325,7 @@ async function run() {
           requestTimeoutMs: STARTUP_TIMEOUT_MS,
           signal: operationSignal,
         });
-        stage = "WebDriver startup";
+        stage = "WebDriver process ownership capture";
         const collectedBrowserLogs = [];
         const collectedPerformanceLogs = [];
 
@@ -1761,7 +1783,7 @@ async function run() {
     });
   } catch (error) {
     console.error(
-      `${runLabel} failed during ${stage} [${failureCode(error)}].`,
+      `${runLabel} failed during ${stage} [${nativeSmokeFailureCodes(error).join(",")}].`,
     );
     process.exitCode = 1;
   }

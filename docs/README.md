@@ -23,6 +23,8 @@ at the visible passage after Stop and preserve speed writes during cleanup.
 Selected unit/Chromium checks, one current Piper EN WebView2 arm and host cleanup
 pass. Independent PSC-R2-20261031 approves implementation and evidence after the
 R1 evidence blocker was resolved; the plan links the final archival assessment.
+The [PR #291 CI follow-up](plans/evidence/minimal-playback-state-corrections/ci-follow-up.md)
+records the App test updates and content-free native startup diagnostics.
 
 The [completed minimal playback corrections](plans/completed/minimal-playback-audit-corrections.md)
 terminate retired worklets, contain native processor errors through explicit
