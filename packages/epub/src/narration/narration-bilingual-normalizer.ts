@@ -353,8 +353,7 @@ function isWordContextCodePoint(value: string | undefined): boolean {
   if (value === undefined) {
     return false;
   }
-  const code = value.charCodeAt(0);
-  return isAsciiDigit(code) || /[\p{L}\p{M}]/u.test(value);
+  return /[\p{L}\p{M}\p{N}]/u.test(value);
 }
 
 function hasSameLanguage(
@@ -632,7 +631,8 @@ function matchesLexicalForm(
   const attachedCompound =
     (form.kind === "currency" ||
       form.kind === "percentage" ||
-      form.kind === "time") &&
+      form.kind === "time" ||
+      form.kind === "date") &&
     (/[+−-]/u.test(before) ||
       (/[.,/:]/u.test(before) &&
         isAsciiDigit(

@@ -17,6 +17,13 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed four-finding corrections](plans/completed/four-finding-minimal-corrections.md)
+protect Unicode numeric adjacency and attached dates, contain failed startup in
+shutdown-first order, and return native cancellation when invalidation wins final
+PCM arbitration. Selected deterministic/static gates and one current Piper EN
+native arm pass with verified cleanup. Independent F4-R2-20261031 approves the
+implementation and retained evidence; archival assessment is recorded separately.
+
 The [completed playback state corrections](plans/completed/minimal-playback-state-corrections.md)
 protect Resume during navigation cleanup and rejected admission, start fresh Play
 at the visible passage after Stop and preserve speed writes during cleanup.

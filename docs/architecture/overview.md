@@ -1,5 +1,17 @@
 # Architecture overview
 
+Current bilingual, Piper and Chatterbox narration profiles protect Unicode
+numbers alongside letters and marks at lexical boundaries, and preserve dates
+embedded in larger unsupported numeric expressions. Standalone supported forms,
+displayed text, source spans and the frozen legacy profile are unchanged.
+Operational failure containment shuts down pending startup before joining it
+when no synthesis scope is cancellable; active synthesis retains cancellation
+first and all cleanup stages share the existing absolute deadline. Native
+synthesis arbitrates completion under the lifecycle lock: winning invalidation
+returns cancellation even after PCM was constructed, dropping that payload.
+The typed client's stale-byte rejection remains an independent guard. These
+corrections preserve component ownership, local inference and ephemeral audio.
+
 Seven-finding corrections retain the existing owners and public contracts.
 Operational cleanup keeps failed scheduler/player ownership until verified;
 compatibility recheck joins or retries that cleanup before admitting Play.

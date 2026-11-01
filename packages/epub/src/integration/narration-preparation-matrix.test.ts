@@ -229,6 +229,48 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     },
   );
 
+  it.each([
+    ["en", "8١ ١8 8１ １8 8𝟙 𝟙8."],
+    ["es", "1/24/07/2026 24/07/2026/1."],
+    ["en", "1/2026-07-24 2026-07-24/1."],
+  ] as const)(
+    "F4-01/02 preserves public numeric expressions and exact endpoints: %s %s",
+    async (language, source) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${language}"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-numeric-open-failed");
+      try {
+        for (const profile of [
+          "narration-bilingual-v2",
+          "narration-piper-v2",
+          "narration-chatterbox-v1",
+        ] as const) {
+          const result = await collectPreparedSegments(
+            opened.publication,
+            opened.publication.defaultStartLocator!,
+            1,
+            profile,
+            language,
+          );
+          expect(result.segments.map(({ text }) => text).join("")).toBe(source);
+          let offset = 0;
+          for (const [index, segment] of result.segments.entries()) {
+            assertPublicSegment(opened.publication, segment, index);
+            expect(segment.sourceRange.start.textOffsetCodePoints).toBe(offset);
+            offset += Array.from(segment.text).length;
+            expect(segment.sourceRange.end.textOffsetCodePoints).toBe(offset);
+          }
+          expect(offset).toBe(Array.from(source).length);
+        }
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+
   it("SFA-02 preserves Unicode numeric tokens and exact ranges in public one/many batches", async () => {
     const source = "ø8 8ø 字8 8字 𐐀8. ".repeat(50).trim();
     const opened = await openEpubPublication(
