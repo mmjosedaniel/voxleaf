@@ -2245,8 +2245,21 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
     Number(await narration.getAttribute("data-narration-playback-ms")),
   ).toBe(paused);
   await page.locator('[data-narration-action="stop"]').click();
+  // Successful cleanup releases the player and returns to idle. Deliver the
+  // obsolete rejection only after Play is available again, not during Stop.
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
   await page.evaluate(() => Reflect.get(globalThis, "__ria").reject());
-  await expect(narration).toHaveAttribute("data-narration-phase", "stopped");
+  await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+  await expect(narration).toHaveAttribute(
+    "data-narration-service-state",
+    "stopped",
+  );
+  await expect(narration).toHaveAttribute("data-narration-failure", "none");
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "operational",
+  );
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
   await expect
     .poll(() =>
       page.evaluate(() => {

@@ -25,6 +25,8 @@ Selected desktop, Chromium, static and native-harness checks pass, with one
 native build and both image/Piper EN routes, restoration and cleanup verified.
 Independent RIA-R1-20261101 approves without findings; the plan links its final
 archival assessment. Historical runtime PASS results do not supply acceptance.
+The [PR #295 CI follow-up](plans/evidence/reader-image-audibility-corrections/ci-follow-up.md)
+records the Chromium Stop-observation correction and its separate validation.
 
 The [visible-locator and Unicode-compound corrections](plans/completed/visible-locator-unicode-compound-corrections.md)
 keep fresh Play aligned with settled Resume follow and preserve unsupported
