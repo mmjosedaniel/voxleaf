@@ -23,6 +23,10 @@ adds App-level visible-Play coverage to the directed selection. Native startup
 diagnostics distinguish initial process ownership capture and preserve up to
 eight nested fixed error codes, including cleanup failures, without exposing
 raw driver errors or paths.
+The native restart smoke also captures and verifies the application subtree
+before deleting its session, then waits within one ten-second budget for those
+identities to exit before reopening the same profile. The bridge remains alive;
+an uncertain exit fails the smoke and retains the existing final cleanup.
 
 ## Historical v6 benchmark authority
 

@@ -106,6 +106,38 @@ export async function terminateOwnedProcesses(records) {
     throw new Error("Native owned-process cleanup could not be verified.");
 }
 
+export async function waitForOwnedProcessesToExit(
+  records,
+  timeoutMs = 10_000,
+  inspect = inspectOwnedProcesses,
+) {
+  if (
+    records.length === 0 ||
+    !Number.isSafeInteger(timeoutMs) ||
+    timeoutMs <= 0 ||
+    timeoutMs > 10_000
+  ) {
+    throw new Error("Native restart process wait is invalid.");
+  }
+  const exited = await inspect(
+    [
+      "$ErrorActionPreference='Stop'",
+      `$known=ConvertFrom-Json -InputObject ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedIdentities(records)}')))`,
+      "$timer=[Diagnostics.Stopwatch]::StartNew(); $exited=$true",
+      "foreach($record in $known) {",
+      "$process=$null; try {$process=Get-Process -Id ([int]$record.pid) -ErrorAction Stop} catch {if($_.FullyQualifiedErrorId -like 'NoProcessFoundForGivenId,*') {continue}; throw}",
+      "try { $null=$process.Handle; if($process.StartTime.ToUniversalTime().Ticks.ToString() -ne $record.created -or $process.Path -ne $record.executable) {continue}",
+      `if(-not $process.WaitForExit([int][Math]::Max(0,${timeoutMs}-$timer.ElapsedMilliseconds))) {$exited=$false; break}`,
+      "} finally {$process.Dispose()}",
+      "}",
+      "ConvertTo-Json -InputObject $exited -Compress",
+    ].join("; "),
+  );
+  if (exited !== true) {
+    throw new Error("Native restart processes did not exit.");
+  }
+}
+
 export function createNativeResourceObservation({
   assert,
   INTERACTION_TIMEOUT_MS,

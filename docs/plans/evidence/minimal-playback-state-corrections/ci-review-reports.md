@@ -75,3 +75,72 @@ Required next action: no correction required for this exact patch. Complete
 required hosted checks on the subsequent candidate and investigate any remaining
 Windows failure before declaring the user's CI task complete. Approval does not
 establish green CI or grant Git/publication permissions.
+
+## PSC-CI-R2-20261101
+
+Task ID: PSC-CI-20261101. Reviewer: `change_reviewer` (GPT-6 Astra high),
+read-only, no tests or edits. Verdict: **APPROVE — bounded native-restart
+harness patch only**.
+
+Base commit and reviewed HEAD: `6e338eb29fb15783ba0ec7a10eeb787b57898266`.
+Branch: `codex/minimal-playback-state-plan`.
+
+Closed manifest: `tmp/evidence/psc-ci-follow-up/review-manifest-r2.json`, SHA-256
+`6850efb9f02d5ae56d6a0fadd2e8d7515f97a72dde52d1d48ac784888e2c4bc6`:
+16 task/support paths and 97 receipt artifacts. Tracked diff `patch-r2.diff`,
+SHA-256 `5163e0381ba9604b9202096342a807cbefac761e2790313363e4279b48d5b5da`.
+The new `ci-restart-follow-up.md` was read in full.
+
+Identity recheck: **PASS**. Base/HEAD, statuses, content hashes, filter-aware
+blobs and receipts matched before/after review. Saved and actual diffs match;
+all 251 generated exports match. Index empty; no pre-existing changes included.
+
+Acceptance review:
+
+- Application subtree captured before deletion; root verified against prior
+  PID, creation time and executable. Newly captured children enter final-cleanup
+  ownership before deletion. Persistent driver/bridge processes are excluded.
+- Session deletion precedes waiting; replacement follows verified exit and
+  an abort check. Exact identities and held handles share one ten-second waiting
+  budget. No process is terminated by the wait. Missing/replaced identities do
+  not cause waiting on unrelated processes; inspection error or timeout blocks
+  restart.
+- Existing cleanup, failure exits, persistence assertions and privacy checks
+  remain. No retry, profile deletion or application-runtime change is added.
+- Microsoft's browser-process lifecycle guidance supports the boundary but
+  does not establish the hosted failure's cause.
+
+Reviewed normal-local-PowerShell receipts:
+
+| Receipt | Outcome |
+| --- | --- |
+| `restart-before` | Two intended restart failures; existing diagnostic controls passed |
+| `restart-final` | 68 native/client tests passed; format, lint and desktop typecheck passed |
+| `restart-native-final` | Complete ordinary WebView2 smoke passed, including same-profile restart and exact persistence |
+| `restart-evidence` | Evidence guard and whitespace check passed |
+
+Command: `pnpm.cmd --filter @voxleaf/desktop exec node --test scripts/native-smoke.node-test.mjs scripts/native-webdriver-client.node-test.mjs`.
+Coverage includes deferred exit, propagated verification failure, an actual
+Windows process remaining alive after timeout, identity mismatch, delayed exit
+and already-exited handling. Final receipts match reviewed code/tests;
+subsequent differences are documentation only. Earlier candidate/probe failures
+remain preserved and are not acceptance evidence.
+
+The native binary remains SHA-256
+`09e69a0f47531c2df9952b1a92a2bf09ae814bafca376c84c3b1e6162ed48932`.
+The final wrapper checks before/after identity and zero new owned processes or
+scratch roots. Existing scratch/resources remain preserved.
+
+Findings: **None**. Remaining uncertainty: the generic hosted session-creation
+error does not prove that the missing barrier caused it; the earlier initial
+startup/unknown-error remains unexplained. Local success does not prove green CI.
+Required next action: complete hosted checks on the next candidate and
+investigate remaining failures. Approval grants no Git/merge/publication rights.
+
+### Coordinator observation after R2 review
+
+Foundation run `41258964766` on `6e338eb` completed: Ubuntu portable and Rust
+passed; Windows again failed at native restart session creation with
+`webdriver-session-not-created`. Its original log is retained locally as
+`tmp/evidence/psc-ci-follow-up/6e338eb-windows.log`. This does not alter the R2
+report or claim a result for the subsequent restart correction.

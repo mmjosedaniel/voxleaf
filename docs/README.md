@@ -25,6 +25,8 @@ pass. Independent PSC-R2-20261031 approves implementation and evidence after the
 R1 evidence blocker was resolved; the plan links the final archival assessment.
 The [PR #291 CI follow-up](plans/evidence/minimal-playback-state-corrections/ci-follow-up.md)
 records the App test updates and content-free native startup diagnostics.
+Its [native restart follow-up](plans/evidence/minimal-playback-state-corrections/ci-restart-follow-up.md)
+adds verified application-process exit before reopening the same test profile.
 
 The [completed minimal playback corrections](plans/completed/minimal-playback-audit-corrections.md)
 terminate retired worklets, contain native processor errors through explicit
