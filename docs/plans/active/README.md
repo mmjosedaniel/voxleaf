@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No approved implementation plans currently await execution or acceptance.
+- [Four verified findings: minimal corrections](four-finding-minimal-corrections.md):
+  unexecuted plan for Unicode numeric/date boundaries, startup failure containment
+  and native cancellation result arbitration. Includes historical evidence review
+  and focused validation gates. Implementation requires separate authorization.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
