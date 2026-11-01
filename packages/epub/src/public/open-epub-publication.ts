@@ -39,6 +39,7 @@ function failInternal(): never {
 function projectNavigation(
   navigation: ParsedNavigationDocument,
   documentsByPath: ReadonlyMap<string, ContentDocumentId>,
+  documentsBySpineIndex: ReadonlyMap<number, ContentDocumentId>,
 ): readonly PublicationNavigationNode[] {
   function projectNode(node: ParsedNavigationNode): PublicationNavigationNode {
     const children = Object.freeze(node.children.map(projectNode));
@@ -57,7 +58,10 @@ function projectNavigation(
       });
     }
 
-    const documentId = documentsByPath.get(String(node.target.path));
+    const documentId =
+      node.target.kind === "spine"
+        ? documentsBySpineIndex.get(node.target.spineItemIndex)
+        : documentsByPath.get(String(node.target.path));
     if (documentId === undefined) {
       return failInternal();
     }
@@ -150,12 +154,25 @@ export async function openEpubPublication(
         );
       }
     }
+    const documentsBySpineIndex = new Map<number, ContentDocumentId>();
+    for (const { document } of projections) {
+      archive.budget.checkpoint();
+      if (document.location.kind === "spine")
+        documentsBySpineIndex.set(
+          document.location.spineItemIndex,
+          document.id,
+        );
+    }
     const publication = createOpenedPublication(archive, packageDocument, {
       book,
       documents: Object.freeze(
         projections.map((projection) => projection.document),
       ),
-      navigation: projectNavigation(parsedNavigation, documentsByPath),
+      navigation: projectNavigation(
+        parsedNavigation,
+        documentsByPath,
+        documentsBySpineIndex,
+      ),
       locatorIndex,
       targetIndex,
     });

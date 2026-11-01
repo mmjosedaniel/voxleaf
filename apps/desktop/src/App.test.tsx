@@ -54,7 +54,10 @@ import type {
 } from "./tts/product-narration-coordinator";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./tts/operational-recovery";
 import { TtsProcessClient } from "./tts/process-client";
-import { CHATTERBOX_OPTIONAL_PROFILE_ID } from "./tts/optional-chatterbox-client";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "./tts/optional-chatterbox-client";
 import type {
   HardwareCompatibilitySnapshotV1,
   HardwareProfileCompatibilityCoordinator,
@@ -669,6 +672,76 @@ describe("App preference connection characterization", () => {
         );
       }
       view.unmount();
+    },
+  );
+
+  it.each(["success", "failure", "no-owner"] as const)(
+    "R8-05 holds replacement admission across pending removal: %s",
+    async (outcome) => {
+      const settings = observeSettings();
+      const removal =
+        deferred<ReturnType<OptionalChatterboxClient["observe"]>>();
+      const optional = new OptionalChatterboxClient();
+      const remove = vi
+        .spyOn(OptionalChatterboxClient.prototype, "remove")
+        .mockReturnValue(removal.promise);
+      const first = new ControlledNarrationCoordinator();
+      const replacement = new ControlledNarrationCoordinator();
+      const play = vi.spyOn(replacement, "startAtVisibleLocator");
+      const oldRefresh = vi.spyOn(first, "refreshSelectedProfile");
+      const factory = vi
+        .fn()
+        .mockReturnValueOnce(outcome === "no-owner" ? replacement : first)
+        .mockReturnValue(replacement);
+      const view = render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          createNarrationCoordinator={factory}
+        />,
+      );
+      let operation: Promise<void> | undefined;
+      try {
+        if (outcome !== "no-owner") {
+          selectEpub("A.epub");
+          await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+        }
+        act(() => {
+          operation = settings.current().onRemoveChatterbox();
+          void operation.catch(() => undefined);
+        });
+        await waitFor(() => expect(remove).toHaveBeenCalledOnce());
+        selectEpub("B.epub");
+        await screen.findByRole("heading", { name: "Synthetic Reader Book" });
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(factory).toHaveBeenCalledTimes(outcome === "no-owner" ? 0 : 1);
+        expect(screen.queryByRole("button", { name: /^Play$/ })).toBeNull();
+        expect(play).not.toHaveBeenCalled();
+        await act(async () => {
+          if (outcome === "failure")
+            removal.reject(new Error("synthetic removal failure"));
+          else removal.resolve(optional.observe());
+          await operation?.catch(() => undefined);
+        });
+        await waitFor(() =>
+          expect(factory).toHaveBeenCalledTimes(outcome === "no-owner" ? 1 : 2),
+        );
+        expect(play).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
+        expect(play).toHaveBeenCalledOnce();
+        expect(oldRefresh).toHaveBeenCalledTimes(outcome === "success" ? 1 : 0);
+      } finally {
+        removal.resolve(optional.observe());
+        await act(async () => {
+          await operation?.catch(() => undefined);
+        });
+        view.unmount();
+      }
     },
   );
 

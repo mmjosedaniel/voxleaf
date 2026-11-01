@@ -11,6 +11,7 @@ import {
   minimalEpub2PackageDocument,
   minimalChapterDocument,
   minimalNavigationDocument,
+  minimalNcxDocument,
   minimalPackageDocument,
 } from "../../test-support/epub-fixture.js";
 import { EpubArchiveError } from "../archive/archive-error.js";
@@ -138,6 +139,112 @@ describe("public privacy-safe EPUB opening", () => {
       await publication.close();
     }
   });
+
+  it.each(["epub3", "epub2"] as const)(
+    "R8-07 resolves original fallback references and their spine occurrences in %s",
+    async (format) => {
+      const packageXml = (
+        format === "epub3"
+          ? minimalPackageDocument()
+          : minimalEpub2PackageDocument()
+      )
+        .replace(
+          "</manifest>",
+          '<item id="one" href="text/one.xhtml" media-type="application/xhtml+xml" properties="scripted" fallback="middle"/><item id="middle" href="middle.bin" media-type="application/x-synthetic" fallback="chapter"/><item id="two" href="text/two.xhtml" media-type="application/xhtml+xml" properties="scripted" fallback="chapter"/></manifest>',
+        )
+        .replace(
+          '<itemref idref="chapter"/>',
+          '<itemref idref="one"/><itemref idref="two"/><itemref idref="chapter"/>',
+        );
+      const chapterDocument =
+        '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Safe</title></head><body><p id="chapter-one">Safe passage.</p><p><a href="one.xhtml">First</a><a href="two.xhtml#chapter-one">Second</a><a href="two.xhtml#absent">Missing</a><a href="chapter.xhtml#chapter-one">Direct</a><a href="https://example.invalid/one.xhtml">External</a></p></body></html>';
+      const options = {
+        packageDocument: packageXml,
+        chapterDocument,
+        additionalEntries: [
+          { name: "EPUB/text/one.xhtml", content: "unused" },
+          { name: "EPUB/text/two.xhtml", content: "unused" },
+          { name: "EPUB/middle.bin", content: "unused" },
+        ],
+      };
+      const result = await openEpubPublication(
+        await (format === "epub3"
+          ? buildMinimalEpubFixture({
+              ...options,
+              navigationDocument: minimalNavigationDocument()
+                .replace("chapter.xhtml#chapter-one", "two.xhtml")
+                .replace(
+                  "</ol>",
+                  '<li><a href="text/chapter.xhtml#chapter-one">Direct</a></li></ol>',
+                ),
+            })
+          : buildMinimalEpub2Fixture({
+              ...options,
+              ncxDocument: minimalNcxDocument()
+                .replace("chapter.xhtml#chapter-one", "two.xhtml")
+                .replace(
+                  "</navMap>",
+                  '<navPoint id="direct" playOrder="2"><navLabel><text>Direct</text></navLabel><content src="text/chapter.xhtml#chapter-one"/></navPoint></navMap>',
+                ),
+            })),
+      );
+      expect(result).toMatchObject({ ok: true });
+      if (!result.ok) return;
+      const publication = result.publication;
+      try {
+        const navigation = publication.navigation[0]!;
+        expect(navigation.kind).toBe("link");
+        if (navigation.kind !== "link") return;
+        expect(publication.resolveTarget(navigation.target)).toMatchObject({
+          status: "exact",
+          locator: { spineItemIndex: 1 },
+        });
+        const direct = publication.navigation[1]!;
+        expect(direct.kind).toBe("link");
+        if (direct.kind === "link")
+          expect(publication.resolveTarget(direct.target)).toMatchObject({
+            status: "exact",
+            locator: { spineItemIndex: 0 },
+          });
+        for (const document of publication.documents.filter(
+          (document) => document.location.kind === "spine",
+        )) {
+          const paragraph = document.blocks[1];
+          if (paragraph?.kind !== "paragraph")
+            throw new Error("missing synthetic links");
+          const links = paragraph.children.filter(
+            (inline) => inline.kind === "internal-link",
+          );
+          expect(links).toHaveLength(4);
+          expect(publication.resolveTarget(links[0]!.target)).toMatchObject({
+            status: "exact",
+            locator: { spineItemIndex: 0 },
+          });
+          expect(publication.resolveTarget(links[1]!.target)).toMatchObject({
+            status: "exact",
+            locator: { spineItemIndex: 1 },
+          });
+          expect(publication.resolveTarget(links[2]!.target)).toMatchObject({
+            status: "recovered",
+            reason: "fragment-unresolved",
+            locator: { spineItemIndex: 1 },
+          });
+          expect(publication.resolveTarget(links[3]!.target)).toMatchObject({
+            status: "exact",
+            locator: {
+              spineItemIndex:
+                document.location.kind === "spine"
+                  ? document.location.spineItemIndex
+                  : -1,
+            },
+          });
+          expect(JSON.stringify(links)).not.toContain("xhtml");
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
 
   it("RAC-06 / CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
     const result = await openEpubPublication(

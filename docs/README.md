@@ -17,11 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [eight revalidated findings plan](plans/active/eight-revalidated-findings-minimal-corrections.md)
-defines proposed minimal EPUB, reader/admission and maintainer-tool corrections,
-with conditional PNG verification and selected evidence reuse. It is planning
-only: implementation and tests have not started, and historical PASS results
-are not accepted as new validation.
+The [eight revalidated findings plan](plans/completed/eight-revalidated-findings-minimal-corrections.md)
+implements minimal EPUB, reader/admission and maintainer-tool corrections,
+including PNG orientation confirmed in Chromium and WebView2. Selected
+deterministic, browser and native checks pass. Independent R8-R1-20261101
+approves without findings; the plan links the separate final archival assessment.
+Historical PASS results are not accepted as new validation.
 
 The [completed four-finding corrections](plans/completed/four-finding-minimal-corrections.md)
 protect Unicode numeric adjacency and attached dates, contain failed startup in

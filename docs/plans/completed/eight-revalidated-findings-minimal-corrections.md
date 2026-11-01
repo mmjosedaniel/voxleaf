@@ -8,10 +8,13 @@ existing owners. This is a correctness batch spanning EPUB ingestion, the reader
 narration admission and maintainer evaluation tools, so its descriptive filename
 intentionally spans roadmap milestones 3, 4, 6, 10 and 11.
 
-**Planning only, 2026-11-01.** The user authorized this ExecPlan, a branch and a
-local documentation commit, explicitly not implementation or test execution.
-Implementation, new tests, builds, host exercises and acceptance below are future
-work. No push, PR, merge or publication is authorized by this plan.
+**Execution authorized, 2026-11-01.** The subsequent user instruction authorizes
+implementation, selected host checks, documentation and independent review.
+Commit, push, PR, merge and publication remain unauthorized.
+
+Historical planning authorization covered only the plan, branch and local
+documentation commit. The execution instruction above supersedes that earlier
+implementation restriction without granting any further Git action.
 
 ## User-visible outcome
 
@@ -191,7 +194,7 @@ without imposing unrelated refactor unit ceremonies.
 
 ### M0 — Scope, evidence and conditional reproduction
 
-**Status: not started.** Obtain implementation authorization; check current HEAD
+**Status: complete.** Implementation authorization received; check current HEAD
 and preserve unrelated work. Capture actual input membership, dependencies,
 installed tools and host state before any gate. Freeze chosen paths and test
 filters. Establish R8-01's Chromium condition with the bounded fixture; retain
@@ -202,7 +205,7 @@ these invocations. No full-repository or per-finding baseline campaign.
 
 ### M1 — Minimal production corrections and combined fast gates
 
-**Status: not started.** Apply the bounded changes above. Run the selected EPUB,
+**Status: complete.** Applied the bounded changes below. Run the selected EPUB,
 desktop and Python groups once on the combined relevant edits, followed by
 their affected format/lint/type checks. Fix only actionable failures, preserve
 original receipts and rerun only invalidated groups. A shared helper/test change
@@ -210,7 +213,8 @@ invalidates all consumers of that helper, not merely the last edited case.
 
 ### M2 — One integration/host cycle
 
-**Status: not started.** Run the selected Chromium journeys on final source.
+**Status: complete.** Selected Chromium and both current WebView2 arms pass.
+Original resources are restored with exact membership/hash verification.
 After fast gates pass, verify existing Piper payload integrity, build one current
 desktop executable, run the model-free WebView2 smoke and one Piper EN arm using
 those same executable bytes. Integrate PNG/focus checks into existing native
@@ -220,7 +224,10 @@ replace it with an old artifact's PASS.
 
 ### M3 — Independent acceptance and closeout
 
-**Status: not started.** Freeze final code, tests and maintained documentation;
+**Status: complete.** Implementation accepted by R8-R1-20261101, APPROVE, no
+findings. The final archival assessment is R8-R2-20261101 in the
+[immutable reports](../evidence/eight-revalidated-findings/review-reports.md).
+The executed review procedure was to freeze final code, tests and maintained documentation;
 send exact scope, diff, identities and host receipts to `change_reviewer`
 (GPT-6 Astra high). The reviewer reads without editing/running tests. Require
 APPROVE for the exact current patch, including any retained-gate decisions;
@@ -403,18 +410,95 @@ necessary, stop that unit for explicit replanning of scope and gates.
 
 ## Final validation results
 
-**Planning deliverable only.** Source, policy, receipts and Git state were
-inspected read-only; branch creation is the authorized Git mutation. The
-documentation commit is limited to this plan, `docs/plans/active/README.md` and
-`docs/README.md`. No product source, tests, manifests or historical evidence are
-changed. No tests, builds, lint/type checks, hardware probes or benchmarks ran.
-No historical result is declared a fresh PASS or finally approved reuse.
-Documentary inspection found all 12 required sections and no missing local
-links. `git diff --check` found no whitespace issues in the tracked document
-updates; the complete staged documentation is reviewed before committing.
+Implementation is present for R8-01�R8-08; none has been discarded. The final
+selected model-free groups pass: EPUB 205, desktop 399, Python 66, native runner
+50 and Chromium 10. TypeScript/Python format, lint and types pass. Existing
+Piper core integrity passes and one desktop executable has been built.
+Both WebView2 arms and exact host cleanup pass on the same executable.
+Independent R8-R1-20261101 approves all eight corrections and current-task
+evidence retention without findings. Final archival assessment: R8-R2-20261101
+in the [review reports](../evidence/eight-revalidated-findings/review-reports.md).
+Exact commands, immutable receipts, failures and retained-input decisions are
+recorded in the [execution ledger](../evidence/eight-revalidated-findings/execution-ledger.md).
+No historical test result is accepted for this patch. No commit, push, PR,
+merge or publication was performed.
 
-Implementation status: **not started**. R8-01 runtime confirmation, all new
-regressions, current-artifact checks, cleanup evidence and independent behavioral
-acceptance remain pending. The planning-only documentation does not itself
-require the behavioral change-review gate. Record eventual exact commands,
-outcomes, retained-gate proof and review ID here during authorized execution.
+### Execution checkpoint � 2026-11-01
+
+- Verified branch `codex/eight-revalidated-findings-plan`, HEAD
+  `46616e8be197023625d0fd8ff94556fc1478189b`, clean index/worktree.
+- Read AGENTS and the complete plan. Current source/path scope follows the
+  table above; tooling starts with the seven named production files and two
+  existing tests. No native production, contracts, model or lock changes.
+- Reviewed F4 ledger and receipt runner: historical Node 24.18.0 differs from
+  current Node 24.20.0; no historical test result is accepted for reuse.
+- Host readiness: PowerShell 7.6.5, Node 24.20.0, uv 0.11.29. PATH pnpm is
+  11.25.0; Corepack resolves repository-pinned pnpm 11.15.1. Use that pinned
+  tool for the selected commands. Reuse fixtures; renew changed-input gates.
+- R8-01 remains conditional and no production PNG change is authorized by
+  static evidence alone. All behavior gates and independent review pending.
+
+- G1-Python: 7 expected failures / 13 controls pass; all six cleanup-only
+  paths and zero-RAM minimum reproduced on unchanged production. G4-Python:
+  63 pass after correction. Pytest reports an existing cache write warning;
+  test setup/assertions completed. Formatting later invalidates that receipt.
+- G1-Desktop: 8 expected failures / 1 control pass across R8-04/05/06/08.
+- G1-Epub first fixture had a relative-path mistake; retained as insufficient
+  reproduction. G1-Epub-r2 corrected it, and both XHTML/NCX public opens fail.
+- G1-Png-browser: current Chromium decodes valid 3x2 PNG eXIf as 2x3 in both
+  byte orders. G1-Png-unit: 6 expected failures / 4 controls pass. A bounded
+  PNG parser correction is now justified, pending WebView2 confirmation.
+- Production corrections are present for all eight findings. R8-07 reuses the
+  existing bounded package fallback resolver and carries spine occurrence into
+  public navigation. New support path: synthetic `png-fixture.ts` only.
+- G2-Epub: 203 pass, 2 new-test expectation failures. Existing missing-fragment
+  policy is recovered/fragment-unresolved, not unavailable; corrected assertions
+  preserve that policy. Only the public-open leaf needs renewal.
+- G3-Desktop: 398 pass, 1 existing App focus-restoration regression exposed the
+  new guard intercepting close. The guard now yields before onClose; renew App,
+  Settings and control leaves after their final changes.
+- G5-Types passed EPUB/desktop types after rebuilding packages. Later browser
+  changes invalidate desktop types. Python format/lint passed after one import
+  correction; mypy found four test-seam typing errors, now corrected. Original
+  receipts retained under `tmp/evidence/eight-revalidated-findings/run-01/`.
+
+- Self-review preserved first-occurrence semantics when a directly supported
+  resource is also a later spine item after an earlier fallback occurrence.
+  Both XHTML and NCX regressions now cover that ordering and existing
+  fragment-unresolved recovery. The v12 regression additionally covers owned
+  disposable sessions, not only externally supplied machine sessions.
+- G5-Fast-r2 exposed a render-time ref read. Creation already uses the handoff
+  state; removed the redundant ref read and retained pending ownership in
+  event/handoff operations. G5-Final-source passes all seven static checks.
+- Final package changes invalidate consumer exports; rebuilt once, renewed
+  G2/G3 groups and the importing native harness. G2-Epub-final: 205 pass;
+  G3-Desktop-final: 399 pass; G4-Python-final2: 66 pass; G9-Harness-final: 50 pass;
+  G6-Browser-final: all 10 intended cases pass. No failed aggregate is reused.
+- Reuse proof would be more complex than these cheap focused checks, so no
+  earlier partial passing leaf is accepted. Full installed tool/library/browser
+  membership was captured before the final runs; post-run comparison pending.
+- G7-Core passes on the existing payload; G7-Build produced one current binary.
+  Native resource staging reuses F4's already exercised preservation/verification
+  procedure with only the R8 namespace and the two selected versioned runner
+  commands changed. Original resources are journaled and restored in finally.
+
+- G8 model-free and Piper EN both pass on the same current executable. WebView2
+  confirms both PNG orientations; no runtime disagreement. No generated audio
+  files, external requests, new scratch roots or owned surviving processes.
+  Original adjacent resources restored byte-for-byte; temporary backup absent.
+- Strict installed comparison failed only because Chromium appended 135 bytes
+  to debug.log. The original prefix hash and all other 24,008 entries match.
+  Environment-delta-proof records the output-only classification; retain the
+  failure and submit the proof for independent assessment. No test rerun is
+  justified by generated diagnostic output.
+
+- Independent R8-R1-20261101: APPROVE, no findings. Reviewer verified all 384
+  identities, exact scope, unchanged HEAD/branch, empty index, all selected
+  input identities and 251 package exports. It accepts the diagnostic-only
+  environment delta and current-task gate retention; no historical PASS reused.
+- G10-Documents-r2 renewed documentation checks after the ledger changed; all
+  1,499 inputs and 414 links match. Initial receipt retained. Runtime unchanged.
+- Archived this completed plan and updated maintained incoming links/indexes.
+  R8-R2-20261101 is the separate final exact-patch assessment; its immutable
+  report records final documentation receipts and identity recheck. No Git
+  mutation or publication was performed. No authorized finding remains pending.

@@ -6,11 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Eight revalidated findings: minimal corrections](eight-revalidated-findings-minimal-corrections.md):
-  planning only; seven statically confirmed findings and one conditional PNG
-  finding across EPUB, reader/narration admission and maintainer tooling.
-  Defines bounded changes, selected future checks and evidence-reuse criteria;
-  implementation and test execution have not been authorized or started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

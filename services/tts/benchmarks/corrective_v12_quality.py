@@ -12,7 +12,6 @@ import subprocess
 import sys
 import wave
 from collections.abc import Mapping, Sequence, Sized
-from contextlib import suppress
 from pathlib import Path
 from typing import Any, Final, NoReturn, cast
 
@@ -434,6 +433,7 @@ def generate_quality_session(
         str(candidate_python),
     )
     capture = DiagnosticCapture(forbidden_values=sensitive)
+    generation_completed = False
     try:
         with capture:
             cast(Any, adapter).load()
@@ -460,14 +460,21 @@ def generate_quality_session(
                     }
                 )
                 del waveform
+        generation_completed = True
     except Exception:
         shutil.rmtree(quality, ignore_errors=True)
         if candidate_id != CHATTERBOX_CANDIDATE_ID:
             shutil.rmtree(session, ignore_errors=True)
         raise
     finally:
-        with suppress(Exception):
+        try:
             cast(Any, adapter).close()
+        except Exception:
+            if generation_completed:
+                shutil.rmtree(quality, ignore_errors=True)
+                if candidate_id != CHATTERBOX_CANDIDATE_ID:
+                    shutil.rmtree(session, ignore_errors=True)
+                _fail("cleanup")
     observation = capture.observation()
     capture.discard()
     if observation.sensitive_value_observed:

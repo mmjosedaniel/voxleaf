@@ -763,10 +763,14 @@ export function ReaderPublicationContent({
   const focusTableOfContents = useCallback(
     (event: ReactMouseEvent<HTMLAnchorElement>): void => {
       event.preventDefault();
-      focusContentsAfterOpen.current = true;
-      setContentsOpen(true);
+      if (contentsOpen) {
+        navigationRef.current?.focus({ preventScroll: true });
+      } else {
+        focusContentsAfterOpen.current = true;
+        setContentsOpen(true);
+      }
     },
-    [],
+    [contentsOpen],
   );
   useLayoutEffect(() => {
     if (contentsOpen && focusContentsAfterOpen.current) {

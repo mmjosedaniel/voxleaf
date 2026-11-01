@@ -215,6 +215,7 @@ export function ReaderSettingsDialog({
 }: ReaderSettingsDialogProps): ReactElement | null {
   const titleId = useId();
   const descriptionId = useId();
+  const closing = useRef(false);
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [applicationVersion, setApplicationVersion] = useState<
@@ -224,9 +225,22 @@ export function ReaderSettingsDialog({
     useState(false);
 
   useEffect(() => {
-    if (open) {
-      closeButtonRef.current?.focus({ preventScroll: true });
-    }
+    if (!open) return;
+    closing.current = false;
+    const containFocus = (event: FocusEvent): void => {
+      const dialog = dialogRef.current;
+      if (
+        !closing.current &&
+        dialog !== null &&
+        event.target instanceof Node &&
+        !dialog.contains(event.target)
+      ) {
+        (focusableElements(dialog)[0] ?? dialog).focus({ preventScroll: true });
+      }
+    };
+    closeButtonRef.current?.focus({ preventScroll: true });
+    document.addEventListener("focusin", containFocus);
+    return () => document.removeEventListener("focusin", containFocus);
   }, [open]);
 
   useEffect(() => {
@@ -258,10 +272,15 @@ export function ReaderSettingsDialog({
   const readerControlsDisabled =
     readerPreferencesStatus === "loading" || !canPersistReaderPreferences;
 
+  const requestClose = (): void => {
+    closing.current = true;
+    onClose();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
     if (event.key === "Escape") {
       event.preventDefault();
-      onClose();
+      requestClose();
       return;
     }
     if (event.key !== "Tab" || dialogRef.current === null) {
@@ -297,7 +316,7 @@ export function ReaderSettingsDialog({
       className="settings-backdrop"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) {
-          onClose();
+          requestClose();
         }
       }}
     >
@@ -323,7 +342,7 @@ export function ReaderSettingsDialog({
             ref={closeButtonRef}
             type="button"
             className="reader-settings-close"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Close Settings
           </button>

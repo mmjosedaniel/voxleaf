@@ -118,7 +118,7 @@ class WindowsAvailableRamProbe:
         self._kernel32.GlobalMemoryStatusEx.argtypes = (ctypes.POINTER(_MemoryStatusEx),)
         self._kernel32.GlobalMemoryStatusEx.restype = wintypes.BOOL
         self._interval_seconds = interval_seconds
-        self._minimum = 0
+        self._minimum: int | None = None
         self._failed = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -130,7 +130,7 @@ class WindowsAvailableRamProbe:
             self._failed = True
             return
         available = int(status.ullAvailPhys)
-        self._minimum = available if self._minimum == 0 else min(self._minimum, available)
+        self._minimum = available if self._minimum is None else min(self._minimum, available)
 
     def _run(self) -> None:
         while not self._stop.wait(self._interval_seconds):
@@ -139,7 +139,7 @@ class WindowsAvailableRamProbe:
     def start(self) -> None:
         if self._thread is not None:
             raise BilingualBaselineError("memory-active")
-        self._minimum = 0
+        self._minimum = None
         self._failed = False
         self._stop.clear()
         self._sample()
@@ -159,7 +159,7 @@ class WindowsAvailableRamProbe:
         self._stop.set()
         thread.join(timeout=1)
         self._thread = None
-        if thread.is_alive() or self._failed or self._minimum <= 0:
+        if thread.is_alive() or self._failed or self._minimum is None or self._minimum <= 0:
             raise BilingualBaselineError("memory-unavailable")
         return self._minimum
 

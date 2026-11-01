@@ -1,3 +1,8 @@
+import {
+  pngExifChunk,
+  pngExifChunkFromTiff,
+  syntheticPngBytes,
+} from "../../../tests/fixtures/png-fixture";
 import { describe, expect, it } from "vitest";
 import {
   jpegExifSegment,
@@ -437,5 +442,104 @@ describe("raster image predecode policy", () => {
         maximumLiveDecodedPixels: 9,
       }),
     ).toThrow("invalid-raster-image-safety-policy");
+  });
+});
+
+describe("R8-01 PNG bounded orientation", () => {
+  it.each([true, false])(
+    "R8-01 interprets bounded EXIF orientation with littleEndian=%s",
+    (littleEndian) => {
+      for (const orientation of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        expect(
+          inspectRasterImageMetadata(
+            syntheticPngBytes(pngExifChunk(orientation, littleEndian)),
+            "image/png",
+          ),
+        ).toEqual({
+          status: "accepted",
+          metadata: {
+            widthPixels: orientation >= 5 ? 2 : 3,
+            heightPixels: orientation >= 5 ? 3 : 2,
+            decodedPixels: 6,
+            frameCount: 1,
+          },
+        });
+      }
+    },
+  );
+
+  it("R8-01 rejects malformed and duplicate TIFF metadata within eXIf", () => {
+    const tiff = jpegExifSegment(6).subarray(10);
+    const malformed: Uint8Array[] = [];
+    for (const [offset, value] of [
+      [0, 0],
+      [2, 0],
+      [4, 4],
+      [4, 255],
+      [8, 2],
+      [12, 4],
+      [14, 2],
+      [18, 0],
+      [18, 9],
+    ]) {
+      const copy = tiff.slice();
+      copy[offset!] = value!;
+      malformed.push(copy);
+    }
+    for (const length of [0, 7, 8, 12, 25])
+      malformed.push(tiff.slice(0, length));
+    const duplicate = new Uint8Array([
+      ...tiff.slice(0, 22),
+      ...tiff.slice(10, 22),
+      0,
+      0,
+      0,
+      0,
+    ]);
+    duplicate[8] = 2;
+    malformed.push(duplicate);
+    const chunk = pngExifChunk(6);
+    for (const exif of [
+      ...malformed.map(pngExifChunkFromTiff),
+      new Uint8Array([...chunk, ...chunk]),
+    ]) {
+      expect(
+        inspectRasterImageMetadata(syntheticPngBytes(exif), "image/png"),
+      ).toEqual({ status: "rejected", reason: "invalid-image" });
+    }
+  });
+  it("R8-01 keeps absent orientation and enforces raw, presented and pixel limits", () => {
+    const tiff = jpegExifSegment(6).subarray(10);
+    tiff[10] = 0x13;
+    for (const exif of [undefined, pngExifChunkFromTiff(tiff)]) {
+      expect(
+        inspectRasterImageMetadata(syntheticPngBytes(exif), "image/png"),
+      ).toMatchObject({
+        status: "accepted",
+        metadata: { widthPixels: 3, heightPixels: 2, decodedPixels: 6 },
+      });
+    }
+    const bytes = syntheticPngBytes(pngExifChunk(6));
+    const exact = createRasterImageSafetyPolicy({
+      maximumWidthPixels: 3,
+      maximumHeightPixels: 3,
+      maximumDecodedPixels: 6,
+    });
+    expect(inspectRasterImageMetadata(bytes, "image/png", exact).status).toBe(
+      "accepted",
+    );
+    for (const limit of [
+      { maximumWidthPixels: 2 },
+      { maximumHeightPixels: 2 },
+      { maximumDecodedPixels: 5 },
+    ]) {
+      expect(
+        inspectRasterImageMetadata(
+          bytes,
+          "image/png",
+          createRasterImageSafetyPolicy({ ...exact, ...limit }),
+        ).status,
+      ).toBe("rejected");
+    }
   });
 });

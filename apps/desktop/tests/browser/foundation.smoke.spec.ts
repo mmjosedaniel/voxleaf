@@ -1,3 +1,4 @@
+import { pngExifChunk, syntheticPngBytes } from "../fixtures/png-fixture";
 import { expect, test } from "@playwright/test";
 
 import { closeSettings, openSettings } from "./settings-helpers";
@@ -10,7 +11,7 @@ const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
 const NARRATION_PLAYBACK_STORAGE_KEY = "voxleaf.narration.playback-preference";
 const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
 
-test("SAC-09/SAC-13 decodes oriented JPEGs and resolves opaque local fragments", async ({
+test("SAC-09/SAC-13/R8-01 decodes oriented JPEGs and PNGs and resolves opaque local fragments", async ({
   page,
 }) => {
   const fixture = (await import(
@@ -33,6 +34,8 @@ test("SAC-09/SAC-13 decodes oriented JPEGs and resolves opaque local fragments",
   for (const name of [
     "Synthetic orientation six",
     "Synthetic orientation eight",
+    "Synthetic PNG orientation six",
+    "Synthetic PNG orientation eight",
   ]) {
     const image = page.getByRole("img", { name, exact: true });
     await expect(image).toBeVisible();
@@ -866,5 +869,29 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       );
     }
     await context.unroute("**/*");
+  }
+});
+
+test("R8-01 observes actual PNG eXIf decoder dimensions", async ({ page }) => {
+  await page.goto("/");
+  for (const littleEndian of [true, false]) {
+    const dimensions = await page.evaluate(
+      async (bytes) => {
+        const url = URL.createObjectURL(
+          new Blob([new Uint8Array(bytes)], { type: "image/png" }),
+        );
+        const image = new Image();
+        try {
+          image.src = url;
+          await image.decode();
+          return [image.naturalWidth, image.naturalHeight];
+        } finally {
+          image.removeAttribute("src");
+          URL.revokeObjectURL(url);
+        }
+      },
+      Array.from(syntheticPngBytes(pngExifChunk(6, littleEndian))),
+    );
+    expect(dimensions).toEqual([2, 3]);
   }
 });

@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0069: Bounded PNG orientation](ADR-0069-bounded-png-orientation.md): extends bounded IFD0 metadata to PNG eXIf with exact decoder agreement; current acceptance is tracked in the R8 plan.
+
 - [ADR-0068: Align Chatterbox effective available-RAM admission](ADR-0068-align-chatterbox-effective-ram-admission.md): preserve the existing 7,042-MiB fresh-start requirement in native acquisition and disclosure while retaining immutable package floors and loaded-session continuation.
 
 - [ADR-0067: Conservative English titles and Unicode marks](ADR-0067-conservative-english-titles-and-unicode-marks.md): prospective narration clarification; current validation is tracked in the validated audit follow-up plan.

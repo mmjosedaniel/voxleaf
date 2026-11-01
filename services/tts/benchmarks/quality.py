@@ -9,7 +9,6 @@ import secrets
 import shutil
 import wave
 from collections.abc import Callable, Mapping, MutableSequence, Sequence, Sized
-from contextlib import suppress
 from pathlib import Path
 from typing import Any, Final, Protocol, cast
 
@@ -279,6 +278,7 @@ def generate_candidate_audio(
             )
         )
         with capture:
+            generation_completed = False
             try:
                 adapter.load()
                 for index, case_id in enumerate(corpus.performance_order):
@@ -294,9 +294,13 @@ def generate_candidate_audio(
                     )
                     _write_wave(candidate_root / f"{case_id}.wav", waveform, sample_rate)
                     del waveform
+                generation_completed = True
             finally:
-                with suppress(Exception):
+                try:
                     adapter.close()
+                except Exception:
+                    if generation_completed:
+                        raise QualitySessionError("cleanup") from None
         observation = capture.observation()
         capture.discard()
         if observation.sensitive_value_observed:
