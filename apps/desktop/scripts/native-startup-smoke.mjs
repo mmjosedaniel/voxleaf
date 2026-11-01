@@ -21,6 +21,7 @@ import {
   createNativeResourceObservation,
   captureOwnedProcessTree,
   terminateOwnedProcesses,
+  waitForOwnedProcessesToExit,
 } from "./native-smoke/resource-observation.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
 import { buildOrientedRasterEpubFixture } from "../tests/fixtures/oriented-raster-epub-fixture.mjs";
@@ -202,6 +203,19 @@ const WEBDRIVER_SPACE = "\uE00D";
 const WEBDRIVER_PAGE_DOWN = "\uE00F";
 const WEBDRIVER_END = "\uE010";
 const FIXED_FAILURE_CODES = new Map([
+  [
+    "Native restart processes did not exit.",
+    "native-restart-process-exit-timeout",
+  ],
+  [
+    "Native restart process wait is invalid.",
+    "native-restart-process-wait-invalid",
+  ],
+  ["Native smoke cleanup failed.", "native-cleanup-failed"],
+  [
+    "Native owned-process cleanup could not be verified.",
+    "native-process-ownership-unverified",
+  ],
   ["Tauri WebDriver exited before startup.", "tauri-driver-exited"],
   ["Tauri WebDriver did not become ready.", "tauri-driver-timeout"],
   [
@@ -499,6 +513,23 @@ function failureCode(error) {
     return "unexpected-error";
   }
   return FIXED_FAILURE_CODES.get(error.message) ?? "unexpected-error";
+}
+
+export function nativeSmokeFailureCodes(error) {
+  const pending = [error];
+  const codes = new Set();
+  // Keep diagnostics bounded even for cyclic causes or large aggregates. Only
+  // fixed codes escape; raw errors can contain paths, driver data or book text.
+  for (let index = 0; index < pending.length; index++) {
+    const current = pending[index];
+    codes.add(failureCode(current));
+    if (current instanceof AggregateError) {
+      pending.push(...current.errors.slice(0, 8 - pending.length));
+    } else if (current instanceof Error && current.cause !== undefined) {
+      if (pending.length < 8) pending.push(current.cause);
+    }
+  }
+  return [...codes];
 }
 
 async function openReaderSettings(driver) {
@@ -1032,6 +1063,15 @@ export async function captureCurrentChildProcesses(
   return observed;
 }
 
+export async function closeNativeSessionForRestart(
+  driver,
+  processes,
+  waitForExit = waitForOwnedProcessesToExit,
+) {
+  await driver.deleteSession();
+  await waitForExit(processes);
+}
+
 export async function cleanupNativeRun({
   driver,
   child,
@@ -1303,7 +1343,7 @@ async function run() {
           requestTimeoutMs: STARTUP_TIMEOUT_MS,
           signal: operationSignal,
         });
-        stage = "WebDriver startup";
+        stage = "WebDriver process ownership capture";
         const collectedBrowserLogs = [];
         const collectedPerformanceLogs = [];
 
@@ -1574,7 +1614,49 @@ async function run() {
         await delay(OBSERVATION_WINDOW_MS);
         collectedBrowserLogs.push(...(await driver.getLogs("browser")));
         collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
-        await driver.deleteSession();
+        identities = await captureCurrentChildProcesses(child, identities);
+        const application = identities.find(
+          (identity) =>
+            path.normalize(identity.executable).toLowerCase() ===
+            path.normalize(executablePath).toLowerCase(),
+        );
+        assert(
+          application !== undefined,
+          "Native owned-process cleanup could not be verified.",
+        );
+        // The bridge and its console host remain alive across sessions. Wait
+        // only for the captured application subtree, retaining every identity
+        // for final cleanup before DELETE can orphan any browser children.
+        const retiredProcesses = await captureOwnedProcessTree(application.pid);
+        assert(
+          retiredProcesses.some(
+            (identity) =>
+              identity.pid === application.pid &&
+              identity.created === application.created &&
+              identity.executable === application.executable,
+          ),
+          "Native owned-process cleanup could not be verified.",
+        );
+        for (const identity of retiredProcesses) {
+          const previous = identities.find(
+            (known) => known.pid === identity.pid,
+          );
+          assert(
+            previous === undefined ||
+              (previous.created === identity.created &&
+                previous.executable === identity.executable),
+            "Native owned-process cleanup could not be verified.",
+          );
+          if (previous === undefined) {
+            identities.push({
+              ...identity,
+              depth: identity.depth + application.depth,
+            });
+          }
+        }
+        stage = "native restart process exit";
+        await closeNativeSessionForRestart(driver, retiredProcesses);
+        operationSignal.throwIfAborted();
 
         stage = "native restart session creation";
         await driver.createSession(executablePath, profileDirectory);
@@ -1761,7 +1843,7 @@ async function run() {
     });
   } catch (error) {
     console.error(
-      `${runLabel} failed during ${stage} [${failureCode(error)}].`,
+      `${runLabel} failed during ${stage} [${nativeSmokeFailureCodes(error).join(",")}].`,
     );
     process.exitCode = 1;
   }

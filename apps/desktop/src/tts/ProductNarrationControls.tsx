@@ -187,7 +187,7 @@ export function ProductNarrationControls({
                 snapshot.availability !== "available" ||
                 snapshot.navigation.canStart === false
               }
-              onClick={() => coordinator.start()}
+              onClick={() => coordinator.startAtVisibleLocator()}
             >
               Play
             </button>
@@ -205,6 +205,7 @@ export function ProductNarrationControls({
             <button
               type="button"
               data-narration-action="resume"
+              disabled={snapshot.navigation.settling || !operational}
               onClick={() => coordinator.resume()}
             >
               Resume
@@ -269,7 +270,7 @@ export function ProductNarrationControls({
             onSelectionChange={(selection) =>
               void coordinator.setSelection(selection)
             }
-            onStart={() => coordinator.start()}
+            onStart={() => coordinator.startAtVisibleLocator()}
             onPause={() => coordinator.pause()}
             onResume={() => coordinator.resume()}
             onStop={() => void coordinator.stop()}

@@ -18,12 +18,15 @@ import {
   createNativeResourceObservation,
   captureOwnedProcessTree,
   terminateOwnedProcesses,
+  waitForOwnedProcessesToExit,
 } from "./native-smoke/resource-observation.mjs";
 import {
   cleanupNativeRun,
   captureCurrentChildProcesses,
   nativeOperationTimeout,
   runNativeOperation,
+  nativeSmokeFailureCodes,
+  closeNativeSessionForRestart,
 } from "./native-startup-smoke.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
@@ -34,6 +37,127 @@ import {
 import { openEpubPublication } from "@voxleaf/epub";
 import { buildMinimalEpubFixture } from "../../../packages/epub/test-support/epub-fixture.ts";
 import { chatterboxPlaybackSpeedParagraph } from "./native-smoke/narration-fixture.mjs";
+
+test("PSC-CI restart waits for captured process exit after deleting the session", async () => {
+  const events = [];
+  let releaseExit;
+  const exited = new Promise((resolve) => {
+    releaseExit = resolve;
+  });
+  const processes = [{ pid: 123, created: "exact", executable: "synthetic" }];
+  const pending = closeNativeSessionForRestart(
+    { deleteSession: async () => events.push("delete") },
+    processes,
+    async (received) => {
+      assert.equal(received, processes);
+      events.push("wait-exit");
+      await exited;
+    },
+  ).then(() => events.push("restart-ready"));
+  try {
+    await new Promise((resolve) => globalThis.setImmediate(resolve));
+    assert.deepEqual(events, ["delete", "wait-exit"]);
+  } finally {
+    releaseExit();
+    await pending;
+  }
+  assert.deepEqual(events, ["delete", "wait-exit", "restart-ready"]);
+});
+
+test("PSC-CI restart propagates an unverified exit without admitting a new session", async () => {
+  const failure = new Error("Native restart processes did not exit.");
+  await assert.rejects(
+    closeNativeSessionForRestart(
+      { deleteSession: async () => undefined },
+      [],
+      async () => {
+        throw failure;
+      },
+    ),
+    (error) => error === failure,
+  );
+});
+
+test(
+  "PSC-CI restart process wait checks identity, has one deadline and never kills",
+  {
+    skip: process.platform !== "win32",
+  },
+  async () => {
+    const child = spawn(
+      process.execPath,
+      ["-e", "setInterval(() => {}, 1000)"],
+      {
+        stdio: "ignore",
+        windowsHide: true,
+      },
+    );
+    const exited = once(child, "exit");
+    let timer;
+    try {
+      await once(child, "spawn");
+      const records = await captureOwnedProcessTree(child.pid);
+      await assert.rejects(
+        waitForOwnedProcessesToExit(records, 25),
+        /did not exit/u,
+      );
+      assert.equal(child.exitCode, null);
+      await waitForOwnedProcessesToExit(
+        records.map((record) => ({
+          ...record,
+          created: "0",
+        })),
+        25,
+      );
+      assert.equal(child.exitCode, null);
+      timer = globalThis.setTimeout(() => child.kill(), 1000);
+      await waitForOwnedProcessesToExit(records);
+      await exited;
+      await waitForOwnedProcessesToExit(records);
+    } finally {
+      globalThis.clearTimeout(timer);
+      if (child.exitCode === null && child.signalCode === null) child.kill();
+      await exited;
+    }
+  },
+);
+
+test("PSC-CI preserves fixed startup and cleanup codes without exposing error text", () => {
+  const failure = new AggregateError(
+    [
+      new Error("Tauri WebDriver exited before startup."),
+      new AggregateError(
+        [new Error("Native owned-process cleanup could not be verified.")],
+        "Native smoke cleanup failed.",
+      ),
+      new Error("private path and publication text"),
+    ],
+    "Native smoke cleanup failed.",
+  );
+  assert.deepEqual(nativeSmokeFailureCodes(failure), [
+    "native-cleanup-failed",
+    "tauri-driver-exited",
+    "unexpected-error",
+    "native-process-ownership-unverified",
+  ]);
+});
+
+test("PSC-CI bounds nested failure diagnostics and tolerates cyclic causes", () => {
+  const failure = new Error("private path and publication text");
+  failure.cause = failure;
+  assert.deepEqual(nativeSmokeFailureCodes(failure), ["unexpected-error"]);
+  const aggregate = new AggregateError(
+    [
+      ...Array.from({ length: 7 }, () => failure),
+      new Error("Tauri WebDriver exited before startup."),
+    ],
+    "Native smoke cleanup failed.",
+  );
+  assert.deepEqual(nativeSmokeFailureCodes(aggregate), [
+    "native-cleanup-failed",
+    "unexpected-error",
+  ]);
+});
 
 for (const stage of ["before", "during"]) {
   test(`SAF-R1 does not adopt a root whose ChildProcess exits ${stage} inspection`, async () => {

@@ -17,6 +17,17 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed playback state corrections](plans/completed/minimal-playback-state-corrections.md)
+protect Resume during navigation cleanup and rejected admission, start fresh Play
+at the visible passage after Stop and preserve speed writes during cleanup.
+Selected unit/Chromium checks, one current Piper EN WebView2 arm and host cleanup
+pass. Independent PSC-R2-20261031 approves implementation and evidence after the
+R1 evidence blocker was resolved; the plan links the final archival assessment.
+The [PR #291 CI follow-up](plans/evidence/minimal-playback-state-corrections/ci-follow-up.md)
+records the App test updates and content-free native startup diagnostics.
+Its [native restart follow-up](plans/evidence/minimal-playback-state-corrections/ci-restart-follow-up.md)
+adds verified application-process exit before reopening the same test profile.
+
 The [completed minimal playback corrections](plans/completed/minimal-playback-audit-corrections.md)
 terminate retired worklets, contain native processor errors through explicit
 recovery and keep speed labels synchronized after paused navigation. Selected

@@ -241,6 +241,23 @@ command-to-audible were `43.815`/`33.375` seconds, RAM peaks
 `4,928,229,376`/`4,414,746,624` bytes, and VRAM peaks `3,707`/`3,671` MiB,
 with zero underruns. These values do not replace the live hardware gate.
 
+## Explicit playback actions during cleanup
+
+Resume during paused navigation waits for cleanup and target placement: the
+control is disabled while navigation settles, and the coordinator independently
+rejects an early command. A rejected ownerless Resume during availability checks
+preserves paused intent. Completing a check never starts narration; the user can
+explicitly Resume again when the selected profile becomes available.
+
+After Stop, primary Play starts from the current visible passage, including one
+inspected while paused. Ordinary Resume and explicit recovery retain their
+existing heard/selected-target authority. Stop still saves the latest heard
+checkpoint; passive inspection does not replace that persistence authority.
+
+Selecting a supported speed during Stop cleanup updates and writes the preference
+without applying it to the retired player. The next run receives that selection;
+storage failures remain observable through the existing preference status.
+
 ## Goal
 
 Make VoxLeaf's portfolio-facing reader feel like a reading application rather
