@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [eight revalidated findings plan](plans/active/eight-revalidated-findings-minimal-corrections.md)
+defines proposed minimal EPUB, reader/admission and maintainer-tool corrections,
+with conditional PNG verification and selected evidence reuse. It is planning
+only: implementation and tests have not started, and historical PASS results
+are not accepted as new validation.
+
 The [completed four-finding corrections](plans/completed/four-finding-minimal-corrections.md)
 protect Unicode numeric adjacency and attached dates, contain failed startup in
 shutdown-first order, and return native cancellation when invalidation wins final
