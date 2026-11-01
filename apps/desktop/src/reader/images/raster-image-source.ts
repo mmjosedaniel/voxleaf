@@ -269,8 +269,10 @@ export class RasterImageSourceManager {
         return fixedCancelled();
       }
       if (
-        observation.widthPixels !== metadata.widthPixels ||
-        observation.heightPixels !== metadata.heightPixels
+        observation.widthPixels !==
+          (metadata.intrinsicDimensions?.[0] ?? metadata.widthPixels) ||
+        observation.heightPixels !==
+          (metadata.intrinsicDimensions?.[1] ?? metadata.heightPixels)
       ) {
         return fixedRejected("decode-mismatch");
       }

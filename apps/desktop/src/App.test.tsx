@@ -362,6 +362,64 @@ class ControlledNarrationCoordinator {
 }
 
 describe("App preference connection characterization", () => {
+  it("RIA-01 late narrator receives oversized placement through the real mounted reader", async () => {
+    const closing = deferred<void>();
+    const first = new ControlledNarrationCoordinator();
+    vi.spyOn(first, "close").mockReturnValue(closing.promise);
+    vi.spyOn(first, "observe").mockReturnValue({
+      ...narrationSnapshot("inactive"),
+      serviceState: "stopped",
+    });
+    const replacement = new ControlledNarrationCoordinator();
+    const factory = vi
+      .fn()
+      .mockReturnValueOnce(first)
+      .mockReturnValue(replacement);
+    const oversized = {
+      ...createTestPublication("Oversized B"),
+      documents: [
+        {
+          ...TEST_DOCUMENT,
+          blocks: Array.from({ length: 10_001 }, () => TEST_BLOCK),
+        },
+      ],
+    };
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({
+        status: "ready",
+        publication: createTestPublication("Readable A"),
+      })
+      .mockResolvedValueOnce({ status: "ready", publication: oversized });
+    const repository = createTestReaderPositionRepository();
+    const view = render(
+      <App
+        openFlow={createTestFlow(open)}
+        readerPositionRepository={repository}
+        createNarrationCoordinator={factory}
+      />,
+    );
+    try {
+      selectEpub("A.epub");
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+      selectEpub("B.epub");
+      await screen.findByRole("heading", {
+        name: "Reading section unavailable",
+      });
+      expect(factory).toHaveBeenCalledTimes(1);
+      const saves = vi.mocked(repository.writePosition).mock.calls.length;
+      await act(async () => closing.resolve());
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+      expect(replacement.settleReaderPlacement).toHaveBeenLastCalledWith({
+        status: "unavailable",
+        reason: "chapter-too-large",
+      });
+      expect(repository.writePosition).toHaveBeenCalledTimes(saves);
+    } finally {
+      closing.resolve();
+      view.unmount();
+    }
+  });
   it.each([false, true])(
     "RAC-01 Play uses B's current mounted locator after delayed A shutdown (scroll after release: %s)",
     async (afterRelease) => {

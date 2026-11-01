@@ -78,6 +78,47 @@ function render(input: Float32Array, ratePercent: number): Float32Array {
 }
 
 describe("real incremental WSOLA processor", () => {
+  it("RIA-03 confirms each activation only during processing and retains pause source frames", () => {
+    const processor = createProcessor();
+    send(processor, {
+      type: "arm",
+      input: new Float32Array(4800),
+      ratePercent: 75,
+      unitSequence: 1,
+    });
+    send(processor, { type: "start", unitSequence: 1, activation: 0 });
+    expect(
+      processor.port.postMessage.mock.calls.some(([m]) => m.type === "started"),
+    ).toBe(false);
+    quantum(processor);
+    expect(processor.port.postMessage).toHaveBeenLastCalledWith({
+      type: "started",
+      unitSequence: 1,
+      activation: 0,
+      currentFrame: 0,
+      sourceFrames: 0,
+    });
+    send(processor, { type: "pause", unitSequence: 1, activation: 1 });
+    expect(processor.port.postMessage).toHaveBeenLastCalledWith({
+      type: "paused",
+      unitSequence: 1,
+      activation: 1,
+      sourceFrames: 96,
+    });
+    quantum(processor);
+    send(processor, { type: "resume", unitSequence: 1, activation: 2 });
+    expect(
+      processor.port.postMessage.mock.calls.some(([m]) => m.type === "resumed"),
+    ).toBe(false);
+    quantum(processor);
+    expect(processor.port.postMessage).toHaveBeenLastCalledWith({
+      type: "resumed",
+      unitSequence: 1,
+      activation: 2,
+      currentFrame: 0,
+      sourceFrames: 96,
+    });
+  });
   it.each(["idle", "active", "paused"])(
     "MPA-01 terminal disposal rejects later work while %s",
     (state) => {

@@ -17,6 +17,15 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [reader, JPEG-density and audible-start corrections](plans/completed/reader-image-audibility-minimal-corrections.md)
+synchronize late narrator attachment, preserve density-aware JPEG decoding within
+physical limits, and gate heard state and metrics on confirmed audio rendering.
+The reproduced WSOLA activation-clock drift is corrected without DSP changes.
+Selected desktop, Chromium, static and native-harness checks pass, with one
+native build and both image/Piper EN routes, restoration and cleanup verified.
+Independent RIA-R1-20261101 approves without findings; the plan links its final
+archival assessment. Historical runtime PASS results do not supply acceptance.
+
 The [visible-locator and Unicode-compound corrections](plans/completed/visible-locator-unicode-compound-corrections.md)
 keep fresh Play aligned with settled Resume follow and preserve unsupported
 Unicode numeric compounds across existing separators. Focused unit/public,

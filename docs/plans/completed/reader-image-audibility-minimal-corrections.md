@@ -1,9 +1,10 @@
 # Reader placement, JPEG density and audible-start minimal corrections
 
-Status: planning only, 2026-11-01. No implementation milestone has started.
-The user authorizes this ExecPlan, a dedicated branch and a local documentation
-commit only. Execution, runtime tests, implementation, push and PR publication
-are not authorized by this request.
+Status: complete, 2026-11-01. M0-M3 implemented, host-validated and independently approved.
+The current execution instruction authorizes implementation, host tests and
+independent review. Commits, push, PR, merge and publication are not authorized.
+Initial HEAD: `35b3d373e24d285e21825562a5744280dcb2e9d6`; requested branch verified;
+worktree and index were clean before task edits.
 
 Planning base: `f2870ffedb3f27b610b4d5608ba90503ea0b3da5` on `main`, initially
 clean. Plan branch: `codex/reader-image-audibility-plan`.
@@ -233,8 +234,8 @@ Periodic progress remains non-persistent. Do not claim physical speaker timing.
 
 ## Milestones
 
-All execution milestones below are **Not started** and require a later execution
-instruction. Documentation-only checks before this planning commit do not
+M0-M3 are complete. RIA-R1-20261101 independently approves implementation. The current execution
+instruction supersedes the planning-only authorization. Earlier checks do not
 execute these milestones.
 
 ### M0: freeze scope and reusable inputs
@@ -297,8 +298,8 @@ eligible individual receipts across documentation-only corrections, with a new
 immutable review assessment where required.
 
 Only after implementation acceptance move the plan to completed and update
-indexes. Git mutation/publication for implementation requires its own applicable
-authorization; this request authorizes only the planning branch and commit.
+indexes. Git mutation/publication for implementation remains outside current
+authorization.
 
 ## Testing and benchmark strategy
 
@@ -445,6 +446,22 @@ at the run itself, rather than trying to reconstruct missing proof later.
 
 ## Progress log
 
+- 2026-11-01 execution: clean planning HEAD and branch verified; no prior edits.
+  Local installed capture has 24,009 entries. Driver and WebView2 majors match.
+  G0 preparation reused 251 exports: complete membership/hashes, 203 package/build
+  inputs and installed entries match the original VUC capture. No runtime PASS reused.
+- G1-unit-red: six intended failures (two placement, three JPEG,
+  and WSOLA clock), plus one invalid synthetic-clock fixture. RIA-C1 reproduced 9,000 falsely consumed frames with processing
+  withheld. G1-browser-red: both cases fail at product assertions; density direct
+  decoder/rounding/fallback preconditions pass, then reader shows unavailable.
+  Pending device resume reports command-to-audible 160 ms before confirmation.
+  Original logs, renderer identities and browser artifacts retained in run-01.
+- M2: bounded activation clock correction for RIA-C1 is now included. No DSP,
+  scheduler, service, shared contract, model or dependency change. Selected final
+  gates remain G2-G8; added tests join real player/persistence/recovery and real
+  App handoff with the existing fakes/fixtures. Evidence ledger tracks outcomes.
+
+
 - 2026-11-01: Revalidated all three roots and related variants from the chat at
   the clean planning base; distinguished current defects from hypothetical
   correction risks and the unconfirmed additional WSOLA drift candidate.
@@ -468,6 +485,20 @@ at the run itself, rather than trying to reconstruct missing proof later.
 
 ## Discoveries and decisions
 
+- M3 scope revision: G7-Piper failed after its six-rate/cancellation checks at
+  the prepared startup assertion. `application-root-not-mounted` is the old
+  assertion's generic error text, not evidence of a lost application root.
+  The assertion observes scheduler `playing` and immediately requires positive
+  command-to-audible, which RIA-03 correctly leaves absent until rendering.
+  Add only the necessary confirmation wait in
+  `apps/desktop/scripts/native-smoke/tts-scenarios.mjs`, retaining the initial
+  60-second buffer observation and all audible/cleanup assertions. This is a
+  demonstrated harness dependency, not a new runtime fix. Renew G5 and format/lint,
+  then both native modes against the unchanged G6 binary; no rebuild. Preserve
+  the original G7 failure and verified full restoration, and allow one retry
+  after this concrete observation correction. Further failure requires diagnosis
+  and another explicit plan revision, not an automatic repeat.
+
 - Three roots explain the confirmed cases; resume metrics and recovery are
   RIA-03 consequences, not separate cross-component projects.
 - Replaying state at attachment is smaller than delaying reader mounting or
@@ -486,11 +517,35 @@ at the run itself, rather than trying to reconstruct missing proof later.
 
 ## Final validation results
 
-Implementation: **NOT STARTED**. G0-G8: **NOT EXECUTED for this ExecPlan**.
-No implementation PASS, reproduced defect, native measurement, performance
-improvement or independent implementation approval is claimed.
+Implementation and host validation are complete. Independent review
+RIA-R1-20261101: APPROVE, no findings or missing acceptance evidence.
 
-Planning reviewed source, test definitions and historical evidence only.
-Documentation-only evidence/whitespace/link checks may run before the authorized
-local planning commit and must be reported separately. The final handoff records
-the actual branch, commit, those checks and the continued execution prohibition.
+- G0 reused 251 prepared exports with exact membership/hash, build-input and
+  installed-library proof; configured browser/native hooks still execute.
+- G1 retained six intended unit failures, one invalid-clock fixture and two
+  real-browser product failures. RIA-C1 is reproduced and corrected within the
+  existing activation clock, without DSP changes.
+- G2-desktop-final: exit 0, 439/439 in eleven selected suites.
+- G3-browser-final: exit 0, 11/11 selected Chromium cases; renderer bytes captured.
+- G4-format-final, G4-lint-final and G4-types-final: exit 0, separate receipts.
+- G5-harness-r2: exit 0, 50/50.
+- G6-core: exit 0, current existing Piper payload; one G6-build passed.
+- G7-images-r2, G7-Piper-r2 and full resource-cycle-r2: exit 0; same executable, verified restoration and cleanup. G8 documentation checks and independent implementation review pass. No historical runtime result is accepted.
+
+[Execution ledger](../evidence/reader-image-audibility-corrections/execution-ledger.md)
+records preserved failures, bounded renewals, evidence identities and cleanup.
+G2/G5 are retained because later documentation does not belong
+to their consumed dependency graph. G3 was renewed after fixture formatting;
+no original receipt was rebound. No Git publication action is authorized.
+
+Independent RIA-R1-20261101 rechecked all 425 path identities and 205 receipt
+digests, accepted the bounded evidence reuse and verified native restoration.
+The strict installed comparison's only delta is Chromium's generated debug.log;
+its original failed receipt and separate consumed-input equivalence are retained.
+No library/tool update or historical runtime PASS supplies acceptance.
+
+The plan was archived after implementation approval. Final archival checks and
+the subsequent exact-document assessment are retained in the
+[review reports](../evidence/reader-image-audibility-corrections/review-reports.md).
+Production, fixtures, executable and accepted host receipts remain unchanged.
+No commit, push, PR, merge or publication was performed.

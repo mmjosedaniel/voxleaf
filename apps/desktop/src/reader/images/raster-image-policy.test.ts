@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   jpegExifSegment,
+  jpegDensityExifSegment,
   syntheticJpegBytes,
 } from "../../../tests/fixtures/jpeg-fixture";
 
@@ -17,6 +18,66 @@ import {
 } from "./raster-image-policy";
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+it.each([true, false])(
+  "RIA-02 bounded JPEG density metadata littleEndian=%s",
+  (littleEndian) => {
+    const inspect = (exif: Uint8Array) =>
+      inspectRasterImageMetadata(syntheticJpegBytes(exif), "image/jpeg");
+    for (const orientation of [1, 6, 8]) {
+      expect(
+        inspect(jpegDensityExifSegment(orientation, littleEndian)),
+      ).toMatchObject({
+        status: "accepted",
+        metadata: {
+          decodedPixels: 6,
+          intrinsicDimensions: orientation === 1 ? [2, 1] : [1, 2],
+        },
+      });
+    }
+    // Optional malformed/unrecognized density falls back to exact physical size;
+    // it must not bypass the separately strict orientation/header validation.
+    for (const [offset, value, short] of [
+      [78, 0, false],
+      [74, 0, false],
+      [30, 10000, false],
+      [66, 10000, false],
+      [90, 1000, true],
+      [100, 3, false],
+      [54, 1, true],
+      [24, 4, true],
+      [26, 2, false],
+      [94, 5, true],
+      [66, 8, false],
+    ] as const) {
+      const exif = jpegDensityExifSegment(1, littleEndian);
+      const tiff = new DataView(exif.buffer, 10);
+      if (short) tiff.setUint16(offset, value, littleEndian);
+      else tiff.setUint32(offset, value, littleEndian);
+      expect(inspect(exif)).toEqual({
+        status: "accepted",
+        metadata: {
+          widthPixels: 3,
+          heightPixels: 2,
+          decodedPixels: 6,
+          frameCount: 1,
+        },
+      });
+    }
+    for (const overrides of [
+      { maximumWidthPixels: 2 },
+      { maximumDecodedPixels: 5 },
+    ]) {
+      expect(
+        inspectRasterImageMetadata(
+          syntheticJpegBytes(jpegDensityExifSegment(1, littleEndian)),
+          "image/jpeg",
+          createRasterImageSafetyPolicy(overrides),
+        ).status,
+      ).toBe("rejected");
+    }
+  },
+);
 
 function ascii(value: string): number[] {
   return [...value].map((character) => character.charCodeAt(0));

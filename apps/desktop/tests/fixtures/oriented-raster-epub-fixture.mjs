@@ -3,17 +3,34 @@ import {
   buildMinimalEpubFixture,
   minimalPackageDocument,
 } from "../../../../packages/epub/test-support/epub-fixture.ts";
-import { jpegExifSegment, syntheticJpegBytes } from "./jpeg-fixture.ts";
+import {
+  jpegDensityExifSegment,
+  jpegExifSegment,
+  syntheticJpegBytes,
+} from "./jpeg-fixture.ts";
 
 export function buildOrientedRasterEpubFixture() {
   return buildMinimalEpubFixture({
-    packageDocument: minimalPackageDocument().replace(
-      "</manifest>",
-      '<item id="rotated-six" href="images/six.jpg" media-type="image/jpeg"/><item id="rotated-eight" href="images/eight.jpg" media-type="image/jpeg"/><item id="png-six" href="images/six.png" media-type="image/png"/><item id="png-eight" href="images/eight.png" media-type="image/png"/></manifest>',
-    ),
+    packageDocument: minimalPackageDocument()
+      .replace(
+        "</manifest>",
+        '<item id="density" href="images/density.jpg" media-type="image/jpeg"/><item id="density-six" href="images/density-six.jpg" media-type="image/jpeg"/></manifest>',
+      )
+      .replace(
+        "</manifest>",
+        '<item id="rotated-six" href="images/six.jpg" media-type="image/jpeg"/><item id="rotated-eight" href="images/eight.jpg" media-type="image/jpeg"/><item id="png-six" href="images/six.png" media-type="image/png"/><item id="png-eight" href="images/eight.png" media-type="image/png"/></manifest>',
+      ),
     chapterDocument:
-      '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Oriented raster</title></head><body><h1 id="chapter-one">Oriented JPEG fixture</h1><p><a href="#note?1">Literal fragment</a> <a href="#note%3F1">Encoded fragment</a> <a href="?query#note?1">Query blocked</a> <a href="https://example.invalid/#note?1">External blocked</a></p><p><img src="../images/six.jpg" alt="Synthetic orientation six"/></p><p><img src="../images/eight.jpg" alt="Synthetic orientation eight"/></p><p><img src="../images/six.png" alt="Synthetic PNG orientation six"/></p><p><img src="../images/eight.png" alt="Synthetic PNG orientation eight"/></p><h2 id="note?1">Opaque fragment target</h2><p>Repository-authored orientation and fragment controls.</p></body></html>',
+      '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Oriented raster</title></head><body><h1 id="chapter-one">Oriented JPEG fixture</h1><p><a href="#note?1">Literal fragment</a> <a href="#note%3F1">Encoded fragment</a> <a href="?query#note?1">Query blocked</a> <a href="https://example.invalid/#note?1">External blocked</a></p><p><img src="../images/six.jpg" alt="Synthetic orientation six"/></p><p><img src="../images/eight.jpg" alt="Synthetic orientation eight"/></p><p><img src="../images/six.png" alt="Synthetic PNG orientation six"/></p><p><img src="../images/eight.png" alt="Synthetic PNG orientation eight"/></p><p><img src="../images/density.jpg" alt="Synthetic density"/></p><p><img src="../images/density-six.jpg" alt="Synthetic density six"/></p><h2 id="note?1">Opaque fragment target</h2><p>Repository-authored orientation and fragment controls.</p></body></html>',
     additionalEntries: [
+      {
+        name: "EPUB/images/density.jpg",
+        content: syntheticJpegBytes(jpegDensityExifSegment()),
+      },
+      {
+        name: "EPUB/images/density-six.jpg",
+        content: syntheticJpegBytes(jpegDensityExifSegment(6, false)),
+      },
       {
         name: "EPUB/images/six.png",
         content: syntheticPngBytes(pngExifChunk(6)),

@@ -5,6 +5,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   jpegExifSegment,
+  jpegDensityExifSegment,
   syntheticJpegBytes,
 } from "../../../tests/fixtures/jpeg-fixture";
 
@@ -118,6 +119,63 @@ afterEach(() => {
 });
 
 describe("bounded raster image source lifecycle", () => {
+  it("RIA-02 density does not accept arbitrary decoder sizes and cancels with one release", async () => {
+    const adapter = new FakeBrowserAdapter();
+    const manager = new RasterImageSourceManager(undefined, adapter);
+    const bytes = syntheticJpegBytes(jpegDensityExifSegment());
+    for (const dimensions of [
+      [3, 2],
+      [1, 1],
+    ]) {
+      adapter.decode.mockResolvedValue({
+        widthPixels: dimensions[0]!,
+        heightPixels: dimensions[1]!,
+      });
+      expect(await manager.prepare(bytes, "image/jpeg")).toMatchObject({
+        status: "rejected",
+        reason: "decode-mismatch",
+      });
+    }
+    const pending = deferred<RasterImageDecodeObservation>();
+    adapter.decode.mockReturnValue(pending.promise);
+    const controller = new AbortController();
+    const operation = manager.prepare(bytes, "image/jpeg", {
+      signal: controller.signal,
+    });
+    controller.abort();
+    pending.resolve({ widthPixels: 2, heightPixels: 1 });
+    expect(await operation).toMatchObject({ status: "cancelled" });
+    await manager.close();
+    expect(adapter.revoked).toEqual(adapter.created);
+    expect(adapter.revoked).toHaveLength(3);
+    expect(manager.liveDecodedPixels).toBe(0);
+  });
+  it.each([1, 6, 8])(
+    "RIA-02 admits density orientation %i with physical charging",
+    async (orientation) => {
+      const adapter = new FakeBrowserAdapter();
+      adapter.decode.mockResolvedValue(
+        orientation === 1
+          ? { widthPixels: 2, heightPixels: 1 }
+          : { widthPixels: 1, heightPixels: 2 },
+      );
+      const manager = new RasterImageSourceManager(undefined, adapter);
+      const result = await manager.prepare(
+        syntheticJpegBytes(jpegDensityExifSegment(orientation)),
+        "image/jpeg",
+      );
+      expect(result.status).toBe("ready");
+      expect(manager.liveDecodedPixels).toBe(6);
+      if (result.status === "ready") {
+        expect(result.source.widthPixels).toBe(orientation === 1 ? 3 : 2);
+        result.source.release();
+        result.source.release();
+      }
+      await manager.close();
+      expect(adapter.revoked).toEqual(["blob:voxleaf-1"]);
+      expect(manager.liveDecodedPixels).toBe(0);
+    },
+  );
   it.each([6, 8])(
     "SAC-09 admits orientation %i with exact pixels and one release",
     async (orientation) => {

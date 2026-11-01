@@ -2162,6 +2162,101 @@ test("NCC final device counter precedes completion delivery, then saves exact en
   }
 });
 
+test("RIA-03 pending device start and resume preserve heard state and exclude waiting metrics", async ({
+  page,
+}) => {
+  await installSyntheticService(
+    page,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+  );
+  await page.addInitScript(() => {
+    const Original = globalThis.AudioContext;
+    const gate = { pending: false, release: () => {}, reject: () => {} };
+    Object.assign(globalThis, { __ria: gate });
+    globalThis.AudioContext = class extends Original {
+      override resume(): Promise<void> {
+        gate.pending = true;
+        return new Promise<void>((resolve, reject) => {
+          gate.release = () => {
+            gate.pending = false;
+            void super.resume().then(resolve, reject);
+          };
+          gate.reject = () => {
+            gate.pending = false;
+            reject(new Error("synthetic device rejection"));
+          };
+        });
+      }
+    };
+  });
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-ria.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${"<p>Synthetic playback passage.</p>".repeat(24)}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  const saved = () =>
+    page.evaluate(() => localStorage.getItem("voxleaf.reader.positions"));
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").pending))
+    .toBe(true);
+  const before = await saved();
+  await page.waitForTimeout(400);
+  await expect(narration).toHaveAttribute(
+    "data-narration-command-to-audible-ms",
+    "",
+  );
+  await expect(narration).toHaveAttribute("data-narration-playback-ms", "0");
+  expect(
+    await page.evaluate(() => CSS.highlights.has("voxleaf-narration-active")),
+  ).toBe(false);
+  expect(await saved()).toBe(before);
+  await page.evaluate(() => Reflect.get(globalThis, "__ria").release());
+  await expect
+    .poll(() =>
+      page.evaluate(() => CSS.highlights.has("voxleaf-narration-active")),
+    )
+    .toBe(true);
+  await page.locator('[data-narration-action="pause"]').click();
+  const paused = Number(
+    await narration.getAttribute("data-narration-playback-ms"),
+  );
+  await page.locator('[data-narration-action="resume"]').click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").pending))
+    .toBe(true);
+  await page.waitForTimeout(400);
+  expect(
+    Number(await narration.getAttribute("data-narration-playback-ms")),
+  ).toBe(paused);
+  await page.locator('[data-narration-action="stop"]').click();
+  await page.evaluate(() => Reflect.get(globalThis, "__ria").reject());
+  await expect(narration).toHaveAttribute("data-narration-phase", "stopped");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 async function installSyntheticService(
   page: Page,
   naturalCompletion = false,

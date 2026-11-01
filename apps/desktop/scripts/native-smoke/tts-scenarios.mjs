@@ -2036,9 +2036,23 @@ export function createNativeTtsScenarios({
       assert(
         preparedObservation?.targetMs === 60_000 &&
           preparedObservation.playableMs >= 60_000 &&
-          preparedObservation.retainedUnits > 0 &&
-          preparedObservation.commandToAudibleMs > 0,
-        "Native application root did not mount.",
+          preparedObservation.retainedUnits > 0,
+        "Native synchronized narration proof failed.",
+      );
+      // Scheduler admission proves the prepared lead above. Rendering may begin
+      // later: measure its confirmation without charging device-start waiting
+      // or requiring 60 seconds to remain after playback has consumed frames.
+      setStage("adaptive exact-host prepared confirmed rendering");
+      await waitForCondition(
+        driver,
+        `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-phase") === "playing" &&
+         Number(owner.getAttribute("data-narration-command-to-audible-ms")) > 0;`,
+        STARTUP_TIMEOUT_MS,
+      );
+      preparedObservation.commandToAudibleMs = await driver.execute(
+        `return Number(document.querySelector(".product-narration")
+         ?.getAttribute("data-narration-command-to-audible-ms"));`,
       );
       leafStartObservation = await adaptiveReaderExperienceObservation(driver);
       assert(

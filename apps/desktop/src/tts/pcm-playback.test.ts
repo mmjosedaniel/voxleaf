@@ -176,6 +176,9 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
       (paused || stopped ? 0 : this.clock.nowMs - resumedAtMs);
     const handle: FakeHandle = {
       sequence: request.sequence,
+      get rendering() {
+        return !paused && !stopped;
+      },
       get playedSampleFrames() {
         return Math.min(
           durationFrames,
@@ -669,6 +672,224 @@ function synthesize(
   expect(source.takeAudioUnit()).toBeUndefined();
   return unit;
 }
+
+it("RIA-03 direct resume must succeed and the source clock must advance before heard start", async () => {
+  const clock = createManualClock(0);
+  const scheduler = readyScheduler(clock, [segment(1)], true);
+  synthesize(scheduler, segment(1), 1000);
+  const context = new FakeAudioContext();
+  let resolve!: () => void;
+  context.resume = () =>
+    new Promise<void>((done) => {
+      resolve = done;
+    });
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+  );
+  const player = new AdaptivePcmPlayer(scheduler, backend);
+  const heard: AdaptivePcmAudibleProgressObservation[] = [];
+  player.subscribeAudibleProgress((event) => heard.push(event));
+  player.synchronize();
+  expect(heard).toEqual([]);
+  context.currentTime = 10;
+  player.synchronize();
+  expect(heard).toEqual([]);
+  expect(scheduler.currentPlaybackUnit()?.consumedSampleFrames).toBe(0);
+  resolve();
+  await Promise.resolve();
+  player.synchronize();
+  expect(heard).toEqual([]);
+  context.currentTime += 0.01;
+  player.synchronize();
+  expect(heard.map((event) => event.kind)).toEqual(["segment-started"]);
+  player.pause();
+  player.resume();
+  clock.advanceBy(3000);
+  context.currentTime += 3;
+  player.synchronize();
+  expect(heard.map((event) => event.kind)).toEqual(["segment-started"]);
+  player.stop();
+  resolve();
+  await Promise.resolve();
+  expect(player.synchronize().state).toBe("stopped");
+});
+
+it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time before start or resume", async () => {
+  const context = new FakeAudioContext();
+  const node = new FakeWsolaNode();
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+    async () => ({ node: node as unknown as AudioWorkletNode, close: vi.fn() }),
+  );
+  await backend.preparePlaybackRate(75);
+  const handle = backend.start(
+    {
+      sequence: 1,
+      payload: new Uint8Array(96000),
+      sampleRateHz: 24000,
+      channelCount: 1,
+      sampleFormat: "float32-le",
+      sampleCountSamples: 24000,
+      startSampleFrame: 0,
+      volumePercent: 0,
+      playbackRate: 0.75,
+    },
+    { ended: vi.fn(), failed: vi.fn() },
+  );
+  await Promise.resolve();
+  context.currentTime = 0.5;
+  expect(handle.playedSampleFrames).toBe(0);
+  node.port.emit({
+    type: "started",
+    unitSequence: 1,
+    activation: 0,
+    currentFrame: 12000,
+    sourceFrames: 0,
+  });
+  context.currentTime += 0.1;
+  expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  handle.pause();
+  node.port.emit({
+    type: "paused",
+    unitSequence: 1,
+    activation: 1,
+    sourceFrames: 1800,
+  });
+  context.currentTime += 1;
+  expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  handle.resume();
+  await Promise.resolve();
+  context.currentTime += 1;
+  expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  node.port.emit({
+    type: "started",
+    unitSequence: 1,
+    activation: 0,
+    currentFrame: 12000,
+    sourceFrames: 0,
+  });
+  expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  node.port.emit({
+    type: "resumed",
+    unitSequence: 1,
+    activation: 2,
+    currentFrame: 62400,
+    sourceFrames: 1800,
+  });
+  context.currentTime += 0.1;
+  expect(handle.playedSampleFrames).toBeCloseTo(3600, -1);
+  await backend.close();
+});
+
+it.each([1, 0.75])(
+  "RIA-03 ignores stale resume success/failure across activations and successors at rate %s",
+  async (rate) => {
+    const context = new FakeAudioContext();
+    const pending: { resolve(): void; reject(): void }[] = [];
+    context.resume = () =>
+      new Promise<void>((resolve, reject) => {
+        pending.push({
+          resolve,
+          reject: () => reject(new Error("synthetic failure")),
+        });
+      });
+    const node = new FakeWsolaNode();
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+      async () => ({
+        node: node as unknown as AudioWorkletNode,
+        close: vi.fn(),
+      }),
+    );
+    await backend.preparePlaybackRate(rate === 1 ? 100 : 75);
+    const request = {
+      sequence: 1,
+      payload: new Uint8Array(96000),
+      sampleRateHz: 24000,
+      channelCount: 1,
+      sampleFormat: "float32-le",
+      sampleCountSamples: 24000,
+      startSampleFrame: 0,
+      volumePercent: 100,
+      playbackRate: rate,
+    } as const;
+    const callbacks = { ended: vi.fn(), failed: vi.fn() };
+    const first = backend.start(request, callbacks);
+    first.pause();
+    first.resume();
+    pending[0]!.resolve();
+    await Promise.resolve();
+    context.currentTime = 1;
+    expect(first.rendering).toBe(false);
+    expect(first.playedSampleFrames).toBe(0);
+    first.pause();
+    first.resume();
+    pending[1]!.reject();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(callbacks.failed).not.toHaveBeenCalled();
+    pending[2]!.resolve();
+    await Promise.resolve();
+    if (rate !== 1)
+      node.port.emit({
+        type: "resumed",
+        unitSequence: 1,
+        activation: 4,
+        currentFrame: 24000,
+        sourceFrames: 0,
+      });
+    context.currentTime += 0.01;
+    expect(first.rendering).toBe(true);
+    first.pause();
+    first.resume();
+    first.stop();
+    const successor = backend.start({ ...request, sequence: 2 }, callbacks);
+    pending[3]!.reject();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(callbacks.failed).not.toHaveBeenCalled();
+    expect(successor.rendering).toBe(false);
+    successor.stop();
+    pending[4]!.resolve();
+    await Promise.resolve();
+    const rejected = backend.start({ ...request, sequence: 3 }, callbacks);
+    pending[5]!.reject();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(callbacks.failed).toHaveBeenCalledOnce();
+    expect(callbacks.ended).not.toHaveBeenCalled();
+    expect(rejected.rendering).toBe(false);
+    expect(rejected.playedSampleFrames).toBe(0);
+    await backend.close();
+  },
+);
+
+it("RIA-03 publishes a short unit start before end even when both occur inside backend allocation", () => {
+  const clock = createManualClock(0);
+  const scheduler = readyScheduler(clock, [segment(1)], true);
+  synthesize(scheduler, segment(1), 1);
+  const backend: PcmPlaybackBackend = {
+    start(request, callbacks) {
+      callbacks.ended();
+      return {
+        sequence: request.sequence,
+        rendering: false,
+        playedSampleFrames: 24,
+        pause() {},
+        resume() {},
+        stop() {},
+        setVolumePercent() {},
+      };
+    },
+    close() {},
+  };
+  const player = new AdaptivePcmPlayer(scheduler, backend);
+  const events: string[] = [];
+  player.subscribeAudibleProgress((event) => events.push(event.kind));
+  expect(player.synchronize().state).toBe("complete");
+  expect(events).toEqual(["segment-started", "segment-completed"]);
+  player.close();
+});
 
 function runCleanupTurns(turns: Array<() => void>): void {
   while (turns.length > 0) {
@@ -1687,7 +1908,7 @@ describe("Web Audio PCM backend", () => {
     }
   });
 
-  it("decodes exact little-endian float32 PCM into one bounded device buffer", () => {
+  it("decodes exact little-endian float32 PCM into one bounded device buffer", async () => {
     const context = new FakeAudioContext();
     const backend = new WebAudioPcmPlaybackBackend(
       () => context as unknown as AudioContext,
@@ -1720,6 +1941,7 @@ describe("Web Audio PCM backend", () => {
       },
     );
 
+    await Promise.resolve();
     expect(context.buffers).toHaveLength(1);
     expect(context.buffers[0]).toMatchObject({
       numberOfChannels: 1,

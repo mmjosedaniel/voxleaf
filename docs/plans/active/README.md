@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Reader placement, JPEG density and audible-start corrections](reader-image-audibility-minimal-corrections.md):
-  planning only; minimal corrections for late narrator placement, density-aware
-  image agreement and confirmed audio progress, with scoped validation and
-  explicit evidence-reuse decisions. Execution has not been authorized.
+No active plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
