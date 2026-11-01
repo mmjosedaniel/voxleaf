@@ -351,6 +351,14 @@ export function ReaderPublicationContent({
   const getSnapshot = useCallback(() => coordinator.state, [coordinator]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   useLayoutEffect(() => {
+    if (narrationSource === undefined) return;
+    // Attachment replays availability, not a navigation or a position save.
+    externalCallbacks.current.onNavigationSettlement?.(
+      coordinator.state.contentStatus === "chapter-too-large"
+        ? { status: "unavailable", reason: "chapter-too-large" }
+        : { status: "settled", locator: coordinator.state.activeLocator },
+      "reflow",
+    );
     if (coordinator.state.contentStatus === "render") {
       narrationSource?.updateVisibleLocator?.(coordinator.state.activeLocator);
     }

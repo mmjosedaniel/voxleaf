@@ -51,6 +51,7 @@ export interface AdaptivePcmPlayerObservation {
   readonly pendingPlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
   readonly playbackRatePreparationActive: boolean;
   readonly activeSequence: number | undefined;
+  readonly rendering: boolean;
   readonly intentionalTransitionPauseActive: boolean;
   readonly intentionalTransitionPauseMs: number;
   readonly intentionalTransitionPauseRemainingMs: number;
@@ -153,6 +154,7 @@ export class AdaptivePcmPlayer {
   #backendCleanup: Promise<void> | undefined;
   #handle: PcmPlaybackHandle | undefined;
   #activeUnit: ActiveAudibleUnit | undefined;
+  #startPublished = false;
   #lastProgressObservationAtMs: number | undefined;
   #playbackStartSampleFrame = 0;
   #reportedSampleFrames = 0;
@@ -372,17 +374,23 @@ export class AdaptivePcmPlayer {
     const sequence = unit.sequence;
     const playbackRatePercent = this.#scheduler.activateCurrentPlaybackRate();
     try {
-      this.#handle = this.#backend.start(
+      let allocated = false;
+      let ended = false;
+      let failed = false;
+      const handle = this.#backend.start(
         requestFrom(unit, this.#volumePercent, playbackRatePercent),
         Object.freeze({
           ended: () => {
-            this.#handleEnded(sequence);
+            if (!allocated) ended = true;
+            else if (this.#handle === handle) this.#handleEnded(sequence);
           },
           failed: () => {
-            this.#fail();
+            if (!allocated) failed = true;
+            else if (this.#handle === handle) this.#fail();
           },
         }),
       );
+      this.#handle = handle;
       this.#activeUnit = Object.freeze({
         sessionId: unit.metadata.sessionId,
         generationId: unit.metadata.generationId,
@@ -392,17 +400,31 @@ export class AdaptivePcmPlayer {
         sampleCountSamples: unit.metadata.sampleCountSamples,
         transitionPauseMs: unit.transitionPauseMs,
       });
-      this.#lastProgressObservationAtMs =
-        this.#scheduler.observe().observedAtMs;
-      this.#publishAudibleProgress(
-        "segment-started",
-        this.#activeUnit,
-        unit.consumedSampleFrames,
-      );
+      this.#startPublished = false;
+      allocated = true;
+      if (failed) this.#fail();
+      else if (ended) this.#handleEnded(sequence);
+      else this.#confirmRendering();
     } catch {
       this.#fail();
       throw new PcmPlaybackError("playback-failure");
     }
+  }
+
+  #confirmRendering(completed = false): void {
+    if (
+      this.#startPublished ||
+      this.#activeUnit === undefined ||
+      (!completed && !this.#handle?.rendering)
+    )
+      return;
+    this.#startPublished = true;
+    this.#lastProgressObservationAtMs = this.#scheduler.observe().observedAtMs;
+    this.#publishAudibleProgress(
+      "segment-started",
+      this.#activeUnit,
+      this.#playbackStartSampleFrame,
+    );
   }
 
   #handleEnded(sequence: number): void {
@@ -414,6 +436,9 @@ export class AdaptivePcmPlayer {
       return;
     }
     const completedUnit = this.#activeUnit;
+    // The authoritative device end also proves short units that finished
+    // between observations. Publish start before completion even after Pause.
+    this.#confirmRendering(true);
     const paused = this.#scheduler.observe().playbackState === "paused";
     this.#publishAudibleProgress(
       "segment-completed",
@@ -456,6 +481,7 @@ export class AdaptivePcmPlayer {
       handle === undefined ||
       unit === undefined ||
       handle.sequence !== unit.sequence ||
+      (!forceComplete && !handle.rendering) ||
       (this.#scheduler.observe().playbackState !== "playing" &&
         !(
           forceComplete && this.#scheduler.observe().playbackState === "paused"
@@ -463,6 +489,7 @@ export class AdaptivePcmPlayer {
     ) {
       return;
     }
+    this.#confirmRendering(forceComplete);
     const observed = forceComplete
       ? unit.metadata.sampleCountSamples
       : Math.min(
@@ -788,6 +815,7 @@ export class AdaptivePcmPlayer {
       playbackRatePreparationActive:
         this.#playbackRatePreparation !== undefined,
       activeSequence: this.#handle?.sequence,
+      rendering: this.#handle?.rendering === true,
       intentionalTransitionPauseActive:
         this.#transitionPause?.startedAtMs !== undefined &&
         scheduler.playbackState === "playing",

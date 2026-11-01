@@ -31,6 +31,7 @@ export interface RasterImageMetadata {
   readonly heightPixels: number;
   readonly decodedPixels: number;
   readonly frameCount: number;
+  readonly intrinsicDimensions?: readonly [number, number];
 }
 
 export type RasterImageMetadataRejectionReason =
@@ -55,6 +56,7 @@ interface ParsedRasterImageMetadata {
   readonly frameCount: number;
   readonly animated: boolean;
   readonly swapDimensions?: boolean;
+  readonly intrinsicDimensions?: readonly [number, number];
 }
 
 const GIF_87A = Object.freeze([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]);
@@ -407,6 +409,83 @@ function parseExifOrientation(tiff: Uint8Array): number | undefined {
   return orientation ?? 1;
 }
 
+/** Optional JPEG density is presentation metadata, never an allocation budget. */
+function jpegIntrinsicDimensions(
+  tiff: Uint8Array,
+  physical: readonly [number, number],
+): readonly [number, number] | undefined {
+  // IFD0/header/orientation have already passed the strict shared parser.
+  const littleEndian = hasAsciiAt(tiff, "II", 0);
+  const read16 = littleEndian ? readUint16LittleEndian : readUint16BigEndian;
+  const read32 = littleEndian ? readUint32LittleEndian : readUint32BigEndian;
+  const fields = new Map<number, number>();
+  const readDirectory = (offset: number, tags: readonly number[]): boolean => {
+    const count = read16(tiff, offset);
+    if (
+      offset < 8 ||
+      count < 0 ||
+      checkedEnd(offset + 2, count * 12 + 4, tiff.length) === undefined
+    )
+      return false;
+    for (let index = 0; index < count; index += 1) {
+      const entry = offset + 2 + index * 12;
+      const tag = read16(tiff, entry);
+      if (!tags.includes(tag)) continue;
+      if (fields.has(tag) || read32(tiff, entry + 4) !== 1) return false;
+      const type = read16(tiff, entry + 2);
+      let value: number;
+      if (tag === 0x011a || tag === 0x011b) {
+        const rational = read32(tiff, entry + 8);
+        if (
+          type !== 5 ||
+          rational < 8 ||
+          checkedEnd(rational, 8, tiff.length) === undefined
+        )
+          return false;
+        const denominator = read32(tiff, rational + 4);
+        if (denominator <= 0) return false;
+        value = Math.fround(read32(tiff, rational) / denominator);
+      } else {
+        if (
+          (tag === 0x0128 && type !== 3) ||
+          (tag === 0x8769 && type !== 4) ||
+          (type !== 3 && type !== 4)
+        )
+          return false;
+        value = type === 3 ? read16(tiff, entry + 8) : read32(tiff, entry + 8);
+      }
+      if (!Number.isFinite(value) || value <= 0) return false;
+      fields.set(tag, value);
+    }
+    return true;
+  };
+  if (
+    !readDirectory(read32(tiff, 4), [0x011a, 0x011b, 0x0128, 0x8769]) ||
+    fields.get(0x0128) !== 2
+  )
+    return undefined;
+  const subIfd = fields.get(0x8769);
+  if (subIfd === undefined || !readDirectory(subIfd, [0xa002, 0xa003]))
+    return undefined;
+  const x = fields.get(0xa002);
+  const y = fields.get(0xa003);
+  const xResolution = fields.get(0x011a);
+  const yResolution = fields.get(0x011b);
+  if (
+    x === undefined ||
+    y === undefined ||
+    xResolution === undefined ||
+    yResolution === undefined ||
+    x > 0x7fffffff ||
+    y > 0x7fffffff
+  )
+    return undefined;
+  return Math.round(Math.fround((physical[0] * 72) / xResolution)) === x &&
+    Math.round(Math.fround((physical[1] * 72) / yResolution)) === y
+    ? [x, y]
+    : undefined;
+}
+
 function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
   if (!hasBytesAt(bytes, JPEG)) {
     return undefined;
@@ -415,6 +494,7 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
   let offset = JPEG.length;
   let dimensions: readonly [number, number] | undefined;
   let orientation: number | undefined;
+  let exif: Uint8Array | undefined;
   while (offset < bytes.byteLength) {
     if (bytes[offset] !== 0xff) {
       return undefined;
@@ -452,9 +532,8 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
         !hasAsciiAt(bytes.subarray(offset + 2, segmentEnd), "Exif\0\0", 0)
       )
         return undefined;
-      orientation = parseExifOrientation(
-        bytes.subarray(offset + 8, segmentEnd),
-      );
+      exif = bytes.subarray(offset + 8, segmentEnd);
+      orientation = parseExifOrientation(exif);
       if (orientation === undefined) return undefined;
     }
 
@@ -470,6 +549,10 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
       dimensions = [widthPixels, heightPixels];
     }
     if (marker === 0xda) {
+      const intrinsicDimensions =
+        exif !== undefined && dimensions !== undefined
+          ? jpegIntrinsicDimensions(exif, dimensions)
+          : undefined;
       return dimensions === undefined
         ? undefined
         : {
@@ -478,6 +561,9 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
             frameCount: 1,
             animated: false,
             swapDimensions: orientation !== undefined && orientation >= 5,
+            ...(intrinsicDimensions === undefined
+              ? {}
+              : { intrinsicDimensions }),
           };
     }
     offset = segmentEnd;
@@ -704,6 +790,18 @@ export function inspectRasterImageMetadata(
       heightPixels,
       decodedPixels,
       frameCount: parsed.frameCount,
+      ...(parsed.intrinsicDimensions === undefined
+        ? {}
+        : {
+            intrinsicDimensions: Object.freeze(
+              parsed.swapDimensions
+                ? ([
+                    parsed.intrinsicDimensions[1],
+                    parsed.intrinsicDimensions[0],
+                  ] as const)
+                : parsed.intrinsicDimensions,
+            ),
+          }),
     }),
   });
 }

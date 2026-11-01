@@ -198,39 +198,86 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     source.buffer = audioBuffer;
     source.playbackRate.value = request.playbackRate;
     source.connect(gain);
-    const startedAt = context.currentTime;
+    let activatedAt = context.currentTime;
+    let activation = 0;
+    let resumed = false;
+    let sourceStarted = false;
+    let playedFrames = 0;
     let stopped = false;
+    const readFrames = () =>
+      Math.min(
+        remaining,
+        playedFrames +
+          (resumed
+            ? Math.max(
+                0,
+                Math.floor(
+                  (context.currentTime - activatedAt) * request.sampleRateHz,
+                ),
+              )
+            : 0),
+      );
+    const resume = () => {
+      const token = activation;
+      void context
+        .resume()
+        .then(() => {
+          if (stopped || this.#active !== handle || token !== activation)
+            return;
+          activatedAt = context.currentTime;
+          resumed = true;
+          if (!sourceStarted) {
+            source.start();
+            sourceStarted = true;
+          }
+        })
+        .catch(() => {
+          if (!stopped && this.#active === handle && token === activation)
+            callbacks.failed();
+        });
+    };
     const handle: WebAudioPlaybackHandle = {
       sequence: request.sequence,
       playbackRate: 1,
-      get playedSampleFrames() {
-        if (stopped) {
-          return remaining;
-        }
-        return Math.min(
-          remaining,
-          Math.floor((context.currentTime - startedAt) * request.sampleRateHz),
-        );
+      get rendering() {
+        return !stopped && resumed && context.currentTime > activatedAt;
       },
-      pause() {
-        void context.suspend().catch(callbacks.failed);
+      get playedSampleFrames() {
+        return readFrames();
+      },
+      pause: () => {
+        playedFrames = readFrames();
+        resumed = false;
+        const token = ++activation;
+        void context.suspend().catch(() => {
+          if (!stopped && this.#active === handle && token === activation)
+            callbacks.failed();
+        });
       },
       resume() {
-        void context.resume().catch(callbacks.failed);
+        activation += 1;
+        resumed = false;
+        resume();
       },
-      stop() {
+      stop: () => {
         if (!stopped) {
+          playedFrames = readFrames();
+          resumed = false;
           stopped = true;
+          activation += 1;
           source.onended = null;
-          source.stop();
+          if (sourceStarted) source.stop();
           source.disconnect();
           source.buffer = null;
+          if (this.#active === handle) this.#active = undefined;
         }
       },
       setVolumePercent(volumePercent) {
         gain.gain.value = volumePercent / 100;
       },
       complete() {
+        playedFrames = remaining;
+        resumed = false;
         stopped = true;
         source.onended = null;
         source.disconnect();
@@ -245,8 +292,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       }
     };
     this.#active = handle;
-    void context.resume().catch(callbacks.failed);
-    source.start();
+    resume();
     return handle;
   }
 
@@ -265,41 +311,79 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     gain.gain.value = request.volumePercent / 100;
     const input = this.#readRemainingPcm(request);
     const remaining = input.length;
-    const startedAt = context.currentTime;
+    let activatedAt = 0;
+    let activation = 0;
+    let resumed = false;
+    let processing = false;
+    let playedFrames = 0;
     let stopped = false;
+    const readFrames = () =>
+      Math.min(
+        remaining,
+        playedFrames +
+          (processing && resumed
+            ? Math.max(
+                0,
+                Math.floor(
+                  (context.currentTime - activatedAt) *
+                    request.sampleRateHz *
+                    request.playbackRate,
+                ),
+              )
+            : 0),
+      );
+    const resumeContext = () => {
+      const token = activation;
+      void context
+        .resume()
+        .then(() => {
+          if (!stopped && this.#active === handle && token === activation)
+            resumed = true;
+        })
+        .catch(() => {
+          if (!stopped && this.#active === handle && token === activation)
+            callbacks.failed();
+        });
+    };
     const handle: WebAudioPlaybackHandle = {
       sequence: request.sequence,
       playbackRate: request.playbackRate,
+      get rendering() {
+        return !stopped && processing && resumed;
+      },
       get playedSampleFrames() {
-        if (stopped) {
-          return remaining;
-        }
-        return Math.min(
-          remaining,
-          Math.floor(
-            (context.currentTime - startedAt) *
-              request.sampleRateHz *
-              request.playbackRate,
-          ),
-        );
+        return readFrames();
       },
       pause: () => {
+        playedFrames = readFrames();
+        processing = false;
+        resumed = false;
+        const token = ++activation;
         wsola.node.port.postMessage({
           type: "pause",
           unitSequence: request.sequence,
+          activation,
         });
-        void context.suspend().catch(callbacks.failed);
+        void context.suspend().catch(() => {
+          if (!stopped && this.#active === handle && token === activation)
+            callbacks.failed();
+        });
       },
       resume: () => {
+        activation += 1;
+        processing = false;
+        resumed = false;
         wsola.node.port.postMessage({
           type: "resume",
           unitSequence: request.sequence,
+          activation,
         });
-        void context.resume().catch(callbacks.failed);
+        resumeContext();
       },
       stop: () => {
         if (!stopped) {
           stopped = true;
+          activation += 1;
           wsola.node.port.onmessage = null;
           wsola.node.port.postMessage({
             type: "stop",
@@ -315,6 +399,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
         gain.gain.value = volumePercent / 100;
       },
       complete: () => {
+        playedFrames = remaining;
+        processing = false;
         stopped = true;
       },
     };
@@ -325,6 +411,35 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       }
       const type = Reflect.get(message, "type");
       const unitSequence = Reflect.get(message, "unitSequence");
+      if (
+        (type === "started" || type === "resumed" || type === "paused") &&
+        unitSequence === request.sequence &&
+        !stopped &&
+        this.#active === handle &&
+        Reflect.get(message, "activation") === activation
+      ) {
+        const sourceFrames: unknown = Reflect.get(message, "sourceFrames");
+        const currentFrame: unknown = Reflect.get(message, "currentFrame");
+        if (
+          typeof sourceFrames !== "number" ||
+          !Number.isSafeInteger(sourceFrames) ||
+          sourceFrames < 0 ||
+          sourceFrames > remaining
+        )
+          return;
+        if (
+          type !== "paused" &&
+          (typeof currentFrame !== "number" ||
+            !Number.isSafeInteger(currentFrame) ||
+            currentFrame < 0)
+        )
+          return;
+        playedFrames = sourceFrames;
+        processing = type !== "paused";
+        if (processing)
+          activatedAt = (currentFrame as number) / request.sampleRateHz;
+        return;
+      }
       if (type === "failed") {
         if (
           unitSequence === request.sequence &&
@@ -367,8 +482,9 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     wsola.node.port.postMessage({
       type: "start",
       unitSequence: request.sequence,
+      activation,
     });
-    void context.resume().catch(callbacks.failed);
+    resumeContext();
     return handle;
   }
 

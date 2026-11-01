@@ -1757,13 +1757,16 @@ async function run() {
           "Native publication raster image remained mounted after close.",
         );
 
-        stage = "SAC-09 / R8-01 oriented JPEG and PNG decode and release";
+        stage =
+          "SAC-09 / R8-01 / RIA-02 oriented and density raster decode and release";
         await injectNativeFile(driver, orientedFixturePath);
-        for (const alt of [
-          "Synthetic orientation six",
-          "Synthetic orientation eight",
-          "Synthetic PNG orientation six",
-          "Synthetic PNG orientation eight",
+        for (const [alt, width, height] of [
+          ["Synthetic orientation six", 2, 3],
+          ["Synthetic orientation eight", 2, 3],
+          ["Synthetic PNG orientation six", 2, 3],
+          ["Synthetic PNG orientation eight", 2, 3],
+          ["Synthetic density", 2, 1],
+          ["Synthetic density six", 1, 2],
         ]) {
           await waitForCondition(
             driver,
@@ -1776,7 +1779,7 @@ async function run() {
           await waitForCondition(
             driver,
             `const image = document.querySelector('img[alt="${alt}"]');
-        return image !== null && image.src.startsWith("blob:") && image.naturalWidth === 2 && image.naturalHeight === 3;`,
+        return image !== null && image.src.startsWith("blob:") && image.naturalWidth === ${width} && image.naturalHeight === ${height};`,
           );
         }
         stage = "R8-04 / R8-06 native focus ownership";

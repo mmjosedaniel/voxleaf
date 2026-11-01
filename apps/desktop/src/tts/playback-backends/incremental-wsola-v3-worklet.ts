@@ -16,6 +16,7 @@ interface ArmMessage {
 interface UnitMessage {
   readonly type: "start" | "pause" | "resume" | "stop";
   readonly unitSequence?: number;
+  readonly activation?: number;
 }
 
 type WorkletMessage = ArmMessage | UnitMessage | { readonly type: "dispose" };
@@ -73,6 +74,8 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   #ratePercent = 100;
   #renderedFrames = 0;
   #startedReported = false;
+  #activation = 0;
+  #resumePending = false;
   #targetFrames = 0;
   #unitSequence = -1;
 
@@ -108,6 +111,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       }
       this.#active = true;
       this.#paused = false;
+      this.#activation = message.activation ?? 0;
       return;
     }
     if (message.type === "pause") {
@@ -119,8 +123,10 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
         return;
       }
       this.#paused = true;
+      this.#activation = message.activation ?? this.#activation + 1;
       this.port.postMessage({
         type: "paused",
+        activation: this.#activation,
         sourceFrames: this.#consumedSourceFrames(),
         unitSequence: this.#unitSequence,
       });
@@ -135,11 +141,8 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
         return;
       }
       this.#paused = false;
-      this.port.postMessage({
-        type: "resumed",
-        sourceFrames: this.#consumedSourceFrames(),
-        unitSequence: this.#unitSequence,
-      });
+      this.#activation = message.activation ?? this.#activation + 1;
+      this.#resumePending = true;
       return;
     }
     this.#releaseUnit();
@@ -183,6 +186,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     this.#ended = false;
     this.#armed = true;
     this.#startedReported = false;
+    this.#resumePending = false;
 
     this.port.postMessage({
       type: "armed",
@@ -310,10 +314,14 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       return true;
     }
 
-    if (!this.#startedReported) {
+    if (!this.#startedReported || this.#resumePending) {
+      const type = this.#resumePending ? "resumed" : "started";
       this.#startedReported = true;
+      this.#resumePending = false;
       this.port.postMessage({
-        type: "started",
+        type,
+        activation: this.#activation,
+        sourceFrames: this.#consumedSourceFrames(),
         currentFrame,
         unitSequence: this.#unitSequence,
       });

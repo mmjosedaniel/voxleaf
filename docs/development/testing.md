@@ -2046,3 +2046,30 @@ letter/punctuation controls, source mapping, code and foreign-language isolation
 The public matrix checks all three current profiles, multiple segments,
 one/many batching, exact endpoints and immutable displayed documents. Accepted
 grammar, frozen profiles, bounds and cancellation policy remain unchanged.
+
+## Reader placement, JPEG density and confirmed rendering
+
+The [RIA ExecPlan](../plans/completed/reader-image-audibility-minimal-corrections.md)
+selects one combined group of eleven desktop suites and eleven Chromium cases,
+three TypeScript static commands, the existing native harness leaf, one native
+build and the existing image and six-rate Piper EN native modes. It retains
+initial failures and permits renewal only for changed inputs or diagnosed faults.
+
+`RIA-01` covers late availability replay at initial oversized placement and after
+navigation during handoff, readable recovery, and absence of synthetic saves.
+`RIA-02` uses the existing repository-authored 3x2 JPEG with bounded EXIF density,
+both byte orders, rotation, real rounding/fallback, physical limits, mismatch,
+cancellation and release. Chromium and WebView2 exercise the same image fixture.
+`RIA-03` controls device resume and worklet processing independently, joins the
+real player with persistence/recovery, and covers fresh activation, stale callback
+suppression and short start/end ordering. RIA-C1's withheld-processing experiment
+reproduces pre-start WSOLA clock consumption; its correction anchors the existing
+nominal source clock to processing acknowledgements, including resume.
+
+The desktop-local rendering flag distinguishes an allocated unit from confirmed
+processing. Direct playback requires successful resume plus source-clock advance;
+WSOLA requires processing evidence for the current activation. Only confirmed
+start publishes a segment start; resume does not repeat it. Exact ended delivery
+still owns completion and the last frame. Command-to-audible and playback duration
+use that rendering authority, excluding device-start/resume waits. These are
+software rendering observations, not physical-speaker latency measurements.

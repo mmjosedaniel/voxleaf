@@ -43,6 +43,16 @@ Production limits cannot be increased at runtime. Deterministic tests may constr
 
 After preflight succeeds, the desktop copies the bounded bytes into an application-created `Blob`, creates a `blob:` object URL, and invokes `HTMLImageElement.decode()`. The observed natural dimensions must exactly match the preflight metadata before a source handle becomes ready. A mismatch or decode failure rejects that candidate and revokes its URL.
 
+JPEG comparison distinguishes physical SOF dimensions from intrinsic dimensions.
+Bounded IFD0 resolution fields and one EXIF sub-IFD's PixelX/YDimension pair may
+declare a density correction: inch units, positive rational resolutions, and
+the rounded physical-size-times-72/resolution pair must agree exactly with the
+declared intrinsic pair. Otherwise comparison retains physical dimensions.
+Orientation applies to either pair; malformed orientation remains rejected.
+All reads stay inside APP1, without recursive IFD traversal. Physical dimensions
+still govern every predecode limit, live-pixel charge and ready-source size.
+This adds no second decode and does not generalize density handling to PNG/WebP.
+
 The Tauri CSP adds only `img-src 'self' blob:`. It adds no HTTP or HTTPS image origin, script source, connection destination, native command, plugin, filesystem capability, or remote-resource path. Publisher values never become object URLs; the application creates every source from bytes returned by the opened publication.
 
 ### Bind every URL to an explicit owner

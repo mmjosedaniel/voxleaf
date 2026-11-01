@@ -1149,7 +1149,7 @@ export class ProductNarrationCoordinator {
           if (observation.kind === "segment-started") {
             try {
               if (this.#player !== undefined) {
-                this.#updateMetrics(this.#player.observe());
+                this.#updateMetrics(this.#player.observe(), true);
               }
             } catch {
               // Metrics cannot suppress the authoritative audible boundary.
@@ -1987,7 +1987,10 @@ export class ProductNarrationCoordinator {
     }
   }
 
-  #updateMetrics(player: AdaptivePcmPlayerObservation): void {
+  #updateMetrics(
+    player: AdaptivePcmPlayerObservation,
+    confirmedStart = false,
+  ): void {
     const nowMs = this.#clock.nowMs;
     const intentionalWaitDelta = Math.max(
       0,
@@ -2007,10 +2010,9 @@ export class ProductNarrationCoordinator {
       player.underrunCount - this.#lastPlayerUnderrunCount,
     );
     this.#lastPlayerUnderrunCount = player.underrunCount;
-    const audible =
-      player.state === "playing" && player.activeSequence !== undefined;
+    const audible = player.state === "playing" && player.rendering;
     if (
-      audible &&
+      (audible || confirmedStart) &&
       this.#commandToAudibleMs === undefined &&
       this.#commandStartedAtMs !== undefined
     ) {

@@ -28,6 +28,8 @@ export interface PcmPlaybackRequest {
 export interface PcmPlaybackHandle {
   readonly sequence: number;
   readonly playedSampleFrames: number;
+  /** Current activation has confirmed processing; allocation is not rendering. */
+  readonly rendering: boolean;
   pause(): void;
   resume(): void;
   stop(): void;

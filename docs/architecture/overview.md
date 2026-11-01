@@ -780,6 +780,12 @@ The Task 1.2 release probe passed in native Windows WebView2 while the Tauri she
 
 ## Raster image decode boundary
 
+JPEG EXIF density may produce a separately verified intrinsic size for decoder
+agreement. Physical SOF dimensions, with orientation, remain the ready source's
+size and allocation charge. Optional density parsing follows only bounded IFD0
+and its EXIF sub-IFD; absent, malformed or inconsistent density retains the
+physical comparison. See ADR-0010 for exact agreement and fallback rules.
+
 [ADR-0010](decisions/ADR-0010-bounded-raster-image-decode.md) accepts a desktop-owned predecode parser and object-URL source manager for the four static raster types already admitted by ADR-0007. Before browser decode, it enforces 8,192-pixel width/height limits, 16,777,216 decoded pixels, one static frame, and fixed malformed/over-limit outcomes. One manager permits one concurrent decode, eight live sources, and 16,777,216 aggregate live pixels.
 
 Only a preflighted application-created Blob may become a `blob:` URL. Browser-observed dimensions must match preflight metadata. Release/close revokes URLs exactly once; close aborts and awaits active work. The committed CSP permits only self scripts/styles plus self/blob images and adds no network origin or `unsafe-eval`. Task 3.3 integrates this boundary without changing the `@voxleaf/epub` public contract: one publication-scoped loader accepts only opaque catalog IDs, serializes package reads and manager preparation, caps active-plus-queued work at eight, clears returned byte copies, and creates no cache. `IntersectionObserver` starts component work near the viewport; missing support falls back to the same bounded path. Semantic alt text is used when present, fixed application text covers missing alt/failure, and component/reader cleanup aborts stale operations and releases every ready handle. The production Chromium smoke proves real Blob rendering, chapter-change revocation/reload, unchanged browser URL, and zero non-loopback requests. The packaged WebView2 smoke proves the same repository-authored PNG decodes under CSP and disappears on close with zero page/console errors or external requests.

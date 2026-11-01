@@ -1,4 +1,8 @@
 import { pngExifChunk, syntheticPngBytes } from "../fixtures/png-fixture";
+import {
+  jpegDensityExifSegment,
+  syntheticJpegBytes,
+} from "../fixtures/jpeg-fixture";
 import { expect, test } from "@playwright/test";
 
 import { closeSettings, openSettings } from "./settings-helpers";
@@ -10,6 +14,83 @@ const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
 const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
 const NARRATION_PLAYBACK_STORAGE_KEY = "voxleaf.narration.playback-preference";
 const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
+
+test("RIA-02 observes density rounding/fallback in Chromium and admits the physical bounded image", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const littleEndian of [true, false]) {
+    for (const orientation of [1, 6]) {
+      const exif = jpegDensityExifSegment(orientation, littleEndian);
+      for (const mode of [
+        "density",
+        "rounding",
+        "inconsistent",
+        "zero-denominator",
+      ] as const) {
+        const candidate = exif.slice();
+        const tiff = new DataView(candidate.buffer, 10);
+        if (mode === "rounding") tiff.setUint32(74, 120, littleEndian); // 1.8 -> 2
+        if (mode === "inconsistent") tiff.setUint32(100, 1, littleEndian);
+        if (mode === "zero-denominator") tiff.setUint32(78, 0, littleEndian);
+        const dimensions = await page.evaluate(
+          async (bytes) => {
+            const url = URL.createObjectURL(
+              new Blob([new Uint8Array(bytes)], { type: "image/jpeg" }),
+            );
+            const image = new Image();
+            try {
+              image.src = url;
+              await image.decode();
+              return [image.naturalWidth, image.naturalHeight];
+            } finally {
+              image.removeAttribute("src");
+              URL.revokeObjectURL(url);
+            }
+          },
+          Array.from(syntheticJpegBytes(candidate)),
+        );
+        const physical = mode === "inconsistent" || mode === "zero-denominator";
+        expect(dimensions).toEqual(
+          orientation === 1
+            ? physical
+              ? [3, 2]
+              : [2, 1]
+            : physical
+              ? [2, 3]
+              : [1, 2],
+        );
+      }
+    }
+  }
+  const fixture = await import(
+    new URL("../fixtures/oriented-raster-epub-fixture.mjs", import.meta.url)
+      .href
+  );
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-density.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(await fixture.buildOrientedRasterEpubFixture()),
+  });
+  for (const [name, dimensions] of [
+    ["Synthetic density", [2, 1]],
+    ["Synthetic density six", [1, 2]],
+  ] as const) {
+    await page
+      .getByRole("img", { name: new RegExp(`^${name}(\\.|$)`) })
+      .locator("..")
+      .scrollIntoViewIfNeeded();
+    const image = page.getByRole("img", { name, exact: true });
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toHaveAttribute("src", /^blob:/u);
+    expect(
+      await image.evaluate((element: HTMLImageElement) => [
+        element.naturalWidth,
+        element.naturalHeight,
+      ]),
+    ).toEqual(dimensions);
+  }
+});
 
 test("SAC-09/SAC-13/R8-01 decodes oriented JPEGs and PNGs and resolves opaque local fragments", async ({
   page,

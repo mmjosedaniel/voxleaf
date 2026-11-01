@@ -77,6 +77,9 @@ class ManualClock implements ProductNarrationClock {
 
 class FakePlaybackBackend implements PcmPlaybackBackend {
   public playedSampleFrames = 0;
+  public rendering = true;
+  public deferResume = false;
+  public deferStart = false;
   public active:
     | {
         readonly request: PcmPlaybackRequest;
@@ -92,15 +95,24 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
     callbacks: PcmPlaybackCallbacks,
   ): PcmPlaybackHandle {
     this.active = { request, callbacks };
+    this.rendering = !this.deferStart;
     const playedSampleFrames = () => this.playedSampleFrames;
+    const rendering = () => this.rendering;
     this.playedSampleFrames = 0;
     return {
       sequence: request.sequence,
+      get rendering() {
+        return rendering();
+      },
       get playedSampleFrames() {
         return playedSampleFrames();
       },
-      pause: vi.fn(),
-      resume: vi.fn(),
+      pause: vi.fn(() => {
+        this.rendering = false;
+      }),
+      resume: vi.fn(() => {
+        this.rendering = !this.deferResume;
+      }),
       stop: vi.fn(),
       setVolumePercent: vi.fn(),
     };
@@ -532,6 +544,110 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("RIA-03 short completed rendering still records command-to-audible", async () => {
+    const { coordinator, backend } = createHarness();
+    const start = backend.start.bind(backend);
+    vi.spyOn(backend, "start").mockImplementation((request, callbacks) => {
+      const handle = start(request, callbacks);
+      backend.rendering = false;
+      callbacks.ended();
+      return handle;
+    });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(
+        () => coordinator.observe().state?.phase === "complete",
+      );
+      expect(coordinator.observe().metrics.commandToAudibleMs).toBeTypeOf(
+        "number",
+      );
+    } finally {
+      await coordinator.close();
+    }
+  });
+  it("RIA-03 joins real player, checkpoint persistence, delayed resume and recovery without inventing heard progress", async () => {
+    const rangeB = sourceRange(20, 40);
+    const { coordinator, backend, clock, intervals, prepareNarration } =
+      createHarness({
+        prepareNarration: async (request) =>
+          completeSegments([
+            decodeReadingLocatorV1(request.startLocator)
+              .textOffsetCodePoints === 20
+              ? preparedSegment("Synthetic B.", rangeB)
+              : preparedSegment("Synthetic A."),
+          ]),
+      });
+    const sink = {
+      beginNarration: vi.fn(),
+      finishNarration: vi.fn(async () => undefined),
+      flush: vi.fn(async () => undefined),
+      recordHeardCheckpoint: vi.fn(),
+    };
+    const unbind = bindNarrationPositionPersistence(coordinator, sink);
+    try {
+      backend.deferStart = true;
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      clock.advance(2000);
+      intervals[0]!();
+      expect(sink.recordHeardCheckpoint).not.toHaveBeenCalled();
+      expect(coordinator.observe().metrics).toMatchObject({
+        commandToAudibleMs: undefined,
+        playbackMs: 0,
+      });
+      backend.rendering = true;
+      intervals[0]!();
+      expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
+      expect(coordinator.observe().metrics.commandToAudibleMs).toBe(
+        clock.nowMs,
+      );
+      clock.advance(100);
+      intervals[0]!();
+      coordinator.pause();
+      const played = coordinator.observe().metrics.playbackMs;
+      backend.deferResume = true;
+      coordinator.resume();
+      clock.advance(3000);
+      intervals[0]!();
+      expect(coordinator.observe().metrics.playbackMs).toBe(played);
+      backend.rendering = true;
+      intervals[0]!();
+      clock.advance(100);
+      intervals[0]!();
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
+      expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
+      await coordinator.stop();
+      coordinator.updateVisibleLocator(rangeB.start);
+      coordinator.start();
+      await settleUntil(
+        () =>
+          backend.active?.request.sequence === 0 &&
+          prepareNarration.mock.calls.length === 2,
+      );
+      const failedRun = backend.active!.callbacks;
+      clock.advance(2000);
+      intervals[0]!();
+      expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
+      failedRun.failed();
+      intervals[0]!();
+      await settleUntil(
+        () => coordinator.observe().recovery.phase === "recovery-available",
+      );
+      coordinator.recover();
+      await settleUntil(() => prepareNarration.mock.calls.length === 3);
+      expect(prepareNarration.mock.calls[2]![0].startLocator).toEqual(
+        START_LOCATOR,
+      );
+      failedRun.ended();
+      failedRun.failed();
+      expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
+    } finally {
+      unbind();
+      await coordinator.close();
+    }
+  });
   it("PSC-01 ignores Resume while paused navigation releases its retired player", async () => {
     const { coordinator, client, backend, prepareNarration } = createHarness();
     let release!: () => void;

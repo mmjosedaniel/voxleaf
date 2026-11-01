@@ -1988,6 +1988,76 @@ describe("navigable publication reader", () => {
     expect(narrationSource.startLocators).toEqual([]);
   });
 
+  it.each([false, true])(
+    "RIA-01 replays current availability on late attachment (initial oversized=%s)",
+    async (initialOversized) => {
+      const publication = createPublication({
+        continuationDocument: {
+          ...CONTINUATION_DOCUMENT,
+          blocks: [
+            CONTINUATION_HEADING,
+            ...Array.from({ length: 10_000 }, () => ({
+              kind: "paragraph" as const,
+              children: [text("Synthetic oversized content")],
+            })),
+          ],
+        },
+      });
+      const settled = vi.fn();
+      const outcome = vi.fn();
+      const props = {
+        publication,
+        ...(initialOversized
+          ? { initialLocator: CONTINUATION_LOCATED_BLOCK.startLocator }
+          : {}),
+        onSettledLocatorChange: settled,
+        onNavigationSettlement: outcome,
+      };
+      const view = render(<ReaderPublicationContent {...props} />);
+      if (!initialOversized)
+        await act(async () => {
+          fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+        });
+      expect(
+        screen.getByRole("heading", { name: "Reading section unavailable" }),
+      ).toBeInTheDocument();
+      settled.mockClear();
+      outcome.mockClear();
+      const source = new ManualReaderNarrationSource();
+      view.rerender(
+        <ReaderPublicationContent {...props} narrationSource={source} />,
+      );
+      expect(outcome).toHaveBeenLastCalledWith(
+        { status: "unavailable", reason: "chapter-too-large" },
+        "reflow",
+      );
+      expect(settled).not.toHaveBeenCalled();
+      expect(source.startLocators).toEqual([]);
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Previous chapter" }),
+        );
+      });
+      expect(outcome).toHaveBeenLastCalledWith(
+        { status: "settled", locator: expect.any(Object) },
+        "chapter-navigation",
+      );
+      settled.mockClear();
+      outcome.mockClear();
+      view.rerender(
+        <ReaderPublicationContent
+          {...props}
+          narrationSource={new ManualReaderNarrationSource()}
+        />,
+      );
+      expect(outcome).toHaveBeenLastCalledWith(
+        { status: "settled", locator: expect.any(Object) },
+        "reflow",
+      );
+      expect(settled).not.toHaveBeenCalled();
+    },
+  );
+
   it("B04 never reports the previous locator as successful placement of an unavailable chapter", async () => {
     const oversizedContinuation: SemanticDocument = {
       ...CONTINUATION_DOCUMENT,
