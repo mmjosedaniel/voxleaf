@@ -1757,11 +1757,13 @@ async function run() {
           "Native publication raster image remained mounted after close.",
         );
 
-        stage = "SAC-09 oriented JPEG decode and release";
+        stage = "SAC-09 / R8-01 oriented JPEG and PNG decode and release";
         await injectNativeFile(driver, orientedFixturePath);
         for (const alt of [
           "Synthetic orientation six",
           "Synthetic orientation eight",
+          "Synthetic PNG orientation six",
+          "Synthetic PNG orientation eight",
         ]) {
           await waitForCondition(
             driver,
@@ -1777,10 +1779,45 @@ async function run() {
         return image !== null && image.src.startsWith("blob:") && image.naturalWidth === 2 && image.naturalHeight === 3;`,
           );
         }
+        stage = "R8-04 / R8-06 native focus ownership";
+        assert(
+          await driver.execute(`
+          const link = document.querySelector('.reader-return-link');
+          if (!link) return false;
+          link.click(); return true;
+        `),
+          "Native contents return link missing.",
+        );
+        await waitForCondition(
+          driver,
+          `return document.activeElement?.matches('.reader-toc') === true;`,
+        );
+        assert(
+          await driver.execute(`
+          const link = document.querySelector('.reader-return-link');
+          link.focus(); link.click();
+          return document.activeElement?.matches('.reader-toc') === true;
+        `),
+          "Native already-open contents did not regain focus.",
+        );
+        await openReaderSettings(driver);
+        assert(
+          await driver.execute(`
+          document.querySelector('.semantic-document')?.focus();
+          return document.querySelector('[role="dialog"]')?.contains(document.activeElement) === true;
+        `),
+          "Native Settings allowed programmatic focus escape.",
+        );
+        await closeReaderSettings(driver);
+        assert(
+          await driver.execute(
+            `return document.activeElement?.textContent?.trim() === 'Settings';`,
+          ),
+          "Native Settings trigger focus was not restored.",
+        );
         await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
         assert(
-          (await driver.findElements('img[alt^="Synthetic orientation"]'))
-            .length === 0,
+          (await driver.findElements('img[alt*="orientation"]')).length === 0,
           "Native oriented raster image remained mounted after close.",
         );
 

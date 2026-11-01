@@ -173,6 +173,7 @@ function parsePng(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
   let widthPixels: number | undefined;
   let heightPixels: number | undefined;
   let frameCount = 1;
+  let orientation: number | undefined;
   let animated = false;
   let sawHeader = false;
   let sawEnd = false;
@@ -199,6 +200,10 @@ function parsePng(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
       widthPixels = readUint32BigEndian(bytes, dataOffset);
       heightPixels = readUint32BigEndian(bytes, dataOffset + 4);
       sawHeader = true;
+    } else if (hasAsciiAt(bytes, "eXIf", offset + 4)) {
+      if (!sawHeader || orientation !== undefined) return undefined;
+      orientation = parseExifOrientation(bytes.subarray(dataOffset, dataEnd));
+      if (orientation === undefined) return undefined;
     } else if (hasAsciiAt(bytes, "acTL", offset + 4)) {
       if (!sawHeader || animated || chunkLength !== 8) {
         return undefined;
@@ -225,7 +230,13 @@ function parsePng(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
   ) {
     return undefined;
   }
-  return { widthPixels, heightPixels, frameCount, animated };
+  return {
+    widthPixels,
+    heightPixels,
+    frameCount,
+    animated,
+    swapDimensions: orientation !== undefined && orientation >= 5,
+  };
 }
 
 function skipGifSubBlocks(
@@ -361,7 +372,7 @@ function isStandaloneJpegMarker(marker: number): boolean {
 }
 
 /** Only IFD0 orientation affects the main image dimensions; no other IFD is followed. */
-function parseJpegExifOrientation(tiff: Uint8Array): number | undefined {
+function parseExifOrientation(tiff: Uint8Array): number | undefined {
   const littleEndian = hasAsciiAt(tiff, "II", 0);
   if (tiff.byteLength < 8 || (!littleEndian && !hasAsciiAt(tiff, "MM", 0))) {
     return undefined;
@@ -441,7 +452,7 @@ function parseJpeg(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
         !hasAsciiAt(bytes.subarray(offset + 2, segmentEnd), "Exif\0\0", 0)
       )
         return undefined;
-      orientation = parseJpegExifOrientation(
+      orientation = parseExifOrientation(
         bytes.subarray(offset + 8, segmentEnd),
       );
       if (orientation === undefined) return undefined;

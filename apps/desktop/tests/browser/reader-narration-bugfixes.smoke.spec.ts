@@ -314,51 +314,85 @@ test("SFA-EPUB renders and narrates separate table cells and definition entries 
     .toBe(0);
 });
 
-test("MAF-04 closing Settings cannot admit Play during optional removal", async ({
-  page,
-}) => {
-  await installSyntheticService(page, false, false, false, true, false, true);
-  await page.goto("/");
-  await page.getByLabel("Open a book").setInputFiles({
-    name: "synthetic-maf-removal.epub",
-    mimeType: "application/epub+zip",
-    buffer: Buffer.from(
-      await (
-        await fixtures()
-      ).buildMinimalEpubFixture({
-        chapterDocument:
-          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Synthetic removal passage.</p></body></html>',
-      }),
-    ),
-  });
-  await page.evaluate(() => {
-    Reflect.get(globalThis, "__rnb").deferRemoval = true;
-  });
-  const settings = await openSettings(page);
-  await settings.getByRole("button", { name: "Remove Chatterbox" }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(() => Reflect.get(globalThis, "__rnb").removalPending),
-    )
-    .toBe(true);
-  try {
-    await closeSettings(page, settings);
-    const play = page.locator('[data-narration-action="play"]');
-    await expect(play).toBeDisabled();
-    await play.evaluate((button: HTMLButtonElement) => button.click());
+for (const replaceBook of [false, true])
+  test(`MAF-04 / R8-05 blocks Play during removal across replacement=${replaceBook}`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, false, false, false, true, false, true);
+    await page.goto("/");
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-maf-removal.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Synthetic removal passage.</p></body></html>',
+        }),
+      ),
+    });
+    await page.evaluate(() => {
+      Reflect.get(globalThis, "__rnb").deferRemoval = true;
+    });
+    const settings = await openSettings(page);
+    await settings.getByRole("button", { name: "Remove Chatterbox" }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").removalPending),
+      )
+      .toBe(true);
+    try {
+      await closeSettings(page, settings);
+      if (replaceBook) {
+        await page.getByLabel("Open a book").setInputFiles({
+          name: "synthetic-r8-b.epub",
+          mimeType: "application/epub+zip",
+          buffer: Buffer.from(
+            await (
+              await fixtures()
+            ).buildMinimalEpubFixture({
+              chapterDocument:
+                '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>B</title></head><body><p>Replacement book passage.</p></body></html>',
+            }),
+          ),
+        });
+        await expect(page.locator(".semantic-document")).toContainText(
+          "Replacement book passage.",
+        );
+        await expect(
+          page.locator('[data-narration-action="play"]'),
+        ).toHaveCount(0);
+      }
+      const play = page.locator('[data-narration-action="play"]');
+      if (!replaceBook) {
+        await expect(play).toBeDisabled();
+        await play.evaluate((button: HTMLButtonElement) => button.click());
+      }
+      expect(
+        await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+      ).toBe(0);
+    } finally {
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").releaseRemoval(),
+      );
+    }
+    await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
     expect(
       await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
     ).toBe(0);
-  } finally {
-    await page.evaluate(() =>
-      Reflect.get(globalThis, "__rnb").releaseRemoval(),
-    );
-  }
-  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
-  expect(
-    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
-  ).toBe(0);
-});
+    if (replaceBook) {
+      await page.locator('[data-narration-action="play"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => Reflect.get(globalThis, "__rnb").prepared[0]?.text,
+          ),
+        )
+        .toBe("Replacement book passage.");
+      await page.locator('[data-narration-action="stop"]').click();
+    }
+  });
 
 test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitted owner", async ({
   page,
@@ -1051,6 +1085,8 @@ test("CHAT-AUDIT shared fallback, hidden root, unknown language and loaded-sessi
         await fixtures()
       ).buildMinimalEpubFixture({
         packageDocument,
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="a.bin">First fallback</a></li><li><a href="b.bin">Second fallback</a></li></ol></nav></body></html>',
         chapterDocument:
           '<html xmlns="http://www.w3.org/1999/xhtml" lang="EN" xml:lang="en"><head><title>Synthetic</title></head><body><p id="chapter-one">0.25 % 12:14:30</p><p lang="">25 % <em>14:30</em></p></body></html>',
         additionalEntries: [
@@ -1071,6 +1107,17 @@ test("CHAT-AUDIT shared fallback, hidden root, unknown language and loaded-sessi
   await expect(page.locator(".semantic-document")).not.toContainText(
     "Hidden audit sentinel",
   );
+  await page.getByRole("button", { name: "Show table of contents" }).click();
+  await page
+    .getByRole("button", { name: "Second fallback", exact: true })
+    .click();
+  await expect(page.locator(".semantic-document")).toContainText(
+    "0.25 % 12:14:30",
+  );
+  await page.getByRole("button", { name: "Show table of contents" }).click();
+  await page
+    .getByRole("button", { name: "First fallback", exact: true })
+    .click();
   await page.locator('[data-narration-action="play"]').click();
   const narration = page.locator(".product-narration");
   await expect(narration).toHaveAttribute("data-narration-phase", "playing");
@@ -1205,7 +1252,7 @@ test("VAF optional recheck reconciles the loaded profile and traps keyboard focu
 });
 
 for (const paused of [false, true])
-  test(`CHAT-AUDIT failed synthesis removes dead controls and supports explicit recovery (paused=${paused})`, async ({
+  test(`R8-08 / CHAT-AUDIT failed synthesis removes dead controls and supports explicit recovery (paused=${paused})`, async ({
     page,
   }) => {
     await installSyntheticService(page, false, false, false, true);
@@ -1245,6 +1292,54 @@ for (const paused of [false, true])
     await expect(page.locator('[data-narration-action="resume"]')).toHaveCount(
       0,
     );
+    const previousServices = await page.evaluate(
+      () => Reflect.get(globalThis, "__rnb").service,
+    );
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.originalAvailableRam = state.hostReport.memory.availablePhysicalMiB;
+      state.hostReport.memory.availablePhysicalMiB = {
+        status: "known",
+        value: 1,
+      };
+      for (const value of ["hidden", "visible"]) {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+      }
+    });
+    await expect(narration).toHaveAttribute(
+      "data-narration-availability",
+      "unavailable",
+    );
+    await expect(
+      page.locator('[data-narration-action="recover"]'),
+    ).toBeDisabled();
+    await page
+      .locator('[data-narration-action="recover"]')
+      .evaluate((button: HTMLButtonElement) => button.click());
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(previousServices);
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.hostReport.memory.availablePhysicalMiB = state.originalAvailableRam;
+      for (const value of ["hidden", "visible"]) {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+      }
+    });
+    await expect(
+      page.locator('[data-narration-action="recover"]'),
+    ).toBeEnabled();
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(previousServices);
     await page.evaluate(() => {
       Reflect.get(globalThis, "__rnb").holdAfter = Number.MAX_SAFE_INTEGER;
     });
@@ -2439,3 +2534,66 @@ async function installSyntheticService(
     },
   );
 }
+
+test("R8-06 late chapter navigation preserves Settings focus", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-completed-navigation.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        packageDocument:
+          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:sac-navigation</dc:identifier><dc:title>Synthetic navigation</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/><itemref idref="final"/></spine></package>',
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#chapter-one">Opening</a></li><li><a href="text/final.xhtml#chapter-two">Final</a></li></ol></nav></body></html>',
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Opening</title></head><body><h1 id="chapter-one">Opening</h1><p>Synthetic opening.</p></body></html>',
+        additionalEntries: [
+          {
+            name: "EPUB/text/final.xhtml",
+            content:
+              '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Final</title></head><body><h1 id="chapter-two">Final</h1><p>Synthetic final narration.</p></body></html>',
+          },
+        ],
+      }),
+    ),
+  });
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+  });
+  await page.getByRole("button", { name: "Next chapter" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  const settings = await openSettings(page);
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = false;
+    state.releaseShutdown();
+  });
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Final" }),
+  ).toBeAttached();
+  await expect(
+    settings.getByRole("button", { name: "Close Settings" }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(settings.getByLabel("Text size")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(settings).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Settings", exact: true }),
+  ).toBeFocused();
+});

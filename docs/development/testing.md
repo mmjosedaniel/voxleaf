@@ -2007,3 +2007,24 @@ It does not demonstrate an ordinary-input crash. One fresh packaged Piper EN
 speed arm complements these tests. See the
 [execution plan](../plans/completed/minimal-playback-audit-corrections.md) for exact
 commands, preserved failed fixture diagnostics and evidence reuse limits.
+
+
+## R8 bounded correction coverage
+
+`R8-` and `r8_` extend existing fixtures and runner leaves for PNG eXIf,
+quality-adapter cleanup, zero-RAM observations, repeated TOC focus, replacement
+during optional removal, modal focus, fallback aliases and recovery eligibility.
+The [ExecPlan](../plans/completed/eight-revalidated-findings-minimal-corrections.md)
+selects one combined EPUB/desktop/Python check per final relevant input set,
+filtered Chromium journeys, native-runner tests, existing Piper integrity, one
+build and model-free plus Piper EN WebView2 arms. Historical receipts are not
+current acceptance. Retain failed receipts and renew only invalidated checks.
+
+The six maintainer quality generators close once. A cleanup-only exception uses
+the fixed cleanup error and removes the workflow's disposable outputs; an
+existing generation error retains precedence. The v12 owned-session case also
+removes its owned root while preserving externally supplied machine sessions.
+Successful opt-in private quality outputs retain their existing policy. The
+Windows RAM probe preserves zero as an observed minimum, so stop reports the
+existing memory-unavailable result. No model execution or real memory exhaustion
+is used by these tests; product audio persistence and runtime adapters are unchanged.

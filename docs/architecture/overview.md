@@ -1,5 +1,18 @@
 # Architecture overview
 
+The [R8 corrections](../plans/completed/eight-revalidated-findings-minimal-corrections.md)
+keep existing owners and public contracts. Local navigation and inline links
+resolve accepted fallback chains through the package's bounded resolver, retaining
+source spine occurrences for aliases and first-occurrence semantics for direct
+navigation. Missing fragments keep the existing fragment-unresolved recovery.
+App owns pending optional removal across book replacement; reading may continue,
+but narration handoff waits for removal and verified old-owner containment.
+Settings contains programmatic focus while open and yields before close restores
+trigger focus. Restart eligibility follows current availability and reader
+placement. [ADR-0069](decisions/ADR-0069-bounded-png-orientation.md) records the
+bounded PNG extension. Current validation status remains in the R8 plan.
+The system diagram's process, persistence and data-flow topology is unchanged.
+
 Current bilingual, Piper and Chatterbox narration profiles protect Unicode
 numbers alongside letters and marks at lexical boundaries, and preserve dates
 embedded in larger unsupported numeric expressions. Standalone supported forms,

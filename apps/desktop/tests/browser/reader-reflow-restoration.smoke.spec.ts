@@ -966,6 +966,12 @@ test("operates reader landmarks, skip links, preferences, and navigation by keyb
     await expect(toc).toBeFocused();
     await expect(page).toHaveURL(initialUrl);
 
+    // R8-04: the return action must also focus an already mounted panel.
+    await returnLink.focus();
+    await page.keyboard.press("Enter");
+    await expect(toc).toBeFocused();
+    await expect(page).toHaveURL(initialUrl);
+
     await toc.getByRole("button", { name: "Close contents" }).click();
     const settingsButton = page.getByRole("button", { name: "Settings" });
     await settingsButton.focus();

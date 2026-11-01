@@ -595,3 +595,58 @@ describe("product narration controls", () => {
     );
   });
 });
+
+it.each(["checking", "unavailable", "reader-unavailable"] as const)(
+  "R8-08 blocks recovery when admission is %s and waits for explicit retry",
+  (condition) => {
+    let current: ProductNarrationSnapshot = {
+      ...snapshot(),
+      recovery: {
+        ...INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
+        phase: "recovery-available",
+        failureCode: "service-crashed",
+        action: "explicit-service-restart",
+        canRecover: true,
+      },
+    };
+    const coordinator = {
+      observe: () => current,
+      subscribe: vi.fn(() => () => undefined),
+      checkAvailability: vi.fn(async () => undefined),
+      recover: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+    const view = render(<ProductNarrationControls coordinator={coordinator} />);
+    expect(
+      screen.getByRole("button", { name: "Restart local narration" }),
+    ).toBeEnabled();
+    current = {
+      ...current,
+      availability:
+        condition === "reader-unavailable" ? "available" : condition,
+      navigation: {
+        ...current.navigation,
+        canStart: condition !== "reader-unavailable",
+      },
+    };
+    view.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    const restart = screen.queryByRole("button", {
+      name: "Restart local narration",
+    });
+    if (restart !== null) {
+      expect(restart).toBeDisabled();
+      fireEvent.click(restart);
+    }
+    expect(coordinator.recover).not.toHaveBeenCalled();
+    current = {
+      ...current,
+      availability: "available",
+      navigation: { ...current.navigation, canStart: true },
+    };
+    view.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(coordinator.recover).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Restart local narration" }),
+    );
+    expect(coordinator.recover).toHaveBeenCalledOnce();
+  },
+);

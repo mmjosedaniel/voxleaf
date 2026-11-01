@@ -1168,26 +1168,33 @@ describe("navigable publication reader", () => {
     ).toBeVisible();
   });
 
-  it("provides content-free keyboard skip and return links without changing browser history", () => {
-    const initialUrl = window.location.href;
-    render(<ReaderPublicationContent publication={createPublication()} />);
+  it.each([false, true])(
+    "R8-04 keyboard return focuses contents already open=%s without history changes",
+    (alreadyOpen) => {
+      const initialUrl = window.location.href;
+      render(<ReaderPublicationContent publication={createPublication()} />);
+      if (alreadyOpen)
+        fireEvent.click(
+          screen.getByRole("button", { name: "Show table of contents" }),
+        );
 
-    fireEvent.click(
-      screen.getByRole("link", { name: "Skip to reader content" }),
-    );
-    expect(
-      screen.getByRole("article", { name: "Current reading section" }),
-    ).toHaveFocus();
-    expect(window.location.href).toBe(initialUrl);
+      fireEvent.click(
+        screen.getByRole("link", { name: "Skip to reader content" }),
+      );
+      expect(
+        screen.getByRole("article", { name: "Current reading section" }),
+      ).toHaveFocus();
+      expect(window.location.href).toBe(initialUrl);
 
-    fireEvent.click(
-      screen.getByRole("link", { name: "Back to table of contents" }),
-    );
-    expect(
-      screen.getByRole("navigation", { name: "Table of contents" }),
-    ).toHaveFocus();
-    expect(window.location.href).toBe(initialUrl);
-  });
+      fireEvent.click(
+        screen.getByRole("link", { name: "Back to table of contents" }),
+      );
+      expect(
+        screen.getByRole("navigation", { name: "Table of contents" }),
+      ).toHaveFocus();
+      expect(window.location.href).toBe(initialUrl);
+    },
+  );
 
   it("replaces and cleans active-document DOM locator registrations", () => {
     const mapper = new SemanticDomRangeMapper();

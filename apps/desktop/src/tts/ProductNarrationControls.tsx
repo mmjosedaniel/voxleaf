@@ -39,6 +39,10 @@ export function ProductNarrationControls({
   const canRestart =
     snapshot.recovery.canRecover &&
     snapshot.recovery.action !== "select-compatible-profile";
+  const restartDisabled =
+    snapshot.availability !== "available" ||
+    snapshot.navigation.canStart === false ||
+    snapshot.navigation.settling;
   const showStart = state === undefined && operational;
   const showPause = state?.canPause === true;
   const showResume = state?.canResume === true;
@@ -96,7 +100,13 @@ export function ProductNarrationControls({
         <div className="product-narration-summary">
           <h3 id="product-narration-title">Local narration</h3>
           <p aria-live="polite" aria-atomic="true">
-            {productNarrationPhaseMessage(snapshot)}
+            {canRestart && restartDisabled
+              ? snapshot.availability !== "available"
+                ? startHint
+                : snapshot.navigation.settling
+                  ? "Wait for the reading passage to settle before restarting narration."
+                  : "Choose an available reading passage before restarting narration."
+              : productNarrationPhaseMessage(snapshot)}
           </p>
           {state === undefined ? null : (
             <p className="product-narration-loaded">
@@ -233,6 +243,7 @@ export function ProductNarrationControls({
             <button
               type="button"
               data-narration-action="recover"
+              disabled={restartDisabled}
               onClick={() => coordinator.recover()}
             >
               Restart local narration

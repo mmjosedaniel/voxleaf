@@ -620,3 +620,32 @@ describe("reader Settings dialog", () => {
     expect(subject.onActivateChatterbox).not.toHaveBeenCalled();
   });
 });
+
+it("R8-06 contains late programmatic focus and removes the guard on close and unmount", async () => {
+  const outside = document.createElement("button");
+  document.body.append(outside);
+  const view = renderSettings();
+  try {
+    const close = screen.getByRole("button", { name: "Close Settings" });
+    await waitFor(() => expect(close).toHaveFocus());
+    outside.focus();
+    expect(close).toHaveFocus();
+    const inside = screen.getByLabelText("Text size");
+    inside.focus();
+    expect(inside).toHaveFocus();
+    view.rerenderSettings({ open: false });
+    outside.focus();
+    expect(outside).toHaveFocus();
+    view.rerenderSettings({ open: true });
+    outside.focus();
+    expect(
+      screen.getByRole("button", { name: "Close Settings" }),
+    ).toHaveFocus();
+    view.unmount();
+    outside.focus();
+    expect(outside).toHaveFocus();
+  } finally {
+    view.unmount();
+    outside.remove();
+  }
+});

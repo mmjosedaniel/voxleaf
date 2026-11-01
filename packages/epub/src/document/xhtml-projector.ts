@@ -1,3 +1,4 @@
+import { createContentReferenceResolver } from "../package/package-document.js";
 import { createIndex, createSpineItemId } from "@voxleaf/shared";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
@@ -583,6 +584,8 @@ function freezeCodeInlines(
 class XhtmlProjector {
   readonly #archive: OpenedEpubArchive;
   readonly #path: ArchiveFilePath;
+  readonly #resolveContent: ReturnType<typeof createContentReferenceResolver>;
+  readonly #documentsBySpineIndex = new Map<number, ContentDocumentId>();
   readonly #documentsByPath = new Map<string, ContentDocumentId>();
   readonly #resourcesByPath = new Map<string, RasterImageResourceId>();
   readonly #elements: ElementFrame[] = [];
@@ -605,6 +608,10 @@ class XhtmlProjector {
   ) {
     this.#archive = archive;
     this.#path = path;
+    this.#resolveContent = createContentReferenceResolver(
+      archive,
+      packageDocument,
+    );
 
     for (const [index, item] of packageDocument.manifest.entries()) {
       archive.budget.checkpoint();
@@ -620,6 +627,19 @@ class XhtmlProjector {
           this.#resourcesByPath.set(String(item.location.path), id);
         }
       }
+    }
+
+    const firstByPath = new Map<string, number>();
+    for (const item of packageDocument.spine) {
+      archive.budget.checkpoint();
+      const pathText = String(item.path);
+      const baseId = this.#documentsByPath.get(pathText);
+      if (baseId === undefined) return fail("internal-failure");
+      const id = firstByPath.has(pathText)
+        ? (`${baseId}:spine:${String(item.index)}` as ContentDocumentId)
+        : baseId;
+      this.#documentsBySpineIndex.set(item.index, id);
+      if (!firstByPath.has(pathText)) firstByPath.set(pathText, item.index);
     }
 
     if (this.#documentId === undefined) {
@@ -1309,7 +1329,12 @@ class XhtmlProjector {
     if (resolved === undefined) {
       return undefined;
     }
-    const id = this.#documentsByPath.get(String(resolved.path));
+    const target = this.#resolveContent(resolved.path);
+    const id =
+      String(target.path) !== String(resolved.path) &&
+      target.spineItemIndex !== undefined
+        ? this.#documentsBySpineIndex.get(target.spineItemIndex)
+        : this.#documentsByPath.get(String(target.path));
     if (id === undefined) {
       return fail("broken-reference");
     }

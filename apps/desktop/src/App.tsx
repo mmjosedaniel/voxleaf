@@ -237,6 +237,7 @@ export function App({
     activeRestoration?.status === "ready" ? activeRestoration : undefined;
   const readyRestorationResult = readyRestoration?.result;
   const narrationCloseBarrier = useRef(Promise.resolve(true));
+  const pendingChatterboxRemoval = useRef<Promise<void> | undefined>(undefined);
   const profileSelectionOperation = useRef(0);
   const [narrationHandoff, setNarrationHandoff] = useState<
     "ready" | "pending" | "failed"
@@ -268,7 +269,11 @@ export function App({
   useStrictModeSafeResourceCleanup(narrationCoordinator);
 
   const containNarrationForReplacement = useCallback((): void => {
-    if (narrationCoordinator === undefined) return;
+    if (
+      narrationCoordinator === undefined &&
+      pendingChatterboxRemoval.current === undefined
+    )
+      return;
     setNarrationHandoff("pending");
     const close = (async () => {
       await narrationCoordinator?.close();
@@ -281,7 +286,11 @@ export function App({
           snapshot.failure !== "tts-service-failed")
       );
     })();
-    const barrier = Promise.all([narrationCloseBarrier.current, close]).then(
+    const barrier = Promise.all([
+      narrationCloseBarrier.current,
+      close,
+      pendingChatterboxRemoval.current?.catch(() => undefined),
+    ]).then(
       ([previousContained, currentContained]) =>
         previousContained && currentContained,
       () => false,
@@ -669,14 +678,29 @@ export function App({
       readerLifecycle,
     ],
   );
-  const handleChatterboxRemoval = useCallback(
-    (): Promise<void> =>
-      narrationSettingsActions.removeChatterbox(
-        narrationCoordinator,
-        optionalChatterbox,
-      ),
-    [narrationCoordinator, optionalChatterbox],
-  );
+  const handleChatterboxRemoval = useCallback((): Promise<void> => {
+    if (pendingChatterboxRemoval.current !== undefined)
+      return pendingChatterboxRemoval.current;
+    // Own removal before its first asynchronous step, across publication lifetimes.
+    const removal = Promise.resolve()
+      .then(() =>
+        narrationSettingsActions.removeChatterbox(
+          narrationCoordinator,
+          optionalChatterbox,
+        ),
+      )
+      .finally(() => {
+        if (pendingChatterboxRemoval.current === removal)
+          pendingChatterboxRemoval.current = undefined;
+      });
+    pendingChatterboxRemoval.current = removal;
+    if (narrationCoordinator === undefined) containNarrationForReplacement();
+    return removal;
+  }, [
+    containNarrationForReplacement,
+    narrationCoordinator,
+    optionalChatterbox,
+  ]);
   const handleChatterboxActivation = useCallback(
     () =>
       narrationSettingsActions.activateChatterbox(

@@ -1184,6 +1184,56 @@ function resolveSupportedContentDocument(
   return fail("broken-reference");
 }
 
+/** Resolve local links through the same bounded fallback policy as spine admission. */
+export function createContentReferenceResolver(
+  archive: OpenedEpubArchive,
+  packageDocument: ParsedPackageDocument,
+): (path: ArchiveFilePath) => {
+  readonly path: ArchiveFilePath;
+  readonly spineItemIndex?: number;
+} {
+  const byId = new Map<string, PackageManifestItem>();
+  const byPath = new Map<string, PackageManifestItem>();
+  const bySource = new Map<string, number>();
+  const firstByPath = new Map<string, number>();
+  for (const item of packageDocument.manifest) {
+    archive.budget.checkpoint();
+    byId.set(item.id, item);
+    if (item.location.kind === "local")
+      byPath.set(String(item.location.path), item);
+  }
+  for (const item of packageDocument.spine) {
+    archive.budget.checkpoint();
+    bySource.set(item.idref, item.index);
+    if (!firstByPath.has(String(item.path)))
+      firstByPath.set(String(item.path), item.index);
+  }
+  return (path) => {
+    archive.budget.checkpoint();
+    const source = byPath.get(String(path));
+    if (source === undefined) return fail("broken-reference");
+    let target: PackageManifestItem;
+    try {
+      target = resolveSupportedContentDocument(source, byId, archive);
+    } catch (error: unknown) {
+      if (
+        error instanceof EpubArchiveError &&
+        error.code === "unsupported-resource"
+      )
+        return fail("broken-reference");
+      throw error;
+    }
+    if (target.location.kind !== "local") return fail("broken-reference");
+    const spineItemIndex =
+      (source.id === target.id ? undefined : bySource.get(source.id)) ??
+      firstByPath.get(String(target.location.path));
+    return {
+      path: target.location.path,
+      ...(spineItemIndex === undefined ? {} : { spineItemIndex }),
+    };
+  };
+}
+
 function validateMediaOverlays(
   manifest: readonly RawManifestItem[],
   manifestById: ReadonlyMap<string, RawManifestItem>,

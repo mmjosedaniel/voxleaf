@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Final, cast
@@ -50,25 +51,33 @@ LOCK_PATH: Final = (
 
 
 @pytest.mark.parametrize(
-    "module_name,version",
+    "module_name,version,owned_session",
     [
-        ("bilingual_quality", 8),
-        ("corrective_v9_quality", 9),
-        ("chatterbox_v10_quality", 10),
-        ("chatterbox_v11_quality", 11),
-        ("corrective_v12_quality", 12),
+        ("bilingual_quality", 8, False),
+        ("corrective_v9_quality", 9, False),
+        ("chatterbox_v10_quality", 10, False),
+        ("chatterbox_v11_quality", 11, False),
+        ("corrective_v12_quality", 12, False),
+        ("corrective_v12_quality", 12, True),
     ],
 )
-def test_vaf_quality_shuffles_presentation_records_once_preserving_audio(
+@pytest.mark.parametrize("failure", [None, "cleanup", "generation-and-cleanup"])
+def test_r8_02_quality_cleanup_and_blinded_presentation(
     module_name: str,
     version: int,
+    owned_session: bool,
+    failure: str | None,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = importlib.import_module(f"benchmarks.{module_name}")
     session = tmp_path / "session"
     session.mkdir()
-    candidate = getattr(module, "CHATTERBOX_CANDIDATE_ID", "synthetic-candidate")
+    candidate = (
+        "synthetic-owned"
+        if owned_session
+        else getattr(module, "CHATTERBOX_CANDIDATE_ID", "synthetic-candidate")
+    )
     commit = "1" * 40
     session_id = "a" * 32
     (session / "machine.raw.json").write_text(
@@ -86,14 +95,21 @@ def test_vaf_quality_shuffles_presentation_records_once_preserving_audio(
     generated: list[str] = []
     shuffles: list[int] = []
 
+    closes: list[bool] = []
+    generation_error = RuntimeError("synthetic-generation")
+
     class Adapter:
         def load(self) -> None:
             pass
 
         def close(self) -> None:
-            pass
+            closes.append(True)
+            if failure is not None:
+                raise RuntimeError("synthetic-cleanup-private-detail")
 
         def synthesize_for_quality(self, request: GenerationRequest) -> tuple[str, int]:
+            if failure == "generation-and-cleanup":
+                raise generation_error
             generated.append(request.case_id)
             return request.case_id, 24_000
 
@@ -112,55 +128,81 @@ def test_vaf_quality_shuffles_presentation_records_once_preserving_audio(
     monkeypatch.setattr(module.secrets, "SystemRandom", Permutation)
     monkeypatch.setattr(module, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.setattr(module, "_write_wave", write_wave)
-    if version == 8:
-        monkeypatch.setattr(module, "_session_path", lambda _id: session)
-        monkeypatch.setattr(module, "_machine_passed", lambda *_args: True)
-        monkeypatch.setattr(module, "PiperEnglishAdapter", lambda *_args: adapter)
-        module.generate_quality_session(
-            SimpleNamespace(
-                eligible=True,
-                expected_commit_sha=commit,
-                profile=object(),
-                configuration=configuration,
-                candidate_python=Path(sys.executable),
-            ),
-            machine_session_id=session_id,
+    expected_error = (
+        pytest.raises(
+            RuntimeError,
+            match="synthetic-generation" if failure == "generation-and-cleanup" else r"cleanup$",
         )
-    else:
-        monkeypatch.setattr(module, "_session", lambda *_args: session)
-        monkeypatch.setenv("HF_HUB_OFFLINE", "1")
-        monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
-        monkeypatch.setattr(
-            module,
-            "WindowsFirewallNetworkProbe",
-            lambda: SimpleNamespace(active=lambda _path: True),
-        )
-        if version == 12:
-            monkeypatch.setattr(module, "_candidate_python", lambda _id: Path(sys.executable))
-            monkeypatch.setattr(module, "_repository_ready", lambda *_args: True)
-            monkeypatch.setattr(module, "_validate_machine_under_service", lambda *_args: None)
-            monkeypatch.setattr(
-                module, "_adapter", lambda _id: (adapter, configuration.artifact_root, ("es", "en"))
-            )
+        if failure is not None
+        else nullcontext()
+    )
+    with expected_error as caught:
+        if version == 8:
+            monkeypatch.setattr(module, "_session_path", lambda _id: session)
+            monkeypatch.setattr(module, "_machine_passed", lambda *_args: True)
+            monkeypatch.setattr(module, "PiperEnglishAdapter", lambda *_args: adapter)
             module.generate_quality_session(
-                candidate_id=candidate,
-                authority_commit_sha=commit,
-                execution_commit_sha=commit,
+                SimpleNamespace(
+                    eligible=True,
+                    expected_commit_sha=commit,
+                    profile=object(),
+                    configuration=configuration,
+                    candidate_python=Path(sys.executable),
+                ),
                 machine_session_id=session_id,
             )
         else:
-            monkeypatch.setattr(
-                module.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(stdout=commit)
-            )
+            monkeypatch.setattr(module, "_session", lambda *_args: session)
+            monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+            monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
             monkeypatch.setattr(
                 module,
-                "_candidate_configuration",
-                lambda _id: (adapter, configuration, Path(sys.executable)),
+                "WindowsFirewallNetworkProbe",
+                lambda: SimpleNamespace(active=lambda _path: True),
             )
-            module.generate_quality_session(
-                candidate_id=candidate, expected_commit_sha=commit, machine_session_id=session_id
-            )
-    quality = session / "quality"
+            if version == 12:
+                monkeypatch.setattr(module, "RAW_ROOT", tmp_path / "raw")
+                monkeypatch.setattr(module, "_candidate_python", lambda _id: Path(sys.executable))
+                monkeypatch.setattr(module, "_repository_ready", lambda *_args: True)
+                monkeypatch.setattr(module, "_validate_machine_under_service", lambda *_args: None)
+                monkeypatch.setattr(
+                    module,
+                    "_adapter",
+                    lambda _id: (adapter, configuration.artifact_root, ("es", "en")),
+                )
+                module.generate_quality_session(
+                    candidate_id=candidate,
+                    authority_commit_sha=commit,
+                    execution_commit_sha=commit,
+                    machine_session_id=None if owned_session else session_id,
+                )
+            else:
+                monkeypatch.setattr(
+                    module.subprocess,
+                    "run",
+                    lambda *_args, **_kwargs: SimpleNamespace(stdout=commit),
+                )
+                monkeypatch.setattr(
+                    module,
+                    "_candidate_configuration",
+                    lambda _id: (adapter, configuration, Path(sys.executable)),
+                )
+                module.generate_quality_session(
+                    candidate_id=candidate,
+                    expected_commit_sha=commit,
+                    machine_session_id=session_id,
+                )
+    owned_root = tmp_path / "raw" / candidate / f"{1:032x}" if owned_session else session
+    quality = owned_root / "quality"
+    assert closes == [True]
+    if failure is not None:
+        assert not quality.exists()
+        if owned_session:
+            assert not owned_root.exists()
+        assert (session / "machine.raw.json").is_file()
+        if failure == "generation-and-cleanup":
+            assert caught is not None and caught.value is generation_error
+        return
     records = json.loads((quality / "private-map.json").read_text(encoding="utf-8"))["samples"]
     languages = ("en",) if version == 8 else ("es", "en")
     expected = [
@@ -502,3 +544,60 @@ def test_content_safe_summary_applies_all_frozen_quality_gates() -> None:
     assert rejected["status"] == "rejected"
     assert rejected_gates["quality"] == "fail"
     assert rejected_gates["overall"] == "fail"
+
+
+@pytest.mark.parametrize(
+    "readings,expected", [([8, 0, 6], None), ([8, 6, 7], 6), ([8, None, 6], None)]
+)
+def test_r8_03_ram_minimum_preserves_zero_and_probe_failure(
+    readings: list[int | None], expected: int | None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ctypes
+    import os
+    import threading
+
+    from benchmarks import bilingual_baseline as baseline
+
+    samples = iter(readings)
+
+    class MemoryStatus:
+        argtypes: object = None
+        restype: object = None
+
+        def __call__(self, pointer: ctypes.c_void_p) -> bool:
+            sample = next(samples)
+            if sample is None:
+                return False
+            status = ctypes.cast(pointer, ctypes.POINTER(baseline._MemoryStatusEx))
+            status.contents.ullAvailPhys = sample
+            return True
+
+    class Thread:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def join(self, *, timeout: int) -> None:
+            assert timeout == 1
+
+        def is_alive(self) -> bool:
+            return False
+
+    monkeypatch.setattr(os, "name", "nt")
+    monkeypatch.setattr(
+        ctypes,
+        "WinDLL",
+        lambda *_args, **_kwargs: SimpleNamespace(GlobalMemoryStatusEx=MemoryStatus()),
+        raising=False,
+    )
+    monkeypatch.setattr(threading, "Thread", Thread)
+    probe = baseline.WindowsAvailableRamProbe()
+    probe.start()
+    probe._sample()
+    if expected is None:
+        with pytest.raises(baseline.BilingualBaselineError, match="memory-unavailable"):
+            probe.stop()
+    else:
+        assert probe.stop() == expected

@@ -658,3 +658,20 @@ After paused navigation, selecting or successfully resetting speed updates both
 the selector and the zero-loaded-audio label, including during cleanup. A failed
 preference write does not roll back the already applied in-memory selection.
 Resume remains explicit and active-unit rates remain boundary-deferred.
+
+
+## R8 interaction corrections
+
+Pending optional-package removal remains owned by App when the book changes,
+including when there was no previous narration coordinator. The replacement
+remains readable, but its narration owner waits for removal settlement and
+verified containment. Settlement never starts playback; explicit Play uses the
+replacement's visible location and ordinary compatibility checks.
+
+Back to table of contents focuses the panel even when already open. While
+Settings is open, delayed chapter navigation may finish changing the locator
+but cannot take focus out of the dialog. Closing relinquishes focus containment
+before restoring the Settings trigger. Restart is disabled while compatibility
+is checking/unavailable or reader placement is unavailable/pending, without
+consuming recovery or automatically restarting after a compatibility refresh.
+Current acceptance is recorded in the [R8 plan](../plans/completed/eight-revalidated-findings-minimal-corrections.md).

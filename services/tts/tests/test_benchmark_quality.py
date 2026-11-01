@@ -787,3 +787,35 @@ def test_quality_aggregation_preserves_read_and_failure_order(
         "evaluator-01.correction.json",
         "randomization-key.json",
     ] + ["corpus-v1.json"] * (1 if fault in {"later-candidate", "missing-dimension"} else 2)
+
+
+@pytest.mark.parametrize("generation_fails", [False, True])
+def test_r8_02_cleanup_failure_rejects_success_and_preserves_generation_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, generation_fails: bool
+) -> None:
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    closes: list[bool] = []
+
+    class Adapter(FakeQualityAdapter):
+        def synthesize_for_quality(self, request: GenerationRequest) -> tuple[list[float], int]:
+            if generation_fails:
+                raise QualitySessionError("invalid-audio")
+            return super().synthesize_for_quality(request)
+
+        def close(self) -> None:
+            closes.append(True)
+            raise RuntimeError("synthetic-cleanup-private-detail")
+
+    raw_root = tmp_path / "raw"
+    session_id = "8" * 32
+    with pytest.raises(
+        QualitySessionError, match=r"invalid-audio$" if generation_fails else r"cleanup$"
+    ):
+        generate_candidate_audio(
+            _request(tmp_path, QWEN_CANDIDATE_ID),
+            session_id,
+            raw_root=raw_root,
+            adapter_builder=Adapter,
+        )
+    assert closes == [True]
+    assert not (raw_root / "quality-v2" / session_id).exists()
