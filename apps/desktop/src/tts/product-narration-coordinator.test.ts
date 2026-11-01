@@ -2197,6 +2197,121 @@ describe("product narration coordinator", () => {
     expect(starts).toBe(2);
     await coordinator.close();
   });
+  it.each([false, true])(
+    "F4-03 shuts down pending loading after backend failure (shutdown fails: %s)",
+    async (shutdownFails) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      const { coordinator, client, backend, clock, intervals } =
+        createHarness();
+      Object.defineProperty(clock, "nowMs", { get: () => Date.now() });
+      vi.spyOn(clock, "advance").mockImplementation(() => undefined);
+      const events: string[] = [];
+      let finishPreparation!: () => void;
+      let rejectBackend!: (reason: unknown) => void;
+      const prepare = vi
+        .spyOn(client, "prepare")
+        .mockImplementationOnce(async () => {
+          client.state = "loading";
+          await new Promise<void>((resolve) => {
+            finishPreparation = resolve;
+          });
+          events.push("preparation-settled");
+          return client.observe();
+        });
+      const backendPreparation = vi
+        .spyOn(backend, "preparePlaybackRate")
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_, reject) => {
+              rejectBackend = reject;
+            }),
+        );
+      const performShutdown = client.shutdown.bind(client);
+      const shutdown = vi
+        .spyOn(client, "shutdown")
+        .mockImplementation(async () => {
+          events.push("shutdown");
+          if (shutdownFails) throw new Error("synthetic-shutdown-failed");
+          await performShutdown();
+          finishPreparation();
+        });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.state === "loading");
+        const selection = coordinator.setPlaybackRatePercent(75);
+        await settleUntil(() => rejectBackend !== undefined);
+        rejectBackend(new Error("synthetic-backend-preparation-failed"));
+        await selection;
+        await vi.advanceTimersByTimeAsync(0);
+        intervals[0]!();
+        await vi.advanceTimersByTimeAsync(5_001);
+        await settleUntil(() =>
+          ["recovery-available", "contained"].includes(
+            coordinator.observe().recovery.phase,
+          ),
+        );
+        expect(coordinator.observe().recovery).toMatchObject(
+          shutdownFails
+            ? {
+                phase: "contained",
+                failureCode: "cleanup-failed",
+                canRecover: false,
+              }
+            : {
+                phase: "recovery-available",
+                failureCode: "playback-failed",
+                canRecover: true,
+              },
+        );
+        expect(backend.active).toBeUndefined();
+        expect(backend.closed).toBe(true);
+        expect(client.synthesized).toHaveLength(0);
+        expect(client.startedProfiles).toHaveLength(1);
+        if (!shutdownFails) {
+          expect(events).toEqual(["shutdown", "preparation-settled"]);
+          expect(client.observe()).toMatchObject({
+            state: "stopped",
+            serviceInstanceId: undefined,
+            hasActiveGeneration: false,
+            retainedAudioUnits: 0,
+          });
+          expect(coordinator.observe().metrics).toMatchObject({
+            retainedAudioUnitCount: 0,
+            discardedAudioUnitCount: 0,
+          });
+          coordinator.recover();
+          await settleUntil(() => backend.active !== undefined);
+          expect(coordinator.observe()).toMatchObject({
+            state: { phase: "playing" },
+            failure: undefined,
+            recovery: { phase: "operational" },
+          });
+          expect(client.synthesized).toHaveLength(1);
+          expect(client.startedProfiles).toHaveLength(2);
+          expect(client.synthesized[0]).toMatchObject({
+            sessionId: "session:product-test-3",
+            generationId: "generation:product-test-3",
+          });
+          finishPreparation();
+          await vi.advanceTimersByTimeAsync(0);
+          expect(client.startedProfiles).toHaveLength(2);
+        } else {
+          coordinator.recover();
+          expect(client.startedProfiles).toHaveLength(1);
+        }
+      } finally {
+        finishPreparation?.();
+        shutdown.mockRestore();
+        prepare.mockRestore();
+        backendPreparation.mockRestore();
+        await coordinator.close();
+        vi.useRealTimers();
+      }
+    },
+  );
+
   it("interrupts pending preparation before waiting for its completion", async () => {
     const { coordinator, client } = createHarness();
     let rejectPreparation!: (reason: unknown) => void;

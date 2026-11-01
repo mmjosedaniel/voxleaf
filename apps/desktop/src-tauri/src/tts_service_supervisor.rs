@@ -1595,6 +1595,8 @@ impl TtsServiceSupervisor {
                 native_frame_handoff,
             })
         })();
+        #[cfg(test)]
+        tests::before_synthesis_result();
         let cancelled = self
             .lifecycle
             .lock()
@@ -1606,8 +1608,11 @@ impl TtsServiceSupervisor {
                 cancelled
             })
             .unwrap_or(false);
+        if cancelled {
+            return Err(TtsNativeFailure::Cancelled);
+        }
         result.map_err(|failure| {
-            if cancelled || failure == TtsNativeFailure::Cancelled {
+            if failure == TtsNativeFailure::Cancelled {
                 TtsNativeFailure::Cancelled
             } else {
                 self.fail_session(&session, failure)

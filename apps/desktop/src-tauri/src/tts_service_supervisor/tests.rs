@@ -4,6 +4,7 @@ use super::*;
 mod packaged_chatterbox;
 
 thread_local! {
+    static SYNTHESIS_RESULT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static R7_SELECTION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static R7_SPAWNED: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
     static CHATTERBOX_OBSERVER: std::cell::RefCell<Option<(PathBuf, PathBuf, PathBuf)>> = const { std::cell::RefCell::new(None) };
@@ -134,6 +135,57 @@ pub(super) fn receive_hook(timeout: Duration) -> Option<Result<Frame, TtsNativeF
 
 struct CommandFixture;
 
+pub(super) fn before_synthesis_result() {
+    SYNTHESIS_RESULT_HOOK.with(|slot| {
+        if let Some(hook) = slot.borrow_mut().take() {
+            hook();
+        }
+    });
+}
+
+#[test]
+fn f4_cancel_wins_after_successful_pcm_is_constructed() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
+    supervisor.start().unwrap();
+    supervisor.prepare().unwrap();
+    let owner = Arc::clone(&supervisor);
+    SYNTHESIS_RESULT_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            let scope = owner.active_cancel_scope().unwrap();
+            let records = owner.cancel(scope).unwrap();
+            assert_eq!(records[1]["kind"], "cancelled");
+        }));
+    });
+    let result = supervisor.synthesize(fixture_segment());
+    assert_eq!(result, Err(TtsNativeFailure::Cancelled));
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert!(supervisor.lifecycle.lock().unwrap().active.is_none());
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "stopped");
+}
+
+#[test]
+fn f4_completion_wins_and_late_cancel_cannot_revoke_pcm() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    supervisor.start().unwrap();
+    supervisor.prepare().unwrap();
+    let segment = fixture_segment();
+    let scope = CancelScope {
+        session_id: segment["sessionId"].as_str().unwrap().to_owned(),
+        generation_id: segment["generationId"].as_str().unwrap().to_owned(),
+        segment_id: segment["segmentId"].as_str().unwrap().to_owned(),
+    };
+    assert_eq!(supervisor.synthesize(segment).unwrap(), vec![0; 4]);
+    assert_eq!(
+        supervisor.cancel(scope),
+        Err(TtsNativeFailure::InvalidState)
+    );
+    assert_eq!(supervisor.lifecycle.lock().unwrap().state, "ready");
+    supervisor.shutdown().unwrap();
+    assert!(supervisor.session.lock().unwrap().is_none());
+}
+
 impl CommandFixture {
     fn new(delay: Duration, slow_command: &'static str) -> Self {
         Self::with_extra(delay, slow_command, Duration::ZERO)
@@ -210,6 +262,7 @@ impl CommandFixture {
 
 impl Drop for CommandFixture {
     fn drop(&mut self) {
+        SYNTHESIS_RESULT_HOOK.with(|slot| slot.borrow_mut().take());
         SYNTHETIC_COMMAND_SESSION.set(false);
         COMMAND_CLOCK.set(None);
         COMMAND_BUDGET.set(None);

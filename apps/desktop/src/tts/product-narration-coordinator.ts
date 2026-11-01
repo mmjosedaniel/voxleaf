@@ -2101,6 +2101,11 @@ export class ProductNarrationCoordinator {
           Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
           "cancellation-timeout",
         );
+      } else {
+        await this.#withinCleanupDeadline(
+          this.#client.shutdown(),
+          Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
+        );
       }
       if (operation !== undefined) {
         await this.#withinCleanupDeadline(
@@ -2108,10 +2113,12 @@ export class ProductNarrationCoordinator {
           cleanupDeadline,
         );
       }
-      await this.#withinCleanupDeadline(
-        this.#client.shutdown(),
-        Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
-      );
+      if (transition === "cancel" && scope !== undefined) {
+        await this.#withinCleanupDeadline(
+          this.#client.shutdown(),
+          Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
+        );
+      }
     } catch (error) {
       cleanupFailure =
         (error instanceof ProductNarrationRecoveryError &&

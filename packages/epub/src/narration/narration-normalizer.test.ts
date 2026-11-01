@@ -243,6 +243,70 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 ]);
 
 describe("narration normalization", () => {
+  it.each([
+    ["8١", "8١"],
+    ["١8", "١8"],
+    ["8１", "8１"],
+    ["１8", "１8"],
+    ["8𝟙", "8𝟙"],
+    ["𝟙8", "𝟙8"],
+    ["8²", "8²"],
+    ["²8", "²8"],
+    ["ø8", "ø8"],
+    ["8字", "8字"],
+    ["8\u0301", "8\u0301"],
+    ["8", "eight"],
+  ])(
+    "F4-01 preserves numeric adjacency and mapping: %s",
+    (source, expected) => {
+      const leaf = singleTextFixture(source, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        "en",
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+      for (const protectedLeaf of [
+        singleTextFixture(source, true),
+        leafFor(paragraph([text(source, "fr")])),
+      ]) {
+        expect(
+          normalizeBilingualNarrationSourceTokens(
+            protectedLeaf.sourceTokens,
+            "en",
+          ).text,
+        ).toBe(source);
+      }
+    },
+  );
+
+  it.each([
+    ["es", "1/24/07/2026", "1/24/07/2026"],
+    ["es", "24/07/2026/1", "24/07/2026/1"],
+    ["es", "(24/07/2026).", "(veinticuatro de julio de dos mil veintiséis)."],
+    ["en", "1/2026-07-24", "1/2026-07-24"],
+    ["en", "2026-07-24/1", "2026-07-24/1"],
+    ["en", "2026-07-24-1", "2026-07-24-1"],
+    ["en", "(2026-07-24).", "(July twenty-fourth, two thousand twenty-six)."],
+  ] as const)(
+    "F4-02 preserves whole dates and mapping: %s %s",
+    (language, source, expected) => {
+      const leaf = singleTextFixture(source, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        language,
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+    },
+  );
+
   it("SAC-07 preserves unsupported decimal currency expressions as a whole", () => {
     for (const source of [
       "0,20 EUR",

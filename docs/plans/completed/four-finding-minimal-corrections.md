@@ -2,10 +2,10 @@
 
 Task ID: F4-20261031.
 
-Status: planned; implementation and validation have not started. The current
-authorization covers this ExecPlan, its active-index entry, a dedicated branch
-and a local documentation commit only. It does not authorize executing the
-plan, pushing, publishing or opening a pull request.
+Status: complete; implementation and host acceptance approved by independent
+F4-R2-20261031 on 2026-10-31. Final archival assessment is retained separately in
+the [review reports](../evidence/four-finding-minimal-corrections/review-reports.md).
+No commit, push or PR was performed or authorized.
 
 ## Goal
 
@@ -156,7 +156,7 @@ weights belong in tracked evidence.
 
 ## Milestones
 
-### M0: Freeze scope and evidence decisions — not started
+### M0: Freeze scope and evidence decisions — complete
 
 After separate execution authorization, record actual HEAD, worktree ownership,
 closed changed paths and relevant tool/environment identities. Recheck the
@@ -170,7 +170,7 @@ No complete baseline suite is required. Use the targeted failing regressions
 below on the original production bytes as the defect baseline. An unrelated
 baseline failure needs diagnosis, not blanket reruns or an assumed old PASS.
 
-### M1: Correct the two narration boundaries — not started
+### M1: Correct the two narration boundaries — complete
 
 Extend the existing source-mapping fixture, preferably one table per invariant:
 
@@ -187,7 +187,7 @@ Extend the existing source-mapping fixture, preferably one table per invariant:
 Run only the new `F4-` cases before the two local predicate changes. Then run
 G-EPUB once on the completed unit. Keep frozen legacy behavior unchanged.
 
-### M2: Correct startup failure containment — not started
+### M2: Correct startup failure containment — complete
 
 Use the coordinator's fake client, deferred promises, backend and clock. Hold
 `prepare()` in loading, select a non-default rate through the public coordinator,
@@ -205,7 +205,7 @@ Register cleanup in `finally` so the deliberately failing pre-fix run also ends.
 Run the new `F4-03` subset on original coordinator bytes, apply only the ordering
 change, then run G-DESKTOP once after the batch's EPUB exports are current.
 
-### M3: Correct native cancellation result arbitration — not started
+### M3: Correct native cancellation result arbitration — complete
 
 Use `CommandFixture`'s valid synthetic completed waveform. Add, only if needed,
 one `#[cfg(test)]` hook after `result` is constructed and before the final
@@ -220,7 +220,7 @@ Avoid sleeps, probabilistic stress loops, a new synchronization dependency or
 production-only test behavior. The regression must fail on the old `map_err`
 logic before changing that decision. Run G-RUST in both configured feature modes.
 
-### M4: Combined acceptance and documentation — not started
+### M4: Combined acceptance and documentation — complete
 
 Finish fast gates before native preparation. Build one current desktop artifact
 and run one existing Piper EN native arm. Record exact results and cleanup.
@@ -282,8 +282,7 @@ that gate instead. Never rerun an already valid gate merely to rename its receip
 All commands below run from the repository root in normal local PowerShell
 outside the managed automation sandbox. They use configured scripts or the
 existing Vitest/Cargo/native runner with supported selection arguments. Record
-start/end, exit, counts, artifact identity and cleanup separately. All are
-currently **NOT RUN**.
+start/end, exit, counts, artifact identity and cleanup separately. Execution outcomes are recorded in the linked ledger; this table retains the planned selection.
 
 | Gate | Command / invariant | Timing and invalidation |
 | --- | --- | --- |
@@ -377,7 +376,22 @@ of code rollback.
   `codex/four-finding-minimal-corrections-plan` for the authorized local
   documentation commit. No implementation, tests, builds, lint or host mutation
   performed. Git branch creation is the only non-document setup mutation.
-- M0-M4 implementation/acceptance: not started; require separate authorization.
+- 2026-10-31: User authorized implementation and the planned validations, without
+  commit, push or PR. Verified clean expected branch and plan HEAD
+  `3a1f83d395a8c50bc2333136c29d8ef6250d3d8d`; no pre-existing work to preserve.
+- 2026-10-31: Added regressions before the production corrections. EPUB red:
+  16 intended failures/six controls; native red: cancel-wins fails/success passes.
+  Desktop's first harness attempt omitted its manual interval tick; preserved
+  that failure and renewed with the tick before editing production. Valid red
+  proves cleanup-failed instead of recovery-available; failed-shutdown control
+  passes. All deliberate failures terminate with fixture/finally cleanup.
+- 2026-10-31: Minimal corrections implemented. Selected EPUB/desktop gates pass
+  213 tests each. Final coordinator-only renewal passes 148 after a formatting
+  correction; unchanged player/client evidence is retained for review. Rust
+  passes 35 default/34 release-locked, five ignored each. Static checks pass.
+  Core integrity, current desktop build and one Piper EN native arm pass.
+  Original resources are restored byte-for-byte; no new owned process/scratch
+  remains. Installed dependencies match before/after; runtime review is pending.
 
 ## Discoveries and decisions
 
@@ -398,13 +412,28 @@ of code rollback.
 
 ## Final validation results
 
-Planning: source, existing tests, scripts and historical receipts inspected
-read-only; scope and proposed commands reviewed against repository configuration.
-No test, build, lint, type, package, browser/native or automated documentation
-validation command has been executed for this plan. No new PASS is asserted.
+See the [execution ledger](../evidence/four-finding-minimal-corrections/execution-ledger.md)
+for exact commands, outcomes, failed attempts, input identities and reuse decisions.
+Raw immutable receipts are under
+`tmp/evidence/four-finding-minimal-corrections/run-01/`.
 
-Implementation: **NOT STARTED**. G-RED through G-REVIEW: **NOT RUN**.
-Historical runtime results accepted as current F4 evidence: **none**.
-Asset reuse: **candidate only**, pending fresh integrity and host readiness.
-Independent implementation review: **not requested; pending execution**.
-Runtime/contract/architecture files changed by this planning task: **none**.
+G-RED defects are reproduced; G-EXPORTS, G-EPUB, G-DESKTOP, both G-RUST modes,
+G-STATIC, G-CORE, G-BUILD and G-NATIVE pass outside the sandbox.
+G-DOCS passes; G-REVIEW passes with F4-R2-20261031, resolving F4-R1-01. No historical runtime PASS is accepted.
+Existing fixtures and verified core/driver assets are reused; renderer/native
+artifacts are fresh. No public contract or architecture topology changes.
+
+Review F4-R1-20261031 requested one P2 test-coverage correction, F4-R1-01.
+The original passing retry assertions observed dispatch before a fake-clock
+exception. The clock is now consistent and the regression requires actual
+playing audio, operational recovery and no failure. R2 coordinator 148 tests,
+TypeScript format/lint and desktop types pass. Production/native bytes are
+unchanged. Original review and all receipts are retained in the ledger/report.
+
+Final acceptance: F4-R2-20261031 APPROVE, no unresolved findings. The reviewer
+independently accepted retained unaffected gates using the exact input/environment
+proof. The plan is archived only after that implementation acceptance. Index and
+archival-only changes receive a separate immutable assessment in the review reports;
+no runtime or test bytes change during archival. Host cleanup is verified, the
+index remains empty, and HEAD/branch are unchanged. The ledger lists all commands,
+outcomes, failures, limitations and evidence identities.
