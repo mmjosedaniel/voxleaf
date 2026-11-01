@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Visible locator and Unicode numeric compounds: minimal corrections](visible-locator-unicode-compound-corrections.md): planning only; proposes two production-file changes for the remaining Resume-follow/Stop/Play locator and Unicode compound-boundary gaps. Records prior-fix comparisons and a focused validation/reuse strategy. Execution is not authorized.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
