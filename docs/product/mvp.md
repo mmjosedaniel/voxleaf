@@ -2,6 +2,14 @@
 
 ## Implementation status
 
+Current mutable narration profiles check lexical adjacency across approved
+removable formatting marks without changing displayed text or source ranges.
+Unsupported signed/compound numbers, repeated nonbreaking suffix spacing and
+Celsius numeric continuations stay intact. Ordinary sentence punctuation keeps
+accepted numeric forms protected from internal segment cuts. Historical v1
+normalization remains unchanged. Acceptance is recorded in the
+[BNC execution ledger](../plans/evidence/narration-boundary-navigation-corrections/execution-ledger.md).
+
 The [completed narration logic corrections](../plans/completed/narration-logic-corrections.md)
 restore manual-position persistence after natural narration completion and contain
 changed/unavailable compatibility selections before applying a new preparation

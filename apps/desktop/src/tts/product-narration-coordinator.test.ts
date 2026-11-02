@@ -698,6 +698,110 @@ describe("product narration coordinator", () => {
     }
   });
 
+  it.each(["available", "unavailable", "stop"] as const)(
+    "BNC-01 settles rejected navigation and releases manual persistence (%s)",
+    async (outcome) => {
+      const { coordinator, client, prepareNarration } = createHarness();
+      const storage = new Map<string, string>();
+      const repository = createWebStorageReaderPositionRepository({
+        storage: () => ({
+          getItem: (key) => storage.get(key) ?? null,
+          setItem: (key, value) => {
+            storage.set(key, value);
+          },
+        }),
+      });
+      const publication = {
+        ...createPublication(async () => completeResult()),
+        defaultStartLocator: START_LOCATOR,
+      };
+      const save = new ReaderPositionSaveCoordinator(publication, repository, {
+        initialLocator: START_LOCATOR,
+      });
+      const unbind = bindNarrationPositionPersistence(coordinator, save);
+      let release!: (value: "available" | "unavailable") => void;
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        vi.spyOn(client, "exactDemoAvailability").mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              release = resolve;
+            }),
+        );
+        const checking = coordinator.refreshSelectedProfile();
+        await settleUntil(() => typeof release === "function");
+        await coordinator.beginExternalNavigation("chapter-navigation");
+        if (outcome === "stop") await coordinator.stop();
+        coordinator.settleExternalNavigation(END_LOCATOR);
+        await save.flush();
+        expect.soft(save.schedulePassive(END_LOCATOR)).toBe(true);
+        expect(coordinator.observe()).toMatchObject({
+          availability: "checking",
+          navigation: { playIntent: "inactive", settling: false },
+        });
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+        await save.flush();
+        expect(
+          await repository.readPosition(START_LOCATOR.bookIdentity),
+        ).toMatchObject({ status: "ready", state: { locator: END_LOCATOR } });
+        client.availability =
+          outcome === "unavailable" ? "unavailable" : "available";
+        release(client.availability);
+        await checking;
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+        expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+        if (outcome === "unavailable") {
+          client.availability = "available";
+          await coordinator.refreshSelectedProfile();
+        }
+        coordinator.startAtVisibleLocator();
+        await settleUntil(() => prepareNarration.mock.calls.length === 2);
+        expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+          END_LOCATOR,
+        );
+      } finally {
+        release?.("available");
+        unbind();
+        await save.close();
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each([false, true])(
+    "BNC-01 settles navigation without masking cleanup failure (paused: %s)",
+    async (paused) => {
+      const { coordinator, client, prepareNarration } = createHarness();
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      if (paused) coordinator.pause();
+      const shutdown = vi
+        .spyOn(client, "shutdown")
+        .mockRejectedValue(new Error("synthetic cleanup failure"));
+      try {
+        await coordinator.beginExternalNavigation("chapter-navigation");
+        coordinator.settleExternalNavigation(END_LOCATOR);
+        await settleUntil(() => !coordinator.observe().navigation.settling);
+        expect(coordinator.observe()).toMatchObject({
+          navigation: { playIntent: "inactive", settling: false },
+          availability: "unavailable",
+          failure: "tts-service-failed",
+          recovery: { phase: "contained", failureCode: "cleanup-failed" },
+        });
+        coordinator.start();
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+      } finally {
+        shutdown.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
   it("PSC-02 rejected ownerless Resume retains paused intent through availability checks", async () => {
     const { coordinator, client, prepareNarration } = createHarness();
     let release!: (value: "available" | "unavailable") => void;

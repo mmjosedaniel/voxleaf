@@ -360,6 +360,68 @@ function isNumericContextCodePoint(value: string | undefined): boolean {
   return value !== undefined && /^\p{N}$/u.test(value);
 }
 
+interface LexicalContext {
+  readonly index: number;
+  readonly value: string | undefined;
+}
+
+// Read logical adjacency without changing raw spans or crossing code/language
+// barriers. Undefined means the existing lookaround budget cannot prove it.
+function lexicalContext(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  start: number,
+  direction: -1 | 1,
+  language: NarrationNormalizationLanguage,
+  skipWhitespace = false,
+  maximum: number = NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum,
+): LexicalContext | undefined {
+  for (let distance = 0; distance < maximum; distance += 1) {
+    const index = start + distance * direction;
+    const token = tokens[index];
+    const value = sourceText(token);
+    if (token === undefined) return { index, value };
+    const removableMark =
+      value === SOFT_HYPHEN ||
+      value === ZERO_WIDTH_SPACE ||
+      value === WORD_JOINER;
+    if (!isProseTextToken(token) || languages[index] !== language) {
+      return distance === 0 && !(isProseTextToken(token) && removableMark)
+        ? { index, value }
+        : undefined;
+    }
+    if (
+      !removableMark &&
+      !(skipWhitespace && isOrdinaryWhitespace(value ?? ""))
+    )
+      return { index, value };
+  }
+  return undefined;
+}
+
+function hasNumericContinuation(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  context: LexicalContext,
+  origin: number,
+  direction: -1 | 1,
+  language: NarrationNormalizationLanguage,
+): boolean {
+  if (!/[.,/:+−-]/u.test(context.value ?? "")) return false;
+  const beyond = lexicalContext(
+    tokens,
+    languages,
+    context.index + direction,
+    direction,
+    language,
+    false,
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
+      Math.abs(context.index - origin) -
+      1,
+  );
+  return beyond === undefined || isNumericContextCodePoint(beyond.value);
+}
+
 function hasSameLanguage(
   languages: readonly NarrationNormalizationLanguage[],
   startIndex: number,
@@ -453,18 +515,43 @@ function isExactCelsiusForm(
     return false;
   }
 
-  const before = sourceText(tokens[startIndex - 1]);
-  const after = sourceText(tokens[startIndex + form.length]);
-  // ADR-0063: punctuation can attach this accepted suffix to an unsupported
-  // numeric expression. Inspect only the two preceding source code points.
+  const before = lexicalContext(
+    tokens,
+    languages,
+    startIndex - 1,
+    -1,
+    language,
+  );
+  const after = lexicalContext(
+    tokens,
+    languages,
+    startIndex + form.length,
+    1,
+    language,
+  );
+  if (before === undefined || after === undefined) return false;
   const attachedNumericSyntax =
-    /[+−-]/u.test(before ?? "") ||
-    (/[.,/:]/u.test(before ?? "") &&
-      isNumericContextCodePoint(sourceText(tokens[startIndex - 2])));
+    /[+−-]/u.test(before.value ?? "") ||
+    hasNumericContinuation(
+      tokens,
+      languages,
+      before,
+      startIndex - 1,
+      -1,
+      language,
+    ) ||
+    hasNumericContinuation(
+      tokens,
+      languages,
+      after,
+      startIndex + form.length,
+      1,
+      language,
+    );
   return (
     !attachedNumericSyntax &&
-    !isWordContextCodePoint(before) &&
-    !isWordContextCodePoint(after)
+    !isWordContextCodePoint(before.value) &&
+    !isWordContextCodePoint(after.value)
   );
 }
 
@@ -584,33 +671,58 @@ function isLexicalBoundary(value: string | undefined): boolean {
 
 function hasAttachedNumericSyntax(
   tokens: readonly NarrationSourceToken[],
-  startIndex: number,
+  languages: readonly NarrationNormalizationLanguage[],
+  before: LexicalContext,
+  after: LexicalContext,
   endIndexExclusive: number,
+  language: NarrationNormalizationLanguage,
 ): boolean {
-  const before = sourceText(tokens[startIndex - 1]);
-  const after = sourceText(tokens[endIndexExclusive]);
   if (
-    isNumericLookaheadCodePoint(before) ||
-    isNumericLookaheadCodePoint(after) ||
-    before === "€" ||
-    before === "°" ||
-    after === "€" ||
-    after === "°"
+    [before.value, after.value].some(
+      (value) =>
+        value !== "." &&
+        value !== "," &&
+        (isNumericLookaheadCodePoint(value) ||
+          value === "−" ||
+          value === "€" ||
+          value === "°"),
+    )
   ) {
     return true;
   }
-  if (!isOrdinaryWhitespace(after ?? "")) {
+  if (!isOrdinaryWhitespace(after.value ?? "")) {
     return false;
   }
-  const suffix = sourceText(tokens[endIndexExclusive + 1]);
-  return (
-    suffix === "%" ||
-    suffix === "€" ||
-    suffix === "°" ||
-    (suffix === "E" &&
-      sourceText(tokens[endIndexExclusive + 2]) === "U" &&
-      sourceText(tokens[endIndexExclusive + 3]) === "R")
+  const suffix = lexicalContext(
+    tokens,
+    languages,
+    endIndexExclusive,
+    1,
+    language,
+    true,
   );
+  if (suffix === undefined) return true;
+  if (suffix.value === "%" || suffix.value === "€" || suffix.value === "°")
+    return true;
+  if (suffix.value !== "E") return false;
+  let context = suffix;
+  for (const expected of ["U", "R"]) {
+    const next = lexicalContext(
+      tokens,
+      languages,
+      context.index + 1,
+      1,
+      language,
+      false,
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
+        (context.index - endIndexExclusive) -
+        1,
+    );
+    if (next === undefined) return true;
+    if (next.value !== expected) return false;
+    context = next;
+  }
+  return true;
 }
 
 function matchesLexicalForm(
@@ -630,32 +742,8 @@ function matchesLexicalForm(
     return fail();
   }
   const endIndexExclusive = startIndex + source.length;
-  const before = sourceText(tokens[startIndex - 1]) ?? "";
-  const after = sourceText(tokens[endIndexExclusive]) ?? "";
-  const attachedCompound =
-    (form.kind === "currency" ||
-      form.kind === "percentage" ||
-      form.kind === "time" ||
-      form.kind === "date") &&
-    (/[+−-]/u.test(before) ||
-      (/[.,/:]/u.test(before) &&
-        isNumericContextCodePoint(sourceText(tokens[startIndex - 2]))) ||
-      (/[.,/:-]/u.test(after) &&
-        isNumericContextCodePoint(sourceText(tokens[endIndexExclusive + 1]))));
-  if (
-    endIndexExclusive > tokens.length ||
-    attachedCompound ||
-    !isLexicalBoundary(sourceText(tokens[startIndex - 1])) ||
-    !isLexicalBoundary(sourceText(tokens[endIndexExclusive])) ||
-    (form.kind === "number" &&
-      hasAttachedNumericSyntax(tokens, startIndex, endIndexExclusive)) ||
-    (form.kind === "abbreviation" &&
-      (sourceText(tokens[startIndex - 1]) === "." ||
-        sourceText(tokens[endIndexExclusive]) === "."))
-  ) {
-    return undefined;
-  }
-
+  if (endIndexExclusive > tokens.length) return undefined;
+  // Only matching raw forms need bounded contextual lookaround.
   for (let offset = 0; offset < source.length; offset += 1) {
     const index = startIndex + offset;
     if (
@@ -663,10 +751,66 @@ function matchesLexicalForm(
       !isProseTextToken(tokens[index]) ||
       sourceText(tokens[index]) !== source[offset] ||
       languages[index] !== requiredLanguage
-    ) {
+    )
       return undefined;
-    }
   }
+  const before = lexicalContext(
+    tokens,
+    languages,
+    startIndex - 1,
+    -1,
+    requiredLanguage,
+  );
+  const after = lexicalContext(
+    tokens,
+    languages,
+    endIndexExclusive,
+    1,
+    requiredLanguage,
+  );
+  if (before === undefined || after === undefined) return undefined;
+  const attachedCompound =
+    (form.kind === "currency" ||
+      form.kind === "percentage" ||
+      form.kind === "time" ||
+      form.kind === "date" ||
+      form.kind === "number") &&
+    (/[+−-]/u.test(before.value ?? "") ||
+      hasNumericContinuation(
+        tokens,
+        languages,
+        before,
+        startIndex - 1,
+        -1,
+        requiredLanguage,
+      ) ||
+      hasNumericContinuation(
+        tokens,
+        languages,
+        after,
+        endIndexExclusive,
+        1,
+        requiredLanguage,
+      ));
+  if (
+    attachedCompound ||
+    !isLexicalBoundary(before.value) ||
+    !isLexicalBoundary(after.value) ||
+    (form.kind === "number" &&
+      hasAttachedNumericSyntax(
+        tokens,
+        languages,
+        before,
+        after,
+        endIndexExclusive,
+        requiredLanguage,
+      )) ||
+    (form.kind === "abbreviation" &&
+      (before.value === "." || after.value === "."))
+  ) {
+    return undefined;
+  }
+
   return endIndexExclusive;
 }
 

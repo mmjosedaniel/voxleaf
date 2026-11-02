@@ -1,4 +1,5 @@
 import { isApostropheContext } from "./narration-normalizer.js";
+import { normalizeNarrationSourceTokens as normalizeBilingual } from "./narration-bilingual-normalizer.js";
 import {
   createIndex,
   decodeBookV1,
@@ -44,6 +45,45 @@ import {
 } from "./narration-work-controller.js";
 
 const DOCUMENT_ID = "document:narration-resource-bounds" as ContentDocumentId;
+
+it("BNC-02/03 bounds invisible and whitespace context at the existing lookaround ceiling", () => {
+  const maximum =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+  const normalize = (source: string, language: "es" | "en") =>
+    normalizeBilingual(
+      Array.from(source, (text, index) => ({
+        kind: "text" as const,
+        text: text as SensitivePublicationText,
+        sourceSpan: {
+          startOffsetCodePoints: createIndex(index),
+          endOffsetCodePoints: createIndex(index + 1),
+        },
+        textContext: { inlineContainers: [] },
+      })),
+      language,
+    );
+  for (const count of [maximum - 1, maximum, maximum + 1]) {
+    const marks = "\u2060".repeat(count);
+    expect(normalize(`8${marks}!`, "en").text).toBe(
+      count < maximum ? "eight!" : "8!",
+    );
+    expect(normalize(`!${marks}8`, "en").text).toBe(
+      count < maximum ? "!eight" : "!8",
+    );
+    const spaces = "\u00a0".repeat(count);
+    expect(normalize(`21${spaces}word`, "es").text).toBe(
+      count < maximum ? "veintiuno word" : "21 word",
+    );
+    expect(normalize(`21${spaces}%`, "es").text).toBe("21 %");
+  }
+  for (const count of [maximum - 4, maximum - 3, maximum - 2]) {
+    const marks = "\u2060".repeat(count);
+    expect(normalize(`21 E${marks}UR`, "es").text).toBe("21 EUR");
+    expect(normalize(`21 E${marks}UX`, "es").text).toBe(
+      count === maximum - 4 ? "veintiuno EUX" : "21 EUX",
+    );
+  }
+});
 
 it("R7-05 quotation checkpoint has fixed content-free shape regardless of nesting", () => {
   const token = (text: string, index: number) => ({

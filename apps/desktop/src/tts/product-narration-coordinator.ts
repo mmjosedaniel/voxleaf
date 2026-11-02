@@ -1532,9 +1532,19 @@ export class ProductNarrationCoordinator {
     this.#activeLocator = pending.target;
     this.#visibleLocator = pending.target;
     this.#pendingNavigation = undefined;
+    if (this.#recovery.observe().phase !== "operational") {
+      this.#pausedNavigationState = undefined;
+      this.#playIntent = "inactive";
+      this.#publish();
+      return;
+    }
     if (pending.restart) {
-      this.#playIntent = "playing";
+      this.#pausedNavigationState = undefined;
       this.start();
+      if (this.#scheduler === undefined) {
+        this.#playIntent = "inactive";
+        this.#publish();
+      }
       return;
     }
     this.#playIntent = "paused";
