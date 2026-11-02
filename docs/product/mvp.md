@@ -537,6 +537,15 @@ download and activation remain separate user actions.
   percentage. M011 does not expose a profile-selection Cancel action until an
   explicit rollback contract can restore the prior profile preference,
   narration identity, and recovery state safely.
+- Rejected Chatterbox activation shows fixed retry guidance; known preference
+  or admission restrictions prevent unnecessary teardown. Pending profile
+  selection belongs to the narrator lifetime that initiated it, including an
+  absent narrator becoming available for the same publication.
+- Startup-mode changes during Stop wait for containment before persistence.
+  Closing Settings does not release pending narration-setting ownership. While
+  Reset is pending, conflicting startup and compact-speed edits are unavailable;
+  ordinary Stop still permits playback-speed selection. Reset remains best effort
+  and partial failures retain truthful feedback without automatic Play.
 - First Chatterbox Play distinguishes the most specific content-free phases the
   desktop can prove, including installed-package verification, local service
   and model startup, first-audio generation, and buffering. Before audio owns

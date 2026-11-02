@@ -1,5 +1,6 @@
 import { getVersion } from "@tauri-apps/api/app";
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -79,6 +80,7 @@ export interface ReaderSettingsDialogProps {
     language: NarrationLanguageV1,
   ) => Promise<boolean>;
   readonly onResetNarrationSettings: () => Promise<boolean>;
+  readonly narrationSettingsPending?: boolean;
   readonly onRecoveryEpisodeReset: () => void;
   readonly optionalChatterbox: OptionalChatterboxClient;
   readonly onActivateChatterbox: () => Promise<boolean>;
@@ -228,6 +230,10 @@ function OptionalChatterboxSettings({
       }}
       onRemove={onRemove}
       disabled={disabled}
+      activationAllowed={
+        compatibility.canPersistSelection &&
+        compatibility.preferenceStatus !== "unavailable"
+      }
       acquisitionAllowed={acquisition.allowed}
       acquisitionBlockMessage={acquisition.message}
     />
@@ -247,6 +253,7 @@ export function ReaderSettingsDialog({
   onSelectProfile,
   onSelectLanguage,
   onResetNarrationSettings,
+  narrationSettingsPending = false,
   onRecoveryEpisodeReset,
   optionalChatterbox,
   onActivateChatterbox,
@@ -261,8 +268,12 @@ export function ReaderSettingsDialog({
   const [applicationVersion, setApplicationVersion] = useState<
     string | undefined
   >();
-  const [narrationSelectionPending, setNarrationSelectionPending] =
-    useState(false);
+  const [pendingSelections, setPendingSelections] = useState(0);
+  const setNarrationSelectionPending = useCallback((pending: boolean): void => {
+    setPendingSelections((count) => count + (pending ? 1 : -1));
+  }, []);
+  const narrationSelectionPending =
+    narrationSettingsPending || pendingSelections > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -417,6 +428,7 @@ export function ReaderSettingsDialog({
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
               onSelectionPendingChange={setNarrationSelectionPending}
+              disabled={narrationSelectionPending}
             />
             <OptionalChatterboxSettings
               client={optionalChatterbox}

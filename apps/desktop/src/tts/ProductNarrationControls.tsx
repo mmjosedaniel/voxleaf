@@ -18,10 +18,12 @@ import { useProductNarrationSnapshot } from "./use-product-narration-snapshot";
 
 export interface ProductNarrationControlsProps {
   readonly coordinator: ProductNarrationCoordinator;
+  readonly settingsPending?: boolean;
 }
 
 export function ProductNarrationControls({
   coordinator,
+  settingsPending = false,
 }: ProductNarrationControlsProps): ReactElement {
   const [detailOpen, setDetailOpen] = useState(false);
   const detailId = useId();
@@ -171,6 +173,7 @@ export function ProductNarrationControls({
             <select
               value={snapshot.playbackRatePercent}
               disabled={
+                settingsPending ||
                 snapshot.playbackPreferenceStatus === "loading" ||
                 !snapshot.canPersistPlaybackPreference
               }

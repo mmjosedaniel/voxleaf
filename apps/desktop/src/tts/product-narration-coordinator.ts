@@ -663,8 +663,19 @@ export class ProductNarrationCoordinator {
       if (this.#snapshot.state?.phase === "complete") {
         this.#playIntent = "inactive";
         await this.#stopActiveRun(this.#snapshot.state);
+      } else if (
+        this.#stopOperation !== undefined ||
+        this.#recoveryOperation !== undefined
+      ) {
+        // Stopped playback can still retain owners until native containment.
+        await this.#stopActiveRun();
       }
-      if (this.#closed || isActivePhase(this.#snapshot.state)) return false;
+      if (
+        this.#closed ||
+        isActivePhase(this.#snapshot.state) ||
+        !this.#canPersistStartPreference
+      )
+        return false;
       if (this.#recovery.observe().phase !== "operational") {
         const service = this.#client.observe();
         // Explicit reset may finish a contained episode, but never discard

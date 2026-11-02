@@ -3,6 +3,7 @@ import type { ReadingLocatorV1 } from "@voxleaf/shared";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -239,6 +240,8 @@ export function App({
   const narrationCloseBarrier = useRef(Promise.resolve(true));
   const pendingChatterboxRemoval = useRef<Promise<void> | undefined>(undefined);
   const profileSelectionOperation = useRef(0);
+  const pendingNarrationReset = useRef<Promise<boolean> | undefined>(undefined);
+  const [narrationResetPending, setNarrationResetPending] = useState(false);
   const [narrationHandoff, setNarrationHandoff] = useState<
     "ready" | "pending" | "failed"
   >("ready");
@@ -267,6 +270,10 @@ export function App({
   );
 
   useStrictModeSafeResourceCleanup(narrationCoordinator);
+  useLayoutEffect(() => {
+    // Even absent-to-created ownership invalidates selection for the same book.
+    profileSelectionOperation.current += 1;
+  }, [narrationCoordinator]);
 
   const containNarrationForReplacement = useCallback((): void => {
     if (
@@ -714,9 +721,12 @@ export function App({
       ),
     [hardwareCompatibilityCoordinator, narrationCoordinator],
   );
-  const handleNarrationSettingsReset = useCallback(
-    (): Promise<boolean> =>
-      narrationSettingsActions.reset({
+  const handleNarrationSettingsReset = useCallback((): Promise<boolean> => {
+    if (pendingNarrationReset.current !== undefined)
+      return pendingNarrationReset.current;
+    setNarrationResetPending(true);
+    const reset = narrationSettingsActions
+      .reset({
         hardware: hardwareCompatibilityCoordinator,
         coordinator: narrationCoordinator,
         startPreference: narrationStartPreferenceRepository,
@@ -728,14 +738,21 @@ export function App({
             canPersist: true,
           });
         },
-      }),
-    [
-      hardwareCompatibilityCoordinator,
-      narrationCoordinator,
-      narrationStartPreferenceRepository,
-      narrationPlaybackPreferenceRepository,
-    ],
-  );
+      })
+      .finally(() => {
+        if (pendingNarrationReset.current === reset) {
+          pendingNarrationReset.current = undefined;
+          setNarrationResetPending(false);
+        }
+      });
+    pendingNarrationReset.current = reset;
+    return reset;
+  }, [
+    hardwareCompatibilityCoordinator,
+    narrationCoordinator,
+    narrationStartPreferenceRepository,
+    narrationPlaybackPreferenceRepository,
+  ]);
 
   const isRestoringReader =
     viewState.status === "ready" &&
@@ -779,7 +796,10 @@ export function App({
       : undefined;
   const narrationControls =
     narrationCoordinator === undefined ? null : (
-      <ProductNarrationControls coordinator={narrationCoordinator} />
+      <ProductNarrationControls
+        coordinator={narrationCoordinator}
+        settingsPending={narrationResetPending}
+      />
     );
 
   return (
@@ -847,6 +867,7 @@ export function App({
           onSelectProfile={handleHardwareProfileSelection}
           onSelectLanguage={handleNarrationLanguageSelection}
           onResetNarrationSettings={handleNarrationSettingsReset}
+          narrationSettingsPending={narrationResetPending}
           onRecoveryEpisodeReset={() =>
             narrationCoordinator?.resetRecoveryEpisode()
           }

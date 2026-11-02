@@ -25,8 +25,16 @@ import {
 } from "@testing-library/react";
 import { ProductNarrationControls } from "./ProductNarrationControls";
 
-import type { NarrationStartPreferenceRepository } from "../persistence/narration-start-preference";
-import type { NarrationPlaybackPreferenceRepository } from "../persistence/narration-playback-preference";
+import {
+  createWebStorageNarrationStartPreferenceRepository,
+  type NarrationStartPreferenceRepository,
+} from "../persistence/narration-start-preference";
+import {
+  createWebStorageNarrationPlaybackPreferenceRepository,
+  type NarrationPlaybackPreferenceRepository,
+} from "../persistence/narration-playback-preference";
+import { App } from "../App";
+import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
 import { bindNarrationPositionPersistence } from "../persistence/narration-position-save-bridge";
 import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
 import { ReaderPositionRestoreCoordinator } from "../persistence/reader-position-restore-coordinator";
@@ -544,6 +552,233 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["startup", "speed"] as const)(
+    "NSL-04 pending Quick reset survives Settings close/reopen and protects %s",
+    async (edit) => {
+      const values = new Map<string, string>();
+      const storage = {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          values.set(key, value);
+        },
+      };
+      const start = createWebStorageNarrationStartPreferenceRepository(
+        () => storage,
+      );
+      const playback = createWebStorageNarrationPlaybackPreferenceRepository(
+        () => storage,
+      );
+      const { coordinator, client } = createHarness({
+        startPreferenceRepository: start,
+        playbackPreferenceRepository: playback,
+      });
+      const hardware = new HardwareProfileCompatibilityCoordinator();
+      vi.spyOn(hardware, "observe").mockReturnValue({
+        ...hardware.observe(),
+        status: "compatible",
+      });
+      vi.spyOn(hardware, "ensureChecked").mockResolvedValue(hardware.observe());
+      vi.spyOn(hardware, "resetLanguage").mockResolvedValue(true);
+      const publication = {
+        ...createPublication(async () => completeResult()),
+        defaultStartLocator: START_LOCATOR,
+      };
+      const view = render(
+        createElement(App, {
+          openFlow: {
+            publication: undefined,
+            open: async () => ({ status: "ready" as const, publication }),
+            close: async () => ({ status: "closed" as const }),
+          },
+          readerPositionRepository: createWebStorageReaderPositionRepository({
+            storage: () => storage,
+          }),
+          narrationStartPreferenceRepository: start,
+          narrationPlaybackPreferenceRepository: playback,
+          hardwareCompatibilityCoordinator: hardware,
+          createNarrationCoordinator: () => coordinator,
+          ReadyPublicationContent: () => null,
+        }),
+      );
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const shutdown = client.shutdown.bind(client);
+      const stopSpy = vi
+        .spyOn(client, "shutdown")
+        .mockImplementation(async () => {
+          await barrier;
+          return shutdown();
+        });
+      try {
+        await act(async () => {
+          fireEvent.change(screen.getByLabelText("Open a book"), {
+            target: {
+              files: [
+                new File(["synthetic"], "synthetic.epub", {
+                  type: "application/epub+zip",
+                }),
+              ],
+            },
+          });
+        });
+        await act(async () => {
+          await coordinator.checkAvailability();
+          coordinator.start();
+          await settleUntil(
+            () => coordinator.observe().state?.phase === "playing",
+          );
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+        fireEvent.click(
+          screen.getByRole("button", { name: "Reset narration settings" }),
+        );
+        await act(async () => {
+          await settleUntil(() => stopSpy.mock.calls.length > 0);
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
+        let accepted = false;
+        if (edit === "startup") {
+          fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+          const prepared = screen.getByRole("radio", {
+            name: /Prepared playback/,
+          });
+          if (
+            !(prepared as HTMLInputElement).disabled &&
+            !prepared.closest("fieldset:disabled")
+          ) {
+            fireEvent.click(prepared);
+            await act(async () => {
+              await Promise.resolve();
+            });
+            accepted = coordinator.observe().selection.kind === "prepared";
+          }
+        } else {
+          const speed = screen.getByRole("combobox", {
+            name: "Playback speed",
+          });
+          if (!(speed as HTMLSelectElement).disabled) {
+            fireEvent.change(speed, { target: { value: "75" } });
+            await act(async () => {
+              await Promise.resolve();
+            });
+            accepted = coordinator.observe().playbackRatePercent === 75;
+          }
+        }
+        // If a competing edit is accepted, reset must preserve it. Blocking the
+        // edit while reset owns cleanup is also a valid outcome.
+        await act(async () => {
+          release();
+          await settleUntil(
+            () =>
+              hardware.resetLanguage !== undefined &&
+              coordinator.observe().availability !== "checking",
+          );
+        });
+        if (edit === "startup") {
+          const expected = accepted
+            ? { kind: "prepared", targetMs: 60_000 }
+            : { kind: "quick" };
+          expect(coordinator.observe().selection).toEqual(expected);
+          expect((await start.read()).selection).toEqual(expected);
+        } else {
+          expect(coordinator.observe().playbackRatePercent).toBe(
+            accepted ? 75 : 100,
+          );
+          expect((await playback.read()).playbackRatePercent).toBe(
+            accepted ? 75 : 100,
+          );
+        }
+      } finally {
+        release();
+        view.unmount();
+        await coordinator.close();
+        vi.restoreAllMocks();
+      }
+    },
+  );
+
+  it.each([
+    ["quick", "success"],
+    ["prepared", "success"],
+    ["quick", "failure"],
+    ["quick", "close"],
+  ] as const)(
+    "NSL-03 Stop contains Prepared-120000 before %s write (%s)",
+    async (mode, outcome) => {
+      const values = new Map<string, string>();
+      const setItem = vi.fn((key: string, value: string) => {
+        values.set(key, value);
+      });
+      const repository = createWebStorageNarrationStartPreferenceRepository(
+        () => ({
+          getItem: (key) => values.get(key) ?? null,
+          setItem,
+        }),
+      );
+      const original = { kind: "prepared", targetMs: 120_000 } as const;
+      const next =
+        mode === "quick"
+          ? ({ kind: "quick" } as const)
+          : ({ kind: "prepared", targetMs: 60_000 } as const);
+      await repository.write(original);
+      const { coordinator, client } = createHarness({
+        startPreferenceRepository: repository,
+      });
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const shutdown = client.shutdown.bind(client);
+      const stopSpy = vi
+        .spyOn(client, "shutdown")
+        .mockImplementation(async () => {
+          await barrier;
+          if (outcome === "failure")
+            throw new Error("synthetic shutdown failure");
+          return shutdown();
+        });
+      const stopping = coordinator.stop();
+      await settleUntil(() => stopSpy.mock.calls.length > 0);
+      setItem.mockClear();
+      const selection = coordinator.setSelection(next);
+      // Retain a rejected red result without an unhandled asynchronous rejection.
+      const result = selection.then(
+        (accepted) => ({ accepted }),
+        (error: unknown) => ({ error }),
+      );
+      let closing: Promise<void> | undefined;
+      try {
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(setItem).not.toHaveBeenCalled();
+        if (outcome === "close") closing = coordinator.close();
+        release();
+        await stopping;
+        await closing;
+        expect(await result).toEqual({ accepted: outcome === "success" });
+        expect(coordinator.observe().selection).toEqual(
+          outcome === "success" ? next : original,
+        );
+        expect((await repository.read()).selection).toEqual(
+          outcome === "success" ? next : original,
+        );
+        if (outcome === "failure")
+          expect(coordinator.observe().recovery.phase).not.toBe("operational");
+      } finally {
+        release();
+        await stopping;
+        await result;
+        stopSpy.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
   it("RIA-03 short completed rendering still records command-to-audible", async () => {
     const { coordinator, backend } = createHarness();
     const start = backend.start.bind(backend);

@@ -1,5 +1,21 @@
 # Testing strategy
 
+## Narration settings lifecycle coverage
+
+`NSL-01` through `NSL-04` cover fixed activation rejection/retry feedback,
+known persistence/admission restrictions, packaged `DEV=false` selection across
+absent-to-created narrator ownership, and startup writes during native cleanup.
+The real coordinator/storage regressions separate Prepared-120000 -> Quick's
+projection mismatch from Quick -> Prepared-60000's reset overwrite. Mounted
+Settings/App cases also protect compact speed and pending ownership on closure.
+
+The [NSL plan](../plans/completed/narration-settings-lifecycle-corrections.md) selects
+eight desktop suites, TypeScript static checks, three new Chromium journeys plus
+SPM-01/02, MAF-11 Prepared-120000 and SAF-09 controls, and one final build/Piper EN
+native arm. Preserve PSC-04 ordinary Stop speed writes, partial reset, reversible
+profile persistence and healthy-loaded Chatterbox reselection. Historical PASS
+results do not accept modified renderer code; raw receipts preserve each failure.
+
 ## Playback state correction coverage
 
 `PSC-01` through `PSC-04` extend the coordinator/control suites with deferred

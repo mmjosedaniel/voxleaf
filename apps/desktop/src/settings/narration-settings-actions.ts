@@ -2,6 +2,7 @@ import type { NarrationStartPreferenceRepository } from "../persistence/narratio
 import type { NarrationPlaybackPreferenceRepository } from "../persistence/narration-playback-preference";
 import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
+import { profileSupportsNarrationLanguageV1 } from "../tts/narration-profile-language-registry";
 import {
   CHATTERBOX_OPTIONAL_PROFILE_ID,
   type OptionalChatterboxClient,
@@ -34,7 +35,8 @@ export function createNarrationSettingsActions(development: boolean) {
   return {
     async selectProfile(
       profileId: string,
-      hardware: Pick<HardwareSettings, "selectProfile">,
+      hardware: Pick<HardwareSettings, "selectProfile"> &
+        Partial<Pick<HardwareProfileCompatibilityCoordinator, "observe">>,
       coordinator: NarrationSettings | undefined,
       optional: Pick<OptionalChatterboxClient, "select">,
       isCurrent?: () => boolean,
@@ -45,6 +47,23 @@ export function createNarrationSettingsActions(development: boolean) {
         coordinator?.isHealthyLoadedProfile?.(profileId)
       )
         return true;
+      const eligible = (): boolean => {
+        const snapshot = hardware.observe?.();
+        return (
+          snapshot === undefined ||
+          (snapshot.canPersistSelection &&
+            snapshot.preferenceStatus !== "unavailable" &&
+            profileSupportsNarrationLanguageV1(profileId, snapshot.language) &&
+            snapshot.profiles.some(
+              (profile) =>
+                profile.profileId === profileId &&
+                profile.state === "compatible" &&
+                (profile.supportState === "supported" ||
+                  profile.supportState === "development-only"),
+            ))
+        );
+      };
+      if (!eligible()) return false;
       const release = coordinator?.beginConfigurationChange?.();
       try {
         // Packaged selection uses the native-owned optional package lifecycle;
@@ -55,6 +74,7 @@ export function createNarrationSettingsActions(development: boolean) {
             return false;
           }
         }
+        if (isCurrent?.() === false || !eligible()) return false;
         await stopForConfigurationChange(coordinator);
         if (isCurrent?.() === false) return false;
         const selected = await (isCurrent === undefined

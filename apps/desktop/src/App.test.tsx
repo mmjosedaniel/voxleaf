@@ -892,6 +892,88 @@ describe("App preference connection characterization", () => {
     return { observer, current };
   }
 
+  it("NSL-02 packaged absent-owner activation cannot mutate a newly attached narrator", async () => {
+    vi.stubEnv("DEV", false);
+    vi.resetModules();
+    const { App: PackagedApp } = await import("./App");
+    const optionalModule = await import("./tts/optional-chatterbox-client");
+    const dialogModule = await import("./settings/ReaderSettingsDialog");
+    const OriginalDialog = dialogModule.ReaderSettingsDialog;
+    const settings = vi
+      .spyOn(dialogModule, "ReaderSettingsDialog")
+      .mockImplementation((props) => <OriginalDialog {...props} />);
+    const selection =
+      deferred<ReturnType<OptionalChatterboxClient["observe"]>>();
+    const installed = {
+      ...new optionalModule.OptionalChatterboxClient().observe(),
+      state: "installed" as const,
+    };
+    const select = vi
+      .spyOn(optionalModule.OptionalChatterboxClient.prototype, "select")
+      .mockReturnValueOnce(selection.promise)
+      .mockResolvedValue(installed);
+    const position = deferred<ReaderPositionReadResult>();
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockReturnValue(position.promise);
+    const hardware = {
+      ensureChecked: vi.fn(async () => undefined),
+      check: vi.fn(async () => undefined),
+      selectProfile: vi.fn(async () => true),
+      close: vi.fn(),
+    } as unknown as HardwareProfileCompatibilityCoordinator;
+    const owner = new ControlledNarrationCoordinator();
+    const factory = vi.fn(
+      () => owner as unknown as ProductNarrationCoordinator,
+    );
+    const recovery = vi.spyOn(owner, "resetRecoveryEpisode");
+    const view = render(
+      <PackagedApp
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={repository}
+        hardwareCompatibilityCoordinator={hardware}
+        createNarrationCoordinator={factory}
+        ReadyPublicationContent={() => <article>Synthetic reader</article>}
+      />,
+    );
+    try {
+      selectEpub();
+      await screen.findByRole("heading", { name: "Synthetic Reader Book" });
+      expect(factory).not.toHaveBeenCalled();
+      let pending!: Promise<boolean>;
+      act(() => {
+        pending = settings.mock.calls.at(-1)![0].onActivateChatterbox();
+      });
+      await waitFor(() => expect(select).toHaveBeenCalledOnce());
+      await act(async () => position.resolve({ status: "missing" }));
+      await waitFor(() => expect(factory).toHaveBeenCalledOnce());
+      act(() => owner.start());
+      await act(async () => {
+        selection.resolve(installed);
+        expect(await pending).toBe(false);
+      });
+      expect(hardware.selectProfile).not.toHaveBeenCalled();
+      expect(owner.configurationEvents).toEqual([]);
+      expect(recovery).not.toHaveBeenCalled();
+      expect(owner.observe().navigation.playIntent).toBe("playing");
+      await act(async () =>
+        expect(
+          await settings.mock.calls.at(-1)![0].onActivateChatterbox(),
+        ).toBe(true),
+      );
+      expect(hardware.selectProfile).toHaveBeenCalledOnce();
+      expect(owner.configurationEvents).toEqual(["stop", "refresh"]);
+    } finally {
+      selection.resolve(installed);
+      position.resolve({ status: "missing" });
+      view.unmount();
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it.each(["replacement", "failed-replacement", "unmount"] as const)(
     "SAF-09 discards A's pending selection after %s",
     async (transition) => {

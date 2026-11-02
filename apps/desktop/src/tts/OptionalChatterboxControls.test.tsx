@@ -58,6 +58,39 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it.each(["false", "throw"] as const)(
+    "NSL-01 reports rejected activation (%s) and clears feedback on retry",
+    async (failure) => {
+      const activate = vi.fn(async () => true);
+      if (failure === "false") activate.mockResolvedValueOnce(false);
+      else activate.mockRejectedValueOnce(new Error("private failure details"));
+      render(
+        <OptionalChatterboxControls
+          client={
+            new OptionalChatterboxClient(async () => snapshot("installed"))
+          }
+          onActivate={activate}
+          onRecheck={async () => true}
+          onRemove={async () => undefined}
+        />,
+      );
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Activate Chatterbox" }),
+      );
+      const message =
+        "Chatterbox could not be activated. Review the current narration settings and try again.";
+      await waitFor(() =>
+        expect(screen.getByText(message)).toBeInTheDocument(),
+      );
+      expect(screen.queryByText("private failure details")).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Activate Chatterbox" }),
+      );
+      await waitFor(() => expect(activate).toHaveBeenCalledTimes(2));
+      expect(screen.queryByText(message)).toBeNull();
+    },
+  );
+
   it("SFA-06 unmount releases the pending action subscription and timer", async () => {
     vi.useFakeTimers();
     const download = deferred();
