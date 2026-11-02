@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Settings and packaging minimal corrections](settings-packaging-minimal-corrections.md): planning only; implementation and validation not started. Covers coherent narration preference changes and failure feedback, complete local Piper/Chatterbox output promotion, and early Piper metadata validation. Defines selected regression gates and conditional reuse of verified artifacts; no historical runtime PASS is accepted for changed behavior.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
