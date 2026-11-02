@@ -6,6 +6,7 @@ import {
   type OptionalChatterboxState,
 } from "../tts/optional-chatterbox-client";
 import { createNarrationSettingsActions } from "./narration-settings-actions";
+import { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -93,6 +94,86 @@ function fixture(development = false) {
 }
 
 describe("narration settings actions", () => {
+  it.each(["future", "unavailable", "admission", "changed-admission"] as const)(
+    "NSL-01 rejects known %s restriction before teardown",
+    async (restriction) => {
+      const f = fixture();
+      let allowed = restriction !== "admission";
+      const hardware = {
+        ...f.hardware,
+        observe: () => ({
+          ...new HardwareProfileCompatibilityCoordinator().observe(),
+          canPersistSelection: restriction !== "future",
+          preferenceStatus:
+            restriction === "unavailable"
+              ? ("unavailable" as const)
+              : ("missing" as const),
+          profiles: [
+            {
+              profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+              state: allowed
+                ? ("compatible" as const)
+                : ("incompatible" as const),
+              supportState: "supported" as const,
+              role: "standard" as const,
+              reason: undefined,
+            },
+          ],
+        }),
+      };
+      if (restriction === "changed-admission")
+        f.steps.optional.mockImplementation(async () => {
+          allowed = false;
+          return {
+            ...new OptionalChatterboxClient().observe(),
+            state: "installed",
+          };
+        });
+      expect(
+        await f.actions.selectProfile(
+          CHATTERBOX_OPTIONAL_PROFILE_ID,
+          hardware,
+          f.coordinator,
+          f.optional,
+        ),
+      ).toBe(false);
+      expect(f.steps.stop).not.toHaveBeenCalled();
+      expect(f.steps.profile).not.toHaveBeenCalled();
+      expect(f.steps.optional).toHaveBeenCalledTimes(
+        restriction === "changed-admission" ? 1 : 0,
+      );
+    },
+  );
+
+  it("NSL-01 allows a compatible different profile without requiring it to be active", async () => {
+    const f = fixture();
+    const hardware = {
+      ...f.hardware,
+      observe: () => ({
+        ...new HardwareProfileCompatibilityCoordinator().observe(),
+        activeProfileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+        profiles: [
+          {
+            profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+            state: "compatible" as const,
+            supportState: "supported" as const,
+            role: "standard" as const,
+            reason: undefined,
+          },
+        ],
+      }),
+    };
+    expect(
+      await f.actions.selectProfile(
+        CHATTERBOX_OPTIONAL_PROFILE_ID,
+        hardware,
+        f.coordinator,
+        f.optional,
+      ),
+    ).toBe(true);
+    expect(f.events).toEqual(["optional", "stop", "profile", "refresh"]);
+  });
+
   it.each(["optional", "stop", "commit", "refresh"] as const)(
     "SAF-09 ignores an invalidated selection after %s",
     async (stage) => {

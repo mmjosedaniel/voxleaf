@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Narration settings lifecycle corrections](narration-settings-lifecycle-corrections.md):
-  planned minimal fixes for activation feedback, narrator identity, startup-mode
-  changes during cleanup and pending-reset ownership. Execution has not started;
-  the plan identifies conditional artifact reuse and focused acceptance gates.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

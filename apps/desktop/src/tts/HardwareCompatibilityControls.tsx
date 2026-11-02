@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import type {
   HardwareCompatibilitySnapshotV1,
@@ -25,6 +25,7 @@ export interface HardwareCompatibilityControlsProps {
   ) => Promise<boolean>;
   readonly onResetNarrationSettings?: () => Promise<boolean>;
   readonly onSelectionPendingChange?: (pending: boolean) => void;
+  readonly disabled?: boolean;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -109,15 +110,11 @@ export function HardwareCompatibilityControls({
   onSelectLanguage,
   onResetNarrationSettings,
   onSelectionPendingChange,
+  disabled = false,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const [selectionError, setSelectionError] = useState<string>();
   const snapshot = useHardwareCompatibilitySnapshot(coordinator);
-
-  useEffect(
-    () => () => onSelectionPendingChange?.(false),
-    [onSelectionPendingChange],
-  );
 
   const setNarrationSelectionPending = (pending: boolean): void => {
     setSelectionPending(pending);
@@ -209,6 +206,7 @@ export function HardwareCompatibilityControls({
       <fieldset
         disabled={
           selectionPending ||
+          disabled ||
           snapshot.status === "checking" ||
           !snapshot.canPersistLanguage
         }
@@ -246,6 +244,7 @@ export function HardwareCompatibilityControls({
         <fieldset
           disabled={
             selectionPending ||
+            disabled ||
             snapshot.status === "checking" ||
             !snapshot.canPersistSelection
           }
@@ -276,6 +275,7 @@ export function HardwareCompatibilityControls({
         type="button"
         disabled={
           selectionPending ||
+          disabled ||
           snapshot.status === "checking" ||
           !snapshot.canPersistLanguage
         }

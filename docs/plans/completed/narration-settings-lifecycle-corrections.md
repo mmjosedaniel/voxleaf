@@ -1,16 +1,14 @@
 # Narration settings lifecycle corrections
 
-Status: **PLANNED — IMPLEMENTATION AND BEHAVIORAL VALIDATION NOT STARTED**.
+Status: **COMPLETE — IMPLEMENTED, VALIDATED AND INDEPENDENTLY APPROVED**.
 Date: 2026-11-02.
 Planning base: `d1c3d18160de6c8483e52885b6cca0ea63b565c5` (`main`).
 Plan branch: `codex/narration-settings-lifecycle-corrections-plan`.
 
-Current authorization covers this ExecPlan, its active-index entry, the local
-branch and their documentation commit. It does not authorize executing the plan,
-changing production/tests, running its behavioral gates, pushing or opening a PR.
-Execution requires a subsequent instruction. Its implementation commits and
-publication remain separate actions; this plan's commit authorization is not
-authorization to commit the later fixes.
+On 2026-11-02 the user authorized implementation, regression tests and the
+selected local host validations. Entry HEAD is the plan commit
+`bfbf391d7a13e1ee6b3f704051a6596359ce5deb`; branch, index and worktree matched the
+request and were clean. No commit, push, PR, merge or publication is authorized.
 
 ## Goal
 
@@ -38,8 +36,9 @@ roadmap milestone or a behavior-preserving refactor campaign.
 
 ## Current state
 
-The planning worktree/index were clean. All findings below are **static source
-evidence**, not executed reproductions or measured failure frequencies. Earlier
+The planning worktree/index were clean. The table below preserves the original
+**static source evidence**; execution later reproduced and corrected all four
+findings, as recorded in the final results. Earlier
 SPM corrections are present; do not reopen their already resolved cases as new
 findings. The stable NSL identifiers map to the four retained defects as follows.
 
@@ -163,7 +162,8 @@ best effort with truthful feedback; an all-or-nothing transaction is not require
 
 ### Milestone 1: Reproduce the four defects
 
-Status: **NOT STARTED**.
+Status: **COMPLETE**. Host G1 reproduces NSL-01–03; the corrected NSL-04 fixture
+reproduces both later preference overwrites. Original failed receipts remain.
 
 Refresh HEAD/status and preserve unrelated edits. Inspect current tests/config,
 recover the evidence below, and establish preparation identity before changing
@@ -176,7 +176,8 @@ a speculative correction. No separate full-repository baseline is required.
 
 ### Milestone 2: Apply the minimum coordinated correction
 
-Status: **NOT STARTED**.
+Status: **COMPLETE**. Seven allowlisted production files changed. G2 passes
+407 tests; final static/browser/native acceptance is recorded below.
 
 Address cleanup-before-write and reset-operation lifetime, then narrator validity
 and activation feedback. Reuse existing owners/helpers. Run the focused combined
@@ -186,7 +187,8 @@ compensate for a renderer ownership defect.
 
 ### Milestone 3: Validate the final combined patch
 
-Status: **NOT STARTED**.
+Status: **COMPLETE**. Current G2/G3, all six G4 cases, G5 and one G6/G7 pair pass.
+Original native resources are restored; owned process/scratch cleanup is verified.
 
 Freeze the runtime/test patch, run the selected Chromium journeys, prepare or
 verify unchanged assets, build once and run one current Piper EN WebView2 arm.
@@ -197,7 +199,9 @@ renew only affected gates and preserve the superseded attempts.
 
 ### Milestone 4: Independent acceptance and documentation
 
-Status: **NOT STARTED**.
+Status: **COMPLETE**. [NSL-R1-20261102](../evidence/narration-settings-lifecycle-corrections/review-R1.md)
+approves implementation and evidence without findings. The separate final
+archival assessment is recorded as `review-R2.md` in this plan's evidence folder.
 
 Finish documentation and freeze the full patch. Delegate one independent review
 to `change_reviewer` (GPT-6 Astra high), reusing that reviewer for corrections.
@@ -210,8 +214,8 @@ This review does not authorize implementation Git actions or publication.
 
 ## Testing and benchmark strategy
 
-All commands below are **future execution**, from `<repo-root>` in normal local
-PowerShell outside the managed sandbox. No behavioral gate has run for NSL.
+The original gate selection below was executed from `<repo-root>` in normal local
+PowerShell outside the managed sandbox; final receipts and outcomes follow below.
 Use **EJECUTAR**, **REUTILIZAR CON PRUEBA**, **NO APLICA** and **BLOQUEADO** explicitly.
 During readiness, verify that the resolved package manager matches the repository's
 `pnpm@11.15.1` pin. Planning encountered an automation PATH resolving 11.25.0;
@@ -357,8 +361,38 @@ inventories, book text, audio or personal paths into the plan/report.
 - 2026-11-02: Created the requested local plan branch and reviewed both documents.
   Verified all 21 local Markdown link targets. The first documentation checker
   attempt stopped at the pnpm engine guard; offline Corepack dispatch passed.
-- Implementation, behavioral validation and independent behavioral review:
-  **NOT STARTED**. No NSL gate is running or reusable as current acceptance.
+- 2026-11-02 execution: G0 uses process-local offline Corepack, pnpm 11.15.1,
+  Node 24.20.0 and PowerShell 7.6.5. Shared/EPUB exports rebuilt rather than
+  claiming incomplete historical reuse. Installed inputs captured before testing.
+- G1: production unchanged; false/thrown activation lacks feedback, future profile
+  state permits activation, packaged absent-owner activation returns true, and
+  Prepared-120000 Stop writes early and throws `invalid-ui-state`. NSL-04 initially
+  had a checking-state fixture setup failure, retained separately; correcting that
+  fixture reproduced Prepared-60000 -> Quick and 75 -> 100 stale reset overwrites.
+- Implementation keeps Stop containment before startup writes, settings pending
+  counts across dialog closure, App-owned Reset speed exclusion and identity-bound
+  settlement, narrator-lifetime selection invalidation and fixed activation copy.
+- G2 passed 406 tests; typecheck found widened fixture status literals. Renewed
+  G2/G3 passed after correction. G4 then found that the selection precheck used
+  active-profile eligibility instead of selectable-profile admission. Corrected
+  the precheck and added a different-profile positive control. Its fixture used
+  `unavailable` instead of the typed `incompatible` match state; corrected before
+  current G2/G3. Current G2 passes 407 tests. All prior attempts remain immutable.
+- Piper payload reuse proves all 2,024 files and 26 runtime/source inputs,
+  including discovered membership. G5 runs the current cheap checker instead of
+  claiming full historical checker/environment equivalence; it passes.
+- Current G3 format/lint/types and all six G4 Chromium cases pass. One final
+  desktop build and one Piper EN native arm pass. Five created/closed audio
+  contexts, zero stale playback/external requests/generated audio and verified
+  resource/process/scratch restoration are recorded in the
+  [execution ledger](../evidence/narration-settings-lifecycle-corrections/execution-ledger.md).
+- Installed before/after inventories match across 24,009 entries; gate comparisons
+  confirm unchanged consumed inputs/exports. G8 evidence/diff and all 82 local
+  link targets pass before review. NSL-R1-20261102 independently approves the exact
+  implementation without findings and accepts the scoped evidence retention.
+- After implementation approval, archived this plan and updated maintained
+  indexes; production/tests remained frozen. The separate NSL-R2 archival
+  assessment covers the final documentation and inherited code evidence.
 
 ## Discoveries and decisions
 
@@ -379,7 +413,27 @@ inventories, book text, audio or personal paths into the plan/report.
 
 ## Final validation results
 
-Planning-only state:
+Authorized execution results:
+
+- NSL-01–04: reproduced before production edits and corrected within the seven
+  production-file allowlist. Current G2 passes all 407 tests; G3 leaves and six
+  selected Chromium journeys pass. See the execution ledger for exact commands,
+  receipt IDs, retained failures and their causes.
+- G0 exports freshly built; G5 reuses only the identical 2,024-file payload and
+  26-input source closure, with current checker PASS. No historical behavioral
+  result or old executable accepts this patch.
+- G6/G7: exactly one final native build and one direct Piper EN arm, PASS.
+  Executable SHA-256
+  `b44fbc249b39d50cae7e7a3f06f1d899f689f1f5aff5eda9e2fea57f10650845`.
+  Original resources are restored byte-for-byte; no new owned process/scratch
+  or unresolved recovery sibling remains.
+- G8 documentation checks pass; G9 implementation review NSL-R1-20261102 is
+  **APPROVE**, no findings. Final archival assessment is retained separately as
+  `review-R2.md`. No Git/publication action occurred; HEAD/index remain unchanged.
+- Canonical diagram reinspected: component/process/data/persistence topology
+  remains accurate and unchanged. M005 preparation boundary is outside scope.
+
+Historical planning-only checkpoint, preserved for attribution:
 
 - Production/test changes: **NONE**.
 - NSL reproductions and implementation gates G0–G9: **NOT RUN**. The
@@ -396,6 +450,6 @@ Planning-only state:
 - Exact staged scope/diff reviewed: only this plan and the active index.
   `git diff --cached --check`, outside the sandbox: **PASS**, exit 0.
 
-Do not mark the four defects resolved or this ExecPlan complete until subsequent
-authorized execution supplies all required matching evidence and exact-patch
-independent approval.
+The historical planning checkpoint above is superseded only by this execution's
+matching receipts and independent assessment; its original claims are not reused
+as acceptance evidence.

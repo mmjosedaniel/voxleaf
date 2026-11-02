@@ -200,6 +200,66 @@ function hardwareSource() {
 }
 
 describe("reader Settings dialog", () => {
+  it("NSL-01 known future profile state prevents activation before teardown", async () => {
+    const hardware = hardwareSource();
+    hardware.publish({ ...hardware.observe(), canPersistSelection: false });
+    const activate = vi.fn(async () => true);
+    renderSettings({
+      hardwareCompatibility:
+        hardware as unknown as HardwareProfileCompatibilityCoordinator,
+      chatterboxState: "installed",
+      onActivateChatterbox: activate,
+    });
+    const button = await screen.findByRole("button", {
+      name: "Activate Chatterbox",
+    });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(activate).not.toHaveBeenCalled();
+  });
+
+  it("NSL-04 closing Settings retains pending ownership until reset settles", async () => {
+    let finish!: (accepted: boolean) => void;
+    const reset = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const hardware = hardwareSource();
+    hardware.publish({ ...hardware.observe(), status: "compatible" });
+    const subject = renderSettings({
+      hardwareCompatibility:
+        hardware as unknown as HardwareProfileCompatibilityCoordinator,
+    });
+    subject.rerenderSettings({ onResetNarrationSettings: reset });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reset narration settings" }),
+    );
+    subject.rerenderSettings({ open: false, onResetNarrationSettings: reset });
+    subject.rerenderSettings({ open: true, onResetNarrationSettings: reset });
+    try {
+      expect(
+        screen.getByRole("radio", { name: /Prepared playback/ }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Reset narration settings" }),
+      ).toBeDisabled();
+    } finally {
+      // A newer App-owned operation must remain locked when the retired
+      // controls finish their own callback after the dialog was reopened.
+      subject.rerenderSettings({ narrationSettingsPending: true });
+      await act(async () => finish(true));
+    }
+    expect(
+      screen.getByRole("radio", { name: /Prepared playback/ }),
+    ).toBeDisabled();
+    subject.rerenderSettings({ narrationSettingsPending: false });
+    expect(
+      screen.getByRole("radio", { name: /Prepared playback/ }),
+    ).toBeEnabled();
+  });
+
   it("SPM-02 reports rejected startup selection and clears it after retry", async () => {
     const source = narrationSource();
     source.setSelection.mockResolvedValueOnce(false);

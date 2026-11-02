@@ -584,6 +584,239 @@ test("SPM-01/02 Settings reset completes contained recovery and reports partial 
     .toBe(0);
 });
 
+async function openNslBook(page: Page, name = "settings"): Promise<void> {
+  await page.getByLabel("Open a book").setInputFiles({
+    name: `synthetic-nsl-${name}.epub`,
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic settings passage.</p></body></html>',
+      }),
+    ),
+  });
+}
+
+test("NSL-03 Stop finishes containment before Prepared-120000 changes to Quick", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.name));
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "voxleaf.narration.start-preference",
+      JSON.stringify({
+        schemaVersion: 1,
+        mode: "prepared",
+        preparedTargetMs: 120_000,
+      }),
+    ),
+  );
+  await openNslBook(page);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+  });
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  const settings = await openSettings(page);
+  await settings.getByRole("radio", { name: /Quick start/ }).click();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.narration.start-preference")!)
+          .preparedTargetMs,
+    ),
+  ).toBe(120_000);
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = false;
+    state.releaseShutdown();
+  });
+  await expect(
+    settings.getByRole("radio", { name: /Quick start/ }),
+  ).toBeChecked();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.narration.start-preference")!)
+          .mode,
+    ),
+  ).toBe("quick");
+  expect(errors).toEqual([]);
+  expect(
+    await page.evaluate(() => {
+      const s = Reflect.get(globalThis, "__rnb");
+      return s.created - s.closed;
+    }),
+  ).toBe(0);
+});
+
+test("NSL-04 pending Reset stays owned across Settings close and protects mode and compact speed", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await openNslBook(page);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+  });
+  let settings = await openSettings(page);
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  await closeSettings(page, settings);
+  await expect(
+    page.getByRole("combobox", { name: "Playback speed" }),
+  ).toBeDisabled();
+  settings = await openSettings(page);
+  await expect(
+    settings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeDisabled();
+  await expect(
+    settings.getByRole("button", { name: "Reset narration settings" }),
+  ).toBeDisabled();
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = false;
+    state.releaseShutdown();
+  });
+  await expect(
+    settings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeEnabled();
+  await settings.getByRole("radio", { name: /Prepared playback/ }).click();
+  await expect(
+    settings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeChecked();
+  await closeSettings(page, settings);
+  await page
+    .getByRole("combobox", { name: "Playback speed" })
+    .selectOption("75");
+  await expect(
+    page.getByRole("combobox", { name: "Playback speed" }),
+  ).toHaveValue("75");
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.narration.start-preference")!)
+          .preparedTargetMs,
+    ),
+  ).toBe(60_000);
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("voxleaf.narration.playback-preference")!,
+        ).playbackRatePercent,
+    ),
+  ).toBe(75);
+  expect(
+    await page.evaluate(() => {
+      const s = Reflect.get(globalThis, "__rnb");
+      return s.created - s.closed;
+    }),
+  ).toBe(0);
+});
+
+test("NSL-01/02 absent-owner activation rejects after narrator attachment and permits explicit retry", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, false, true);
+  await page.goto("/");
+  await openNslBook(page, "A");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+  });
+  await openNslBook(page, "B");
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  await expect(page.locator(".product-narration")).toHaveCount(0);
+  const settings = await openSettings(page);
+  await settings.getByRole("button", { name: "Activate Chatterbox" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").optionalSelectionPending,
+      ),
+    )
+    .toBe(true);
+  await page.evaluate(() => {
+    const s = Reflect.get(globalThis, "__rnb");
+    s.deferShutdown = false;
+    s.releaseShutdown();
+  });
+  await expect(page.locator(".product-narration")).toHaveCount(1);
+  const before = await page.evaluate(() => ({
+    shutdowns: Reflect.get(globalThis, "__rnb").shutdownCalls,
+    preference: localStorage.getItem("voxleaf.tts.profile-preference"),
+  }));
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").releaseOptionalSelection(),
+  );
+  const message = settings.getByText(
+    "Chatterbox could not be activated. Review the current narration settings and try again.",
+  );
+  await expect(message).toBeVisible();
+  expect(
+    await page.evaluate(() => ({
+      shutdowns: Reflect.get(globalThis, "__rnb").shutdownCalls,
+      preference: localStorage.getItem("voxleaf.tts.profile-preference"),
+    })),
+  ).toEqual(before);
+  await settings.getByRole("button", { name: "Activate Chatterbox" }).click();
+  await expect(message).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").optionalSelectionPending,
+      ),
+    )
+    .toBe(true);
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").releaseOptionalSelection(),
+  );
+  await expect(settings.getByText("Chatterbox is active.")).toBeVisible();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  expect(
+    await page.evaluate(() => {
+      const s = Reflect.get(globalThis, "__rnb");
+      return s.created - s.closed;
+    }),
+  ).toBe(0);
+});
+
 for (const targetMs of [120_000, 300_000, 600_000]) {
   test(`MAF-11 completed Prepared ${targetMs} switches to Quick and restarts explicitly`, async ({
     page,

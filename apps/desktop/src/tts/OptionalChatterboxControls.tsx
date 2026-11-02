@@ -18,6 +18,7 @@ export interface OptionalChatterboxControlsProps {
   readonly onRecheck: () => Promise<boolean>;
   readonly onRemove: () => Promise<void>;
   readonly disabled?: boolean;
+  readonly activationAllowed?: boolean;
   /** The renderer-side presentation gate; native repeats this before network. */
   readonly acquisitionAllowed?: boolean;
   readonly acquisitionBlockMessage?: string;
@@ -203,6 +204,7 @@ export function OptionalChatterboxControls({
   onRecheck,
   onRemove,
   disabled = false,
+  activationAllowed = true,
   acquisitionAllowed = true,
   acquisitionBlockMessage = "",
 }: OptionalChatterboxControlsProps): ReactElement {
@@ -212,6 +214,7 @@ export function OptionalChatterboxControls({
     () => client.observe(),
   );
   const [pending, setPending] = useState(false);
+  const [activationFailed, setActivationFailed] = useState(false);
   const [downloadRequested, setDownloadRequested] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -242,6 +245,18 @@ export function OptionalChatterboxControls({
   const run = (operation: () => Promise<unknown>): void => {
     setPending(true);
     void operation().finally(() => setPending(false));
+  };
+
+  const activate = async (): Promise<void> => {
+    setActivationFailed(false);
+    setPending(true);
+    try {
+      setActivationFailed(!(await onActivate()));
+    } catch {
+      setActivationFailed(true);
+    } finally {
+      setPending(false);
+    }
   };
 
   const download = (): void => {
@@ -298,6 +313,12 @@ export function OptionalChatterboxControls({
         downloadRequested={downloadRequested}
         active={active}
       />
+      {activationFailed ? (
+        <p role="status" aria-live="polite">
+          Chatterbox could not be activated. Review the current narration
+          settings and try again.
+        </p>
+      ) : null}
       {snapshot.state === "absent" ? (
         <ChatterboxDisclosure snapshot={snapshot} />
       ) : null}
@@ -402,8 +423,8 @@ export function OptionalChatterboxControls({
           {active ? null : (
             <button
               type="button"
-              disabled={disabled || pending}
-              onClick={() => run(onActivate)}
+              disabled={disabled || pending || !activationAllowed}
+              onClick={() => void activate()}
             >
               Activate Chatterbox
             </button>

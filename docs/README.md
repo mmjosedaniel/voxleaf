@@ -17,6 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [narration settings lifecycle corrections](plans/completed/narration-settings-lifecycle-corrections.md)
+report rejected activation, guard profile selection against narrator-lifetime
+changes, wait for Stop containment before startup writes and retain pending Reset
+ownership across Settings closure, including compact speed. Selected desktop,
+Chromium, static and one current Piper EN native arm pass with verified restoration.
+Independent NSL-R1-20261102 approves without findings; the plan records the
+separate archival assessment. Runtime contracts and system topology are unchanged.
+
 The [settings and packaging corrections](plans/completed/settings-packaging-minimal-corrections.md)
 keep startup preferences coherent across cleanup/reset and report rejected or
 partial Settings changes, including the temporary fallback controls during book
