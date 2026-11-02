@@ -244,6 +244,81 @@ const BILINGUAL_V2_CORPUS = Object.freeze([
 
 describe("narration normalization", () => {
   it.each([
+    ["1", "8", "18"],
+    ["8", "1", "81"],
+  ])(
+    "BNC-R1 preserves numeric adjacency through a foreign formatting span: %s %s",
+    (left, right, expected) => {
+      const leaf = leafFor(
+        paragraph([text(left!), text("\u2060", "fr"), text(right!)]),
+      );
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        "en",
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+    },
+  );
+
+  it.each([
+    ["BNC-R1", "es", "21 E\u2060UR", "21 EUR"],
+    ["BNC-R1", "es", "21 EU\u2060R", "21 EUR"],
+    ["BNC-02", "en", "1\u20608", "18"],
+    ["BNC-02", "en", "1\u200b8", "18"],
+    ["BNC-02", "en", "1\u00ad8", "18"],
+    ["BNC-02", "en", "a\u20608", "a8"],
+    ["BNC-02", "en", "8\u2060a", "8a"],
+    ["BNC-03", "es", "−21", "−21"],
+    ["BNC-03", "en", "8−8", "8−8"],
+    ["BNC-03", "en", "14:30+02:00", "14:30+02:00"],
+    ["BNC-03", "en", "14:30−15:30", "14:30−15:30"],
+    ["BNC-03", "es", "21\u00a0\u00a0%", "21 %"],
+    ["BNC-03", "es", "21\u202f\u202fEUR", "21 EUR"],
+    ["BNC-04", "es", "20 °C-25 °C", "20 °C-25 °C"],
+    ["BNC-04", "en", "20 °C/8", "20 °C/8"],
+    ["BNC-04", "en", "20 °C+１", "20 °C+１"],
+    ["BNC-04", "es", "(20 °C),", "(veinte grados Celsius),"],
+    ["BNC-05", "es", "21.", "veintiuno."],
+    ["BNC-05", "es", "3,14.", "tres coma catorce."],
+    ["BNC-05", "es", "(1.234),", "(mil doscientos treinta y cuatro),"],
+    ["BNC-05", "es", "1.234.56", "1.234.56"],
+    ["BNC-05", "es", "0.21", "0.21"],
+  ] as const)(
+    "%s preserves logical numeric boundaries: %s %s",
+    (_id, language, source, expected) => {
+      const leaf = singleTextFixture(source, false);
+      const normalized = normalizeBilingualNarrationSourceTokens(
+        leaf.sourceTokens,
+        language,
+      );
+      expect(normalized.text).toBe(expected);
+      assertSourceMapping(
+        leaf,
+        normalized as unknown as NarrationNormalizedStream,
+      );
+      expect(
+        normalizeBilingualNarrationSourceTokens(
+          singleTextFixture(source, true).sourceTokens,
+          language,
+        ).text,
+      ).toBe(source);
+      const foreign = leafFor(paragraph([text(source, "fr")]));
+      expect(
+        normalizeBilingualNarrationSourceTokens(foreign.sourceTokens, language)
+          .text,
+      ).toBe(
+        source
+          .replace(/[\u00ad\u200b\u2060]/gu, "")
+          .replace(/[\u00a0\u202f]+/gu, " "),
+      );
+    },
+  );
+
+  it.each([
     ["es", "١,20 °C", "١,20 °C"],
     ["en", "１.20 °C", "１.20 °C"],
     ["en", "𝟙/20 °C", "𝟙/20 °C"],

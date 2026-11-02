@@ -2,6 +2,14 @@
 
 ## Status
 
+When chapter navigation cannot restart narration under current admission, it
+settles to inactive intent and releases manual reading-position saves. A later
+compatibility result does not autoplay; explicit Play uses the current visible
+passage. Failed cleanup retains its failure and containment state while settling
+navigation; successfully paused navigation remains paused. The
+[BNC execution ledger](../plans/evidence/narration-boundary-navigation-corrections/execution-ledger.md)
+records acceptance of these corrections.
+
 Approved product direction for roadmap Milestone 10.2. Milestone 1 froze
 the exact
 [`reader settings and playback authority v1`](../architecture/reader-settings-playback-authority-v1.md)

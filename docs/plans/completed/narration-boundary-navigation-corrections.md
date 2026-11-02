@@ -2,15 +2,17 @@
 
 Date: 2026-11-01. Task ID: BNC-20261101.
 
-Status: **Planning only; implementation and execution have not started.**
+Status: **M0–M3 complete; independently approved by BNC-R2-20261101.**
+The final archival assessment is retained separately in the
+[immutable review records](../evidence/narration-boundary-navigation-corrections/review-reports.md).
 Planning base: `c5617ad80945d2f11b96a58c5acf27f16f0184ea` on clean `main`.
 Plan branch: `codex/narration-boundary-navigation-plan`.
 
-The user authorized this ExecPlan, its local branch and its documentation commit.
-They explicitly withheld execution. Do not implement fixes, add/run regressions,
-build packages or start models under this planning authorization. Push, PR, merge
-and publication are also outside it. Later execution authorization does not by
-itself authorize committing or publishing the implementation.
+The 2026-11-01 execution instruction supersedes the earlier planning-only
+restriction and authorizes M0–M3 implementation, tests, builds and native execution.
+Commit, push, PR, merge and publication remain unauthorized. Execution started
+at `69de1d9e450f6602015175ac38ffeba7ab9d9440` on the expected plan branch with
+a clean worktree and empty index. No unrelated changes were present.
 
 ## Goal
 
@@ -209,7 +211,7 @@ M005's preparation-only implementation claims to audio or synchronization.
 
 ### M0: authorized execution, identity and preparation decision
 
-**Status: not started.** First obtain separate execution authorization. Inspect
+**Status: complete.** Separate execution authorization received. Inspect
 HEAD, branch, worktree/index, exact production/test paths and any existing running
 gate. Preserve unrelated changes; do not reset, stash or overwrite them. Capture
 original source and relevant installed/tool/config/export identities before tests.
@@ -223,7 +225,7 @@ pre-change green suite or model baseline is unnecessary for these targeted fixes
 
 ### M1: focused failing regressions on unchanged production
 
-**Status: not started.** Add `BNC-` cases in the existing unit/public suites and
+**Status: complete.** Added `BNC-` cases in the existing unit/public suites and
 run G1/G2 once before their respective production edits.
 
 - BNC-01: hold configuration availability pending while playing, finish chapter
@@ -257,7 +259,7 @@ assertions for new lookaround to the resource suite.
 
 ### M2: minimal implementation and combined deterministic/browser proof
 
-**Status: not started.** Apply U1 and U2 in their existing owners; do not execute
+**Status: complete.** Applied U1 and U2 in their existing owners; do not execute
 the independent implementation units simultaneously against mutable shared exports.
 Rebuild package exports after U2 before desktop consumers. Run G3/G4 once on the
 combined final patch and G5 once after its browser regression is ready.
@@ -276,7 +278,7 @@ before expensive native preparation. Update the current-behavior documentation.
 
 ### M3: current native integration, independent review and closeout
 
-**Status: not started.** After fast gates, verify existing Piper payload integrity,
+**Status: complete.** After fast gates, verify existing Piper payload integrity,
 build one current executable and run one existing Piper EN native arm. ES and all
 numeric edge cases are proved deterministically through public preparation, not by
 duplicating real-model arms. Keep current native assertions and verified cleanup.
@@ -416,6 +418,37 @@ is rewritten to make a candidate pass.
 
 ## Progress log
 
+- 2026-11-01 closeout: BNC-R2-20261101 independently approves the corrected
+  patch, both R1 dispositions and the two proven reused gates without findings.
+  Archived this plan after host/native/cleanup acceptance and updated indexes.
+  Only documentation changes follow that approval; final archival assessment
+  is retained in the immutable review record. No Git/publication action performed.
+- 2026-11-01 review: BNC-R1-20261101 returned CHANGES_REQUESTED for two BNC-02
+  combinations at mixed-language marks and within EUR. Eight additional red
+  cases reproduced both before production correction. Bounded fixes stay in
+  U2; run-02 renews invalidated gates, with run-01 and the original review retained.
+- 2026-11-01 review correction: run-02 passes 265 EPUB, 194 desktop and three
+  Chromium cases; renewed format/lint/EPUB types, build and Piper EN native arm
+  pass. Desktop types/core integrity are reused from run-01 with complete proof.
+  Final native cancellation is 774 ms with zero underruns/audio persistence;
+  resources/processes/scratch/context cleanup and installed identities pass.
+- 2026-11-01 execution: exact plan branch/HEAD verified; clean worktree/index.
+  User authorization supersedes planning-only scope. G0 rebuilt exports after
+  strict historical installed-identity comparison differed. No historical PASS
+  reused. New immutable receipts and failure dispositions are in the
+  [execution ledger](../evidence/narration-boundary-navigation-corrections/execution-ledger.md).
+- 2026-11-01 execution: all five findings reproduced before their production
+  edits. U1/U2 implemented in exactly the two expected owners. Final selected
+  deterministic groups pass (257 EPUB, 194 desktop); three Chromium journeys
+  and all four static gates pass. Failed attempts remain retained.
+- 2026-11-01 execution: canonical system diagram and M005/roadmap boundary
+  reviewed; no architecture, process, persistence, schema or preparation limits
+  change. No completed plan, historical normalizer, corpus or hash is edited.
+- 2026-11-01 execution: G7/G8 pass on the current executable and integrity-checked
+  existing core. Original resources restored; no new owned process/scratch,
+  retained PCM or generated audio files remain. G9 passes; exact current-patch
+  review and subsequent archival assessment remain pending.
+
 - 2026-11-01: Revalidated all five chat findings at planning HEAD using source,
   callers, tests and historical patches; no test/model execution or production edit.
 - 2026-11-01: Read planning/review requirements and inspected original VUC/RIA
@@ -444,16 +477,12 @@ is rewritten to make a candidate pass.
 
 ## Final validation results
 
-**Implementation: NOT STARTED. G0-G9: NOT EXECUTED for this plan.**
-No current bug-fix PASS, native measurement or independent implementation approval
-is claimed. Historical results above retain their original code/environment scope.
-The read-only receipt inspection is planning evidence, not execution of those gates.
-
-Planning handoff: all twelve required ExecPlan sections are present, all five
-findings and their earlier treatments are mapped, conditional reuse and fresh
-checks are separated, and only the plan/index are authorized for the local commit.
-Planning-only PowerShell inspection found all twelve sections and resolved all
-26 relative file links; no implementation tests or builds ran. Git whitespace
-and staged-scope inspection belong to the documentation commit, not G9 acceptance.
-Record the actual commit and documentation inspection outcome in the handoff;
-do not insert a self-referential commit hash into this file.
+Implementation and independent acceptance complete. G0–G9 pass within the
+selected scope, including freshly reproduced BNC-01–05 and final combined groups.
+The [execution ledger](../evidence/narration-boundary-navigation-corrections/execution-ledger.md)
+records original commands, counts and all failed-attempt dispositions. Native
+integration and cleanup verification pass. BNC-R2-20261101 approves the exact
+implementation. No historical behavioral PASS or implementation Git action is claimed.
+The final code revision is the BNC-R1 correction in run-02; the ledger distinguishes
+renewed results from the two proven reused gates. Final documentation-only archival
+assessment is retained separately without rewriting earlier reports.

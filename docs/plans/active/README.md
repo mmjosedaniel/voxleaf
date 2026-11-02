@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Narration boundaries and navigation: minimal corrections](narration-boundary-navigation-corrections.md)
-  is planning only. It covers five statically revalidated narration/navigation
-  findings, two expected production owners, and focused validation with conditional
-  evidence/artifact reuse. Execution has not been authorized or started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

@@ -29,6 +29,122 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it.each([
+    ["en", '1<span lang="fr">&#x2060;</span>8', "18", 3],
+    ["en", '8<span lang="fr">&#x2060;</span>1', "81", 3],
+    ["es", "21 E\u2060UR", "21 EUR", 7],
+    ["es", "21 EU\u2060R", "21 EUR", 7],
+  ] as const)(
+    "BNC-R1 public mixed-span and suffix protection: %s %s",
+    async (language, markup, expected, sourceLength) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language}"><head><title>Synthetic</title></head><body><p>${markup}</p><p>Fin.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-review-open-failed");
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      try {
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-bilingual-v2",
+          "narration-chatterbox-v1",
+        ] as const) {
+          const all = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            16,
+            profile,
+            language,
+          );
+          const single = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            language,
+          );
+          expect(single.segments).toEqual(all.segments);
+          expect(all.segments.map((segment) => segment.text)).toEqual([
+            expected,
+            "Fin.",
+          ]);
+          expect(all.segments[0]!.sourceRange.end.textOffsetCodePoints).toBe(
+            sourceLength,
+          );
+          for (const [index, segment] of all.segments.entries())
+            assertPublicSegment(publication, segment, index);
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each([
+    ["BNC-02", "en", "1\u20608", "18"],
+    ["BNC-03", "es", "21\u00a0\u00a0%", "21 %"],
+    ["BNC-04", "en", "20 °C/8", "20 °C/8"],
+    [
+      "BNC-05",
+      "es",
+      "Hola. Tengo 1.234.",
+      "Hola. Tengo mil doscientos treinta y cuatro.",
+    ],
+  ] as const)(
+    "%s public preparation preserves whole numeric forms and exact source ranges",
+    async (_id, language, source, expected) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language}"><head><title>Synthetic</title></head><body><p>${source}</p><p>Fin.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-boundary-open-failed");
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      try {
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-bilingual-v2",
+          "narration-chatterbox-v1",
+        ] as const) {
+          const all = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            16,
+            profile,
+            language,
+          );
+          const single = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            language,
+          );
+          expect(single.segments).toEqual(all.segments);
+          expect(all.segments.map((segment) => segment.text)).toEqual([
+            expected,
+            "Fin.",
+          ]);
+          expect(all.segments[0]!.sourceRange.start).toEqual(
+            publication.defaultStartLocator,
+          );
+          expect(all.segments[0]!.sourceRange.end.textOffsetCodePoints).toBe(
+            Array.from(source).length,
+          );
+          for (const [index, segment] of all.segments.entries())
+            assertPublicSegment(publication, segment, index);
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
   it.each(
     (
       [

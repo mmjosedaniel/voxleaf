@@ -1035,6 +1035,113 @@ test("RAC-07 mid-unit Resume follows the active range once and preserves inspect
     .toBe(0);
 });
 
+test("BNC-01 rejected navigation settles manual saves and requires explicit Play after compatibility", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-bnc.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        packageDocument:
+          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:bnc</dc:identifier><dc:title>Synthetic navigation</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/><itemref idref="final"/></spine></package>',
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml">Opening</a></li><li><a href="text/final.xhtml">Final</a></li></ol></nav></body></html>',
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Opening</title></head><body><p>Synthetic opening passage.</p></body></html>',
+        additionalEntries: [
+          {
+            name: "EPUB/text/final.xhtml",
+            content: `<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Final</title></head><body>${"<p>Synthetic final passage with quiet paths and ordinary details.</p>".repeat(60)}</body></html>`,
+          },
+        ],
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").deferConfiguration = true;
+    for (const value of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").configurationPending,
+      ),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "Next chapter", exact: true }).click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-navigation-settling",
+    "false",
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-play-intent",
+    "inactive",
+  );
+  await expect(page.locator(".semantic-document")).toContainText(
+    "Synthetic final passage",
+  );
+  await page
+    .locator(".semantic-document p")
+    .nth(25)
+    .evaluate((element) => element.scrollIntoView({ block: "start" }));
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  await expect.poll(async () => (await saved())?.spineItemIndex).toBe(1);
+  await expect
+    .poll(async () => (await saved())?.anchor?.anchorIndex)
+    .toBeGreaterThan(0);
+  const target = await saved();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").releaseConfiguration(),
+  );
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  const preparedBeforeRestart = await page.evaluate(
+    () => Reflect.get(globalThis, "__rnb").prepared.length,
+  );
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").service))
+    .toBe(2);
+  const prepared = await page.evaluate(
+    (start) =>
+      Reflect.get(globalThis, "__rnb")
+        .prepared.slice(start)
+        .find((entry: { spine: number }) => entry.spine === 1),
+    preparedBeforeRestart,
+  );
+  expect(prepared.sourceRange.start.anchor).toEqual(target.anchor);
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+});
+
 test("VCA-06/09 paused next and previous place exact interior offsets without audio or stale preparation", async ({
   page,
 }) => {
@@ -2337,6 +2444,9 @@ async function installSyntheticService(
         probes: 0,
         deferProbe: false,
         releaseProbe: () => {},
+        deferConfiguration: false,
+        configurationPending: false,
+        releaseConfiguration: () => {},
         optionalMutations: [] as string[],
         optionalRecovered: false,
         optionalSelectionPending: false,
@@ -2670,6 +2780,16 @@ async function installSyntheticService(
                 observations.optionalMutations.push(command);
                 throw "tts-service-unavailable";
               case "tts_profile_configuration_available":
+                if (observations.deferConfiguration) {
+                  observations.configurationPending = true;
+                  await new Promise<void>((resolve) => {
+                    observations.releaseConfiguration = () => {
+                      observations.deferConfiguration = false;
+                      observations.configurationPending = false;
+                      resolve();
+                    };
+                  });
+                }
                 return true;
               case "exact_tts_demo_available":
                 return false;
