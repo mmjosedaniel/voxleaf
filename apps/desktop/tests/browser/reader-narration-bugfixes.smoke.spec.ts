@@ -477,6 +477,113 @@ test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitt
     .toBe(0);
 });
 
+test("SPM-01/02 Settings reset completes contained recovery and reports partial writes", async ({
+  page,
+}) => {
+  await installSyntheticService(page);
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").holdAfter = 0;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-spm.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic reset passage.</p></body></html>',
+      }),
+    ),
+  });
+  const initialSettings = await openSettings(page);
+  await initialSettings
+    .getByRole("radio", { name: "Spanish", exact: true })
+    .click();
+  await expect(
+    initialSettings.getByRole("radio", { name: "Spanish", exact: true }),
+  ).toBeChecked();
+  await closeSettings(page, initialSettings);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").blocked))
+    .toBe(true);
+  await page.evaluate(() => Reflect.get(globalThis, "__rnb").failSynthesis());
+  const narration = page.locator(".product-narration");
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "recovery-available",
+  );
+  const settings = await openSettings(page);
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Reflect.get(globalThis, "__rnb").restoreStorage = () => {
+      Storage.prototype.setItem = original;
+    };
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "voxleaf.narration.start-preference")
+        throw new Error("synthetic denied write");
+      original.call(this, key, value);
+    };
+  });
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect(
+    settings.getByText(
+      "Not all narration settings were reset. Review the current values and try again.",
+    ),
+  ).toBeVisible();
+  await expect(
+    settings.getByRole("radio", { name: "English", exact: true }),
+  ).toBeChecked();
+  await expect(
+    settings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeChecked();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.narration.start-preference")!)
+          .mode,
+    ),
+  ).toBe("prepared");
+  await page.evaluate(() => Reflect.get(globalThis, "__rnb").restoreStorage());
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect(
+    settings.getByRole("radio", { name: /Quick start/ }),
+  ).toBeChecked();
+  await expect(
+    settings.getByText(
+      "Not all narration settings were reset. Review the current values and try again.",
+    ),
+  ).toHaveCount(0);
+  await expect(narration).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "operational",
+  );
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.narration.start-preference")!)
+          .mode,
+    ),
+  ).toBe("quick");
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        return state.created - state.closed;
+      }),
+    )
+    .toBe(0);
+});
+
 for (const targetMs of [120_000, 300_000, 600_000]) {
   test(`MAF-11 completed Prepared ${targetMs} switches to Quick and restarts explicitly`, async ({
     page,

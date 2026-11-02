@@ -636,66 +636,61 @@ export class ProductNarrationCoordinator {
   public async setSelection(
     selection: AdaptiveBufferStartMode,
   ): Promise<boolean> {
-    await this.#hydrateStartPreference();
-    if (
-      this.#closed ||
-      isActivePhase(this.#snapshot.state) ||
-      this.#recovery.observe().phase !== "operational" ||
-      !this.#canPersistStartPreference
-    ) {
-      return false;
-    }
-    const result = await this.#startPreferenceRepository.write(selection);
-    if (
-      this.#closed ||
-      result.status !== "saved" ||
-      isActivePhase(this.#snapshot.state)
-    ) {
-      return false;
-    }
-    if (this.#snapshot.state?.phase === "complete") {
-      this.#playIntent = "inactive";
-      await this.#stopActiveRun(this.#snapshot.state);
-    }
-    if (
-      this.#closed ||
-      this.#recovery.observe().phase !== "operational" ||
-      isActivePhase(this.#snapshot.state)
-    )
-      return false;
-    this.#publishStartSelection(selection);
-    return true;
+    return this.#changeStartPreference(selection, false);
   }
 
   public async resetStartPreference(): Promise<boolean> {
+    return this.#changeStartPreference(
+      DEFAULT_NARRATION_START_PREFERENCE_V1,
+      true,
+    );
+  }
+
+  async #changeStartPreference(
+    selection: AdaptiveBufferStartMode,
+    reset: boolean,
+  ): Promise<boolean> {
     await this.#hydrateStartPreference();
     if (
       this.#closed ||
       isActivePhase(this.#snapshot.state) ||
-      !this.#canPersistStartPreference
-    ) {
-      return false;
-    }
-    const result = await this.#startPreferenceRepository.reset();
-    if (
-      this.#closed ||
-      result.status !== "saved" ||
-      isActivePhase(this.#snapshot.state)
-    ) {
-      return false;
-    }
-    if (this.#snapshot.state?.phase === "complete") {
-      this.#playIntent = "inactive";
-      await this.#stopActiveRun(this.#snapshot.state);
-    }
-    if (
-      this.#closed ||
-      this.#recovery.observe().phase !== "operational" ||
-      isActivePhase(this.#snapshot.state)
+      !this.#canPersistStartPreference ||
+      (!reset && this.#recovery.observe().phase !== "operational")
     )
       return false;
-    this.#publishStartSelection(DEFAULT_NARRATION_START_PREFERENCE_V1);
-    return true;
+    const release = this.beginConfigurationChange();
+    try {
+      if (this.#snapshot.state?.phase === "complete") {
+        this.#playIntent = "inactive";
+        await this.#stopActiveRun(this.#snapshot.state);
+      }
+      if (this.#closed || isActivePhase(this.#snapshot.state)) return false;
+      if (this.#recovery.observe().phase !== "operational") {
+        const service = this.#client.observe();
+        // Explicit reset may finish a contained episode, but never discard
+        // retained cleanup owners or treat a failed shutdown as containment.
+        if (
+          !reset ||
+          this.#player !== undefined ||
+          this.#scheduler !== undefined ||
+          this.#stopOperation !== undefined ||
+          this.#recoveryOperation !== undefined ||
+          service.state !== "stopped" ||
+          service.serviceInstanceId !== undefined ||
+          service.hasActiveGeneration ||
+          service.retainedAudioUnits !== 0
+        )
+          return false;
+      }
+      const result = reset
+        ? await this.#startPreferenceRepository.reset()
+        : await this.#startPreferenceRepository.write(selection);
+      if (this.#closed || result.status !== "saved") return false;
+      this.#publishStartSelection(selection);
+      return true;
+    } finally {
+      release();
+    }
   }
 
   #publishStartSelection(selection: AdaptiveBufferStartMode): void {

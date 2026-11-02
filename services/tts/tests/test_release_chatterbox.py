@@ -682,12 +682,30 @@ def ncc_package_builder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
         release_chatterbox, "_download_artifact", lambda *a: tmp_path / "unused.zip"
     )
     monkeypatch.setattr(release_chatterbox, "_extract_embedded_python", extract)
-    monkeypatch.setattr(release_chatterbox, "_local_package_receipt", lambda *a, **kw: {})
+
+    def notices(
+        root: Path, staging: Path, _site: Path, _source: object, *, package_version: PackageVersion
+    ) -> None:
+        layout = PackageLayout(package_version)
+        _write_tree(
+            staging,
+            {
+                layout.source_manifest: (
+                    root / "services/tts/release/optional/chatterbox" / layout.source_manifest
+                ).read_bytes(),
+                "notices/requirements.lock": (root / layout.lock_path).read_bytes(),
+                "notices/python/tokenizers-0.23.1/LICENSE": (
+                    root
+                    / "services/tts/release/optional/chatterbox/licenses"
+                    / "tokenizers-0.23.1-LICENSE.txt"
+                ).read_bytes(),
+            },
+        )
+
+    monkeypatch.setattr(release_chatterbox, "_copy_notices", notices)
     for name in (
         "_configure_embedded_python",
         "_copy_tree",
-        "_copy_runtime_modules",
-        "_copy_notices",
     ):
         monkeypatch.setattr(release_chatterbox, name, lambda *a, **kw: None)
     return tmp_path / "output"
@@ -703,7 +721,7 @@ def test_ncc_promotion_failure_restores_previous_package(
     replace = Path.replace
 
     def fail_promotion(path: Path, destination: Path) -> Path:
-        if path.parent.name == ".s":
+        if path.parent.name == ".s" and destination == target:
             raise OSError("injected promotion failure")
         return replace(path, destination)
 
@@ -726,7 +744,7 @@ def test_ncc_failed_restore_preserves_backup_across_retry(
     restore_blocked = True
 
     def fail_moves(path: Path, destination: Path) -> Path:
-        if path.parent.name == ".s":
+        if path.parent.name == ".s" and destination == target:
             raise OSError("injected promotion failure")
         if path == previous and restore_blocked:
             raise OSError("injected restoration failure")
@@ -1118,3 +1136,151 @@ def test_embedded_runtime_enables_only_its_private_site_packages(tmp_path: Path)
     assert pth.read_text(encoding="utf-8") == (
         "python312.zip\n.\nLib\\site-packages\nimport site\n"
     )
+
+
+@pytest.mark.parametrize(
+    "stage", ["zip", "receipt", "promote-archive", "promote-part", "promote-receipt"]
+)
+def test_spm_chatterbox_preserves_previous_set(
+    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch, stage: str
+) -> None:
+    layout = PackageLayout("6")
+    dist = layout.dist(repository_root(), ncc_package_builder)
+    target = dist / layout.directory
+    _write_tree(target, {"old.txt": b"old runtime"})
+    files = {
+        layout.archive: b"old zip",
+        f"{layout.archive}.part-001": b"old part",
+        "local-build-evidence-v6.json": b"old evidence",
+    }
+    _write_tree(dist, files | {"unrelated.txt": b"keep"})
+    replace = Path.replace
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise OSError("injected failure")
+
+    if stage == "zip":
+        monkeypatch.setattr(release_chatterbox, "_zip_package", fail)
+    elif stage == "receipt":
+        monkeypatch.setattr(release_chatterbox, "_local_package_receipt", fail)
+    else:
+        name = {
+            "promote-archive": layout.archive,
+            "promote-part": f"{layout.archive}.part-001",
+            "promote-receipt": "local-build-evidence-v6.json",
+        }[stage]
+
+        def fail_replace(path: Path, destination: Path) -> Path:
+            if destination == dist / name and not path.name.endswith(".previous"):
+                fail()
+            return replace(path, destination)
+
+        monkeypatch.setattr(Path, "replace", fail_replace)
+    with pytest.raises((OSError, ReleaseChatterboxError)):
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert (target / "old.txt").read_bytes() == b"old runtime"
+    assert {name: (dist / name).read_bytes() for name in files} == files
+    assert (dist / "unrelated.txt").read_bytes() == b"keep"
+
+
+@pytest.mark.parametrize("payload", [b"", b"12345"])
+def test_spm_split_rejects_invalid_count_without_removing_parts(
+    tmp_path: Path, payload: bytes
+) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(payload)
+    part = tmp_path / "runtime.zip.part-001"
+    part.write_bytes(b"old")
+    with pytest.raises(ReleaseChatterboxError, match="runtime-too-large"):
+        split_archive(archive, maximum_part_bytes=1)
+    assert part.read_bytes() == b"old"
+
+
+@pytest.mark.parametrize("operation", ["read", "write"])
+def test_spm_split_io_failure_preserves_previous_parts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"12345678")
+    _write_tree(tmp_path, {"runtime.zip.part-001": b"old one", "runtime.zip.part-002": b"old two"})
+    original = Path.open
+
+    def fail_open(path: Path, mode: str = "r", *args: object, **kwargs: object) -> object:
+        if (operation == "read" and path == archive and mode == "rb") or (
+            operation == "write" and path.name.endswith("part-002") and path.parent != tmp_path
+        ):
+            raise OSError("injected part IO failure")
+        return original(path, mode, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(Path, "open", fail_open)
+    with pytest.raises(ReleaseChatterboxError):
+        split_archive(archive, maximum_part_bytes=4)
+    assert (tmp_path / "runtime.zip.part-001").read_bytes() == b"old one"
+    assert (tmp_path / "runtime.zip.part-002").read_bytes() == b"old two"
+
+
+def test_spm_split_success_removes_stale_parts_only_after_preparation(tmp_path: Path) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"new")
+    _write_tree(
+        tmp_path,
+        {"runtime.zip.part-001": b"old", "runtime.zip.part-004": b"stale", "sentinel": b"keep"},
+    )
+    parts = split_archive(archive, maximum_part_bytes=4)
+    assert len(parts) == 1
+    assert (tmp_path / parts[0].filename).read_bytes() == b"new"
+    assert not (tmp_path / "runtime.zip.part-004").exists()
+    assert (tmp_path / "sentinel").read_bytes() == b"keep"
+
+
+def test_spm_chatterbox_receipt_matches_promoted_outputs(ncc_package_builder: Path) -> None:
+    for _ in range(2):
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+        release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)
+
+
+@pytest.mark.parametrize("stage", ["rollback", "cleanup"])
+def test_spm_chatterbox_retains_backup_with_truthful_commit_status(
+    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch, stage: str
+) -> None:
+    layout = PackageLayout("6")
+    dist = layout.dist(repository_root(), ncc_package_builder)
+    target = dist / layout.directory
+    _write_tree(target, {"old.txt": b"old"})
+    backup = dist / f".{target.name}.previous"
+    replace = Path.replace
+    remove = release_chatterbox._remove_output
+
+    def fail_replace(path: Path, destination: Path) -> Path:
+        if destination == dist / layout.archive or path == backup:
+            raise OSError("injected rollback failure")
+        return replace(path, destination)
+
+    def fail_remove(path: Path) -> None:
+        if path == backup:
+            raise OSError("injected cleanup failure")
+        remove(path)
+
+    if stage == "rollback":
+        monkeypatch.setattr(Path, "replace", fail_replace)
+    else:
+        monkeypatch.setattr(release_chatterbox, "_remove_output", fail_remove)
+    with pytest.raises((OSError, ReleaseChatterboxError)) as error:
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert (backup / "old.txt").read_bytes() == b"old"
+    if stage == "cleanup":
+        assert "after-commit" in str(error.value)
+        release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)
+    else:
+        assert not target.exists()
+
+
+def test_spm_split_recovers_sole_stale_part_backup_before_retry(tmp_path: Path) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"new")
+    backup = tmp_path / ".runtime.zip.part-004.previous"
+    backup.write_bytes(b"old fourth")
+    split_archive(archive, maximum_part_bytes=4)
+    assert not backup.exists()
+    assert not (tmp_path / "runtime.zip.part-004").exists()
+    assert (tmp_path / "runtime.zip.part-001").read_bytes() == b"new"

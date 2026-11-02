@@ -17,6 +17,17 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [settings and packaging corrections](plans/completed/settings-packaging-minimal-corrections.md)
+keep startup preferences coherent across cleanup/reset and report rejected or
+partial Settings changes, including the temporary fallback controls during book
+replacement. Maintainer builders prepare complete verified output sets before
+promotion and retain recovery backups on failed restoration; Piper rejects
+incompatible profile tuples early. Selected desktop, Python, Chromium, static
+and current Piper EN native checks pass with resources restored. Independent
+SPM-R2-20261102 approves the corrected patch; final archival assessment is linked
+from the plan. Runtime profiles, frozen authorities and system topology remain
+unchanged.
+
 The [reader, JPEG-density and audible-start corrections](plans/completed/reader-image-audibility-minimal-corrections.md)
 synchronize late narrator attachment, preserve density-aware JPEG decoding within
 physical limits, and gate heard state and metrics on confirmed audio rendering.

@@ -1,14 +1,13 @@
 # Settings and packaging minimal corrections
 
-Status: **Planning only; implementation and implementation validation not started.**
+Status: **Complete; independently accepted and archived on 2026-11-02 local.**
 Planning date: 2026-11-02 UTC (2026-11-01 local).
 Base: `85dd916b9fea1771f3da6eb181df392342823368`, clean `main` at entry.
 Branch: `codex/settings-packaging-minimal-corrections-plan`.
 
-Authorization for this delivery covers this ExecPlan, its active-index entry,
-the branch and a local documentation commit. It does not execute this plan or
-authorize implementation, push, PR, merge or publication. The preceding audit
-was static: no tests ran and no defect was reproduced in execution.
+The user authorized implementation and local host tests on 2026-11-01 (local).
+Commit, push, PR, merge and publication remain unauthorized. The preceding audit
+was static; its results are not executable acceptance evidence.
 
 ## Goal
 
@@ -183,7 +182,33 @@ paths. Preserve unrelated files and resources during rollback and test cleanup.
 
 ## Milestones
 
-### M0: Freeze scope and evidence decisions — Not started
+### M0: Freeze scope and evidence decisions — Complete
+
+Entry HEAD is `599b4cf4a446c006ae3262cfceac0f75e596a50d` on the planned branch;
+index and worktree were clean. The immutable initial tracked/discovered input
+inventory is `tmp/evidence/settings-packaging-minimal-corrections/M0-inputs.json`.
+The implementation allowlist is the three U1 production files and their tests,
+`services/tts/src/voxleaf_tts/release_core.py`,
+`services/tts/src/voxleaf_tts/release_chatterbox.py`,
+`services/tts/tests/test_release_core.py`,
+`services/tts/tests/test_release_chatterbox.py`, and the G5 browser spec.
+Conditional support remains limited to the paths explicitly named in Scope;
+record any activation before editing. Documentation outputs are this plan,
+its active/completed indexes, the Settings requirements, TTS organization and
+the task evidence directory. No pre-existing changes require preservation.
+
+G1–G8 are RUN. G0 exports will be rebuilt if their full input proof is absent.
+No historical behavioral PASS is reused. The original MAF Python/core and RIA
+desktop/core/native result receipts were retrieved; only the existing core
+payload is a conditional artifact reuse candidate, pending complete membership,
+hash and source-closure comparison before G6. Rust/GPU/EPUB matrices remain
+NOT APPLICABLE under the unchanged scope. No installation/download is selected.
+Local unsandboxed PowerShell readiness found Node 24.20.0, pnpm 11.15.1,
+uv 0.11.29, PowerShell 7.6.5, existing JS/Python dependencies and 139 GB free.
+Use the existing Corepack shim through process-local PATH. Task scratch is the
+new ignored `tmp/evidence/settings-packaging-minimal-corrections/` directory;
+synthetic packaging tests use their pytest temporary roots. Native resources
+will be journaled before the host arm.
 
 After execution authorization, record actual HEAD, dirty paths, literal allowlist
 and per-gate source/test/config/lock/discovered-input identities before edits.
@@ -192,14 +217,14 @@ NOT APPLICABLE or BLOCKED; do not run a broad baseline by default. Check only
 needed tool/package/browser/driver readiness. Do not install/update/download by
 default. Confirm a safe owned scratch root and preserve current user state.
 
-### M1: Implement U1 with directed regressions — Not started
+### M1: Implement U1 with directed regressions — Complete
 
 Use existing fake transport, cleanup barriers and storage seams to reproduce
 SPM-01/02 before changing production. Implement only required coordinator order
 and local feedback. Add a mounted browser case through the real settings action
 and coordinator; do not prove the circular reset only with boolean mocks.
 
-### M2: Implement U2/U3 with synthetic outputs — Not started
+### M2: Implement U2/U3 with synthetic outputs — Complete
 
 Exercise real builder orchestration and filesystem renames with tiny fixtures;
 mock acquisition/model work, not the promotion mechanism under test. Fix Piper
@@ -208,7 +233,7 @@ Fix Chatterbox output/part replacement while retaining versioned sources and
 sole-backup retry behavior. No real package generation is needed merely to
 demonstrate an injected file/ZIP/smoke/receipt failure.
 
-### M3: Combined verification and acceptance — Not started
+### M3: Combined verification and acceptance — Complete
 
 Run the final selected deterministic/static gates below, followed by the selected
 Chromium journey and one current native build/Piper EN arm. Reuse verified core
@@ -266,11 +291,11 @@ reused PASS. Recheck this classification if implementation expands.
 
 ### Minimal gate table
 
-All commands below are **future**, from the repository root in normal local
-PowerShell outside the managed sandbox. They use configured scripts or selectors
+The table below preserves the selected commands, from the repository root in
+normal local PowerShell outside the managed sandbox. They use configured scripts or selectors
 on their existing Vitest/pytest/Playwright runners. Use repository-selected pnpm,
-not an unrelated PATH version. No tests/formatters/builds are run for this plan
-delivery. Capture each leaf's actual command, times, result and input identities.
+not an unrelated PATH version. Actual command, timing, result and input identities are retained in the
+execution ledger and original host receipts.
 
 | Gate | Command / timing | Invariant, invalidation and reuse |
 | --- | --- | --- |
@@ -363,13 +388,83 @@ from the selected leaf set.
 
 ## Final validation results
 
-Planning-only state: the plan format, owning code, configured commands, relevant
-requirements and historical evidence were inspected. Implementation, red/green
-regressions, G0-G8, native restoration and independent behavioral acceptance are
-**NOT RUN / NOT STARTED**. No historical measurement is accepted as current proof.
+Current host results and preserved failures are recorded in the
+[execution ledger](../evidence/settings-packaging-minimal-corrections/execution-ledger.md).
+G0 preparation, final G2 desktop (355), final G3 Python (136), all six G4 leaves,
+G5 Chromium (6) and current G6 core check pass. The initial build/native
+arm passed; R1 F1 required a replacement build (passed), and its native arm/restoration also pass. In total two builds and two native
+arms ran; R1 F1 invalidated the first renderer/binary result. Native original resources are restored byte-for-byte; no new
+owned process or native scratch remains. Historical PASS results are not reused.
+The current Piper payload alone is reused after complete membership/hash and
+runtime-source/authority equality checks. G8 passes. Independent
+[SPM-R2-20261102](../evidence/settings-packaging-minimal-corrections/review-R2.md)
+is APPROVE with R1 F1 resolved and no findings. The plan is accepted and archived;
+the separate [final archival assessment](../evidence/settings-packaging-minimal-corrections/review-R3.md)
+binds the final documentation/index patch without rewriting this record.
 
-This delivery is documentation-only and is exempt from behavioral change review
-under `agentic-change-review.md`. A later implementation is not exempt. Record
-actual execution commands/outcomes, justified immutable reuse, current review ID
-and remaining limitations here only after authorized execution. Do not archive
-this plan or mark any finding fixed during the planning commit.
+## Execution update (2026-11-01 local)
+
+- G1 desktop: six intended failures reproduced. G1 packaging: 22 failures and
+  two passing controls; failed receipts retained. No production data was used.
+- G2 first combined run: 351 passed, three old status-removal expectations failed.
+  Updated those expectations for the required stable failure feedback. G2-r2:
+  all 354 passed. G3 first combined run: 131 passed, two legacy rename injections
+  intercepted the newly staged ZIP instead of final promotion. Narrowed each
+  injection to its intended target. G3-r2: all 133 passed. The fixture now uses
+  real local receipt verification. Pytest reports a nonfatal pre-existing cache
+  permission warning; no test or assertion was skipped because of it.
+- Static checks pass after correcting one long fixture line and its overload
+  annotation. G5's first invocation failed before tests because pnpm/cmd removed
+  the grep expression's quoting. The one infrastructure retry preserves literal
+  double quotes through that boundary; all six selected Chromium cases pass.
+- Current core check passes. Complete retained/current payload comparison finds
+  2,024 identical files, with unchanged runtime closure, recipe and authority.
+  This reuses prepared bytes only. No prior test PASS, desktop binary or timing
+  is accepted. G6 desktop build is running; G7 and independent review remain due.
+- Before R1, no App change was required. No shared contract, native runner, runtime source, model,
+  dependency, frozen authority or generated tracked artifact changed. The
+  canonical system topology and M005 boundary remain unchanged. Closeout may
+  update `docs/README.md` as required by the active-index archival instructions.
+
+- Final native receipt G7-Piper passes with zero external requests/generated
+  audio files and verified restoration. The final splitter recovery correction
+  renews G3 (136 passed) and all Python static leaves; it is excluded from the
+  runtime and does not invalidate the one completed build/native arm.
+
+## R1 correction order (2026-11-02 local)
+
+Independent [SPM-R1-20261101](../evidence/settings-packaging-minimal-corrections/review-R1.md)
+requests F1: ready-publication Settings may use the fallback startup callback
+while narration handoff is pending/failed, and it silently drops write rejection.
+Activate the already conditional `App.tsx`/`App.test.tsx` allowance. Return the
+existing boolean result through the local Settings callback and apply the same
+bounded feedback to fallback startup. Add the mounted App regression before the
+fix. Renew G2, TS static leaves, G5 and desktop build/native G6/G7 because renderer
+inputs change. The one-build condition no longer holds; retain the first passing
+build/native receipts as superseded evidence. Python and core verification inputs
+remain unchanged; retention requires the reviewer's exact input comparison.
+
+- R1 F1 now has a discriminating mounted App red test and passes the final
+  355-test desktop group. G4 TypeScript, six G5 cases, replacement G6 build and
+  G7-Piper-F1 pass. Resources and installed inputs are restored/unchanged; final
+  review is pending. Original Python/core evidence has a complete current-input
+  comparison, with only unconsumed desktop/docs/Chatterbox differences.
+
+
+## Acceptance closeout (2026-11-02 local)
+
+M0–M3 are complete. SPM-R2-20261102 independently approves all six correction
+boundaries and accepts the original current-task Python/static/core evidence
+against complete input comparisons. The latest desktop, Chromium, build and
+native receipts validate F1; earlier renderer/binary results are superseded.
+All relevant selected gates pass. Original native resources were restored on
+both arms; no new owned processes, scratch, audio, firewall or installation
+changes remain. Raw receipts are intentionally retained in ignored task scratch.
+
+The Git index remains empty, with intentional source/test/documentation changes
+unstaged. HEAD and branch are unchanged; no commit, push, PR, merge or publication
+occurred. The system diagram still matches the unchanged implementation topology
+and M005 boundary. There are no acceptance blockers. Limits remain the selected
+host/engine scope, nonfatal existing pytest-cache/Vite advisories, and compensated
+ordinary filesystem failures rather than power-loss/concurrent-build atomicity.
+The final archival assessment is retained outside its own identity manifest.

@@ -659,6 +659,66 @@ describe("App preference connection characterization", () => {
     }
   });
 
+  it("SPM-F1 reports fallback startup rejection during replacement handoff and clears it on retry", async () => {
+    const closing = deferred<void>();
+    const first = new ControlledNarrationCoordinator();
+    vi.spyOn(first, "close").mockReturnValue(closing.promise);
+    const factory = vi
+      .fn()
+      .mockReturnValueOnce(first)
+      .mockReturnValue(new ControlledNarrationCoordinator());
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({
+        status: "ready",
+        publication: createTestPublication("SPM first"),
+      })
+      .mockResolvedValueOnce({
+        status: "ready",
+        publication: createTestPublication("SPM replacement"),
+      });
+    const preference: NarrationStartPreferenceRepository = {
+      read: async () => ({ status: "ready", selection: { kind: "quick" } }),
+      write: vi
+        .fn<NarrationStartPreferenceRepository["write"]>()
+        .mockResolvedValueOnce({ status: "unavailable" })
+        .mockResolvedValue({ status: "saved" }),
+      reset: async () => ({ status: "saved" }),
+    };
+    const view = render(
+      <App
+        openFlow={createTestFlow(open)}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        narrationStartPreferenceRepository={preference}
+        createNarrationCoordinator={factory}
+      />,
+    );
+    try {
+      selectEpub("first.epub");
+      await waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+      selectEpub("replacement.epub");
+      await screen.findByText("SPM replacement");
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+      const prepared = screen.getByRole("radio", { name: /Prepared playback/ });
+      await waitFor(() => expect(prepared).toBeEnabled());
+      expect(factory).toHaveBeenCalledTimes(1);
+      fireEvent.click(prepared);
+      const message =
+        "The startup preference could not be applied. Review the current value and try again.";
+      await waitFor(() =>
+        expect(screen.getByText(message)).toBeInTheDocument(),
+      );
+      expect(screen.getByRole("radio", { name: /Quick start/ })).toBeChecked();
+      fireEvent.click(prepared);
+      await waitFor(() => expect(prepared).toBeChecked());
+      expect(screen.queryByText(message)).not.toBeInTheDocument();
+      expect(preference.write).toHaveBeenCalledTimes(2);
+    } finally {
+      await act(async () => closing.resolve());
+      view.unmount();
+    }
+  });
+
   it.each(["success", "rejected", "uncontained"] as const)(
     "VCA-05 waits for A containment across A-to-B-to-C replacement: %s",
     async (outcome) => {

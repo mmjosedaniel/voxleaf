@@ -574,18 +574,15 @@ export function App({
     ],
   );
   const handleFallbackNarrationStartChange = useCallback(
-    (selection: AdaptiveBufferStartMode): void => {
-      void narrationStartPreferenceRepository
-        .write(selection)
-        .then((result) => {
-          if (result.status === "saved") {
-            setFallbackNarrationStart({
-              selection,
-              status: "ready",
-              canPersist: true,
-            });
-          }
-        });
+    async (selection: AdaptiveBufferStartMode): Promise<boolean> => {
+      const result = await narrationStartPreferenceRepository.write(selection);
+      if (result.status !== "saved") return false;
+      setFallbackNarrationStart({
+        selection,
+        status: "ready",
+        canPersist: true,
+      });
+      return true;
     },
     [narrationStartPreferenceRepository],
   );

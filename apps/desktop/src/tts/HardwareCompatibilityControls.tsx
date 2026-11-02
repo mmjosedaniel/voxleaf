@@ -111,6 +111,7 @@ export function HardwareCompatibilityControls({
   onSelectionPendingChange,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
+  const [selectionError, setSelectionError] = useState<string>();
   const snapshot = useHardwareCompatibilitySnapshot(coordinator);
 
   useEffect(
@@ -133,13 +134,22 @@ export function HardwareCompatibilityControls({
 
   const runNarrationSettingsChange = async (
     operation: () => Promise<boolean>,
+    reset = false,
   ): Promise<void> => {
+    const failureMessage = reset
+      ? "Not all narration settings were reset. Review the current values and try again."
+      : "The narration selection could not be applied. Review the current values and try again.";
+    setSelectionError(undefined);
     setNarrationSelectionPending(true);
     try {
       const selected = await operation();
       if (selected) {
         onRecoveryEpisodeReset?.();
+      } else {
+        setSelectionError(failureMessage);
       }
+    } catch {
+      setSelectionError(failureMessage);
     } finally {
       setNarrationSelectionPending(false);
     }
@@ -169,10 +179,12 @@ export function HardwareCompatibilityControls({
   };
 
   const handleReset = async (): Promise<void> => {
-    await runNarrationSettingsChange(() =>
-      onResetNarrationSettings === undefined
-        ? coordinator.resetLanguage()
-        : onResetNarrationSettings(),
+    await runNarrationSettingsChange(
+      () =>
+        onResetNarrationSettings === undefined
+          ? coordinator.resetLanguage()
+          : onResetNarrationSettings(),
+      true,
     );
   };
 
@@ -187,6 +199,11 @@ export function HardwareCompatibilityControls({
       {selectionPending ? (
         <p role="status" aria-live="polite" aria-atomic="true">
           Applying narration settings. Existing settings remain available.
+        </p>
+      ) : null}
+      {selectionError ? (
+        <p role="status" aria-live="polite" aria-atomic="true">
+          {selectionError}
         </p>
       ) : null}
       <fieldset

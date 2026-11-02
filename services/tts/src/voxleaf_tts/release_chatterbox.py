@@ -383,46 +383,108 @@ def _zip_package(source: Path, archive: Path, *, package_version: PackageVersion
         raise ReleaseChatterboxError("chatterbox-package-archive-failed") from None
 
 
+def _remove_output(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink(missing_ok=True)
+
+
+def _recover_outputs(targets: list[Path]) -> None:
+    for target in targets:
+        backup = target.with_name(f".{target.name}.previous")
+        if backup.exists():
+            if target.exists():
+                raise ReleaseChatterboxError("chatterbox-package-recovery-required")
+            backup.replace(target)
+
+
+def _promote_outputs(outputs: list[tuple[Path | None, Path]]) -> None:
+    moved: list[tuple[Path, Path]] = []
+    promoted: list[Path] = []
+    try:
+        for candidate, target in outputs:
+            backup = target.with_name(f".{target.name}.previous")
+            if target.exists():
+                target.replace(backup)
+                moved.append((target, backup))
+            if candidate is not None:
+                candidate.replace(target)
+                promoted.append(target)
+    except OSError as error:
+        for target in reversed(promoted):
+            try:
+                _remove_output(target)
+            except OSError:
+                error.add_note("Candidate removal failed; previous output retained in backup.")
+        for target, backup in reversed(moved):
+            try:
+                if target.exists():
+                    raise OSError("candidate still present")
+                backup.replace(target)
+            except OSError:
+                error.add_note("Previous output retained in promotion backup; recovery required.")
+        raise
+    # The complete verified output set is committed before backup disposal.
+    try:
+        for _, backup in moved:
+            _remove_output(backup)
+    except OSError:
+        raise ReleaseChatterboxError("chatterbox-package-cleanup-failed-after-commit") from None
+
+
 def split_archive(
     archive: Path, *, maximum_part_bytes: int = MAXIMUM_PART_BYTES
 ) -> tuple[ArchivePartMeasurement, ...]:
-    """Split one deterministic archive into bounded, ordered release assets."""
-
+    """Prepare all bounded parts before replacing any previous part."""
     if maximum_part_bytes <= 0:
         raise ReleaseChatterboxError("chatterbox-package-part-limit-invalid")
-    for stale in archive.parent.glob(f"{archive.name}.part-*"):
-        stale.unlink(missing_ok=True)
+    staging = archive.parent / f".{archive.name}.parts-{os.getpid()}"
     parts: list[ArchivePartMeasurement] = []
     try:
+        size = archive.stat().st_size
+        if size == 0 or size > 4 * maximum_part_bytes:
+            raise ReleaseChatterboxError("chatterbox-package-runtime-too-large")
+        _recover_outputs(
+            [archive.parent / f"{archive.name}.part-{index:03d}" for index in range(1, 5)]
+        )
+        staging.mkdir()
         with archive.open("rb") as source:
             index = 1
-            while True:
-                first = source.read(1)
-                if not first:
-                    break
+            while first := source.read(1):
+                if index > 4:
+                    raise ReleaseChatterboxError("chatterbox-package-runtime-too-large")
                 filename = f"{archive.name}.part-{index:03d}"
-                path = archive.parent / filename
+                path = staging / filename
                 digest = hashlib.sha256()
                 written = 0
                 with path.open("wb") as output:
                     block = first
                     while block and written < maximum_part_bytes:
-                        remaining = maximum_part_bytes - written
-                        if len(block) > remaining:
-                            raise ReleaseChatterboxError("chatterbox-package-archive-failed")
                         output.write(block)
                         digest.update(block)
                         written += len(block)
                         block = source.read(min(HASH_BLOCK_BYTES, maximum_part_bytes - written))
                 parts.append(ArchivePartMeasurement(filename, digest.hexdigest(), written))
                 index += 1
-    except ReleaseChatterboxError:
-        raise
+        if not parts:
+            raise ReleaseChatterboxError("chatterbox-package-runtime-too-large")
+        names = {part.filename for part in parts}
+        outputs: list[tuple[Path | None, Path]] = [
+            (staging / part.filename, archive.parent / part.filename) for part in parts
+        ]
+        outputs.extend(
+            (None, stale)
+            for stale in sorted(archive.parent.glob(f"{archive.name}.part-*"))
+            if stale.name not in names
+        )
+        _recover_outputs([target for _, target in outputs])
+        _promote_outputs(outputs)
+        return tuple(parts)
     except OSError:
         raise ReleaseChatterboxError("chatterbox-package-archive-failed") from None
-    if not parts or len(parts) > 4:
-        raise ReleaseChatterboxError("chatterbox-package-runtime-too-large")
-    return tuple(parts)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 def _synchronise_environment(
@@ -473,6 +535,12 @@ def build_package(
     sources = resolve_runtime_sources(root, source)
     dist = layout.dist(root, output_root)
     dist.mkdir(parents=True, exist_ok=True)
+    # Recover the closed prior output set, including a sole missing part backup.
+    previous_outputs = [dist / layout.directory, dist / layout.archive]
+    previous_outputs.extend(dist / f"{layout.archive}.part-{index:03d}" for index in range(1, 5))
+    if package_version in {"4", "5", "6", "7"}:
+        previous_outputs.append(dist / f"local-build-evidence-v{package_version}.json")
+    _recover_outputs(previous_outputs)
     environment = dist / "environment"
     if synchronise:
         _synchronise_environment(root, environment, package_version=package_version)
@@ -499,52 +567,47 @@ def build_package(
         rendered = render_manifest(build_runtime_manifest(staging, package_version=package_version))
         (staging / layout.runtime_manifest).write_bytes(rendered)
         verify_package_tree(staging, json.loads(rendered), package_version=package_version)
-        target = dist / layout.directory
-        previous = dist / f".{layout.directory}.previous"
-        # A failed rollback leaves the only previous package here. Recover it
-        # before treating a backup as disposable, including on a later build.
-        if previous.exists() and not target.exists():
-            previous.replace(target)
-        if previous.exists():
-            shutil.rmtree(previous)
-        if target.exists():
-            target.replace(previous)
-        try:
-            staging.replace(target)
-        except OSError as error:
-            if previous.exists():
-                try:
-                    previous.replace(target)
-                except OSError:
-                    error.add_note(
-                        "Previous package retained in the promotion backup; recovery failed."
+        archive = staging_parent / layout.archive
+        _zip_package(staging, archive, package_version=package_version)
+        parts = split_archive(archive)
+        installed_files = [path for path in staging.rglob("*") if path.is_file()]
+        measurement = PackageMeasurement(
+            archive_sha256=sha256_file(archive),
+            compressed_bytes=archive.stat().st_size,
+            installed_bytes=sum(path.stat().st_size for path in installed_files),
+            file_count=len(installed_files),
+            runtime_manifest_sha256=sha256_file(staging / layout.runtime_manifest),
+            parts=parts,
+        )
+        outputs: list[tuple[Path | None, Path]] = [
+            (staging, dist / layout.directory),
+            (archive, dist / layout.archive),
+        ]
+        outputs.extend((staging_parent / part.filename, dist / part.filename) for part in parts)
+        names = {part.filename for part in parts}
+        outputs.extend(
+            (None, stale)
+            for stale in sorted(dist.glob(f"{layout.archive}.part-*"))
+            if stale.name not in names
+        )
+        if package_version in {"4", "5", "6", "7"}:
+            receipt = staging_parent / f"local-build-evidence-v{package_version}.json"
+            receipt.write_bytes(
+                render_manifest(
+                    _local_package_receipt(
+                        root,
+                        package_version=package_version,
+                        output_root=output_root,
+                        candidate_dist=staging_parent,
                     )
-            raise
-        shutil.rmtree(previous, ignore_errors=True)
-    finally:
-        shutil.rmtree(staging_parent, ignore_errors=True)
-    archive = dist / layout.archive
-    _zip_package(target, archive, package_version=package_version)
-    parts = split_archive(archive)
-    installed_files = [path for path in target.rglob("*") if path.is_file()]
-    runtime_manifest = target / layout.runtime_manifest
-    measurement = PackageMeasurement(
-        archive_sha256=sha256_file(archive),
-        compressed_bytes=archive.stat().st_size,
-        installed_bytes=sum(path.stat().st_size for path in installed_files),
-        file_count=len(installed_files),
-        runtime_manifest_sha256=sha256_file(runtime_manifest),
-        parts=parts,
-    )
-    if package_version in {"4", "5", "6", "7"}:
-        (dist / f"local-build-evidence-v{package_version}.json").write_bytes(
-            render_manifest(
-                _local_package_receipt(
-                    root, package_version=package_version, output_root=output_root
                 )
             )
-        )
-    return measurement
+            outputs.append((receipt, dist / receipt.name))
+        _recover_outputs([target for _, target in outputs])
+        _promote_outputs(outputs)
+        return measurement
+    finally:
+        shutil.rmtree(staging_parent, ignore_errors=True)
 
 
 def _verify_local_archive_parts(
@@ -598,14 +661,18 @@ def _verify_local_archive_members(
 
 
 def _local_package_receipt(
-    root: Path, *, package_version: PackageVersion = "4", output_root: Path | None = None
+    root: Path,
+    *,
+    package_version: PackageVersion = "4",
+    output_root: Path | None = None,
+    candidate_dist: Path | None = None,
 ) -> dict[str, object]:
     """Measure local versioned outputs without publication/execution claims."""
 
     if package_version not in {"4", "5", "6", "7"}:
         raise ReleaseChatterboxError("chatterbox-package-version-invalid")
     layout = PackageLayout(package_version)
-    dist = layout.dist(root, output_root)
+    dist = candidate_dist or layout.dist(root, output_root)
     target = dist / layout.directory
     source = load_source_manifest(root, package_version=package_version)
     sources = resolve_runtime_sources(root, source)
