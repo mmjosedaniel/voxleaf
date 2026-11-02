@@ -132,6 +132,15 @@ prior profile, preference, identities, service ownership, and recovery episode.
 A failed selection instead leaves a stable actionable error and the safest
 valid profile state.
 
+Completed-run cleanup and reset eligibility are checked before writing the
+startup preference. Failed cleanup retains the previous saved and visible mode.
+An explicit reset may apply Quick after verified containment even while the
+recovery episode still awaits its existing explicit reset. It never starts
+playback or discards retained cleanup owners. Language, profile and startup
+rejections show fixed, content-free retry feedback. Cross-key reset remains
+best effort: successful fields stay applied and a partial reset asks the user
+to review the displayed current values, without claiming complete success.
+
 Automatic compatibility checks after a hidden/visible transition reconcile the
 current narration owner after the probe settles. A changed or unavailable
 selection stops obsolete narration before applying its preparation policy;

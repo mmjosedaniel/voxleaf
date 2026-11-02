@@ -167,6 +167,45 @@ async function ensureChecked(
 }
 
 describe("hardware compatibility controls", () => {
+  it.each(["profile", "language", "reset"] as const)(
+    "SPM-02 explains rejected %s and clears feedback after retry",
+    async (action) => {
+      const subject = coordinator();
+      const operation = vi.fn(async () => false);
+      render(
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="narration"
+          onSelectProfile={operation}
+          onSelectLanguage={operation}
+          onResetNarrationSettings={operation}
+        />,
+      );
+      await ensureChecked(subject);
+      const trigger =
+        action === "reset"
+          ? screen.getByRole("button", { name: "Reset narration settings" })
+          : screen.getByRole("radio", {
+              name:
+                action === "language"
+                  ? "English"
+                  : "Qwen and Serena Spanish quality profile (Development)",
+            });
+      fireEvent.click(trigger);
+      const message =
+        action === "reset"
+          ? "Not all narration settings were reset. Review the current values and try again."
+          : "The narration selection could not be applied. Review the current values and try again.";
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(message),
+      );
+      operation.mockResolvedValue(true);
+      fireEvent.click(trigger);
+      await waitFor(() =>
+        expect(screen.queryByText(message)).not.toBeInTheDocument(),
+      );
+    },
+  );
   it.each([
     ["profile", "selectProfile", [EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID]],
     ["language", "selectLanguage", ["en"]],
@@ -267,7 +306,10 @@ describe("hardware compatibility controls", () => {
           );
           for (const control of [...radios, reset])
             expect(control).toBeEnabled();
-          expect(screen.queryByRole("status")).not.toBeInTheDocument();
+          if (accepted)
+            expect(screen.queryByRole("status")).not.toBeInTheDocument();
+          else
+            expect(screen.getByRole("status")).toHaveTextContent("try again");
           rendered.unmount();
         }
       }

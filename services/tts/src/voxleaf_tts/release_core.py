@@ -85,7 +85,33 @@ def load_source_manifest(root: Path | None = None) -> dict[str, object]:
         or manifest["platform"] != "windows-x86_64"
     ):
         raise ReleaseCoreError("piper-core-source-manifest-invalid")
+    _validate_profiles(manifest["voices"], recipe=True)
     return manifest
+
+
+def _validate_profiles(value: object, *, recipe: bool = False) -> None:
+    reason = "piper-core-profile-invalid"
+    profiles = _json_array(value, reason)
+    expected = {
+        ("es", "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1", "voices/es", "davefx-es"),
+        ("en", "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1", "voices/en", "joe-en"),
+    }
+    actual = []
+    for value in profiles:
+        profile = _json_object(value, reason)
+        actual.append(
+            tuple(
+                _text(profile.get(key), reason)
+                for key in (
+                    "language",
+                    "profileId",
+                    "targetDirectory" if recipe else "modelRoot",
+                    "runtimeVoice",
+                )
+            )
+        )
+    if len(actual) != len(expected) or set(actual) != expected:
+        raise ReleaseCoreError(reason)
 
 
 def _artifact(value: object) -> dict[str, object]:
@@ -400,43 +426,70 @@ def _clean_staging(parent: Path) -> None:
         raise ReleaseCoreError("piper-core-cleanup-failed") from None
 
 
+def _remove_output(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink(missing_ok=True)
+
+
+def _recover_outputs(targets: list[Path]) -> None:
+    for target in targets:
+        backup = target.with_name(f".{target.name}.previous")
+        if backup.exists():
+            if target.exists():
+                raise ReleaseCoreError("piper-core-recovery-required")
+            backup.replace(target)
+
+
+def _promote_outputs(outputs: list[tuple[Path, Path]]) -> None:
+    """Compensate pre-commit failures; retain backups if restoration fails."""
+    moved: list[tuple[Path, Path]] = []
+    promoted: list[Path] = []
+    try:
+        for candidate, target in outputs:
+            backup = target.with_name(f".{target.name}.previous")
+            if target.exists():
+                target.replace(backup)
+                moved.append((target, backup))
+            candidate.replace(target)
+            promoted.append(target)
+    except OSError as error:
+        for target in reversed(promoted):
+            try:
+                _remove_output(target)
+            except OSError:
+                error.add_note("Candidate removal failed; previous output retained in backup.")
+        for target, backup in reversed(moved):
+            try:
+                if target.exists():
+                    raise OSError("candidate still present")
+                backup.replace(target)
+            except OSError:
+                error.add_note("Previous output retained in promotion backup; recovery required.")
+        raise
+    # All verified candidates are committed. Cleanup cannot roll back this set.
+    try:
+        for _, backup in moved:
+            _remove_output(backup)
+    except OSError:
+        raise ReleaseCoreError("piper-core-cleanup-failed-after-commit") from None
+
+
 def atomic_stage(target: Path, populate: Callable[[Path], None]) -> None:
     parent = target.parent
     parent.mkdir(parents=True, exist_ok=True)
+    _recover_outputs([target])
     _clean_staging(parent)
     staging = parent / f".{PACKAGE_DIRECTORY_NAME}{STAGING_MARKER}{os.getpid()}"
-    backup = parent / f".{PACKAGE_DIRECTORY_NAME}.previous"
-    # Failed promotion and restoration may have left this as the only package.
-    # Recover it before cleanup or population can discard the recovery input.
-    if backup.exists() and not target.exists():
-        try:
-            backup.replace(target)
-        except OSError:
-            raise ReleaseCoreError("piper-core-promotion-failed") from None
-    shutil.rmtree(staging, ignore_errors=True)
-    shutil.rmtree(backup, ignore_errors=True)
     staging.mkdir(parents=True)
-    moved_previous = False
     try:
         populate(staging)
-        if target.exists():
-            target.replace(backup)
-            moved_previous = True
-        staging.replace(target)
-        if moved_previous:
-            shutil.rmtree(backup)
-    except ReleaseCoreError:
-        if moved_previous and not target.exists() and backup.exists():
-            backup.replace(target)
-        raise
+        _promote_outputs([(staging, target)])
     except OSError:
-        if moved_previous and not target.exists() and backup.exists():
-            backup.replace(target)
         raise ReleaseCoreError("piper-core-promotion-failed") from None
     finally:
         shutil.rmtree(staging, ignore_errors=True)
-        if target.exists():
-            shutil.rmtree(backup, ignore_errors=True)
 
 
 def _zip_package(package_root: Path, archive_path: Path) -> None:
@@ -525,10 +578,8 @@ def _assemble_staging(
 
     generated = render_manifest(build_runtime_manifest(staging, source_manifest))
     authority_path = root / "services/tts/release/core/runtime-manifest-v1.json"
-    if write_manifest:
-        authority_path.write_bytes(generated)
     try:
-        authority = authority_path.read_bytes()
+        authority = generated if write_manifest else authority_path.read_bytes()
     except OSError:
         raise ReleaseCoreError("piper-core-runtime-manifest-missing") from None
     if authority != generated:
@@ -618,38 +669,67 @@ def build_package(*, write_manifest: bool = False, sync: bool = True) -> Package
     dist = root / "services/tts/release/core/dist"
     target = dist / PACKAGE_DIRECTORY_NAME
     cache = dist / "downloads"
-    atomic_stage(
-        target,
-        lambda staging: _assemble_staging(staging, root, source_manifest, cache, write_manifest),
-    )
-    manifest = _load_json(target / RUNTIME_MANIFEST_NAME, "piper-core-runtime-manifest-invalid")
-    verify_package_tree(target, manifest)
     archive = dist / f"{PACKAGE_DIRECTORY_NAME}.zip"
-    _zip_package(target, archive)
-    spanish = _offline_smoke(target, "es")
-    english = _offline_smoke(target, "en")
+    authority = root / "services/tts/release/core/runtime-manifest-v1.json"
+    evidence = authority.parent / PACKAGE_EVIDENCE_NAME
+    targets = [target, archive] + ([authority, evidence] if write_manifest else [])
+    _recover_outputs(targets)
+    dist.mkdir(parents=True, exist_ok=True)
+    _clean_staging(dist)
+    staging = dist / f".{PACKAGE_DIRECTORY_NAME}{STAGING_MARKER}{os.getpid()}"
+    candidate = staging / PACKAGE_DIRECTORY_NAME
+    candidate.mkdir(parents=True)
     try:
-        installed = sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
-        file_count = sum(1 for path in target.rglob("*") if path.is_file())
-        compressed = archive.stat().st_size
-    except OSError:
-        raise ReleaseCoreError("piper-core-measurement-failed") from None
-    measurement = PackageMeasurement(
-        archive_sha256=sha256_file(archive),
-        compressed_bytes=compressed,
-        installed_bytes=installed,
-        file_count=file_count,
-        spanish_payload_bytes=spanish,
-        english_payload_bytes=english,
-    )
-    if write_manifest:
-        write_package_evidence(root, measurement)
-    return measurement
+        _assemble_staging(candidate, root, source_manifest, cache, write_manifest)
+        manifest = _load_json(
+            candidate / RUNTIME_MANIFEST_NAME, "piper-core-runtime-manifest-invalid"
+        )
+        _validate_profiles(
+            _json_object(manifest["runtime"], "piper-core-profile-invalid")["profiles"]
+        )
+        verify_package_tree(candidate, manifest)
+        candidate_archive = staging / archive.name
+        _zip_package(candidate, candidate_archive)
+        spanish = _offline_smoke(candidate, "es")
+        english = _offline_smoke(candidate, "en")
+        try:
+            installed = sum(path.stat().st_size for path in candidate.rglob("*") if path.is_file())
+            file_count = sum(1 for path in candidate.rglob("*") if path.is_file())
+            compressed = candidate_archive.stat().st_size
+        except OSError:
+            raise ReleaseCoreError("piper-core-measurement-failed") from None
+        measurement = PackageMeasurement(
+            archive_sha256=sha256_file(candidate_archive),
+            compressed_bytes=compressed,
+            installed_bytes=installed,
+            file_count=file_count,
+            spanish_payload_bytes=spanish,
+            english_payload_bytes=english,
+        )
+        outputs = [(candidate, target), (candidate_archive, archive)]
+        if write_manifest:
+            staged_authority = staging / authority.name
+            staged_authority.write_bytes((candidate / RUNTIME_MANIFEST_NAME).read_bytes())
+            staged_evidence = staging / evidence.name
+            staged_evidence.write_bytes(
+                render_manifest(
+                    package_evidence(root, measurement, runtime_manifest=staged_authority)
+                )
+            )
+            outputs.extend([(staged_authority, authority), (staged_evidence, evidence)])
+        _promote_outputs(outputs)
+        return measurement
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
-def package_evidence(root: Path, measurement: PackageMeasurement) -> dict[str, object]:
+def package_evidence(
+    root: Path, measurement: PackageMeasurement, *, runtime_manifest: Path | None = None
+) -> dict[str, object]:
     source_manifest = root / "services/tts/release/core/source-manifest-v1.json"
-    runtime_manifest = root / "services/tts/release/core/runtime-manifest-v1.json"
+    runtime_manifest = (
+        runtime_manifest or root / "services/tts/release/core/runtime-manifest-v1.json"
+    )
     return {
         "schemaVersion": 1,
         "packageId": PACKAGE_DIRECTORY_NAME,
@@ -677,6 +757,7 @@ def package_evidence(root: Path, measurement: PackageMeasurement) -> dict[str, o
             "staleArtifactRejected": True,
             "partialStagingRemoved": True,
             "previousPackagePreservedOnFailure": True,
+            "previousPackagePreservationScope": "before-complete-output-promotion",
         },
         "distribution": {
             "pythonRuntimeBundled": True,
@@ -699,11 +780,12 @@ def package_evidence(root: Path, measurement: PackageMeasurement) -> dict[str, o
 
 def write_package_evidence(root: Path, measurement: PackageMeasurement) -> None:
     path = root / "services/tts/release/core" / PACKAGE_EVIDENCE_NAME
-    path.write_text(
-        json.dumps(package_evidence(root, measurement), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    temporary = path.with_name(f".{path.name}.partial-{os.getpid()}")
+    try:
+        temporary.write_bytes(render_manifest(package_evidence(root, measurement)))
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def check_tracked_manifest() -> None:
@@ -716,6 +798,9 @@ def check_tracked_manifest() -> None:
     installed = _load_json(target / RUNTIME_MANIFEST_NAME, "piper-core-runtime-manifest-missing")
     if tracked != installed:
         raise ReleaseCoreError("piper-core-runtime-manifest-stale")
+    _validate_profiles(
+        _json_object(tracked.get("runtime"), "piper-core-profile-invalid").get("profiles")
+    )
     verify_package_tree(target, tracked)
     archive = root / "services/tts/release/core/dist" / f"{PACKAGE_DIRECTORY_NAME}.zip"
     evidence = _load_json(

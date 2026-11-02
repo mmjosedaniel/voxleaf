@@ -56,7 +56,9 @@ interface FallbackNarrationStartState {
   readonly selection: AdaptiveBufferStartMode;
   readonly status: PreferenceStatus;
   readonly canPersist: boolean;
-  readonly onSelectionChange: (selection: AdaptiveBufferStartMode) => void;
+  readonly onSelectionChange: (
+    selection: AdaptiveBufferStartMode,
+  ) => Promise<boolean>;
 }
 
 export interface ReaderSettingsDialogProps {
@@ -84,6 +86,46 @@ export interface ReaderSettingsDialogProps {
   readonly loadApplicationVersion?: () => Promise<string>;
 }
 
+function NarrationStartSettingsControls({
+  selection,
+  active = false,
+  disabled = false,
+  onSelectionChange,
+}: Readonly<{
+  selection: AdaptiveBufferStartMode;
+  active?: boolean;
+  disabled?: boolean;
+  onSelectionChange: (selection: AdaptiveBufferStartMode) => Promise<boolean>;
+}>): ReactElement {
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <>
+      <NarrationStartPreferenceControls
+        selection={selection}
+        active={active}
+        disabled={disabled || pending}
+        onSelectionChange={(next) => {
+          setFailed(false);
+          setPending(true);
+          void onSelectionChange(next)
+            .then(
+              (accepted) => setFailed(!accepted),
+              () => setFailed(true),
+            )
+            .finally(() => setPending(false));
+        }}
+      />
+      {failed ? (
+        <p role="status" aria-live="polite">
+          The startup preference could not be applied. Review the current value
+          and try again.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function CoordinatorNarrationStartSettings({
   coordinator,
   disabled = false,
@@ -97,7 +139,7 @@ function CoordinatorNarrationStartSettings({
     snapshot.state.phase !== "stopped" &&
     snapshot.state.phase !== "complete";
   return (
-    <NarrationStartPreferenceControls
+    <NarrationStartSettingsControls
       selection={snapshot.selection}
       active={active}
       disabled={
@@ -105,9 +147,7 @@ function CoordinatorNarrationStartSettings({
         snapshot.startPreferenceStatus === "loading" ||
         !snapshot.canPersistStartPreference
       }
-      onSelectionChange={(selection) =>
-        void coordinator.setSelection(selection)
-      }
+      onSelectionChange={(selection) => coordinator.setSelection(selection)}
     />
   );
 }
@@ -130,7 +170,7 @@ function NarrationStartSettings({
     );
   }
   return (
-    <NarrationStartPreferenceControls
+    <NarrationStartSettingsControls
       selection={fallback.selection}
       disabled={
         disabled || fallback.status === "loading" || !fallback.canPersist

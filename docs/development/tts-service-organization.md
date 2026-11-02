@@ -75,6 +75,23 @@ discovery select v7 at `cb/7` under
 Retained v2/v3/v5/v6 installations are cleanup-only; they are not execution fallbacks.
 Do not infer identical rollback behavior across builders.
 
+Both maintainer builders prepare their complete candidate before promotion.
+Piper verifies the tree, creates its deterministic ZIP, runs both offline smokes
+and measures the candidate before replacing the folder/archive. Only explicit
+`write-manifest` includes candidate authority and evidence in that same bounded
+promotion. Exact language/profile/root/voice tuples are checked at recipe intake
+and core verification; generic synthetic integrity helpers remain usable.
+
+Chatterbox prepares its ZIP, at most four streamed parts and applicable local
+receipt before replacing the prior set. Failed part preparation preserves
+existing parts; stale extra parts are removed only during successful promotion.
+Both builders compensate partial promotion and retain backups when restoration
+fails. A sole backup is recovered before retry; a backup alongside an existing
+target requires explicit inspection instead of automatic deletion. After all
+outputs are promoted, backup-removal failure reports `cleanup-failed-after-commit`
+and retains the coherent new set. The evidence preservation claim applies to
+pre-commit failures, not power loss, concurrent builds or post-commit cleanup.
+
 ## Benchmark and test boundaries
 
 Corpus loading preserves existing ordering, permissive admission and unwrapped

@@ -3881,6 +3881,72 @@ describe("product narration coordinator", () => {
     },
   );
 
+  it.each(["contained", "cleanup-failed", "complete"] as const)(
+    "SPM-01 keeps saved and visible start choices coherent after %s",
+    async (scenario) => {
+      const prepared = { kind: "prepared", targetMs: 120_000 } as const;
+      const repository: NarrationStartPreferenceRepository = {
+        read: vi.fn(async () => ({
+          status: "ready" as const,
+          selection: prepared,
+        })),
+        write: vi.fn(async () => ({ status: "saved" as const })),
+        reset: vi.fn(async () => ({ status: "saved" as const })),
+      };
+      const { coordinator, client, backend, intervals } = createHarness({
+        startPreferenceRepository: repository,
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      const shutdown = vi.spyOn(client, "shutdown");
+      if (scenario !== "contained")
+        shutdown.mockRejectedValue(new Error("synthetic cleanup failure"));
+      try {
+        if (scenario === "complete") {
+          backend.finish();
+          for (const tick of [...intervals]) tick();
+          expect(coordinator.observe().state?.phase).toBe("complete");
+          expect(await coordinator.setSelection({ kind: "quick" })).toBe(false);
+          expect(repository.write).not.toHaveBeenCalled();
+          expect(coordinator.observe().selection).toEqual(prepared);
+        } else {
+          backend.active!.callbacks.failed();
+          intervals[0]?.();
+          await settleUntil(() =>
+            ["recovery-available", "contained"].includes(
+              coordinator.observe().recovery.phase,
+            ),
+          );
+          const reset = await createNarrationSettingsActions(false).reset({
+            hardware: { resetLanguage: async () => true },
+            coordinator,
+            startPreference: repository,
+            playbackPreference: { reset: async () => ({ status: "saved" }) },
+            onStartPreferenceReset: () => undefined,
+          });
+          expect(reset).toBe(scenario === "contained");
+          expect(repository.reset).toHaveBeenCalledTimes(
+            scenario === "contained" ? 1 : 0,
+          );
+          expect(coordinator.observe().selection).toEqual(
+            scenario === "contained" ? { kind: "quick" } : prepared,
+          );
+          if (reset) {
+            coordinator.resetRecoveryEpisode();
+            await settleUntil(
+              () => coordinator.observe().recovery.phase === "operational",
+            );
+          }
+          expect(client.startedProfiles).toHaveLength(1);
+        }
+      } finally {
+        shutdown.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
   it("hydrates a saved start preference before availability becomes actionable", async () => {
     const repository: NarrationStartPreferenceRepository = {
       read: vi.fn(async () => ({

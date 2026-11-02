@@ -181,7 +181,7 @@ function narrationSource() {
       canPersistStartPreference: true,
     }),
     checkAvailability: vi.fn(),
-    setSelection: vi.fn(),
+    setSelection: vi.fn(async () => true),
     start: vi.fn(),
     stop: vi.fn(),
     close: vi.fn(),
@@ -200,6 +200,21 @@ function hardwareSource() {
 }
 
 describe("reader Settings dialog", () => {
+  it("SPM-02 reports rejected startup selection and clears it after retry", async () => {
+    const source = narrationSource();
+    source.setSelection.mockResolvedValueOnce(false);
+    renderSettings({
+      narrationCoordinator: source as unknown as ProductNarrationCoordinator,
+    });
+    fireEvent.click(screen.getByRole("radio", { name: /Prepared playback/ }));
+    const message =
+      "The startup preference could not be applied. Review the current value and try again.";
+    await waitFor(() => expect(screen.getByText(message)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("radio", { name: /Prepared playback/ }));
+    await waitFor(() =>
+      expect(screen.queryByText(message)).not.toBeInTheDocument(),
+    );
+  });
   it.each(["select", "download"] as const)(
     "EFC-07 reconciles cached %s preflight failure after mounted Recheck",
     async (action) => {
