@@ -450,6 +450,104 @@ function createPublication(
   };
 }
 
+it("RCF-02 blocks repeated Play while inactive reader placement is pending", async () => {
+  const { coordinator, client } = createHarness();
+  await coordinator.checkAvailability();
+  await coordinator.beginExternalNavigation("chapter-navigation");
+  coordinator.startAtVisibleLocator();
+  coordinator.startAtVisibleLocator();
+  await Promise.resolve();
+  expect(coordinator.observe().navigation.canStart).toBe(false);
+  expect(client.startedProfiles).toHaveLength(0);
+  coordinator.settleReaderPlacement({
+    status: "settled",
+    locator: START_LOCATOR,
+  });
+  coordinator.settleExternalNavigation(START_LOCATOR);
+  expect(coordinator.observe().navigation.canStart).toBe(true);
+  await coordinator.close();
+});
+
+it("RCF-05 real containment failure prevents settings persistence", async () => {
+  const { coordinator, client, backend } = createHarness();
+  await coordinator.checkAvailability();
+  coordinator.start();
+  await vi.waitFor(() => expect(backend.active).toBeDefined());
+  const failure = vi
+    .spyOn(client, "shutdown")
+    .mockRejectedValue(new Error("synthetic containment failure"));
+  const selectLanguage = vi.fn(async () => true);
+  try {
+    await expect(
+      createNarrationSettingsActions(true).selectLanguage(
+        "es",
+        { selectLanguage },
+        coordinator,
+      ),
+    ).rejects.toThrow();
+    expect(selectLanguage).not.toHaveBeenCalled();
+  } finally {
+    failure.mockRestore();
+    await coordinator.close();
+  }
+});
+
+it.each(["saved", "unavailable"] as const)(
+  "RCF-19 preserves current audio and reports fallback independently of preference %s",
+  async (saveStatus) => {
+    const repository: NarrationPlaybackPreferenceRepository = {
+      read: async () => ({ status: "ready", playbackRatePercent: 100 }),
+      write: vi.fn(async () => ({ status: saveStatus })),
+      reset: async () => ({ status: "saved" }),
+    };
+    const { coordinator, backend, intervals } = createHarness({
+      playbackPreferenceRepository: repository,
+    });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      const active = backend.active;
+      let reject!: (reason: unknown) => void;
+      const prepare = vi
+        .spyOn(backend, "preparePlaybackRate")
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_resolve, fail) => {
+              reject = fail;
+            }),
+        );
+      await coordinator.setPlaybackRatePercent(85);
+      await coordinator.setPlaybackRatePercent(75);
+      await coordinator.setPlaybackRatePercent(75);
+      expect(prepare).toHaveBeenCalledTimes(1);
+      reject(new Error("synthetic shared future preparation failure"));
+      await Promise.resolve();
+      await Promise.resolve();
+      intervals[0]!();
+      await settleUntil(
+        () => coordinator.observe().playbackRateFallback === true,
+      );
+      expect(backend.active).toBe(active);
+      expect(coordinator.observe()).toMatchObject({
+        playbackRatePercent: 100,
+        failure: undefined,
+        state: { phase: "playing" },
+      });
+      await settleUntil(
+        () =>
+          coordinator.observe().playbackPreferenceStatus ===
+          (saveStatus === "saved" ? "ready" : "unavailable"),
+      );
+      expect(repository.write).toHaveBeenLastCalledWith(100);
+      intervals[0]!();
+      expect(repository.write).toHaveBeenCalledTimes(4);
+    } finally {
+      await coordinator.close();
+    }
+  },
+);
+
 function createHarness(
   options: {
     readonly result?: NarrationPreparationResult;
@@ -1924,6 +2022,7 @@ describe("product narration coordinator", () => {
       backend.finish();
       for (const tick of [...intervals]) tick();
       expect(coordinator.observe().state?.phase).toBe("complete");
+      expect(intervals).toHaveLength(0);
       const target = action === "visible" ? END_LOCATOR : START_LOCATOR;
       coordinator.updateVisibleLocator(target);
       let release = (): void => undefined;
@@ -1954,6 +2053,7 @@ describe("product narration coordinator", () => {
       });
       expect(client.synthesized[1]!.generationId).not.toBe(oldGeneration);
       expect(coordinator.observe().state?.phase).toBe("playing");
+      expect(intervals).toHaveLength(1);
       await coordinator.close();
     },
   );
@@ -3942,6 +4042,38 @@ describe("product narration coordinator", () => {
     }
   });
 
+  it("RCF-06 disables Previous across disjoint prepared windows", async () => {
+    const { coordinator, backend } = createHarness({
+      prepareNarration: async ({ startLocator }) => {
+        const offset =
+          decodeReadingLocatorV1(startLocator).textOffsetCodePoints;
+        return completeSegments([
+          preparedSegment("Synthetic.", sourceRange(offset, offset + 8)),
+        ]);
+      },
+    });
+    const requests = vi.fn();
+    coordinator.subscribeNavigationRequests(requests);
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      await coordinator.beginExternalNavigation("chapter-navigation");
+      coordinator.settleReaderPlacement({
+        status: "settled",
+        locator: sourceRange(100, 108).start,
+      });
+      coordinator.settleExternalNavigation(sourceRange(100, 108).start);
+      await settleUntil(() => backend.active !== undefined);
+      expect(coordinator.observe().navigation.canGoPrevious).toBe(false);
+      coordinator.goToPreviousBoundary();
+      await Promise.resolve();
+      expect(requests).not.toHaveBeenCalled();
+    } finally {
+      await coordinator.close();
+    }
+  });
+
   it("moves by bounded stable prepared-segment boundaries after containment", async () => {
     const ranges = [
       sourceRange(0, 12),
@@ -4270,13 +4402,18 @@ describe("product narration coordinator", () => {
               coordinator.observe().recovery.phase,
             ),
           );
-          const reset = await createNarrationSettingsActions(false).reset({
+          const resetting = createNarrationSettingsActions(false).reset({
             hardware: { resetLanguage: async () => true },
             coordinator,
             startPreference: repository,
             playbackPreference: { reset: async () => ({ status: "saved" }) },
             onStartPreferenceReset: () => undefined,
           });
+          if (scenario === "cleanup-failed")
+            await expect(resetting).rejects.toThrow(
+              "Narration cleanup did not complete.",
+            );
+          const reset = scenario === "cleanup-failed" ? false : await resetting;
           expect(reset).toBe(scenario === "contained");
           expect(repository.reset).toHaveBeenCalledTimes(
             scenario === "contained" ? 1 : 0,

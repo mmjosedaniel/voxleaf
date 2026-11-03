@@ -248,7 +248,8 @@ class ThreadedDualWorkerRuntime:
             else f"batch-{occurrence_id}"
         )
         try:
-            self._candidates[worker_role].cancel(request_id)
+            # This runtime owns a submitted batch even before adapter dispatch.
+            self._candidates[worker_role].cancel(request_id, cancel_idle=work is not None)
         except AdapterOperationError:
             raise DualWorkerBenchmarkError("cleanup-failed") from None
 

@@ -17,6 +17,16 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [revalidated chat corrections](plans/completed/revalidated-chat-findings-minimal-corrections.md)
+resolve all 22 cases and registered variants across EPUB admission/projection,
+reader placement and manual inspection, settings containment, playback-rate
+recovery, package cleanup and benchmark ownership. RCF-R3-20261103 approves the
+implementation after two preparation-ownership findings were corrected. Selected
+static, deterministic, Chromium, current six-rate Piper and exact local optional
+admission checks pass with verified resource restoration. The plan links its
+separate final archival assessment. Frozen model authorities and system topology
+remain unchanged; no broader performance or listening-quality claim is made.
+
 The [residual audit corrections](plans/completed/residual-audit-corrections.md)
 resolve all 18 retained findings across publication lifetime, reader/playback
 state, native operation ownership, bounded EPUB preparation and maintainer package

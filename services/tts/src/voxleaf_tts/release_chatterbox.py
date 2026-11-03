@@ -390,6 +390,27 @@ def _remove_output(path: Path) -> None:
         path.unlink(missing_ok=True)
 
 
+def _coherent_recovery_parts(archive: Path, parts: list[tuple[Path, Path]]) -> bool:
+    if not archive.is_file() or not 1 <= len(parts) <= 4:
+        return False
+    digest = hashlib.sha256()
+    total = 0
+    for index, (logical, actual) in enumerate(sorted(parts), 1):
+        if (
+            logical.name
+            != f"{archive.name.removeprefix('.').removesuffix('.previous')}.part-{index:03d}"
+        ):
+            return False
+        size = actual.stat().st_size
+        if not 0 < size <= MAXIMUM_PART_BYTES:
+            return False
+        with actual.open("rb") as source:
+            for block in iter(lambda: source.read(HASH_BLOCK_BYTES), b""):
+                digest.update(block)
+        total += size
+    return total == archive.stat().st_size and digest.hexdigest() == sha256_file(archive)
+
+
 def _recover_outputs(targets: list[Path]) -> None:
     # A later committed target makes every backup ambiguous, including retired parts.
     # Inspect the closed output set before restoring any member.
@@ -397,10 +418,59 @@ def _recover_outputs(targets: list[Path]) -> None:
         backup = target.with_name(f".{target.name}.previous")
         if backup.exists() and target.exists():
             raise ReleaseChatterboxError("chatterbox-package-recovery-required")
-    for target in targets:
-        backup = target.with_name(f".{target.name}.previous")
-        if backup.exists():
-            backup.replace(target)
+    part_backups = [
+        target
+        for target in targets
+        if ".part-" in target.name and target.with_name(f".{target.name}.previous").exists()
+    ]
+    for archive_name in {target.name.rsplit(".part-", 1)[0] for target in part_backups}:
+        directory = part_backups[0].parent
+        archive = directory / archive_name
+        archive_backup = archive.with_name(f".{archive.name}.previous")
+        virtual_archive = archive if archive.exists() else archive_backup
+        visible = [(part, part) for part in directory.glob(f"{archive_name}.part-*")]
+        if any(
+            part.name not in {f"{archive_name}.part-{index:03d}" for index in range(1, 5)}
+            for part, _ in visible
+        ):
+            raise ReleaseChatterboxError("chatterbox-package-recovery-required")
+        virtual = []
+        for index in range(1, 5):
+            part = directory / f"{archive_name}.part-{index:03d}"
+            backup = part.with_name(f".{part.name}.previous")
+            if part.exists() or backup.exists():
+                virtual.append((part, part if part.exists() else backup))
+        # A coherent visible set is already committed. A missing backup-only
+        # member can be restored only if the entire virtual sequence matches.
+        if _coherent_recovery_parts(archive, visible) or not _coherent_recovery_parts(
+            virtual_archive, virtual
+        ):
+            raise ReleaseChatterboxError("chatterbox-package-recovery-required")
+        for version in ("2", "3", "4", "5", "6", "7"):
+            layout = PackageLayout(version)
+            tree = directory / layout.directory
+            if layout.archive == archive_name and tree in targets:
+                virtual_tree = tree if tree.exists() else tree.with_name(f".{tree.name}.previous")
+                try:
+                    if not virtual_tree.is_dir():
+                        raise ReleaseChatterboxError("chatterbox-package-recovery-required")
+                    _verify_local_archive_members(virtual_tree, virtual_archive, layout)
+                except (OSError, zipfile.BadZipFile, ReleaseChatterboxError):
+                    raise ReleaseChatterboxError("chatterbox-package-recovery-required") from None
+    restored: list[tuple[Path, Path]] = []
+    try:
+        for target in targets:
+            backup = target.with_name(f".{target.name}.previous")
+            if backup.exists():
+                backup.replace(target)
+                restored.append((target, backup))
+    except OSError as error:
+        for target, backup in reversed(restored):
+            try:
+                target.replace(backup)
+            except OSError:
+                error.add_note("Restored output retained at its target; recovery required.")
+        raise
 
 
 def _promote_outputs(outputs: list[tuple[Path | None, Path]]) -> None:

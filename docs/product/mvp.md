@@ -2,6 +2,15 @@
 
 ## Implementation status
 
+[ADR-0070](../architecture/decisions/ADR-0070-explicit-placement-and-recovery-boundaries.md)
+records the approved placement and recovery policies: wait for the reading
+destination before Play, preserve manual inspection through paused typography,
+require containment for settings, and return future speed preparation to 100%
+with an explanation if it fails. Optional package cleanup is retried explicitly;
+periodic checks do not delete files. The
+[RCF ledger](../plans/evidence/revalidated-chat-findings/execution-ledger.md)
+is the implementation and host-acceptance authority for these corrections.
+
 Current mutable narration profiles check lexical adjacency across approved
 removable formatting marks without changing displayed text or source ranges.
 Unsupported signed/compound numbers, repeated nonbreaking suffix spacing and

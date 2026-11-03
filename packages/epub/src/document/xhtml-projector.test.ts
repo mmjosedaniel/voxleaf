@@ -43,6 +43,80 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it.each(["0", "-3", "+7", "000000000005", "invalid", "2147483648", "1.5"])(
+    "RCF-07 bounds explicit start/value %s",
+    async (ordinal) => {
+      await withArchive(
+        xhtml(
+          `<h:ol start="${ordinal}"><h:li value="${ordinal}">One</h:li><h:li value="9">Two</h:li></h:ol>`,
+        ),
+        {},
+        async (archive) => {
+          const document = await projectXhtmlDocument(
+            archive,
+            createPackageDocument(),
+            CHAPTER_PATH,
+          );
+          const list = document.blocks[0];
+          if (list?.kind !== "list") throw new Error("expected list");
+          expect(list.start).toBe(
+            ["0", "-3", "+7", "000000000005"].includes(ordinal)
+              ? Number(ordinal)
+              : undefined,
+          );
+          expect(list.items[1]?.value).toBe(9);
+        },
+      );
+    },
+  );
+  it("RCF-01 coalesces words within a raw leaf without changing source text", async () => {
+    const prose = "word ".repeat(20_000).trimEnd();
+    await withArchive(
+      xhtml(`<h:p id="start"> ${prose} </h:p>`),
+      {},
+      async (archive) => {
+        const projection = await projectXhtmlDocumentProjection(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        const block = projection.document.blocks[0];
+        if (block?.kind !== "paragraph") throw new Error("expected paragraph");
+        expect(block.children.length).toBe(1);
+        expect(block.children[0]).toMatchObject({ kind: "text", text: prose });
+        expect(projection.addressableBlocks[0]?.sourceElementId).toBe("start");
+      },
+    );
+  });
+
+  it("RCF-07 retains signed ordinals and the numbering effect of empty visible items", async () => {
+    await withArchive(
+      xhtml(
+        '<h:ol start="-2"><h:li/><h:li>One</h:li><h:li hidden=""/><h:li value="0">Two<h:ol start="5"><h:li>Nested</h:li></h:ol></h:li><h:li value="invalid">Three</h:li></h:ol>',
+      ),
+      {},
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        expect(document.blocks[0]).toMatchObject({
+          kind: "list",
+          start: -2,
+          items: [
+            { value: -1 },
+            { children: [{ kind: "paragraph" }, { kind: "list", start: 5 }] },
+            { children: [{ kind: "paragraph" }] },
+          ],
+        });
+        const list = document.blocks[0];
+        if (list?.kind !== "list") throw new Error("expected list");
+        expect(list.items).toHaveLength(3);
+      },
+    );
+  });
+
   it("SFA-04 enforces exact and over-limit block budgets without partial projection", async () => {
     const chapter = xhtml(
       "<h:table><h:tr><h:td>10</h:td><h:td>20</h:td></h:tr></h:table><h:dl><h:dt>Term</h:dt><h:dd>Definition</h:dd></h:dl>",

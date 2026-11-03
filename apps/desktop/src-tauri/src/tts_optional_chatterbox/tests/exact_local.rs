@@ -38,8 +38,18 @@ impl Drop for ClearDownloadHook {
 
 #[test]
 #[ignore = "explicit exact local artifacts and models; no HTTP or user installation"]
-#[allow(clippy::assertions_on_constants)] // Reject explicit runs without release admission.
 fn optional_v7_exact_local_acquisition_replay() {
+    exact_local_acquisition_replay(true);
+}
+
+#[test]
+#[ignore = "explicit exact local artifacts and models; admission only, no inference or HTTP"]
+fn optional_v7_exact_local_admission_replay() {
+    exact_local_acquisition_replay(false);
+}
+
+#[allow(clippy::assertions_on_constants)] // Reject explicit runs without release admission.
+fn exact_local_acquisition_replay(inference: bool) {
     assert!(cfg!(feature = "release-locked-runtime"));
     let parts = PathBuf::from(std::env::var_os("VOXLEAF_V7_PARTS").expect("parts directory"));
     let models = PathBuf::from(std::env::var_os("VOXLEAF_V7_MODELS").expect("models directory"));
@@ -106,7 +116,7 @@ fn optional_v7_exact_local_acquisition_replay() {
     // Exercise the interpreter admitted at cb/7, with bounded synthetic audio.
     let script = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../../scripts/test-chatterbox-runtime-smoke.py");
-    for language in ["es", "en"] {
+    for language in ["es", "en"].into_iter().filter(|_| inference) {
         let mut child =
             std::process::Command::new(package_root(&root.0).join("runtime/python.exe"))
                 .args(["-I", "-B"])
@@ -148,5 +158,7 @@ fn optional_v7_exact_local_acquisition_replay() {
         fs::read(unrelated.join("keep.bin")).unwrap(),
         b"synthetic sentinel"
     );
-    eprintln!("exact-local: admission, rediscovery, ES/EN, integrity and owned removal passed");
+    eprintln!(
+        "exact-local: admission, rediscovery, integrity and owned removal passed; inference={inference}"
+    );
 }

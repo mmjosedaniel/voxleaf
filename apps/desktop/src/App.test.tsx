@@ -313,9 +313,10 @@ class ControlledNarrationCoordinator {
     return Promise.resolve();
   }
 
-  public stopForConfigurationChange(): Promise<void> {
+  public async stopForConfigurationChange(): Promise<"contained"> {
     this.configurationEvents.push("stop");
-    return this.stop();
+    await this.stop();
+    return "contained";
   }
 
   public resetStartPreference(): Promise<boolean> {
@@ -1018,7 +1019,7 @@ describe("App preference connection characterization", () => {
   it.each(["replacement", "failed-replacement", "unmount"] as const)(
     "SAF-09 discards A's pending selection after %s",
     async (transition) => {
-      const selection = deferred<void>();
+      const selection = deferred<"contained">();
       const hardware = {
         ensureChecked: vi.fn(async () => undefined),
         check: vi.fn(async () => undefined),
@@ -1070,7 +1071,7 @@ describe("App preference connection characterization", () => {
         } else await waitFor(() => expect(opens).toBe(2));
       }
       await act(async () => {
-        selection.resolve();
+        selection.resolve("contained");
         expect(await pending).toBe(false);
       });
       expect(hardware.selectProfile).not.toHaveBeenCalled();

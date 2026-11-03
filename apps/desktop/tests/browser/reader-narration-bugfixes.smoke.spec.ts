@@ -24,7 +24,7 @@ async function fixtures() {
   }>;
 }
 
-test("RAF-02 Settings remount observes preflight then transfer and cancellation", async ({
+test("RAF-02 RCF-05/18 Settings remount and cancellation survive failed concurrent Reset", async ({
   page,
 }) => {
   await installSyntheticService(page, false, false, false, true, false, true);
@@ -70,6 +70,11 @@ test("RAF-02 Settings remount observes preflight then transfer and cancellation"
       }),
     ),
   });
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
   let settings = await openSettings(page);
   await settings
     .getByRole("button", { name: "Download Chatterbox", exact: true })
@@ -92,12 +97,49 @@ test("RAF-02 Settings remount observes preflight then transfer and cancellation"
   await closeSettings(page, settings);
   settings = await openSettings(page);
   await expect(settings.getByText(/Downloading Chatterbox:/)).toBeVisible();
+  const preferences = await page.evaluate(() =>
+    Object.entries(localStorage).filter(([key]) => key.includes("preference")),
+  );
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = true;
+    state.shutdownFailures = 1;
+  });
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+    )
+    .toBe(true);
+  await expect(
+    settings.getByRole("radio", { name: /Prepared playback/ }),
+  ).toBeDisabled();
+  await expect(
+    settings.getByRole("button", { name: "Cancel download", exact: true }),
+  ).toBeEnabled();
   await settings
     .getByRole("button", { name: "Cancel download", exact: true })
     .click();
   await expect(
     settings.getByRole("button", { name: "Review Chatterbox download" }),
   ).toBeVisible();
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = false;
+    state.releaseShutdown();
+  });
+  await expect(
+    settings.getByRole("button", { name: "Reset narration settings" }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() =>
+      Object.entries(localStorage).filter(([key]) =>
+        key.includes("preference"),
+      ),
+    ),
+  ).toEqual(preferences);
   expect(
     await page.evaluate(() => Reflect.get(globalThis, "__rafDownload").calls),
   ).toBe(1);
@@ -259,6 +301,220 @@ test("MPA-01/03 real worklet slow/direct/slow reuse and paused-navigation labels
     )
     .toBe(0);
   expect(errors).toEqual([]);
+});
+
+test("RCF-02/07/09 inactive incremental list placement gates Play", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  const items = Array.from(
+    { length: 600 },
+    (_, index) =>
+      `<li${index === 450 ? ' id="target" value="900"' : ""}>Synthetic item ${index}.</li>`,
+  ).join("");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "rcf-placement.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>List</title></head><body><ol start="-2">${items}</ol></body></html>`,
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Navigation</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#target">Distant item</a></li></ol></nav></body></html>',
+      }),
+    ),
+  });
+  await page
+    .getByRole("button", { name: "Show table of contents", exact: true })
+    .click();
+  await page.evaluate(() => {
+    const original = HTMLElement.prototype.scrollIntoView;
+    Reflect.set(globalThis, "__rcfPlacementPlayAttempts", 0);
+    HTMLElement.prototype.scrollIntoView = function (...args) {
+      if (this.textContent === "Synthetic item 450.") {
+        Reflect.set(
+          globalThis,
+          "__rcfPlacementPlayAttempts",
+          Reflect.get(globalThis, "__rcfPlacementPlayAttempts") + 1,
+        );
+        document
+          .querySelector<HTMLButtonElement>('[data-narration-action="play"]')!
+          .click();
+      }
+      original.apply(this, args);
+    };
+  });
+  await page.getByRole("button", { name: "Distant item", exact: true }).click();
+  const narration = page.locator(".product-narration");
+  expect(
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rcfPlacementPlayAttempts"),
+    ),
+  ).toBeGreaterThan(0);
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").calls),
+  ).toBe(0);
+  await expect(narration).toHaveAttribute(
+    "data-narration-navigation-settling",
+    "false",
+  );
+  await expect(
+    page.locator('.semantic-document li[value="900"]'),
+  ).toContainText("Synthetic item 450.");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          Reflect.get(globalThis, "__rnb").prepared[0]?.sourceRange.start.anchor
+            .anchorIndex,
+      ),
+    )
+    // The list itself owns anchor 0; its item 450 owns anchor 451.
+    .toBe(451);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+test("RCF-17 paused manual inspection survives typography and Resume follows", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.setViewportSize({ width: 700, height: 500 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "rcf-inspection.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Inspection</title></head><body>${Array.from({ length: 60 }, (_, index) => `<p>Synthetic inspection paragraph ${index}. Ordinary text for stable reading.</p>`).join("")}</body></html>`,
+      }),
+    ),
+  });
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  await page.locator('[data-narration-action="pause"]').click();
+  const viewport = page.locator(".reader-viewport");
+  await viewport.hover();
+  await page.mouse.wheel(0, 900);
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(500);
+  await page.waitForTimeout(150);
+  const visibleParagraph = () =>
+    page.evaluate(() => {
+      const top = document
+        .querySelector(".reader-viewport")!
+        .getBoundingClientRect().top;
+      return [...document.querySelectorAll(".semantic-document p")].find(
+        (element) => element.getBoundingClientRect().bottom > top + 10,
+      )?.textContent;
+    });
+  const inspected = await visibleParagraph();
+  const settings = await openSettings(page);
+  await settings.getByLabel("Text size").selectOption("large");
+  await closeSettings(page, settings);
+  await expect.poll(visibleParagraph).toBe(inspected);
+  await page.locator('[data-narration-action="resume"]').click();
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollTop))
+    .toBeLessThan(100);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+test("RCF-19 future idle worklet failure keeps direct audio and recovers the next rate", async ({
+  page,
+}) => {
+  await installSyntheticService(
+    page,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+  );
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").naturalAudioFrames = 240_000;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "rcf-future-speed.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>First synthetic passage.</p><p>Second synthetic passage.</p></body></html>',
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-active-rate-percent",
+    "100",
+  );
+  await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").workletNodes.length),
+    )
+    .toBe(1);
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").workletNodes[0].dispatchEvent(
+      new ErrorEvent("error"),
+    ),
+  );
+  await expect(
+    narration.getByText(/The next playback speed could not be prepared/),
+  ).toBeVisible();
+  await expect(page.getByLabel("Playback speed", { exact: true })).toHaveValue(
+    "100",
+  );
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  expect(
+    await page.evaluate(() => {
+      const s = Reflect.get(globalThis, "__rnb");
+      return {
+        service: s.service,
+        closed: s.closed,
+        ended: s.deviceEnded,
+        lifecycle: s.workletLifecycle,
+      };
+    }),
+  ).toEqual({
+    service: 1,
+    closed: 0,
+    ended: 0,
+    lifecycle: [["dispose", "close"]],
+  });
+  await expect
+    .poll(
+      () => page.evaluate(() => Reflect.get(globalThis, "__rnb").deviceEnded),
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThanOrEqual(1);
+  await expect(narration).toHaveAttribute(
+    "data-narration-active-rate-percent",
+    "100",
+  );
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").closed))
+    .toBe(1);
 });
 
 test("MPA-02 injected native processorerror reaches explicit product recovery", async ({
@@ -2683,7 +2939,7 @@ test("LCF completed narration restarts from visible passage and paragraph leaf",
   expect(errors).toEqual([]);
 });
 
-test("NCC final device counter precedes completion delivery, then saves exact end and manual reopen at direct and slow rates", async ({
+test("NCC final RCF-16 device completion retains newer inspected viewport and exact heard checkpoint", async ({
   browser,
 }) => {
   test.setTimeout(90_000);
@@ -2740,6 +2996,15 @@ test("NCC final device counter precedes completion delivery, then saves exact en
       expect(
         await page.evaluate(() => Reflect.get(globalThis, "__rnb").deviceEnded),
       ).toBe(24);
+      const inspectedViewport = page.getByRole("region", {
+        name: "Publication reading viewport",
+      });
+      await inspectedViewport.hover();
+      await page.mouse.wheel(0, -20_000);
+      await expect
+        .poll(() => inspectedViewport.evaluate((element) => element.scrollTop))
+        .toBe(0);
+      await page.waitForTimeout(150);
       await page.evaluate(() =>
         Reflect.get(globalThis, "__rnb").releaseCompletion(),
       );
@@ -2751,10 +3016,15 @@ test("NCC final device counter precedes completion delivery, then saves exact en
         anchor: { anchorIndex: 23 },
         textOffsetCodePoints: "Synthetic passage number 23.".length,
       });
+      await expect(page.locator(".semantic-document p").first()).toBeInViewport(
+        { ratio: 0.5 },
+      );
       const viewport = page.getByRole("region", {
         name: "Publication reading viewport",
       });
       await viewport.hover();
+      await page.mouse.wheel(0, 200);
+      await page.waitForTimeout(150);
       await page.mouse.wheel(0, -20_000);
       await expect
         .poll(async () => (await saved())?.anchor.anchorIndex)
@@ -2960,6 +3230,7 @@ async function installSyntheticService(
         releaseRemoval: () => {},
         lastGeneration: "",
         audioFrames: 24_000,
+        naturalAudioFrames: undefined as number | undefined,
         holdAfter: Number.MAX_SAFE_INTEGER,
         calls: 0,
         blocked: false,
@@ -3343,11 +3614,12 @@ async function installSyntheticService(
                   anchor: segment.sourceRange.start.anchor.anchorIndex,
                 });
                 const pcm = new Float32Array(
-                  observations.synthesized++ === 0 ||
+                  observations.naturalAudioFrames ??
+                    (observations.synthesized++ === 0 ||
                     auditWorkletFIFO ||
                     mpaPlayback
-                    ? 48_000
-                    : 1_200,
+                      ? 48_000
+                      : 1_200),
                 );
                 if (pcm.length === 48_000) {
                   pcm.fill(0.25, 12_000, 16_000);

@@ -473,9 +473,12 @@ host test. Set absolute `VOXLEAF_V7_PARTS` and `VOXLEAF_V7_MODELS` directories
 containing the exact three release parts and six models. Its fail-closed local
 download hook verifies every copied artifact; native `download_at` performs real
 reassembly, extraction, integrity and promotion into a fresh synthetic root.
-It checks rediscovery, admitted ES/EN synthesis/cancellation and explicit removal
+It checks rediscovery, integrity after preparation and explicit removal
 while preserving retained V6 until removal and unrelated sentinels throughout.
-It neither accesses the user's installation nor establishes complete HTTP delivery.
+It performs no inference and neither mutates the user's installation nor
+establishes complete HTTP delivery. The separate ignored
+`optional_v7_exact_local_acquisition_replay` test retains the combined admission
+and ES/EN synthesis/cancellation journey when that broader gate is required.
 
 V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,

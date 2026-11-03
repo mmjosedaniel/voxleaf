@@ -53,5 +53,6 @@ export interface PcmPlaybackBackend {
     playbackRatePercent: NarrationPlaybackRatePercentV3,
   ): boolean;
   releasePlaybackRatePreparation?(): void;
+  playbackRatePreparationFailed?(): boolean;
   close(): void | Promise<void>;
 }

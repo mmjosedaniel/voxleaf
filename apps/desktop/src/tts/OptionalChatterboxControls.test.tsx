@@ -58,6 +58,44 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("RCF-18 Cancel remains available during unrelated settings and old download cannot clear pending Cancel", async () => {
+    const transfer = deferred();
+    const cancellation = deferred();
+    const invoke = vi.fn((command: string) =>
+      command === "download_optional_chatterbox"
+        ? transfer.promise
+        : command === "cancel_optional_chatterbox"
+          ? cancellation.promise
+          : Promise.resolve(snapshot("confirming")),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const props = {
+      client,
+      onActivate: async () => true,
+      onRecheck: async () => true,
+      onRemove: async () => undefined,
+    };
+    const view = render(<OptionalChatterboxControls {...props} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    );
+    view.rerender(<OptionalChatterboxControls {...props} disabled />);
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toBeEnabled();
+    fireEvent.click(cancel);
+    expect(cancel).toBeDisabled();
+    await act(async () => {
+      transfer.resolve(snapshot("installed"));
+    });
+    expect(cancel).toBeDisabled();
+    await act(async () => {
+      cancellation.resolve(snapshot("absent"));
+    });
+    expect(
+      screen.getByRole("button", { name: "Review Chatterbox download" }),
+    ).toBeDisabled();
+  });
+
   it("RAF-02 remount during native preflight resumes bounded progress observation", async () => {
     vi.useFakeTimers();
     const pending = deferred();

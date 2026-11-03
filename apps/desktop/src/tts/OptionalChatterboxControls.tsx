@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactElement,
@@ -214,6 +215,7 @@ export function OptionalChatterboxControls({
     () => client.observe(),
   );
   const [pending, setPending] = useState(false);
+  const pendingOwner = useRef<object | undefined>(undefined);
   const [activationFailed, setActivationFailed] = useState(false);
   const downloadRequested = useSyncExternalStore(
     (listener) => client.subscribe(listener),
@@ -247,11 +249,20 @@ export function OptionalChatterboxControls({
   }, [client, downloadRequested, snapshot.state]);
 
   const run = (operation: () => Promise<unknown>): void => {
+    const owner = {};
+    pendingOwner.current = owner;
     setPending(true);
-    void operation().finally(() => setPending(false));
+    void operation().finally(() => {
+      if (pendingOwner.current === owner) {
+        pendingOwner.current = undefined;
+        setPending(false);
+      }
+    });
   };
 
   const activate = async (): Promise<void> => {
+    const owner = {};
+    pendingOwner.current = owner;
     setActivationFailed(false);
     setPending(true);
     try {
@@ -259,15 +270,15 @@ export function OptionalChatterboxControls({
     } catch {
       setActivationFailed(true);
     } finally {
-      setPending(false);
+      if (pendingOwner.current === owner) {
+        pendingOwner.current = undefined;
+        setPending(false);
+      }
     }
   };
 
   const download = (): void => {
-    setPending(true);
-    void client.download().finally(() => {
-      setPending(false);
-    });
+    run(() => client.download());
   };
 
   const exportError = async (): Promise<void> => {
@@ -395,7 +406,7 @@ export function OptionalChatterboxControls({
           </button>
           <button
             type="button"
-            disabled={disabled || (pending && !downloadRequested)}
+            disabled={pending && !downloadRequested}
             onClick={() => run(() => client.cancel())}
           >
             Cancel
@@ -415,7 +426,7 @@ export function OptionalChatterboxControls({
           <p>{CANCELLATION_SCOPE_COPY}</p>
           <button
             type="button"
-            disabled={disabled || (pending && !downloadRequested)}
+            disabled={pending && !downloadRequested}
             onClick={() => run(() => client.cancel())}
           >
             Cancel download
@@ -453,7 +464,7 @@ export function OptionalChatterboxControls({
                   ? () => client.recheckCompatibility(onRecheck)
                   : retryAcquisition
                     ? () => client.select()
-                    : () => client.refresh(),
+                    : () => client.retryCleanup(),
               )
             }
           >

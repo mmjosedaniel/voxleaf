@@ -223,6 +223,56 @@ afterEach(() => {
 });
 
 describe("segment highlight controller", () => {
+  it.each(["complete", "resume"] as const)(
+    "RCF-16/17 manual inspection survives paused reflow until %s",
+    (next) => {
+      const block = paragraph("Lifecycle");
+      const located = locatedBlock(0, block, 9);
+      const mapper = new SemanticDomRangeMapper();
+      const element = document.createElement("p");
+      element.textContent = "Lifecycle";
+      document.body.append(element);
+      const unregister = mapper.registerBlock(element, located);
+      const environment = new ManualHighlightEnvironment();
+      const callbacks = {
+        navigateToLocator: vi.fn(),
+        settleLocator: vi.fn(),
+        suspendVisualSampling: vi.fn(() => vi.fn()),
+      };
+      const controller = new SegmentHighlightController(
+        [located],
+        mapper,
+        callbacks,
+        environment,
+      );
+      controller.setRoot(element);
+      const range = sourceRange(located, 2, 9);
+      controller.accept(observation("segment-started", range));
+      controller.reconcile(narrationSnapshot("paused"));
+      controller.manualInspection();
+      callbacks.settleLocator.mockClear();
+      environment.scrolls.length = 0;
+      environment.range = { top: 140, bottom: 160 };
+      controller.refresh();
+      environment.flush();
+      expect(environment.scrolls).toEqual([]);
+      expect(callbacks.settleLocator).not.toHaveBeenCalled();
+      if (next === "complete") {
+        controller.accept(observation("segment-completed", range));
+        controller.reconcile(narrationSnapshot("complete"));
+        expect(callbacks.settleLocator).not.toHaveBeenCalled();
+      } else {
+        controller.reconcile(narrationSnapshot("playing"));
+        environment.flush();
+        expect(environment.scrolls.length).toBeGreaterThan(0);
+      }
+      controller.close();
+      unregister();
+      mapper.close();
+      element.remove();
+    },
+  );
+
   it("VAF H10 retains completed decoration without follow, navigation or settlement authority", () => {
     const block = paragraph("Lifecycle");
     const located = locatedBlock(0, block, 9);

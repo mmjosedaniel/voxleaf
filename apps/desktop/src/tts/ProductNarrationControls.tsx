@@ -116,8 +116,16 @@ export function ProductNarrationControls({
             </p>
           )}
           <p className="product-narration-policy">{startupPolicy}</p>
+          {snapshot.playbackRateFallback ? (
+            <p role="status">
+              The next playback speed could not be prepared. Playback will
+              continue at 100%.
+            </p>
+          ) : null}
           {snapshot.playbackPreferenceStatus === "unavailable" ||
-          snapshot.playbackPreferenceStatus === "over-limit" ? (
+          snapshot.playbackPreferenceStatus === "over-limit" ||
+          (snapshot.playbackRateFallback &&
+            snapshot.playbackPreferenceStatus === "malformed") ? (
             <p role="status">
               Playback speed could not be saved. The current speed still
               applies; select a speed again to retry.

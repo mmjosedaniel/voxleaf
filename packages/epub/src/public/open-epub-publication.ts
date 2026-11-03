@@ -23,7 +23,7 @@ import type {
   ParsedNavigationDocument,
   ParsedNavigationNode,
 } from "../navigation/navigation-document.js";
-import { parsePackageDocument } from "../package/package-document.js";
+import { parsePackageCandidate } from "../package/package-document.js";
 import type { ParsedPackageDocument } from "../package/package-document.js";
 import { createOpenedPublication } from "../resource/opened-publication.js";
 import {
@@ -127,8 +127,21 @@ export async function openEpubPublication(
     archive = await openEpubArchive(bytes, {
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
-    const resolvedPackage = await resolveContainerPackage(archive);
-    const packageDocument = parsePackageDocument(archive, resolvedPackage);
+    let selectedPackage: ParsedPackageDocument | undefined;
+    const candidateArchive = archive;
+    await resolveContainerPackage(archive, async (resolved) => {
+      const candidate = parsePackageCandidate(candidateArchive, resolved);
+      if (candidate.status === "incompatible-layout") {
+        // Complete the same security/content validation before skipping a rendition.
+        await parseNavigationDocument(
+          candidateArchive,
+          candidate.packageDocument,
+        );
+        await projectDocuments(candidateArchive, candidate.packageDocument);
+      } else selectedPackage = candidate.packageDocument;
+      return candidate.status;
+    });
+    const packageDocument = selectedPackage ?? failInternal();
     const parsedNavigation = await parseNavigationDocument(
       archive,
       packageDocument,

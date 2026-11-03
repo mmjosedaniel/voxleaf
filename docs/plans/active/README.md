@@ -1,12 +1,12 @@
 # Active plans
 
-Store approved implementation ExecPlans here while work or required acceptance
+Store implementation ExecPlans here while planning, work or required acceptance
 is still pending. Follow [the plan format](../../../.agents/PLANS.md) and keep
 each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans in this index.
+No active ExecPlans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

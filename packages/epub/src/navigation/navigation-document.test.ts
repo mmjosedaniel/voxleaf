@@ -38,6 +38,41 @@ afterEach(() => {
 });
 
 describe("EPUB 3 navigation document parsing", () => {
+  it.each([
+    '<h:span hidden="">hidden</h:span>',
+    '<h:span hidden=""><h:script>unsafe</h:script></h:span>Visible',
+  ])(
+    "RCF-15 retains malformed and unsafe hidden-label rejection %s",
+    async (label) => {
+      await withArchive(
+        navigationDocument(
+          `<h:li><h:a href="text/chapter.xhtml">${label}</h:a></h:li>`,
+        ),
+        {},
+        async (archive) => {
+          await expect(
+            parseNavigationDocument(archive, createPackageDocument()),
+          ).rejects.toMatchObject({ code: "malformed-package" });
+        },
+      );
+    },
+  );
+  it("RCF-15 excludes hidden descendants from label text and its length budget", async () => {
+    await withArchive(
+      navigationDocument(
+        `<h:li><h:a href="text/chapter.xhtml"><h:span hidden="">${"x".repeat(1100)}<h:img alt="hidden"/></h:span>Visible<h:img hidden="" alt="hidden"/><h:span aria-hidden="true"> visual</h:span><h:span><h:img alt=" image"/></h:span></h:a></h:li>`,
+      ),
+      {},
+      async (archive) => {
+        const parsed = await parseNavigationDocument(
+          archive,
+          createPackageDocument(),
+        );
+        expect(parsed.roots[0]?.label).toBe("Visible visual image");
+      },
+    );
+  });
+
   it("parses namespace-aware nested labels and fragment targets without network or workers", async () => {
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");

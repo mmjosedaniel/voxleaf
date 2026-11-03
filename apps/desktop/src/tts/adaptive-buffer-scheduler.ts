@@ -13,7 +13,6 @@ import {
 } from "./playback-transition-policy";
 import {
   activateNarrationPlaybackRateAtBoundaryV3,
-  effectiveListeningMillisecondsFromSampleFramesV3,
   initialNarrationPlaybackRateStateV3,
   selectNarrationPlaybackRateV3,
   type NarrationPlaybackRatePercentV3,
@@ -370,6 +369,12 @@ export class AdaptiveBufferScheduler {
       targetBufferMs,
       lowBuffer:
         this.#playbackState === "playing" &&
+        !(
+          this.#rangeComplete &&
+          this.#pendingSegments.length === 0 &&
+          this.#activeSynthesis === undefined &&
+          playableSampleFrames > 0
+        ) &&
         effectiveListeningDurationMs <=
           Math.min(
             ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.lowWaterMarkMs,
@@ -934,18 +939,21 @@ export class AdaptiveBufferScheduler {
   }
 
   #effectiveListeningDurationMs(): number {
-    return this.#audioUnits.reduce((total, retained) => {
-      const remaining = retained.sampleFrames - retained.consumedSampleFrames;
-      const rate =
-        retained.sequence === this.#activePlaybackSequence &&
-        this.#playbackRateState.activeRatePercent !== null
-          ? this.#playbackRateState.activeRatePercent
-          : this.#playbackRateState.selectedRatePercent;
-      return (
-        total +
-        effectiveListeningMillisecondsFromSampleFramesV3(remaining, rate)
-      );
-    }, 0);
+    return Math.floor(
+      this.#audioUnits.reduce((total, retained) => {
+        const remaining = retained.sampleFrames - retained.consumedSampleFrames;
+        const rate =
+          retained.sequence === this.#activePlaybackSequence &&
+          this.#playbackRateState.activeRatePercent !== null
+            ? this.#playbackRateState.activeRatePercent
+            : this.#playbackRateState.selectedRatePercent;
+        return (
+          total +
+          (remaining * 100_000) /
+            (ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz * rate)
+        );
+      }, 0),
+    );
   }
 
   #settleActivePromptResources(

@@ -50,6 +50,7 @@ export interface AdaptivePcmPlayerObservation {
   readonly activePlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
   readonly pendingPlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
   readonly playbackRatePreparationActive: boolean;
+  readonly playbackRateFallback?: number;
   readonly activeSequence: number | undefined;
   readonly rendering: boolean;
   readonly intentionalTransitionPauseActive: boolean;
@@ -170,6 +171,8 @@ export class AdaptivePcmPlayer {
   #completedTransitionPauseMs = 0;
   #playbackRatePreparation: Promise<void> | undefined;
   #playbackRatePreparationToken = 0;
+  #futureRatePreparation = false;
+  #playbackRateFallback = 0;
   #pausedBeforeRateStart = false;
   #completedWhilePaused = false;
 
@@ -197,6 +200,12 @@ export class AdaptivePcmPlayer {
       return this.#observation();
     }
     this.#refreshProgress();
+    if (
+      this.#futureRatePreparation &&
+      this.#backend.playbackRatePreparationFailed?.() === true
+    ) {
+      this.#fallbackFutureRate();
+    }
     this.#settleElapsedTransitionPause();
     const observation = this.#scheduler.observe();
     if (
@@ -764,10 +773,24 @@ export class AdaptivePcmPlayer {
     }
     const prepare = this.#backend.preparePlaybackRate;
     if (prepare === undefined) {
+      if (
+        this.#scheduler.observe().playbackRateState.activeRatePercent === 100
+      ) {
+        this.#fallbackFutureRate();
+        return;
+      }
       throw new PcmPlaybackError("unsupported-rate");
     }
     const token = ++this.#playbackRatePreparationToken;
-    const preparation = prepare.call(this.#backend, playbackRatePercent);
+    const future =
+      this.#scheduler.observe().playbackRateState.activeRatePercent === 100;
+    this.#futureRatePreparation = future;
+    let preparation: Promise<void>;
+    try {
+      preparation = prepare.call(this.#backend, playbackRatePercent);
+    } catch {
+      preparation = Promise.reject(new PcmPlaybackError("playback-failure"));
+    }
     this.#playbackRatePreparation = preparation;
     void preparation
       .then(() => {
@@ -786,21 +809,36 @@ export class AdaptivePcmPlayer {
       .catch(() => {
         if (token === this.#playbackRatePreparationToken) {
           this.#playbackRatePreparation = undefined;
-          this.#fail();
+          // Slower selections share this attempt. Only releasing/replacing
+          // the preparation token supersedes its failure, not a new rate.
+          if (future) {
+            this.#fallbackFutureRate();
+          } else {
+            this.#fail();
+          }
         }
       });
   }
 
   #releasePlaybackRatePreparation(): void {
+    this.#futureRatePreparation = false;
     this.#playbackRatePreparationToken += 1;
     this.#playbackRatePreparation = undefined;
     this.#backend.releasePlaybackRatePreparation?.();
+  }
+
+  #fallbackFutureRate(): void {
+    if (this.#terminalState !== undefined) return;
+    this.#scheduler.selectPlaybackRatePercent(100);
+    this.#playbackRateFallback += 1;
+    this.#releasePlaybackRatePreparation();
   }
 
   #observation(): AdaptivePcmPlayerObservation {
     const scheduler = this.#scheduler.observe();
     return Object.freeze({
       state: this.#terminalState ?? scheduler.playbackState,
+      playbackRateFallback: this.#playbackRateFallback,
       playableSampleFrames: scheduler.playableSampleFrames,
       playableDurationMs: scheduler.effectiveListeningDurationMs,
       lowBuffer: scheduler.lowBuffer,

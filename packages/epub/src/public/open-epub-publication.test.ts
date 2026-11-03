@@ -42,6 +42,111 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("RCF-03 global layout fallback cannot hide unsafe candidate content", async () => {
+    const fixed = minimalPackageDocument()
+      .replace(
+        "</metadata>",
+        '<meta property="rendition:layout">pre-paginated</meta></metadata>',
+      )
+      .replace("text/chapter.xhtml", "text/unsafe.xhtml");
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        containerDocument:
+          '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        additionalEntries: [
+          { name: "EPUB/fixed.opf", content: fixed },
+          {
+            name: "EPUB/text/unsafe.xhtml",
+            content:
+              '<!DOCTYPE html [<!ENTITY external SYSTEM "file:///private">]><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Unsafe</title></head><body><p>&external;</p></body></html>',
+          },
+        ],
+      }),
+    );
+    expect(opened).toMatchObject({ ok: false });
+    if (!opened.ok) expect(opened.detail).not.toBe("unsupported-layout");
+  });
+
+  it.each([
+    "narration-v1",
+    "narration-bilingual-v2",
+    "narration-piper-v2",
+    "narration-chatterbox-v1",
+  ] as const)(
+    "RCF-08 rejects the code-to-prose bypass through public profile %s",
+    async (profile) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Numeric boundary</title></head><body><p><code>+</code>${"1".repeat(129)}</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        expect(
+          await opened.publication.prepareNarration({
+            profile,
+            defaultLanguage: "es",
+            maximumSegments: 1,
+            startLocator: opened.publication.defaultStartLocator!,
+          }),
+        ).toMatchObject({ status: "resource-limit-exceeded" });
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+
+  it.each([false, true])(
+    "RCF-03 examines multiple layout-incompatible candidates (exhausted %s)",
+    async (exhausted) => {
+      const fixed = minimalPackageDocument().replace(
+        '<itemref idref="chapter"',
+        '<itemref properties="rendition:layout-pre-paginated" idref="chapter"',
+      );
+      const bytes = await buildMinimalEpubFixture({
+        packageDocument: exhausted ? fixed : minimalPackageDocument(),
+        containerDocument:
+          '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        additionalEntries: [{ name: "EPUB/fixed.opf", content: fixed }],
+      });
+      const opened = await openEpubPublication(bytes);
+      if (exhausted)
+        expect(opened).toMatchObject({
+          ok: false,
+          detail: "unsupported-layout",
+        });
+      else {
+        expect(opened.ok).toBe(true);
+        if (opened.ok) await opened.publication.close();
+      }
+    },
+  );
+  it.each([false, true])(
+    "RCF-03 validates later spine items before layout-only fallback (malformed %s)",
+    async (malformed) => {
+      const fixed = minimalPackageDocument()
+        .replace(
+          '<itemref idref="chapter"',
+          '<itemref properties="rendition:layout-pre-paginated" idref="chapter"',
+        )
+        .replace(
+          "</spine>",
+          malformed ? '<itemref idref="missing"/></spine>' : "</spine>",
+        );
+      const bytes = await buildMinimalEpubFixture({
+        containerDocument:
+          '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        additionalEntries: [{ name: "EPUB/fixed.opf", content: fixed }],
+      });
+      const opened = await openEpubPublication(bytes);
+      if (malformed)
+        expect(opened).toMatchObject({ ok: false, detail: "broken-reference" });
+      else {
+        expect(opened.ok).toBe(true);
+        if (opened.ok) await opened.publication.close();
+      }
+    },
+  );
+
   it("RAF-10 warm public preparation does not rescan every source-length metadata value", async () => {
     const count = 1_000;
     const bytes = await buildMinimalEpubFixture({

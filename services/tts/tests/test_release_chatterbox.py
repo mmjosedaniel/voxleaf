@@ -1275,22 +1275,79 @@ def test_spm_chatterbox_retains_backup_with_truthful_commit_status(
         assert not target.exists()
 
 
-def test_spm_split_recovers_sole_stale_part_backup_before_retry(tmp_path: Path) -> None:
+def test_spm_split_preserves_ambiguous_sole_stale_part_backup(tmp_path: Path) -> None:
     archive = tmp_path / "runtime.zip"
     archive.write_bytes(b"new")
     backup = tmp_path / ".runtime.zip.part-004.previous"
     backup.write_bytes(b"old fourth")
-    split_archive(archive, maximum_part_bytes=4)
-    assert not backup.exists()
+    with pytest.raises(ReleaseChatterboxError, match="recovery-required"):
+        split_archive(archive, maximum_part_bytes=4)
+    assert backup.read_bytes() == b"old fourth"
     assert not (tmp_path / "runtime.zip.part-004").exists()
-    assert (tmp_path / "runtime.zip.part-001").read_bytes() == b"new"
+    assert not (tmp_path / "runtime.zip.part-001").exists()
+
+
+def test_rcf_04_receiptless_retired_part_cannot_rejoin_committed_archive(tmp_path: Path) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"new committed bytes")
+    parts = split_archive(archive, maximum_part_bytes=7)
+    backup = tmp_path / ".runtime.zip.part-004.previous"
+    backup.write_bytes(b"old fourth")
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    with pytest.raises(ReleaseChatterboxError, match="recovery-required"):
+        split_archive(archive, maximum_part_bytes=7)
+    assert before == {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    assert (
+        b"".join((tmp_path / part.filename).read_bytes() for part in parts) == archive.read_bytes()
+    )
+
+
+def test_rcf_04_restoration_failure_preserves_preflight_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"synthetic complete archive")
+    parts = split_archive(archive, maximum_part_bytes=8)
+    targets = [tmp_path / part.filename for part in parts]
+    for target in targets[:2]:
+        target.replace(target.with_name(f".{target.name}.previous"))
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir()}
+    replace = Path.replace
+
+    def fail_second(path: Path, destination: Path) -> Path:
+        if path.name.endswith("part-002.previous"):
+            raise OSError("injected second restoration failure")
+        return replace(path, destination)
+
+    monkeypatch.setattr(Path, "replace", fail_second)
+    with pytest.raises(OSError, match="second restoration"):
+        release_chatterbox._recover_outputs(targets)
+    assert before == {path.name: path.read_bytes() for path in tmp_path.iterdir()}
+
+
+def test_rcf_04_recovers_only_coherent_missing_archive_parts(tmp_path: Path) -> None:
+    archive = tmp_path / "runtime.zip"
+    archive.write_bytes(b"synthetic complete archive")
+    parts = split_archive(archive, maximum_part_bytes=8)
+    missing = tmp_path / parts[1].filename
+    backup = missing.with_name(f".{missing.name}.previous")
+    missing.replace(backup)
+    split_archive(archive, maximum_part_bytes=8)
+    assert not backup.exists()
+    assert (
+        b"".join((tmp_path / part.filename).read_bytes() for part in parts) == archive.read_bytes()
+    )
 
 
 @pytest.mark.parametrize("retired_index", [2, 3, 4])
+@pytest.mark.parametrize("version", ["2", "3", "6"])
 def test_raf_11_late_retired_backup_cleanup_retry_preserves_committed_set(
-    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch, retired_index: int
+    ncc_package_builder: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    retired_index: int,
+    version: PackageVersion,
 ) -> None:
-    layout = PackageLayout("6")
+    layout = PackageLayout(version)
     dist = layout.dist(repository_root(), ncc_package_builder)
     _write_tree(dist / layout.directory, {"old.txt": b"old"})
     _write_tree(dist, {layout.archive: b"old zip", "local-build-evidence-v6.json": b"old receipt"})
@@ -1308,15 +1365,23 @@ def test_raf_11_late_retired_backup_cleanup_retry_preserves_committed_set(
     with monkeypatch.context() as patch:
         patch.setattr(release_chatterbox, "_remove_output", fail_late_cleanup)
         with pytest.raises(ReleaseChatterboxError, match="cleanup-failed-after-commit"):
-            release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
-    release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)
+            release_chatterbox.build_package(
+                package_version=version, output_root=ncc_package_builder
+            )
+    if version == "6":
+        release_chatterbox.check_local_package(
+            package_version=version, output_root=ncc_package_builder
+        )
     before = {
         path.relative_to(dist): path.read_bytes() for path in dist.rglob("*") if path.is_file()
     }
     with pytest.raises(ReleaseChatterboxError, match="recovery-required"):
-        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+        release_chatterbox.build_package(package_version=version, output_root=ncc_package_builder)
     assert not retired.exists()
     assert before == {
         path.relative_to(dist): path.read_bytes() for path in dist.rglob("*") if path.is_file()
     }
-    release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)
+    if version == "6":
+        release_chatterbox.check_local_package(
+            package_version=version, output_root=ncc_package_builder
+        )

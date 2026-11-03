@@ -91,7 +91,12 @@ fn verify_package(
     profile_id: &str,
 ) -> Result<PackagedPiperRuntime, PackagedCoreError> {
     let manifest_path = package_root.join(RUNTIME_MANIFEST_NAME);
-    let installed_manifest = fs::read(&manifest_path).map_err(|_| PackagedCoreError::Invalid)?;
+    let mut installed_manifest = Vec::new();
+    File::open(&manifest_path)
+        .map_err(|_| PackagedCoreError::Invalid)?
+        .take(trusted_manifest.len() as u64 + 1)
+        .read_to_end(&mut installed_manifest)
+        .map_err(|_| PackagedCoreError::Invalid)?;
     if installed_manifest != trusted_manifest {
         return Err(PackagedCoreError::Invalid);
     }

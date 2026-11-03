@@ -24,7 +24,7 @@ const LABELS: Readonly<Record<ReaderExperienceLeafState, string>> =
     preview: "Start narration at this paragraph",
     preparing: "Preparing narration at this paragraph",
     audible: "Narrating this paragraph",
-    checkpoint: "Resume narration at saved checkpoint",
+    checkpoint: "Start narration at the beginning of the saved paragraph",
   });
 
 function positionFor(

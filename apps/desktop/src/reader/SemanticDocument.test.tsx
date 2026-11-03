@@ -25,6 +25,31 @@ import {
 
 afterEach(cleanup);
 
+it("RCF-07 renders signed list starts and ordinal overrides", () => {
+  const document = documentWith([
+    {
+      kind: "list",
+      ordered: true,
+      start: -2,
+      items: [
+        {
+          value: -1,
+          children: [{ kind: "paragraph", children: [text("One")] }],
+        },
+        {
+          value: 9,
+          children: [{ kind: "paragraph", children: [text("Two")] }],
+        },
+      ],
+    },
+  ]);
+  const { container } = render(<SemanticDocumentContent document={document} />);
+  expect(container.querySelector("ol")).toHaveAttribute("start", "-2");
+  expect(
+    Array.from(container.querySelectorAll("li"), (item) => item.value),
+  ).toEqual([-1, 9]);
+});
+
 it("SAF-15 passes decorative empty alt through the semantic renderer", () => {
   const document = documentWith([
     Object.freeze({

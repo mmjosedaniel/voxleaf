@@ -259,6 +259,10 @@ export class OptionalChatterboxClient {
     });
   }
 
+  public async retryCleanup(): Promise<OptionalChatterboxSnapshot> {
+    return this.#call("optional_chatterbox_snapshot", { retryCleanup: true });
+  }
+
   public async recheckCompatibility(
     check: () => Promise<boolean>,
   ): Promise<OptionalChatterboxSnapshot> {
@@ -304,7 +308,8 @@ export class OptionalChatterboxClient {
     command: string,
     args?: Record<string, unknown>,
   ): Promise<OptionalChatterboxSnapshot> {
-    const isRefresh = command === "optional_chatterbox_snapshot";
+    const isRefresh =
+      command === "optional_chatterbox_snapshot" && args?.retryCleanup !== true;
     if (!isRefresh && command !== "download_optional_chatterbox") {
       this.#downloadAttempt = undefined;
       this.#publish();

@@ -352,7 +352,7 @@ function SemanticListItemGroupElement({
   return group.items
     .filter((item) => item.startIndex < renderedBlockCount)
     .map((item, index) => (
-      <li key={index}>
+      <li key={index} value={item.value}>
         {renderBlockSequence(
           item.children,
           renderedBlockCount,
@@ -534,7 +534,7 @@ function SemanticBlockElement({
         destination,
       );
       return block.ordered ? (
-        <ol ref={elementRef} {...attributes}>
+        <ol ref={elementRef} start={block.start} {...attributes}>
           {items}
         </ol>
       ) : (
