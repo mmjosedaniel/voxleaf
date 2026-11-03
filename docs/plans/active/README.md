@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Residual audit corrections](residual-audit-corrections.md): planning only for
+  the 18 findings retained by the ten-pass audit; minimal owner changes and
+  conditional historical-evidence reuse. Implementation is not yet authorized
+  or started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
