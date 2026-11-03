@@ -135,6 +135,184 @@ pub(super) fn receive_hook(timeout: Duration) -> Option<Result<Frame, TtsNativeF
 
 struct CommandFixture;
 
+#[cfg(windows)]
+#[test]
+fn raf_r1_prepublication_rejection_has_owned_cleanup_without_stopping_replacement() {
+    fn missing_command() -> Command {
+        // A file cannot be a parent directory: this real OS spawn must fail.
+        Command::new(std::env::current_exe().unwrap().join("raf-missing.exe"))
+    }
+    for configuration_failure in [false, true] {
+        let supervisor =
+            TtsServiceSupervisor::with_child(ServiceChild::TestCommand(missing_command));
+        let result = if configuration_failure {
+            supervisor.start_selected(
+                Some("raf-missing-profile"),
+                Some("en"),
+                Some("start:never-spawned".into()),
+            )
+        } else {
+            supervisor.start_owned(Some("start:never-spawned".into()))
+        };
+        assert!(result.is_err());
+        assert!(supervisor.session.lock().unwrap().is_none());
+        assert!(
+            supervisor
+                .shutdown_owned(None, Some("start:foreign"))
+                .is_err()
+        );
+        let receipt = supervisor
+            .shutdown_owned(None, Some("start:never-spawned"))
+            .expect("a proven no-child attempt must be releasable");
+        assert_eq!(receipt[0]["state"], "stopping");
+        assert_eq!(receipt[1]["state"], "stopped");
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        *supervisor.child_configuration.lock().unwrap() = ServiceChild::Fake(NORMAL_SCENARIO);
+        supervisor
+            .start_owned(Some("start:replacement".into()))
+            .unwrap();
+        let replacement = supervisor.active_session().unwrap();
+        let phase = supervisor.lifecycle.lock().unwrap().state.clone();
+        assert!(
+            supervisor
+                .shutdown_owned(None, Some("start:never-spawned"))
+                .is_ok()
+        );
+        assert_eq!(
+            supervisor.active_session().unwrap().service_instance_id,
+            replacement.service_instance_id
+        );
+        assert_eq!(supervisor.lifecycle.lock().unwrap().state, phase);
+        // A rejected competing start also has no child and must not own replacement.
+        assert!(
+            supervisor
+                .start_owned(Some("start:rejected-competitor".into()))
+                .is_err()
+        );
+        assert!(
+            supervisor
+                .shutdown_owned(None, Some("start:rejected-competitor"))
+                .is_ok()
+        );
+        assert_eq!(
+            supervisor.active_session().unwrap().service_instance_id,
+            replacement.service_instance_id
+        );
+        supervisor.force_stop().unwrap();
+    }
+}
+
+#[test]
+fn raf_15_contained_failed_handshake_acknowledges_only_its_start_identity() {
+    let _fixture = CommandFixture::new(Duration::from_secs(1), "handshake");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    assert_eq!(
+        supervisor.start_owned(Some("start:raf-failed".into())),
+        Err(TtsNativeFailure::TimedOut)
+    );
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert_eq!(
+        supervisor.shutdown_owned(None, Some("start:foreign")),
+        Err(TtsNativeFailure::Cancelled)
+    );
+    let controls = supervisor
+        .shutdown_owned(None, Some("start:raf-failed"))
+        .expect("matching verified failed start must acknowledge containment");
+    assert_eq!(controls[0]["state"], "stopping");
+    assert_eq!(controls[1]["state"], "stopped");
+    supervisor.force_stop().unwrap();
+    assert_eq!(
+        supervisor.shutdown_owned(None, Some("start:raf-failed")),
+        Err(TtsNativeFailure::InvalidState)
+    );
+}
+
+#[test]
+fn raf_15_unverified_termination_retains_start_ownership_without_receipt() {
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let (mut session, _sender) = channel_session();
+    session.start_request_id = Some("start:unverified".into());
+    let session = Arc::new(session);
+    *supervisor.session.lock().unwrap() = Some(session.clone());
+    let _ = std::panic::catch_unwind(|| {
+        let _process = session.process.lock().unwrap();
+        panic!("synthetic termination failure");
+    });
+    assert_eq!(
+        supervisor.fail_session(&session, TtsNativeFailure::TimedOut),
+        TtsNativeFailure::InternalFailure
+    );
+    assert_eq!(
+        supervisor.shutdown_owned(None, Some("start:unverified")),
+        Err(TtsNativeFailure::InternalFailure)
+    );
+    assert!(supervisor.session.lock().unwrap().is_some());
+    assert!(
+        supervisor
+            .lifecycle
+            .lock()
+            .unwrap()
+            .contained_start_request_id
+            .is_none()
+    );
+    // Restore only the synthetic poisoned mutex so the test can verify explicit retry.
+    session.process.clear_poison();
+    assert!(
+        supervisor
+            .shutdown_owned(None, Some("start:unverified"))
+            .is_err()
+    );
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert!(
+        supervisor
+            .shutdown_owned(None, Some("start:unverified"))
+            .is_ok()
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn raf_15_real_silent_child_failed_handshake_is_joined_before_receipt() {
+    fn silent_child() -> Command {
+        let mut command = Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Start-Sleep -Seconds 60",
+        ]);
+        command
+    }
+    let supervisor = Arc::new(TtsServiceSupervisor::with_child(ServiceChild::TestCommand(
+        silent_child,
+    )));
+    let observed = Arc::new(Mutex::new(None));
+    let capture = Arc::clone(&observed);
+    let owner = Arc::clone(&supervisor);
+    START_PUBLISHED_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            let session = owner.active_session().unwrap();
+            eprintln!(
+                "RAF15 owned silent child pid={}, ownership=Child-handle-and-Job",
+                session.process.lock().unwrap().as_ref().unwrap().child.id()
+            );
+            *capture.lock().unwrap() = Some(session);
+        }))
+    });
+    COMMAND_BUDGET.set(Some(Duration::from_millis(100)));
+    let result = supervisor.start_owned(Some("start:real-silent".into()));
+    COMMAND_BUDGET.set(None);
+    START_PUBLISHED_HOOK.with(|slot| slot.borrow_mut().take());
+    let captured = observed.lock().unwrap().take().unwrap();
+    let process_joined = captured.process.lock().unwrap().is_none();
+    let writer_joined = captured.input.worker.lock().unwrap().is_none();
+    let receipt = supervisor.shutdown_owned(None, Some("start:real-silent"));
+    supervisor.force_stop().unwrap();
+    assert_eq!(result, Err(TtsNativeFailure::TimedOut));
+    assert!(process_joined && writer_joined);
+    assert!(receipt.is_ok());
+}
+
 pub(super) fn before_synthesis_result() {
     SYNTHESIS_RESULT_HOOK.with(|slot| {
         if let Some(hook) = slot.borrow_mut().take() {
@@ -494,6 +672,7 @@ fn backpressure_session() -> (Arc<ServiceSession>, usize) {
         &ServiceChild::TestCommand(backpressure_child_command),
         "service:backpressure".to_owned(),
         None,
+        &mut false,
     )
     .unwrap();
     BACKPRESSURE_CAPACITY_PATH.with(|path| path.borrow_mut().take());
@@ -1764,6 +1943,7 @@ fn failed_job_assignment_kills_and_reaps_the_spawned_child() {
     let result = ChildProcess::spawn_with_job_assigner(
         &ServiceChild::TestCommand(assignment_failure_child_command),
         fail_job_assignment,
+        &mut false,
     );
     // A spawn error bypasses the assigner, so release any unused readiness event here.
     let _unused_ready_event = ASSIGNMENT_FAILURE_READY_EVENT

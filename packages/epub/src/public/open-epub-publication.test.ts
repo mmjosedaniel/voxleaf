@@ -18,6 +18,7 @@ import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import { mapEpubFailure } from "./epub-result.js";
 import { openEpubPublication } from "./open-epub-publication.js";
+import * as locatorIndex from "../locator/locator-index.js";
 
 const EXPECTED_OPERATIONAL_CODE = Object.freeze({
   "broken-reference": "invalid-input",
@@ -41,6 +42,157 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("RAF-10 warm public preparation does not rescan every source-length metadata value", async () => {
+    const count = 1_000;
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Preparation</title></head><body>' +
+        "<p>A bounded synthetic sentence for narration.</p>".repeat(count) +
+        "</body></html>",
+    });
+    let visits = 0;
+    const original = locatorIndex.createPublicationLocatorIndex;
+    vi.spyOn(locatorIndex, "createPublicationLocatorIndex").mockImplementation(
+      (...args) => {
+        const index = original(...args);
+        const blocks = new Proxy(index.blocks, {
+          get(target, key, receiver) {
+            if (key === Symbol.iterator)
+              return function* () {
+                for (const block of target) {
+                  visits++;
+                  yield block;
+                }
+              };
+            return Reflect.get(target, key, receiver);
+          },
+        });
+        return Object.freeze({ ...index, blocks });
+      },
+    );
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error(opened.detail);
+    const publication = opened.publication;
+    try {
+      const first = await publication.prepareNarration({
+        maximumSegments: 16,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+        startLocator: publication.defaultStartLocator!,
+      });
+      expect(first.status).toBe("batch");
+      if (first.status !== "batch") throw new Error("expected-batch");
+      visits = 0;
+      const warm = await publication.prepareNarration({
+        maximumSegments: 16,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+        startLocator: first.continuation,
+      });
+      expect(warm.status).toBe("batch");
+      expect(visits).toBeLessThan(64);
+      if (warm.status !== "batch") throw new Error("expected-warm-batch");
+      expect(warm.segments[0]!.sourceRange.start).toEqual(
+        publication.locators[16]!.startLocator,
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+  it("RAF-01 opens an admitted chapter beyond the host argument expansion capacity", async () => {
+    const count = 140_000;
+    const chapter =
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Scale</title></head><body>' +
+      Array.from(
+        { length: count / 2 },
+        (_, index) => `<blockquote><p>${index}</p></blockquote>`,
+      ).join("") +
+      "</body></html>";
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument: null,
+      additionalEntries: [
+        {
+          name: "EPUB/text/chapter.xhtml",
+          content: chapter,
+          compression: "stored",
+        },
+      ],
+    });
+    const original = locatorIndex.createPublicationLocatorIndex;
+    let failureName: string | undefined;
+    const observeIndex = vi
+      .spyOn(locatorIndex, "createPublicationLocatorIndex")
+      .mockImplementation((...args) => {
+        try {
+          return original(...args);
+        } catch (error) {
+          failureName = error instanceof Error ? error.name : "unknown";
+          throw error;
+        }
+      });
+    const result = await openEpubPublication(bytes);
+    expect(observeIndex).toHaveBeenCalledOnce();
+    expect(failureName).toBeUndefined();
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) {
+      try {
+        expect(result.publication.locators).toHaveLength(count);
+      } finally {
+        await result.publication.close();
+      }
+    }
+  });
+
+  it.each([16, 64])(
+    "RAF-18 bounds repeated package index construction for %i admitted documents",
+    async (count) => {
+      const indices = Array.from({ length: count }, (_, index) => index);
+      const bytes = await buildMinimalEpubFixture({
+        packageDocument: minimalPackageDocument()
+          .replace(
+            "</manifest>",
+            indices
+              .map(
+                (index) =>
+                  `<item id="raf-${index}" href="text/raf-${index}.xhtml" media-type="application/xhtml+xml"/>`,
+              )
+              .join("") + "</manifest>",
+          )
+          .replace(
+            "</spine>",
+            indices.map((index) => `<itemref idref="raf-${index}"/>`).join("") +
+              "</spine>",
+          ),
+        additionalEntries: indices.map((index) => ({
+          name: `EPUB/text/raf-${index}.xhtml`,
+          content:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Scale</title></head><body><p>Bounded synthetic passage.</p></body></html>',
+        })),
+      });
+      let visits = 0;
+      const original = Map.prototype.set;
+      const observer = vi
+        .spyOn(Map.prototype, "set")
+        .mockImplementation(function (
+          this: Map<unknown, unknown>,
+          key: unknown,
+          value: unknown,
+        ) {
+          if (typeof key === "string" && /^raf-\d+$/.test(key)) visits++;
+          return original.call(this, key, value);
+        });
+      const result = await openEpubPublication(bytes);
+      observer.mockRestore();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        try {
+          expect(visits).toBeLessThanOrEqual(count * 12);
+        } finally {
+          await result.publication.close();
+        }
+      }
+    },
+  );
   it("SAC-13 resolves equivalent opaque fragments to the exact public target", async () => {
     const opened = await openEpubPublication(
       await buildMinimalEpubFixture({

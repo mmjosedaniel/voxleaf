@@ -391,11 +391,15 @@ def _remove_output(path: Path) -> None:
 
 
 def _recover_outputs(targets: list[Path]) -> None:
+    # A later committed target makes every backup ambiguous, including retired parts.
+    # Inspect the closed output set before restoring any member.
+    for target in targets:
+        backup = target.with_name(f".{target.name}.previous")
+        if backup.exists() and target.exists():
+            raise ReleaseChatterboxError("chatterbox-package-recovery-required")
     for target in targets:
         backup = target.with_name(f".{target.name}.previous")
         if backup.exists():
-            if target.exists():
-                raise ReleaseChatterboxError("chatterbox-package-recovery-required")
             backup.replace(target)
 
 

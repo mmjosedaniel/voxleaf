@@ -14,7 +14,10 @@ export interface ReaderPublicationSummary {
 }
 
 export type ReaderFailureReason =
-  LocalPublicationOpenFailureReason | "close-failed" | "rendering-failed";
+  | LocalPublicationOpenFailureReason
+  | "close-failed"
+  | "rendering-failed"
+  | "open-interrupted";
 
 export interface IdleReaderState {
   readonly status: "idle";
@@ -99,7 +102,7 @@ function stateForOpenResult(
 ): ReaderLifecycleState {
   switch (result.status) {
     case "cancelled":
-      return IDLE_STATE;
+      return failed("open-interrupted");
     case "rejected":
       return failed(result.reason);
     case "ready":
@@ -167,6 +170,17 @@ class DesktopReaderLifecycle implements ReaderLifecycle {
     }
 
     if (result.status === "ready") {
+      if (result.publication.defaultStartLocator === undefined) {
+        // This attempt still owns the flow. Detach its rejected handle before
+        // awaiting cleanup; a later open must keep its own state and ownership.
+        const closed = await closeSafely(this.#openFlow);
+        if (intentVersion === this.#intentVersion) {
+          this.setState(
+            closed.status === "closed" ? EMPTY_STATE : failed("close-failed"),
+          );
+        }
+        return;
+      }
       this.#publicationSequence += 1;
     }
     this.setState(stateForOpenResult(result, this.#publicationSequence));

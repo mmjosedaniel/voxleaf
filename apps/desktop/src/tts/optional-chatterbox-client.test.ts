@@ -39,6 +39,39 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it("RAF-02 stale download settlement cannot clear a replacement attempt", async () => {
+    const first = deferred();
+    const second = deferred();
+    let attempts = 0;
+    const client = new OptionalChatterboxClient((command) =>
+      command === "download_optional_chatterbox"
+        ? ++attempts === 1
+          ? first.promise
+          : second.promise
+        : Promise.resolve(
+            snapshot(
+              command === "cancel_optional_chatterbox"
+                ? "absent"
+                : "confirming",
+            ),
+          ),
+    );
+    await client.select();
+    const old = client.download();
+    expect(client.downloadPending).toBe(true);
+    await client.cancel();
+    expect(client.downloadPending).toBe(false);
+    await client.select();
+    const current = client.download();
+    first.resolve(snapshot("installed"));
+    await old;
+    expect(client.downloadPending).toBe(true);
+    expect(client.observe().state).toBe("confirming");
+    second.reject("tts-optional-profile-download-failed");
+    await current;
+    expect(client.downloadPending).toBe(false);
+    expect(client.observe().state).toBe("failed");
+  });
   it.each([false, true])(
     "EFC-07 recheck preserves superseding actions (allowed=%s)",
     async (allowed) => {

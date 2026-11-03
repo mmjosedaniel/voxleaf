@@ -116,6 +116,18 @@ export function ProductNarrationControls({
             </p>
           )}
           <p className="product-narration-policy">{startupPolicy}</p>
+          {snapshot.playbackPreferenceStatus === "unavailable" ||
+          snapshot.playbackPreferenceStatus === "over-limit" ? (
+            <p role="status">
+              Playback speed could not be saved. The current speed still
+              applies; select a speed again to retry.
+            </p>
+          ) : snapshot.playbackPreferenceStatus === "unsupported-version" ? (
+            <p role="status">
+              Playback speed preferences use a newer version. Use a compatible
+              VoxLeaf version to change them.
+            </p>
+          ) : null}
           {snapshot.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID &&
           snapshot.metrics.commandToAudibleMs === undefined ? (
             <p className="product-narration-policy">

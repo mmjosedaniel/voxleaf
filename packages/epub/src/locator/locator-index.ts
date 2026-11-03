@@ -352,7 +352,10 @@ export function createPublicationLocatorIndex(
         blocks,
       }),
     );
-    located.push(...blocks);
+    for (const block of blocks) {
+      budget.checkpoint();
+      located.push(block);
+    }
   }
 
   return Object.freeze({

@@ -1,5 +1,34 @@
 # Architecture overview
 
+Residual audit corrections retain these component and process boundaries. EPUB
+opening builds package lookup context once, keeps occurrence-specific self-links,
+and appends admitted locator blocks without an argument-list expansion. Each
+opened publication owns one checked source-position aggregate; preparing a
+continuation reuses that immutable count while retaining the existing work debit,
+limits, cancellation and source mappings. Reader navigation similarly indexes
+documents and first locators within its own lifetime. None is a global cache.
+
+Mutable bilingual normalization conservatively preserves unsupported numeric
+compounds, including leading-dot and space-grouped forms. Bounded decimal
+protection prevents internal sentence splits without expanding the grammar or
+changing hard ceilings. Legacy v1 and the completed M005 authority remain frozen.
+
+The existing typed start request remains owned after a failed handshake until
+shutdown is verified. The native supervisor can acknowledge an already contained
+failed start only from its bounded matching private receipt. Unverified termination
+retains ownership; foreign identities and replacement owners remain protected.
+An attempt rejected before acquiring a child (or after verified pre-publication
+cleanup) has a separate bounded private receipt. Acknowledging it does not change
+the state or process of a later owner; generic InvalidState remains insufficient.
+Operational recovery joins a completion/cancellation race before accepting cleanup.
+Optional acquisition binds the original confirmation token before host preflight
+and atomically checks it before transfer. No serialized contract changes.
+
+Maintainer Chatterbox output recovery preflights the entire closed output set
+before restoring any backup. A late committed-output conflict leaves both the new
+set and remaining backups unchanged, including retired split parts. This is bounded
+fail-closed retry behavior, not concurrent-builder or power-loss atomicity.
+
 The [R8 corrections](../plans/completed/eight-revalidated-findings-minimal-corrections.md)
 keep existing owners and public contracts. Local navigation and inline links
 resolve accepted fallback chains through the package's bounded resolver, retaining

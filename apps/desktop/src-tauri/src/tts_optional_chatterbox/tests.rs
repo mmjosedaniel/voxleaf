@@ -12,6 +12,53 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+#[test]
+fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    let transfers = Arc::new(AtomicU64::new(0));
+    let observed = Arc::clone(&transfers);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move |_, _| {
+            observed.fetch_add(1, Ordering::SeqCst);
+            Err(OptionalProfileError::DownloadFailed)
+        }));
+    });
+    manager.select_at(&root.0).unwrap();
+    // The real command uses this same probe/claim boundary, without holding
+    // the operation lock during host admission.
+    let result = download_at_if_host_admitted(&manager, &root.0, || {
+        manager.cancel_at(&root.0).unwrap();
+        manager.select_at(&root.0).unwrap();
+        true
+    });
+    assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    assert_eq!(result, Err(OptionalProfileError::Cancelled));
+    assert_eq!(
+        manager
+            .operation_snapshot(&exact_manifest().unwrap())
+            .unwrap()
+            .state,
+        OptionalProfileState::Confirming
+    );
+    let replacement = download_at_if_host_admitted(&manager, &root.0, || true);
+    #[cfg(windows)]
+    {
+        assert_eq!(replacement, Err(OptionalProfileError::DownloadFailed));
+        assert_eq!(transfers.load(Ordering::SeqCst), 1);
+    }
+    #[cfg(not(windows))]
+    {
+        // The replacement is current, but the Windows-only disk-space probe
+        // fails closed before transfer on unsupported platforms.
+        assert_eq!(replacement, Err(OptionalProfileError::Unavailable));
+        assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    }
+    DOWNLOAD_HOOK.with(|slot| {
+        slot.borrow_mut().take();
+    });
+}
+
 thread_local! {
     static R7_TRANSFER_PUBLICATION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
 }
@@ -2395,7 +2442,7 @@ fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
         Err(OptionalProfileError::IncompatibleHost)
     );
     assert_eq!(
-        download_at_if_host_admitted(&manager, &root.0, false),
+        download_at_if_host_admitted(&manager, &root.0, || false),
         Err(OptionalProfileError::IncompatibleHost)
     );
 

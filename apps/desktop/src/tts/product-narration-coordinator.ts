@@ -924,7 +924,9 @@ export class ProductNarrationCoordinator {
     if (this.#closed || this.#pendingNavigation !== undefined) {
       return;
     }
-    this.#activeLocator = locator;
+    if (this.#playIntent === "inactive" && this.#scheduler === undefined) {
+      this.#activeLocator = locator;
+    }
     this.#visibleLocator = locator;
   }
 
@@ -2138,12 +2140,18 @@ export class ProductNarrationCoordinator {
         );
       }
     } catch (error) {
-      cleanupFailure =
-        (error instanceof ProductNarrationRecoveryError &&
-          error.recoveryCode === "cancellation-timeout") ||
-        (transition === "cancel" &&
-          error instanceof TtsProcessClientError &&
-          error.code === "tts-service-timeout")
+      const completionRace =
+        transition === "cancel" &&
+        scope !== undefined &&
+        error instanceof TtsProcessClientError &&
+        error.code === "tts-service-invalid-state";
+      cleanupFailure = completionRace
+        ? undefined
+        : (error instanceof ProductNarrationRecoveryError &&
+              error.recoveryCode === "cancellation-timeout") ||
+            (transition === "cancel" &&
+              error instanceof TtsProcessClientError &&
+              error.code === "tts-service-timeout")
           ? "cancellation-timeout"
           : "cleanup-failed";
       try {
@@ -2153,6 +2161,16 @@ export class ProductNarrationCoordinator {
         );
       } catch {
         cleanupFailure ??= "cleanup-failed";
+      }
+      if (operation !== undefined) {
+        try {
+          await this.#withinCleanupDeadline(
+            operation.catch(() => undefined),
+            cleanupDeadline,
+          );
+        } catch {
+          cleanupFailure ??= "cleanup-failed";
+        }
       }
     }
     if (containmentToken !== this.#runToken) {
@@ -2319,16 +2337,19 @@ export class ProductNarrationCoordinator {
     ) {
       let estimatedWaitMs: number | undefined;
       try {
+        const readinessTargetMs =
+          scheduler.playbackState === "buffering"
+            ? ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs
+            : scheduler.targetBufferMs;
         estimatedWaitMs = this.#estimator.estimate({
           playableSampleFrames: scheduler.playableSampleFrames,
-          targetMs: scheduler.targetBufferMs,
+          targetMs: readinessTargetMs,
           targetSampleFrames:
-            scheduler.effectiveListeningDurationMs >= scheduler.targetBufferMs
+            scheduler.effectiveListeningDurationMs >= readinessTargetMs
               ? scheduler.playableSampleFrames
               : scheduler.playableSampleFrames +
                 minimumSourceSampleFramesForEffectiveListeningMillisecondsV3(
-                  scheduler.targetBufferMs -
-                    scheduler.effectiveListeningDurationMs,
+                  readinessTargetMs - scheduler.effectiveListeningDurationMs,
                   scheduler.playbackRateState.selectedRatePercent,
                 ),
           serviceState: scheduler.serviceState,

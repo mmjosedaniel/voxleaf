@@ -215,7 +215,11 @@ export function OptionalChatterboxControls({
   );
   const [pending, setPending] = useState(false);
   const [activationFailed, setActivationFailed] = useState(false);
-  const [downloadRequested, setDownloadRequested] = useState(false);
+  const downloadRequested = useSyncExternalStore(
+    (listener) => client.subscribe(listener),
+    () => client.downloadPending,
+    () => client.downloadPending,
+  );
   const [exporting, setExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
   const storageFootprintBytes = snapshot.installedBytes;
@@ -261,9 +265,7 @@ export function OptionalChatterboxControls({
 
   const download = (): void => {
     setPending(true);
-    setDownloadRequested(true);
     void client.download().finally(() => {
-      setDownloadRequested(false);
       setPending(false);
     });
   };
@@ -384,14 +386,16 @@ export function OptionalChatterboxControls({
           <p>{CANCELLATION_SCOPE_COPY}</p>
           <button
             type="button"
-            disabled={disabled || pending || !acquisitionAllowed}
+            disabled={
+              disabled || pending || downloadRequested || !acquisitionAllowed
+            }
             onClick={download}
           >
             Download Chatterbox
           </button>
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || (pending && !downloadRequested)}
             onClick={() => run(() => client.cancel())}
           >
             Cancel

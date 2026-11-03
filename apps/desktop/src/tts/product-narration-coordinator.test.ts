@@ -47,6 +47,7 @@ import {
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
 import { loadedAudioStatusText } from "./adaptive-preparation-presentation";
+import { AdaptivePreparationEstimator } from "./adaptive-preparation";
 import { bindHardwareCompatibilityChecks } from "./hardware-compatibility-check-binding";
 import type { HardwareCompatibilitySnapshotV1 } from "./hardware-profile-compatibility";
 import {
@@ -552,6 +553,62 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each([100, 75] as const)(
+    "RAF-05 automatic refill estimates its one-minute threshold at %i percent",
+    async (rate) => {
+      const estimate = vi.spyOn(
+        AdaptivePreparationEstimator.prototype,
+        "estimate",
+      );
+      const { coordinator, client, backend, clock, intervals } = createHarness({
+        result: completeSegments(
+          Array.from({ length: 16 }, (_, index) =>
+            preparedSegment(
+              "Synthetic passage.",
+              sourceRange(index * 12, (index + 1) * 12),
+            ),
+          ),
+        ),
+      });
+      try {
+        await coordinator.checkAvailability();
+        await coordinator.setSelection({ kind: "prepared", targetMs: 120_000 });
+        await coordinator.setPlaybackRatePercent(rate);
+        coordinator.start();
+        for (
+          let tick = 0;
+          tick < 1_000 && coordinator.observe().state?.phase !== "playing";
+          tick++
+        )
+          await Promise.resolve();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(
+          estimate.mock.calls.some(([input]) => input.targetMs === 120_000),
+        ).toBe(true);
+        client.blockSynthesis = true;
+        for (
+          let index = 0;
+          index < 20 && coordinator.observe().state?.phase !== "buffering";
+          index++
+        ) {
+          clock.advance(20_000);
+          backend.finish();
+          intervals[0]?.();
+          for (let tick = 0; tick < 20; tick++) await Promise.resolve();
+        }
+        expect(coordinator.observe().state?.phase).toBe("buffering");
+        expect(estimate.mock.calls.at(-1)![0]).toMatchObject({
+          targetMs: 60_000,
+          targetSampleFrames: (24_000 * 60 * rate) / 100,
+        });
+      } finally {
+        await coordinator.close();
+        estimate.mockRestore();
+      }
+    },
+  );
   it.each(["startup", "speed"] as const)(
     "NSL-04 pending Quick reset survives Settings close/reopen and protects %s",
     async (edit) => {
@@ -1519,6 +1576,34 @@ describe("product narration coordinator", () => {
       await settleUntil(() => prepareNarration.mock.calls.length === 2);
       expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
         END_LOCATOR,
+      );
+    } finally {
+      await coordinator.close();
+    }
+  });
+
+  it("RAF-04 settled paused navigation keeps Resume target across passive inspection and reflow", async () => {
+    const { coordinator, prepareNarration } = createHarness();
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      coordinator.pause();
+      await coordinator.beginExternalNavigation("chapter-navigation");
+      coordinator.settleExternalNavigation(END_LOCATOR);
+      await settleUntil(() => !coordinator.observe().navigation.settling);
+      coordinator.updateVisibleLocator(START_LOCATOR);
+      coordinator.preserveActiveLocator(START_LOCATOR);
+      coordinator.resume();
+      await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        END_LOCATOR,
+      );
+      await coordinator.stop();
+      coordinator.startAtVisibleLocator();
+      await settleUntil(() => prepareNarration.mock.calls.length === 3);
+      expect(prepareNarration.mock.calls[2]![0].startLocator).toEqual(
+        START_LOCATOR,
       );
     } finally {
       await coordinator.close();
@@ -2563,95 +2648,127 @@ describe("product narration coordinator", () => {
     },
   );
 
-  it("permits explicit restart after the typed client's completed-synthesis cancellation race", async () => {
-    const serviceInstanceId = "service:coordinator-race";
-    const state = (value: string) => ({
-      schemaVersion: 1,
-      protocolVersion: 1,
-      kind: "state",
-      serviceInstanceId,
-      state: value,
-    });
-    const capabilities = {
-      schemaVersion: 1,
-      protocolVersion: 1,
-      kind: "capabilities",
-      serviceInstanceId,
-      report: {
+  it.each(["stop", "failure"] as const)(
+    "RAF-14 permits explicit restart after typed completed-synthesis cancellation during %s",
+    async (cause) => {
+      const serviceInstanceId = "service:coordinator-race";
+      const state = (value: string) => ({
         schemaVersion: 1,
-        capabilities: {
-          localSpeechGeneration: "unknown",
-          streamingGeneration: "unsupported",
-          generationCancellation: "unsupported",
-          hardwareAcceleration: "unknown",
-          cpuFallback: "unsupported",
-        },
-      },
-      cancellationContainment: "identity-invalidation-then-worker-termination",
-    };
-    let finishSynthesis!: (value: ArrayBuffer) => void;
-    let starts = 0;
-    let syntheses = 0;
-    const invoke = vi.fn(async (command: string): Promise<unknown> => {
-      if (
-        command === "tts_profile_configuration_available" ||
-        command === "exact_tts_demo_available"
-      )
-        return true;
-      if (command === "start_tts_service") {
-        starts += 1;
-        return [
-          state("handshaking"),
-          {
-            schemaVersion: 1,
-            protocolVersion: 1,
-            kind: "handshakeAccepted",
-            serviceInstanceId,
+        protocolVersion: 1,
+        kind: "state",
+        serviceInstanceId,
+        state: value,
+      });
+      const capabilities = {
+        schemaVersion: 1,
+        protocolVersion: 1,
+        kind: "capabilities",
+        serviceInstanceId,
+        report: {
+          schemaVersion: 1,
+          capabilities: {
+            localSpeechGeneration: "unknown",
+            streamingGeneration: "unsupported",
+            generationCancellation: "unsupported",
+            hardwareAcceleration: "unknown",
+            cpuFallback: "unsupported",
           },
-          state("unloaded"),
-          capabilities,
-        ];
+        },
+        cancellationContainment:
+          "identity-invalidation-then-worker-termination",
+      };
+      let finishSynthesis!: (value: ArrayBuffer) => void;
+      let starts = 0;
+      let syntheses = 0;
+      const invoke = vi.fn(async (command: string): Promise<unknown> => {
+        if (
+          command === "tts_profile_configuration_available" ||
+          command === "exact_tts_demo_available"
+        )
+          return true;
+        if (command === "start_tts_service") {
+          starts += 1;
+          return [
+            state("handshaking"),
+            {
+              schemaVersion: 1,
+              protocolVersion: 1,
+              kind: "handshakeAccepted",
+              serviceInstanceId,
+            },
+            state("unloaded"),
+            capabilities,
+          ];
+        }
+        if (command === "prepare_tts_service")
+          return [
+            state("loading"),
+            state("warming"),
+            state("ready"),
+            capabilities,
+          ];
+        if (command === "synthesize_tts_segment") {
+          syntheses += 1;
+          if (syntheses === (cause === "stop" ? 1 : 2))
+            return new Promise<ArrayBuffer>((resolve) => {
+              finishSynthesis = resolve;
+            });
+          return new Float32Array(360_000).buffer;
+        }
+        if (command === "cancel_tts_generation")
+          throw "tts-service-invalid-state";
+        if (command === "shutdown_tts_service")
+          return [state("stopping"), state("stopped")];
+        throw new Error("unexpected synthetic command");
+      });
+      const client = new TtsProcessClient(
+        async <T>(command: string) => (await invoke(command)) as T,
+      );
+      const { coordinator, backend, intervals } = createHarness({
+        serviceClient: client,
+        ...(cause === "failure"
+          ? {
+              result: completeSegments([
+                preparedSegment("First synthetic passage.", sourceRange(0, 12)),
+                preparedSegment(
+                  "Second synthetic passage.",
+                  sourceRange(12, 24),
+                ),
+              ]),
+            }
+          : {}),
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => syntheses === (cause === "stop" ? 1 : 2));
+      const stopped = cause === "stop" ? coordinator.stop() : Promise.resolve();
+      if (cause === "failure") {
+        backend.active!.callbacks.failed();
+        intervals[0]?.();
       }
-      if (command === "prepare_tts_service")
-        return [
-          state("loading"),
-          state("warming"),
-          state("ready"),
-          capabilities,
-        ];
-      if (command === "synthesize_tts_segment") {
-        syntheses += 1;
-        if (syntheses === 1)
-          return new Promise<ArrayBuffer>((resolve) => {
-            finishSynthesis = resolve;
-          });
-        return new Float32Array(360_000).buffer;
+      await settleUntil(() => client.observe().state === "stopped");
+      const staleAudio = new Float32Array(24_000).fill(0.25);
+      finishSynthesis(staleAudio.buffer);
+      await stopped;
+      await settleUntil(() => staleAudio.every((value) => value === 0));
+      expect(staleAudio.every((value) => value === 0)).toBe(true);
+      if (cause === "failure") {
+        await settleUntil(() =>
+          ["recovery-available", "unavailable", "contained"].includes(
+            coordinator.observe().recovery.phase,
+          ),
+        );
+        expect(coordinator.observe().recovery.phase).toBe("recovery-available");
+        coordinator.recover();
+      } else {
+        expect(coordinator.observe().recovery.phase).toBe("operational");
+        coordinator.start();
       }
-      if (command === "cancel_tts_generation")
-        throw "tts-service-invalid-state";
-      if (command === "shutdown_tts_service")
-        return [state("stopping"), state("stopped")];
-      throw new Error("unexpected synthetic command");
-    });
-    const client = new TtsProcessClient(
-      async <T>(command: string) => (await invoke(command)) as T,
-    );
-    const { coordinator, backend } = createHarness({ serviceClient: client });
-    await coordinator.checkAvailability();
-    coordinator.start();
-    await settleUntil(() => syntheses === 1);
-    const stopped = coordinator.stop();
-    await settleUntil(() => client.observe().state === "stopped");
-    const staleAudio = new Float32Array(24_000).fill(0.25);
-    finishSynthesis(staleAudio.buffer);
-    await stopped;
-    expect(staleAudio.every((value) => value === 0)).toBe(true);
-    expect(coordinator.observe().recovery.phase).toBe("operational");
-    coordinator.start();
-    await settleUntil(() => backend.active !== undefined);
-    expect(starts).toBe(2);
-    await coordinator.close();
-  });
+      await settleUntil(() => backend.active !== undefined);
+      expect(starts).toBe(2);
+      await coordinator.close();
+    },
+  );
   it.each([false, true])(
     "F4-03 shuts down pending loading after backend failure (shutdown fails: %s)",
     async (shutdownFails) => {
@@ -4694,17 +4811,19 @@ describe("product narration coordinator", () => {
   );
 
   it.each([
+    ["start_tts_service", "tts-service-unavailable"],
     ["prepare_tts_service", "tts-service-internal-failure"],
     ["prepare_tts_service", "tts-service-timeout"],
     ["synthesize_tts_segment", "tts-service-internal-failure"],
     ["synthesize_tts_segment", "tts-service-timeout"],
   ] as const)(
-    "CLB-03 real client acknowledges contained %s/%s before explicit recovery",
+    "CLB-03/RAF-15 real client acknowledges contained %s/%s before explicit recovery",
     async (failedCommand, failureCode) => {
       let serviceInstanceId = "";
       let starts = 0;
       let failNext = true;
       let containedId: string | undefined;
+      let failedStartRequest: unknown;
       const shutdownIds: unknown[] = [];
       const control = (kind: string, extra = {}) => ({
         schemaVersion: 1,
@@ -4743,6 +4862,11 @@ describe("product narration coordinator", () => {
         if (command === "start_tts_service") {
           serviceInstanceId = `service:contained-${++starts}`;
           containedId = undefined;
+          if (failedCommand === command && failNext) {
+            failNext = false;
+            failedStartRequest = args?.startRequestId;
+            throw failureCode;
+          }
           return [
             state("handshaking"),
             control("handshakeAccepted"),
@@ -4767,7 +4891,12 @@ describe("product narration coordinator", () => {
         if (command === "cancel_tts_generation")
           throw "tts-service-invalid-state";
         if (command === "shutdown_tts_service") {
-          shutdownIds.push(args?.serviceInstanceId);
+          shutdownIds.push(args?.serviceInstanceId ?? args?.startRequestId);
+          if (
+            args?.startRequestId !== undefined &&
+            args.startRequestId === failedStartRequest
+          )
+            return [state("stopping"), state("stopped")];
           if (args?.serviceInstanceId !== (containedId ?? serviceInstanceId))
             throw "tts-service-cancelled";
           return [state("stopping"), state("stopped")];
@@ -4788,7 +4917,9 @@ describe("product narration coordinator", () => {
           () => coordinator.observe().recovery.phase === "recovery-available",
         );
         expect(starts).toBe(1);
-        expect(shutdownIds).toEqual(["service:contained-1"]);
+        expect(shutdownIds).toEqual([
+          failedStartRequest ?? "service:contained-1",
+        ]);
         expect(client.observe()).toMatchObject({
           state: "stopped",
           serviceInstanceId: undefined,

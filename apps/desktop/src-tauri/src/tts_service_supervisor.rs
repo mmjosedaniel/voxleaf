@@ -650,6 +650,10 @@ struct Lifecycle {
     active: Option<WorkIdentity>,
     // One bounded receipt, issued only after verified process termination.
     contained_service_instance_id: Option<String>,
+    contained_start_request_id: Option<String>,
+    // One rejected attempt proven to have no remaining child. Its
+    // acknowledgment is independent of any later session and cannot stop it.
+    rejected_start: Option<(String, String)>,
 }
 
 struct ChildProcess {
@@ -659,33 +663,46 @@ struct ChildProcess {
 }
 
 impl ChildProcess {
-    fn spawn(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
+    fn spawn(
+        child_configuration: &ServiceChild,
+        child_may_exist: &mut bool,
+    ) -> Result<Self, TtsNativeFailure> {
         #[cfg(windows)]
-        return Self::spawn_with_job_assigner(child_configuration, assign_kill_on_close_job);
+        return Self::spawn_with_job_assigner(
+            child_configuration,
+            assign_kill_on_close_job,
+            child_may_exist,
+        );
 
         #[cfg(not(windows))]
-        Self::spawn_without_job(child_configuration)
+        Self::spawn_without_job(child_configuration, child_may_exist)
     }
 
     #[cfg(windows)]
     fn spawn_with_job_assigner(
         child_configuration: &ServiceChild,
         assign_job: fn(&Child) -> Result<windows_sys::Win32::Foundation::HANDLE, TtsNativeFailure>,
+        child_may_exist: &mut bool,
     ) -> Result<Self, TtsNativeFailure> {
-        let mut process = Self::spawn_without_job(child_configuration)?;
+        let mut process = Self::spawn_without_job(child_configuration, child_may_exist)?;
         match assign_job(&process.child) {
             Ok(job) => {
                 process.job = job as usize;
                 Ok(process)
             }
             Err(error) => {
-                let _ = process.terminate();
+                if process.terminate().is_ok() {
+                    *child_may_exist = false;
+                }
                 Err(error)
             }
         }
     }
 
-    fn spawn_without_job(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
+    fn spawn_without_job(
+        child_configuration: &ServiceChild,
+        child_may_exist: &mut bool,
+    ) -> Result<Self, TtsNativeFailure> {
         let mut command = child_configuration.command()?;
         configure_supervised_child(&mut command);
         let child = command
@@ -694,6 +711,7 @@ impl ChildProcess {
             .stderr(Stdio::null())
             .spawn()
             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        *child_may_exist = true;
         Ok(Self {
             child,
             #[cfg(windows)]
@@ -971,24 +989,23 @@ impl ServiceSession {
         child_configuration: &ServiceChild,
         service_instance_id: String,
         start_request_id: Option<String>,
+        child_may_exist: &mut bool,
     ) -> Result<Arc<Self>, TtsNativeFailure> {
         #[cfg(test)]
         if let Some(session) =
             tests::spawn_session_hook(child_configuration, &service_instance_id, &start_request_id)
         {
+            *child_may_exist = true;
             return Ok(session);
         }
-        let mut process = ChildProcess::spawn(child_configuration)?;
-        let input = process
-            .child
-            .stdin
-            .take()
-            .ok_or(TtsNativeFailure::ChildUnavailable)?;
-        let mut output = process
-            .child
-            .stdout
-            .take()
-            .ok_or(TtsNativeFailure::ChildUnavailable)?;
+        let mut process = ChildProcess::spawn(child_configuration, child_may_exist)?;
+        let (Some(input), Some(mut output)) =
+            (process.child.stdin.take(), process.child.stdout.take())
+        else {
+            process.terminate()?;
+            *child_may_exist = false;
+            return Err(TtsNativeFailure::ChildUnavailable);
+        };
         let (sender, frames) = mpsc::sync_channel(1);
         thread::spawn(move || {
             loop {
@@ -1136,6 +1153,8 @@ impl TtsServiceSupervisor {
                 state: "stopped".to_owned(),
                 active: None,
                 contained_service_instance_id: None,
+                contained_start_request_id: None,
+                rejected_start: None,
             }),
             session: Mutex::new(None),
             child_configuration: Mutex::new(child_configuration),
@@ -1382,6 +1401,7 @@ impl TtsServiceSupervisor {
             return TtsNativeFailure::InternalFailure;
         };
         lifecycle.contained_service_instance_id = Some(failed.service_instance_id.clone());
+        lifecycle.contained_start_request_id = failed.start_request_id.clone();
         session.take();
         failure
     }
@@ -1406,6 +1426,38 @@ impl TtsServiceSupervisor {
         if let Some(request) = &start_request_id {
             validate_start_request_id(request)?;
         }
+        let service_instance_id = format!(
+            "service:native-{}",
+            SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
+        );
+        let mut child_may_exist = false;
+        let result = self.start_selected_attempt(
+            profile_id,
+            language,
+            start_request_id.clone(),
+            service_instance_id.clone(),
+            &mut child_may_exist,
+        );
+        if result.is_err()
+            && !child_may_exist
+            && let Some(request) = start_request_id
+        {
+            self.lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .rejected_start = Some((request, service_instance_id));
+        }
+        result
+    }
+
+    fn start_selected_attempt(
+        &self,
+        profile_id: Option<&str>,
+        language: Option<&str>,
+        start_request_id: Option<String>,
+        service_instance_id: String,
+        child_may_exist: &mut bool,
+    ) -> Result<Vec<Value>, TtsNativeFailure> {
         let admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
         if let Some(profile_id) = profile_id {
@@ -1421,10 +1473,6 @@ impl TtsServiceSupervisor {
         if slot.is_some() {
             return Err(TtsNativeFailure::InvalidState);
         }
-        let service_instance_id = format!(
-            "service:native-{}",
-            SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
-        );
         let child_configuration = self
             .child_configuration
             .lock()
@@ -1434,12 +1482,17 @@ impl TtsServiceSupervisor {
             &child_configuration,
             service_instance_id.clone(),
             start_request_id,
+            child_may_exist,
         )?;
         self.set_state("starting")?;
-        self.lifecycle
-            .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)?
-            .contained_service_instance_id = None;
+        {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            lifecycle.contained_service_instance_id = None;
+            lifecycle.contained_start_request_id = None;
+        }
         *slot = Some(session.clone());
         drop(slot);
         drop(admission);
@@ -1708,6 +1761,20 @@ impl TtsServiceSupervisor {
     ) -> Result<Vec<Value>, TtsNativeFailure> {
         if let Some(request) = start_request_id {
             validate_start_request_id(request)?;
+            if expected.is_none() {
+                let lifecycle = self
+                    .lifecycle
+                    .lock()
+                    .map_err(|_| TtsNativeFailure::InternalFailure)?;
+                if let Some((owner, id)) = &lifecycle.rejected_start
+                    && owner == request
+                {
+                    return Ok(vec![
+                        state_control(id, "stopping"),
+                        state_control(id, "stopped"),
+                    ]);
+                }
+            }
         }
         let operation = match self.acquire_operation() {
             Ok(guard) => Some(guard),
@@ -1727,16 +1794,24 @@ impl TtsServiceSupervisor {
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
-            let id = expected.ok_or(TtsNativeFailure::InvalidState)?;
-            match lifecycle.contained_service_instance_id.as_deref() {
-                Some(contained) if contained == id => {}
-                Some(_) => return Err(TtsNativeFailure::Cancelled),
-                None => return Err(TtsNativeFailure::InvalidState),
+            let id = lifecycle
+                .contained_service_instance_id
+                .clone()
+                .ok_or(TtsNativeFailure::InvalidState)?;
+            if expected.is_none() && start_request_id.is_none() {
+                return Err(TtsNativeFailure::InvalidState);
+            }
+            if expected.is_some_and(|expected| expected != id)
+                || start_request_id.is_some_and(|request| {
+                    lifecycle.contained_start_request_id.as_deref() != Some(request)
+                })
+            {
+                return Err(TtsNativeFailure::Cancelled);
             }
             lifecycle.state = "stopped".to_owned();
             return Ok(vec![
-                state_control(id, "stopping"),
-                state_control(id, "stopped"),
+                state_control(&id, "stopping"),
+                state_control(&id, "stopped"),
             ]);
         }
         if operation.is_none() {
@@ -1822,6 +1897,8 @@ impl TtsServiceSupervisor {
         lifecycle.active = None;
         lifecycle.state = "stopped".to_owned();
         lifecycle.contained_service_instance_id = None;
+        lifecycle.contained_start_request_id = None;
+        lifecycle.rejected_start = None;
         Ok(())
     }
 }

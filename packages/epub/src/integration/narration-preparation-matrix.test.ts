@@ -30,6 +30,52 @@ afterEach(() => {
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
   it.each([
+    "narration-piper-v2",
+    "narration-bilingual-v2",
+    "narration-chatterbox-v1",
+  ] as const)(
+    "RAF-13 forced public %s splits preserve unsupported decimal punctuation",
+    async (profile) => {
+      const source =
+        "word ".repeat(50) + "12.34 " + "word ".repeat(200) + "End.";
+      const forbidden = source.indexOf("12.34") + 3;
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Decimal</title></head><body><p>${source}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        const all = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          1,
+          profile,
+          "en",
+        );
+        expect(all.segments.length).toBeGreaterThan(1);
+        expect(
+          all.segments.some(
+            (segment) =>
+              segment.sourceRange.end.textOffsetCodePoints === forbidden,
+          ),
+        ).toBe(false);
+        expect(
+          all.segments.some((segment) =>
+            String(segment.text).includes("12.34"),
+          ),
+        ).toBe(true);
+        expect(all.segments.at(-1)!.sourceRange.end.textOffsetCodePoints).toBe(
+          source.length,
+        );
+        for (const [index, segment] of all.segments.entries())
+          assertPublicSegment(opened.publication, segment, index);
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+  it.each([
     ["en", '1<span lang="fr">&#x2060;</span>8', "18", 3],
     ["en", '8<span lang="fr">&#x2060;</span>1', "81", 3],
     ["es", "21 E\u2060UR", "21 EUR", 7],
@@ -85,6 +131,11 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
 
   it.each([
     ["BNC-02", "en", "1\u20608", "18"],
+    ["RAF-12", "en", ".25 %", ".25 %"],
+    ["RAF-12", "en", "1\u202f120", "1 120"],
+    ["RAF-12", "en", "1\u00a0120", "1 120"],
+    ["RAF-12", "en", "1 120", "1 120"],
+    ["RAF-12", "en", ".\u206025 %", ".25 %"],
     ["BNC-03", "es", "21\u00a0\u00a0%", "21 %"],
     ["BNC-04", "en", "20 °C/8", "20 °C/8"],
     [

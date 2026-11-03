@@ -17,6 +17,15 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [residual audit corrections](plans/completed/residual-audit-corrections.md)
+resolve all 18 retained findings across publication lifetime, reader/playback
+state, native operation ownership, bounded EPUB preparation and maintainer package
+recovery. Four capacity/traversal risks have bounded public reproductions. Selected
+deterministic, Chromium, static and renewed native Piper EN/F08 checks pass with
+resources restored. Independent RAF-R2-20261103 approves without remaining findings;
+the plan links the separate final archival assessment. No historical behavioral
+PASS, new model support or broader performance guarantee is inferred.
+
 The [narration settings lifecycle corrections](plans/completed/narration-settings-lifecycle-corrections.md)
 report rejected activation, guard profile selection against narrator-lifetime
 changes, wait for Stop containment before startup writes and retain pending Reset

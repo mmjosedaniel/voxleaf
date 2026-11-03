@@ -24,6 +24,144 @@ async function fixtures() {
   }>;
 }
 
+test("RAF-02 Settings remount observes preflight then transfer and cancellation", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    const native = Reflect.get(window, "__TAURI_INTERNALS__");
+    const invoke = native.invoke;
+    const download = { state: "confirming", calls: 0, release: () => {} };
+    Reflect.set(globalThis, "__rafDownload", download);
+    native.invoke = async (command: string, args: unknown) => {
+      if (command === "optional_chatterbox_snapshot")
+        return { ...(await invoke(command, args)), state: download.state };
+      if (command === "download_optional_chatterbox") {
+        download.calls += 1;
+        await new Promise<void>((resolve) => {
+          download.release = resolve;
+        });
+        return {
+          ...(await invoke("optional_chatterbox_snapshot")),
+          state: download.state,
+        };
+      }
+      if (command === "cancel_optional_chatterbox") {
+        download.state = "absent";
+        download.release();
+        return {
+          ...(await invoke("optional_chatterbox_snapshot")),
+          state: "absent",
+        };
+      }
+      return invoke(command, args);
+    };
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "raf-download.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic download observation.</p></body></html>',
+      }),
+    ),
+  });
+  let settings = await openSettings(page);
+  await settings
+    .getByRole("button", { name: "Download Chatterbox", exact: true })
+    .click();
+  await expect(
+    settings.getByText("Starting the Chatterbox download."),
+  ).toBeVisible();
+  await closeSettings(page, settings);
+  settings = await openSettings(page);
+  await expect(
+    settings.getByRole("button", { name: "Download Chatterbox", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    settings.getByRole("button", { name: "Cancel", exact: true }),
+  ).toBeEnabled();
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rafDownload").state = "downloading";
+  });
+  await expect(settings.getByText(/Downloading Chatterbox:/)).toBeVisible();
+  await closeSettings(page, settings);
+  settings = await openSettings(page);
+  await expect(settings.getByText(/Downloading Chatterbox:/)).toBeVisible();
+  await settings
+    .getByRole("button", { name: "Cancel download", exact: true })
+    .click();
+  await expect(
+    settings.getByRole("button", { name: "Review Chatterbox download" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rafDownload").calls),
+  ).toBe(1);
+  await closeSettings(page, settings);
+});
+
+test("RAF-03/06/07 rejected replacement clears reader and compact speed reports write failure", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  const build = (await fixtures()).buildMinimalEpubFixture;
+  const open = async (body: string, name: string) =>
+    page.getByLabel("Open a book").setInputFiles({
+      name,
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await build({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${body}</body></html>`,
+        }),
+      ),
+    });
+  await open("<p>First synthetic publication.</p>", "raf-first.epub");
+  await expect(page.locator(".semantic-document")).toContainText(
+    "First synthetic publication.",
+  );
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Reflect.set(globalThis, "__rafRestoreStorage", () => {
+      Storage.prototype.setItem = original;
+    });
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "voxleaf.narration.playback-preference")
+        throw new Error("synthetic denied write");
+      original.call(this, key, value);
+    };
+  });
+  const speed = page.getByLabel("Playback speed", { exact: true });
+  await speed.selectOption("75");
+  await expect(
+    page.getByText(/Playback speed could not be saved/),
+  ).toBeVisible();
+  await expect(speed).toHaveValue("75");
+  await page.evaluate(() => Reflect.get(globalThis, "__rafRestoreStorage")());
+  await speed.selectOption("100");
+  await expect(page.getByText(/Playback speed could not be saved/)).toHaveCount(
+    0,
+  );
+  await open("", "raf-empty.epub");
+  await expect(
+    page.getByRole("heading", { name: "No readable content" }),
+  ).toBeVisible();
+  await expect(page.locator(".semantic-document")).toHaveCount(0);
+  await expect(page.locator(".product-narration")).toHaveCount(0);
+  await open("<p>Replacement synthetic publication.</p>", "raf-next.epub");
+  await expect(page.locator(".semantic-document")).toContainText(
+    "Replacement synthetic publication.",
+  );
+  await expect(page.locator(".product-narration")).toBeVisible();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(0);
+});
+
 test("MPA-01/03 real worklet slow/direct/slow reuse and paused-navigation labels", async ({
   page,
 }) => {
@@ -1482,7 +1620,7 @@ test("BNC-01 rejected navigation settles manual saves and requires explicit Play
   await expect(narration).toHaveAttribute("data-narration-phase", "idle");
 });
 
-test("VCA-06/09 paused next and previous place exact interior offsets without audio or stale preparation", async ({
+test("RAF-04 VCA-06/09 paused navigation survives passive scroll and reflow before Resume and Stop Play", async ({
   page,
 }) => {
   await installSyntheticService(page, false, false, false, true);
@@ -1616,6 +1754,14 @@ test("VCA-06/09 paused next and previous place exact interior offsets without au
     previousIndex = index;
   }
   // The fixture deliberately caps retained observations at sixteen entries.
+  await page.setViewportSize({ width: 720, height: 520 });
+  await page.locator(".reader-viewport").evaluate(async (element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event("scroll"));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
   await page.evaluate(() => {
     Reflect.get(globalThis, "__rnb").prepared.length = 0;
   });
@@ -1628,6 +1774,24 @@ test("VCA-06/09 paused next and previous place exact interior offsets without au
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").calls))
     .toBeGreaterThan(stoppedCalls!);
+  await page.locator('[data-narration-action="stop"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "idle");
+  await page.locator(".reader-viewport").evaluate(async (element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event("scroll"));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").prepared.length = 0;
+  });
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.offset),
+    )
+    .toBe(0);
   await page.locator('[data-narration-action="stop"]').click();
 });
 

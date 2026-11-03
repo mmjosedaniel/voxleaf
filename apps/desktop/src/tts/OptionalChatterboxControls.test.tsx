@@ -58,6 +58,55 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("RAF-02 remount during native preflight resumes bounded progress observation", async () => {
+    vi.useFakeTimers();
+    const pending = deferred();
+    let state: "confirming" | "downloading" = "confirming";
+    const invoke = vi.fn((command: string) =>
+      command === "download_optional_chatterbox"
+        ? pending.promise
+        : Promise.resolve(snapshot(state)),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const element = (
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={async () => undefined}
+      />
+    );
+    const first = render(element);
+    await act(async () => {
+      await client.refresh();
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Download Chatterbox" }),
+    );
+    expect(screen.getByRole("button", { name: /^Cancel$/ })).toBeEnabled();
+    first.unmount();
+    const second = render(element);
+    await act(async () => {
+      await client.refresh();
+    });
+    expect(
+      screen.getByRole("button", { name: "Download Chatterbox" }),
+    ).toBeDisabled();
+    state = "downloading";
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+    try {
+      expect(client.observe().state).toBe("downloading");
+      expect(screen.getByText(/Downloading Chatterbox:/)).toBeInTheDocument();
+    } finally {
+      await act(async () => {
+        pending.resolve(snapshot("installed"));
+      });
+      second.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  });
   it.each(["false", "throw"] as const)(
     "NSL-01 reports rejected activation (%s) and clears feedback on retry",
     async (failure) => {

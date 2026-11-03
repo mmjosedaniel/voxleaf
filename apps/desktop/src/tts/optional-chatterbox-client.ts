@@ -212,6 +212,7 @@ export class OptionalChatterboxClient {
   #nextRequestId = 0;
   #actionGeneration = 0;
   #refreshInFlight: Promise<OptionalChatterboxSnapshot> | undefined;
+  #downloadAttempt: object | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
     this.#invoke = invokePort;
@@ -219,6 +220,10 @@ export class OptionalChatterboxClient {
 
   public observe(): OptionalChatterboxSnapshot {
     return this.#snapshot;
+  }
+
+  public get downloadPending(): boolean {
+    return this.#downloadAttempt !== undefined;
   }
 
   public async readDownloadDiagnostic(): Promise<
@@ -268,9 +273,19 @@ export class OptionalChatterboxClient {
   }
 
   public async download(): Promise<OptionalChatterboxSnapshot> {
-    return this.#call("download_optional_chatterbox", {
-      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
-    });
+    const attempt = {};
+    this.#downloadAttempt = attempt;
+    this.#publish();
+    try {
+      return await this.#call("download_optional_chatterbox", {
+        profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+      });
+    } finally {
+      if (this.#downloadAttempt === attempt) {
+        this.#downloadAttempt = undefined;
+        this.#publish();
+      }
+    }
   }
 
   public async cancel(): Promise<OptionalChatterboxSnapshot> {
@@ -290,6 +305,10 @@ export class OptionalChatterboxClient {
     args?: Record<string, unknown>,
   ): Promise<OptionalChatterboxSnapshot> {
     const isRefresh = command === "optional_chatterbox_snapshot";
+    if (!isRefresh && command !== "download_optional_chatterbox") {
+      this.#downloadAttempt = undefined;
+      this.#publish();
+    }
     const actionGeneration = isRefresh
       ? this.#actionGeneration
       : ++this.#actionGeneration;
