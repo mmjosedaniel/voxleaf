@@ -27,9 +27,9 @@ function fixture(development = false) {
     });
   const snapshot = new OptionalChatterboxClient().observe();
   const steps = {
-    stop: vi.fn<() => Promise<void> | void | null>(() => {
+    stop: vi.fn<() => Promise<"contained" | "failed">>(() => {
       events.push("stop");
-      return Promise.resolve();
+      return Promise.resolve("contained");
     }),
     legacyStop: call("legacy-stop", undefined),
     refresh: call("refresh", undefined),
@@ -202,9 +202,11 @@ describe("narration settings actions", () => {
       barrier.resolve(
         (stage === "optional"
           ? { ...new OptionalChatterboxClient().observe(), state: "installed" }
-          : stage === "commit"
-            ? true
-            : undefined) as never,
+          : stage === "stop"
+            ? "contained"
+            : stage === "commit"
+              ? true
+              : undefined) as never,
       );
       await expect(pending).resolves.toBe(false);
       if (stage === "optional") expect(f.steps.stop).not.toHaveBeenCalled();
@@ -219,7 +221,7 @@ describe("narration settings actions", () => {
     "%s awaits stop and propagates rejection",
     async (kind) => {
       const f = fixture();
-      const stop = deferred<void>();
+      const stop = deferred<"contained">();
       f.steps.stop.mockReturnValue(stop.promise);
       const pending = f.run[kind]();
       expect(f.events).toEqual([]);
@@ -234,13 +236,14 @@ describe("narration settings actions", () => {
   );
 
   it.each([undefined, null])(
-    "retains nullish stop fallback %s",
+    "RCF-05 rejects missing containment result %s",
     async (value) => {
       const f = fixture();
-      f.steps.stop.mockReturnValue(value);
-      await f.run.language();
-      expect(f.events).toEqual(["legacy-stop", "language", "refresh"]);
-      expect(f.steps.legacyStop.mock.contexts).toEqual([f.coordinator]);
+      f.steps.stop.mockReturnValue(Promise.resolve(value) as never);
+      await expect(f.run.language()).rejects.toThrow(
+        "Narration cleanup did not complete.",
+      );
+      expect(f.events).toEqual([]);
     },
   );
 
@@ -304,7 +307,7 @@ describe("narration settings actions", () => {
     "%s awaits stop, selection and refresh; false does not refresh",
     async (kind) => {
       const f = fixture();
-      const stop = deferred<void>();
+      const stop = deferred<"contained">();
       const selected = deferred<boolean>();
       const refresh = deferred<undefined>();
       f.steps.stop.mockReturnValueOnce(stop.promise);
@@ -314,7 +317,7 @@ describe("narration settings actions", () => {
       f.steps.refresh.mockReturnValue(refresh.promise);
       const pending = f.run[kind]();
       expect(f.steps[kind]).not.toHaveBeenCalled();
-      stop.resolve();
+      stop.resolve("contained");
       await vi.waitFor(() => expect(f.steps[kind]).toHaveBeenCalledOnce());
       expect(f.steps[kind].mock.contexts).toEqual([f.hardware]);
       expect(f.steps[kind]).toHaveBeenCalledWith(

@@ -665,7 +665,9 @@ function enforceNumericLookahead(
     if (
       !isProseTextToken(tokens[index]) ||
       !isNumericLookaheadCodePoint(value) ||
-      (index > 0 && isNumericLookaheadCodePoint(sourceText(tokens[index - 1])))
+      (index > 0 &&
+        isProseTextToken(tokens[index - 1]) &&
+        isNumericLookaheadCodePoint(sourceText(tokens[index - 1])))
     ) {
       continue;
     }

@@ -419,6 +419,7 @@ struct Operation {
     downloaded_bytes: u64,
     failure: Option<&'static str>,
     cancellation: Option<Arc<AtomicBool>>,
+    post_commit_cleanup: Option<(PathBuf, String)>,
 }
 
 #[derive(Default)]
@@ -1083,6 +1084,28 @@ fn verification_hash(
     }
 }
 
+// Largest exact manifest across current v7 and cleanup-only v2 (including
+// pre-correction), v3, v5 and v6 authorities. See the RCF execution ledger.
+const MAXIMUM_RUNTIME_MANIFEST_BYTES: u64 = 2_662_009;
+
+fn read_runtime_manifest(
+    path: &Path,
+    cancellation: Option<&AtomicBool>,
+) -> Result<Vec<u8>, OptionalProfileError> {
+    check_acquisition_cancellation(cancellation)?;
+    let mut bytes = Vec::new();
+    File::open(path)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?
+        .take(MAXIMUM_RUNTIME_MANIFEST_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    check_acquisition_cancellation(cancellation)?;
+    if bytes.len() as u64 > MAXIMUM_RUNTIME_MANIFEST_BYTES {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    Ok(bytes)
+}
+
 fn verify_runtime_cancellable(
     root: &Path,
     manifest_authority: &OptionalPackageManifest,
@@ -1095,8 +1118,7 @@ fn verify_runtime_cancellable(
         .as_ref()
         .ok_or(OptionalProfileError::VerificationFailed)?;
     let manifest_path = root.join(&manifest_name);
-    let manifest_bytes =
-        fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let manifest_bytes = read_runtime_manifest(&manifest_path, cancellation)?;
     let manifest_hash = encode_sha256(Sha256::digest(&manifest_bytes));
     if manifest_hash != runtime_authority.runtime_manifest_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
@@ -1215,8 +1237,7 @@ fn runtime_manifest_for_bytecode_cleanup(
         .runtime_artifact
         .as_ref()
         .ok_or(OptionalProfileError::VerificationFailed)?;
-    let bytes = fs::read(root.join(&manifest_name))
-        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let bytes = read_runtime_manifest(&root.join(&manifest_name), None)?;
     let hash = encode_sha256(Sha256::digest(&bytes));
     if hash != runtime_authority.runtime_manifest_sha256
         && !manifest_authority
@@ -1494,6 +1515,10 @@ fn promote(
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
     canonical_contained_directory(root, parent)?;
     verify_runtime_cancellable(staging, manifest, cancellation)?;
+    let cleanup_identity = (
+        canonical_managed_root(root)?,
+        runtime_authority_key(manifest)?,
+    );
     #[cfg(test)]
     tests::run_before_commit_hook();
     // No hash or long verification holds this mutex. It serializes accepted
@@ -1528,6 +1553,7 @@ fn promote(
         operation.state = Some(OptionalProfileState::Installed);
         operation.cancellation = None;
         operation.worker_active = true;
+        operation.post_commit_cleanup = Some(cleanup_identity);
     }
     drop(operation);
     #[cfg(test)]
@@ -1850,12 +1876,20 @@ impl OptionalChatterboxManager {
         cancellation: Option<Arc<AtomicBool>>,
     ) {
         if let Ok(mut operation) = self.operation.lock() {
+            let post_commit_cleanup = if state == OptionalProfileState::Failed
+                && failure == Some(OptionalProfileError::CleanupFailed.code())
+            {
+                operation.post_commit_cleanup.take()
+            } else {
+                None
+            };
             *operation = Operation {
                 worker_active: cancellation.is_some(),
                 state: Some(state),
                 downloaded_bytes,
                 failure,
                 cancellation,
+                post_commit_cleanup,
             };
         }
     }
@@ -1869,6 +1903,48 @@ impl OptionalChatterboxManager {
     fn snapshot_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
         self.snapshot_with_manifest(root, &manifest)
+    }
+
+    fn retry_cleanup(
+        &self,
+        root: &Path,
+        manifest: &OptionalPackageManifest,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+        with_installed_runtime_lock(|| {
+            let mut operation = self
+                .operation
+                .lock()
+                .map_err(|_| OptionalProfileError::Busy)?;
+            let expected = (
+                canonical_managed_root(root)?,
+                runtime_authority_key(manifest)?,
+            );
+            if operation.worker_active
+                || operation.state != Some(OptionalProfileState::Failed)
+                || operation.post_commit_cleanup.as_ref() != Some(&expected)
+            {
+                drop(operation);
+                return Ok(false);
+            }
+            // Hold the operation admission lock throughout this explicit retry.
+            // No replacement can take ownership of the recorded paths.
+            let result: Result<(), OptionalProfileError> = (|| {
+                verify_runtime_cached(&package_root(root), manifest)?;
+                remove_promotion_backup(root)?;
+                clean_staging(root)?;
+                verify_runtime_cached(&package_root(root), manifest)?;
+                Ok(())
+            })();
+            match result {
+                Ok(()) => *operation = Operation::default(),
+                Err(error) => {
+                    operation.failure = Some(error.code());
+                    return Err(error);
+                }
+            }
+            Ok(true)
+        })?;
+        self.snapshot_with_manifest(root, manifest)
     }
 
     fn snapshot_with_manifest(
@@ -1923,13 +1999,12 @@ impl OptionalChatterboxManager {
                     operation.failure,
                 )));
             }
-            clean_staging(root)?;
             Ok(None)
         })?;
         if let Some(snapshot) = admitted {
             return Ok(snapshot);
         }
-        match prepare_and_verify_installed_runtime(root, manifest) {
+        match with_installed_runtime_lock(|| verify_runtime_cached(&package_root(root), manifest)) {
             Ok(_) => Ok(snapshot_from(
                 manifest,
                 OptionalProfileState::Installed,
@@ -2418,11 +2493,16 @@ pub fn optional_chatterbox_download_diagnostic(
 #[tauri::command]
 pub async fn optional_chatterbox_snapshot(
     manager: State<'_, Arc<OptionalChatterboxManager>>,
+    retry_cleanup: Option<bool>,
 ) -> Result<OptionalProfileSnapshot, &'static str> {
     let manager = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let root = OptionalChatterboxManager::profile_root_for()?;
-        manager.snapshot_at(root)
+        if retry_cleanup == Some(true) {
+            manager.retry_cleanup(root, &exact_manifest()?)
+        } else {
+            manager.snapshot_at(root)
+        }
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?

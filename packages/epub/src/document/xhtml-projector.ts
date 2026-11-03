@@ -142,7 +142,13 @@ interface ListCollector {
   readonly kind: "list";
   readonly context: TextContext;
   readonly ordered: boolean;
-  readonly items: { readonly children: readonly SemanticBlock[] }[];
+  readonly start?: number;
+  nextOrdinal: number;
+  nextRenderedOrdinal: number;
+  readonly items: {
+    readonly value?: number;
+    readonly children: readonly SemanticBlock[];
+  }[];
 }
 
 type SemanticDestination = BlockCollector | InlineCollector | ListCollector;
@@ -173,7 +179,11 @@ type CloseAction =
       readonly kind: "list";
       readonly sourceElementId?: string;
     }
-  | { readonly collector: BlockCollector; readonly kind: "list-item" }
+  | {
+      readonly collector: BlockCollector;
+      readonly kind: "list-item";
+      readonly value?: number;
+    }
   | {
       readonly collector: InlineCollector;
       readonly kind: "paragraph";
@@ -392,7 +402,9 @@ function convertNormalText(
   output: SemanticInline[],
   state: WhitespaceState,
 ): void {
-  const parts = value.split(NORMAL_WHITESPACE);
+  const normalized = value
+    .replace(NORMAL_WHITESPACE, " ")
+    .replace(/^ | $/gu, "");
   const beginsWithWhitespace = /^[\t\n\f\r ]/u.test(value);
   const endsWithWhitespace = /[\t\n\f\r ]$/u.test(value);
 
@@ -400,22 +412,23 @@ function convertNormalText(
     state.pendingSpace = true;
   }
 
-  for (const [index, part] of parts.entries()) {
-    if (part.length > 0) {
-      const prefix = state.pendingSpace && state.emittedContent ? " " : "";
-      appendTextNode(output, `${prefix}${part}`, context);
-      state.emittedContent = true;
-      state.pendingSpace = false;
-    }
-
-    if (index < parts.length - 1 && state.emittedContent) {
-      state.pendingSpace = true;
-    }
+  if (normalized.length > 0) {
+    const prefix = state.pendingSpace && state.emittedContent ? " " : "";
+    appendTextNode(output, `${prefix}${normalized}`, context);
+    state.emittedContent = true;
+    state.pendingSpace = endsWithWhitespace;
   }
+}
 
-  if (!endsWithWhitespace && parts.at(-1)?.length !== 0) {
-    state.pendingSpace = false;
-  }
+function listOrdinal(value: string | undefined): number | undefined {
+  if (value === undefined || !/^[+-]?\d+$/u.test(value.trim()))
+    return undefined;
+  const ordinal = Number(value.trim());
+  return Number.isInteger(ordinal) &&
+    ordinal >= -2_147_483_648 &&
+    ordinal <= 2_147_483_647
+    ? ordinal
+    : undefined;
 }
 
 function freezeRawInlines(
@@ -1085,10 +1098,16 @@ class XhtmlProjector {
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
+    const start = ordered
+      ? listOrdinal(attribute(event, "", "start"))
+      : undefined;
     const collector: ListCollector = {
       kind: "list",
       context,
       ordered,
+      ...(start === undefined ? {} : { start }),
+      nextOrdinal: start ?? 1,
+      nextRenderedOrdinal: start ?? 1,
       items: [],
     };
     this.#destinations.push(collector);
@@ -1125,7 +1144,17 @@ class XhtmlProjector {
       name: event.name,
       context,
       omitted: false,
-      closeAction: { kind: "list-item", collector },
+      closeAction: {
+        kind: "list-item",
+        collector,
+        ...(parent.ordered
+          ? {
+              value:
+                listOrdinal(attribute(event, "", "value")) ??
+                parent.nextOrdinal,
+            }
+          : {}),
+      },
       paragraphSourceBoundary: true,
       ...(elementId === undefined
         ? {}
@@ -1273,14 +1302,22 @@ class XhtmlProjector {
         if (parent.kind !== "list") {
           return fail("internal-failure");
         }
+        if (action.value !== undefined)
+          parent.nextOrdinal = Math.min(2_147_483_647, action.value + 1);
         if (action.collector.blocks.length === 0) {
           return;
         }
         parent.items.push(
           Object.freeze({
+            ...(action.value !== undefined &&
+            action.value !== parent.nextRenderedOrdinal
+              ? { value: action.value }
+              : {}),
             children: Object.freeze([...action.collector.blocks]),
           }),
         );
+        parent.nextRenderedOrdinal =
+          action.value === undefined ? parent.nextOrdinal : action.value + 1;
         return;
       }
       case "list": {
@@ -1295,6 +1332,9 @@ class XhtmlProjector {
           Object.freeze({
             kind: "list",
             ordered: action.collector.ordered,
+            ...(action.collector.start === undefined
+              ? {}
+              : { start: action.collector.start }),
             items: Object.freeze([...action.collector.items]),
             ...contextProperties(context),
           }),

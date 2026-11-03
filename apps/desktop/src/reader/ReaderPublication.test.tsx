@@ -328,6 +328,8 @@ function narrationSnapshot(
 }
 
 class ManualReaderNarrationSource implements ReaderNarrationSource {
+  readonly beginReaderPlacement = vi.fn();
+  readonly settleReaderPlacement = vi.fn();
   readonly #listeners = new Set<() => void>();
   readonly #progressListeners = new Set<
     (observation: ProductNarrationAudibleProgressObservation) => void
@@ -992,6 +994,29 @@ describe("navigable publication reader", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Continuation" }),
     ).toHaveFocus();
+  });
+
+  it("RCF-09 late narration attachment joins the initial restoration barrier", () => {
+    const publication = createPublication();
+    const environment = new ManualReaderReflowEnvironment();
+    const source = new ManualReaderNarrationSource();
+    const props = {
+      publication,
+      initialLocator: CONTINUATION_LOCATED_BLOCK.startLocator,
+      restoreInitialLocator: true,
+      reflowEnvironment: environment,
+    };
+    const view = render(<ReaderPublicationContent {...props} />);
+    view.rerender(
+      <ReaderPublicationContent {...props} narrationSource={source} />,
+    );
+    expect(source.beginReaderPlacement).toHaveBeenCalled();
+    expect(source.settleReaderPlacement).not.toHaveBeenCalled();
+    act(() => environment.flushAll());
+    expect(source.settleReaderPlacement).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: CONTINUATION_LOCATED_BLOCK.startLocator,
+    });
   });
 
   it("waits for narration invalidation before chapter placement and reports the settled reason", async () => {
@@ -1790,7 +1815,7 @@ describe("navigable publication reader", () => {
 
     act(() => narrationSource.stop());
     const checkpoint = screen.getByRole("button", {
-      name: "Resume narration at saved checkpoint",
+      name: "Start narration at the beginning of the saved paragraph",
     });
     expect(checkpoint).not.toHaveAttribute("aria-current");
     expect(checkpoint.textContent).toBe("");
@@ -1939,7 +1964,7 @@ describe("navigable publication reader", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Resume narration at saved checkpoint",
+        name: "Start narration at the beginning of the saved paragraph",
       }),
     ).toHaveAttribute("data-leaf-state", "checkpoint");
   });

@@ -371,6 +371,9 @@ function inspectPackageProfile(
 
 export async function resolveContainerPackage(
   archive: OpenedEpubArchive,
+  validateCandidate?: (
+    candidate: ResolvedPackageDocument,
+  ) => Promise<"supported" | "incompatible-layout">,
 ): Promise<ResolvedPackageDocument> {
   const rootfiles = await readContainerRootfiles(archive);
   let firstUnsupportedReason:
@@ -397,21 +400,29 @@ export async function resolveContainerPackage(
     }
 
     const layout = profile.renditionLayout ?? REFLOWED_LAYOUT;
-    if (layout === FIXED_LAYOUT) {
+    if (layout === FIXED_LAYOUT && validateCandidate === undefined) {
       firstUnsupportedReason ??= "unsupported-layout";
       continue;
     }
 
-    if (layout !== REFLOWED_LAYOUT) {
+    if (layout !== REFLOWED_LAYOUT && layout !== FIXED_LAYOUT) {
       return fail("malformed-package");
     }
 
-    return Object.freeze({
+    const candidate = Object.freeze({
       path: rootfile.path,
       bytes,
       version: profile.version,
       renditionLayout: REFLOWED_LAYOUT,
     });
+    if (
+      validateCandidate !== undefined &&
+      (await validateCandidate(candidate)) === "incompatible-layout"
+    ) {
+      firstUnsupportedReason ??= "unsupported-layout";
+      continue;
+    }
+    return candidate;
   }
 
   return fail(firstUnsupportedReason ?? "unsupported-resource");

@@ -13,6 +13,121 @@ use std::{
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[test]
+fn rcf14_bounds_both_manifest_verification_and_cleanup() {
+    let root = TestRoot::new();
+    let authority = write_runtime(&root.0);
+    let path = root.0.join(runtime_manifest_name(&authority));
+    let original = fs::read(&path).unwrap();
+    for bytes in [
+        vec![b' '; MAXIMUM_RUNTIME_MANIFEST_BYTES as usize + 1],
+        original[..original.len() - 1].to_vec(),
+        vec![b'!'; original.len()],
+    ] {
+        fs::write(&path, bytes).unwrap();
+        assert!(matches!(
+            verify_runtime_cancellable(&root.0, &authority, None),
+            Err(OptionalProfileError::VerificationFailed)
+        ));
+        assert!(matches!(
+            runtime_manifest_for_bytecode_cleanup(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        ));
+    }
+    fs::write(&path, original).unwrap();
+    assert!(verify_runtime_cancellable(&root.0, &authority, None).is_ok());
+    assert!(runtime_manifest_for_bytecode_cleanup(&root.0, &authority).is_ok());
+    assert!(matches!(
+        read_runtime_manifest(&path, Some(&AtomicBool::new(true))),
+        Err(OptionalProfileError::Cancelled)
+    ));
+}
+
+#[cfg(windows)]
+#[test]
+fn rcf13_explicit_cleanup_retry_preserves_failure_until_verified_and_never_claims_replacement() {
+    use std::os::windows::fs::OpenOptionsExt;
+    for staging_failure in [false, true] {
+        let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        let staging = staging_root(&root.0).join("operation/package");
+        let authority = write_runtime(&staging);
+        let active = package_root(&root.0);
+        fs::create_dir_all(&active).unwrap();
+        fs::write(active.join("old.bin"), b"old").unwrap();
+        let backup = promotion_backup_root(&root.0);
+        let signal = AtomicBool::new(false);
+        let locked_path = if staging_failure {
+            let path = staging_root(&root.0).join("operation/retained.bin");
+            fs::write(&path, b"retained").unwrap();
+            path
+        } else {
+            backup.join("old.bin")
+        };
+        AFTER_COMMIT_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                CLEANUP_LOCK.with(|lock| {
+                    *lock.borrow_mut() = Some(
+                        fs::OpenOptions::new()
+                            .read(true)
+                            .share_mode(0)
+                            .open(&locked_path)
+                            .unwrap(),
+                    )
+                });
+            }));
+        });
+        let result = promote(&root.0, &staging, &authority, Some((&manager, &signal)))
+            .and_then(|()| clean_staging(&root.0));
+        assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+        manager.set_operation(
+            OptionalProfileState::Failed,
+            0,
+            Some(OptionalProfileError::CleanupFailed.code()),
+            None,
+        );
+        assert_eq!(
+            manager
+                .snapshot_with_manifest(&root.0, &authority)
+                .unwrap()
+                .state,
+            OptionalProfileState::Failed
+        );
+        assert_eq!(
+            manager.retry_cleanup(&root.0, &authority),
+            Err(OptionalProfileError::CleanupFailed)
+        );
+        CLEANUP_LOCK.with(|slot| slot.borrow_mut().take());
+        assert_eq!(
+            manager
+                .snapshot_with_manifest(&root.0, &authority)
+                .unwrap()
+                .state,
+            OptionalProfileState::Failed
+        );
+        assert_eq!(
+            manager.retry_cleanup(&root.0, &authority).unwrap().state,
+            OptionalProfileState::Installed
+        );
+        assert!(!backup.exists());
+        assert!(!staging_root(&root.0).exists());
+        manager.set_operation(
+            OptionalProfileState::Downloading,
+            0,
+            None,
+            Some(Arc::new(AtomicBool::new(false))),
+        );
+        let marker = staging_root(&root.0).join("new/keep");
+        fs::create_dir_all(marker.parent().unwrap()).unwrap();
+        fs::write(&marker, b"new").unwrap();
+        assert_eq!(
+            manager.retry_cleanup(&root.0, &authority).unwrap().state,
+            OptionalProfileState::Downloading
+        );
+        assert_eq!(fs::read(marker).unwrap(), b"new");
+    }
+}
+
+#[test]
 fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();
@@ -2417,7 +2532,7 @@ fn hashes_optional_payloads_without_a_large_stack_allocation() {
 }
 
 #[test]
-fn ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent() {
+fn rcf13_ordinary_snapshot_preserves_incomplete_prior_operation_until_explicit_removal() {
     let root = TestRoot::new();
     let stale_staging = staging_root(&root.0).join("operation/package.zip");
     fs::create_dir_all(stale_staging.parent().expect("parent should exist"))
@@ -2428,8 +2543,10 @@ fn ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent() {
         .snapshot_at(&root.0)
         .expect("snapshot should succeed");
     assert_eq!(before.state, OptionalProfileState::Absent);
-    assert!(!stale_staging.exists());
+    assert!(stale_staging.exists());
     assert!(!profile_root(&root.0).exists());
+    manager.remove_at(&root.0).unwrap();
+    assert!(!stale_staging.exists());
 }
 
 #[test]

@@ -6,8 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Revalidated chat findings: minimal corrections](revalidated-chat-findings-minimal-corrections.md)
-  — planning only; implementation is not authorized or started.
+No active ExecPlans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

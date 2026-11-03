@@ -246,17 +246,24 @@ class _ProcessGeneration(Iterator[AudioChunk]):
         self._request_id = request_id
         self._complete = False
         self._deadline = deadline
+        self.connection = owner._connection
+
+    def require_current(self) -> None:
+        if self._complete or self._owner._active_generation is not self:
+            raise StopIteration
 
     def __iter__(self) -> _ProcessGeneration:
         return self
 
     def __next__(self) -> AudioChunk:
+        self.require_current()
         if self._complete or self._owner.was_cancelled(self._request_id):
             raise StopIteration
         remaining = self._deadline - time.monotonic()
         if remaining <= 0:
             self._owner.abort("timeout")
-        response = self._owner.receive(remaining)
+        response = self._owner.receive(remaining, generation=self)
+        self.require_current()
         if time.monotonic() > self._deadline:
             self._owner.abort("timeout")
         if response[0] == "chunk" and len(response) == 2:
@@ -298,6 +305,7 @@ class IsolatedBenchmarkAdapter:
         self._loaded = False
         self._cleanup_pending = False
         self._active_request_id: str | None = None
+        self._active_generation: _ProcessGeneration | None = None
         self._cancelled_request_ids: set[str] = set()
 
     @property
@@ -341,17 +349,27 @@ class IsolatedBenchmarkAdapter:
         except (BrokenPipeError, EOFError, OSError):
             self.abort("crash")
 
-    def receive(self, timeout_seconds: float) -> _Message:
-        connection = self._connection
+    def receive(
+        self, timeout_seconds: float, *, generation: _ProcessGeneration | None = None
+    ) -> _Message:
+        if generation is not None:
+            generation.require_current()
+        connection = self._connection if generation is None else generation.connection
         if connection is None:
             raise AdapterOperationError("crash")
         try:
             if not connection.poll(timeout_seconds):
+                if generation is not None:
+                    generation.require_current()
                 self.abort("timeout")
+            if generation is not None:
+                generation.require_current()
             return cast(_Message, connection.recv())
         except AdapterOperationError:
             raise
         except (EOFError, OSError):
+            if generation is not None:
+                generation.require_current()
             self.abort("crash")
         raise AssertionError("unreachable")
 
@@ -409,13 +427,15 @@ class IsolatedBenchmarkAdapter:
         self._expect_ok(self.timeouts.request_seconds)
 
     def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
-        if self._active_request_id is not None:
+        if self._active_request_id is not None or self.was_cancelled(request.request_id):
             raise AdapterOperationError("invalid-request")
         self._ensure_loaded()
         self._active_request_id = request.request_id
         deadline = time.monotonic() + self.timeouts.request_seconds
+        generation = _ProcessGeneration(self, request.request_id, deadline)
+        self._active_generation = generation
         self._send(("generate", request))
-        return _ProcessGeneration(self, request.request_id, deadline)
+        return generation
 
     def generate_batch(
         self,
@@ -456,11 +476,14 @@ class IsolatedBenchmarkAdapter:
     def finish_request(self, request_id: str) -> None:
         if self._active_request_id == request_id:
             self._active_request_id = None
+            self._active_generation = None
 
-    def cancel(self, request_id: str) -> CancellationResponse:
+    def cancel(self, request_id: str, *, cancel_idle: bool = False) -> CancellationResponse:
         self._cancelled_request_ids.add(request_id)
-        self.finish_request(request_id)
-        self._terminate_worker()
+        if self._active_request_id == request_id or (
+            cancel_idle and self._active_request_id is None
+        ):
+            self._terminate_worker()
         return CancellationResponse(acknowledged=True, stop_mode="worker-termination")
 
     def framework_memory_high_water_bytes(self) -> int | None:
@@ -477,6 +500,7 @@ class IsolatedBenchmarkAdapter:
         self._loaded = False
         self._placement_evidence = None
         self._active_request_id = None
+        self._active_generation = None
         try:
             if connection is not None:
                 connection.close()

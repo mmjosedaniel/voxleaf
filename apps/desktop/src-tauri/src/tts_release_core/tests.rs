@@ -95,6 +95,25 @@ fn tracked_manifest_matches_core_lock_and_native_authority() {
 }
 
 #[test]
+fn rcf14_rejects_oversized_truncated_and_malformed_manifests() {
+    let root = TestRoot::new();
+    let trusted = write_test_package(&root.0);
+    for bytes in [
+        vec![b' '; trusted.len() + 1],
+        trusted[..trusted.len() - 1].to_vec(),
+        vec![b'!'; trusted.len()],
+    ] {
+        fs::write(root.0.join(RUNTIME_MANIFEST_NAME), bytes).unwrap();
+        assert_eq!(
+            verify_package(&root.0, &trusted, PIPER_ENGLISH_PROFILE_ID),
+            Err(PackagedCoreError::Invalid)
+        );
+    }
+    fs::write(root.0.join(RUNTIME_MANIFEST_NAME), &trusted).unwrap();
+    assert!(verify_package(&root.0, &trusted, PIPER_ENGLISH_PROFILE_ID).is_ok());
+}
+
+#[test]
 fn accepts_only_the_exact_manifest_and_payload() {
     let root = TestRoot::new();
     let manifest = write_test_package(&root.0);

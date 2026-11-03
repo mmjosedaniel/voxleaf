@@ -24,12 +24,58 @@ from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
 from benchmarks.process_fake import ProcessFakeAdapter, ProcessFakeFactory
 
 
+def test_rcf_12_rejects_cancelled_id_before_starting_worker() -> None:
+    adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
+    try:
+        adapter.generate(_request("retired"))
+        adapter.cancel("retired")
+        with pytest.raises(AdapterOperationError, match="invalid-request"):
+            adapter.generate(_request("retired"))
+        assert adapter.worker_pid is None
+        assert tuple(adapter.generate(_request("fresh")))
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+@pytest.mark.parametrize("termination", ["abort", "cancel", "close"])
+def test_rcf_22_obsolete_iterator_and_cancel_preserve_replacement(
+    termination: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
+    try:
+        retired = adapter.generate(_request("old"))
+        if termination == "abort":
+            with pytest.raises(AdapterOperationError, match="timeout"):
+                adapter.abort("timeout")
+        elif termination == "cancel":
+            adapter.cancel("old")
+        else:
+            # A retained, unconsumed iterator can make graceful close reject
+            # stale output, but close must still contain and reap its child.
+            try:
+                adapter.close()
+            except AdapterOperationError:
+                assert adapter.worker_pid is None
+        monkeypatch.setattr(retired, "_deadline", 0)
+        replacement = adapter.generate(_request("new"))
+        replacement_pid = adapter.worker_pid
+        assert tuple(retired) == ()
+        adapter.cancel("old")
+        assert adapter.worker_pid == replacement_pid
+        assert all(chunk.request_id == "new" for chunk in replacement)
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
 @pytest.mark.parametrize("failure", ["join", "close", "survives"])
 def test_r7_03_retains_failed_teardown_and_blocks_replacement(
     monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
     adapter.load()
+    adapter.generate(_request("r7-owned"))
     process = adapter._process
     assert process is not None
     original_join = process.join
@@ -103,7 +149,7 @@ def test_vca07_receives_only_the_remaining_request_deadline(
         aborted.append(code)
         raise AdapterOperationError(code)
 
-    def receive(timeout: float) -> tuple[object, ...]:
+    def receive(timeout: float, **_ownership: object) -> tuple[object, ...]:
         waits.append(timeout)
         if len(waits) == 2 and timeout <= 50:
             abort("timeout")  # Later chunk is blocked beyond the remaining budget.

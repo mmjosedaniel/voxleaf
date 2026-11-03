@@ -39,6 +39,29 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it("RCF-13 explicit cleanup bypasses a coalesced poll and rejects stale retry after replacement", async () => {
+    const poll = deferred();
+    const retry = deferred();
+    const invoke = vi.fn((command: string, args?: Record<string, unknown>) =>
+      command === "optional_chatterbox_snapshot"
+        ? args?.retryCleanup === true
+          ? retry.promise
+          : poll.promise
+        : Promise.resolve(snapshot("confirming")),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const pendingPoll = client.refresh();
+    const pendingRetry = client.retryCleanup();
+    expect(invoke).toHaveBeenLastCalledWith("optional_chatterbox_snapshot", {
+      retryCleanup: true,
+    });
+    await client.select();
+    retry.resolve(snapshot("installed"));
+    poll.resolve(snapshot("failed"));
+    await Promise.all([pendingPoll, pendingRetry]);
+    expect(client.observe().state).toBe("confirming");
+  });
+
   it("RAF-02 stale download settlement cannot clear a replacement attempt", async () => {
     const first = deferred();
     const second = deferred();

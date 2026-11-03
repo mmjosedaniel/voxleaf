@@ -111,12 +111,15 @@ export interface SemanticBlockQuoteBlock extends SemanticTextContext {
 }
 
 export interface SemanticListItem {
+  /** Bounded signed ordinal override for an ordered list. */
+  readonly value?: number;
   readonly children: readonly SemanticBlock[];
 }
 
 export interface SemanticListBlock extends SemanticTextContext {
   readonly kind: "list";
   readonly ordered: boolean;
+  readonly start?: number;
   readonly items: readonly SemanticListItem[];
 }
 

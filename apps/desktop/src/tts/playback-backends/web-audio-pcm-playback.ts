@@ -35,6 +35,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   #wsolaFailed = false;
   #wsolaUnitFailure: (() => void) | undefined;
   #wsolaPreparation: Promise<void> | undefined;
+  #wsolaPreparationOwner: number | undefined;
   #wsolaPreparationToken = 0;
   #closeOperation: Promise<void> | undefined;
 
@@ -62,7 +63,17 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       return;
     }
     if (this.#wsolaPreparation !== undefined) {
-      return this.#wsolaPreparation;
+      const token = this.#wsolaPreparationToken;
+      if (this.#wsolaPreparationOwner === token) return this.#wsolaPreparation;
+      // A released creation still owns cleanup. Join it before admitting the
+      // current request, without adopting its obsolete success or failure.
+      await this.#wsolaPreparation.catch(() => undefined);
+      if (
+        token !== this.#wsolaPreparationToken ||
+        this.#closeOperation !== undefined
+      )
+        return;
+      return this.preparePlaybackRate(playbackRatePercent);
     }
     const context = this.#ensureAudioGraph();
     const token = this.#wsolaPreparationToken;
@@ -83,11 +94,13 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       created.node.connect(this.#gain!);
     });
     this.#wsolaPreparation = preparation;
+    this.#wsolaPreparationOwner = token;
     try {
       await preparation;
     } finally {
       if (this.#wsolaPreparation === preparation) {
         this.#wsolaPreparation = undefined;
+        this.#wsolaPreparationOwner = undefined;
       }
     }
   }
@@ -109,6 +122,10 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     this.#disposeWsola();
     this.#wsola = undefined;
     this.#wsolaFailed = false;
+  }
+
+  public playbackRatePreparationFailed(): boolean {
+    return this.#wsolaFailed;
   }
 
   #disposeWsola(): void {

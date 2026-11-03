@@ -202,6 +202,7 @@ export function ReaderPublicationContent({
   segmentHighlightEnvironment,
 }: ReaderPublicationContentProps): ReactElement {
   const externalCallbacks = useRef({
+    narrationSource,
     onActiveLocatorChange,
     onNavigationSettlement,
     onSettledLocatorChange,
@@ -209,6 +210,7 @@ export function ReaderPublicationContent({
   });
   useLayoutEffect(() => {
     externalCallbacks.current = {
+      narrationSource,
       onActiveLocatorChange,
       onNavigationSettlement,
       onSettledLocatorChange,
@@ -222,18 +224,29 @@ export function ReaderPublicationContent({
         preferences: initialPreferences,
       }),
   );
+  const placementPending = useRef(false);
   const notifySettlement = useCallback(
     (
       reason: ReaderLocatorSettlementReason,
       locator = coordinator.state.activeLocator,
     ): void => {
+      if (reason === "reflow" && placementPending.current) return;
+      placementPending.current = false;
       if (coordinator.state.contentStatus === "chapter-too-large") {
+        externalCallbacks.current.narrationSource?.settleReaderPlacement?.({
+          status: "unavailable",
+          reason: "chapter-too-large",
+        });
         externalCallbacks.current.onNavigationSettlement?.(
           { status: "unavailable", reason: "chapter-too-large" },
           reason,
         );
         return;
       }
+      externalCallbacks.current.narrationSource?.settleReaderPlacement?.({
+        status: "settled",
+        locator,
+      });
       externalCallbacks.current.onNavigationSettlement?.(
         { status: "settled", locator },
         reason,
@@ -273,13 +286,6 @@ export function ReaderPublicationContent({
         onLocator: () => undefined,
       }),
   );
-  useLayoutEffect(() => {
-    visualLocatorTracker.setOnLocator((locator) => {
-      if (coordinator.updateActiveVisualLocator(locator)) {
-        externalCallbacks.current.onActiveLocatorChange?.(locator);
-      }
-    });
-  }, [coordinator, visualLocatorTracker]);
   useStrictModeSafeResourceCleanup(visualLocatorTracker);
   const [initialVisualLocatorResume] = useState(() =>
     initialRestorationRequired ? visualLocatorTracker.suspend() : undefined,
@@ -298,6 +304,12 @@ export function ReaderPublicationContent({
         return;
       }
       initialRestorationStatus.current = settlement.status;
+      if (settlement.status !== "superseded")
+        externalCallbacks.current.narrationSource?.settleReaderPlacement?.(
+          settlement.status === "unavailable"
+            ? { status: "unavailable", reason: "chapter-too-large" }
+            : { status: "settled", locator: settlement.locator },
+        );
       setInitialRestorationPending(false);
       const resume = initialVisualLocatorResumeRef.current;
       initialVisualLocatorResumeRef.current = undefined;
@@ -352,6 +364,14 @@ export function ReaderPublicationContent({
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   useLayoutEffect(() => {
     if (narrationSource === undefined) return;
+    if (
+      initialRestorationStatus.current === "pending" ||
+      placementPending.current ||
+      pendingPositionSaveRevision.current !== undefined
+    ) {
+      narrationSource.beginReaderPlacement?.();
+      return;
+    }
     // Attachment replays availability, not a navigation or a position save.
     externalCallbacks.current.onNavigationSettlement?.(
       coordinator.state.contentStatus === "chapter-too-large"
@@ -400,6 +420,14 @@ export function ReaderPublicationContent({
       ),
   );
   useStrictModeSafeResourceCleanup(segmentHighlightController);
+  useLayoutEffect(() => {
+    visualLocatorTracker.setOnLocator((locator) => {
+      if (coordinator.updateActiveVisualLocator(locator)) {
+        segmentHighlightController.manualInspection();
+        externalCallbacks.current.onActiveLocatorChange?.(locator);
+      }
+    });
+  }, [coordinator, visualLocatorTracker, segmentHighlightController]);
   useStrictModeSafeResourceCleanup(
     domRangeMapper === undefined ? ownedDomRangeMapper : undefined,
   );
@@ -618,6 +646,8 @@ export function ReaderPublicationContent({
       }
       const request = programmaticNavigationRequest.current + 1;
       programmaticNavigationRequest.current = request;
+      placementPending.current = true;
+      narrationSource?.beginReaderPlacement?.();
       const continueNavigation = (): void => {
         if (programmaticNavigationRequest.current !== request) {
           return;
@@ -650,12 +680,16 @@ export function ReaderPublicationContent({
       try {
         invalidation = onNavigationIntent?.(reason);
       } catch {
+        notifySettlement(reason);
         return;
       }
       if (invalidation === undefined) {
         continueNavigation();
       } else {
-        void invalidation.then(continueNavigation).catch(() => undefined);
+        void invalidation.then(continueNavigation).catch(() => {
+          if (programmaticNavigationRequest.current === request)
+            notifySettlement(reason);
+        });
       }
     },
     [
@@ -663,6 +697,7 @@ export function ReaderPublicationContent({
       completeInitialRestoration,
       finishProgrammaticNavigation,
       onNavigationIntent,
+      narrationSource,
       notifySettlement,
       reflowRestorer,
       segmentHighlightController,

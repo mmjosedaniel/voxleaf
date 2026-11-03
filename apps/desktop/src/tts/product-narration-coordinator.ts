@@ -118,6 +118,7 @@ export interface ProductNarrationSnapshot {
     "loading" | NarrationStartPreferenceReadResult["status"];
   readonly canPersistStartPreference: boolean;
   readonly playbackRatePercent: NarrationPlaybackRatePercentV3;
+  readonly playbackRateFallback?: boolean;
   readonly playbackPreferenceStatus:
     "loading" | NarrationPlaybackPreferenceReadResult["status"];
   readonly canPersistPlaybackPreference: boolean;
@@ -375,6 +376,14 @@ export class ProductNarrationCoordinator {
   readonly #recovery = new OperationalRecoveryController();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
+  readonly #knownPredecessors: {
+    previous: LocatorRangeV1;
+    next: LocatorRangeV1;
+  }[] = [];
+  #lastPreparedBoundary: LocatorRangeV1 | undefined;
+  #playbackRateFallback = false;
+  #handledPlaybackRateFallback = 0;
+  #playbackPreferenceRevision = 0;
   #segmentationContext: string | undefined;
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #availabilityRevision = 0;
@@ -398,6 +407,7 @@ export class ProductNarrationCoordinator {
   #audibleRange: LocatorRangeV1 | undefined;
   #playIntent: ProductNarrationPlayIntent = "inactive";
   #readerPlacementAvailable = true;
+  #readerPlacementPending = false;
   #pendingNavigation: PendingNavigation | undefined;
   #navigationRevision = 0;
   #pausedNavigationState: AdaptivePreparationUiState | undefined;
@@ -608,8 +618,9 @@ export class ProductNarrationCoordinator {
     ) {
       const stop = this.stopForConfigurationChange();
       const containmentToken = this.#runToken;
-      await stop;
+      const containment = await stop;
       if (
+        containment !== "contained" ||
         this.#closed ||
         revision !== this.#availabilityRevision ||
         containmentToken !== this.#runToken ||
@@ -732,6 +743,8 @@ export class ProductNarrationCoordinator {
     if (this.#closed || !this.#canPersistPlaybackPreference) {
       return false;
     }
+    const revision = ++this.#playbackPreferenceRevision;
+    this.#playbackRateFallback = false;
     try {
       if (this.#identity !== undefined)
         this.#player?.setPlaybackRatePercent(playbackRatePercent);
@@ -741,9 +754,10 @@ export class ProductNarrationCoordinator {
     this.#playbackRatePercent = playbackRatePercent;
     this.#updateRetainedPlaybackRate();
     this.#publish();
-    const result =
-      await this.#playbackPreferenceRepository.write(playbackRatePercent);
-    if (this.#closed) {
+    const result = await this.#playbackPreferenceRepository
+      .write(playbackRatePercent)
+      .catch(() => ({ status: "unavailable" as const }));
+    if (this.#closed || revision !== this.#playbackPreferenceRevision) {
       return false;
     }
     if (result.status === "saved") {
@@ -883,6 +897,7 @@ export class ProductNarrationCoordinator {
   public async beginExternalNavigation(
     event: "chapter-navigation",
   ): Promise<void> {
+    this.beginReaderPlacement();
     if (this.#closed || this.#playIntent === "inactive") {
       return;
     }
@@ -894,6 +909,7 @@ export class ProductNarrationCoordinator {
     settlement: import("../reader/reader-navigation").ReaderNavigationSettlement,
   ): void {
     if (this.#closed) return;
+    this.#readerPlacementPending = false;
     this.#readerPlacementAvailable = settlement.status === "settled";
     if (!this.#readerPlacementAvailable) {
       this.#navigationRevision += 1;
@@ -910,10 +926,12 @@ export class ProductNarrationCoordinator {
     if (this.#closed) {
       return;
     }
+    this.#readerPlacementPending = false;
     const pending = this.#pendingNavigation;
     if (pending === undefined) {
       this.#activeLocator = locator;
       this.#visibleLocator = locator;
+      this.#publish();
       return;
     }
     pending.target = locator;
@@ -934,6 +952,8 @@ export class ProductNarrationCoordinator {
     if (
       this.#configurationChanges > 0 ||
       this.#closed ||
+      this.#readerPlacementPending ||
+      this.#pendingNavigation !== undefined ||
       !this.#readerPlacementAvailable ||
       this.#availability !== "available" ||
       this.#recovery.observe().phase !== "operational"
@@ -952,6 +972,7 @@ export class ProductNarrationCoordinator {
 
   public startAtLocator(locator: ReadingLocatorV1): boolean {
     if (
+      this.#readerPlacementPending ||
       this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
@@ -1017,6 +1038,8 @@ export class ProductNarrationCoordinator {
 
   public start(): void {
     if (
+      this.#readerPlacementPending ||
+      this.#pendingNavigation !== undefined ||
       this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
@@ -1031,6 +1054,8 @@ export class ProductNarrationCoordinator {
 
   public recover(): void {
     if (
+      this.#readerPlacementPending ||
+      this.#pendingNavigation !== undefined ||
       this.#configurationChanges > 0 ||
       this.#closed ||
       !this.#readerPlacementAvailable ||
@@ -1122,6 +1147,7 @@ export class ProductNarrationCoordinator {
     this.#estimator.reset();
     this.#prepared.clear();
     this.#continuation = this.#activeLocator;
+    this.#lastPreparedBoundary = undefined;
     this.#nextSequence = 0;
     this.#acceptedAudioUnitCount = 0;
     this.#acceptedAudioSampleFrames = 0;
@@ -1147,6 +1173,7 @@ export class ProductNarrationCoordinator {
       this.#playbackRatePercent,
     );
     this.#player = this.#createPlayer(this.#scheduler);
+    this.#handledPlaybackRateFallback = 0;
     this.#player.setVolumePercent(this.#volumePercent);
     this.#playerAudibleUnsubscribe = this.#player.subscribeAudibleProgress(
       (observation) => {
@@ -1165,9 +1192,13 @@ export class ProductNarrationCoordinator {
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
             this.#rememberBoundary(observation.sourceRange);
-            this.#scheduler?.forEachBufferedSourceRange((range) =>
-              this.#rememberBoundary(range),
-            );
+            let previous = observation.sourceRange;
+            this.#scheduler?.forEachBufferedSourceRange((range) => {
+              this.#rememberBoundary(range);
+              if (!sameRange(previous, range))
+                this.#rememberPredecessor(previous, range);
+              previous = range;
+            });
             for (const entry of this.#prepared.values())
               this.#rememberBoundary(entry.contract.sourceRange);
             this.#visibleLocator = observation.sourceRange.start;
@@ -1227,6 +1258,8 @@ export class ProductNarrationCoordinator {
 
   public resume(): void {
     if (
+      this.#readerPlacementPending ||
+      !this.#readerPlacementAvailable ||
       this.#closed ||
       this.#configurationChanges > 0 ||
       this.#pendingNavigation !== undefined ||
@@ -1312,14 +1345,42 @@ export class ProductNarrationCoordinator {
     await this.#stopActiveRun();
   }
 
-  public async stopForConfigurationChange(): Promise<void> {
-    await this.stop();
+  public beginReaderPlacement(): void {
+    if (this.#closed) return;
+    this.#readerPlacementPending = true;
+    this.#publish();
+  }
+
+  public async stopForConfigurationChange(): Promise<"contained" | "failed"> {
+    const stopping = this.stop();
+    const token = this.#runToken;
+    await stopping;
+    if (
+      token !== this.#runToken ||
+      this.#scheduler !== undefined ||
+      this.#player !== undefined
+    )
+      return "failed";
     try {
-      await this.#client.shutdown();
+      await this.#withinCleanupDeadline(
+        this.#client.shutdown(),
+        this.#clock.nowMs +
+          HARDWARE_PROFILE_AUTHORITY_V1.cleanup.finalCleanupMaximumMs,
+      );
     } catch {
-      // Identity and retained audio were invalidated before containment.
+      return "failed";
     }
     this.#publish();
+    const service = this.#client.observe();
+    return token === this.#runToken &&
+      this.#scheduler === undefined &&
+      this.#player === undefined &&
+      service.state === "stopped" &&
+      service.serviceInstanceId === undefined &&
+      !service.hasActiveGeneration &&
+      service.retainedAudioUnits === 0
+      ? "contained"
+      : "failed";
   }
 
   #stopActiveRun(completedState?: AdaptivePreparationUiState): Promise<void> {
@@ -1591,7 +1652,12 @@ export class ProductNarrationCoordinator {
   }
 
   #requestBoundaryNavigation(event: "next-segment" | "previous-segment"): void {
-    if (this.#closed || this.#playIntent === "inactive") {
+    if (
+      this.#closed ||
+      this.#playIntent === "inactive" ||
+      this.#readerPlacementPending ||
+      this.#pendingNavigation !== undefined
+    ) {
       return;
     }
     const currentIndex = this.#currentBoundaryIndex();
@@ -1606,6 +1672,11 @@ export class ProductNarrationCoordinator {
     if (target === undefined) {
       return;
     }
+    if (
+      event === "previous-segment" &&
+      !this.#hasKnownPredecessor(currentIndex!)
+    )
+      return;
     const pending = this.#beginNavigation(event);
     pending.target = target.start;
     void pending.stop.then(() => {
@@ -1637,6 +1708,7 @@ export class ProductNarrationCoordinator {
     if (this.#segmentationContext === context) return;
     this.#segmentationContext = context;
     this.#knownBoundaries.length = 0;
+    this.#knownPredecessors.length = 0;
     this.#audibleRange = undefined;
   }
 
@@ -1653,6 +1725,40 @@ export class ProductNarrationCoordinator {
       containsLocator(candidate, this.#activeLocator),
     );
     return containing >= 0 ? containing : undefined;
+  }
+
+  #hasKnownPredecessor(index: number): boolean {
+    const current = this.#knownBoundaries[index];
+    const previous = this.#knownBoundaries[index - 1];
+    return (
+      current !== undefined &&
+      previous !== undefined &&
+      this.#knownPredecessors.some(
+        (edge) =>
+          sameRange(edge.previous, previous) && sameRange(edge.next, current),
+      )
+    );
+  }
+
+  #rememberPredecessor(previous: LocatorRangeV1, next: LocatorRangeV1): void {
+    if (
+      !this.#knownPredecessors.some(
+        (edge) =>
+          sameRange(edge.previous, previous) && sameRange(edge.next, next),
+      )
+    ) {
+      this.#knownPredecessors.push({ previous, next });
+    }
+    const retained = this.#knownPredecessors.filter((edge) =>
+      [edge.previous, edge.next].every((range) =>
+        this.#knownBoundaries.some((known) => sameRange(known, range)),
+      ),
+    );
+    this.#knownPredecessors.splice(
+      0,
+      this.#knownPredecessors.length,
+      ...retained,
+    );
   }
 
   #rememberBoundary(range: LocatorRangeV1): void {
@@ -1923,6 +2029,10 @@ export class ProductNarrationCoordinator {
     for (const entry of entries) {
       this.#prepared.set(entry.contract.segmentId, entry);
       this.#rememberBoundary(entry.contract.sourceRange);
+      const next = entry.contract.sourceRange;
+      const previous = this.#lastPreparedBoundary;
+      if (previous !== undefined) this.#rememberPredecessor(previous, next);
+      this.#lastPreparedBoundary = next;
     }
     scheduler.acceptPreparedBatch({
       complete: result.status === "complete",
@@ -1995,8 +2105,39 @@ export class ProductNarrationCoordinator {
         return;
       }
       this.#updateMetrics(player);
+      if (
+        (player.playbackRateFallback ?? 0) > this.#handledPlaybackRateFallback
+      ) {
+        this.#handledPlaybackRateFallback = player.playbackRateFallback!;
+        // A newer selection on the same player supersedes this fallback.
+        if (player.selectedPlaybackRatePercent === 100) {
+          this.#playbackRatePercent = 100;
+          this.#playbackRateFallback = true;
+          this.#updateRetainedPlaybackRate();
+          const revision = ++this.#playbackPreferenceRevision;
+          void this.#playbackPreferenceRepository
+            .write(100)
+            .catch(() => ({ status: "unavailable" as const }))
+            .then((result) => {
+              if (this.#closed || revision !== this.#playbackPreferenceRevision)
+                return;
+              this.#playbackPreferenceStatus =
+                result.status === "saved"
+                  ? "ready"
+                  : result.status === "invalid-selection"
+                    ? "malformed"
+                    : result.status;
+              this.#canPersistPlaybackPreference =
+                result.status !== "unsupported-version";
+              this.#publish();
+            });
+        }
+      }
       if (player.state === "complete") {
         this.#playIntent = "inactive";
+        this.#stopTicker();
+        this.#publish();
+        return;
       }
       this.#publish();
       this.#requestPump(runToken);
@@ -2380,6 +2521,7 @@ export class ProductNarrationCoordinator {
       startPreferenceStatus: this.#startPreferenceStatus,
       canPersistStartPreference: this.#canPersistStartPreference,
       playbackRatePercent: this.#playbackRatePercent,
+      playbackRateFallback: this.#playbackRateFallback,
       playbackPreferenceStatus: this.#playbackPreferenceStatus,
       canPersistPlaybackPreference: this.#canPersistPlaybackPreference,
       state,
@@ -2411,10 +2553,15 @@ export class ProductNarrationCoordinator {
         discardedAudioUnitCount: scheduler?.discardedAudioUnitCount ?? 0,
       }),
       navigation: Object.freeze({
-        canStart: this.#readerPlacementAvailable,
+        canStart:
+          this.#readerPlacementAvailable &&
+          !this.#readerPlacementPending &&
+          this.#pendingNavigation === undefined,
         playIntent: this.#playIntent,
-        settling: this.#pendingNavigation !== undefined,
-        canGoPrevious: navigationActive && currentBoundaryIndex > 0,
+        settling:
+          this.#pendingNavigation !== undefined || this.#readerPlacementPending,
+        canGoPrevious:
+          navigationActive && this.#hasKnownPredecessor(currentBoundaryIndex),
         canGoNext:
           navigationActive &&
           currentBoundaryIndex < this.#knownBoundaries.length - 1,

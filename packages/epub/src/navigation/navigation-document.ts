@@ -123,6 +123,7 @@ class NavigationDocumentParser {
   #tocDepth: number | undefined;
   #headingDepth: number | undefined;
   #label: LabelBuilder | undefined;
+  #hiddenLabelDepth: number | undefined;
   #roots: readonly ParsedNavigationNode[] | undefined;
   #tocCount = 0;
   #navigationNodeCount = 0;
@@ -211,6 +212,14 @@ class NavigationDocumentParser {
       ) {
         return fail("malformed-package");
       }
+
+      if (
+        this.#hiddenLabelDepth === undefined &&
+        attribute(event, "", "hidden") !== undefined
+      ) {
+        this.#hiddenLabelDepth = depth;
+      }
+      if (this.#hiddenLabelDepth !== undefined) return;
 
       const alt = attribute(event, "", "alt");
       if (alt !== undefined) {
@@ -364,6 +373,7 @@ class NavigationDocumentParser {
       }
     }
 
+    if (depth === this.#hiddenLabelDepth) this.#hiddenLabelDepth = undefined;
     this.#elementStack.pop();
   }
 
@@ -373,6 +383,7 @@ class NavigationDocumentParser {
     }
 
     if (this.#label !== undefined) {
+      if (this.#hiddenLabelDepth !== undefined) return;
       this.appendLabelText(this.#label, text);
       return;
     }

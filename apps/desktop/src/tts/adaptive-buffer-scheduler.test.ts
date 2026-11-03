@@ -147,6 +147,72 @@ function synthesize(scheduler: AdaptiveBufferScheduler, unit: OwnedUnit): void {
   expect(scheduler.acceptCompletedUnit(unit)).toBe("accepted");
 }
 
+it("RCF-20 floors the summed effective duration once", () => {
+  const scheduler = makeReadyScheduler(
+    createManualClock(0),
+    { kind: "quick" },
+    75,
+  );
+  prepare(scheduler, [segment(1), segment(2)], true);
+  synthesize(scheduler, ownedUnit(segment(1).segmentId, 2));
+  synthesize(scheduler, ownedUnit(segment(2).segmentId, 2));
+  expect(scheduler.observe().effectiveListeningDurationMs).toBe(5);
+  scheduler.invalidate();
+  scheduler.releaseDiscardedAudioUnits(2);
+});
+
+it.each([-1, 0, 1])(
+  "RCF-20 exact startup and partially consumed mixed rates, frame neighbor %s",
+  (neighbor) => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    prepare(scheduler, [segment(1), segment(2)]);
+    for (const [index, frames] of [180_011, 179_989 + neighbor].entries()) {
+      const original = ownedUnit(segment(index + 1).segmentId, 1);
+      synthesize(scheduler, {
+        ...original,
+        metadata: {
+          ...original.metadata,
+          sampleCountSamples: frames,
+          payloadBytes: frames * 4,
+        },
+        payload: new Uint8Array(frames * 4),
+      });
+    }
+    expect(scheduler.observe().effectiveListeningDurationMs).toBe(
+      neighbor < 0 ? 14_999 : 15_000,
+    );
+    expect(scheduler.observe().playbackState).toBe(
+      neighbor < 0 ? "preparing" : "playing",
+    );
+    scheduler.playAvailableAudio();
+    scheduler.activateCurrentPlaybackRate();
+    scheduler.selectPlaybackRatePercent(75);
+    scheduler.consumeSampleFrames(11);
+    expect(scheduler.observe().effectiveListeningDurationMs).toBe(
+      Math.floor(180_000 / 24 + (179_989 + neighbor) / 18),
+    );
+    scheduler.invalidate();
+    scheduler.releaseDiscardedAudioUnits(2);
+  },
+);
+
+it.each([true, false])(
+  "RCF-21 suppresses low-buffer only for exhausted positive tail: %s",
+  (complete) => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    prepare(scheduler, [segment(1)], complete);
+    synthesize(scheduler, ownedUnit(segment(1).segmentId, 15_000));
+    scheduler.consumeSampleFrames(359_999);
+    expect(scheduler.observe()).toMatchObject({
+      playableSampleFrames: 1,
+      effectiveListeningDurationMs: 0,
+      lowBuffer: !complete,
+    });
+    scheduler.invalidate();
+    scheduler.releaseDiscardedAudioUnits(1);
+  },
+);
+
 function assertWithinAuthority(
   observation: AdaptiveBufferSchedulerObservation,
 ): void {

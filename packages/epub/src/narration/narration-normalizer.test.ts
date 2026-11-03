@@ -39,6 +39,35 @@ import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
 
+it.each(["1", "+", "-"])(
+  "RCF-08 enforces prose numeric admission after code %s in both authorities",
+  (prefix) => {
+    for (const normalize of [
+      normalizeNarrationSourceTokens,
+      normalizeBilingualNarrationSourceTokens,
+    ]) {
+      for (const count of [128, 129]) {
+        const source = prefix + "1".repeat(count);
+        const tokens = Array.from(
+          source,
+          (text, index): NarrationSourceToken => ({
+            kind: "text",
+            text: text as SensitivePublicationText,
+            sourceSpan: {
+              startOffsetCodePoints: createIndex(index),
+              endOffsetCodePoints: createIndex(index + 1),
+            },
+            textContext: { inlineContainers: index === 0 ? ["code"] : [] },
+          }),
+        );
+        if (count === 129)
+          expect(() => normalize(tokens, "und")).toThrow(EpubArchiveError);
+        else expect(normalize(tokens, "und").text).toBe(source);
+      }
+    }
+  },
+);
+
 it.each(["ø8", "8ø", "字8", "8字", "𐐀8", "8𐐀", "8"])(
   "SFA-02 protects Unicode lexical adjacency: %s",
   (source) => {

@@ -1,13 +1,14 @@
 # Revalidated chat findings: minimal corrections
 
-Status: **Planning only; implementation has not started.**
+Status: **Implementation and behavioral acceptance complete (RCF-R3-20261103). Final archival disposition is recorded in RCF-R4-20261103.**
 
 Created: 2026-11-03. Planning base: 5e4c44b5dde4b099036fcab4ca08218536631fe7.
 Branch: codex/revalidated-chat-findings-plan.
 
-Authorization covers this ExecPlan, its index entry, branch creation and a local
-documentation commit. It does not authorize executing the plan, implementation,
-runtime tests, pushing, opening a PR, merging or publishing.
+On 2026-11-03 the user authorized implementation and necessary host verification.
+No commit, push, PR, merge or publication is authorized. The user delegated the
+four pending policy choices to the implementer; the selected bounded decisions
+and revalidation are recorded in the execution ledger.
 
 ## Goal
 
@@ -43,8 +44,8 @@ After authorized implementation and acceptance:
   manifest reads are bounded before allocation. Package recovery and benchmark
   cancellation cannot damage a newer valid output or worker.
 
-RCF-03, RCF-06 and RCF-17 describe real current behavior but need the policy
-decisions below before their proposed behavior becomes an acceptance criterion.
+RCF-03, RCF-06 and RCF-17 use the bounded policies selected under the user's
+delegated decision. Their accepted criteria are recorded below.
 They are not counted as unconditional regressions against an approved contract.
 
 ## Current state
@@ -52,7 +53,8 @@ They are not counted as unconditional regressions against an approved contract.
 The planning base has the previous corrections, including the completed
 [residual audit plan](../completed/residual-audit-corrections.md). The initial
 worktree and index were clean. Source inspection and historical receipts are
-the evidence for this plan; no new runtime reproduction or benchmark was run.
+the evidence for this plan; that planning phase ran no runtime reproduction or benchmark. Current execution
+results and case coverage are in the linked execution ledger.
 Earlier PASS results establish what was tested on their own input identities.
 They do not prove these newly identified paths correct.
 
@@ -129,7 +131,7 @@ targets, rejected placement, stale settlement and repeated Play.
 container-resolver.ts preselects using version/global layout; package-document.ts
 can reject an individual fixed-layout spine item before validating later items.
 M003's narrower implementation and ADR-0007's first-supported wording differ.
-Proposed policy, pending approval: continue to the next rootfile only after
+Selected policy under the user's delegated decision: continue to the next rootfile only after
 complete structural/security validation identifies a supported-shape but
 layout-incompatible candidate. Return a typed incompatibility result rather
 than broadly catching an unsupported error. Malformed idrefs, unsafe content,
@@ -166,7 +168,7 @@ successful Reset and existing partial-persistence controls.
 **RCF-06 — Previous may jump across disjoint retained preparation ranges.**
 Navigation currently sorts retained prepared ranges; the earlier bounded-history
 and segmentation-context fixes allow that history and do not promise an
-immediate textual predecessor. Proposed policy, pending approval: enable
+immediate textual predecessor. Selected policy under the user's delegated decision: enable
 Previous only for a known immediate predecessor in the preparation chain.
 Disable it when that relationship is unknown. Do not add reverse preparation,
 discard all history on every restart, or infer continuity merely from equal
@@ -193,9 +195,8 @@ Make predecessor suppression conditional on prose context and preserve code
 literal behavior and source mappings. Cover digit/sign code predecessors,
 128/129 boundaries, normal prose predecessors and source-window continuation
 across every affected active profile. The analogous legacy-v1 guard must be
-identified separately at M0: either explicitly approve the same admission-only
-correction without altering normalized output/corpus, or leave it as a named
-unresolved legacy case. Historical v1 immutability is not silently overridden.
+included by the user's delegated M0 decision as the same admission-only
+correction without altering normalized output or the frozen corpus.
 
 **RCF-09 — Initial saved placement is busy but Play is available.** App's
 pending readyRestoration and ReaderPublication's narrator attachment can expose
@@ -281,7 +282,7 @@ Verify the actually persisted visible/heard owners, not just highlight state.
 The preference refresh still considers the paused highlight follow-eligible,
 settles A and can cancel B's pending reflow. Existing audible-precedence and
 Resume-follow corrections do not establish the desired paused-appearance rule.
-Proposed policy, pending approval: preserve manually inspected B through
+Selected policy under the user's delegated decision: preserve manually inspected B through
 paused typography changes; refresh decorations independently of follow and
 visible settlement. Explicit Resume or new audible ownership follows A once.
 Test both A already comfortable and A out of view, rapid preference changes,
@@ -413,7 +414,7 @@ explicitly permits a bounded correction.
 
 ### M0 — Reconfirm scope, decisions and the smallest gate set
 
-Status: Not started.
+Status: Complete. All 22 cases revalidated; four policy choices resolved.
 
 After execution is authorized, record actual HEAD, clean/index state and any
 pre-existing changes; revalidate every owning path against this planning base.
@@ -436,7 +437,7 @@ Use fresh host evidence if an old baseline cannot prove identical inputs.
 
 ### M1 — U1: EPUB boundaries and representation
 
-Status: Not started.
+Status: Complete and accepted by RCF-R3-20261103. Current checks are recorded in the execution ledger.
 
 Implement 01/07/08/15 and approved 03 in their existing owners. Validate source
 text/ranges and rendering together; handle whitespace/list changes before
@@ -445,7 +446,7 @@ affected G3/G6 rendering scenarios pass, with current type/contract checks.
 
 ### M2 — U2/U3: reader, settings and playback
 
-Status: Not started.
+Status: Complete and accepted by RCF-R3-20261103. Current checks are recorded in the execution ledger.
 
 Implement the shared placement barrier for 02/09 first, then containment 05,
 position ownership 16 and approved 06/17. Make the bounded 10/11/18 changes
@@ -456,7 +457,7 @@ settle. Expected acceptance: G1/G3/G6/G8, plus G7 where the harness changes.
 
 ### M3 — U4: optional cleanup and manifest admission
 
-Status: Not started.
+Status: Complete and accepted by RCF-R3-20261103. Current checks are recorded in the execution ledger.
 
 Implement 13/14 with file-operation faults under isolated temporary roots.
 Preserve current and cleanup-only authority identities. Expected acceptance:
@@ -466,7 +467,7 @@ Do not substitute an old native binary's PASS.
 
 ### M4 — U5: output recovery and benchmark ownership
 
-Status: Not started.
+Status: Complete and accepted by RCF-R3-20261103. Current checks are recorded in the execution ledger.
 
 Implement 04 as a transactional preflight, then 12/22 together using process
 fakes and real temporary IPC where the current tests do so. Expected
@@ -475,7 +476,7 @@ inputs to these regressions.
 
 ### M5 — Combined acceptance and independent review
 
-Status: Not started.
+Status: Implementation acceptance complete under RCF-R3-20261103; final archival assessment is recorded separately in RCF-R4-20261103.
 
 Run the required final gates on their final affected inputs. Reuse within this
 execution only where complete identity proof still holds. Perform one final
@@ -695,7 +696,7 @@ not every unrelated gate. Do not retry to hide nondeterministic ownership.
   Preserve data for recovery instead of guessing which generation is current.
 - Reduced testing is based on affected invariants, not a fixed test-count
   quota. Missing identity proof means rerun the affected check, not all checks.
-- Decisions 03/06/17 and legacy 08 are unresolved until explicitly recorded.
+- Decisions 03/06/17 and legacy 08 were resolved under the user's delegation.
   Do not close the whole plan by silently excluding them.
 
 Before implementation, record owned paths and preserve unrelated work. Roll
@@ -706,6 +707,13 @@ If a minimal fix requires a broader contract/architecture change, amend this
 plan and its risk/gate map before dependent implementation.
 
 ## Progress log
+
+- 2026-11-03 execution: verified branch and HEAD
+  `887c5898d0712cf4053e845bbf286e8dadd3cf80`, with clean worktree/index.
+  Applied investigate-bug; independent final change review remains mandatory.
+  Grouped consultation received "Analiza qué es lo más recomendable y aplicalo".
+  Selected all four bounded proposals (03/06/17 and admission-only legacy 08).
+  See [execution ledger](../evidence/revalidated-chat-findings/execution-ledger.md).
 
 - 2026-11-03: Consolidated the 21 original findings, their residual variants and
   the additional benchmark ownership case as RCF-22. Distinguished three
@@ -718,8 +726,9 @@ plan and its risk/gate map before dependent implementation.
 - 2026-11-03: Planning-document evidence policy and local link/structure/path
   inspection passed in normal local PowerShell outside the sandbox. Local
   documentation commit follows the final staged-diff check.
-- M0-M5: not started. No implementation, runtime test or benchmark executed
-  for this plan.
+- M0 source revalidation complete. U1-U5 implementation and grouped checks are
+  in progress; see the execution ledger for exact outcomes and failed attempts.
+  Final static, integrated host, cleanup and independent review gates remain.
 
 ## Discoveries and decisions
 
@@ -727,11 +736,11 @@ plan and its risk/gate map before dependent implementation.
   speed preparation fails. Restore the stored preference through the normal
   persistence owner; explicitly report a failed save. This does not authorize
   interrupting a healthy immutable current unit or discarding a newer choice.
-- Proposed, not yet approved: RCF-03 permits only validated layout-specific
+- Selected under the user's delegated decision: RCF-03 permits only validated layout-specific
   rootfile fallback; RCF-06 Previous requires a known immediate predecessor;
   RCF-17 paused appearance changes preserve manual inspection until Resume.
-- RCF-08's legacy-v1 admission variant requires explicit scope resolution;
-  active-profile correction does not by itself close that legacy variant.
+- RCF-08's legacy-v1 admission variant is included under the delegated decision;
+  normalized output and frozen evaluation corpora remain unchanged.
   RCF-15 does not broaden aria-hidden into a visual-hidden rule.
 - RCF-02 includes inactive/incrementally mounted placement; RCF-04 includes
   receiptless old package formats; RCF-07 includes empty li numbering;
@@ -750,8 +759,18 @@ plan and its risk/gate map before dependent implementation.
 
 ## Final validation results
 
-Implementation: **NOT STARTED**. All behavior and host gates G0-G9 remain
-pending. Proposed product decisions remain unresolved as listed above.
+Implementation: **ACCEPTED by RCF-R3-20261103**. All 22 cases and
+registered variants are implemented. G1–G6, G8–G10 pass; G7 is inapplicable
+because the native smoke harness is unchanged. The execution ledger records
+516 EPUB, 632 desktop, 165/164 native, 126 Python, ten Chromium journeys,
+the current build/six-speed Piper run and exact-local Chatterbox admission.
+R1-F1 and R2-F2 exposed shared/retired preparation ownership gaps. Both are
+corrected with real-backend and player controls. All affected playback gates
+pass on the final binary; RCF-R3-20261103 approves without remaining findings.
+
+Implementation review: [RCF-R3-20261103](../evidence/revalidated-chat-findings/review-R3.md).
+The separate [RCF-R4-20261103 archival report](../evidence/revalidated-chat-findings/review-R4.md)
+governs acceptance of the final documentation/path changes; a pending report is not approval.
 
 Planning-only checks on 2026-11-03, outside the managed sandbox:
 
@@ -765,7 +784,12 @@ Planning-only checks on 2026-11-03, outside the managed sandbox:
 
 These are documentation checks, not execution of the implementation plan.
 
-Historical results in this document are labeled as historical. No new test
-PASS, artifact equivalence, benchmark, runtime review, fix or deployment is
-claimed. The system diagram and completed-plan authorities are unchanged by
+Historical results in this document are labeled as historical. Current test results are recorded in the execution ledger. Implementation acceptance and artifact/source equivalence are recorded in the execution ledger.
+Final archival disposition is recorded separately. No deployment or Git delivery occurred. The system diagram and completed-plan authorities are unchanged by
 this planning commit.
+
+Archival closeout: all RCF-01–22 and registered variants are resolved. The four
+delegated policy choices and RCF-19 are implemented; R1-F1 and R2-F2 are resolved.
+Current static, deterministic, Chromium, native Piper and optional admission
+evidence satisfies the plan. No decision or runtime gate remains pending.
+Indexes and maintained documentation are reconciled for the final archival assessment.

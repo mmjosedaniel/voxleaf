@@ -1305,13 +1305,12 @@ function buildParsedPackage(
   archive: OpenedEpubArchive,
   resolved: ResolvedPackageDocument,
   raw: RawPackageDocument,
-): ParsedPackageDocument {
-  if (raw.renditionLayout === FIXED_LAYOUT) {
-    return fail("unsupported-layout");
-  }
+): PackageCandidateResult {
+  let incompatibleLayout = raw.renditionLayout === FIXED_LAYOUT;
   if (
     raw.renditionLayout !== undefined &&
-    raw.renditionLayout !== REFLOWED_LAYOUT
+    raw.renditionLayout !== REFLOWED_LAYOUT &&
+    raw.renditionLayout !== FIXED_LAYOUT
   ) {
     return fail("malformed-package");
   }
@@ -1368,7 +1367,7 @@ function buildParsedPackage(
       return fail("malformed-package");
     }
     if (rawSpineItem.properties.includes("rendition:layout-pre-paginated")) {
-      return fail("unsupported-layout");
+      incompatibleLayout = true;
     }
 
     const sourceItem = manifestById.get(rawSpineItem.idref);
@@ -1403,7 +1402,7 @@ function buildParsedPackage(
     return fail("malformed-package");
   }
 
-  return Object.freeze({
+  const packageDocument: ParsedPackageDocument = Object.freeze({
     path: resolved.path,
     version: raw.version,
     renditionLayout: REFLOWED_LAYOUT,
@@ -1422,12 +1421,22 @@ function buildParsedPackage(
     spine: Object.freeze(spine),
     navigation: Object.freeze(navigation),
   });
+  return Object.freeze({
+    status: incompatibleLayout ? "incompatible-layout" : "supported",
+    packageDocument,
+  });
 }
 
-export function parsePackageDocument(
+export interface PackageCandidateResult {
+  readonly status: "supported" | "incompatible-layout";
+  /** Structurally validated candidate; incompatibility must be checked before admission. */
+  readonly packageDocument: ParsedPackageDocument;
+}
+
+export function parsePackageCandidate(
   archive: OpenedEpubArchive,
   resolved: ResolvedPackageDocument,
-): ParsedPackageDocument {
+): PackageCandidateResult {
   archive.budget.checkpoint();
   rejectProtectedPublication(archive);
   if (resolved.renditionLayout !== REFLOWED_LAYOUT) {
@@ -1447,4 +1456,14 @@ export function parsePackageDocument(
   );
   const raw = parser.complete();
   return buildParsedPackage(archive, resolved, raw);
+}
+
+export function parsePackageDocument(
+  archive: OpenedEpubArchive,
+  resolved: ResolvedPackageDocument,
+): ParsedPackageDocument {
+  const candidate = parsePackageCandidate(archive, resolved);
+  if (candidate.status === "incompatible-layout")
+    return fail("unsupported-layout");
+  return candidate.packageDocument;
 }

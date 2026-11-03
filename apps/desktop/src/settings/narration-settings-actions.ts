@@ -20,15 +20,18 @@ type NarrationSettings = Pick<
   | "resetStartPreference"
   | "resetPlaybackPreference"
 > & {
-  stopForConfigurationChange?(): Promise<void> | void | null;
+  stopForConfigurationChange?(): Promise<"contained" | "failed">;
   beginConfigurationChange?(): () => void;
   isHealthyLoadedProfile?(profileId: string): boolean;
 };
 
-function stopForConfigurationChange(
+async function stopForConfigurationChange(
   coordinator: NarrationSettings | undefined,
 ) {
-  return coordinator?.stopForConfigurationChange?.() ?? coordinator?.stop();
+  if (coordinator?.stopForConfigurationChange !== undefined) {
+    if ((await coordinator.stopForConfigurationChange()) !== "contained")
+      throw new Error("Narration cleanup did not complete.");
+  } else await coordinator?.stop();
 }
 
 export function createNarrationSettingsActions(development: boolean) {

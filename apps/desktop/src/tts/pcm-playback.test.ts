@@ -501,6 +501,130 @@ it.each([false, true])(
   },
 );
 
+it.each([false, true])(
+  "RCF-19 real backend retires creation before a later attempt (old rejection=%s)",
+  async (rejectOld) => {
+    const context = new FakeAudioContext();
+    const nodes = [new FakeWsolaNode(), new FakeWsolaNode()];
+    const pending: {
+      resolve: (
+        node: Awaited<ReturnType<typeof createIncrementalWsolaV3Node>>,
+      ) => void;
+      reject: (reason: unknown) => void;
+    }[] = [];
+    const create = vi.fn(
+      () =>
+        new Promise<Awaited<ReturnType<typeof createIncrementalWsolaV3Node>>>(
+          (resolve, reject) => {
+            pending.push({ resolve, reject });
+          },
+        ),
+    );
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+      create,
+    );
+    const clock = createManualClock(0);
+    const first = segment(1);
+    const scheduler = readyScheduler(clock, [first], true);
+    const unit = synthesize(scheduler, first, 15_000);
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    const settle = async () => {
+      for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    };
+    const created = (index: number) => ({
+      node: nodes[index]! as unknown as AudioWorkletNode,
+      close: () => {
+        nodes[index]!.disconnect();
+        nodes[index]!.port.close();
+      },
+    });
+    try {
+      player.synchronize();
+      await settle();
+      const source = context.sources[0]!;
+      player.setPlaybackRatePercent(85);
+      player.setPlaybackRatePercent(100);
+      player.setPlaybackRatePercent(75);
+      for (const rate of [80, 95, 75] as const) {
+        player.setPlaybackRatePercent(100);
+        player.setPlaybackRatePercent(rate);
+      }
+      expect(create).toHaveBeenCalledTimes(1);
+      if (rejectOld) pending[0]!.reject(new Error("retired creation"));
+      else pending[0]!.resolve(created(0));
+      await settle();
+      expect(create).toHaveBeenCalledTimes(2);
+      expect(nodes[0]!.disconnectCount).toBe(rejectOld ? 0 : 1);
+      expect(nodes[0]!.port.closeCount).toBe(rejectOld ? 0 : 1);
+      expect(nodes[0]!.connectCount).toBe(0);
+      pending[1]!.resolve(created(1));
+      await settle();
+      context.currentTime = 1;
+      expect(player.synchronize()).toMatchObject({
+        state: "playing",
+        selectedPlaybackRatePercent: 75,
+        activePlaybackRatePercent: 100,
+        playbackRateFallback: 0,
+      });
+      expect(backend.isPlaybackRatePrepared(75)).toBe(true);
+      expect(nodes[1]!.connectCount).toBe(1);
+      expect(context.sources).toEqual([source]);
+      expect(source.stopped).toBe(false);
+      expect(unit.releaseCount).toBe(0);
+    } finally {
+      player.close();
+      await player.waitForCleanup();
+    }
+    expect(nodes[1]!.disconnectCount).toBe(1);
+    expect(nodes[1]!.port.closeCount).toBe(1);
+    expect(context.closeCount).toBe(1);
+    expect(unit.releaseCount).toBe(1);
+  },
+);
+
+it("RCF-19 close joins retired creation and prevents its queued replacement", async () => {
+  const context = new FakeAudioContext();
+  const node = new FakeWsolaNode();
+  let resolve!: (
+    created: Awaited<ReturnType<typeof createIncrementalWsolaV3Node>>,
+  ) => void;
+  const create = vi.fn(
+    () =>
+      new Promise<Awaited<ReturnType<typeof createIncrementalWsolaV3Node>>>(
+        (done) => {
+          resolve = done;
+        },
+      ),
+  );
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+    create,
+  );
+  const first = backend.preparePlaybackRate(85);
+  backend.releasePlaybackRatePreparation();
+  const replacement = backend.preparePlaybackRate(75);
+  let closed = false;
+  const cleanup = backend.close().then(() => {
+    closed = true;
+  });
+  await Promise.resolve();
+  expect(closed).toBe(false);
+  resolve({
+    node: node as unknown as AudioWorkletNode,
+    close: () => {
+      node.disconnect();
+      node.port.close();
+    },
+  });
+  await Promise.all([first, replacement, cleanup]);
+  expect(create).toHaveBeenCalledTimes(1);
+  expect(node.connectCount).toBe(0);
+  expect(node.disconnectCount).toBe(1);
+  expect(node.port.closeCount).toBe(1);
+  expect(context.closeCount).toBe(1);
+});
+
 it.each(["before", "during", "between"])(
   "MPA-02 native processorerror %s units invalidates its owner only",
   async (timing) => {
@@ -1081,6 +1205,115 @@ describe("adaptive PCM playback", () => {
     },
   );
 
+  it.each([75, 85, 100] as const)(
+    "RCF-19 shared future failure handles latest %s through current, paused and ended units",
+    async (latest) => {
+      for (const phase of ["playing", "paused", "boundary"] as const) {
+        const clock = createManualClock(0);
+        const first = segment(1);
+        const second = segment(2);
+        const scheduler = readyScheduler(clock, [first, second], true);
+        const firstUnit = synthesize(scheduler, first, 15_000);
+        synthesize(scheduler, second, 5_000);
+        const backend = new ManualPcmPlaybackBackend(clock);
+        const player = new AdaptivePcmPlayer(scheduler, backend);
+        const progress: AdaptivePcmAudibleProgressObservation[] = [];
+        player.subscribeAudibleProgress((event) => progress.push(event));
+        let reject!: (reason: unknown) => void;
+        const prepare = vi
+          .spyOn(backend, "preparePlaybackRate")
+          .mockImplementationOnce(
+            () =>
+              new Promise<void>((_resolve, fail) => {
+                reject = fail;
+              }),
+          );
+        player.synchronize();
+        const active = backend.active;
+        player.setPlaybackRatePercent(85);
+        player.setPlaybackRatePercent(latest);
+        expect(prepare).toHaveBeenCalledTimes(1);
+        if (phase === "paused") player.pause();
+        if (phase === "boundary") {
+          clock.advanceBy(15_000);
+          backend.pump();
+          player.synchronize();
+        }
+        reject(new Error("shared preparation failed"));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(player.synchronize()).toMatchObject({
+          selectedPlaybackRatePercent: 100,
+          playbackRateFallback: latest === 100 ? 0 : 1,
+        });
+        if (phase !== "boundary") {
+          expect(backend.active).toBe(active);
+          expect(firstUnit.releaseCount).toBe(0);
+          expect(player.synchronize().state).toBe(
+            phase === "paused" ? "paused" : "playing",
+          );
+          if (phase === "paused") player.resume();
+          clock.advanceBy(15_000);
+          backend.pump();
+        }
+        clock.advanceBy(600);
+        player.synchronize();
+        expect(backend.startedRates).toEqual([1, 1]);
+        expect(prepare).toHaveBeenCalledTimes(1);
+        expect(firstUnit.releaseCount).toBe(1);
+        expect(
+          progress.filter((event) => event.kind === "segment-completed"),
+        ).toHaveLength(1);
+        player.close();
+        await player.waitForCleanup();
+      }
+    },
+  );
+
+  it.each(["stop", "close", "invalidateForSeek", "independent"] as const)(
+    "RCF-19 ignores an obsolete future failure after %s",
+    async (replacement) => {
+      const clock = createManualClock(0);
+      const first = segment(1);
+      const scheduler = readyScheduler(clock, [first], true);
+      const unit = synthesize(scheduler, first, 15_000);
+      const backend = new ManualPcmPlaybackBackend(clock);
+      const player = new AdaptivePcmPlayer(scheduler, backend);
+      let reject!: (reason: unknown) => void;
+      const prepare = vi
+        .spyOn(backend, "preparePlaybackRate")
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_resolve, fail) => {
+              reject = fail;
+            }),
+        );
+      player.synchronize();
+      const active = backend.active;
+      player.setPlaybackRatePercent(85);
+      if (replacement === "independent") {
+        player.setPlaybackRatePercent(100);
+        player.setPlaybackRatePercent(75);
+      } else player[replacement]();
+      reject(new Error("obsolete preparation failed"));
+      await Promise.resolve();
+      await Promise.resolve();
+      const observation = player.synchronize();
+      expect(observation.playbackRateFallback).toBe(0);
+      if (replacement === "independent") {
+        expect(observation).toMatchObject({
+          state: "playing",
+          selectedPlaybackRatePercent: 75,
+        });
+        expect(prepare).toHaveBeenCalledTimes(2);
+        expect(backend.ratePrepared).toBe(true);
+        expect(backend.active).toBe(active);
+      } else expect(observation.state).toBe("stopped");
+      player.close();
+      await player.waitForCleanup();
+      expect(unit.releaseCount).toBe(1);
+    },
+  );
   it("B08 reports a genuine preparation failure while paused and releases audio", async () => {
     const clock = createManualClock(0);
     const first = segment(1);

@@ -11,6 +11,7 @@ export interface SemanticBlockPlan {
 }
 
 interface SemanticListItemPlan {
+  readonly value?: number;
   readonly startIndex: number;
   readonly endIndex: number;
   readonly children: SemanticBlockSequencePlan;
@@ -76,6 +77,7 @@ function buildBlockPlan(
             blockIndexes,
           );
           return Object.freeze({
+            ...(item.value === undefined ? {} : { value: item.value }),
             startIndex:
               itemStartIndex === index.value ? startIndex : itemStartIndex,
             endIndex: index.value,

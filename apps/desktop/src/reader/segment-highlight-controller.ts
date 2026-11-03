@@ -24,6 +24,10 @@ export interface ReaderNarrationSource {
   ): () => void;
   startAtLocator?(locator: ReadingLocatorV1): boolean;
   updateVisibleLocator?(locator: ReadingLocatorV1): void;
+  beginReaderPlacement?(): void;
+  settleReaderPlacement?(
+    settlement: import("./reader-navigation").ReaderNavigationSettlement,
+  ): void;
 }
 
 export interface SegmentHighlightRect {
@@ -322,6 +326,11 @@ export class SegmentHighlightController {
     this.refresh();
   }
 
+  public manualInspection(): void {
+    if (this.#active !== undefined) this.#active.followEligible = false;
+    this.#cancelPendingFollow();
+  }
+
   public reconcile(snapshot: ProductNarrationSnapshot): void {
     const phase = snapshot.state?.phase;
     const resumed = this.#lastPhase === "paused" && phase === "playing";
@@ -338,7 +347,8 @@ export class SegmentHighlightController {
       (phase === undefined && this.#active !== undefined)
     ) {
       this.clear();
-    } else if (resumed && this.#active?.followEligible) {
+    } else if (resumed && this.#active !== undefined) {
+      this.#active.followEligible = true;
       this.refresh();
     }
   }
