@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [chat audit follow-up plan](plans/active/chat-audit-minimal-follow-up.md)
+records minimal corrections for 26 retained cases, a verification-first timing
+case, and the documented policies or unresolved risks excluded from fixes.
+It reviews previous validation and defines selective gates and artifact reuse.
+The plan is not executed; it adds no implementation or acceptance claim.
+
 The [revalidated chat corrections](plans/completed/revalidated-chat-findings-minimal-corrections.md)
 resolve all 22 cases and registered variants across EPUB admission/projection,
 reader placement and manual inspection, settings containment, playback-rate

@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active ExecPlans.
+- [Minimal follow-up to the eight chat audit rounds](chat-audit-minimal-follow-up.md):
+  planned corrections for 26 retained cases, one verification-first timing case,
+  and explicit preservation/deferral of the remaining findings. Includes minimal
+  change boundaries and historical-evidence reuse rules; not executed.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
