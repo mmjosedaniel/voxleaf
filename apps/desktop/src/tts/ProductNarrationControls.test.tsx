@@ -55,6 +55,45 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it.each(["unavailable", "unsupported-version"] as const)(
+    "RAF-03 compact speed exposes %s persistence feedback and clears it after success",
+    (status) => {
+      let current = {
+        ...snapshot(),
+        playbackRatePercent: 75 as const,
+        playbackPreferenceStatus: status,
+        canPersistPlaybackPreference: status !== "unsupported-version",
+      } as ProductNarrationSnapshot;
+      const coordinator = {
+        observe: () => current,
+        subscribe: () => () => undefined,
+        checkAvailability: vi.fn(),
+        setPlaybackRatePercent: vi.fn(),
+      } as unknown as ProductNarrationCoordinator;
+      const subject = render(
+        <ProductNarrationControls coordinator={coordinator} />,
+      );
+      expect(
+        screen.getByRole("combobox", { name: "Playback speed" }),
+      ).toHaveValue("75");
+      expect(screen.getByRole("status")).toHaveTextContent(
+        status === "unavailable"
+          ? "Playback speed could not be saved"
+          : "Playback speed preferences use a newer version",
+      );
+      if (status === "unsupported-version")
+        expect(
+          screen.getByRole("combobox", { name: "Playback speed" }),
+        ).toBeDisabled();
+      current = {
+        ...current,
+        playbackPreferenceStatus: "ready",
+        canPersistPlaybackPreference: true,
+      };
+      subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
   it("PSC-01 disables Resume until paused navigation settles", () => {
     let current: ProductNarrationSnapshot = {
       ...snapshot(),

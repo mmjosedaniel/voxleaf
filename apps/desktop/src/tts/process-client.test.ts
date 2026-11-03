@@ -13,6 +13,64 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 const mockedInvoke = vi.mocked(invoke);
 
+it("RAF-R1-F1 verified no-child receipt permits explicit retry after spawn rejection", async () => {
+  let prerequisiteRestored = false;
+  let failedStart: unknown;
+  const client = new TtsProcessClient(
+    async <T>(command: string, args?: Record<string, unknown>) => {
+      if (command === "start_tts_service") {
+        if (!prerequisiteRestored) {
+          failedStart = args?.startRequestId;
+          throw "tts-service-unavailable";
+        }
+        expect(args?.startRequestId).not.toBe(failedStart);
+        return startControls() as T;
+      }
+      if (command === "shutdown_tts_service") {
+        expect(args?.startRequestId).toBe(failedStart);
+        return shutdownControls() as T;
+      }
+      throw "unexpected-command";
+    },
+  );
+  await expect(client.start()).rejects.toMatchObject({
+    code: "tts-service-unavailable",
+  });
+  await client.shutdown();
+  expect(client.observe().state).toBe("stopped");
+  prerequisiteRestored = true;
+  await client.start();
+  expect(client.observe().state).toBe("unloaded");
+});
+
+it("RAF-15 settled failed start retains exact shutdown ownership until containment succeeds", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  let terminateFails = true;
+  const client = new TtsProcessClient(
+    async <T>(command: string, args?: Record<string, unknown>) => {
+      calls.push({ command, ...(args === undefined ? {} : { args }) });
+      if (command === "start_tts_service") throw "tts-service-failed";
+      if (command === "shutdown_tts_service") {
+        if (terminateFails) throw "tts-service-failed";
+        return shutdownControls() as T;
+      }
+      throw "unexpected-command";
+    },
+  );
+  await expect(client.start()).rejects.toBeInstanceOf(TtsProcessClientError);
+  const request = calls[0]!.args!.startRequestId;
+  await expect(client.shutdown()).rejects.toBeInstanceOf(TtsProcessClientError);
+  expect(client.observe().state).not.toBe("stopped");
+  expect(calls.at(-1)).toEqual({
+    command: "shutdown_tts_service",
+    args: { startRequestId: request },
+  });
+  terminateFails = false;
+  await client.shutdown();
+  expect(client.observe().state).toBe("stopped");
+  expect(calls.at(-1)!.args).toEqual({ startRequestId: request });
+});
+
 it("rejects a late preparation result after shutdown without reviving readiness", async () => {
   let finish!: (value: unknown) => void;
   mockedInvoke.mockReset();

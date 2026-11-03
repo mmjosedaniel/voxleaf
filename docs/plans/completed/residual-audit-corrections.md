@@ -7,11 +7,16 @@ the smallest changes to their existing owners and the smallest defensible set of
 new validation runs. Preserve the earlier corrections and product constraints.
 Do not convert static reasoning into a claim of an executed reproduction.
 
-**Status on 2026-11-02: planning only; implementation is not authorized or started.**
-The current request authorizes this document, its active-index entry, a branch
-and a local documentation commit. It does not authorize executing this plan,
-runtime tests, package preparation, push, PR, merge or release. Execution requires
-a later instruction. Future Git/publication actions remain separately scoped.
+**Completed 2026-11-03.** M0–M4 implementation and behavioral acceptance are
+complete. [RAF-R2-20261103](../evidence/residual-audit-corrections/review-r2.md)
+approves all 18 findings with no remaining issue. The separate final archival
+assessment is [RAF-R3-20261103](../evidence/residual-audit-corrections/review-r3.md).
+The current user request supersedes the planning-only restriction and authorizes
+M0–M4 implementation and host validation. Staging, commits, push, PR, merge and
+publication remain unauthorized. Entry HEAD is
+`031581acf028b73697bfb3e12ffa96828f1553fa`; the named branch and clean index/worktree
+match the planning handoff. Current execution is recorded in the
+[execution ledger](../evidence/residual-audit-corrections/execution-ledger.md).
 
 Planning base: `59cc2e07962eb63ec61f4535d9e9db81443d5fee` (`main`, PR #302).
 Planning branch: `codex/residual-audit-corrections-plan`.
@@ -355,7 +360,9 @@ implementation, not an undocumented workaround.
 
 ### M0 — freeze scope and evidence decisions
 
-**Not started.** After execution authorization, capture base/HEAD, dirty paths,
+**Completed.** Entry identities, current tool/dependency membership, historical
+receipt dispositions and all 18 rows are recorded in the execution ledger.
+The following requirements governed preparation: capture base/HEAD, dirty paths,
 tool/dependency membership and relevant host facts without disturbing other work.
 Recheck every RAF trigger against current source. Create a gate ledger with all
 18 rows, exact selections, dependency closures, environments and invalidation
@@ -365,7 +372,10 @@ reuse is cheaper than rerunning. Record `EJECUTAR`, `REUTILIZAR CON PRUEBA`,
 
 ### M1 — establish focused failures or candidate dispositions
 
-**Not started.** Add regressions to existing suites before changing each affected
+**Completed.** Targeted pre-edit failures were recorded for U1–U9. All four risk
+triggers were confirmed with public admitted inputs and bounded count/exception
+oracles; fixture-only failures were corrected and retained separately.
+The following requirements governed reproduction: add regressions before changing each affected
 production owner. Batch independent RAF cases in one red invocation per runner
 where practical. Use `RAF-` labels for Vitest/browser cases and `raf_` for Rust/
 pytest tests; these are planned labels, not existing test commands or evidence.
@@ -379,7 +389,10 @@ measurement only if static counts cannot settle the actual impact question.
 
 ### M2 — apply the nine bounded units
 
-**Not started.** Implement U1-U9 without opportunistic cleanup. Verify each unit's
+**Implemented.** U1–U9 changes remain in their existing owners. No dependency,
+serialized schema, frozen corpus, legacy v1 or completed-plan change. The desktop
+test project includes the existing shared synthetic EPUB builder for real import
+regressions. The following requirements governed implementation: verify each unit's
 new cases and directly coupled controls, then retain those receipts. Shared
 coordinator/App/index edits invalidate earlier dependent evidence. Reconcile the
 inventory explicitly if a smaller fix removes the need to edit a conditional
@@ -387,7 +400,13 @@ support file. Do not drop a row solely because an earlier plan has a similar tit
 
 ### M3 — final combined acceptance
 
-**Not started.** Freeze the final implementation/test inputs. Run the selected
+**Completed after review correction.** Current complete groups pass: 522 EPUB tests, 604 desktop tests,
+96 packaging tests, default/locked native supervisor 39/38 and optional manager
+65/65 (explicit ignored opt-ins remain separate), applicable static checks and
+seven Chromium journeys. Piper bytes match all 2,024 payload files and 26 runtime
+inputs; the current integrity checker passed. Final app build, Piper EN and real
+F08 replacement controls pass. Original resources restored; no new owned process
+or scratch root remains. The following requirements governed integration: run the selected
 deterministic groups and applicable format/lint/types before native preparation.
 A unit green run can satisfy its final group only with complete unchanged-input
 proof; do not run identical gates again by habit. Perform one combined Chromium
@@ -398,7 +417,8 @@ Verify cleanup and preserve all failed attempts.
 
 ### M4 — independent review and documentation closeout
 
-**Not started.** Follow
+**Completed.** RAF-R2-20261103 approves the corrected implementation and evidence.
+The final archival assessment is recorded separately above. The workflow followed
 [agentic change review](../../development/agentic-change-review.md): delegate the
 exact final behavioral patch to `change_reviewer` (GPT-6 Astra high), read-only
 and without running tests. Supply the closed path list, HEAD/base, full diff,
@@ -406,12 +426,23 @@ SHA-256 and filter-aware Git identities, gate receipts, reuse proof and every RA
 disposition. Resolve actionable findings and obtain approval for the exact current
 patch. Missing evidence or reviewer is `BLOQUEADO`, not acceptance.
 
+RAF-R1-20261103 requests one correction: retain a bounded private proof for a
+start attempt rejected before creating any child, so exact owned shutdown and
+explicit retry remain possible. The proof must come from the native spawn boundary,
+not generic InvalidState. A rejected attempt's acknowledgment must not mutate a
+later live owner. Renew native/typed-client/coordinator checks and final app/Piper
+evidence after this native change; all other RAF dispositions remain in scope.
+The correction is implemented and the real spawn-rejection regression passes.
+Renewed full desktop/native/static groups, app build, Piper EN and F08 pass;
+the new native arm reports 268 ms cancellation, zero underruns/network/audio
+files and complete resource restoration. R2 independent assessment is APPROVE.
+
 After approval, update current product/testing docs where needed, record the
 diagram/M005 review, archive this plan and reconcile active/completed indexes and
 incoming links. Documentation-only drift can retain behavior gates with explicit
 closure proof; review/report identities still must match. No commit/push/merge is
-implied by implementation acceptance. This planning-only documentation patch does
-not itself require a behavioral change review.
+implied by implementation acceptance. The original planning-only document was
+exempt; the implemented behavior and current archival patch have separate reviews.
 
 ## Testing and benchmark strategy
 
@@ -624,7 +655,33 @@ frozen-authority change, replan explicitly before editing it.
   no current behavioral PASS or complete artifact-reuse proof is claimed.
 - 2026-11-02: Created `codex/residual-audit-corrections-plan` from the planning
   base. Only this document and the active index belong to the planning commit.
-- M0-M4: not started; execution awaits a later user instruction.
+- 2026-11-03: Execution authorized. Entry matches the planning commit and branch;
+  no pre-existing changes. Initial G0 fails before build because PATH selects
+  pnpm 11.25.0. The existing offline Corepack shim selects required pnpm 11.15.1;
+  corrected G0 passes outside the sandbox. No global installation or engine bypass.
+- 2026-11-03: Completed sequential implementation U1–U9, with targeted pre-edit
+  failures and retained fixture corrections. RAF-01 reaches the locator owner
+  with 140,000 nested admitted blocks and a host RangeError before correction.
+  RAF-09/10/18 confirm repeated metadata traversal, without a latency claim.
+- 2026-11-03: Integration found two comma-adjacent numeric regressions; narrowed
+  the leading-dot guard and reran the entire 522-test EPUB group successfully.
+  Desktop fixture inclusion and the initial browser book setup were corrected;
+  complete 602-test desktop and seven-case browser groups pass.
+- 2026-11-03: M0–M2 implemented, M3 in progress, M4 pending. Findings are not
+  finally accepted until native/cleanup evidence and independent review pass.
+- 2026-11-03: M3 complete: one final desktop build, Piper EN (zero underruns,
+  network requests and audio files; cancellation 255 ms), real owned-child failure
+  cleanup and final F08 replacement proof pass. Original resources restored with
+  complete byte/membership equality. M4 independent review pending.
+- 2026-11-03: RAF-R1-20261103 requested one pre-publication startup correction.
+  A real OS spawn rejection reproduced it; native proof, typed-client/coordinator
+  retry and replacement controls pass. Renewed 604 desktop tests, 39/38 supervisor
+  and 65/65 optional tests, static checks, build/Piper EN and frozen F08 pass.
+  RAF-R2-20261103 APPROVE accepts all 18 findings, with no remaining issue.
+- 2026-11-03: Archived after behavioral acceptance. Documentation/index changes
+  retain source/native evidence only with exact closure comparison; final archival
+  assessment is recorded separately under RAF-R3-20261103. Index remains empty;
+  no commit, push, PR, merge or publication.
 
 ## Discoveries and decisions
 
@@ -645,18 +702,13 @@ frozen-authority change, replan explicitly before editing it.
 
 ## Final validation results
 
-**Implementation: NOT STARTED.** All 18 findings remain open under the status
-distinctions above. No test, benchmark, model, browser, native, package or runtime
-validation from this plan has executed. No finding is marked fixed.
+See the [execution ledger](../evidence/residual-audit-corrections/execution-ledger.md)
+for every finding, exact commands, failed-attempt classification and acceptance
+status. Raw immutable receipts remain ignored. No historical behavioral PASS is
+reused. The current Piper artifact comparison and checker are separate evidence;
+no model download or regeneration occurred. M005 and the canonical system diagram
+were reviewed: existing boundaries and milestone claims remain valid, so neither
+frozen history nor the topology diagram needs an edit.
 
-**Historical reuse: CANDIDATE ONLY.** Earlier results were inspected; full current
-reuse proof and independent acceptance belong to M0-M4. Old failures remain part
-of their original evidence.
-
-**Planning deliverable:** this ExecPlan plus the active-index link, on the named
-branch. Documentation-only inspection in local PowerShell outside the sandbox
-found all 37 local Markdown link targets and all 29 named Vitest suite paths;
-`git diff --check`, `git diff --cached --check` and `pnpm.cmd check:evidence`
-passed. Staged scope is exactly the two planning Markdown files. These checks
-execute no suite and do not validate runtime behavior. The planning deliverable
-is prepared for its authorized local commit. No push or publication.
+The planning-only checks above are historical. Execution leaves the index empty
+and all implementation changes uncommitted, as explicitly requested.

@@ -6,6 +6,7 @@ import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
 import type {
   PackageManifestItem,
+  PackageSpineItem,
   ParsedPackageDocument,
 } from "../package/package-document.js";
 import type { ArchiveFilePath } from "../paths/archive-path.js";
@@ -581,13 +582,72 @@ function freezeCodeInlines(
   return Object.freeze(output);
 }
 
+interface XhtmlPublicationLookup {
+  readonly resolveContent: ReturnType<typeof createContentReferenceResolver>;
+  readonly documentsBySpineIndex: ReadonlyMap<number, ContentDocumentId>;
+  readonly documentsByPath: ReadonlyMap<string, ContentDocumentId>;
+  readonly resourcesByPath: ReadonlyMap<string, RasterImageResourceId>;
+  readonly spineByPath: ReadonlyMap<string, readonly PackageSpineItem[]>;
+}
+
+/** Package-internal immutable lookup data shared only during one public open. */
+export function createXhtmlPublicationLookup(
+  archive: OpenedEpubArchive,
+  packageDocument: ParsedPackageDocument,
+): XhtmlPublicationLookup {
+  const documentsByPath = new Map<string, ContentDocumentId>();
+  const documentsBySpineIndex = new Map<number, ContentDocumentId>();
+  const resourcesByPath = new Map<string, RasterImageResourceId>();
+  const spineByPath = new Map<string, PackageSpineItem[]>();
+  const resolveContent = createContentReferenceResolver(
+    archive,
+    packageDocument,
+  );
+  for (const [index, item] of packageDocument.manifest.entries()) {
+    archive.budget.checkpoint();
+    if (isSupportedContentDocument(item) && item.location.kind === "local") {
+      documentsByPath.set(
+        String(item.location.path),
+        contentDocumentIdForManifestIndex(index),
+      );
+    } else {
+      const id = rasterImageResourceIdForManifestItem(item, index);
+      if (id !== undefined && item.location.kind === "local")
+        resourcesByPath.set(String(item.location.path), id);
+    }
+  }
+  for (const item of packageDocument.spine) {
+    archive.budget.checkpoint();
+    const path = String(item.path);
+    const baseId = documentsByPath.get(path);
+    if (baseId === undefined) return fail("internal-failure");
+    const occurrences = spineByPath.get(path) ?? [];
+    documentsBySpineIndex.set(
+      item.index,
+      occurrences.length === 0
+        ? baseId
+        : (`${baseId}:spine:${String(item.index)}` as ContentDocumentId),
+    );
+    occurrences.push(item);
+    spineByPath.set(path, occurrences);
+  }
+  for (const occurrences of spineByPath.values()) Object.freeze(occurrences);
+  return Object.freeze({
+    resolveContent,
+    documentsByPath,
+    documentsBySpineIndex,
+    resourcesByPath,
+    spineByPath,
+  });
+}
+
 class XhtmlProjector {
   readonly #archive: OpenedEpubArchive;
   readonly #path: ArchiveFilePath;
   readonly #resolveContent: ReturnType<typeof createContentReferenceResolver>;
-  readonly #documentsBySpineIndex = new Map<number, ContentDocumentId>();
-  readonly #documentsByPath = new Map<string, ContentDocumentId>();
-  readonly #resourcesByPath = new Map<string, RasterImageResourceId>();
+  readonly #documentsBySpineIndex: ReadonlyMap<number, ContentDocumentId>;
+  readonly #documentsByPath: ReadonlyMap<string, ContentDocumentId>;
+  readonly #resourcesByPath: ReadonlyMap<string, RasterImageResourceId>;
   readonly #elements: ElementFrame[] = [];
   readonly #destinations: SemanticDestination[] = [];
   readonly #sourceElementIdCounts = new Map<string, number>();
@@ -605,50 +665,21 @@ class XhtmlProjector {
     packageDocument: ParsedPackageDocument,
     path: ArchiveFilePath,
     spineItemIndex?: number,
+    lookup = createXhtmlPublicationLookup(archive, packageDocument),
   ) {
     this.#archive = archive;
     this.#path = path;
-    this.#resolveContent = createContentReferenceResolver(
-      archive,
-      packageDocument,
-    );
-
-    for (const [index, item] of packageDocument.manifest.entries()) {
-      archive.budget.checkpoint();
-      if (isSupportedContentDocument(item) && item.location.kind === "local") {
-        const id = contentDocumentIdForManifestIndex(index);
-        this.#documentsByPath.set(String(item.location.path), id);
-        if (String(item.location.path) === String(path)) {
-          this.#documentId = id;
-        }
-      } else {
-        const id = rasterImageResourceIdForManifestItem(item, index);
-        if (id !== undefined && item.location.kind === "local") {
-          this.#resourcesByPath.set(String(item.location.path), id);
-        }
-      }
-    }
-
-    const firstByPath = new Map<string, number>();
-    for (const item of packageDocument.spine) {
-      archive.budget.checkpoint();
-      const pathText = String(item.path);
-      const baseId = this.#documentsByPath.get(pathText);
-      if (baseId === undefined) return fail("internal-failure");
-      const id = firstByPath.has(pathText)
-        ? (`${baseId}:spine:${String(item.index)}` as ContentDocumentId)
-        : baseId;
-      this.#documentsBySpineIndex.set(item.index, id);
-      if (!firstByPath.has(pathText)) firstByPath.set(pathText, item.index);
-    }
+    this.#resolveContent = lookup.resolveContent;
+    this.#documentsByPath = lookup.documentsByPath;
+    this.#documentsBySpineIndex = lookup.documentsBySpineIndex;
+    this.#resourcesByPath = lookup.resourcesByPath;
+    this.#documentId = lookup.documentsByPath.get(String(path));
 
     if (this.#documentId === undefined) {
       return fail("unsupported-resource");
     }
 
-    const firstSpineItem = packageDocument.spine.find(
-      (item) => String(item.path) === String(path),
-    );
+    const firstSpineItem = lookup.spineByPath.get(String(path))?.[0];
     const spineItem =
       spineItemIndex === undefined
         ? firstSpineItem
@@ -662,8 +693,6 @@ class XhtmlProjector {
     if (spineItem !== undefined && spineItem !== firstSpineItem) {
       this.#documentId =
         `${this.#documentId}:spine:${String(spineItem.index)}` as ContentDocumentId;
-      // A link to this resource within a repeated occurrence stays in that occurrence.
-      this.#documentsByPath.set(String(path), this.#documentId);
     }
     this.#documentLocation = Object.freeze(
       spineItem === undefined
@@ -1334,7 +1363,9 @@ class XhtmlProjector {
       String(target.path) !== String(resolved.path) &&
       target.spineItemIndex !== undefined
         ? this.#documentsBySpineIndex.get(target.spineItemIndex)
-        : this.#documentsByPath.get(String(target.path));
+        : String(target.path) === String(this.#path)
+          ? this.#documentId
+          : this.#documentsByPath.get(String(target.path));
     if (id === undefined) {
       return fail("broken-reference");
     }
@@ -1475,6 +1506,7 @@ export async function projectXhtmlDocumentProjection(
   packageDocument: ParsedPackageDocument,
   path: ArchiveFilePath,
   spineItemIndex?: number,
+  lookup?: XhtmlPublicationLookup,
 ): Promise<XhtmlDocumentProjection> {
   try {
     archive.budget.checkpoint();
@@ -1483,6 +1515,7 @@ export async function projectXhtmlDocumentProjection(
       packageDocument,
       path,
       spineItemIndex,
+      lookup,
     );
     const bytes = await archive.readEntry(path, {
       maximumBytes: archive.budget.policy.maxContentDocumentBytes,

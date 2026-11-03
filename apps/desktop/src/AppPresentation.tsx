@@ -33,6 +33,8 @@ const FAILURE_MESSAGE: Readonly<Record<ReaderFailureReason, string>> =
     "file-too-large": "That file is larger than the 100 MiB EPUB limit.",
     "internal-failure":
       "VoxLeaf could not open that EPUB because of an internal failure.",
+    "open-interrupted":
+      "Opening the EPUB was interrupted. Try opening it again or choose another local EPUB.",
     "invalid-epub": "That file is not a valid supported EPUB.",
     "rendering-failed":
       "VoxLeaf could not display that EPUB. Reopen it or choose another local EPUB.",

@@ -639,6 +639,23 @@ when its admitted continuation remains valid. Fresh starts, changed profiles
 or languages, failed owners and explicit compatibility rechecks retain their
 existing admission rules.
 
+Settings shows the narrator's selected/continuing profile independently of the
+fresh-start compatibility choice. An optional download remains observable when
+Settings is closed and reopened during host preflight or transfer; reopening
+does not authorize a second download. Cancellation remains available during
+preflight. Native admission belongs to the original confirmation attempt.
+
+The compact speed control reports failed persistence while retaining the applied
+in-memory speed. A later successful choice clears that feedback; a newer saved
+preference version explains why changes are unavailable. Automatic refill ETA
+uses the one-minute refill threshold, even after a longer Prepared start target.
+
+After paused navigation has settled, passive scrolling and reflow preserve the
+heard/explicitly selected Resume target. Stop releases that target: the next Play
+starts at the currently visible passage. Rejected unreadable books release the
+accepted publication; an unexpectedly interrupted current import offers a retry
+without guessing whether cancellation came from a deadline.
+
 After natural completion, changing Prepared/Quick preferences releases the
 completed mode-dependent player/scheduler before publishing the new selection.
 The final heard checkpoint is preserved and playback requires an explicit Play.

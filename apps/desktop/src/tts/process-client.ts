@@ -320,6 +320,8 @@ export class TtsProcessClient {
     if (
       this.stopping !== undefined ||
       this.starting !== undefined ||
+      (this.startRequestId !== undefined &&
+        this.serviceInstanceId === undefined) ||
       !["stopped", "failed"].includes(this.state)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-state");
@@ -533,6 +535,7 @@ export class TtsProcessClient {
     }
     this.state = "stopped";
     this.serviceInstanceId = undefined;
+    this.startRequestId = undefined;
   }
 
   public async shutdown(): Promise<void> {
@@ -582,6 +585,7 @@ export class TtsProcessClient {
           first.serviceInstanceId !== last.serviceInstanceId
         )
           throw new TtsProcessClientError("tts-service-invalid-response");
+        this.startRequestId = undefined;
       }
       if (
         interrupted !== undefined &&
@@ -590,7 +594,30 @@ export class TtsProcessClient {
       ) {
         this.validateShutdown(interrupted);
         this.serviceInstanceId = undefined;
+        this.startRequestId = undefined;
       }
+    }
+    if (
+      this.serviceInstanceId === undefined &&
+      this.startRequestId !== undefined
+    ) {
+      this.state = "stopping";
+      const controls = await this.invokeControls("shutdown_tts_service", {
+        startRequestId: this.startRequestId,
+      });
+      expectKinds(controls, ["state", "state"]);
+      const first = controls[0]!;
+      const last = controls[1]!;
+      if (
+        first.kind !== "state" ||
+        first.state !== "stopping" ||
+        last.kind !== "state" ||
+        last.state !== "stopped" ||
+        first.serviceInstanceId !== last.serviceInstanceId
+      ) {
+        throw new TtsProcessClientError("tts-service-invalid-response");
+      }
+      this.startRequestId = undefined;
     }
     if (this.serviceInstanceId === undefined || this.state === "stopped") {
       this.state = "stopped";
@@ -604,6 +631,7 @@ export class TtsProcessClient {
     this.validateShutdown(controls);
     this.state = "stopped";
     this.serviceInstanceId = undefined;
+    this.startRequestId = undefined;
   }
 
   private validateShutdown(controls: readonly TtsProtocolControlV1[]): void {

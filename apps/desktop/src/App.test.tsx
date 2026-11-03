@@ -69,6 +69,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Inspect only committed App hook values, not GC timing or alternate React
+// trees. This is a retention regression: the obsolete state is not rendered.
+function committedAppRestoration(container: HTMLElement): unknown[] {
+  interface Fiber {
+    type: unknown;
+    child?: Fiber;
+    sibling?: Fiber;
+    stateNode?: { current: Fiber };
+    memoizedState?: { memoizedState: unknown; next?: Fiber["memoizedState"] };
+  }
+  const key = Object.keys(container).find((name) =>
+    name.startsWith("__reactContainer$"),
+  );
+  if (key === undefined) throw new Error("missing-react-root");
+  const root = (container as unknown as Record<string, Fiber>)[key]!.stateNode!
+    .current;
+  const pending = [root];
+  while (pending.length > 0) {
+    const fiber = pending.pop()!;
+    if (fiber.type === App) {
+      const values: unknown[] = [];
+      for (
+        let hook = fiber.memoizedState;
+        hook !== undefined && hook !== null;
+        hook = hook.next
+      )
+        values.push(hook.memoizedState);
+      return values.filter(
+        (value) =>
+          typeof value === "object" &&
+          value !== null &&
+          "publication" in value &&
+          !("summary" in value),
+      );
+    }
+    if (fiber.child) pending.push(fiber.child);
+    if (fiber.sibling) pending.push(fiber.sibling);
+  }
+  throw new Error("missing-app-owner");
+}
+
 const TEST_DOCUMENT_ID = "document:test" as ContentDocumentId;
 const TEST_TEXT = "Visible semantic passage" as SensitivePublicationText;
 const TEST_BLOCK: SemanticBlock = Object.freeze({
@@ -1792,6 +1833,50 @@ describe("App preference connection characterization", () => {
 });
 
 describe("desktop reader lifecycle surface", () => {
+  it("RAF-06 releases obsolete committed restoration after rejected replacement and preserves the next owner", async () => {
+    const first = createTestPublication("First restoration");
+    const next = createTestPublication("Next restoration");
+    const flow = createTestFlow(
+      vi
+        .fn<LocalPublicationOpenFlow["open"]>()
+        .mockResolvedValueOnce({ status: "ready", publication: first })
+        .mockResolvedValueOnce({ status: "rejected", reason: "invalid-epub" })
+        .mockResolvedValueOnce({ status: "ready", publication: next }),
+    );
+    const { container } = render(
+      <StrictMode>
+        <App
+          openFlow={flow}
+          readerPositionRepository={createTestReaderPositionRepository()}
+        />
+      </StrictMode>,
+    );
+    selectEpub();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "The EPUB opened successfully.",
+      ),
+    );
+    expect(committedAppRestoration(container)).toEqual([
+      expect.objectContaining({ publication: first }),
+    ]);
+    selectEpub();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "That file is not a valid supported EPUB.",
+      ),
+    );
+    expect(committedAppRestoration(container)).toEqual([]);
+    selectEpub();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "The EPUB opened successfully.",
+      ),
+    );
+    expect(committedAppRestoration(container)).toEqual([
+      expect.objectContaining({ publication: next }),
+    ]);
+  });
   it("NCC-02 reconciles the mounted owner and ignores checks from replaced or closed books", async () => {
     const descriptor = Object.getOwnPropertyDescriptor(
       document,
@@ -2809,7 +2894,7 @@ describe("desktop reader lifecycle surface", () => {
       resolveOpen?.({ status: "cancelled" });
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      "No local EPUB is open.",
+      "Opening the EPUB was interrupted. Try opening it again or choose another local EPUB.",
     );
   });
 

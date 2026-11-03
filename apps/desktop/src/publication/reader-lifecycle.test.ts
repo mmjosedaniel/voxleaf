@@ -13,6 +13,13 @@ import type {
   LocalPublicationOpenResult,
 } from "./local-publication-open";
 import { createReaderLifecycle } from "./reader-lifecycle";
+import { createLocalPublicationOpenFlow } from "./local-publication-open";
+import { createPublicationSession } from "./publication-session";
+import { openEpubPublication } from "@voxleaf/epub";
+import {
+  buildMinimalEpubFixture,
+  minimalPackageDocument,
+} from "../../../../packages/epub/test-support/epub-fixture";
 
 const TEST_BLOCK: SemanticBlock = Object.freeze({
   kind: "paragraph",
@@ -88,6 +95,123 @@ function controlled<T>(): {
 }
 
 describe("reader lifecycle", () => {
+  it("RAF-07 releases a public auxiliary-only readable publication rejected as empty", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      packageDocument: minimalPackageDocument()
+        .replace(
+          "</manifest>",
+          '<item id="aux" href="text/aux.xhtml" media-type="application/xhtml+xml"/></manifest>',
+        )
+        .replace(
+          '<itemref idref="chapter"/>',
+          '<itemref idref="aux" linear="no"/><itemref idref="chapter"/>',
+        ),
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Empty</title></head><body/></html>',
+      additionalEntries: [
+        {
+          name: "EPUB/text/aux.xhtml",
+          content:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Auxiliary</title></head><body><p>Auxiliary passage.</p></body></html>',
+        },
+      ],
+    });
+    const opened = await openEpubPublication(bytes);
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) throw new Error("fixture-open-failed");
+    const publication = opened.publication;
+    expect(publication.defaultStartLocator).toBeUndefined();
+    expect(publication.locators.length).toBeGreaterThan(0);
+    const session = createPublicationSession({
+      openPublication: async () => ({ ok: true, publication }),
+    });
+    const flow = createLocalPublicationOpenFlow({
+      session,
+      readFile: async () => ({ status: "ready", bytes }),
+    });
+    const lifecycle = createReaderLifecycle({ openFlow: flow });
+    try {
+      await lifecycle.open(new File([], "synthetic.epub"));
+      expect(lifecycle.state).toEqual({ status: "empty" });
+      expect(publication.closed).toBe(true);
+      expect(session.publication).toBeUndefined();
+    } finally {
+      await lifecycle.cleanup();
+      await opened.publication.close();
+    }
+  });
+
+  it.each(["closed", "rejected"] as const)(
+    "RAF-07 empty cleanup %s cannot overwrite a newer ready owner",
+    async (status) => {
+      const pending = controlled<LocalPublicationCloseResult>();
+      const replacement = createTestPublication("Replacement");
+      const flow = createTestFlow(
+        vi
+          .fn<LocalPublicationOpenFlow["open"]>()
+          .mockResolvedValueOnce({
+            status: "ready",
+            publication: createTestPublication("Empty", false),
+          })
+          .mockResolvedValueOnce({ status: "ready", publication: replacement }),
+        () => pending.promise,
+      );
+      const lifecycle = createReaderLifecycle({ openFlow: flow });
+      const opening = lifecycle.open(new File([], "empty.epub"));
+      await vi.waitFor(() => expect(flow.close).toHaveBeenCalledTimes(1));
+      await lifecycle.open(new File([], "replacement.epub"));
+      pending.resolve(
+        status === "closed"
+          ? { status }
+          : { status, reason: "internal-failure" },
+      );
+      await opening;
+      expect(lifecycle.state).toMatchObject({
+        status: "ready",
+        publication: replacement,
+      });
+    },
+  );
+
+  it("RAF-07 reports failure closing rejected empty content", async () => {
+    const flow = createTestFlow(
+      async () => ({
+        status: "ready",
+        publication: createTestPublication("Empty", false),
+      }),
+      async () => ({ status: "rejected", reason: "internal-failure" }),
+    );
+    const lifecycle = createReaderLifecycle({ openFlow: flow });
+    await lifecycle.open(new File([], "empty.epub"));
+    expect(lifecycle.state).toEqual({
+      status: "failure",
+      reason: "close-failed",
+    });
+  });
+
+  it("RAF-17 reports an unexpected current cancellation through the public import path", async () => {
+    const bytes = await buildMinimalEpubFixture();
+    const flow = createLocalPublicationOpenFlow({
+      readFile: async () => ({ status: "ready", bytes }),
+    });
+    const lifecycle = createReaderLifecycle({ openFlow: flow });
+    let ticks = 0;
+    const clock = vi
+      .spyOn(performance, "now")
+      .mockImplementation(() => ticks++ * 31_000);
+    try {
+      await lifecycle.open(new File([], "synthetic.epub"));
+      expect(lifecycle.state).toEqual({
+        status: "failure",
+        reason: "open-interrupted",
+      });
+      expect(flow.publication).toBeUndefined();
+    } finally {
+      clock.mockRestore();
+      await lifecycle.cleanup();
+    }
+  });
+
   it("publishes immutable opening and ready states", async () => {
     const pending = controlled<LocalPublicationOpenResult>();
     const publication = createTestPublication("Safe synthetic title");
@@ -152,7 +276,10 @@ describe("reader lifecycle", () => {
     });
 
     await lifecycle.open(new File([], "cancelled.epub"));
-    expect(lifecycle.state).toEqual({ status: "idle" });
+    expect(lifecycle.state).toEqual({
+      status: "failure",
+      reason: "open-interrupted",
+    });
 
     await lifecycle.open(new File([], "thrown.epub"));
     expect(lifecycle.state).toEqual({

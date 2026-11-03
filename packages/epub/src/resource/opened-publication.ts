@@ -125,6 +125,7 @@ class OpenedPublicationHandle implements OpenedPublication {
   readonly #archive: OpenedEpubArchive;
   readonly #bindingsById: ReadonlyMap<string, RasterImageResourceBinding>;
   readonly #locatorIndex: PublicationLocatorIndex;
+  readonly #sourcePositions: number;
   readonly #narrationResourceObserver:
     NarrationPreparationResourceObserver | undefined;
   readonly #narrationYieldScheduler: NarrationYieldScheduler;
@@ -150,6 +151,15 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.defaultStartLocator = defaultStartBlock?.startLocator;
     this.documents = Object.freeze([...values.documents]);
     this.#locatorIndex = values.locatorIndex;
+    let sourcePositions = 0;
+    for (const block of values.locatorIndex.blocks) {
+      archive.budget.checkpoint();
+      sourcePositions += block.textLengthCodePoints;
+      if (!Number.isSafeInteger(sourcePositions) || sourcePositions < 0) {
+        fail("internal-failure");
+      }
+    }
+    this.#sourcePositions = sourcePositions;
     this.#narrationResourceObserver = values.narrationResourceObserver;
     this.#narrationYieldScheduler =
       values.narrationYieldScheduler ?? DEFAULT_NARRATION_YIELD_SCHEDULER;
@@ -277,6 +287,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     try {
       const result = await prepareNarrationBatch(
         this.#locatorIndex,
+        this.#sourcePositions,
         Object.freeze({
           ...validated,
           signal: linkedSignal.signal,

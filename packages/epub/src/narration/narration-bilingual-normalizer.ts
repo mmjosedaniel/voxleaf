@@ -407,14 +407,16 @@ function hasNumericContinuation(
   direction: -1 | 1,
   language: NarrationNormalizationLanguage,
 ): boolean {
-  if (!/[.,/:+−-]/u.test(context.value ?? "")) return false;
+  if (direction === -1 && context.value === ".") return true;
+  const groupingSpace = isOrdinaryWhitespace(context.value ?? "");
+  if (!groupingSpace && !/[.,/:+−-]/u.test(context.value ?? "")) return false;
   const beyond = lexicalContext(
     tokens,
     languages,
     context.index + direction,
     direction,
     language,
-    false,
+    groupingSpace,
     NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
       Math.abs(context.index - origin) -
       1,
@@ -1207,6 +1209,7 @@ function findFirstSignificantProseToken(
 
 function findPunctuationPlan(
   tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
   preceding?: NarrationQuotationContext,
 ): readonly (PunctuationPlanEntry | undefined)[] {
   const plan = new Array<PunctuationPlanEntry | undefined>(tokens.length);
@@ -1246,6 +1249,45 @@ function findPunctuationPlan(
     }
 
     if (value === ".") {
+      const language = languages[index]!;
+      const before = lexicalContext(tokens, languages, index - 1, -1, language);
+      const after = lexicalContext(tokens, languages, index + 1, 1, language);
+      if (
+        before !== undefined &&
+        after !== undefined &&
+        isNumericContextCodePoint(before.value) &&
+        isNumericContextCodePoint(after.value)
+      ) {
+        // Preserve numeric punctuation without admitting or expanding its grammar.
+        // Keeping the bounded contiguous token protected also prevents a soft
+        // segment cut; oversized tokens retain the existing hard-split policy.
+        let start = before.index;
+        let end = after.index + 1;
+        const maximum =
+          NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+        while (
+          start > 0 &&
+          end - start < maximum &&
+          isProseTextToken(tokens[start - 1]) &&
+          languages[start - 1] === language &&
+          isNumericContextCodePoint(sourceText(tokens[start - 1]))
+        )
+          start--;
+        while (
+          end < tokens.length &&
+          end - start < maximum &&
+          isProseTextToken(tokens[end]) &&
+          languages[end] === language &&
+          isNumericContextCodePoint(sourceText(tokens[end]))
+        )
+          end++;
+        for (let position = start; position < end; position++)
+          plan[position] = punctuationEntry(
+            "punctuation",
+            Object.freeze(["decimal-token"]),
+          );
+        continue;
+      }
       let end = index + 1;
       while (
         end < tokens.length &&
@@ -1835,6 +1877,7 @@ function normalizeNarrationSourceTokensInternal(
   );
   const punctuationPlan = findPunctuationPlan(
     tokens,
+    languages,
     precedingQuotationContext,
   );
   const provisional = tokens.map((token, index) => {

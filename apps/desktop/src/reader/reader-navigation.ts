@@ -129,15 +129,27 @@ function documentForLocatedBlock(
 function readableChapterStarts(
   publication: OpenedPublication,
 ): readonly PublicationLocatedBlock[] {
+  const documents = new Map(
+    publication.documents.map((document) => [document.id, document]),
+  );
+  const firstLocations = new Map<string, PublicationLocatedBlock>();
+  for (const located of publication.locators) {
+    const key = `${located.startLocator.spineItemIndex}:${located.startLocator.spineItemId}`;
+    if (!firstLocations.has(key)) firstLocations.set(key, located);
+  }
   return Object.freeze(
     publication.book.spine.flatMap((spineItem) => {
-      const locatedBlock = publication.locators.find(
-        (candidate) =>
-          candidate.startLocator.spineItemId === spineItem.id &&
-          candidate.startLocator.spineItemIndex === spineItem.index,
+      const locatedBlock = firstLocations.get(
+        `${spineItem.index}:${spineItem.id}`,
       );
+      const document =
+        locatedBlock === undefined
+          ? undefined
+          : documents.get(locatedBlock.documentId);
       return locatedBlock === undefined ||
-        documentForLocatedBlock(publication, locatedBlock) === undefined
+        document?.location.kind !== "spine" ||
+        document.location.spineItemId !== spineItem.id ||
+        document.location.spineItemIndex !== spineItem.index
         ? []
         : [locatedBlock];
     }),

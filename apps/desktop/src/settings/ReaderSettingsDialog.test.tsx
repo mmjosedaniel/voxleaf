@@ -200,6 +200,32 @@ function hardwareSource() {
 }
 
 describe("reader Settings dialog", () => {
+  it("RAF-08 continuing narrator determines active label independently of fresh-start compatibility", async () => {
+    const source = narrationSource();
+    const observe = source.observe;
+    let current = {
+      ...observe(),
+      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID as string,
+    };
+    source.observe = vi.fn(() => current);
+    const subject = renderSettings({
+      chatterboxState: "installed",
+      narrationCoordinator: source as unknown as ProductNarrationCoordinator,
+    });
+    expect(
+      await screen.findByText("Chatterbox is active."),
+    ).toBeInTheDocument();
+    current = {
+      ...current,
+      profileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+    };
+    subject.rerenderSettings({
+      narrationCoordinator: source as unknown as ProductNarrationCoordinator,
+    });
+    expect(
+      await screen.findByText("Chatterbox is not active."),
+    ).toBeInTheDocument();
+  });
   it("NSL-01 known future profile state prevents activation before teardown", async () => {
     const hardware = hardwareSource();
     hardware.publish({ ...hardware.observe(), canPersistSelection: false });
@@ -397,7 +423,7 @@ describe("reader Settings dialog", () => {
     expect(loadApplicationVersion).not.toHaveBeenCalled();
     subject.rerenderSettings({ open: true });
     await screen.findByText("VoxLeaf 0.1.0.");
-    expect(first.listeners.size).toBe(1);
+    expect(first.listeners.size).toBe(2);
     expect(hardware.listeners.size).toBe(3);
     expect(subject.refresh).toHaveBeenCalledOnce();
     act(() =>
@@ -416,7 +442,7 @@ describe("reader Settings dialog", () => {
       narrationCoordinator: secondCoordinator,
     });
     expect(first.listeners.size).toBe(0);
-    expect(second.listeners.size).toBe(1);
+    expect(second.listeners.size).toBe(2);
     act(() =>
       second.publish({
         ...second.observe(),
@@ -440,7 +466,7 @@ describe("reader Settings dialog", () => {
       open: true,
       narrationCoordinator: secondCoordinator,
     });
-    expect(second.listeners.size).toBe(1);
+    expect(second.listeners.size).toBe(2);
     subject.rerenderSettings({ open: false });
     expect(
       first.listeners.size + second.listeners.size + hardware.listeners.size,
@@ -449,7 +475,7 @@ describe("reader Settings dialog", () => {
       open: true,
       narrationCoordinator: secondCoordinator,
     });
-    expect(second.listeners.size).toBe(1);
+    expect(second.listeners.size).toBe(2);
     expect(hardware.listeners.size).toBe(3);
     expect(loadApplicationVersion).toHaveBeenCalledTimes(2);
     expect(subject.refresh).toHaveBeenCalledTimes(2);

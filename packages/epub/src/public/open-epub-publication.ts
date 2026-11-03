@@ -11,6 +11,7 @@ import type {
 } from "../document/document-model.js";
 import {
   contentDocumentIdForManifestIndex,
+  createXhtmlPublicationLookup,
   isSupportedContentDocument,
   projectXhtmlDocumentProjection,
 } from "../document/xhtml-projector.js";
@@ -82,13 +83,12 @@ async function projectDocuments(
   packageDocument: ParsedPackageDocument,
 ): Promise<readonly XhtmlDocumentProjection[]> {
   const projections: XhtmlDocumentProjection[] = [];
+  const lookup = createXhtmlPublicationLookup(archive, packageDocument);
   for (const item of packageDocument.manifest) {
     archive.budget.checkpoint();
     if (isSupportedContentDocument(item) && item.location.kind === "local") {
       const path = item.location.path;
-      const occurrences = packageDocument.spine.filter(
-        (spineItem) => String(spineItem.path) === String(path),
-      );
+      const occurrences = lookup.spineByPath.get(String(path)) ?? [];
       // Each accepted spine occurrence owns its location. Reprojection uses the
       // same archive budgets, so repeated fallbacks cannot bypass work limits.
       for (const occurrence of occurrences.length === 0
@@ -100,6 +100,7 @@ async function projectDocuments(
             packageDocument,
             path,
             occurrence?.index,
+            lookup,
           ),
         );
       }

@@ -1995,6 +1995,7 @@ impl OptionalChatterboxManager {
         }
         *operation = Operation {
             state: Some(OptionalProfileState::Confirming),
+            cancellation: Some(Arc::new(AtomicBool::new(false))),
             ..Operation::default()
         };
         Ok(snapshot_from(
@@ -2005,7 +2006,31 @@ impl OptionalChatterboxManager {
         ))
     }
 
+    fn download_attempt(&self) -> Result<Arc<AtomicBool>, OptionalProfileError> {
+        let mut operation = self
+            .operation
+            .lock()
+            .map_err(|_| OptionalProfileError::Busy)?;
+        if !matches!(operation.state, Some(OptionalProfileState::Confirming)) {
+            return Err(OptionalProfileError::Invalid);
+        }
+        Ok(Arc::clone(
+            operation
+                .cancellation
+                .get_or_insert_with(|| Arc::new(AtomicBool::new(false))),
+        ))
+    }
+
+    #[cfg(test)]
     fn download_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+        self.download_for_attempt(root, self.download_attempt()?)
+    }
+
+    fn download_for_attempt(
+        &self,
+        root: &Path,
+        cancellation: Arc<AtomicBool>,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
         let runtime_artifact = manifest
             .runtime_artifact
@@ -2022,10 +2047,15 @@ impl OptionalChatterboxManager {
             .operation
             .lock()
             .map_err(|_| OptionalProfileError::Busy)?;
-        if !matches!(operation.state, Some(OptionalProfileState::Confirming)) {
-            return Err(OptionalProfileError::Invalid);
+        if cancellation.load(Ordering::Acquire)
+            || !matches!(operation.state, Some(OptionalProfileState::Confirming))
+            || !operation
+                .cancellation
+                .as_ref()
+                .is_some_and(|current| Arc::ptr_eq(current, &cancellation))
+        {
+            return Err(OptionalProfileError::Cancelled);
         }
-        let cancellation = Arc::new(AtomicBool::new(false));
         operation.state = Some(OptionalProfileState::Downloading);
         operation.downloaded_bytes = 0;
         operation.failure = None;
@@ -2363,12 +2393,15 @@ fn select_at_if_host_admitted(
 fn download_at_if_host_admitted(
     manager: &OptionalChatterboxManager,
     root: &Path,
-    admitted: bool,
+    admitted: impl FnOnce() -> bool,
 ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
-    if !admitted {
+    // Bind before the potentially slow host probe. Cancellation/reselection
+    // replaces this identity; it can never grant consent to the old command.
+    let attempt = manager.download_attempt();
+    if !admitted() {
         return Err(OptionalProfileError::IncompatibleHost);
     }
-    manager.download_at(root)
+    manager.download_for_attempt(root, attempt?)
 }
 
 #[tauri::command]
@@ -2427,7 +2460,7 @@ pub async fn download_optional_chatterbox(
     tauri::async_runtime::spawn_blocking(move || {
         let manifest = exact_manifest()?;
         let root = OptionalChatterboxManager::profile_root_for()?;
-        download_at_if_host_admitted(&manager, root, host_is_admitted(&manifest))
+        download_at_if_host_admitted(&manager, root, || host_is_admitted(&manifest))
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?

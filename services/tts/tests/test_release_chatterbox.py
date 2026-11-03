@@ -1284,3 +1284,39 @@ def test_spm_split_recovers_sole_stale_part_backup_before_retry(tmp_path: Path) 
     assert not backup.exists()
     assert not (tmp_path / "runtime.zip.part-004").exists()
     assert (tmp_path / "runtime.zip.part-001").read_bytes() == b"new"
+
+
+@pytest.mark.parametrize("retired_index", [2, 3, 4])
+def test_raf_11_late_retired_backup_cleanup_retry_preserves_committed_set(
+    ncc_package_builder: Path, monkeypatch: pytest.MonkeyPatch, retired_index: int
+) -> None:
+    layout = PackageLayout("6")
+    dist = layout.dist(repository_root(), ncc_package_builder)
+    _write_tree(dist / layout.directory, {"old.txt": b"old"})
+    _write_tree(dist, {layout.archive: b"old zip", "local-build-evidence-v6.json": b"old receipt"})
+    for index in range(1, 5):
+        (dist / f"{layout.archive}.part-{index:03d}").write_bytes(b"old part")
+    retired = dist / f"{layout.archive}.part-{retired_index:03d}"
+    backup = retired.with_name(f".{retired.name}.previous")
+    remove = release_chatterbox._remove_output
+
+    def fail_late_cleanup(path: Path) -> None:
+        if path == backup:
+            raise OSError("synthetic late cleanup failure")
+        remove(path)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(release_chatterbox, "_remove_output", fail_late_cleanup)
+        with pytest.raises(ReleaseChatterboxError, match="cleanup-failed-after-commit"):
+            release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)
+    before = {
+        path.relative_to(dist): path.read_bytes() for path in dist.rglob("*") if path.is_file()
+    }
+    with pytest.raises(ReleaseChatterboxError, match="recovery-required"):
+        release_chatterbox.build_package(package_version="6", output_root=ncc_package_builder)
+    assert not retired.exists()
+    assert before == {
+        path.relative_to(dist): path.read_bytes() for path in dist.rglob("*") if path.is_file()
+    }
+    release_chatterbox.check_local_package(package_version="6", output_root=ncc_package_builder)

@@ -338,7 +338,25 @@ export function App({
       readyPublicationSequence === undefined
     ) {
       readerPositionRestoreCoordinator.cancel();
-      return;
+      let active = true;
+      queueMicrotask(() => {
+        if (!active) return;
+        setReaderRestoration((current) => {
+          const state = readerLifecycle.state;
+          return state.status === "ready" &&
+            current !== undefined &&
+            isReaderRestorationForPublication(
+              current,
+              state.publication,
+              state.publicationSequence,
+            )
+            ? current
+            : undefined;
+        });
+      });
+      return () => {
+        active = false;
+      };
     }
 
     const publication = readyPublication;

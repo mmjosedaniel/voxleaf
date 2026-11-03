@@ -5,6 +5,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent,
   type ReactElement,
 } from "react";
@@ -202,6 +203,7 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
 function OptionalChatterboxSettings({
   client,
   hardwareCompatibility,
+  narrationCoordinator,
   onActivate,
   onRemove,
   onRecoveryEpisodeReset,
@@ -209,17 +211,31 @@ function OptionalChatterboxSettings({
 }: Readonly<{
   client: OptionalChatterboxClient;
   hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
+  narrationCoordinator?: ProductNarrationCoordinator;
   onActivate: () => Promise<boolean>;
   onRemove: () => Promise<void>;
   onRecoveryEpisodeReset: () => void;
   disabled?: boolean;
 }>): ReactElement {
   const compatibility = useHardwareCompatibilitySnapshot(hardwareCompatibility);
+  const activeProfileId = useSyncExternalStore(
+    useCallback(
+      (listener: () => void) =>
+        narrationCoordinator?.subscribe(listener) ?? (() => undefined),
+      [narrationCoordinator],
+    ),
+    useCallback(
+      () =>
+        narrationCoordinator?.observe().profileId ??
+        compatibility.activeProfileId,
+      [narrationCoordinator, compatibility.activeProfileId],
+    ),
+  );
   const acquisition = chatterboxAcquisitionPresentation(compatibility);
   return (
     <OptionalChatterboxControls
       client={client}
-      active={compatibility.activeProfileId === CHATTERBOX_OPTIONAL_PROFILE_ID}
+      active={activeProfileId === CHATTERBOX_OPTIONAL_PROFILE_ID}
       onActivate={onActivate}
       onRecheck={async () => {
         await hardwareCompatibility.check("explicit-recheck");
@@ -432,6 +448,9 @@ export function ReaderSettingsDialog({
             />
             <OptionalChatterboxSettings
               client={optionalChatterbox}
+              {...(narrationCoordinator === undefined
+                ? {}
+                : { narrationCoordinator })}
               hardwareCompatibility={hardwareCompatibility}
               onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}

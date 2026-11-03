@@ -28,10 +28,7 @@ import {
 } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
-import {
-  NarrationOperationWorkBudget,
-  NarrationWorkController,
-} from "./narration-work-controller.js";
+import { NarrationOperationWorkBudget } from "./narration-work-controller.js";
 import {
   NARRATION_V1_BATCH_POLICY,
   NARRATION_V1_SEGMENT_POLICY,
@@ -627,6 +624,7 @@ function titleContextAt(
  */
 export async function prepareNarrationBatch(
   locatorIndex: PublicationLocatorIndex,
+  sourcePositions: number,
   request: ValidatedNarrationPreparationRequest,
   scheduler: NarrationYieldScheduler,
   resourceObserver?: NarrationPreparationResourceObserver,
@@ -674,18 +672,12 @@ export async function prepareNarrationBatch(
       narrationUtf8Bytes: 0,
       sentenceCount: 0,
     };
-    let sourcePositions = 0;
-    const derivation = new NarrationWorkController(signal, scheduler);
-    for (const block of locatorIndex.blocks) {
-      await derivation.observe();
-      sourcePositions = addSafe(sourcePositions, block.textLengthCodePoints);
-    }
     const sourceInspectionMaximum = addSafe(
       4 * sourcePositions,
       NARRATION_V1_SOURCE_WINDOW_POLICY.sourceCodePointsInspectedHardMaximum,
     );
     const operation: MutablePreparationMeasurements = {
-      checkpointCount: derivation.checkpointCount,
+      checkpointCount: 0,
       sourceCodePointsInspected: 0,
       sourceInspectionMaximum,
       work: new NarrationOperationWorkBudget(
@@ -693,7 +685,9 @@ export async function prepareNarrationBatch(
           addSafe(sourceInspectionMaximum, locatorIndex.blocks.length),
       ),
     };
-    operation.work.charge(derivation.workUnitCount);
+    // Preserve the former per-request allowance debit without rescanning
+    // immutable metadata. The checked aggregate is charged at publication open.
+    operation.work.charge(locatorIndex.blocks.length);
     let sourceComplete = false;
     const segmentPolicy = narrationSegmentPolicy(request.profile);
     const retainTitleContext =

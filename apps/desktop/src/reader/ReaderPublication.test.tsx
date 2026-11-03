@@ -35,6 +35,11 @@ import type { ReaderReflowEnvironment } from "./reader-reflow-restoration";
 import { DEFAULT_READER_PREFERENCES } from "./reader-preferences";
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
+import { openEpubPublication } from "@voxleaf/epub";
+import {
+  buildMinimalEpubFixture,
+  minimalPackageDocument,
+} from "../../../../packages/epub/test-support/epub-fixture";
 import type {
   ReaderNarrationSource,
   SegmentHighlightEnvironment,
@@ -52,6 +57,66 @@ const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
 const SUPPLEMENT_DOCUMENT_ID = "document:supplement" as ContentDocumentId;
 const CONTINUATION_FRAGMENT = "private-continuation-fragment" as SourceFragment;
+
+it.each([16, 64])(
+  "RAF-09 constructs navigation with linear metadata visits for %i admitted chapters",
+  async (count) => {
+    const indices = Array.from({ length: count - 1 }, (_, index) => index + 1);
+    const bytes = await buildMinimalEpubFixture({
+      packageDocument: minimalPackageDocument()
+        .replace(
+          "</manifest>",
+          indices
+            .map(
+              (index) =>
+                `<item id="c${index}" href="text/c${index}.xhtml" media-type="application/xhtml+xml"/>`,
+            )
+            .join("") + "</manifest>",
+        )
+        .replace(
+          "</spine>",
+          indices.map((index) => `<itemref idref="c${index}"/>`).join("") +
+            "</spine>",
+        ),
+      additionalEntries: indices.map((index) => ({
+        name: `EPUB/text/c${index}.xhtml`,
+        content:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter</title></head><body><p>Synthetic passage.</p></body></html>',
+      })),
+    });
+    const result = await openEpubPublication(bytes);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("fixture-open-failed");
+    const publication = result.publication;
+    let visits = 0;
+    const counted = <T,>(values: readonly T[]) =>
+      new Proxy([...values], {
+        get(target, key, receiver) {
+          if (typeof key === "string" && /^\d+$/.test(key)) visits++;
+          return Reflect.get(target, key, receiver);
+        },
+      });
+    const locators = counted(publication.locators);
+    const documents = counted(publication.documents);
+    const observed = new Proxy({} as OpenedPublication, {
+      get(_target, key) {
+        if (key === "locators") return locators;
+        if (key === "documents") return documents;
+        const value: unknown = Reflect.get(publication, key, publication);
+        return typeof value === "function" ? value.bind(publication) : value;
+      },
+    });
+    try {
+      const navigation = new ReaderNavigationCoordinator(observed);
+      expect(navigation.state.canGoNext).toBe(true);
+      expect(visits).toBeLessThanOrEqual(
+        4 * (locators.length + documents.length + count),
+      );
+    } finally {
+      await publication.close();
+    }
+  },
+);
 
 class ManualVisualLocatorEnvironment implements ActiveVisualLocatorEnvironment {
   readonly rects = new Map<string, VisualLocatorRect>();
