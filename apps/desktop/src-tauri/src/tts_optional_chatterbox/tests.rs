@@ -41,11 +41,19 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
             .state,
         OptionalProfileState::Confirming
     );
-    assert_eq!(
-        download_at_if_host_admitted(&manager, &root.0, || true),
-        Err(OptionalProfileError::DownloadFailed)
-    );
-    assert_eq!(transfers.load(Ordering::SeqCst), 1);
+    let replacement = download_at_if_host_admitted(&manager, &root.0, || true);
+    #[cfg(windows)]
+    {
+        assert_eq!(replacement, Err(OptionalProfileError::DownloadFailed));
+        assert_eq!(transfers.load(Ordering::SeqCst), 1);
+    }
+    #[cfg(not(windows))]
+    {
+        // The replacement is current, but the Windows-only disk-space probe
+        // fails closed before transfer on unsupported platforms.
+        assert_eq!(replacement, Err(OptionalProfileError::Unavailable));
+        assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    }
     DOWNLOAD_HOOK.with(|slot| {
         slot.borrow_mut().take();
     });
