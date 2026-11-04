@@ -50,6 +50,10 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 }
 
 function utf8Bytes(value: string): number {
+  // UTF-8 is at least as large as the UTF-16 code-unit count. Avoid encoding
+  // an unbounded existing value when this lower bound already exceeds policy.
+  if (value.length > NARRATION_START_PREFERENCE_V1.maximumEnvelopeUtf8Bytes)
+    return value.length;
   return new TextEncoder().encode(value).byteLength;
 }
 
@@ -131,6 +135,12 @@ export function createWebStorageNarrationStartPreferenceRepository(
         NARRATION_START_PREFERENCE_V1.storageKey,
       );
       if (current !== null) {
+        if (
+          utf8Bytes(current) >
+          NARRATION_START_PREFERENCE_V1.maximumEnvelopeUtf8Bytes
+        ) {
+          return Object.freeze({ status: "over-limit" });
+        }
         try {
           const decoded: unknown = JSON.parse(current);
           if (

@@ -48,6 +48,33 @@ function cloneRecord(input: unknown): Record<string, unknown> {
 }
 
 describe("TTS protocol control v1", () => {
+  it("CAF-R4.2 enforces common range and identifier vectors at the decoder", async () => {
+    const vectors = (await readJson("caf-range-vectors.json")) as {
+      name: string;
+      valid: boolean;
+      changes: Record<string, unknown>;
+    }[];
+    for (const vector of vectors) {
+      const message = cloneRecord(await readJson("valid-synthesize.json"));
+      for (const [path, value] of Object.entries(vector.changes)) {
+        const parts = path.split(".");
+        let target = message;
+        for (const part of parts.slice(0, -1))
+          target = target[part] as Record<string, unknown>;
+        target[parts.at(-1)!] = value;
+      }
+      if (vector.valid)
+        expect(
+          () => decodeTtsProtocolControlV1(message),
+          vector.name,
+        ).not.toThrow();
+      else
+        expect(
+          () => decodeTtsProtocolControlV1(message),
+          vector.name,
+        ).toThrow();
+    }
+  });
   it.each(VALID_FIXTURES)("decodes and deeply freezes %s", async (name) => {
     const decoded = decodeTtsProtocolControlV1(await readJson(name));
 

@@ -12,6 +12,138 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+type CafSpaceProbe = Box<dyn FnOnce(&Path) -> Result<u64, OptionalProfileError>>;
+thread_local! {
+    static CAF_SPACE_PROBE: std::cell::RefCell<Option<CafSpaceProbe>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn caf_space_probe(root: &Path) -> Option<Result<u64, OptionalProfileError>> {
+    CAF_SPACE_PROBE.with(|probe| probe.borrow_mut().take().map(|probe| probe(root)))
+}
+
+#[test]
+fn caf_r1_3_staging_only_restart_remains_discoverable_without_poll_cleanup() {
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0);
+    fs::create_dir_all(&staging).unwrap();
+    fs::write(staging.join("owned.partial"), b"partial").unwrap();
+    let manager = OptionalChatterboxManager::default();
+    assert_eq!(
+        manager.snapshot_at(&root.0).unwrap().state,
+        OptionalProfileState::Failed
+    );
+    assert!(staging.join("owned.partial").exists());
+    manager.remove_at(&root.0).unwrap();
+    assert!(!staging.exists());
+    let authority = write_runtime(&package_root(&root.0));
+    fs::create_dir_all(&staging).unwrap();
+    fs::write(staging.join("owned.partial"), b"partial").unwrap();
+    assert_eq!(
+        manager
+            .snapshot_with_manifest(&root.0, &authority)
+            .unwrap()
+            .state,
+        OptionalProfileState::Installed
+    );
+    assert_eq!(fs::read(staging.join("owned.partial")).unwrap(), b"partial");
+}
+
+#[cfg(windows)]
+#[test]
+fn caf_r8_2_failed_staging_cleanup_prevents_disk_probe() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0);
+    fs::create_dir_all(&staging).unwrap();
+    let path = staging.join("locked.partial");
+    fs::write(&path, b"owned incomplete").unwrap();
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&path)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    manager.set_operation(
+        OptionalProfileState::Confirming,
+        0,
+        None,
+        Some(Arc::new(AtomicBool::new(false))),
+    );
+    let probed = Arc::new(AtomicBool::new(false));
+    let called = Arc::clone(&probed);
+    CAF_SPACE_PROBE.with(|probe| {
+        *probe.borrow_mut() = Some(Box::new(move |_| {
+            called.store(true, Ordering::Release);
+            Ok(u64::MAX)
+        }))
+    });
+    let result = manager.download_at(&root.0);
+    CAF_SPACE_PROBE.with(|probe| probe.borrow_mut().take());
+    drop(held);
+    assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+    assert!(!probed.load(Ordering::Acquire));
+    assert_eq!(fs::read(path).unwrap(), b"owned incomplete");
+}
+
+#[test]
+fn caf_r8_1_sole_backup_is_preserved_before_promotion() {
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation/package");
+    let authority = write_runtime(&staging);
+    let backup = promotion_backup_root(&root.0);
+    fs::create_dir_all(&backup).unwrap();
+    fs::write(backup.join("recover.bin"), b"only recovery copy").unwrap();
+    assert_eq!(
+        promote(&root.0, &staging, &authority, None),
+        Err(OptionalProfileError::CleanupFailed)
+    );
+    assert_eq!(
+        fs::read(backup.join("recover.bin")).unwrap(),
+        b"only recovery copy"
+    );
+    assert!(!package_root(&root.0).exists());
+    assert!(staging.exists());
+}
+
+#[test]
+fn caf_r8_2_disk_probe_follows_owned_staging_reclamation() {
+    for extra in [0, 1] {
+        let root = TestRoot::new();
+        let staging = staging_root(&root.0);
+        fs::create_dir_all(&staging).unwrap();
+        fs::write(staging.join("old.partial"), b"old").unwrap();
+        let manager = OptionalChatterboxManager::default();
+        let cancel = Arc::new(AtomicBool::new(false));
+        manager.set_operation(
+            OptionalProfileState::Confirming,
+            0,
+            None,
+            Some(Arc::clone(&cancel)),
+        );
+        let observed = Arc::new(AtomicBool::new(false));
+        let observed_probe = Arc::clone(&observed);
+        let minimum = exact_manifest()
+            .unwrap()
+            .measurements
+            .unwrap()
+            .minimum_free_bytes;
+        CAF_SPACE_PROBE.with(|probe| {
+            *probe.borrow_mut() = Some(Box::new(move |root| {
+                observed_probe.store(!staging_root(root).exists(), Ordering::Release);
+                // Stop at the first transfer checkpoint; never initiate network IO.
+                cancel.store(true, Ordering::Release);
+                Ok(minimum - extra)
+            }))
+        });
+        let result = manager.download_at(&root.0);
+        assert!(observed.load(Ordering::Acquire));
+        if extra == 1 {
+            assert_eq!(result, Err(OptionalProfileError::InsufficientSpace));
+        }
+        assert!(!staging.exists());
+    }
+}
+
 #[test]
 fn rcf14_bounds_both_manifest_verification_and_cleanup() {
     let root = TestRoot::new();
@@ -2542,7 +2674,7 @@ fn rcf13_ordinary_snapshot_preserves_incomplete_prior_operation_until_explicit_r
     let before = manager
         .snapshot_at(&root.0)
         .expect("snapshot should succeed");
-    assert_eq!(before.state, OptionalProfileState::Absent);
+    assert_eq!(before.state, OptionalProfileState::Failed);
     assert!(stale_staging.exists());
     assert!(!profile_root(&root.0).exists());
     manager.remove_at(&root.0).unwrap();

@@ -219,20 +219,23 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     let activation = 0;
     let resumed = false;
     let sourceStarted = false;
+    let sourceStartedAt = 0;
     let playedFrames = 0;
     let stopped = false;
     const readFrames = () =>
       Math.min(
         remaining,
-        playedFrames +
-          (resumed
-            ? Math.max(
-                0,
-                Math.floor(
-                  (context.currentTime - activatedAt) * request.sampleRateHz,
-                ),
-              )
-            : 0),
+        // A started buffer source follows the context clock, including the
+        // interval before suspend settles and before resume's reply arrives.
+        // The clock itself freezes while suspended; never reanchor this source.
+        sourceStarted && !stopped
+          ? Math.max(
+              0,
+              Math.floor(
+                (context.currentTime - sourceStartedAt) * request.sampleRateHz,
+              ),
+            )
+          : playedFrames,
       );
     const resume = () => {
       const token = activation;
@@ -244,6 +247,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
           activatedAt = context.currentTime;
           resumed = true;
           if (!sourceStarted) {
+            sourceStartedAt = context.currentTime;
             source.start();
             sourceStarted = true;
           }

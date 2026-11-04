@@ -1,0 +1,68 @@
+[
+  {
+    "name": "same index different document",
+    "valid": false,
+    "changes": { "segment.sourceRange.end.spineItemId": "spine:other" }
+  },
+  {
+    "name": "same document different index",
+    "valid": false,
+    "changes": { "segment.sourceRange.end.spineItemIndex": 1 }
+  },
+  {
+    "name": "same index different anchor",
+    "valid": false,
+    "changes": { "segment.sourceRange.end.anchor.value": "paragraph-2" }
+  },
+  {
+    "name": "same anchor different index",
+    "valid": false,
+    "changes": { "segment.sourceRange.end.anchor.anchorIndex": 1 }
+  },
+  {
+    "name": "reversed offsets",
+    "valid": false,
+    "changes": { "segment.sourceRange.start.textOffsetCodePoints": 25 }
+  },
+  {
+    "name": "reversed progression",
+    "valid": false,
+    "changes": {
+      "segment.sourceRange.start.progression": 0.8,
+      "segment.sourceRange.end.progression": 0.2
+    }
+  },
+  {
+    "name": "cross document",
+    "valid": true,
+    "changes": {
+      "segment.sourceRange.end.spineItemId": "spine:other",
+      "segment.sourceRange.end.spineItemIndex": 1
+    }
+  },
+  {
+    "name": "equal range",
+    "valid": true,
+    "changes": { "segment.sourceRange.end.textOffsetCodePoints": 0 }
+  },
+  {
+    "name": "optional progression",
+    "valid": true,
+    "changes": { "segment.sourceRange.start.progression": 0.8 }
+  },
+  {
+    "name": "C1 identifier",
+    "valid": true,
+    "changes": { "requestId": "request:\u0080" }
+  },
+  {
+    "name": "C0 identifier",
+    "valid": false,
+    "changes": { "requestId": "request:\u001f" }
+  },
+  {
+    "name": "DEL identifier",
+    "valid": false,
+    "changes": { "requestId": "request:\u007f" }
+  }
+]

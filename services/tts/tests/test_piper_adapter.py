@@ -604,7 +604,35 @@ def _observe_chunks(
     monkeypatch.setattr(voice, "synthesize", synthesize)
 
 
-def test_multiple_nonzero_chunks_materialize_then_preserve_order_and_rounding(
+def test_caf_r1_1_stops_and_closes_iterator_at_cumulative_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, _calls, voice = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    events: list[str] = []
+
+    def synthesize(*_args: object, **_kwargs: object) -> Iterator[SimpleNamespace]:
+        try:
+            for size in (220_500, 220_501, 1):
+                events.append(f"yield:{size}")
+                yield SimpleNamespace(
+                    sample_rate=22_050,
+                    sample_width=2,
+                    sample_channels=1,
+                    audio_float_array=FakeAudioArray([0.0] * size),
+                )
+        finally:
+            events.append("closed")
+
+    monkeypatch.setattr(voice, "synthesize", synthesize)
+    with pytest.raises(EngineFailure):
+        adapter.warm()
+    assert events == ["yield:220500", "yield:220501", "closed"]
+    assert not adapter.has_active_operation
+
+
+def test_multiple_nonzero_chunks_incrementally_preserve_order_and_rounding(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -633,8 +661,8 @@ def test_multiple_nonzero_chunks_materialize_then_preserve_order_and_rounding(
     )
     assert events == [
         "yield:0",
-        "yield:1",
         "iterate:0",
+        "yield:1",
         "iterate:1",
     ]
 
@@ -643,7 +671,7 @@ def test_multiple_nonzero_chunks_materialize_then_preserve_order_and_rounding(
     "case",
     ("empty", "rate", "width", "channels", "bool", "length", "cumulative"),
 )
-def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
+def test_chunk_validation_rejects_before_iteration_and_stops_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     case: str,
@@ -674,9 +702,9 @@ def test_chunk_validation_rejects_before_iteration_after_eager_materialization(
     assert failure.value.code is EngineFailureCode.FAILURE
     assert not adapter.has_active_operation
     assert adapter.capabilities().local_speech_generation == "unknown"
-    expected = [] if case == "empty" else ["yield:0", "yield:1"]
+    expected = [] if case == "empty" else ["yield:0"]
     if case == "cumulative":
-        expected.append("iterate:0")
+        expected.extend(["iterate:0", "yield:1"])
     assert events == expected
 
 

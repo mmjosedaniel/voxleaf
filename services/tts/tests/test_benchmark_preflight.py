@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Final
+
+import pytest
 
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
@@ -21,11 +25,80 @@ from benchmarks.preflight import (
     PreflightRequest,
     RepositoryState,
     RunConditions,
+    WindowsFirewallNetworkProbe,
     run_preflight,
 )
 
 COMMIT_SHA: Final = "a" * 40
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="PowerShell probe")
+@pytest.mark.parametrize(
+    "case",
+    [
+        "valid",
+        "disabled",
+        "inactive",
+        "profile",
+        "address",
+        "port",
+        "program",
+        "duplicate",
+        "unavailable",
+    ],
+)
+def test_caf_r3_5_real_firewall_probe_interprets_effective_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    candidate = tmp_path / "synthetic.exe"
+    candidate.write_bytes(b"synthetic")
+    run = subprocess.run
+    prelude = """
+$ErrorActionPreference='Stop'
+function Get-NetFirewallRule { param($PolicyStore, $DisplayName)
+  if ($env:CAF_CASE -eq 'unavailable') { throw 'unavailable' }
+  if ($env:CAF_CASE -eq 'inactive' -and $PolicyStore -eq 'ActiveStore') { return }
+  [pscustomobject]@{
+    Enabled='True';Direction='Outbound';Action='Block';PrimaryStatus='OK'
+    Profile=$(if($env:CAF_CASE -eq 'profile'){'Public'}else{'Any'})
+  }
+}
+function Get-NetFirewallProfile { param($PolicyStore)
+  foreach($name in @('Domain','Private','Public')) {
+    [pscustomobject]@{Name=$name;Enabled=($env:CAF_CASE -ne 'disabled')}
+  }
+}
+function Get-Service { [pscustomobject]@{Status='Running'} }
+function Get-NetFirewallApplicationFilter { process {
+  $program=$env:VOXLEAF_BENCHMARK_CANDIDATE_PYTHON
+  [pscustomobject]@{Program=$(if($env:CAF_CASE -eq 'program'){'wrong'}else{$program})}
+  if ($env:CAF_CASE -eq 'duplicate') { [pscustomobject]@{Program=$program} }
+} }
+function Get-NetFirewallAddressFilter { process { [pscustomobject]@{
+  LocalAddress='Any'
+  RemoteAddress=$(if($env:CAF_CASE -eq 'address'){'127.0.0.1'}else{'Any'})
+} } }
+function Get-NetFirewallPortFilter { process { [pscustomobject]@{
+  Protocol='Any';LocalPort='Any'
+  RemotePort=$(if($env:CAF_CASE -eq 'port'){'443'}else{'Any'})
+} } }
+function Get-NetFirewallServiceFilter { process { [pscustomobject]@{Service='Any'} } }
+function Get-NetFirewallInterfaceFilter { process { [pscustomobject]@{InterfaceAlias='Any'} } }
+function Get-NetFirewallInterfaceTypeFilter { process { [pscustomobject]@{InterfaceType='Any'} } }
+"""
+
+    def controlled_run(
+        arguments: tuple[str, ...], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        # Invoke the real probe script with local command fixtures, never the host firewall.
+        return run((*arguments[:-1], prelude + arguments[-1]), **kwargs)  # type: ignore[call-overload,no-any-return]
+
+    monkeypatch.setenv("CAF_CASE", case)
+    monkeypatch.setattr("benchmarks.preflight.subprocess.run", controlled_run)
+    assert WindowsFirewallNetworkProbe().active(candidate) is (case == "valid")
 
 
 class FixedRepositoryProbe:

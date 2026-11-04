@@ -1,4 +1,5 @@
 import { EpubArchiveError } from "../archive/archive-error.js";
+import { createRasterImageResourceCatalog } from "../resource/raster-resource-catalog.js";
 import { openEpubArchive } from "../archive/archive-inventory.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
 import { projectBookV1 } from "../book/book-v1-projection.js";
@@ -132,6 +133,10 @@ export async function openEpubPublication(
     await resolveContainerPackage(archive, async (resolved) => {
       const candidate = parsePackageCandidate(candidateArchive, resolved);
       if (candidate.status === "incompatible-layout") {
+        createRasterImageResourceCatalog(
+          candidateArchive,
+          candidate.packageDocument,
+        );
         // Complete the same security/content validation before skipping a rendition.
         await parseNavigationDocument(
           candidateArchive,

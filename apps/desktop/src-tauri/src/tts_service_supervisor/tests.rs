@@ -1,5 +1,126 @@
 use super::*;
 
+#[test]
+fn caf_r5_1_cancel_receipt_can_finish_cleanup_after_lost_reply() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    supervisor
+        .start_owned(Some("start:caf-cancel".into()))
+        .unwrap();
+    let id = supervisor
+        .active_session()
+        .unwrap()
+        .service_instance_id
+        .clone();
+    let identity = build_work_identity(&fixture_segment()).unwrap();
+    supervisor.lifecycle.lock().unwrap().active = Some(identity.clone());
+    supervisor
+        .cancel(CancelScope {
+            session_id: identity.session_id,
+            generation_id: identity.generation_id,
+            segment_id: identity.segment_id,
+        })
+        .unwrap();
+    assert!(supervisor.session.lock().unwrap().is_none());
+    let receipt = supervisor
+        .shutdown_owned(Some(&id), Some("start:caf-cancel"))
+        .unwrap();
+    assert_eq!(
+        receipt,
+        supervisor
+            .shutdown_owned(Some(&id), Some("start:caf-cancel"))
+            .unwrap()
+    );
+    assert!(
+        supervisor
+            .start_owned(Some("start:caf-cancel".into()))
+            .is_err()
+    );
+}
+
+#[test]
+fn caf_r5_1_successful_shutdown_receipt_survives_lost_reply() {
+    for busy in [false, true] {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        supervisor.start_owned(Some("start:caf".into())).unwrap();
+        let id = supervisor
+            .active_session()
+            .unwrap()
+            .service_instance_id
+            .clone();
+        let operation = busy.then(|| supervisor.acquire_operation().unwrap());
+        let first = supervisor
+            .shutdown_owned(Some(&id), Some("start:caf"))
+            .unwrap();
+        drop(operation);
+        assert_eq!(
+            supervisor
+                .shutdown_owned(Some(&id), Some("start:caf"))
+                .unwrap(),
+            first
+        );
+        assert!(
+            supervisor
+                .shutdown_owned(Some("service:foreign"), Some("start:caf"))
+                .is_err()
+        );
+        supervisor
+            .start_owned(Some("start:successor".into()))
+            .unwrap();
+        let successor = supervisor.active_session().unwrap();
+        assert!(
+            supervisor
+                .shutdown_owned(Some(&id), Some("start:caf"))
+                .is_err()
+        );
+        assert!(Arc::ptr_eq(
+            &supervisor.active_session().unwrap(),
+            &successor
+        ));
+        supervisor.force_stop().unwrap();
+    }
+}
+
+#[test]
+fn caf_r5_2_replayed_start_cannot_replace_retained_or_active_identity() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    assert!(
+        supervisor
+            .start_selected(Some("missing"), Some("en"), Some("start:rejected".into()))
+            .is_err()
+    );
+    let receipt = supervisor
+        .shutdown_owned(None, Some("start:rejected"))
+        .unwrap();
+    assert!(
+        supervisor
+            .start_owned(Some("start:rejected".into()))
+            .is_err()
+    );
+    assert!(supervisor.session.lock().unwrap().is_none());
+    assert_eq!(
+        supervisor
+            .shutdown_owned(None, Some("start:rejected"))
+            .unwrap(),
+        receipt
+    );
+    supervisor.start_owned(Some("start:active".into())).unwrap();
+    let active = supervisor.active_session().unwrap();
+    assert!(supervisor.start_owned(Some("start:active".into())).is_err());
+    assert_eq!(
+        supervisor
+            .shutdown_owned(None, Some("start:rejected"))
+            .unwrap(),
+        receipt
+    );
+    supervisor
+        .shutdown_owned(Some(&active.service_instance_id), Some("start:active"))
+        .unwrap();
+    assert!(supervisor.session.lock().unwrap().is_none());
+}
+
 #[cfg(windows)]
 mod packaged_chatterbox;
 

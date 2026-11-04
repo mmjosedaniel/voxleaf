@@ -4,6 +4,276 @@ import report from "../../../../packages/shared/fixtures/contracts/host-profile-
 
 import { closeSettings, openSettings } from "./settings-helpers";
 
+test("CAF-1 contents dismissal and initial fallback retain the precise checkpoint", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true, false, false, true);
+  await page.goto("/");
+  const file = {
+    name: "caf-placement.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p id="target">Synthetic target passage for initial placement.</p></body></html>',
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#target">Target passage</a></li></ol></nav></body></html>',
+      }),
+    ),
+  };
+  await page.getByLabel("Open a book").setInputFiles(file);
+  for (const label of ["Close contents", "Close table of contents"]) {
+    await page.getByRole("button", { name: "Show table of contents" }).click();
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Show table of contents" }),
+    ).toBeFocused();
+  }
+  await page.getByRole("button", { name: "Show table of contents" }).click();
+  await page
+    .getByRole("button", { name: "Target passage", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("voxleaf.reader.positions")),
+    )
+    .not.toBeNull();
+  const stored = await page.evaluate(() => {
+    const envelope = JSON.parse(
+      localStorage.getItem("voxleaf.reader.positions")!,
+    );
+    envelope.states[0].locator.textOffsetCodePoints = 10;
+    return JSON.stringify(envelope);
+  });
+  await page.reload();
+  await page.evaluate((value) => {
+    localStorage.setItem("voxleaf.reader.positions", value);
+    Range.prototype.getBoundingClientRect = () =>
+      new DOMRect(0, 100_000, 10, 20);
+    Reflect.get(globalThis, "__rnb").deferConfiguration = true;
+  }, stored);
+  await page.getByLabel("Open a book").setInputFiles(file);
+  await expect(
+    page.getByRole("region", { name: "Publication reading viewport" }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").configurationPending,
+      ),
+    )
+    .toBe(true);
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").releaseConfiguration(),
+  );
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  expect(
+    await page.evaluate(() => localStorage.getItem("voxleaf.reader.positions")),
+  ).toBe(stored);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.offset),
+    )
+    .toBe(0);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+test("CAF-2 removal failure retries and same-book reinstall refreshes without autoplay", async ({
+  page,
+}) => {
+  await installSyntheticService(
+    page,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+  );
+  await page.goto("/");
+  await page.evaluate(() => {
+    const native = Reflect.get(window, "__TAURI_INTERNALS__");
+    const invoke = native.invoke;
+    const acquisition = {
+      state: "installed",
+      available: true,
+      checks: 0,
+      failRemoval: true,
+      pending: false,
+      release: () => {},
+    };
+    Reflect.set(globalThis, "__cafAcquisition", acquisition);
+    native.invoke = async (command: string, args: unknown) => {
+      const snapshot = async () => ({
+        ...(await invoke("optional_chatterbox_snapshot")),
+        state: acquisition.state,
+      });
+      if (command === "optional_chatterbox_snapshot") return snapshot();
+      if (command === "tts_profile_configuration_available") {
+        acquisition.checks += 1;
+        return acquisition.available;
+      }
+      if (command === "remove_optional_chatterbox") {
+        acquisition.state = "absent";
+        acquisition.available = false;
+        return snapshot();
+      }
+      if (command === "shutdown_tts_service" && acquisition.failRemoval) {
+        acquisition.failRemoval = false;
+        throw "tts-service-internal-failure";
+      }
+      if (command === "select_optional_chatterbox") {
+        acquisition.state = "confirming";
+        return snapshot();
+      }
+      if (command === "download_optional_chatterbox") {
+        acquisition.state = "verifying";
+        acquisition.pending = true;
+        await new Promise<void>((resolve) => {
+          acquisition.release = resolve;
+        });
+        acquisition.pending = false;
+        acquisition.state = "installed";
+        acquisition.available = true;
+        return snapshot();
+      }
+      return invoke(command, args);
+    };
+  });
+  const file = {
+    name: "caf-reinstall.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic reinstall passage.</p></body></html>',
+      }),
+    ),
+  };
+  await page.getByLabel("Open a book").setInputFiles(file);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  const settings = await openSettings(page);
+  const remove = settings.getByRole("button", {
+    name: "Remove Chatterbox",
+    exact: true,
+  });
+  await remove.click();
+  await expect(
+    settings.getByText(/Chatterbox could not be removed/),
+  ).toBeVisible();
+  await remove.click();
+  await expect(
+    settings.getByRole("button", { name: "Review Chatterbox download" }),
+  ).toBeVisible();
+  // A successful cleanup retry does not clear the terminal recovery episode.
+  // Use the existing explicit Reset before testing same-book acquisition.
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-recovery-phase",
+    "operational",
+  );
+  await settings
+    .getByRole("button", { name: "Review Chatterbox download" })
+    .click();
+  await settings
+    .getByRole("button", { name: "Download Chatterbox", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__cafAcquisition").pending),
+    )
+    .toBe(true);
+  const before = await page.evaluate(() => ({
+    checks: Reflect.get(globalThis, "__cafAcquisition").checks,
+    starts: Reflect.get(globalThis, "__rnb").service,
+  }));
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__cafAcquisition").release(),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__cafAcquisition").checks),
+    )
+    .toBe(before.checks + 1);
+  await closeSettings(page, settings);
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(before.starts);
+  await page.getByLabel("Open a book").setInputFiles(file);
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(before.starts);
+});
+
+test("CAF-3 over-limit Reset and appearance write rejection preserve bytes and feedback", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    for (const key of [
+      "voxleaf.narration.language-preference",
+      "voxleaf.narration.start-preference",
+      "voxleaf.narration.playback-preference",
+    ])
+      localStorage.setItem(key, "x".repeat(257));
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "voxleaf.reader.preferences")
+        throw new Error("synthetic storage failure");
+      original.call(this, key, value);
+    };
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "caf-preferences.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Synthetic preference passage.</p></body></html>',
+      }),
+    ),
+  });
+  const settings = await openSettings(page);
+  await settings.getByLabel("Text size").selectOption("large");
+  await expect(
+    settings.getByText(/Appearance settings could not be saved/),
+  ).toBeVisible();
+  await expect(settings.getByLabel("Text size")).toHaveValue("large");
+  await settings
+    .getByRole("button", { name: "Reset narration settings" })
+    .click();
+  await expect(
+    settings.getByRole("button", { name: "Reset narration settings" }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() =>
+      [
+        "voxleaf.narration.language-preference",
+        "voxleaf.narration.start-preference",
+        "voxleaf.narration.playback-preference",
+      ].map((key) => localStorage.getItem(key)),
+    ),
+  ).toEqual(Array(3).fill("x".repeat(257)));
+  await closeSettings(page, settings);
+});
+
 async function fixtures() {
   return import(
     new URL(

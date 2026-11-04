@@ -30,6 +30,22 @@ from voxleaf_tts.release_core import (
 )
 
 
+def test_caf_r4_3_recovery_preflights_the_entire_output_set(tmp_path: Path) -> None:
+    early = tmp_path / "early"
+    early_backup = tmp_path / ".early.previous"
+    late = tmp_path / "late"
+    late_backup = tmp_path / ".late.previous"
+    early_backup.write_bytes(b"sole earlier output")
+    late.write_bytes(b"new output")
+    late_backup.write_bytes(b"old output")
+    with pytest.raises(ReleaseCoreError, match="piper-core-recovery-required"):
+        release_core._recover_outputs([early, late])
+    assert not early.exists()
+    assert early_backup.read_bytes() == b"sole earlier output"
+    assert late.read_bytes() == b"new output"
+    assert late_backup.read_bytes() == b"old output"
+
+
 def test_core_sync_reinstalls_the_current_local_voxleaf_package(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

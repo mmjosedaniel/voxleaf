@@ -38,6 +38,24 @@ afterEach(() => {
 });
 
 describe("EPUB 3 navigation document parsing", () => {
+  it.each(["ignored", "x".repeat(1100)])(
+    "CAF-R3.4 only XHTML images contribute alt (%s)",
+    async (alt) => {
+      await withArchive(
+        navigationDocument(
+          `<h:li><h:a href="text/chapter.xhtml"><h:span alt="${alt}">Visible</h:span><img xmlns="urn:foreign" alt="${alt}"/><h:span><h:img alt=" image"/></h:span></h:a></h:li>`,
+        ),
+        {},
+        async (archive) => {
+          const parsed = await parseNavigationDocument(
+            archive,
+            createPackageDocument(),
+          );
+          expect(parsed.roots[0]?.label).toBe("Visible image");
+        },
+      );
+    },
+  );
   it.each([
     '<h:span hidden="">hidden</h:span>',
     '<h:span hidden=""><h:script>unsafe</h:script></h:span>Visible',

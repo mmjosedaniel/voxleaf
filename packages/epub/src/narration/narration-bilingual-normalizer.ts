@@ -207,6 +207,29 @@ function isAsciiDigit(code: number): boolean {
 function isWellFormedLanguageTag(value: string): boolean {
   let subtagLength = 0;
   let subtagIndex = 0;
+  let subtagStart = 0;
+  let privateUse = false;
+  let needsPayload = false;
+  const singletons = new Set<string>();
+
+  const acceptSubtag = (end: number): boolean => {
+    if (subtagIndex === 0) return true;
+    if (privateUse) {
+      needsPayload = false;
+      return true;
+    }
+    if (subtagLength === 1) {
+      if (needsPayload) return false;
+      const singleton = value.slice(subtagStart, end).toLowerCase();
+      if (singletons.has(singleton)) return false;
+      singletons.add(singleton);
+      privateUse = singleton === "x";
+      needsPayload = true;
+    } else {
+      needsPayload = false;
+    }
+    return true;
+  };
 
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index);
@@ -214,12 +237,14 @@ function isWellFormedLanguageTag(value: string): boolean {
       if (
         subtagLength === 0 ||
         subtagLength > 8 ||
-        (subtagIndex === 0 && subtagLength < 2)
+        (subtagIndex === 0 && subtagLength < 2) ||
+        !acceptSubtag(index)
       ) {
         return false;
       }
       subtagIndex += 1;
       subtagLength = 0;
+      subtagStart = index + 1;
       continue;
     }
 
@@ -235,7 +260,9 @@ function isWellFormedLanguageTag(value: string): boolean {
   return (
     subtagLength > 0 &&
     subtagLength <= 8 &&
-    (subtagIndex > 0 || subtagLength >= 2)
+    (subtagIndex > 0 || subtagLength >= 2) &&
+    acceptSubtag(value.length) &&
+    !needsPayload
   );
 }
 
@@ -777,7 +804,8 @@ function matchesLexicalForm(
       form.kind === "time" ||
       form.kind === "date" ||
       form.kind === "number") &&
-    (/[+−-]/u.test(before.value ?? "") ||
+    (after.value === "%" ||
+      /[+−-]/u.test(before.value ?? "") ||
       hasNumericContinuation(
         tokens,
         languages,

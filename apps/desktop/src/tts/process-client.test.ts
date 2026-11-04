@@ -466,19 +466,29 @@ describe("typed native TTS process client", () => {
         return buffer;
       },
     ],
-  ])("rejects a %s without retaining it", async (_label, createResponse) => {
-    const client = await readyClient();
-    const response = createResponse();
-    mockedInvoke.mockResolvedValueOnce(response);
+  ])(
+    "CAF-R2.4 rejects a %s without retaining generation or audio",
+    async (_label, createResponse) => {
+      const client = await readyClient();
+      const response = createResponse();
+      mockedInvoke.mockResolvedValueOnce(response);
 
-    await expect(client.synthesize(segment())).rejects.toEqual(
-      expect.objectContaining({ code: "tts-service-invalid-response" }),
-    );
-    expect(client.observe().retainedAudioUnits).toBe(0);
-    if (response instanceof ArrayBuffer) {
-      expect(new Uint8Array(response).every((value) => value === 0)).toBe(true);
-    }
-  });
+      await expect(client.synthesize(segment())).rejects.toEqual(
+        expect.objectContaining({ code: "tts-service-invalid-response" }),
+      );
+      expect(client.observe().retainedAudioUnits).toBe(0);
+      expect(client.observe()).toMatchObject({
+        state: "failed",
+        hasActiveGeneration: false,
+        serviceInstanceId: SERVICE_INSTANCE_ID,
+      });
+      if (response instanceof ArrayBuffer) {
+        expect(new Uint8Array(response).every((value) => value === 0)).toBe(
+          true,
+        );
+      }
+    },
+  );
 
   it("permits one active request and rejects concurrent or buffered work", async () => {
     const client = await readyClient();
@@ -584,6 +594,50 @@ describe("typed native TTS process client", () => {
     );
     expect(new Uint8Array(lateBuffer).every((value) => value === 0)).toBe(true);
     expect(client.observe().retainedAudioUnits).toBe(0);
+  });
+
+  it("CAF-R2.1 late rejected cancellation cannot shut down a replacement", async () => {
+    const client = await readyClient();
+    let rejectCancel!: (reason: unknown) => void;
+    let deliver!: (value: ArrayBuffer) => void;
+    mockedInvoke
+      .mockImplementationOnce(
+        () =>
+          new Promise<ArrayBuffer>((resolve) => {
+            deliver = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectCancel = reject;
+          }),
+      );
+    const synthesis = client
+      .synthesize(segment())
+      .catch((error: unknown) => error);
+    const cancellation = client
+      .cancel(scope())
+      .catch((error: unknown) => error);
+    mockedInvoke.mockResolvedValueOnce(shutdownControls());
+    await client.shutdown();
+    const replace = (controls: ReturnType<typeof startControls>) =>
+      controls.map((control) => ({
+        ...control,
+        serviceInstanceId: "service:replacement",
+      }));
+    mockedInvoke.mockResolvedValueOnce(replace(startControls()));
+    await client.start();
+    const before = client.observe();
+    const calls = mockedInvoke.mock.calls.length;
+    rejectCancel("tts-service-invalid-state");
+    await cancellation;
+    expect(mockedInvoke.mock.calls.length).toBe(calls);
+    expect(client.observe()).toEqual(before);
+    deliver(audioBuffer());
+    await synthesis;
+    mockedInvoke.mockResolvedValueOnce(replace(shutdownControls()));
+    await client.shutdown();
   });
 
   it("contains completed native work before restart and discards late audio", async () => {

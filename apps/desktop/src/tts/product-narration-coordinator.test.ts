@@ -854,6 +854,25 @@ describe("product narration coordinator", () => {
     },
   );
 
+  it("CAF-R4b.2 mixed-rate readiness does not attribute the whole duration to the selected rate", async () => {
+    const { coordinator } = createHarness();
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      await coordinator.setPlaybackRatePercent(75);
+      const state = coordinator.observe().state!;
+      expect(state.activePlaybackRatePercent).toBe(100);
+      expect(state.selectedPlaybackRatePercent).toBe(75);
+      expect(loadedAudioStatusText(state)).toContain(
+        "available listening time",
+      );
+      expect(loadedAudioStatusText(state)).not.toContain("ready at 0.75×");
+    } finally {
+      await coordinator.close();
+    }
+  });
+
   it.each([
     ["quick", "success"],
     ["prepared", "success"],
@@ -2747,6 +2766,112 @@ describe("product narration coordinator", () => {
       }
     },
   );
+
+  it("CAF-R2.1 coordinator timeout, explicit reset and replacement survive the old cancel rejection", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    let instance = "";
+    let starts = 0;
+    let rejectCancel!: (error: unknown) => void;
+    let finishSynthesis!: (buffer: ArrayBuffer) => void;
+    const shutdownIds: unknown[] = [];
+    const control = (kind: string, extra = {}) => ({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      kind,
+      serviceInstanceId: instance,
+      ...extra,
+    });
+    const state = (value: string) => control("state", { state: value });
+    const capabilities = () =>
+      control("capabilities", {
+        report: {
+          schemaVersion: 1,
+          capabilities: {
+            localSpeechGeneration: "unknown",
+            streamingGeneration: "unsupported",
+            generationCancellation: "unsupported",
+            hardwareAcceleration: "unknown",
+            cpuFallback: "unsupported",
+          },
+        },
+        cancellationContainment:
+          "identity-invalidation-then-worker-termination",
+      });
+    const invoke = async (
+      command: string,
+      args?: Record<string, unknown>,
+    ): Promise<unknown> => {
+      if (command.endsWith("available")) return true;
+      if (command === "start_tts_service") {
+        instance = `service:caf-${++starts}`;
+        return [
+          state("handshaking"),
+          control("handshakeAccepted"),
+          state("unloaded"),
+          capabilities(),
+        ];
+      }
+      if (command === "prepare_tts_service")
+        return [
+          state("loading"),
+          state("warming"),
+          state("ready"),
+          capabilities(),
+        ];
+      if (command === "synthesize_tts_segment")
+        return starts === 1
+          ? new Promise<ArrayBuffer>((resolve) => {
+              finishSynthesis = resolve;
+            })
+          : new Float32Array(360_000).buffer;
+      if (command === "cancel_tts_generation")
+        return new Promise((_, reject) => {
+          rejectCancel = reject;
+        });
+      if (command === "shutdown_tts_service") {
+        shutdownIds.push(args?.serviceInstanceId);
+        finishSynthesis?.(new ArrayBuffer(96_000));
+        return [state("stopping"), state("stopped")];
+      }
+      throw "tts-service-unavailable";
+    };
+    const client = new TtsProcessClient(
+      async <T>(command: string, args?: Record<string, unknown>) =>
+        (await invoke(command, args)) as T,
+    );
+    const { coordinator, clock } = createHarness({ serviceClient: client });
+    Object.defineProperty(clock, "nowMs", { get: () => Date.now() });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => finishSynthesis !== undefined);
+      const stopping = coordinator.stop();
+      await settleUntil(() => rejectCancel !== undefined);
+      await vi.advanceTimersByTimeAsync(6_000);
+      await stopping;
+      expect(coordinator.observe().recovery.phase).toBe("contained");
+      await coordinator.stopForConfigurationChange();
+      coordinator.resetRecoveryEpisode();
+      await coordinator.refreshSelectedProfile();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(starts).toBe(2);
+      const shutdownCount = shutdownIds.length;
+      rejectCancel("tts-service-invalid-state");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(shutdownIds).toHaveLength(shutdownCount);
+      expect(client.observe()).toMatchObject({
+        serviceInstanceId: "service:caf-2",
+        state: "ready",
+      });
+      expect(coordinator.observe().state?.phase).toBe("playing");
+    } finally {
+      rejectCancel?.("tts-service-invalid-state");
+      await coordinator.close();
+      vi.useRealTimers();
+    }
+  });
 
   it.each(["stop", "failure"] as const)(
     "RAF-14 permits explicit restart after typed completed-synthesis cancellation during %s",

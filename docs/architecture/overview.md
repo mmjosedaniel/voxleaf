@@ -122,6 +122,27 @@ actual-audio metrics, cancellation classification and truthful preference
 restoration. Existing owners, public contracts and runtime/model versions
 remain unchanged.
 
+The [CAF follow-up](../plans/completed/chat-audit-minimal-follow-up.md) keeps these
+component and process boundaries. Archive close joins pending readers before
+releasing its ZIP reader and entry map; caller-owned bytes and immutable metadata
+remain untouched. Rejected-layout rootfiles still consume metadata-only raster
+admission budgets. Current bilingual normalization conservatively preserves
+compound percent suffixes and malformed language extensions; the frozen v1 path
+is unchanged.
+
+Current Python and native protocol decoders enforce locator-range identity and
+ordering constraints at their existing boundaries. Piper collects PCM
+incrementally under the existing cap and closes its iterator on exit. Native
+shutdown/cancel retain bounded terminal identity receipts, and start rejects
+active or retained identity collisions. The 1x audio backend measures consumed
+frames from the source's single context-clock start across asynchronous
+suspend/resume, retaining its audible activation and ended clamp.
+
+Optional-package observation discovers staging-only residue without deleting it.
+Download admission reclaims only its owned staging before checking free space;
+promotion refuses to erase a sole backup. No automatic restoration, new package
+format, frozen optional-source update, or model migration is introduced.
+
 [ADR-0065](decisions/ADR-0065-validated-runtime-and-narration-boundaries.md) records
 the coordinated CUDA/free-memory fact, pending-start ownership, episode metrics,
 private child bootstrap and EPUB/narration corrections. They stay in existing

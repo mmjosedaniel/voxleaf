@@ -8,7 +8,11 @@ import type { ZipWriterAddDataOptions } from "@zip.js/zip.js/lib/zip-core-native
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EpubArchiveError } from "./archive-error.js";
-import { inventoryEpubArchive } from "./archive-inventory.js";
+import { inventoryEpubArchive, openEpubArchive } from "./archive-inventory.js";
+import {
+  parseArchiveEntryPath,
+  type ArchiveFilePath,
+} from "../paths/archive-path.js";
 
 const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
 const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
@@ -40,6 +44,67 @@ afterEach(() => {
 });
 
 describe("EPUB ZIP inventory", () => {
+  it("CAF-R2.3 close joins the pending reader and releases its entry map once", async () => {
+    const bytes = await createArchive([
+      mimetypeEntry(),
+      { name: "EPUB/pending.xhtml", data: "synthetic" },
+    ]);
+    const getEntries = ZipReader.prototype.getEntriesGenerator;
+    let release!: () => void;
+    let defer = false;
+    vi.spyOn(ZipReader.prototype, "getEntriesGenerator").mockImplementation(
+      async function* (this: ZipReader<Uint8Array>, options) {
+        for await (const entry of getEntries.call(this, options)) {
+          if (!entry.directory && entry.filename === "EPUB/pending.xhtml") {
+            const getData = entry.getData.bind(entry);
+            entry.getData = async (...args) => {
+              if (defer)
+                await new Promise<void>((done) => {
+                  release = done;
+                });
+              return getData(...args);
+            };
+          }
+          yield entry;
+        }
+        return true;
+      },
+    );
+    const archive = await openEpubArchive(bytes);
+    const inventory = archive.inventory;
+    let cleared = 0;
+    const clear = Map.prototype.clear;
+    vi.spyOn(Map.prototype, "clear").mockImplementation(function (
+      this: Map<unknown, unknown>,
+    ) {
+      if (this.has("EPUB/pending.xhtml")) cleared += 1;
+      clear.call(this);
+    });
+    defer = true;
+    const reading = archive.readEntry(
+      parseArchiveEntryPath("EPUB/pending.xhtml", "file") as ArchiveFilePath,
+    );
+    let closed = false;
+    const closing = archive.close().then(() => {
+      closed = true;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const prematurelyClosed = closed;
+    release();
+    await reading;
+    await closing;
+    await archive.close();
+    expect(prematurelyClosed).toBe(false);
+    expect(cleared).toBe(1);
+    expect(archive.inventory).toBe(inventory);
+    expect(bytes.some((byte) => byte !== 0)).toBe(true);
+    await expect(
+      archive.readEntry(
+        parseArchiveEntryPath("EPUB/pending.xhtml", "file") as ArchiveFilePath,
+      ),
+    ).rejects.toMatchObject({ code: "internal-failure" });
+  });
   it("returns an immutable physical-order inventory without workers or network", async () => {
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");

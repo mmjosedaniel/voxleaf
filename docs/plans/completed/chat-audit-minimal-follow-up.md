@@ -1,14 +1,14 @@
 # Minimal follow-up to the eight chat audit rounds
 
-Status: **Planned; implementation and acceptance have not started.**
+Status: **Implementation accepted by CAF-R2-20261103; archival assessment recorded separately.**
 Created: 2026-11-03. Case prefix: `CAF`.
 Planning base: `7820db65e372eee6987954935ab3f79202765f1a` (`main`, after #304).
 Planning branch: `codex/chat-audit-minimal-follow-up-plan`.
 
-The current authorization covers this ExecPlan, its indexes, a branch and a local
-commit. It does **not** authorize executing the plan, changing runtime code,
-running its tests, pushing, opening a PR, merging or publishing. Later execution
-requires the user's instruction. Commands below are future work, not run results.
+The 2026-11-03 execution instruction authorizes implementation and validation.
+The earlier planning-only restriction is superseded. Commit, push, PR, merge and
+publication remain unauthorized. Commands below are gate definitions, not run
+results unless explicitly recorded in the execution ledger.
 
 ## 1. Goal
 
@@ -199,7 +199,7 @@ invalidate its old runtime package; regenerate it once after those edits settle.
 
 ## 7. Milestones
 
-### M0: Establish execution inputs and directed cases — not started
+### M0: Establish execution inputs and directed cases — complete
 
 When execution is authorized, record actual HEAD, existing user changes,
 allowlisted paths and installed tools. Reconcile drift from the planning base.
@@ -214,7 +214,7 @@ as a reproduction. A broad baseline run is unnecessary when it adds no relevant
 evidence; a known historical PASS is context, not a fabricated current baseline.
 Investigate a candidate that fails to reproduce before changing its production path.
 
-### M1: Implement bounded units — not started
+### M1: Implement bounded units — complete and accepted
 
 | Unit | Cases / responsibility | Minimum acceptance observations |
 | --- | --- | --- |
@@ -232,7 +232,7 @@ correction, not the systematic-refactor workflow. No per-unit broad full suite,
 mandatory duplicate build or implementation commit is required. Future Git
 actions still need the user's authorization independently of execution permission.
 
-### M2: Freeze and validate the combined patch — not started
+### M2: Freeze and validate the combined patch — complete
 
 Finish focused regressions and current documentation before expensive preparation.
 Run the deduplicated gate groups below once on their final consumed inputs. Use
@@ -247,7 +247,7 @@ model campaign to discover a missing prerequisite. Keep timeout and cleanup
 evidence for each stage. If an ignored native gate builds/relinks an executable,
 capture the executable that actually runs; never reuse a pre-link hash.
 
-### M3: Independent acceptance and closeout — not started
+### M3: Independent acceptance and closeout — implementation accepted; archival assessment separate
 
 Delegate read-only review to `change_reviewer` (GPT-6 Astra high) following the
 repository review policy. The reviewer inspects the exact current code, documentation,
@@ -466,6 +466,50 @@ review. Missing prerequisites or failed restoration block acceptance.
 
 ## 10. Progress log
 
+- 2026-11-03 closeout: CAF-R2-20261103 APPROVE accepts all 27 bounded corrections
+  after CAF-R1-F1's mounted appearance-write coverage was added. No production
+  change was needed after the first review. Current static, deterministic,
+  Chromium, Piper EN/F08 and optional local admission gates pass; complete
+  artifact/environment restoration and source/export equivalence are verified.
+  Archive this plan and reconcile maintained indexes. Final archival assessment
+  is recorded as CAF-R3-20261103 outside its own reviewed manifest. No Git action
+  or publication occurred.
+
+- Execution update: U1-U7 candidate production changes follow directed host
+  reproductions. New receipt IDs in the ignored execution root: `U1-close-red`,
+  `U2-client-red`, `U2-native-red`, `U3-preferences-red`, `U3-removal-red`,
+  `U3-reader-red`, `U3-reinstall-red`, `U4-red`, `U5-piper-red`,
+  `U5-protocol-python-red`, `U5-protocol-rust-red`, `U6-driver-red`,
+  `U6-firewall-red`, `U6-recovery-red`, `U6-signature-red`. Each contains its
+  literal command, input manifest, timestamps, output and exit code. Failures
+  match the bounded case assertions; none is an acceptance verdict.
+- Directed green receipts so far: `U1-green` (13 selected cases),
+  `U7-green-selector-retry` (one case). `U7-green` failed before test execution
+  because cmd interpreted the selector pipe. The single corrected selector
+  retry is retained separately. Python host runs reported an existing pytest
+  cache permission warning; final Python checks will disable that optional cache.
+- No historical behavioral result has been reused. Existing synthetic fixtures,
+  runner structure and scenario knowledge are artifact reuse only. Frozen v1
+  normalization and optional source authority remain unedited. All final groups,
+  browser journeys, native preparation/restoration and independent review remain
+  pending; candidate edits are not yet accepted.
+
+- 2026-11-03 execution: branch and HEAD match the requested planning commit
+  `840bf0a2cadf43849d380058b38da784174302db`; index and worktree initially clean.
+  The only delta from the planning base is the plan and two indexes. Captured
+  complete tracked input membership before edits in the ignored evidence root
+  `tmp/evidence/chat-audit-minimal-follow-up/20261103-01/`.
+- Host tools verified outside sandbox: Node 24.20.0, pnpm 11.15.1 via existing
+  offline Corepack shim, uv 0.11.29, Rust/Cargo 1.97.1 and Python 3.12.10.
+- U7 directed test `CAF-R7.3` on unchanged production failed at the intended
+  assertion: 6,000 frames reported versus 12,000 after deferred suspend. Receipt
+  `U7-red` records command, complete source identities, environment and failure.
+  Source starts only after initial resume; its context clock advances until
+  suspend, freezes while suspended and resumes before promise delivery. This
+  demonstrates lost clock accounting, not lost PCM or physical-speaker drift.
+  Correction keeps one source-start anchor. Acceptance and owner-race controls
+  remain pending.
+
 - 2026-11-03: Reconciled all 34 original cases, their prior agent investigations,
   the deeper static revalidation and the additional N1 candidate. Separated 26
   bounded corrections from five preserved policies, two deferred risks and one
@@ -497,10 +541,35 @@ review. Missing prerequisites or failed restoration block acceptance.
 
 ## 12. Final validation results
 
-**Implementation: NOT STARTED.** No production/test source changes, test runs,
-builds, model execution or native host mutation have been performed for this
-ExecPlan. All runtime gate outcomes and independent implementation review are
-pending. The planning commit will contain only this document and its two indexes.
+Execution evidence is maintained in the [CAF ledger](../evidence/chat-audit-minimal-follow-up/execution-ledger.md)
+and [literal command register](../evidence/chat-audit-minimal-follow-up/validation-commands.md).
+All 27 bounded production corrections, including reproduced R7.3, are implemented
+and accepted by [CAF-R2-20261103](../evidence/chat-audit-minimal-follow-up/review-R2.md).
+Piper EN 1x, F08 and exact local optional admission passed with
+verified cleanup. CAF-R1-20261103 identified a mounted R6.2 coverage gap and
+pending evidence, so it remains BLOCKED rather than approved. Three additional
+App cases resolve the coverage gap (90 App tests pass with applicable static
+checks); no production change was required. CAF-R2-20261103 approves the corrected
+patch without remaining findings. The separate
+[CAF-R3-20261103 archival report](../evidence/chat-audit-minimal-follow-up/review-R3.md)
+governs the final documentation/path changes; a pending report is not approval.
+Static checks, current shared/EPUB/desktop/Python/Node groups and both Rust
+variants have passing results; the ledger preserves every earlier failure.
+Piper was regenerated once with current source and passed both offline voices
+plus package check. The resulting generated core manifest/evidence are current
+artifacts, not edits to frozen optional authorities. Native consumers are renewed
+because this manifest changed. One final desktop build completed.
+The diagram, M005 boundary and ADRs remain applicable; no process, dependency,
+persistence or major component boundary changed. No diagram or historical plan
+rewrite is needed. The five deliberate policies and three deferred questions
+(including additional N1) retain their original classification.
+
+### Historical planning-stage checks
+
+At planning time no production/test source changes, test runs, builds, model
+execution or native host mutation had been performed for this ExecPlan. Runtime
+gate outcomes and independent implementation review were pending. The planning
+commit contained only this document and its two indexes.
 
 Planning-only verification:
 

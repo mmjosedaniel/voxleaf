@@ -23,6 +23,55 @@ import {
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
+test("CAF-R4b.3 readiness requires explicit true", async () => {
+  let ready = false;
+  const fake = await startServer(() => ({ body: { value: { ready } } }));
+  try {
+    const client = new WebDriverClient(fake.endpoint);
+    assert.equal(await client.isReady(), false);
+    ready = true;
+    assert.equal(await client.isReady(), true);
+  } finally {
+    await fake.stop();
+  }
+});
+
+test("CAF-R5.3 failed DELETE retains exclusive retry ownership", async (t) => {
+  let deletes = 0;
+  let finish;
+  const pending = new Promise((resolve) => {
+    finish = resolve;
+  });
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    if (options.method === "DELETE") {
+      deletes += 1;
+      if (deletes === 1) throw new Error("synthetic transport failure");
+      await pending;
+      return {
+        ok: false,
+        json: async () => ({
+          value: { error: "invalid session id", message: "absent" },
+        }),
+      };
+    }
+    return { ok: true, json: async () => ({ value: { sessionId: "owned" } }) };
+  });
+  const client = new WebDriverClient("http://127.0.0.1:1");
+  await client.createSession("synthetic", "synthetic");
+  await assert.rejects(client.deleteSession(), {
+    code: "webdriver-request-failed",
+  });
+  assert.equal(client.hasSession, true);
+  await assert.rejects(client.execute("return true"));
+  await assert.rejects(client.createSession("replacement", "replacement"));
+  const first = client.deleteSession();
+  const second = client.deleteSession();
+  finish();
+  await Promise.all([first, second]);
+  assert.equal(deletes, 2);
+  assert.equal(client.hasSession, false);
+});
+
 test("SAF-13 aborts an active operation request while session cleanup stays independent", async () => {
   let entered;
   const requested = new Promise((resolve) => {

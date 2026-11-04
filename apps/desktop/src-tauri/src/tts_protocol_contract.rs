@@ -26,7 +26,9 @@ pub fn valid_identifier(value: Option<&Value>) -> bool {
             && code_points <= MAX_IDENTIFIER_CODE_POINTS
             && identifier.len() <= MAX_IDENTIFIER_UTF8_BYTES
             && identifier.trim() == identifier
-            && !identifier.chars().any(char::is_control)
+            && !identifier
+                .chars()
+                .any(|value| value <= '\u{001f}' || value == '\u{007f}')
     })
 }
 
@@ -152,6 +154,16 @@ fn valid_locator_range(value: Option<&Value>, book_identity: Option<&Value>) -> 
         && valid_locator(Some(end))
         && start.get("bookIdentity") == book_identity
         && end.get("bookIdentity") == book_identity
+        && (start["spineItemId"] == end["spineItemId"])
+            == (start["spineItemIndex"] == end["spineItemIndex"])
+        && (start["spineItemIndex"] != end["spineItemIndex"]
+            || (start["anchor"]["value"] == end["anchor"]["value"])
+                == (start["anchor"]["anchorIndex"] == end["anchor"]["anchorIndex"]))
+        && start
+            .get("progression")
+            .and_then(Value::as_f64)
+            .zip(end.get("progression").and_then(Value::as_f64))
+            .is_none_or(|(start, end)| start <= end)
         && locator_position(start)
             .zip(locator_position(end))
             .is_some_and(|(start_position, end_position)| start_position <= end_position)

@@ -28,6 +28,40 @@ import {
 } from "./windows-release.mjs";
 
 test(
+  "CAF-R1.5 real signature policy rejects invalid and indeterminate pairs",
+  { skip: process.platform !== "win32" },
+  () => {
+    const result = spawnSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-Command",
+        `
+$ErrorActionPreference='Stop'
+$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/build-windows-release.ps1'),[ref]$null,[ref]$null)
+$function=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-ReleaseSignatureStatus'},$true)
+Invoke-Expression $function.Extent.Text
+$states=@('Valid','NotSigned','HashMismatch','NotTrusted','UnknownError','NotSupportedFileFormat','Incompatible')
+foreach($signed in @($false,$true)) {
+ foreach($binary in $states) { foreach($installer in $states) {
+  $expected=if($signed){'Valid'}else{'NotSigned'}
+  $accepted=$binary -eq $expected -and $installer -eq $expected
+  $outcome=$null
+  try { $outcome=Get-ReleaseSignatureStatus $binary $installer $signed } catch { if($accepted){throw} }
+  if($accepted -ne ($null -ne $outcome)){ throw "signature-policy-$binary-$installer-$signed" }
+  if($accepted -and $outcome -ne $(if($signed){'signed-valid'}else{'unsigned-local'})){ throw 'signature-label' }
+ } }
+}
+exit 0
+`,
+      ],
+      { cwd: repositoryRoot(), encoding: "utf8", windowsHide: true },
+    );
+    assert.equal(result.status, 0, result.stderr);
+  },
+);
+
+test(
   "lifecycle fixtures provide one marker for each declared optional root",
   {
     skip: process.platform !== "win32",

@@ -457,6 +457,21 @@ export class TtsProcessClient {
       response = await this.invokePort<unknown>("synthesize_tts_segment", {
         segment,
       });
+      if (
+        token !== this.invalidation ||
+        this.active === undefined ||
+        !sameScope(this.active, scope)
+      ) {
+        if (response instanceof ArrayBuffer || response instanceof Uint8Array) {
+          zero(binaryView(response));
+        }
+        throw new TtsProcessClientError("tts-service-cancelled");
+      }
+      const unit = validateAudio(response, scope);
+      this.sink.accept(unit.metadata, unit.payload);
+      this.active = undefined;
+      this.state = "ready";
+      return unit.metadata;
     } catch (error) {
       if (
         token !== this.invalidation ||
@@ -467,23 +482,10 @@ export class TtsProcessClient {
       }
       this.active = undefined;
       this.state = "failed";
-      throw fixedFailure(error);
+      throw error instanceof TtsProcessClientError
+        ? error
+        : fixedFailure(error);
     }
-    if (
-      token !== this.invalidation ||
-      this.active === undefined ||
-      !sameScope(this.active, scope)
-    ) {
-      if (response instanceof ArrayBuffer || response instanceof Uint8Array) {
-        zero(binaryView(response));
-      }
-      throw new TtsProcessClientError("tts-service-cancelled");
-    }
-    const unit = validateAudio(response, scope);
-    this.active = undefined;
-    this.state = "ready";
-    this.sink.accept(unit.metadata, unit.payload);
-    return unit.metadata;
   }
 
   public takeAudioUnit(): TtsAudioUnit | undefined {
@@ -498,13 +500,21 @@ export class TtsProcessClient {
     this.active = undefined;
     this.sink.release();
     this.state = "cancelling";
+    const token = this.invalidation;
+    const serviceInstanceId = this.serviceInstanceId;
+    const startRequestId = this.startRequestId;
+    const ownsCancellation = () =>
+      token === this.invalidation &&
+      serviceInstanceId === this.serviceInstanceId &&
+      startRequestId === this.startRequestId;
     let controls: readonly TtsProtocolControlV1[];
     try {
       controls = await this.invokeControls("cancel_tts_generation", { scope });
     } catch (error) {
       if (
         error instanceof TtsProcessClientError &&
-        error.code === "tts-service-invalid-state"
+        error.code === "tts-service-invalid-state" &&
+        ownsCancellation()
       ) {
         // Native work may finish before its response reaches this client.
         // Only validated shutdown can establish containment and permit restart.
@@ -516,6 +526,8 @@ export class TtsProcessClient {
       }
       throw error;
     }
+    if (!ownsCancellation())
+      throw new TtsProcessClientError("tts-service-cancelled");
     expectKinds(controls, ["state", "cancelled", "state"]);
     const cancelling = controls[0]!;
     const cancelled = controls[1]!;
