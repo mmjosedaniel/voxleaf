@@ -581,7 +581,10 @@ export function ReaderPublicationContent({
       (result.placement !== "exact-range" || (!result.aligned && !visible))
     ) {
       coordinator.updateActiveVisualLocator(resolved.locatedBlock.startLocator);
-      destinationRef.current?.scrollIntoView?.({ block: "start" });
+      // The restorer already aligned a successful block fallback to the reading
+      // line. A second element scroll would replace that measured placement.
+      if (!result.aligned)
+        destinationRef.current?.scrollIntoView?.({ block: "start" });
     }
     if (navigationRevision === 0) {
       visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);

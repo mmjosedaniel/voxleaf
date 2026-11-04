@@ -1046,6 +1046,47 @@ describe("navigable publication reader", () => {
     },
   );
 
+  it("CAF-CI preserves aligned block fallback geometry during initial restoration", () => {
+    const publication = createPublication();
+    const initial = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 3,
+    });
+    vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+      status: "exact",
+      reason: "exact",
+      locator: decodeReadingLocatorV1(input),
+      locatedBlock: OPENING_LOCATED_BLOCK,
+    }));
+    const environment = new ManualReaderReflowEnvironment();
+    vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+    const source = new ManualReaderNarrationSource();
+    const settled = vi.fn();
+    const persisted = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={publication}
+        initialLocator={initial}
+        restoreInitialLocator
+        reflowEnvironment={environment}
+        narrationSource={source}
+        onInitialRestorationSettled={settled}
+        onSettledLocatorChange={persisted}
+      />,
+    );
+    act(() => environment.flushAll());
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(settled).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: OPENING_LOCATED_BLOCK.startLocator,
+    });
+    expect(source.settleReaderPlacement).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: OPENING_LOCATED_BLOCK.startLocator,
+    });
+    expect(persisted).not.toHaveBeenCalled();
+  });
+
   it.each(["Close contents", "Close table of contents", "failure"])(
     "CAF-R2.5 restores contents trigger focus on %s",
     async (dismissal) => {

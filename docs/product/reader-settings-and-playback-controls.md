@@ -724,6 +724,8 @@ navigation is pending; successful navigation still focuses its destination.
 Initial placement uses the actually displayed block when an interior range cannot
 be placed, including for late narration attachment. That temporary fallback does
 not overwrite the precise saved checkpoint.
+An already aligned block fallback retains the restorer's measured reading-line
+placement; locator settlement does not scroll that block a second time.
 
 Appearance changes remain active in memory when storage rejects them. Settings
 reports the failure and carries its status into the next book until a later save
