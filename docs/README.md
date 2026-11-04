@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [confirmed chat findings plan](plans/active/confirmed-chat-findings-minimal-corrections.md)
+is prepared for 18 supported corrections, with five intentional, deferred or
+unconfirmed cases preserved. Implementation has not started. It maps previous
+fixes and validation to the remaining triggers and separates reusable artifacts
+from behavioral checks that require current evidence.
+
 The [completed chat audit follow-up](plans/completed/chat-audit-minimal-follow-up.md)
 resolves 27 bounded cases, including R7.3 reproduced before its production edit.
 CAF-R2-20261103 approves after completing mounted appearance-write coverage.

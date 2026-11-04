@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation ExecPlan is currently active.
+- [Minimal corrections for confirmed chat findings](confirmed-chat-findings-minimal-corrections.md)
+  plans 18 supported corrections and preserves five no-change dispositions from
+  the 23-case review. Planning only; implementation and acceptance are pending.
+  It records prior evidence, conditional reuse and the minimum combined gates.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
