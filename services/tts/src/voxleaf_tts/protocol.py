@@ -272,6 +272,35 @@ def _expected_error_code(reason: str) -> str:
     return "invalid-input"
 
 
+def _validate_locator_range(start: Mapping[str, object], end: Mapping[str, object]) -> None:
+    same_document = start["spineItemId"] == end["spineItemId"]
+    same_index = start["spineItemIndex"] == end["spineItemIndex"]
+    start_anchor = cast(dict[str, object], start["anchor"])
+    end_anchor = cast(dict[str, object], end["anchor"])
+    if same_document != same_index or (
+        same_index
+        and (start_anchor["value"] == end_anchor["value"])
+        != (start_anchor["anchorIndex"] == end_anchor["anchorIndex"])
+    ):
+        raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
+    start_position = (
+        cast(int, start["spineItemIndex"]),
+        cast(int, start_anchor["anchorIndex"]),
+        cast(int, start["textOffsetCodePoints"]),
+    )
+    end_position = (
+        cast(int, end["spineItemIndex"]),
+        cast(int, end_anchor["anchorIndex"]),
+        cast(int, end["textOffsetCodePoints"]),
+    )
+    if start_position > end_position or (
+        "progression" in start
+        and "progression" in end
+        and cast(float, start["progression"]) > cast(float, end["progression"])
+    ):
+        raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
+
+
 def _semantic_validate(message: Mapping[str, object]) -> None:
     kind = message["kind"]
     if kind == "synthesize":
@@ -289,6 +318,7 @@ def _semantic_validate(message: Mapping[str, object]) -> None:
         end = cast(dict[str, object], source_range["end"])
         if book_identity != start["bookIdentity"] or book_identity != end["bookIdentity"]:
             raise ProtocolFailure(ProtocolReason.IDENTITY_MISMATCH)
+        _validate_locator_range(start, end)
     elif kind == "audioMetadata":
         frame = cast(dict[str, object], message["frame"])
         sample_count = cast(int, frame["sampleCountSamples"])

@@ -709,3 +709,27 @@ before restoring the Settings trigger. Restart is disabled while compatibility
 is checking/unavailable or reader placement is unavailable/pending, without
 consuming recovery or automatically restarting after a compatibility refresh.
 Current acceptance is recorded in the [R8 plan](../plans/completed/eight-revalidated-findings-minimal-corrections.md).
+
+## Minimal audit follow-up
+
+The [CAF follow-up](../plans/completed/chat-audit-minimal-follow-up.md) adds bounded
+failure feedback and ownership checks. Optional removal reports a failed Stop
+barrier with accessible retry feedback. A completed acquisition refreshes the
+selected Chatterbox profile once for its current book owner; it never starts
+playback or resets a terminal recovery episode. Obsolete actions cannot publish
+to a replacement owner.
+
+Closing contents or selecting a destination returns focus to the trigger while
+navigation is pending; successful navigation still focuses its destination.
+Initial placement uses the actually displayed block when an interior range cannot
+be placed, including for late narration attachment. That temporary fallback does
+not overwrite the precise saved checkpoint.
+An already aligned block fallback retains the restorer's measured reading-line
+placement; locator settlement does not scroll that block a second time.
+
+Appearance changes remain active in memory when storage rejects them. Settings
+reports the failure and carries its status into the next book until a later save
+succeeds. Oversized narration preference envelopes are rejected before parsing
+or unbounded encoding, including during Reset; their bytes remain intact.
+When queued and active units use different playback rates, loaded duration is
+described as available listening time without attributing the total to one rate.

@@ -95,6 +95,8 @@ export class WebDriverClient {
   #endpoint;
   #requestTimeoutMs;
   #sessionId;
+  #cleanupPending = false;
+  #closing;
   #signal;
   #requests = new Set();
 
@@ -114,14 +116,17 @@ export class WebDriverClient {
 
   async isReady() {
     try {
-      await this.#request("GET", "/status");
-      return true;
+      const status = await this.#request("GET", "/status");
+      return status?.ready === true;
     } catch {
       return false;
     }
   }
 
   async createSession(applicationPath, userDataFolder) {
+    if (this.#sessionId !== undefined || this.#cleanupPending) {
+      throw new WebDriverClientError("webdriver-session-cleanup-pending");
+    }
     const response = await this.#request("POST", "/session", {
       capabilities: {
         alwaysMatch: {
@@ -148,15 +153,36 @@ export class WebDriverClient {
     this.#sessionId = sessionId;
   }
 
-  async deleteSession() {
+  deleteSession() {
+    if (this.#closing !== undefined) return this.#closing;
     if (this.#sessionId === undefined) {
-      return;
+      return Promise.resolve();
     }
 
     const sessionId = this.#sessionId;
-    this.#sessionId = undefined;
+    this.#cleanupPending = true;
     // Cleanup has a fresh bounded channel even after operation cancellation.
-    await this.#request("DELETE", `/session/${sessionId}`, undefined, false);
+    this.#closing = this.#request(
+      "DELETE",
+      `/session/${sessionId}`,
+      undefined,
+      false,
+    )
+      .catch((error) => {
+        if (
+          !(error instanceof WebDriverClientError) ||
+          error.code !== "webdriver-invalid-session"
+        )
+          throw error;
+      })
+      .then(() => {
+        this.#sessionId = undefined;
+        this.#cleanupPending = false;
+      })
+      .finally(() => {
+        this.#closing = undefined;
+      });
+    return this.#closing;
   }
 
   async findElement(selector) {
@@ -225,6 +251,8 @@ export class WebDriverClient {
   }
 
   async #sessionRequest(method, path, body) {
+    if (this.#cleanupPending)
+      throw new WebDriverClientError("webdriver-session-cleanup-pending");
     if (this.#sessionId === undefined) {
       throw new WebDriverClientError("webdriver-session-missing");
     }
@@ -309,6 +337,8 @@ export class WebDriverClient {
 }
 
 function protocolFailureCode(payload) {
+  if (payload?.value?.error === "invalid session id")
+    return "webdriver-invalid-session";
   const message =
     typeof payload?.value?.message === "string"
       ? payload.value.message.toLowerCase()

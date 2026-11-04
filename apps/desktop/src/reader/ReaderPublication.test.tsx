@@ -996,6 +996,119 @@ describe("navigable publication reader", () => {
     ).toHaveFocus();
   });
 
+  it.each(["missing", "visible", "offscreen"])(
+    "CAF-R4.1 initial placement settles the actual visible locator (%s)",
+    (geometry) => {
+      const publication = createPublication();
+      const initial = decodeReadingLocatorV1({
+        ...OPENING_LOCATED_BLOCK.startLocator,
+        textOffsetCodePoints: 3,
+      });
+      vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+        status: "exact",
+        reason: "exact",
+        locator: decodeReadingLocatorV1(input),
+        locatedBlock: OPENING_LOCATED_BLOCK,
+      }));
+      const environment = new ManualReaderReflowEnvironment();
+      if (geometry === "missing")
+        vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+      if (geometry === "offscreen")
+        vi.spyOn(environment, "rangeRect").mockReturnValue({
+          top: 1000,
+          bottom: 1020,
+          left: 0,
+          right: 100,
+        });
+      const source = new ManualReaderNarrationSource();
+      const settled = vi.fn();
+      const persisted = vi.fn();
+      render(
+        <ReaderPublicationContent
+          publication={publication}
+          initialLocator={initial}
+          restoreInitialLocator
+          reflowEnvironment={environment}
+          narrationSource={source}
+          onInitialRestorationSettled={settled}
+          onSettledLocatorChange={persisted}
+        />,
+      );
+      act(() => environment.flushAll());
+      const locator =
+        geometry === "visible" ? initial : OPENING_LOCATED_BLOCK.startLocator;
+      expect(settled).toHaveBeenLastCalledWith({ status: "settled", locator });
+      expect(source.settleReaderPlacement).toHaveBeenLastCalledWith({
+        status: "settled",
+        locator,
+      });
+      expect(persisted).not.toHaveBeenCalled();
+    },
+  );
+
+  it("CAF-CI preserves aligned block fallback geometry during initial restoration", () => {
+    const publication = createPublication();
+    const initial = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 3,
+    });
+    vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+      status: "exact",
+      reason: "exact",
+      locator: decodeReadingLocatorV1(input),
+      locatedBlock: OPENING_LOCATED_BLOCK,
+    }));
+    const environment = new ManualReaderReflowEnvironment();
+    vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+    const source = new ManualReaderNarrationSource();
+    const settled = vi.fn();
+    const persisted = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={publication}
+        initialLocator={initial}
+        restoreInitialLocator
+        reflowEnvironment={environment}
+        narrationSource={source}
+        onInitialRestorationSettled={settled}
+        onSettledLocatorChange={persisted}
+      />,
+    );
+    act(() => environment.flushAll());
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(settled).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: OPENING_LOCATED_BLOCK.startLocator,
+    });
+    expect(source.settleReaderPlacement).toHaveBeenLastCalledWith({
+      status: "settled",
+      locator: OPENING_LOCATED_BLOCK.startLocator,
+    });
+    expect(persisted).not.toHaveBeenCalled();
+  });
+
+  it.each(["Close contents", "Close table of contents", "failure"])(
+    "CAF-R2.5 restores contents trigger focus on %s",
+    async (dismissal) => {
+      render(
+        <ReaderPublicationContent
+          publication={createPublication()}
+          onNavigationIntent={() => Promise.reject(new Error("synthetic"))}
+        />,
+      );
+      const toc = openTableOfContents();
+      const action =
+        dismissal === "failure"
+          ? within(toc).getByRole("button", { name: "Continuation" })
+          : screen.getByRole("button", { name: dismissal });
+      action.focus();
+      await act(async () => fireEvent.click(action));
+      expect(
+        screen.getByRole("button", { name: "Show table of contents" }),
+      ).toHaveFocus();
+    },
+  );
+
   it("RCF-09 late narration attachment joins the initial restoration barrier", () => {
     const publication = createPublication();
     const environment = new ManualReaderReflowEnvironment();

@@ -41,7 +41,11 @@ export function loadedAudioStatusText(
   const loaded = formatLoadedDuration(state.readyMs);
   const target = preparationTargetLabel(state.targetMs);
   const rate = (state.selectedPlaybackRatePercent / 100).toFixed(2);
-  const loadedAtRate = `${loaded} ready at ${rate}×`;
+  const loadedAtRate =
+    state.activePlaybackRatePercent !== null &&
+    state.activePlaybackRatePercent !== state.selectedPlaybackRatePercent
+      ? `${loaded} of available listening time`
+      : `${loaded} ready at ${rate}×`;
   return state.phase === "preparing"
     ? `Playable audio loaded: ${loadedAtRate}. Starts at ${target}.`
     : `Playable audio loaded: ${loadedAtRate}. Active target: ${target}.`;

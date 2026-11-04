@@ -58,6 +58,66 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("CAF-R1.4 late removal rejection cannot publish to a replacement action owner", async () => {
+    const client = new OptionalChatterboxClient(async () =>
+      snapshot("installed"),
+    );
+    const pending = deferred();
+    const props = {
+      client,
+      onActivate: async () => true,
+      onRecheck: async () => true,
+      onRemove: async () => {
+        await pending.promise;
+      },
+    };
+    const view = render(<OptionalChatterboxControls {...props} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Chatterbox" }),
+    );
+    view.rerender(
+      <OptionalChatterboxControls
+        {...props}
+        onRemove={async () => undefined}
+      />,
+    );
+    await act(async () => {
+      pending.reject(new Error("synthetic old rejection"));
+    });
+    expect(
+      screen.queryByText(/Chatterbox could not be removed/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove Chatterbox" }),
+    ).toBeEnabled();
+  });
+  it("CAF-R1.4 removal failure is owned, explained and cleared on retry", async () => {
+    const invoke = vi.fn(async () => snapshot("installed"));
+    const client = new OptionalChatterboxClient(invoke);
+    const onRemove = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("synthetic stop rejection"))
+      .mockResolvedValue(undefined);
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={onRemove}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Chatterbox" }),
+    );
+    expect(
+      await screen.findByText(/Chatterbox could not be removed/),
+    ).toHaveAttribute("role", "status");
+    fireEvent.click(screen.getByRole("button", { name: "Remove Chatterbox" }));
+    await waitFor(() => expect(onRemove).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByText(/Chatterbox could not be removed/),
+    ).not.toBeInTheDocument();
+  });
   it("RCF-18 Cancel remains available during unrelated settings and old download cannot clear pending Cancel", async () => {
     const transfer = deferred();
     const cancellation = deferred();

@@ -403,6 +403,11 @@ export function ReaderPublicationContent({
   const [readerContentRoot, setReaderContentRoot] =
     useState<HTMLDivElement | null>(null);
   const navigationRef = useRef<HTMLElement | null>(null);
+  const contentsTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeContents = useCallback(() => {
+    setContentsOpen(false);
+    contentsTriggerRef.current?.focus({ preventScroll: true });
+  }, []);
   const focusContentsAfterOpen = useRef(false);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
@@ -547,14 +552,11 @@ export function ReaderPublicationContent({
     if (pendingRestoration === undefined) return;
     const { result, navigationRevision } = pendingRestoration;
     if (navigationRevision !== coordinator.state.navigationRevision) return;
-    if (navigationRevision === 0) {
-      completeInitialRestoration({
-        status: result.placement === "unavailable" ? "unavailable" : "settled",
-        locator: result.locator,
-      });
+    if (
+      navigationRevision !== 0 &&
+      pendingPositionSaveRevision.current !== navigationRevision
+    )
       return;
-    }
-    if (pendingPositionSaveRevision.current !== navigationRevision) return;
     // A mounted block is not proof of exact placement. Preserve a visible
     // interior range even when bottom-of-document clamping prevents alignment.
     const resolved = publication.resolveLocator(result.locator);
@@ -579,7 +581,18 @@ export function ReaderPublicationContent({
       (result.placement !== "exact-range" || (!result.aligned && !visible))
     ) {
       coordinator.updateActiveVisualLocator(resolved.locatedBlock.startLocator);
-      destinationRef.current?.scrollIntoView?.({ block: "start" });
+      // The restorer already aligned a successful block fallback to the reading
+      // line. A second element scroll would replace that measured placement.
+      if (!result.aligned)
+        destinationRef.current?.scrollIntoView?.({ block: "start" });
+    }
+    if (navigationRevision === 0) {
+      visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
+      completeInitialRestoration({
+        status: result.placement === "unavailable" ? "unavailable" : "settled",
+        locator: coordinator.state.activeLocator,
+      });
+      return;
     }
     finishProgrammaticNavigation();
   }, [
@@ -590,6 +603,7 @@ export function ReaderPublicationContent({
     pendingRestoration,
     publication,
     reflowEnvironment,
+    visualLocatorTracker,
   ]);
   const focusDestination = useCallback(
     (destination: HTMLElement): void => {
@@ -706,13 +720,13 @@ export function ReaderPublicationContent({
   );
   const activateTarget = useCallback(
     (target: SemanticDocumentTarget) => {
-      setContentsOpen(false);
+      if (contentsOpen) closeContents();
       runProgrammaticNavigation(
         () => coordinator.navigateToTarget(target),
         "chapter-navigation",
       );
     },
-    [coordinator, runProgrammaticNavigation],
+    [coordinator, runProgrammaticNavigation, contentsOpen, closeContents],
   );
   const activateParagraphLeaf = useCallback(
     (locatedBlock: PublicationLocatedBlock): void => {
@@ -965,6 +979,7 @@ export function ReaderPublicationContent({
         <button
           type="button"
           aria-expanded={contentsOpen}
+          ref={contentsTriggerRef}
           aria-controls={navigationId}
           onClick={() => setContentsOpen((open) => !open)}
         >
@@ -1022,7 +1037,7 @@ export function ReaderPublicationContent({
             type="button"
             className="reader-toc-backdrop"
             aria-label="Close table of contents"
-            onClick={() => setContentsOpen(false)}
+            onClick={closeContents}
           />
         ) : null}
         <nav
@@ -1036,7 +1051,7 @@ export function ReaderPublicationContent({
         >
           <div className="reader-toc-heading">
             <h3>Table of contents</h3>
-            <button type="button" onClick={() => setContentsOpen(false)}>
+            <button type="button" onClick={closeContents}>
               Close contents
             </button>
           </div>

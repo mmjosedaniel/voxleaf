@@ -87,6 +87,24 @@ def reason_from(call: Callable[[], object]) -> ProtocolReason:
     return captured.value.reason
 
 
+def test_caf_r4_2_common_range_and_identifier_vectors() -> None:
+    vectors = json.loads((FIXTURE_ROOT / "caf-range-vectors.json").read_text(encoding="utf-8"))
+    for vector in vectors:
+        message = load_fixture("valid-synthesize.json")
+        for path, value in vector["changes"].items():
+            parts = path.split(".")
+            target = message
+            for part in parts[:-1]:
+                target = cast(dict[str, object], target[part])
+            target[parts[-1]] = value
+        payload = json.dumps(message).encode("utf-8")
+        if vector["valid"]:
+            decode_control_payload(payload)
+        else:
+            with pytest.raises(ProtocolFailure):
+                decode_control_payload(payload)
+
+
 def test_framing_accepts_exact_limits_and_fragmented_or_coalesced_reads() -> None:
     control = bytes(MAX_CONTROL_PAYLOAD_BYTES)
     audio = bytes(MAX_AUDIO_PAYLOAD_BYTES)

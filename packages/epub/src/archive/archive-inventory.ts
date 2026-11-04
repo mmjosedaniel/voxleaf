@@ -507,10 +507,12 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
   public readonly inventory: ArchiveInventory;
   public readonly budget: EpubProcessingBudget;
 
-  readonly #reader: ZipReader<Uint8Array>;
-  readonly #entriesByPath: ReadonlyMap<string, CandidateEntry>;
+  #reader: ZipReader<Uint8Array> | undefined;
+  readonly #entriesByPath: Map<string, CandidateEntry>;
   #closed = false;
   #readInProgress = false;
+  #pendingRead: Promise<void> | undefined;
+  #closeOperation: Promise<void> | undefined;
 
   public constructor(
     reader: ZipReader<Uint8Array>,
@@ -535,6 +537,10 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
     }
 
     this.#readInProgress = true;
+    let finishRead!: () => void;
+    this.#pendingRead = new Promise<void>((resolve) => {
+      finishRead = resolve;
+    });
     let operation = this.budget;
     try {
       if (options.resourceOperation === true) {
@@ -557,16 +563,21 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
       throw mapArchiveError(error, operation, options.signal);
     } finally {
       this.#readInProgress = false;
+      this.#pendingRead = undefined;
+      finishRead();
     }
   }
 
-  public async close(): Promise<void> {
-    if (this.#closed) {
-      return;
-    }
-
+  public close(): Promise<void> {
+    if (this.#closeOperation !== undefined) return this.#closeOperation;
     this.#closed = true;
-    await this.#reader.close().catch(() => undefined);
+    this.#closeOperation = (async () => {
+      await this.#pendingRead;
+      await this.#reader?.close().catch(() => undefined);
+      this.#entriesByPath.clear();
+      this.#reader = undefined;
+    })();
+    return this.#closeOperation;
   }
 }
 

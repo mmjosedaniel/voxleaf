@@ -28,13 +28,18 @@ function Invoke-CheckedCommand {
   }
 }
 
-function Get-VerifiedSignature {
-  param([Parameter(Mandatory = $true)][string]$Path)
-
-  $signature = Get-AuthenticodeSignature -LiteralPath $Path
-  if ($signature.Status -ne "Valid") {
-    throw "windows-release-signature-invalid"
+function Get-ReleaseSignatureStatus {
+  param([string]$BinaryStatus, [string]$InstallerStatus, [bool]$Signed)
+  if ($Signed) {
+    if ($BinaryStatus -ne 'Valid' -or $InstallerStatus -ne 'Valid') {
+      throw 'windows-release-signature-invalid'
+    }
+    return 'signed-valid'
   }
+  if ($BinaryStatus -ne 'NotSigned' -or $InstallerStatus -ne 'NotSigned') {
+    throw 'windows-release-unexpected-signature'
+  }
+  return 'unsigned-local'
 }
 
 function Invoke-DefenderArtifactScan {
@@ -112,13 +117,7 @@ try {
 
   $binarySignature = Get-AuthenticodeSignature -LiteralPath $binary
   $installerSignature = Get-AuthenticodeSignature -LiteralPath $installer
-  if ($Sign) {
-    Get-VerifiedSignature $binary
-    Get-VerifiedSignature $installer
-    $signatureStatus = "signed-valid"
-  } elseif ($binarySignature.Status -eq "Valid" -or $installerSignature.Status -eq "Valid") {
-    throw "windows-release-unexpected-signature"
-  }
+  $signatureStatus = Get-ReleaseSignatureStatus $binarySignature.Status $installerSignature.Status ([bool]$Sign)
 
   if ($ScanWithDefender) {
     $antivirusStatus = Invoke-DefenderArtifactScan $installer

@@ -217,6 +217,7 @@ export function OptionalChatterboxControls({
   const [pending, setPending] = useState(false);
   const pendingOwner = useRef<object | undefined>(undefined);
   const [activationFailed, setActivationFailed] = useState(false);
+  const [actionFailure, setActionFailure] = useState<string | undefined>();
   const downloadRequested = useSyncExternalStore(
     (listener) => client.subscribe(listener),
     () => client.downloadPending,
@@ -238,6 +239,20 @@ export function OptionalChatterboxControls({
   }, [client]);
 
   useEffect(() => {
+    let current = true;
+    queueMicrotask(() => {
+      if (current && pendingOwner.current === undefined) {
+        setPending(false);
+        setActionFailure(undefined);
+      }
+    });
+    return () => {
+      current = false;
+      pendingOwner.current = undefined;
+    };
+  }, [client, onRemove]);
+
+  useEffect(() => {
     if (
       !downloadRequested &&
       !["downloading", "verifying", "removing"].includes(snapshot.state)
@@ -248,16 +263,24 @@ export function OptionalChatterboxControls({
     return () => window.clearInterval(timer);
   }, [client, downloadRequested, snapshot.state]);
 
-  const run = (operation: () => Promise<unknown>): void => {
+  const run = (
+    operation: () => Promise<unknown>,
+    failure = "Chatterbox could not complete this action. Try again.",
+  ): void => {
     const owner = {};
     pendingOwner.current = owner;
     setPending(true);
-    void operation().finally(() => {
-      if (pendingOwner.current === owner) {
-        pendingOwner.current = undefined;
-        setPending(false);
-      }
-    });
+    setActionFailure(undefined);
+    void (async () => operation())()
+      .catch(() => {
+        if (pendingOwner.current === owner) setActionFailure(failure);
+      })
+      .finally(() => {
+        if (pendingOwner.current === owner) {
+          pendingOwner.current = undefined;
+          setPending(false);
+        }
+      });
   };
 
   const activate = async (): Promise<void> => {
@@ -326,6 +349,11 @@ export function OptionalChatterboxControls({
         downloadRequested={downloadRequested}
         active={active}
       />
+      {actionFailure ? (
+        <p role="status" aria-live="polite">
+          {actionFailure}
+        </p>
+      ) : null}
       {activationFailed ? (
         <p role="status" aria-live="polite">
           Chatterbox could not be activated. Review the current narration
@@ -447,7 +475,12 @@ export function OptionalChatterboxControls({
           <button
             type="button"
             disabled={disabled || pending}
-            onClick={() => run(onRemove)}
+            onClick={() =>
+              run(
+                onRemove,
+                "Chatterbox could not be removed. Stop narration and try again.",
+              )
+            }
           >
             Remove Chatterbox
           </button>
@@ -477,7 +510,12 @@ export function OptionalChatterboxControls({
           <button
             type="button"
             disabled={disabled || pending}
-            onClick={() => run(onRemove)}
+            onClick={() =>
+              run(
+                onRemove,
+                "Chatterbox could not be removed. Stop narration and try again.",
+              )
+            }
           >
             Remove Chatterbox
           </button>

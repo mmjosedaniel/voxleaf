@@ -838,6 +838,68 @@ it("RIA-03 direct resume must succeed and the source clock must advance before h
   expect(player.synchronize().state).toBe("stopped");
 });
 
+it("CAF-R7.3 counts the source clock through deferred suspend and resume", async () => {
+  const context = new FakeAudioContext();
+  let suspendDone!: () => void;
+  let resumeDone!: () => void;
+  context.suspend = () =>
+    new Promise<void>((done) => {
+      suspendDone = done;
+    });
+  context.resume = () =>
+    new Promise<void>((done) => {
+      resumeDone = done;
+    });
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+  );
+  const ended = vi.fn();
+  const failed = vi.fn();
+  const handle = backend.start(
+    {
+      sequence: 1,
+      payload: new Uint8Array(24_000 * 4),
+      sampleRateHz: 24_000,
+      channelCount: 1,
+      sampleFormat: "float32-le",
+      sampleCountSamples: 24_000,
+      startSampleFrame: 0,
+      volumePercent: 100,
+      playbackRate: 1,
+    },
+    { ended, failed },
+  );
+  context.currentTime = 10;
+  expect(context.sources[0]!.started).toBe(false);
+  resumeDone();
+  await Promise.resolve();
+  expect(context.sources[0]!.started).toBe(true);
+  const start = vi.spyOn(context.sources[0]!, "start");
+  context.currentTime = 10.25;
+  expect(handle.playedSampleFrames).toBe(6_000);
+  handle.pause();
+  // The source continues to render until suspend takes effect. The context
+  // clock then freezes; wall-clock time while suspended does not advance it.
+  context.currentTime = 10.5;
+  suspendDone();
+  await Promise.resolve();
+  expect(handle.playedSampleFrames).toBe(12_000);
+  expect(handle.rendering).toBe(false);
+  handle.resume();
+  // The already-started source resumes with the context, before promise delivery.
+  context.currentTime = 10.625;
+  resumeDone();
+  await Promise.resolve();
+  expect(handle.playedSampleFrames).toBe(15_000);
+  expect(start).not.toHaveBeenCalled();
+  context.currentTime = 12;
+  expect(handle.playedSampleFrames).toBe(24_000);
+  context.sources[0]!.end();
+  expect(ended).toHaveBeenCalledOnce();
+  expect(failed).not.toHaveBeenCalled();
+  await backend.close();
+});
+
 it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time before start or resume", async () => {
   const context = new FakeAudioContext();
   const node = new FakeWsolaNode();

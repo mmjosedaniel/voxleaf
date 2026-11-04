@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Minimal follow-up to the eight chat audit rounds](chat-audit-minimal-follow-up.md): 27 bounded corrections accepted by CAF-R2-20261103, including R7.3 reproduced before its production edit. Five deliberate policies and two original risks plus N1 remain preserved/deferred. The R1 mounted appearance-write coverage gap is resolved. Current shared/EPUB/desktop/Python/Node/Rust, Chromium, offline ES/EN core smokes, Piper EN 1x, F08 and exact optional local admission pass with resource restoration. The plan links its separate final archival assessment; no historical behavioral PASS or Git/publication action.
+
 - [Revalidated chat findings: minimal corrections](revalidated-chat-findings-minimal-corrections.md): all RCF-01–22 and registered variants implemented and accepted by RCF-R3-20261103 after resolving shared/retired speed-preparation findings F1/F2. Current EPUB, desktop, Python, native, Chromium and six-rate Piper checks pass; exact local Chatterbox admission and cleanup are verified. The plan links its separate final archival assessment. Verified artifacts and unchanged gate closures are reused explicitly; no Git delivery or publication.
 
 - [Residual audit corrections](residual-audit-corrections.md): all RAF-01–18 are implemented and accepted, including four bounded capacity/traversal reproductions. Current 522 EPUB, 604 desktop, 96 packaging tests, both native configurations, static checks, seven Chromium journeys and renewed Piper EN/F08 pass. Resources restored and owned cleanup verified. Independent RAF-R2-20261103 approves the correction from R1; the plan links its separate final archival assessment. No historical behavioral PASS or Git/publication action.

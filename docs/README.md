@@ -17,6 +17,17 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed chat audit follow-up](plans/completed/chat-audit-minimal-follow-up.md)
+resolves 27 bounded cases, including R7.3 reproduced before its production edit.
+CAF-R2-20261103 approves after completing mounted appearance-write coverage.
+Selected static, deterministic, Chromium, Piper EN/F08 and exact optional local
+admission checks pass with resources restored. Five deliberate policies and two
+original deferred risks plus N1 retain their classification. The plan links its
+separate final archival assessment and distinguishes verified artifact/result
+reuse from scope omissions. No historical behavioral PASS or publication is implied.
+The [CAF CI follow-up](plans/evidence/chat-audit-minimal-follow-up/ci-follow-up.md)
+records the subsequent empty-range block-alignment regression and its validation.
+
 The [revalidated chat corrections](plans/completed/revalidated-chat-findings-minimal-corrections.md)
 resolve all 22 cases and registered variants across EPUB admission/projection,
 reader placement and manual inspection, settings containment, playback-rate

@@ -656,6 +656,23 @@ struct Lifecycle {
     rejected_start: Option<(String, String)>,
 }
 
+impl Lifecycle {
+    fn retains_start(&self, request: &str) -> bool {
+        self.contained_start_request_id.as_deref() == Some(request)
+            || self
+                .rejected_start
+                .as_ref()
+                .is_some_and(|(id, _)| id == request)
+    }
+
+    fn record_termination(&mut self, session: &ServiceSession) {
+        self.active = None;
+        self.state = "stopped".to_owned();
+        self.contained_service_instance_id = Some(session.service_instance_id.clone());
+        self.contained_start_request_id = session.start_request_id.clone();
+    }
+}
+
 struct ChildProcess {
     child: Child,
     #[cfg(windows)]
@@ -1425,6 +1442,21 @@ impl TtsServiceSupervisor {
     ) -> Result<Vec<Value>, TtsNativeFailure> {
         if let Some(request) = &start_request_id {
             validate_start_request_id(request)?;
+            let slot = self
+                .session
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if slot
+                .as_ref()
+                .is_some_and(|session| session.start_request_id.as_deref() == Some(request))
+                || lifecycle.retains_start(request)
+            {
+                return Err(TtsNativeFailure::InvalidState);
+            }
         }
         let service_instance_id = format!(
             "service:native-{}",
@@ -1442,10 +1474,21 @@ impl TtsServiceSupervisor {
             && !child_may_exist
             && let Some(request) = start_request_id
         {
-            self.lifecycle
+            let slot = self
+                .session
                 .lock()
-                .map_err(|_| TtsNativeFailure::InternalFailure)?
-                .rejected_start = Some((request, service_instance_id));
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if !slot
+                .as_ref()
+                .is_some_and(|session| session.start_request_id.as_deref() == Some(&request))
+                && !lifecycle.retains_start(&request)
+            {
+                lifecycle.rejected_start = Some((request, service_instance_id));
+            }
         }
         result
     }
@@ -1472,6 +1515,15 @@ impl TtsServiceSupervisor {
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
         if slot.is_some() {
             return Err(TtsNativeFailure::InvalidState);
+        }
+        if let Some(request) = &start_request_id {
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if lifecycle.retains_start(request) {
+                return Err(TtsNativeFailure::InvalidState);
+            }
         }
         let child_configuration = self
             .child_configuration
@@ -1731,6 +1783,10 @@ impl TtsServiceSupervisor {
             .input
             .enqueue(&cancel, Instant::now() + TERMINATION_TIMEOUT);
         session.terminate()?;
+        self.lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .record_termination(&session);
         slot.take();
         self.set_state("stopped")?;
         Ok(vec![
@@ -1832,6 +1888,10 @@ impl TtsServiceSupervisor {
                 lifecycle.state = "stopping".to_owned();
             }
             session.terminate()?;
+            self.lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .record_termination(session);
             slot.take();
             self.set_state("stopped")?;
             return Ok(vec![
@@ -1875,6 +1935,10 @@ impl TtsServiceSupervisor {
             .as_ref()
             .is_some_and(|active| Arc::ptr_eq(active, &session))
         {
+            self.lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .record_termination(&session);
             slot.take();
         }
         Ok(records)

@@ -42,6 +42,44 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it.each([0, 1])(
+    "CAF-R1.2 discarded fixed rendition honors raster limit plus %s",
+    async (extra) => {
+      const fixed = minimalPackageDocument()
+        .replace(
+          "</metadata>",
+          '<meta property="rendition:layout">pre-paginated</meta></metadata>',
+        )
+        .replace(
+          "</manifest>",
+          '<item id="oversize" href="large.png" media-type="image/png"/></manifest>',
+        );
+      const result = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          containerDocument:
+            '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+          additionalEntries: [
+            { name: "EPUB/fixed.opf", content: fixed },
+            {
+              name: "EPUB/large.png",
+              content: new Uint8Array(32 * 1_048_576 + extra),
+              compression: "stored",
+            },
+          ],
+        }),
+      );
+      try {
+        if (extra === 0) expect(result.ok).toBe(true);
+        else
+          expect(result).toMatchObject({
+            ok: false,
+            detail: "resource-limit-exceeded",
+          });
+      } finally {
+        if (result.ok) await result.publication.close();
+      }
+    },
+  );
   it("RCF-03 global layout fallback cannot hide unsafe candidate content", async () => {
     const fixed = minimalPackageDocument()
       .replace(

@@ -222,7 +222,7 @@ class NavigationDocumentParser {
       if (this.#hiddenLabelDepth !== undefined) return;
 
       const alt = attribute(event, "", "alt");
-      if (alt !== undefined) {
+      if (alt !== undefined && namesEqual(event.name, XHTML_NAMESPACE, "img")) {
         this.appendLabelText(this.#label, alt);
       }
       return;

@@ -905,6 +905,87 @@ describe("App preference connection characterization", () => {
     },
   );
 
+  it("CAF-R3.1 refreshes selected Chatterbox once after same-book reinstall without starting playback", async () => {
+    const base = new OptionalChatterboxClient().observe();
+    let snapshot = { ...base, state: "absent" as typeof base.state };
+    const listeners = new Set<() => void>();
+    vi.spyOn(OptionalChatterboxClient.prototype, "observe").mockImplementation(
+      () => snapshot,
+    );
+    vi.spyOn(
+      OptionalChatterboxClient.prototype,
+      "subscribe",
+    ).mockImplementation((listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    });
+    const coordinator = new ControlledNarrationCoordinator();
+    const selectChatterbox = (owner: ControlledNarrationCoordinator) => {
+      const observe = owner.observe.bind(owner);
+      const snapshots = new WeakMap<
+        ProductNarrationSnapshot,
+        ProductNarrationSnapshot
+      >();
+      vi.spyOn(owner, "observe").mockImplementation(() => {
+        const source = observe();
+        let selected = snapshots.get(source);
+        if (selected === undefined) {
+          selected = { ...source, profileId: CHATTERBOX_OPTIONAL_PROFILE_ID };
+          snapshots.set(source, selected);
+        }
+        return selected;
+      });
+    };
+    selectChatterbox(coordinator);
+    const refresh = vi.spyOn(coordinator, "refreshSelectedProfile");
+    const start = vi.spyOn(coordinator, "start");
+    const replacement = new ControlledNarrationCoordinator();
+    const replacementRefresh = vi.spyOn(replacement, "refreshSelectedProfile");
+    selectChatterbox(replacement);
+    const factory = vi
+      .fn()
+      .mockReturnValueOnce(coordinator)
+      .mockReturnValue(replacement);
+    const view = render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        createNarrationCoordinator={factory}
+      />,
+    );
+    selectEpub();
+    await waitFor(() => expect(factory).toHaveBeenCalledOnce());
+    for (const state of ["verifying", "installed", "installed"] as const) {
+      await act(async () => {
+        snapshot = { ...snapshot, state };
+        listeners.forEach((listener) => listener());
+      });
+    }
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(start).not.toHaveBeenCalled();
+    await act(async () => {
+      snapshot = { ...snapshot, state: "verifying" };
+      listeners.forEach((listener) => listener());
+    });
+    selectEpub();
+    await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      snapshot = { ...snapshot, state: "installed" };
+      listeners.forEach((listener) => listener());
+    });
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(replacementRefresh).not.toHaveBeenCalled();
+    view.unmount();
+    snapshot = { ...snapshot, state: "installed" };
+    listeners.forEach((listener) => listener());
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
   const savedReaderPreferences = Object.freeze({
     ...DEFAULT_READER_PREFERENCES,
     textScale: "large" as const,
@@ -933,6 +1014,128 @@ describe("App preference connection characterization", () => {
     const current = () => observer.mock.calls.at(-1)![0];
     return { observer, current };
   }
+
+  it("CAF-R6.2 reports a direct pre-book appearance failure and retries with the current owner", async () => {
+    const settings = observeSettings();
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.writePreferences).mockRejectedValueOnce(
+      new Error("synthetic appearance storage rejection"),
+    );
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication("Direct appearance"),
+        }))}
+        readerPositionRepository={repository}
+      />,
+    );
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe("missing"),
+    );
+    act(() =>
+      settings.current().onReaderPreferenceChange("textScale", "large"),
+    );
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe("unavailable"),
+    );
+    expect(settings.current().readerPreferences.textScale).toBe("large");
+    expect(repository.writePreferences).toHaveBeenCalledOnce();
+    selectEpub();
+    await screen.findByText(TEST_TEXT);
+    openSettings();
+    expect(screen.getByLabelText("Text size")).toHaveValue("large");
+    expect(
+      screen.getByText(/Appearance settings could not be saved/),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "extra-large" },
+    });
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe("ready"),
+    );
+    expect(repository.writePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ textScale: "extra-large" }),
+    );
+    expect(
+      screen.queryByText(/Appearance settings could not be saved/),
+    ).toBeNull();
+    selectEpub();
+    await screen.findByText(TEST_TEXT);
+    expect(settings.current().readerPreferencesStatus).toBe("ready");
+    expect(settings.current().readerPreferences.textScale).toBe("extra-large");
+  });
+
+  it.each(["before-open", "after-open"] as const)(
+    "CAF-R6.2 discards a deferred %s appearance failure after owner replacement",
+    async (origin) => {
+      const settings = observeSettings();
+      const repository = createTestReaderPositionRepository();
+      const pending =
+        deferred<
+          Awaited<ReturnType<ReaderPositionRepository["writePreferences"]>>
+        >();
+      vi.mocked(repository.writePreferences).mockReturnValueOnce(
+        pending.promise,
+      );
+      let opened = 0;
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(`Appearance owner ${++opened}`),
+          }))}
+          readerPositionRepository={repository}
+        />,
+      );
+      await waitFor(() =>
+        expect(settings.current().readerPreferencesStatus).toBe("missing"),
+      );
+      if (origin === "after-open") {
+        selectEpub();
+        await screen.findByText(TEST_TEXT);
+      }
+      act(() =>
+        settings.current().onReaderPreferenceChange("textScale", "large"),
+      );
+      await waitFor(() =>
+        expect(repository.writePreferences).toHaveBeenCalledOnce(),
+      );
+      expect(settings.current().readerPreferences.textScale).toBe("large");
+      selectEpub();
+      await screen.findByRole("heading", {
+        name:
+          origin === "before-open"
+            ? "Appearance owner 1"
+            : "Appearance owner 2",
+      });
+      await screen.findByText(TEST_TEXT);
+      openSettings();
+      const currentStatus = settings.current().readerPreferencesStatus;
+      expect(currentStatus).toBe("missing");
+      await act(async () => pending.resolve({ status: "unavailable" }));
+      expect(settings.current().readerPreferencesStatus).toBe(currentStatus);
+      expect(screen.getByLabelText("Text size")).toHaveValue("large");
+      expect(
+        screen.queryByText(/Appearance settings could not be saved/),
+      ).toBeNull();
+      fireEvent.change(screen.getByLabelText("Text size"), {
+        target: { value: "extra-large" },
+      });
+      await waitFor(() =>
+        expect(settings.current().readerPreferencesStatus).toBe("ready"),
+      );
+      expect(repository.writePreferences).toHaveBeenLastCalledWith(
+        expect.objectContaining({ textScale: "extra-large" }),
+      );
+      selectEpub();
+      await screen.findByText(TEST_TEXT);
+      expect(settings.current().readerPreferencesStatus).toBe("ready");
+      expect(settings.current().readerPreferences.textScale).toBe(
+        "extra-large",
+      );
+    },
+  );
 
   it("NSL-02 packaged absent-owner activation cannot mutate a newly attached narrator", async () => {
     vi.stubEnv("DEV", false);
@@ -2964,6 +3167,43 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByLabelText("Open a book")).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Close EPUB" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
+  });
+
+  it("CAF-R6.2 reports appearance write failure and retains it across book replacement", async () => {
+    const first = createTestPublication("Appearance first");
+    const second = createTestPublication("Appearance second");
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({ status: "ready", publication: first })
+      .mockResolvedValueOnce({ status: "ready", publication: second });
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.writePreferences).mockResolvedValue({
+      status: "unavailable",
+    });
+    render(
+      <App
+        openFlow={createTestFlow(open)}
+        readerPositionRepository={repository}
+      />,
+    );
+    selectEpub();
+    await screen.findByRole("heading", { name: "Appearance first" });
+    openSettings();
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "large" },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Appearance settings could not be saved/),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText("Text size")).toHaveValue("large");
+    selectEpub();
+    await screen.findByRole("heading", { name: "Appearance second" });
+    openSettings();
+    expect(
+      screen.getByText(/Appearance settings could not be saved/),
+    ).toBeInTheDocument();
   });
 
   it("flushes validated position state before replacement", async () => {

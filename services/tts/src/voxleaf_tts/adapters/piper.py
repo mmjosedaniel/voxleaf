@@ -277,9 +277,7 @@ def _protocol_sample_count(source_sample_count: int) -> int:
     ) // SOURCE_SAMPLE_RATE_HZ
 
 
-def _collect_bounded_source_samples(chunks: tuple[_PiperAudioChunk, ...]) -> array.array[float]:
-    if not chunks:
-        raise EngineFailure(EngineFailureCode.FAILURE)
+def _collect_bounded_source_samples(chunks: Iterable[_PiperAudioChunk]) -> array.array[float]:
     source = array.array("f")
     maximum_source_samples = MAX_AUDIO_SAMPLE_COUNT * SOURCE_SAMPLE_RATE_HZ // SAMPLE_RATE_HZ
     for chunk in chunks:
@@ -299,6 +297,8 @@ def _collect_bounded_source_samples(chunks: tuple[_PiperAudioChunk, ...]) -> arr
             if not math.isfinite(sample):
                 raise EngineFailure(EngineFailureCode.FAILURE)
             source.append(sample)
+    if not source:
+        raise EngineFailure(EngineFailureCode.FAILURE)
     return source
 
 
@@ -479,14 +479,19 @@ class PiperCpuTtsEngine:
         if voice is None or synthesis_config is None:
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
         try:
-            chunks = tuple(
+            chunks = iter(
                 voice.synthesize(
                     text,
                     syn_config=synthesis_config,
                     include_alignments=False,
                 )
             )
-            source = _collect_bounded_source_samples(chunks)
+            try:
+                source = _collect_bounded_source_samples(chunks)
+            finally:
+                close = getattr(chunks, "close", None)
+                if callable(close):
+                    close()
             output = _resample_to_protocol_rate(source)
             if sys.byteorder != "little":
                 output.byteswap()

@@ -210,6 +210,34 @@ function deferredWrite() {
 }
 
 describe("reader position save coordinator", () => {
+  it("CAF-R6.2 reports only the current write and suppresses closed ownership", async () => {
+    const first = deferredWrite();
+    const repository = createRepository(undefined, async () => first.promise);
+    const { coordinator, environment } = createHarness(repository);
+    const report = vi.fn();
+    coordinator.setOnPreferencesWritten(report);
+    coordinator.savePreferences(DEFAULT_READER_PREFERENCES);
+    environment.advance(0);
+    const newest = {
+      ...DEFAULT_READER_PREFERENCES,
+      textScale: "large",
+    } as const;
+    repository.writePreferences.mockResolvedValueOnce({ status: "saved" });
+    coordinator.savePreferences(newest);
+    environment.advance(0);
+    first.resolve({ status: "unavailable" });
+    await coordinator.flush();
+    expect(report).toHaveBeenCalledExactlyOnceWith(newest, { status: "saved" });
+    report.mockClear();
+    const pending = deferredWrite();
+    repository.writePreferences.mockReturnValueOnce(pending.promise);
+    coordinator.savePreferences(DEFAULT_READER_PREFERENCES);
+    environment.advance(0);
+    const closing = coordinator.close();
+    pending.resolve({ status: "unavailable" });
+    await closing;
+    expect(report).not.toHaveBeenCalled();
+  });
   it.each(["position", "preferences"] as const)(
     "R7-06 close includes %s queued in the drain completion microtask gap",
     async (kind) => {

@@ -10,7 +10,10 @@ import {
 } from "@voxleaf/shared";
 
 import type { ReaderPreferencesV1 } from "../reader/reader-preferences";
-import type { ReaderPositionRepository } from "./reader-position-repository";
+import type {
+  ReaderPositionRepository,
+  ReaderRepositoryWriteResult,
+} from "./reader-position-repository";
 
 export const PASSIVE_POSITION_SAVE_DEBOUNCE_MS = 500;
 
@@ -28,6 +31,10 @@ export interface ReaderPositionSaveCoordinatorOptions {
   readonly environment?: ReaderPositionSaveEnvironment;
   readonly initialLocator?: ReadingLocatorV1;
   readonly persistInitialLocatorOnFlush?: boolean;
+  readonly onPreferencesWritten?: (
+    preferences: ReaderPreferencesV1,
+    result: ReaderRepositoryWriteResult,
+  ) => void;
 }
 
 export type HeardPositionCheckpoint =
@@ -144,6 +151,7 @@ export class ReaderPositionSaveCoordinator {
   readonly #publication: OpenedPublication;
   readonly #repository: ReaderPositionRepository;
   readonly #environment: ReaderPositionSaveEnvironment;
+  #onPreferencesWritten: ReaderPositionSaveCoordinatorOptions["onPreferencesWritten"];
   #latestLocator: ReadingLocatorV1;
   #lastRequestedLocator: ReadingLocatorV1 | undefined;
   #lastSavedLocator: ReadingLocatorV1 | undefined;
@@ -185,6 +193,7 @@ export class ReaderPositionSaveCoordinator {
 
     this.#publication = publication;
     this.#repository = repository;
+    this.#onPreferencesWritten = options.onPreferencesWritten;
     this.#environment =
       options.environment ?? BROWSER_READER_POSITION_SAVE_ENVIRONMENT;
     this.#latestLocator = initialLocator;
@@ -199,6 +208,12 @@ export class ReaderPositionSaveCoordinator {
     this.#unsubscribeLifecycle = this.#environment.subscribeLifecycle(() => {
       void this.flush();
     });
+  }
+
+  public setOnPreferencesWritten(
+    callback: ReaderPositionSaveCoordinatorOptions["onPreferencesWritten"],
+  ): void {
+    this.#onPreferencesWritten = callback;
   }
 
   public schedulePassive(locator: ReadingLocatorV1): boolean {
@@ -511,8 +526,9 @@ export class ReaderPositionSaveCoordinator {
       const preferences = this.#queuedPreferences;
       this.#queuedPreferences = undefined;
       this.#writingPreferences = preferences;
+      let result: ReaderRepositoryWriteResult = { status: "unavailable" };
       try {
-        const result = await this.#repository.writePreferences(preferences);
+        result = await this.#repository.writePreferences(preferences);
         if (result.status === "saved") {
           this.#lastSavedPreferences = preferences;
         }
@@ -520,6 +536,11 @@ export class ReaderPositionSaveCoordinator {
         // Preference persistence is best effort and cannot interrupt reflow.
       } finally {
         this.#writingPreferences = undefined;
+      }
+      if (!this.#closed && this.#latestPreferences === preferences) {
+        if (result.status !== "saved")
+          this.#lastRequestedPreferences = undefined;
+        this.#onPreferencesWritten?.(preferences, result);
       }
     }
     this.#preferencesDrain = undefined;

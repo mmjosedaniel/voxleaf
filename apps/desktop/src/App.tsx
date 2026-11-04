@@ -29,6 +29,7 @@ import type { LocalPublicationOpenFlow } from "./publication/local-publication-o
 import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
+  type ReaderRepositoryWriteResult,
 } from "./persistence/reader-position-repository";
 import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
@@ -75,7 +76,10 @@ import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
 import type { AdaptiveBufferStartMode } from "./tts/adaptive-buffer-scheduler";
-import { OptionalChatterboxClient } from "./tts/optional-chatterbox-client";
+import {
+  OptionalChatterboxClient,
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+} from "./tts/optional-chatterbox-client";
 
 const narrationSettingsActions = createNarrationSettingsActions(
   import.meta.env.DEV,
@@ -186,6 +190,7 @@ export function App({
   const currentReaderPreferences = useRef<ReaderPreferencesV1>(
     DEFAULT_READER_PREFERENCES,
   );
+  const preferenceWriteEpoch = useRef(0);
   useEffect(() => {
     currentReaderPreferences.current = readerPreferencePresentation.preferences;
   }, [readerPreferencePresentation.preferences]);
@@ -425,29 +430,92 @@ export function App({
     readyPublicationSequence,
   ]);
 
-  const positionSaveCoordinator = useMemo(
-    () =>
-      readyPublication === undefined || readyRestorationResult === undefined
-        ? undefined
-        : new ReaderPositionSaveCoordinator(
-            readyPublication,
-            readerPositionRepository,
-            {
-              ...(readerPositionSaveEnvironment === undefined
-                ? {}
-                : { environment: readerPositionSaveEnvironment }),
-              initialLocator: readyRestorationResult.position.locator,
-              persistInitialLocatorOnFlush:
-                readyRestorationResult.position.mode === "book-start",
-            },
-          ),
-    [
-      readerPositionRepository,
-      readerPositionSaveEnvironment,
-      readyPublication,
-      readyRestorationResult,
-    ],
+  const reportPreferenceWrite = useCallback(
+    (
+      preferences: ReaderPreferencesV1,
+      result: ReaderRepositoryWriteResult,
+    ): void => {
+      const current = currentReaderPreferences.current;
+      if (
+        current.textScale !== preferences.textScale ||
+        current.lineSpacing !== preferences.lineSpacing ||
+        current.contentWidth !== preferences.contentWidth ||
+        current.theme !== preferences.theme
+      )
+        return;
+      const status = result.status === "saved" ? "ready" : result.status;
+      readerPositionRestoreCoordinator.setPreferences(preferences, status);
+      setReaderPreferencePresentation({
+        preferences,
+        status,
+        canPersist: status !== "unsupported-version",
+      });
+    },
+    [readerPositionRestoreCoordinator],
   );
+  useEffect(() => {
+    if (narrationCoordinator === undefined) return;
+    let previous = optionalChatterbox.observe().state;
+    let acquisitionObserved = false;
+    return optionalChatterbox.subscribe(() => {
+      const next = optionalChatterbox.observe().state;
+      if (
+        next !== previous &&
+        (next === "confirming" ||
+          next === "downloading" ||
+          next === "verifying")
+      )
+        acquisitionObserved = true;
+      const completed =
+        acquisitionObserved &&
+        next === "installed" &&
+        (previous === "confirming" ||
+          previous === "downloading" ||
+          previous === "verifying");
+      previous = next;
+      if (next === "installed" || next === "absent" || next === "failed")
+        acquisitionObserved = false;
+      if (
+        completed &&
+        readerLifecycle.state.status === "ready" &&
+        readerLifecycle.state.publication === readyPublication &&
+        narrationCoordinator.observe().profileId ===
+          CHATTERBOX_OPTIONAL_PROFILE_ID
+      ) {
+        void narrationCoordinator
+          .refreshSelectedProfile()
+          .catch(() => undefined);
+      }
+    });
+  }, [
+    narrationCoordinator,
+    optionalChatterbox,
+    readerLifecycle,
+    readyPublication,
+  ]);
+
+  const positionSaveCoordinator = useMemo(() => {
+    if (readyPublication === undefined || readyRestorationResult === undefined)
+      return undefined;
+    const coordinator = new ReaderPositionSaveCoordinator(
+      readyPublication,
+      readerPositionRepository,
+      {
+        ...(readerPositionSaveEnvironment === undefined
+          ? {}
+          : { environment: readerPositionSaveEnvironment }),
+        initialLocator: readyRestorationResult.position.locator,
+        persistInitialLocatorOnFlush:
+          readyRestorationResult.position.mode === "book-start",
+      },
+    );
+    return coordinator;
+  }, [
+    readerPositionRepository,
+    readerPositionSaveEnvironment,
+    readyPublication,
+    readyRestorationResult,
+  ]);
   const activePositionSaveCoordinator = useRef<
     ReaderPositionSaveCoordinator | undefined
   >(undefined);
@@ -472,8 +540,13 @@ export function App({
       void previous.close();
     }
     activePositionSaveCoordinator.current = positionSaveCoordinator;
+    positionSaveCoordinator?.setOnPreferencesWritten((preferences, result) => {
+      if (activePositionSaveCoordinator.current === positionSaveCoordinator)
+        reportPreferenceWrite(preferences, result);
+    });
     positionSaveCoordinator?.start();
     return () => {
+      positionSaveCoordinator?.setOnPreferencesWritten(undefined);
       queueMicrotask(() => {
         if (currentCleanup.superseded) {
           return;
@@ -484,7 +557,7 @@ export function App({
         void positionSaveCoordinator?.close();
       });
     };
-  }, [positionSaveCoordinator]);
+  }, [positionSaveCoordinator, reportPreferenceWrite]);
 
   useEffect(() => {
     if (
@@ -525,6 +598,7 @@ export function App({
     const currentCleanup = { superseded: false };
     applicationCleanupToken.current = currentCleanup;
     return () => {
+      preferenceWriteEpoch.current += 1;
       profileSelectionOperation.current += 1;
       queueMicrotask(() => {
         if (currentCleanup.superseded) {
@@ -553,6 +627,7 @@ export function App({
     }
 
     setSettingsOpen(false);
+    preferenceWriteEpoch.current += 1;
     profileSelectionOperation.current += 1;
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
@@ -562,15 +637,23 @@ export function App({
   const handleReaderPreferencesChange = useCallback(
     (preferences: ReaderPreferencesV1): void => {
       currentReaderPreferences.current = preferences;
-      readerPositionRestoreCoordinator.setPreferences(preferences);
+      readerPositionRestoreCoordinator.setPreferences(
+        preferences,
+        readerPreferencePresentation.status === "loading"
+          ? "unavailable"
+          : readerPreferencePresentation.status,
+      );
       positionSaveCoordinator?.savePreferences(preferences);
       setReaderPreferencePresentation((current) => ({
         ...current,
         preferences,
-        status: "ready",
       }));
     },
-    [positionSaveCoordinator, readerPositionRestoreCoordinator],
+    [
+      positionSaveCoordinator,
+      readerPositionRestoreCoordinator,
+      readerPreferencePresentation.status,
+    ],
   );
   const handleReaderPreferenceSettingChange = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
@@ -580,22 +663,35 @@ export function App({
         return;
       }
       currentReaderPreferences.current = next;
-      readerPositionRestoreCoordinator.setPreferences(next);
+      readerPositionRestoreCoordinator.setPreferences(
+        next,
+        readerPreferencePresentation.status === "loading"
+          ? "unavailable"
+          : readerPreferencePresentation.status,
+      );
       if (positionSaveCoordinator === undefined) {
-        void readerPositionRepository.writePreferences(next);
+        const epoch = ++preferenceWriteEpoch.current;
+        void Promise.resolve()
+          .then(() => readerPositionRepository.writePreferences(next))
+          .catch((): ReaderRepositoryWriteResult => ({ status: "unavailable" }))
+          .then((result) => {
+            if (epoch === preferenceWriteEpoch.current)
+              reportPreferenceWrite(next, result);
+          });
       } else {
         positionSaveCoordinator.savePreferences(next);
       }
       setReaderPreferencePresentation((current) => ({
         ...current,
         preferences: next,
-        status: "ready",
       }));
     },
     [
       positionSaveCoordinator,
       readerPositionRepository,
       readerPositionRestoreCoordinator,
+      readerPreferencePresentation.status,
+      reportPreferenceWrite,
     ],
   );
   const handleFallbackNarrationStartChange = useCallback(

@@ -1534,6 +1534,11 @@ fn promote(
     };
     check_acquisition_cancellation(cancellation)?;
     let backup = promotion_backup_root(root);
+    // An interrupted promotion may leave the only recoverable install here.
+    // Explicit removal remains available; acquisition never activates it.
+    if !owned_path_present(&destination) && owned_path_present(&backup) {
+        return Err(OptionalProfileError::CleanupFailed);
+    }
     remove_promotion_backup(root)?;
     invalidate_verified_runtime_receipt();
     let moved_previous = if destination.exists() {
@@ -1566,6 +1571,10 @@ fn promote(
 }
 
 fn available_space(root: &Path) -> Result<u64, OptionalProfileError> {
+    #[cfg(test)]
+    if let Some(result) = tests::caf_space_probe(root) {
+        return result;
+    }
     #[cfg(windows)]
     {
         use std::os::windows::ffi::OsStrExt;
@@ -1957,32 +1966,6 @@ impl OptionalChatterboxManager {
         }
         #[cfg(test)]
         tests::run_snapshot_idle_hook();
-        let active_exists = owned_path_present(&package_root(root));
-        let retained_exists = retained_package_exists(root);
-        if (!active_exists && retained_exists)
-            || (manifest.availability == "withheld" && (active_exists || retained_exists))
-        {
-            let mut snapshot = snapshot_from(
-                manifest,
-                OptionalProfileState::Failed,
-                0,
-                Some("tts-optional-profile-unavailable"),
-            );
-            snapshot.installed_bytes = None;
-            return Ok(snapshot);
-        }
-        if manifest.availability == "withheld" {
-            return Ok(snapshot_from(
-                manifest,
-                OptionalProfileState::Withheld,
-                0,
-                None,
-            ));
-        }
-        let _runtime_artifact = manifest
-            .runtime_artifact
-            .as_ref()
-            .ok_or(OptionalProfileError::Invalid)?;
         // Lock order matches promotion: installed runtime, then operation.
         // Admission cannot create staging until this cleanup releases operation;
         // neither lock on admission is held across transfer or package hashing.
@@ -1999,11 +1982,39 @@ impl OptionalChatterboxManager {
                     operation.failure,
                 )));
             }
+            let active_exists = owned_path_present(&package_root(root));
+            let retained_exists =
+                retained_package_exists(root) || owned_path_present(&staging_root(root));
+            if (!active_exists && retained_exists)
+                || (manifest.availability == "withheld" && (active_exists || retained_exists))
+            {
+                let mut snapshot = snapshot_from(
+                    manifest,
+                    OptionalProfileState::Failed,
+                    0,
+                    Some("tts-optional-profile-unavailable"),
+                );
+                snapshot.installed_bytes = None;
+                return Ok(Some(snapshot));
+            }
+            if manifest.availability == "withheld" {
+                return Ok(Some(snapshot_from(
+                    manifest,
+                    OptionalProfileState::Withheld,
+                    0,
+                    None,
+                )));
+            }
             Ok(None)
         })?;
         if let Some(snapshot) = admitted {
             return Ok(snapshot);
         }
+        let active_exists = owned_path_present(&package_root(root));
+        let _runtime_artifact = manifest
+            .runtime_artifact
+            .as_ref()
+            .ok_or(OptionalProfileError::Invalid)?;
         match with_installed_runtime_lock(|| verify_runtime_cached(&package_root(root), manifest)) {
             Ok(_) => Ok(snapshot_from(
                 manifest,
@@ -2141,10 +2152,10 @@ impl OptionalChatterboxManager {
         let result = (|| {
             fs::create_dir_all(root).map_err(|_| OptionalProfileError::CleanupFailed)?;
             canonical_managed_root(root)?;
+            clean_staging(root)?;
             if !sufficient_space(available_space(root)?, measurements.minimum_free_bytes) {
                 return Err(OptionalProfileError::InsufficientSpace);
             }
-            clean_staging(root)?;
             let staging = staging_root(root).join("operation");
             fs::create_dir_all(&staging).map_err(|_| OptionalProfileError::CleanupFailed)?;
             let downloads = staging.join("downloads");

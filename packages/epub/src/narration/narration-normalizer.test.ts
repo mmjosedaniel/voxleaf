@@ -298,6 +298,10 @@ describe("narration normalization", () => {
     ["BNC-R1", "es", "21 EU\u2060R", "21 EUR"],
     ["BNC-02", "en", "1\u20608", "18"],
     ["BNC-02", "en", "1\u200b8", "18"],
+    ["CAF-R3.2", "en", "14:30%", "14:30%"],
+    ["CAF-R3.2", "en", "$12.50%", "$12.50%"],
+    ["CAF-R3.2", "es", "14:30%", "14:30%"],
+    ["CAF-R3.2", "en", "25%%", "25%%"],
     ["BNC-02", "en", "1\u00ad8", "18"],
     ["BNC-02", "en", "a\u20608", "a8"],
     ["BNC-02", "en", "8\u2060a", "8a"],
@@ -681,6 +685,28 @@ describe("narration normalization", () => {
         assertDeepFrozen(first as unknown as NarrationNormalizedStream);
       });
     }
+
+    it.each([
+      ["es-x", "es", "21", "21"],
+      ["en-u-x-a", "en", "8", "8"],
+      ["en-u-ca-u-nu", "en", "8", "8"],
+      ["es-x-a", "es", "21", "veintiuno"],
+      ["en-u-ca-x-a", "en", "8", "eight"],
+    ] as const)(
+      "CAF-R8.3 validates language structure %s",
+      (tag, language, source, expected) => {
+        const leaf = leafFor(paragraph([text(source, tag)]));
+        const result = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(result.text).toBe(expected);
+        assertSourceMapping(
+          leaf,
+          result as unknown as NarrationNormalizedStream,
+        );
+      },
+    );
 
     it("preserves conflicting and unsupported semantic language spans", () => {
       const englishSelected = leafFor(

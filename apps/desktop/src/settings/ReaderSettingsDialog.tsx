@@ -427,6 +427,19 @@ export function ReaderSettingsDialog({
 
           <section aria-labelledby={`${titleId}-appearance`}>
             <h3 id={`${titleId}-appearance`}>Appearance</h3>
+            {readerPreferencesStatus === "unavailable" ||
+            readerPreferencesStatus === "malformed" ||
+            readerPreferencesStatus === "over-limit" ? (
+              <p role="status">
+                Appearance settings could not be saved or read. Your current
+                appearance applies to this session.
+              </p>
+            ) : readerPreferencesStatus === "unsupported-version" ? (
+              <p role="status">
+                Appearance settings were saved by a newer version and cannot be
+                overwritten.
+              </p>
+            ) : null}
             <ReaderAppearanceSettingsControls
               disabled={readerControlsDisabled}
               preferences={readerPreferences}

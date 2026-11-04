@@ -1,5 +1,38 @@
 use super::*;
 
+#[test]
+fn caf_r4_2_common_range_and_identifier_vectors() {
+    let vectors: Value = serde_json::from_str(include_str!(
+        "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/caf-range-vectors.json"
+    )).unwrap();
+    for vector in vectors.as_array().unwrap() {
+        let mut message: Value = serde_json::from_str(
+            VALID_FIXTURES
+                .iter()
+                .find(|(name, _)| *name == "synthesize")
+                .unwrap()
+                .1,
+        )
+        .unwrap();
+        for (path, value) in vector["changes"].as_object().unwrap() {
+            let pointer = format!("/{}", path.replace('.', "/"));
+            let (parent, field) = pointer.rsplit_once('/').unwrap();
+            message
+                .pointer_mut(parent)
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .insert(field.to_owned(), value.clone());
+        }
+        assert_eq!(
+            validate_control_value(&message),
+            vector["valid"].as_bool().unwrap(),
+            "{}",
+            vector["name"]
+        );
+    }
+}
+
 #[cfg(test)]
 const VALID_FIXTURES: [(&str, &str); 15] = [
     (

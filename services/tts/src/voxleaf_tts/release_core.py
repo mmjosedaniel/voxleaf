@@ -434,12 +434,15 @@ def _remove_output(path: Path) -> None:
 
 
 def _recover_outputs(targets: list[Path]) -> None:
+    recoverable: list[tuple[Path, Path]] = []
     for target in targets:
         backup = target.with_name(f".{target.name}.previous")
         if backup.exists():
             if target.exists():
                 raise ReleaseCoreError("piper-core-recovery-required")
-            backup.replace(target)
+            recoverable.append((backup, target))
+    for backup, target in recoverable:
+        backup.replace(target)
 
 
 def _promote_outputs(outputs: list[tuple[Path, Path]]) -> None:

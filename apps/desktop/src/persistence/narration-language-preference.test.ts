@@ -17,6 +17,34 @@ function memoryStorage(initial?: string) {
 }
 
 describe("narration language preference repository", () => {
+  it.each(["read", "write", "reset"] as const)(
+    "CAF-R4.4 bounds existing input before %s parsing or encoding",
+    async (operation) => {
+      const value = "x".repeat(257);
+      const storage = memoryStorage(value);
+      const subject = createWebStorageNarrationLanguagePreferenceRepository(
+        () => storage,
+      );
+      const parse = vi.spyOn(JSON, "parse");
+      const encode = vi.spyOn(TextEncoder.prototype, "encode");
+      try {
+        const result =
+          operation === "write"
+            ? await subject.write("en")
+            : await subject[operation]();
+        expect(result.status).toBe("over-limit");
+        expect(parse).not.toHaveBeenCalled();
+        expect(
+          encode.mock.calls.every(([text]) => (text?.length ?? 0) <= 256),
+        ).toBe(true);
+        expect(storage.value()).toBe(value);
+        expect(storage.setItem).not.toHaveBeenCalled();
+      } finally {
+        parse.mockRestore();
+        encode.mockRestore();
+      }
+    },
+  );
   it("defaults missing state to English and stores one closed V2 value", async () => {
     const storage = memoryStorage();
     const subject = createWebStorageNarrationLanguagePreferenceRepository(
