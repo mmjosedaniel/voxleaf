@@ -7,7 +7,7 @@
 export const validateAudioFrameV1Wire = validate20;
 const schema31 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:audio-frame:v1","title":"AudioFrameV1Wire","description":"Privacy-safe metadata for one in-memory audio frame. Audio payload and encoding are intentionally outside this contract.","type":"object","additionalProperties":false,"required":["schemaVersion","frameId","sessionId","generationId","segmentId","sequence","sampleRateHz","sampleCountSamples","channelCount","endOfSegment"],"properties":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"frameId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/frameId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"},"sequence":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/index","description":"Monotonic frame order within the active generation."},"sampleRateHz":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/hertz"},"sampleCountSamples":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sampleCount"},{"type":"integer","minimum":1}],"description":"Positive count of sample frames per channel; duration is this count divided by sampleRateHz."},"channelCount":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/count"},{"type":"integer","minimum":1}],"description":"Positive number of channels represented by the future payload; it does not multiply duration."},"endOfSegment":{"type":"boolean","description":"True only for the final audio frame produced for this narration segment."}}};
 const schema39 = {"title":"SchemaVersionWire","type":"integer","minimum":1,"maximum":9007199254740991};
-const schema33 = {"title":"IdentifierWire","type":"string","minLength":1,"maxLength":128,"pattern":"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"};
+const schema33 = {"title":"IdentifierWire","type":"string","minLength":1,"maxLength":128,"$comment":"Both edges exclude C0, DEL, and ECMAScript trim whitespace. Interior characters exclude only C0 and DEL. The final assertion requires actual end of input across regex engines.","pattern":"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"};
 const schema41 = {"title":"IndexWire","type":"integer","minimum":0,"maximum":9007199254740991};
 const schema44 = {"title":"HertzWire","type":"integer","minimum":1,"maximum":9007199254740991};
 const schema43 = {"title":"SampleCountWire","type":"integer","minimum":0,"maximum":9007199254740991};
@@ -35,7 +35,7 @@ function func2(value) {
 
   return codePointLength;
 }
-const pattern4 = new RegExp("^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$", "u");
+const pattern4 = new RegExp("^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])", "u");
 
 function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="urn:voxleaf:schema:audio-frame:v1" */;
@@ -230,7 +230,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err17 = {instancePath:instancePath+"/frameId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/frameId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err17 = {instancePath:instancePath+"/frameId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/frameId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -275,7 +275,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err21 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err21 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -320,7 +320,7 @@ vErrors.push(err24);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err25 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err25 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -365,7 +365,7 @@ vErrors.push(err28);
 errors++;
 }
 if(!pattern4.test(data4)){
-const err29 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err29 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -761,7 +761,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -882,6 +882,7 @@ function func0(left, right) {
 
   return left !== left && right !== right;
 }
+const pattern17 = new RegExp("^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$", "u");
 
 function validate25(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -949,7 +950,7 @@ vErrors.push(err4);
 }
 errors++;
 }
-if(!pattern4.test(data0)){
+if(!pattern17.test(data0)){
 const err5 = {instancePath:instancePath+"/title",schemaPath:"#/$defs/boundedText/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
 if(vErrors === null){
 vErrors = [err5];
@@ -1008,7 +1009,7 @@ vErrors.push(err9);
 }
 errors++;
 }
-if(!pattern4.test(data2)){
+if(!pattern17.test(data2)){
 const err10 = {instancePath:instancePath+"/authors/" + i0,schemaPath:"#/$defs/boundedText/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
 if(vErrors === null){
 vErrors = [err10];
@@ -1344,7 +1345,7 @@ vErrors.push(err5);
 errors++;
 }
 if(!pattern4.test(data0)){
-const err6 = {instancePath:instancePath+"/id",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err6 = {instancePath:instancePath+"/id",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err6];
 }
@@ -1529,7 +1530,7 @@ vErrors.push(err4);
 }
 errors++;
 }
-if(!pattern4.test(data0)){
+if(!pattern17.test(data0)){
 const err5 = {instancePath:instancePath+"/label",schemaPath:"#/$defs/boundedText/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
 if(vErrors === null){
 vErrors = [err5];
@@ -1575,7 +1576,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err9 = {instancePath:instancePath+"/targetSpineItemId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err9 = {instancePath:instancePath+"/targetSpineItemId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -2230,7 +2231,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err14 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err14 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -2275,7 +2276,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err18 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err18 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -4544,7 +4545,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -4992,7 +4993,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/spineItemId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/spineItemId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/spineItemId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -5430,7 +5431,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -5673,7 +5674,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err15 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err15 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -5724,7 +5725,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err19 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err19 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -5769,7 +5770,7 @@ vErrors.push(err22);
 errors++;
 }
 if(!pattern4.test(data4)){
-const err23 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err23 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -6229,7 +6230,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -6715,7 +6716,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err13 = {instancePath:instancePath+"/value",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/bookId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -6918,7 +6919,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err11 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -6969,7 +6970,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err15 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err15 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -7198,7 +7199,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -7365,7 +7366,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -7532,7 +7533,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -7719,7 +7720,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -7764,7 +7765,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!pattern4.test(data4)){
-const err16 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err16 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -7945,7 +7946,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!pattern4.test(data0)){
-const err7 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err7 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -7990,7 +7991,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data1)){
-const err11 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -8035,7 +8036,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!pattern4.test(data2)){
-const err15 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err15 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -8080,7 +8081,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err19 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err19 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -8256,7 +8257,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -8429,7 +8430,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -8596,7 +8597,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -8763,7 +8764,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -8941,7 +8942,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -9151,7 +9152,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -9376,7 +9377,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err14 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err14 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -9421,7 +9422,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!pattern4.test(data4)){
-const err18 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err18 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -9758,7 +9759,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -9941,7 +9942,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -10135,7 +10136,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!pattern4.test(data3)){
-const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"},message:"must match pattern \""+"^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"+"\""};
 if(vErrors === null){
 vErrors = [err12];
 }

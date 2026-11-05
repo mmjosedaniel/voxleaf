@@ -53,6 +53,7 @@ export interface AdaptivePcmPlayerObservation {
   readonly playbackRateFallback?: number;
   readonly activeSequence: number | undefined;
   readonly rendering: boolean;
+  readonly renderedSampleFrames: number;
   readonly intentionalTransitionPauseActive: boolean;
   readonly intentionalTransitionPauseMs: number;
   readonly intentionalTransitionPauseRemainingMs: number;
@@ -154,6 +155,7 @@ export class AdaptivePcmPlayer {
   readonly #cleanupWaiters = new Set<() => void>();
   #backendCleanup: Promise<void> | undefined;
   #handle: PcmPlaybackHandle | undefined;
+  #settledRenderedSampleFrames = 0;
   #activeUnit: ActiveAudibleUnit | undefined;
   #startPublished = false;
   #lastProgressObservationAtMs: number | undefined;
@@ -437,9 +439,10 @@ export class AdaptivePcmPlayer {
   }
 
   #handleEnded(sequence: number): void {
+    const handle = this.#handle;
     if (
       this.#terminalState !== undefined ||
-      this.#handle?.sequence !== sequence ||
+      handle?.sequence !== sequence ||
       this.#activeUnit?.sequence !== sequence
     ) {
       return;
@@ -448,13 +451,16 @@ export class AdaptivePcmPlayer {
     // The authoritative device end also proves short units that finished
     // between observations. Publish start before completion even after Pause.
     this.#confirmRendering(true);
+    if (this.#handle !== handle) return;
     const paused = this.#scheduler.observe().playbackState === "paused";
     this.#publishAudibleProgress(
       "segment-completed",
       completedUnit,
       completedUnit.sampleCountSamples,
     );
+    if (this.#handle !== handle) return;
     this.#refreshProgress(true);
+    this.#settledRenderedSampleFrames += handle.renderedSampleFrames;
     this.#handle = undefined;
     this.#activeUnit = undefined;
     this.#lastProgressObservationAtMs = undefined;
@@ -534,6 +540,8 @@ export class AdaptivePcmPlayer {
     this.#pausedBeforeRateStart = false;
     this.#completedWhilePaused = false;
     this.#releasePlaybackRatePreparation();
+    if (this.#transitionPause !== undefined)
+      this.#captureTransitionPauseElapsed(this.#transitionPause);
     this.#cancelPendingTransitionPause();
     const transition = this.#scheduler.invalidate();
     this.#invalidationTransition = transition;
@@ -542,6 +550,7 @@ export class AdaptivePcmPlayer {
     this.#activeUnit = undefined;
     this.#lastProgressObservationAtMs = undefined;
     handle?.stop();
+    this.#settledRenderedSampleFrames += handle?.renderedSampleFrames ?? 0;
     this.#scheduleCleanup();
     return transition;
   }
@@ -854,6 +863,9 @@ export class AdaptivePcmPlayer {
         this.#playbackRatePreparation !== undefined,
       activeSequence: this.#handle?.sequence,
       rendering: this.#handle?.rendering === true,
+      renderedSampleFrames:
+        this.#settledRenderedSampleFrames +
+        (this.#handle?.renderedSampleFrames ?? 0),
       intentionalTransitionPauseActive:
         this.#transitionPause?.startedAtMs !== undefined &&
         scheduler.playbackState === "playing",

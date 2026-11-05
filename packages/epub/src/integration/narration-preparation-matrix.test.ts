@@ -139,6 +139,16 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     ["BNC-03", "es", "21\u00a0\u00a0%", "21 %"],
     ["BNC-04", "en", "20 °C/8", "20 °C/8"],
     [
+      "CCF-C06",
+      "en",
+      "120 EURASIAN birds",
+      "one hundred twenty EURASIAN birds",
+    ],
+    ["CCF-C18", "es", "20 °C–25 °C", "20 °C–25 °C"],
+    ["CCF-C18", "en", "20 °C - 25 °C", "20 °C - 25 °C"],
+    ["CCF-C22", "es", "14:30 %", "14:30 %"],
+    ["CCF-C22", "en", "$12.50 %", "$12.50 %"],
+    [
       "BNC-05",
       "es",
       "Hola. Tengo 1.234.",

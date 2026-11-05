@@ -1,6 +1,36 @@
 use super::*;
 
 #[test]
+fn ccf_c05_portable_identifier_vectors_at_native_control_boundary() {
+    let vectors: Value = serde_json::from_str(include_str!(
+        "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/ccf-identifier-vectors.json"
+    ))
+    .unwrap();
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
+    ))
+    .unwrap();
+    for vector in vectors.as_array().unwrap() {
+        let repeat = vector["repeat"].as_u64().unwrap_or(1);
+        let identifier = Value::String(
+            vector["value"]
+                .as_str()
+                .unwrap()
+                .repeat(usize::try_from(repeat).unwrap()),
+        );
+        let mut message = fixture.clone();
+        message["requestId"] = identifier.clone();
+        message["segment"]["sessionId"] = identifier;
+        assert_eq!(
+            validate_control_value(&message),
+            vector["valid"].as_bool().unwrap(),
+            "{}",
+            vector["name"],
+        );
+    }
+}
+
+#[test]
 fn caf_r4_2_common_range_and_identifier_vectors() {
     let vectors: Value = serde_json::from_str(include_str!(
         "../../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/caf-range-vectors.json"

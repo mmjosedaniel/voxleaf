@@ -554,6 +554,16 @@ package evidence. The installer includes the WebView2 bootstrapper; when the
 Windows prerequisite is absent, that Microsoft bootstrapper can require
 network access. Normal EPUB reading and Piper narration remain local.
 
+The Windows builder admits only the canonical implicit x64 Cargo output layout.
+It checks effective Cargo metadata and configuration before building, including
+ancestor and Cargo-home configuration. Alternate target directories, explicit
+target triples, compiler overrides (`RUSTC`, `CARGO_BUILD_RUSTC`, `build.rustc`),
+and unresolved configuration includes are rejected before inspecting outputs.
+Ordinary aliases/jobs and an explicitly canonical target directory remain valid.
+This guard uses the already pinned CPython 3.12.10 through uv in offline mode;
+that interpreter must already be discoverable. It does not download Python or
+infer that an unchanged executable hash means the build was stale.
+
 The rebuilt candidate identity is emitted into generated package evidence. A
 rebuild changes that identity and requires new hash-bound lifecycle and ordinary
 journey receipts before carrying forward exact-artifact acceptance. The current

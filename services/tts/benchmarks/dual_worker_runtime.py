@@ -45,6 +45,13 @@ class _ActiveWork:
     cancelled: Event
 
 
+@dataclass
+class _RetiredWork:
+    work: _ActiveWork
+    dispatch_finished: Event
+    dispatch_succeeded: bool = False
+
+
 def _failure_code(error: AdapterOperationError) -> DualWorkerFailureCode:
     failures: dict[str, DualWorkerFailureCode] = {
         "timeout": "timeout",
@@ -79,9 +86,10 @@ class ThreadedDualWorkerRuntime:
             thread_name_prefix="voxleaf-v5-worker",
         )
         self._active: dict[DualWorkerRole, _ActiveWork] = {}
-        self._retired: dict[DualWorkerRole, _ActiveWork] = {}
+        self._retired: dict[DualWorkerRole, _RetiredWork] = {}
         self._loading: dict[DualWorkerRole, Event] = {}
         self._lifecycle_lock = Lock()
+        self._close_lock = Lock()
         self._closed = False
         self._cleanup_complete = False
 
@@ -91,6 +99,7 @@ class ThreadedDualWorkerRuntime:
 
     def load_worker(self, role: DualWorkerRole) -> None:
         with self._lifecycle_lock:
+            self._reap_retired(role)
             if (
                 self._closed
                 or role in self._active
@@ -146,9 +155,7 @@ class ThreadedDualWorkerRuntime:
 
     def submit(self, worker_role: DualWorkerRole, request: DualUnitRequest) -> int:
         with self._lifecycle_lock:
-            retired = self._retired.get(worker_role)
-            if retired is not None and retired.future.done():
-                self._retired.pop(worker_role)
+            self._reap_retired(worker_role)
             if (
                 self._closed
                 or worker_role in self._active
@@ -167,17 +174,29 @@ class ThreadedDualWorkerRuntime:
         self,
         active_roles: frozenset[DualWorkerRole],
     ) -> DualWorkerCompletion:
-        if active_roles != frozenset(self._active):
-            raise DualWorkerBenchmarkError("stale-identity")
+        with self._lifecycle_lock:
+            active = self._active.copy()
+            if active_roles != frozenset(active):
+                raise DualWorkerBenchmarkError("stale-identity")
         done, _pending = wait(
-            [work.future for work in self._active.values()],
+            [work.future for work in active.values()],
             timeout=NEXT_COMPLETION_TIMEOUT_SECONDS,
             return_when="FIRST_COMPLETED",
         )
-        if not done:
-            role = GPU_WORKER_ROLE if GPU_WORKER_ROLE in active_roles else next(iter(active_roles))
-            work = self._active[role]
-            self.cancel(role, work.request.occurrence_id)
+        with self._lifecycle_lock:
+            if active != self._active:
+                raise DualWorkerBenchmarkError("stale-identity")
+            ready_roles = [role for role, work in active.items() if work.future in done]
+            available_roles = ready_roles or list(active)
+            role = GPU_WORKER_ROLE if GPU_WORKER_ROLE in available_roles else available_roles[0]
+            work = active[role]
+            retired = None
+            if done:
+                del self._active[role]
+            else:
+                retired = self._retire(role, work)
+        if retired is not None:
+            self._dispatch_cancellation(role, retired)
             return DualWorkerCompletion(
                 request=work.request,
                 worker=self._worker(role),
@@ -186,9 +205,6 @@ class ThreadedDualWorkerRuntime:
                 status="timed-out",
                 failure_code="timeout",
             )
-        completed_roles = [role for role, work in self._active.items() if work.future in done]
-        role = GPU_WORKER_ROLE if GPU_WORKER_ROLE in completed_roles else completed_roles[0]
-        work = self._active.pop(role)
         result = work.future.result()
         completed = result.completed_nanoseconds
         if result.failure is not None:
@@ -235,23 +251,55 @@ class ThreadedDualWorkerRuntime:
     def _worker(self, role: DualWorkerRole) -> DualWorkerIdentity:
         return next(worker for worker in self._workers if worker.role == role)
 
-    def cancel(self, worker_role: DualWorkerRole, occurrence_id: str) -> None:
-        with self._lifecycle_lock:
-            work = self._active.pop(worker_role, None)
-            if work is not None:
-                work.cancelled.set()
-                work.future.cancel()
-                self._retired[worker_role] = work
-        request_id = (
-            f"batch-{work.request.source_sequence}"
-            if work is not None
-            else f"batch-{occurrence_id}"
-        )
+    def _reap_retired(self, role: DualWorkerRole) -> None:
+        retired = self._retired.get(role)
+        if retired is not None and retired.dispatch_succeeded and retired.work.future.done():
+            del self._retired[role]
+
+    def _retire(self, role: DualWorkerRole, work: _ActiveWork) -> _RetiredWork:
+        del self._active[role]
+        work.cancelled.set()
+        work.future.cancel()
+        retired = _RetiredWork(work, Event())
+        self._retired[role] = retired
+        return retired
+
+    def _dispatch_cancellation(self, role: DualWorkerRole, retired: _RetiredWork) -> None:
+        succeeded = False
         try:
             # This runtime owns a submitted batch even before adapter dispatch.
-            self._candidates[worker_role].cancel(request_id, cancel_idle=work is not None)
+            self._candidates[role].cancel(
+                f"batch-{retired.work.request.source_sequence}", cancel_idle=True
+            )
+            succeeded = True
         except AdapterOperationError:
             raise DualWorkerBenchmarkError("cleanup-failed") from None
+        finally:
+            with self._lifecycle_lock:
+                retired.dispatch_succeeded = succeeded
+                retired.dispatch_finished.set()
+
+    def cancel(self, worker_role: DualWorkerRole, occurrence_id: str) -> None:
+        retired: _RetiredWork | None
+        with self._lifecycle_lock:
+            if self._closed:
+                return
+            work = self._active.get(worker_role)
+            if work is not None:
+                if work.request.occurrence_id != occurrence_id:
+                    return
+                retired = self._retire(worker_role, work)
+            else:
+                retired = self._retired.get(worker_role)
+                if (
+                    retired is None
+                    or retired.work.request.occurrence_id != occurrence_id
+                    or retired.dispatch_succeeded
+                    or not retired.dispatch_finished.is_set()
+                ):
+                    return
+                retired.dispatch_finished.clear()
+        self._dispatch_cancellation(worker_role, retired)
 
     def worker_pid(self, role: DualWorkerRole) -> int | None:
         return self._candidates[role].worker_pid
@@ -266,17 +314,28 @@ class ThreadedDualWorkerRuntime:
         return self._candidates[role].framework_memory_high_water_bytes()
 
     def close(self) -> None:
+        with self._close_lock:
+            self._close()
+
+    def _close(self) -> None:
         if self._cleanup_complete:
             return
         with self._lifecycle_lock:
             self._closed = True
             loading = tuple(self._loading.values())
+            cancellations = [
+                (role, self._retire(role, work)) for role, work in tuple(self._active.items())
+            ]
+            retired_work = tuple(self._retired.values())
         failures = 0
-        for role, work in tuple(self._active.items()):
+        for role, retired in cancellations:
             try:
-                self.cancel(role, work.request.occurrence_id)
+                self._dispatch_cancellation(role, retired)
             except DualWorkerBenchmarkError:
                 failures += 1
+        for retired in retired_work:
+            if not retired.dispatch_finished.wait(NEXT_COMPLETION_TIMEOUT_SECONDS):
+                raise DualWorkerBenchmarkError("cleanup-failed")
         for candidate in self._candidates.values():
             try:
                 candidate.close()
@@ -286,7 +345,7 @@ class ThreadedDualWorkerRuntime:
             if not settled.wait(NEXT_COMPLETION_TIMEOUT_SECONDS):
                 failures += 1
         pending = wait(
-            [work.future for work in self._retired.values()],
+            [retired.work.future for retired in retired_work if not retired.work.future.done()],
             timeout=NEXT_COMPLETION_TIMEOUT_SECONDS,
         ).not_done
         self._executor.shutdown(wait=not pending, cancel_futures=True)
@@ -300,5 +359,6 @@ class ThreadedDualWorkerRuntime:
                 failures += 1
         if failures:
             raise DualWorkerBenchmarkError("cleanup-failed")
-        self._retired.clear()
-        self._cleanup_complete = True
+        with self._lifecycle_lock:
+            self._retired.clear()
+            self._cleanup_complete = True

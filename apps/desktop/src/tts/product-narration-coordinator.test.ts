@@ -86,6 +86,7 @@ class ManualClock implements ProductNarrationClock {
 
 class FakePlaybackBackend implements PcmPlaybackBackend {
   public playedSampleFrames = 0;
+  public renderedSampleFrames = 0;
   public rendering = true;
   public deferResume = false;
   public deferStart = false;
@@ -106,8 +107,10 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
     this.active = { request, callbacks };
     this.rendering = !this.deferStart;
     const playedSampleFrames = () => this.playedSampleFrames;
+    const renderedSampleFrames = () => this.renderedSampleFrames;
     const rendering = () => this.rendering;
     this.playedSampleFrames = 0;
+    this.renderedSampleFrames = 0;
     return {
       sequence: request.sequence,
       get rendering() {
@@ -115,6 +118,9 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
       },
       get playedSampleFrames() {
         return playedSampleFrames();
+      },
+      get renderedSampleFrames() {
+        return renderedSampleFrames();
       },
       pause: vi.fn(() => {
         this.rendering = false;
@@ -130,7 +136,14 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
   public finish(): void {
     const active = this.active;
     this.active = undefined;
-    active?.callbacks.ended();
+    if (active !== undefined) {
+      const { sampleCountSamples, startSampleFrame, playbackRate } =
+        active.request;
+      this.renderedSampleFrames = Math.ceil(
+        (sampleCountSamples - startSampleFrame) / playbackRate,
+      );
+      active.callbacks.ended();
+    }
   }
 
   public preparePlaybackRate(
@@ -493,12 +506,12 @@ it("RCF-05 real containment failure prevents settings persistence", async () => 
 });
 
 it.each(["saved", "unavailable"] as const)(
-  "RCF-19 preserves current audio and reports fallback independently of preference %s",
+  "CCF-C11 / RCF-19 preserves fallback after speed save %s until a successful reset",
   async (saveStatus) => {
     const repository: NarrationPlaybackPreferenceRepository = {
       read: async () => ({ status: "ready", playbackRatePercent: 100 }),
       write: vi.fn(async () => ({ status: saveStatus })),
-      reset: async () => ({ status: "saved" }),
+      reset: vi.fn(async () => ({ status: "unavailable" as const })),
     };
     const { coordinator, backend, intervals } = createHarness({
       playbackPreferenceRepository: repository,
@@ -542,6 +555,13 @@ it.each(["saved", "unavailable"] as const)(
       expect(repository.write).toHaveBeenLastCalledWith(100);
       intervals[0]!();
       expect(repository.write).toHaveBeenCalledTimes(4);
+      await coordinator.stop();
+      expect(coordinator.observe().playbackRateFallback).toBe(true);
+      expect(await coordinator.resetPlaybackPreference()).toBe(false);
+      expect(coordinator.observe().playbackRateFallback).toBe(true);
+      vi.spyOn(repository, "reset").mockResolvedValueOnce({ status: "saved" });
+      expect(await coordinator.resetPlaybackPreference()).toBe(true);
+      expect(coordinator.observe().playbackRateFallback).toBe(false);
     } finally {
       await coordinator.close();
     }
@@ -651,6 +671,151 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("CCF-C11 a delayed reset receipt cannot overwrite a newer persisted speed", async () => {
+    let stored: string | null = null;
+    const persistence = createWebStorageNarrationPlaybackPreferenceRepository(
+      () => ({
+        getItem: () => stored,
+        setItem: (_key, value) => {
+          stored = value;
+        },
+      }),
+    );
+    let release!: () => void;
+    const receipt = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const reset = vi.fn(async () => {
+      const saved = await persistence.reset();
+      await receipt;
+      return saved;
+    });
+    const { coordinator } = createHarness({
+      playbackPreferenceRepository: { ...persistence, reset },
+    });
+    try {
+      await coordinator.checkAvailability();
+      expect(await coordinator.setPlaybackRatePercent(75)).toBe(true);
+      const resetting = coordinator.resetPlaybackPreference();
+      await settleUntil(() => reset.mock.calls.length === 1);
+      expect(await persistence.read()).toEqual({
+        status: "ready",
+        playbackRatePercent: 100,
+      });
+      expect(await coordinator.setPlaybackRatePercent(90)).toBe(true);
+      release();
+      expect(await resetting).toBe(false);
+      expect(coordinator.observe().playbackRatePercent).toBe(90);
+      expect(await persistence.read()).toEqual({
+        status: "ready",
+        playbackRatePercent: 90,
+      });
+    } finally {
+      release();
+      await coordinator.close();
+    }
+  });
+
+  it("CCF-C07 Stop releases old no-spawn preflight before Play starts its replacement", async () => {
+    const { coordinator, client, backend } = createHarness();
+    let release!: (availability: "available") => void;
+    const pending = new Promise<"available">((resolve) => {
+      release = resolve;
+    });
+    await coordinator.checkAvailability();
+    const configuration = vi
+      .spyOn(client, "profileConfigurationAvailability")
+      .mockReturnValueOnce(pending);
+    try {
+      coordinator.start();
+      await settleUntil(() => configuration.mock.calls.length === 1);
+      let stopped = false;
+      const stop = coordinator.stop().then(() => {
+        stopped = true;
+      });
+      try {
+        await settleUntil(() => stopped);
+      } finally {
+        if (!stopped) release("available");
+        await stop;
+      }
+      expect(client.startedProfiles).toHaveLength(0);
+      expect(client.shutdownCount).toBe(1);
+      expect(coordinator.observe().recovery.phase).toBe("operational");
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      release("available");
+      await pending;
+      expect(client.startedProfiles).toHaveLength(1);
+      expect(coordinator.observe().state?.phase).toBe("playing");
+    } finally {
+      release("available");
+      await coordinator.close();
+    }
+  });
+
+  it("CCF-C07 synchronous Stop during the start-service publication prevents dispatch", async () => {
+    const { coordinator, client } = createHarness();
+    let readyToDispatch = false;
+    let requested = false;
+    let stop: Promise<void> | undefined;
+    await coordinator.checkAvailability();
+    vi.spyOn(client, "profileConfigurationAvailability").mockImplementationOnce(
+      async () => {
+        readyToDispatch = true;
+        return "available";
+      },
+    );
+    const unsubscribe = coordinator.subscribe(() => {
+      if (readyToDispatch && !requested) {
+        requested = true;
+        stop = coordinator.stop();
+      }
+    });
+    try {
+      coordinator.start();
+      await settleUntil(() => stop !== undefined);
+      await stop;
+      expect(client.startedProfiles).toHaveLength(0);
+      expect(coordinator.observe().failure).toBeUndefined();
+    } finally {
+      unsubscribe();
+      await coordinator.close();
+    }
+  });
+
+  it("CCF-C07 Stop still contains and awaits a truly dispatched service start", async () => {
+    const { coordinator, client } = createHarness();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const start = vi.spyOn(client, "start").mockImplementationOnce(async () => {
+      client.state = "starting";
+      await pending;
+      return client.observe();
+    });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => start.mock.calls.length === 1);
+      let stopped = false;
+      const stop = coordinator.stop().then(() => {
+        stopped = true;
+      });
+      await settleUntil(() => client.shutdownCount === 1);
+      await Promise.resolve();
+      expect(stopped).toBe(false);
+      release();
+      await stop;
+      expect(coordinator.observe().serviceState).toBe("stopped");
+      expect(coordinator.observe().recovery.phase).toBe("operational");
+    } finally {
+      release();
+      await coordinator.close();
+    }
+  });
+
   it.each([100, 75] as const)(
     "RAF-05 automatic refill estimates its one-minute threshold at %i percent",
     async (rate) => {
@@ -953,24 +1118,69 @@ describe("product narration coordinator", () => {
     },
   );
 
-  it("RIA-03 short completed rendering still records command-to-audible", async () => {
-    const { coordinator, backend } = createHarness();
+  it("CCF-C20 / RIA-03 counts short rendering and ignores time after its completion", async () => {
+    const { coordinator, backend, client, clock, intervals } = createHarness();
+    client.synthesisSampleFrames = 120;
     const start = backend.start.bind(backend);
     vi.spyOn(backend, "start").mockImplementation((request, callbacks) => {
       const handle = start(request, callbacks);
       backend.rendering = false;
-      callbacks.ended();
+      backend.finish();
       return handle;
     });
     try {
       await coordinator.checkAvailability();
       coordinator.start();
+      const tick = intervals[0]!;
       await settleUntil(
         () => coordinator.observe().state?.phase === "complete",
       );
       expect(coordinator.observe().metrics.commandToAudibleMs).toBeTypeOf(
         "number",
       );
+      expect(coordinator.observe().metrics.playbackMs).toBe(5);
+      expect(coordinator.observe().hasConfirmedRendering).toBe(true);
+      clock.advance(3_000);
+      tick();
+      expect(coordinator.observe().metrics.playbackMs).toBe(5);
+    } finally {
+      await coordinator.close();
+    }
+  });
+  it("CCF-C20 counts paused delayed completion and each consecutive unit once", async () => {
+    const { coordinator, backend, client, clock, intervals } = createHarness({
+      result: completeSegments([
+        preparedSegment("Synthetic A."),
+        preparedSegment("Synthetic B.", sourceRange(20, 40)),
+      ]),
+    });
+    client.synthesisSampleFrames = 6_000;
+    try {
+      await coordinator.checkAvailability();
+      await coordinator.setPlaybackRatePercent(75);
+      coordinator.start();
+      await settleUntil(() => client.synthesized.length === 2);
+      await settleUntil(() => backend.active?.request.sequence === 0);
+      const previous = backend.active!.callbacks;
+      backend.playedSampleFrames = 4_500;
+      backend.renderedSampleFrames = 6_000;
+      clock.advance(250);
+      intervals[0]!();
+      expect(coordinator.observe().metrics.playbackMs).toBe(250);
+      coordinator.pause();
+      clock.advance(5_000);
+      backend.finish();
+      intervals[0]!();
+      expect(coordinator.observe().state?.phase).toBe("paused");
+      expect(coordinator.observe().metrics.playbackMs).toBe(8_000 / 24);
+      coordinator.resume();
+      await settleUntil(() => backend.active?.request.sequence === 1);
+      previous.ended();
+      backend.finish();
+      clock.advance(250);
+      intervals[0]!();
+      expect(coordinator.observe().state?.phase).toBe("complete");
+      expect(coordinator.observe().metrics.playbackMs).toBe(16_000 / 24);
     } finally {
       await coordinator.close();
     }
@@ -1013,6 +1223,7 @@ describe("product narration coordinator", () => {
         clock.nowMs,
       );
       clock.advance(100);
+      backend.renderedSampleFrames += 2_400;
       intervals[0]!();
       coordinator.pause();
       const played = coordinator.observe().metrics.playbackMs;
@@ -1024,6 +1235,7 @@ describe("product narration coordinator", () => {
       backend.rendering = true;
       intervals[0]!();
       clock.advance(100);
+      backend.renderedSampleFrames += 2_400;
       intervals[0]!();
       expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
@@ -3272,6 +3484,45 @@ describe("product narration coordinator", () => {
     },
   );
 
+  it.each([false, true])(
+    "CCF-C19 uses the quoted ellipsis wait only with a buffered successor (%s)",
+    async (hasSuccessor) => {
+      const { buildMinimalEpubFixture } = await vi.importActual<{
+        buildMinimalEpubFixture(options: {
+          chapterDocument: string;
+        }): Promise<Uint8Array>;
+      }>("../../../../packages/epub/test-support/epub-fixture.ts");
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Synthetic</title></head><body><p>‹Espera…›</p>${hasSuccessor ? "<p>Segunda frase.</p>" : ""}</body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-ellipsis-open-failed");
+      const { publication } = opened;
+      const { backend, client, coordinator, intervals, transitionTimers } =
+        createHarness({ publication });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await vi.waitFor(() =>
+          expect(client.synthesized).toHaveLength(hasSuccessor ? 2 : 1),
+        );
+        expect(backend.active?.request.sequence).toBe(0);
+        backend.finish();
+        intervals[0]?.();
+        expect(transitionTimers.timers.map((timer) => timer.delayMs)).toEqual(
+          hasSuccessor ? [900] : [],
+        );
+        expect(coordinator.observe().state?.phase).toBe(
+          hasSuccessor ? "intentional-wait" : "complete",
+        );
+      } finally {
+        await coordinator.close();
+        await publication.close();
+      }
+    },
+  );
+
   it("separates buffered generated units by semantic boundary and reports only intentional time", async () => {
     const firstRange = sourceRange(0, 12);
     const secondRange = sourceRange(12, 24);
@@ -3784,6 +4035,7 @@ describe("product narration coordinator", () => {
             startedAt,
           );
           clock.advance(250);
+          backend.renderedSampleFrames += 6_000;
           intervals[0]!();
           expect(coordinator.observe().metrics.playbackMs).toBe(250);
         } else {

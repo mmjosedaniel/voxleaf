@@ -19,13 +19,31 @@ fn exact_keys(object: &Map<String, Value>, names: &[&str]) -> bool {
     object.keys().cloned().collect::<BTreeSet<_>>() == keys(names)
 }
 
+// Match the explicit ECMAScript edge-whitespace set in the primitive schema.
+fn identifier_edge_whitespace(value: char) -> bool {
+    matches!(
+        value,
+        '\u{0009}'..='\u{000d}'
+            | ' '
+            | '\u{00a0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200a}'
+            | '\u{2028}'
+            | '\u{2029}'
+            | '\u{202f}'
+            | '\u{205f}'
+            | '\u{3000}'
+            | '\u{feff}'
+    )
+}
+
 pub fn valid_identifier(value: Option<&Value>) -> bool {
     value.and_then(Value::as_str).is_some_and(|identifier| {
         let code_points = identifier.chars().count();
         code_points > 0
             && code_points <= MAX_IDENTIFIER_CODE_POINTS
             && identifier.len() <= MAX_IDENTIFIER_UTF8_BYTES
-            && identifier.trim() == identifier
+            && identifier.trim_matches(identifier_edge_whitespace) == identifier
             && !identifier
                 .chars()
                 .any(|value| value <= '\u{001f}' || value == '\u{007f}')

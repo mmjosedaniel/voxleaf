@@ -7,6 +7,7 @@ import {
   readFile,
   rename,
   rm,
+  rmdir,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -117,6 +118,106 @@ for (const mode of ["missing-driver", "spawn-failure", "uncertain-cleanup"]) {
       await assert.rejects(readFile(path.join(backup, "sentinel")), {
         code: "ENOENT",
       });
+    } finally {
+      if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+      else process.env.LOCALAPPDATA = originalLocalData;
+    }
+  });
+}
+
+for (const { name, noSpawn, ambiguous, cleanupFails } of [
+  { name: "C04 installer spawn failure restores original", noSpawn: true },
+  {
+    name: "C04 ambiguous installer ENOENT retains backup",
+    ambiguous: true,
+    cleanupFails: true,
+  },
+  { name: "C23 failed diagnostic preserves primary after cleanup" },
+  {
+    name: "C23 failed diagnostic and cleanup preserve both errors",
+    cleanupFails: true,
+  },
+]) {
+  test(`CCF-${name}`, async () => {
+    const owned = await mkdtemp(path.join(root, "ccf-journey-"));
+    const originalLocalData = process.env.LOCALAPPDATA;
+    const dataRoot = path.join(owned, "com.voxleaf.desktop");
+    const backup = `${dataRoot}.ordinary-chatterbox-harness-backup-${process.pid}`;
+    const options = {
+      installedRoot: path.join(owned, "VoxLeaf"),
+      installer: path.join(owned, "synthetic-installer.exe"),
+      receipt: path.join(owned, "receipt.json"),
+      tauriDriver: path.join(owned, "synthetic-driver.exe"),
+      edgeDriver: path.join(owned, "synthetic-edge.exe"),
+      mode: "journey",
+    };
+    await mkdir(dataRoot);
+    await writeFile(path.join(dataRoot, "sentinel"), "original");
+    for (const fixture of [
+      options.installer,
+      options.tauriDriver,
+      options.edgeDriver,
+    ])
+      await writeFile(fixture, "synthetic prerequisite");
+    if (!noSpawn && !ambiguous) await mkdir(`${options.receipt}.failure.json`);
+    const primary = Object.assign(new Error("synthetic-primary"), {
+      code: "ENOENT",
+    });
+    const cleanup = new Error("synthetic-uninstall-uncertain");
+    let uninstallCalls = 0;
+    process.env.LOCALAPPDATA = owned;
+    try {
+      await assert.rejects(
+        runJourney(
+          options,
+          { ...process.env, USERPROFILE: owned },
+          {
+            runInstaller: noSpawn
+              ? undefined
+              : async () => {
+                  await mkdir(options.installedRoot);
+                  await mkdir(dataRoot);
+                  await writeFile(path.join(dataRoot, "sentinel"), "temporary");
+                  if (ambiguous) throw primary;
+                },
+            runPreflight: async () => {
+              throw primary;
+            },
+            runUninstaller: async () => {
+              uninstallCalls += 1;
+              if (noSpawn || cleanupFails) throw cleanup;
+              await rmdir(options.installedRoot);
+            },
+          },
+        ),
+        (error) => {
+          if (noSpawn) {
+            assert.equal(uninstallCalls, 0);
+            assert.match(error.syscall, /^spawn(?: |$)/u);
+          } else if (cleanupFails) {
+            assert(error instanceof AggregateError);
+            assert.deepEqual(error.errors, [primary, cleanup]);
+          } else {
+            assert.equal(error, primary);
+          }
+          return true;
+        },
+      );
+      assert.equal(uninstallCalls, noSpawn ? 0 : 1);
+      assert.equal(
+        await readFile(path.join(dataRoot, "sentinel"), "utf8"),
+        cleanupFails ? "temporary" : "original",
+      );
+      if (cleanupFails) {
+        assert.equal(
+          await readFile(path.join(backup, "sentinel"), "utf8"),
+          "original",
+        );
+      } else {
+        await assert.rejects(readFile(path.join(backup, "sentinel")), {
+          code: "ENOENT",
+        });
+      }
     } finally {
       if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
       else process.env.LOCALAPPDATA = originalLocalData;

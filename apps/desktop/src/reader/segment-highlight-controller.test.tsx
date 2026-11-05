@@ -140,6 +140,8 @@ function narrationSnapshot(
           }),
     failure,
     preparationFailure: undefined,
+    hasConfirmedRendering:
+      phase === "playing" || phase === "paused" || phase === "complete",
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,
@@ -273,7 +275,7 @@ describe("segment highlight controller", () => {
     },
   );
 
-  it("VAF H10 retains completed decoration without follow, navigation or settlement authority", () => {
+  it("CCF-C08 / VAF H10 retains completed decoration without follow before the next audible segment", () => {
     const block = paragraph("Lifecycle");
     const located = locatedBlock(0, block, 9);
     const mapper = new SemanticDomRangeMapper();
@@ -297,14 +299,17 @@ describe("segment highlight controller", () => {
     controller.setRoot(element);
     const range = sourceRange(located, 0, 9);
     controller.accept(observation("segment-started", range));
+    controller.reconcile(narrationSnapshot("paused"));
     controller.accept(observation("segment-completed", range));
     expect(callbacks.settleLocator).toHaveBeenLastCalledWith(range.end);
-    controller.reconcile(narrationSnapshot("complete"));
     callbacks.settleLocator.mockClear();
     callbacks.suspendVisualSampling.mockClear();
     environment.scrolls.length = 0;
     environment.range = { top: 140, bottom: 160 };
     controller.refresh();
+    environment.flush();
+    controller.reconcile(narrationSnapshot("playing"));
+    controller.accept(observation("segment-completed", range));
     environment.flush();
     expect(environment.highlighted?.toString()).toBe("Lifecycle");
     expect(environment.scrolls).toEqual([]);
@@ -314,6 +319,7 @@ describe("segment highlight controller", () => {
     expect(callbacks.navigateToLocator).not.toHaveBeenCalled();
     expect(callbacks.suspendVisualSampling).not.toHaveBeenCalled();
     expect(environment.scheduled).toEqual([]);
+    controller.reconcile(narrationSnapshot("complete"));
     controller.close();
     mapper.close();
     element.remove();

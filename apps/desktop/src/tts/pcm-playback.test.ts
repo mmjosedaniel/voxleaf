@@ -107,6 +107,8 @@ it("CHAT-AUDIT F09 rejects a prior unit failure delivered FIFO after its ended c
       backend.start({ ...request, sequence: 2 }, { ended: vi.fn(), failed });
     });
     const first = backend.start(request, { ended, failed: vi.fn() });
+    // Let the device resume receipt dispatch start before blocking this thread.
+    await Promise.resolve();
     expect(Atomics.wait(flags, 0, 0, 2000)).not.toBe("timed-out");
     worker.postMessage("render");
     expect(Atomics.wait(flags, 1, 0, 2000)).not.toBe("timed-out");
@@ -185,6 +187,12 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
           Math.floor(
             (elapsedMs() * request.sampleRateHz * request.playbackRate) / 1_000,
           ),
+        );
+      },
+      get renderedSampleFrames() {
+        return Math.min(
+          Math.ceil(durationFrames / request.playbackRate),
+          Math.floor((elapsedMs() * request.sampleRateHz) / 1_000),
         );
       },
       pause: () => {
@@ -838,7 +846,7 @@ it("RIA-03 direct resume must succeed and the source clock must advance before h
   expect(player.synchronize().state).toBe("stopped");
 });
 
-it("CAF-R7.3 counts the source clock through deferred suspend and resume", async () => {
+it("CCF-C20 / CAF-R7.3 direct rendering includes deferred suspend but excludes device wait and late end", async () => {
   const context = new FakeAudioContext();
   let suspendDone!: () => void;
   let resumeDone!: () => void;
@@ -871,12 +879,14 @@ it("CAF-R7.3 counts the source clock through deferred suspend and resume", async
   );
   context.currentTime = 10;
   expect(context.sources[0]!.started).toBe(false);
+  expect(handle.renderedSampleFrames).toBe(0);
   resumeDone();
   await Promise.resolve();
   expect(context.sources[0]!.started).toBe(true);
   const start = vi.spyOn(context.sources[0]!, "start");
   context.currentTime = 10.25;
   expect(handle.playedSampleFrames).toBe(6_000);
+  expect(handle.renderedSampleFrames).toBe(6_000);
   handle.pause();
   // The source continues to render until suspend takes effect. The context
   // clock then freezes; wall-clock time while suspended does not advance it.
@@ -884,6 +894,7 @@ it("CAF-R7.3 counts the source clock through deferred suspend and resume", async
   suspendDone();
   await Promise.resolve();
   expect(handle.playedSampleFrames).toBe(12_000);
+  expect(handle.renderedSampleFrames).toBe(12_000);
   expect(handle.rendering).toBe(false);
   handle.resume();
   // The already-started source resumes with the context, before promise delivery.
@@ -894,15 +905,19 @@ it("CAF-R7.3 counts the source clock through deferred suspend and resume", async
   expect(start).not.toHaveBeenCalled();
   context.currentTime = 12;
   expect(handle.playedSampleFrames).toBe(24_000);
+  expect(handle.renderedSampleFrames).toBe(24_000);
   context.sources[0]!.end();
+  context.currentTime = 30;
+  expect(handle.renderedSampleFrames).toBe(24_000);
   expect(ended).toHaveBeenCalledOnce();
   expect(failed).not.toHaveBeenCalled();
   await backend.close();
 });
 
-it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time before start or resume", async () => {
+it("CCF-C20 / RIA-03 WSOLA reports actual output separately from clock-estimated source progress", async () => {
   const context = new FakeAudioContext();
   const node = new FakeWsolaNode();
+  const ended = vi.fn();
   const backend = new WebAudioPcmPlaybackBackend(
     () => context as unknown as AudioContext,
     async () => ({ node: node as unknown as AudioWorkletNode, close: vi.fn() }),
@@ -920,11 +935,12 @@ it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time 
       volumePercent: 0,
       playbackRate: 0.75,
     },
-    { ended: vi.fn(), failed: vi.fn() },
+    { ended, failed: vi.fn() },
   );
   await Promise.resolve();
   context.currentTime = 0.5;
   expect(handle.playedSampleFrames).toBe(0);
+  expect(handle.renderedSampleFrames).toBe(0);
   node.port.emit({
     type: "started",
     unitSequence: 1,
@@ -934,15 +950,18 @@ it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time 
   });
   context.currentTime += 0.1;
   expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  expect(handle.renderedSampleFrames).toBe(0);
   handle.pause();
   node.port.emit({
     type: "paused",
     unitSequence: 1,
     activation: 1,
     sourceFrames: 1800,
+    renderedFrames: 2400,
   });
   context.currentTime += 1;
   expect(handle.playedSampleFrames).toBeCloseTo(1800, -1);
+  expect(handle.renderedSampleFrames).toBe(2400);
   handle.resume();
   await Promise.resolve();
   context.currentTime += 1;
@@ -964,11 +983,24 @@ it("RIA-03 / RIA-C1 withheld WSOLA processing cannot consume context-clock time 
   });
   context.currentTime += 0.1;
   expect(handle.playedSampleFrames).toBeCloseTo(3600, -1);
+  node.port.emit({ type: "rendered", unitSequence: 1, renderedFrames: 6000 });
+  expect(handle.renderedSampleFrames).toBe(6000);
+  node.port.emit({ type: "rendered", unitSequence: 0, renderedFrames: 20000 });
+  expect(handle.renderedSampleFrames).toBe(6000);
+  context.currentTime += 10;
+  node.port.emit({
+    type: "ended",
+    unitSequence: 1,
+    sourceFrames: 24000,
+    renderedFrames: 32000,
+  });
+  expect(handle.renderedSampleFrames).toBe(32000);
+  expect(ended).toHaveBeenCalledOnce();
   await backend.close();
 });
 
 it.each([1, 0.75])(
-  "RIA-03 ignores stale resume success/failure across activations and successors at rate %s",
+  "CCF-C20 / RIA-03 waits for current device activation across pauses and successors at rate %s",
   async (rate) => {
     const context = new FakeAudioContext();
     const pending: { resolve(): void; reject(): void }[] = [];
@@ -1001,6 +1033,10 @@ it.each([1, 0.75])(
     } as const;
     const callbacks = { ended: vi.fn(), failed: vi.fn() };
     const first = backend.start(request, callbacks);
+    if (rate !== 1) {
+      expect(node.port.messages).toHaveLength(1);
+      expect(node.port.messages[0]).toMatchObject({ type: "arm" });
+    }
     first.pause();
     first.resume();
     pending[0]!.resolve();
@@ -1008,6 +1044,7 @@ it.each([1, 0.75])(
     context.currentTime = 1;
     expect(first.rendering).toBe(false);
     expect(first.playedSampleFrames).toBe(0);
+    if (rate !== 1) expect(node.port.messages).toHaveLength(1);
     first.pause();
     first.resume();
     pending[1]!.reject();
@@ -1016,18 +1053,28 @@ it.each([1, 0.75])(
     expect(callbacks.failed).not.toHaveBeenCalled();
     pending[2]!.resolve();
     await Promise.resolve();
-    if (rate !== 1)
+    if (rate !== 1) {
+      expect(node.port.messages.slice(1)).toMatchObject([
+        { type: "start", unitSequence: 1, activation: 4 },
+      ]);
       node.port.emit({
-        type: "resumed",
+        type: "started",
         unitSequence: 1,
         activation: 4,
         currentFrame: 24000,
         sourceFrames: 0,
       });
+    }
     context.currentTime += 0.01;
     expect(first.rendering).toBe(true);
     first.pause();
     first.resume();
+    if (rate !== 1)
+      expect(node.port.messages.at(-1)).toMatchObject({
+        type: "pause",
+        unitSequence: 1,
+        activation: 5,
+      });
     first.stop();
     const successor = backend.start({ ...request, sequence: 2 }, callbacks);
     pending[3]!.reject();
@@ -1038,6 +1085,11 @@ it.each([1, 0.75])(
     successor.stop();
     pending[4]!.resolve();
     await Promise.resolve();
+    if (rate !== 1)
+      expect(node.port.messages.at(-1)).toMatchObject({
+        type: "stop",
+        unitSequence: 2,
+      });
     const rejected = backend.start({ ...request, sequence: 3 }, callbacks);
     pending[5]!.reject();
     await Promise.resolve();
@@ -1061,6 +1113,7 @@ it("RIA-03 publishes a short unit start before end even when both occur inside b
         sequence: request.sequence,
         rendering: false,
         playedSampleFrames: 24,
+        renderedSampleFrames: 24,
         pause() {},
         resume() {},
         stop() {},
@@ -2307,6 +2360,7 @@ describe("Web Audio PCM backend", () => {
       },
       callbacks,
     );
+    await Promise.resolve();
     expect(node.port.messages).toMatchObject([
       {
         type: "arm",

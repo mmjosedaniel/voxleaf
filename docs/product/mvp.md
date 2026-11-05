@@ -19,6 +19,15 @@ accepted numeric forms protected from internal segment cuts. Historical v1
 normalization remains unchanged. Acceptance is recorded in the
 [BNC execution ledger](../plans/evidence/narration-boundary-navigation-corrections/execution-ledger.md).
 
+The current [CCF correction batch](../plans/evidence/confirmed-chat-findings/execution-ledger.md)
+adds whole Celsius-range and spaced percent-compound preservation, distinguishes
+the `EUR` suffix from a continuing word such as `EURASIAN`, and shares bounded
+language classification across mutable token/title preparation. Distinct long
+language tags consume the existing work budget and yield for cancellation;
+displayed language attributes remain intact. Current host acceptance and
+independent approval are recorded in that ledger; the earlier BNC results do
+not validate these new paths.
+
 The [completed narration logic corrections](../plans/completed/narration-logic-corrections.md)
 restore manual-position persistence after natural narration completion and contain
 changed/unavailable compatibility selections before applying a new preparation
@@ -552,7 +561,8 @@ download and activation remain separate user actions.
   absent narrator becoming available for the same publication.
 - Startup-mode changes during Stop wait for containment before persistence.
   Closing Settings does not release pending narration-setting ownership. While
-  Reset is pending, conflicting startup and compact-speed edits are unavailable;
+  Reset is pending, conflicting startup and compact-speed edits and book
+  replacement are unavailable;
   ordinary Stop still permits playback-speed selection. Reset remains best effort
   and partial failures retain truthful feedback without automatic Play.
 - First Chatterbox Play distinguishes the most specific content-free phases the

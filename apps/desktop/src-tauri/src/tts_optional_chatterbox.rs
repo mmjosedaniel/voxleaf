@@ -1924,16 +1924,18 @@ impl OptionalChatterboxManager {
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
+            if operation.worker_active
+                || operation.state != Some(OptionalProfileState::Failed)
+                || operation.post_commit_cleanup.is_none()
+            {
+                return Ok(());
+            }
             let expected = (
                 canonical_managed_root(root)?,
                 runtime_authority_key(manifest)?,
             );
-            if operation.worker_active
-                || operation.state != Some(OptionalProfileState::Failed)
-                || operation.post_commit_cleanup.as_ref() != Some(&expected)
-            {
-                drop(operation);
-                return Ok(false);
+            if operation.post_commit_cleanup.as_ref() != Some(&expected) {
+                return Ok(());
             }
             // Hold the operation admission lock throughout this explicit retry.
             // No replacement can take ownership of the recorded paths.
@@ -1951,7 +1953,7 @@ impl OptionalChatterboxManager {
                     return Err(error);
                 }
             }
-            Ok(true)
+            Ok(())
         })?;
         self.snapshot_with_manifest(root, manifest)
     }

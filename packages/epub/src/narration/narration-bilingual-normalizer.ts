@@ -15,6 +15,7 @@ import type {
 } from "./narration-source.js";
 import type { NarrationSourceTextContext } from "./narration-source-projector.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
+import type { NarrationWorkController } from "./narration-work-controller.js";
 import {
   ENGLISH_AMPERSAND_NARRATION,
   ENGLISH_CELSIUS_NORMALIZATION,
@@ -204,7 +205,9 @@ function isAsciiDigit(code: number): boolean {
   return code >= 0x30 && code <= 0x39;
 }
 
-function isWellFormedLanguageTag(value: string): boolean {
+function* isWellFormedLanguageTag(value: string): Generator<number, boolean> {
+  const step =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenCheckpointsTarget;
   let subtagLength = 0;
   let subtagIndex = 0;
   let subtagStart = 0;
@@ -232,6 +235,7 @@ function isWellFormedLanguageTag(value: string): boolean {
   };
 
   for (let index = 0; index < value.length; index += 1) {
+    if (index % step === 0) yield Math.min(step, value.length - index);
     const code = value.charCodeAt(index);
     if (code === 0x2d) {
       if (
@@ -266,46 +270,63 @@ function isWellFormedLanguageTag(value: string): boolean {
   );
 }
 
-function hasSpanishPrimarySubtag(value: string): boolean {
-  if (!isWellFormedLanguageTag(value)) {
-    return false;
-  }
-  const separator = value.indexOf("-");
-  const primary = separator === -1 ? value : value.slice(0, separator);
-  return (
-    primary.length === 2 &&
-    (primary.charCodeAt(0) === 0x45 || primary.charCodeAt(0) === 0x65) &&
-    (primary.charCodeAt(1) === 0x53 || primary.charCodeAt(1) === 0x73)
-  );
-}
-
-function hasEnglishPrimarySubtag(value: string): boolean {
-  if (!isWellFormedLanguageTag(value)) {
-    return false;
-  }
-  const separator = value.indexOf("-");
-  const primary = separator === -1 ? value : value.slice(0, separator);
-  return (
-    primary.length === 2 &&
-    (primary.charCodeAt(0) === 0x45 || primary.charCodeAt(0) === 0x65) &&
-    (primary.charCodeAt(1) === 0x4e || primary.charCodeAt(1) === 0x6e)
-  );
-}
-
-function effectiveLanguage(
-  textContext: NarrationSourceTextContext,
+function* classifyLanguageTag(
+  value: string,
   defaultLanguage: NarrationNormalizationLanguage,
-): NarrationNormalizationLanguage {
-  if (textContext.language === undefined) {
-    return defaultLanguage;
+): Generator<number, NarrationNormalizationLanguage> {
+  if (value.length !== 2 && value[2] !== "-") return "und";
+  const primary = value.slice(0, 2).toLowerCase();
+  if (primary === "es" && defaultLanguage !== "en") {
+    return (yield* isWellFormedLanguageTag(value)) ? "es" : "und";
   }
-  if (hasSpanishPrimarySubtag(textContext.language)) {
-    return defaultLanguage === "en" ? "und" : "es";
-  }
-  if (hasEnglishPrimarySubtag(textContext.language)) {
-    return defaultLanguage === "es" || defaultLanguage === "und" ? "und" : "en";
+  if (primary === "en" && defaultLanguage === "en") {
+    return (yield* isWellFormedLanguageTag(value)) ? "en" : "und";
   }
   return "und";
+}
+
+// One classifier per preparation request. Only tags of visited tokens are
+// cached, and the title continuation retains a summary, not the classifier.
+export class NarrationLanguageClassifier {
+  readonly #languages = new Map<string, NarrationNormalizationLanguage>();
+
+  public constructor(
+    private readonly defaultLanguage: NarrationNormalizationLanguage,
+    private readonly work?: NarrationWorkController,
+  ) {}
+
+  public async prepare(tokens: readonly NarrationSourceToken[]): Promise<void> {
+    if (this.work === undefined) return;
+    for (const {
+      textContext: { language },
+    } of tokens) {
+      if (language === undefined || this.#languages.has(language)) continue;
+      const classifier = classifyLanguageTag(language, this.defaultLanguage);
+      let step = classifier.next();
+      while (!step.done) {
+        await this.work.observe(step.value);
+        step = classifier.next();
+      }
+      this.#languages.set(language, step.value);
+    }
+  }
+
+  public languageFor(
+    textContext: NarrationSourceTextContext,
+  ): NarrationNormalizationLanguage {
+    const { language } = textContext;
+    if (language === undefined) return this.defaultLanguage;
+    const cached = this.#languages.get(language);
+    if (cached !== undefined) return cached;
+    if (this.work !== undefined) return fail();
+
+    // Standalone normalization of bounded token fixtures has no scheduler.
+    const classifier = classifyLanguageTag(language, this.defaultLanguage);
+    let step = classifier.next();
+    while (!step.done) step = classifier.next();
+    this.#languages.set(language, step.value);
+    return step.value;
+  }
 }
 
 function copySourceSpan(sourceSpan: NarrationSourceSpan): NarrationSourceSpan {
@@ -402,6 +423,7 @@ function lexicalContext(
   language: NarrationNormalizationLanguage,
   skipWhitespace = false,
   maximum: number = NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum,
+  stopAtBarrier = false,
 ): LexicalContext | undefined {
   for (let distance = 0; distance < maximum; distance += 1) {
     const index = start + distance * direction;
@@ -413,6 +435,7 @@ function lexicalContext(
       value === ZERO_WIDTH_SPACE ||
       value === WORD_JOINER;
     if (!isProseTextToken(token) || languages[index] !== language) {
+      if (stopAtBarrier) return { index, value: undefined };
       return distance === 0 && !(isProseTextToken(token) && removableMark)
         ? { index, value }
         : undefined;
@@ -523,6 +546,59 @@ interface CelsiusNormalizationEntry {
   readonly narration: string | undefined;
 }
 
+function hasCelsiusRangeNeighbor(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  start: number,
+  direction: -1 | 1,
+  language: "es" | "en",
+): boolean {
+  let cursor = start;
+  let exhausted = false;
+  const next = (skipWhitespace = false): string | undefined => {
+    const context = lexicalContext(
+      tokens,
+      languages,
+      cursor,
+      direction,
+      language,
+      skipWhitespace,
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
+        Math.abs(cursor - start),
+      true,
+    );
+    if (context === undefined) {
+      exhausted = true;
+      return undefined;
+    }
+    cursor = context.index + direction;
+    return context.value;
+  };
+  const separator = next(true);
+  if (separator !== "-" && separator !== "–") return exhausted;
+
+  // Require a Celsius endpoint across the dash, so prose dashes remain punctuation.
+  if (direction === -1) {
+    return (
+      (next(true) === "C" &&
+        next() === "°" &&
+        isNumericContextCodePoint(next(true))) ||
+      exhausted
+    );
+  }
+
+  let value = next(true);
+  if (!isNumericContextCodePoint(value)) return exhausted;
+  do {
+    value = next();
+  } while (isNumericContextCodePoint(value));
+  if (isOrdinaryWhitespace(value ?? "")) value = next(true);
+  return (
+    (value === "°" && next() === "C" && !isWordContextCodePoint(next())) ||
+    exhausted
+  );
+}
+
 function isExactCelsiusForm(
   tokens: readonly NarrationSourceToken[],
   startIndex: number,
@@ -580,7 +656,9 @@ function isExactCelsiusForm(
   return (
     !attachedNumericSyntax &&
     !isWordContextCodePoint(before.value) &&
-    !isWordContextCodePoint(after.value)
+    !isWordContextCodePoint(after.value) &&
+    !hasCelsiusRangeNeighbor(tokens, languages, startIndex - 1, -1, language) &&
+    !hasCelsiusRangeNeighbor(tokens, languages, endIndex + 1, 1, language)
   );
 }
 
@@ -751,7 +829,23 @@ function hasAttachedNumericSyntax(
     if (next.value !== expected) return false;
     context = next;
   }
-  return true;
+  const continuation = lexicalContext(
+    tokens,
+    languages,
+    context.index + 1,
+    1,
+    language,
+    false,
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
+      (context.index - endIndexExclusive) -
+      1,
+  );
+  return (
+    continuation === undefined ||
+    !isProseTextToken(tokens[continuation.index]) ||
+    languages[continuation.index] !== language ||
+    isLexicalBoundary(continuation.value)
+  );
 }
 
 function matchesLexicalForm(
@@ -798,6 +892,22 @@ function matchesLexicalForm(
     requiredLanguage,
   );
   if (before === undefined || after === undefined) return undefined;
+  if (
+    (form.kind === "currency" || form.kind === "time") &&
+    isOrdinaryWhitespace(after.value ?? "")
+  ) {
+    const suffix = lexicalContext(
+      tokens,
+      languages,
+      endIndexExclusive,
+      1,
+      requiredLanguage,
+      true,
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum,
+      true,
+    );
+    if (suffix === undefined || suffix.value === "%") return undefined;
+  }
   const attachedCompound =
     (form.kind === "currency" ||
       form.kind === "percentage" ||
@@ -984,7 +1094,7 @@ export interface NarrationEnglishTitleContext {
 export function summarizeEnglishTitleContext(
   tokens: readonly NarrationSourceToken[],
   endIndexExclusive: number,
-  defaultLanguage: NarrationNormalizationLanguage,
+  classifier: NarrationLanguageClassifier,
   preceding?: NarrationEnglishTitleContext,
 ): NarrationEnglishTitleContext {
   const limit =
@@ -1007,7 +1117,7 @@ export function summarizeEnglishTitleContext(
     if (
       token === undefined ||
       !isProseTextToken(token) ||
-      effectiveLanguage(token.textContext, defaultLanguage) !== "en"
+      classifier.languageFor(token.textContext) !== "en"
     ) {
       state = {
         trailingWhitespace: 0,
@@ -1052,7 +1162,7 @@ function hasEnglishTitleContext(
   languages: readonly NarrationNormalizationLanguage[],
   start: number,
   end: number,
-  defaultLanguage: NarrationNormalizationLanguage,
+  classifier: NarrationLanguageClassifier,
   preceding?: NarrationEnglishTitleContext,
 ): boolean {
   const limit =
@@ -1074,7 +1184,7 @@ function hasEnglishTitleContext(
   const previous = summarizeEnglishTitleContext(
     tokens,
     start,
-    defaultLanguage,
+    classifier,
     preceding,
   );
   return (
@@ -1089,7 +1199,7 @@ function findLexicalReplacements(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
   existingReplacements: readonly (PlannedReplacement | undefined)[],
-  defaultLanguage: NarrationNormalizationLanguage,
+  classifier: NarrationLanguageClassifier,
   preceding?: NarrationEnglishTitleContext,
 ): readonly (PlannedReplacement | undefined)[] {
   enforceNumericLookahead(tokens);
@@ -1185,7 +1295,7 @@ function findLexicalReplacements(
             languages,
             index,
             endIndexExclusive,
-            defaultLanguage,
+            classifier,
             preceding,
           )
           ? undefined
@@ -1873,6 +1983,7 @@ function normalizeNarrationSourceTokensInternal(
   defaultLanguage: NarrationNormalizationLanguage,
   preceding?: NarrationEnglishTitleContext,
   precedingQuotationContext?: NarrationQuotationContext,
+  classifier = new NarrationLanguageClassifier(defaultLanguage),
 ): NarrationNormalizedStream {
   if (
     defaultLanguage !== "es" &&
@@ -1894,7 +2005,7 @@ function normalizeNarrationSourceTokensInternal(
     NarrationSourceTextContext
   >();
   const languages = tokens.map((token) =>
-    effectiveLanguage(token.textContext, defaultLanguage),
+    classifier.languageFor(token.textContext),
   );
   const lineEndHyphenation = findLineEndHyphenation(tokens, languages);
   const symbolReplacements = findSymbolReplacements(tokens, languages);
@@ -1902,7 +2013,7 @@ function normalizeNarrationSourceTokensInternal(
     tokens,
     languages,
     symbolReplacements,
-    defaultLanguage,
+    classifier,
     preceding,
   );
   const punctuationPlan = findPunctuationPlan(
@@ -1956,6 +2067,7 @@ export function normalizeNarrationSourceTokens(
   defaultLanguage: NarrationNormalizationLanguage,
   preceding?: NarrationEnglishTitleContext,
   precedingQuotationContext?: NarrationQuotationContext,
+  classifier?: NarrationLanguageClassifier,
 ): NarrationNormalizedStream {
   try {
     return normalizeNarrationSourceTokensInternal(
@@ -1963,6 +2075,7 @@ export function normalizeNarrationSourceTokens(
       defaultLanguage,
       preceding,
       precedingQuotationContext,
+      classifier,
     );
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {

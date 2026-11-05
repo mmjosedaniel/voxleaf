@@ -54,7 +54,8 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"
+      "$comment": "Both edges exclude C0, DEL, and ECMAScript trim whitespace. Interior characters exclude only C0 and DEL. The final assertion requires actual end of input across regex engines.",
+      "pattern": "^[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u0000-\\u001F\\u007F]*[^\\u0000-\\u0020\\u007F\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?![\\s\\S])"
     },
     "bookId": {
       "title": "BookIdWire",

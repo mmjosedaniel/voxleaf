@@ -36,6 +36,7 @@ import {
 import {
   normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens,
   type NarrationNormalizationLanguage as BilingualNarrationNormalizationLanguage,
+  type NarrationLanguageClassifier,
   type NarrationEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
 import { scanNarrationBoundaries } from "./narration-boundary-scanner.js";
@@ -56,6 +57,7 @@ type NarrationNormalizationProfile = "narration-v1" | "narration-bilingual-v2";
 
 interface NarrationPreparationOptions extends NarrationPackingOptions {
   readonly normalizationProfile?: NarrationNormalizationProfile;
+  readonly languageClassifier?: NarrationLanguageClassifier;
   readonly precedingEnglishTitleContext?: NarrationEnglishTitleContext;
   readonly precedingQuotationContext?: NarrationQuotationContext;
 }
@@ -336,6 +338,7 @@ export async function prepareNarrationSourceLeaf(
           defaultLanguage,
           options.precedingEnglishTitleContext,
           options.precedingQuotationContext,
+          options.languageClassifier,
         )
       : normalizeNarrationSourceTokens(
           source.sourceTokens,

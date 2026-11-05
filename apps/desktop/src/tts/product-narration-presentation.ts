@@ -42,7 +42,11 @@ export function productNarrationAvailabilityMessage(
 export function productNarrationPhaseMessage(
   snapshot: Pick<
     ProductNarrationSnapshot,
-    "availability" | "profileId" | "failure" | "serviceState"
+    | "availability"
+    | "profileId"
+    | "failure"
+    | "serviceState"
+    | "hasConfirmedRendering"
   > & {
     readonly state:
       Pick<NonNullable<ProductNarrationSnapshot["state"]>, "phase"> | undefined;
@@ -108,7 +112,9 @@ export function productNarrationPhaseMessage(
     case "paused":
       return "Narration paused.";
     case "playing":
-      return "Narration playing.";
+      return snapshot.hasConfirmedRendering
+        ? "Narration playing."
+        : "Preparing audio playback.";
     case "stopped":
       return "Narration stopped.";
     case undefined:

@@ -823,15 +823,32 @@ async function runBilingualSmoke(executable, profileId, language, environment) {
   );
 }
 
+const installerSpawnFailures = new WeakSet();
+
 async function runInstaller(installer, environment) {
   await new Promise((resolve, reject) => {
-    const child = spawn(installer, ["/S"], {
-      cwd: repositoryRoot,
-      env: environment,
-      stdio: "ignore",
-      windowsHide: true,
+    let child;
+    try {
+      child = spawn(installer, ["/S"], {
+        cwd: repositoryRoot,
+        env: environment,
+        stdio: "ignore",
+        windowsHide: true,
+      });
+    } catch (error) {
+      // Windows can reject an invalid executable directly from spawn().
+      installerSpawnFailures.add(error);
+      reject(error);
+      return;
+    }
+    let spawned = false;
+    child.once("spawn", () => {
+      spawned = true;
     });
-    child.once("error", reject);
+    child.once("error", (error) => {
+      if (!spawned) installerSpawnFailures.add(error);
+      reject(error);
+    });
     child.once("exit", (exitCode) => {
       if (exitCode === 0) resolve();
       else reject(new Error("ordinary-chatterbox-release-host:installer"));
@@ -890,13 +907,24 @@ async function backupApplicationData() {
   return Object.freeze({ root, backup });
 }
 
-async function restoreApplicationData({ root, backup }) {
+async function restoreApplicationData(
+  { root, backup },
+  { requireAbsent = false } = {},
+) {
   assertExactRootWithin(
     process.env.LOCALAPPDATA,
     root,
     APPLICATION_ID,
     "application-data-root",
   );
+  if (requireAbsent) {
+    await assertAbsent(
+      root,
+      "unexpected-data-root-after-installer-spawn-failure",
+    );
+    if (backup !== undefined) await rename(backup, root);
+    return;
+  }
   try {
     const current = await lstat(root);
     if (!current.isDirectory() || current.isSymbolicLink()) {
@@ -1008,6 +1036,7 @@ export async function runJourney(
   const dataBackup = await backupApplicationData();
   let session;
   let applicationInstalled = false;
+  let installerDidNotSpawn = false;
   let journeyError;
   let journeyReceipt;
   let corrections;
@@ -1015,7 +1044,13 @@ export async function runJourney(
     stages.mark("journey-install");
     // Even a rejected installer may have created a partial installation.
     applicationInstalled = true;
-    await install(options.installer, releaseEnv);
+    try {
+      await install(options.installer, releaseEnv);
+    } catch (error) {
+      installerDidNotSpawn =
+        install === runInstaller && installerSpawnFailures.has(error);
+      throw error;
+    }
     const { artifact } = await preflight(options, environment);
     stages.mark("journey-ordinary-session");
     session = await createOrdinarySession({
@@ -1251,13 +1286,20 @@ export async function runJourney(
         }
       }),
     );
-    await writeFile(
-      `${options.receipt}.failure.json`,
-      `${JSON.stringify({ corrections, managedPaths, downloadDiagnostic }, null, 2)}\n`,
-      "utf8",
-    );
+    try {
+      await writeFile(
+        `${options.receipt}.failure.json`,
+        `${JSON.stringify({ corrections, managedPaths, downloadDiagnostic }, null, 2)}\n`,
+        "utf8",
+      );
+    } catch {
+      process.stderr.write(
+        "ordinary-chatterbox-release-host:failure-diagnostic-unavailable\n",
+      );
+    }
     throw error;
   } finally {
+    const safePrelaunchCleanup = installerDidNotSpawn && session === undefined;
     await finalizeJourney({
       dataBackup,
       journeyError,
@@ -1265,10 +1307,19 @@ export async function runJourney(
         await session?.close();
       },
       uninstall: async () => {
-        if (applicationInstalled) {
+        if (applicationInstalled && !safePrelaunchCleanup) {
           await uninstall(options.installedRoot, releaseEnv);
         }
       },
+      restoreData: safePrelaunchCleanup
+        ? async (backup) => {
+            await assertAbsent(
+              options.installedRoot,
+              "unexpected-install-root-after-installer-spawn-failure",
+            );
+            await restoreApplicationData(backup, { requireAbsent: true });
+          }
+        : undefined,
     });
   }
   if (journeyReceipt === undefined) fail("journey-receipt");

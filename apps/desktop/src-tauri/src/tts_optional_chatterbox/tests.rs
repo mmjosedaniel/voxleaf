@@ -260,6 +260,69 @@ fn rcf13_explicit_cleanup_retry_preserves_failure_until_verified_and_never_claim
 }
 
 #[test]
+fn ccf_c14_retry_without_receipt_returns_absent_or_current_operation() {
+    let root = TestRoot::new();
+    let absent = root.0.join("absent");
+    let authority = write_runtime(&root.0.join("synthetic-authority"));
+    let manager = OptionalChatterboxManager::default();
+
+    let snapshot = manager.retry_cleanup(&absent, &authority).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Absent);
+    assert_eq!(snapshot.failure, None);
+    assert!(!absent.exists());
+
+    let failure = OptionalProfileError::DownloadFailed.code();
+    manager.set_operation(OptionalProfileState::Failed, 0, Some(failure), None);
+    let snapshot = manager.retry_cleanup(&absent, &authority).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Failed);
+    assert_eq!(snapshot.failure, Some(failure));
+    assert!(!absent.exists());
+
+    manager.set_operation(
+        OptionalProfileState::Downloading,
+        0,
+        None,
+        Some(Arc::new(AtomicBool::new(false))),
+    );
+    let snapshot = manager.retry_cleanup(&absent, &authority).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Downloading);
+    assert_eq!(snapshot.failure, None);
+    assert!(!absent.exists());
+}
+
+#[test]
+fn ccf_c14_retry_with_receipt_preserves_root_and_authority_checks() {
+    let root = TestRoot::new();
+    let authority = write_runtime(&package_root(&root.0));
+    let manager = OptionalChatterboxManager::default();
+    let backup = promotion_backup_root(&root.0);
+    fs::create_dir_all(&backup).unwrap();
+    let marker = backup.join("old.bin");
+    fs::write(&marker, b"retained").unwrap();
+    let failure = OptionalProfileError::CleanupFailed.code();
+    let canonical_root = canonical_managed_root(&root.0).unwrap();
+    let authority_key = runtime_authority_key(&authority).unwrap();
+    manager.set_operation(OptionalProfileState::Failed, 0, Some(failure), None);
+
+    for receipt in [
+        (canonical_root.join("different-root"), authority_key.clone()),
+        (canonical_root, format!("{authority_key}-different")),
+    ] {
+        manager.operation.lock().unwrap().post_commit_cleanup = Some(receipt);
+        let snapshot = manager.retry_cleanup(&root.0, &authority).unwrap();
+        assert_eq!(snapshot.state, OptionalProfileState::Failed);
+        assert_eq!(snapshot.failure, Some(failure));
+        assert_eq!(fs::read(&marker).unwrap(), b"retained");
+    }
+
+    assert_eq!(
+        manager.retry_cleanup(&marker, &authority),
+        Err(OptionalProfileError::VerificationFailed)
+    );
+    assert_eq!(fs::read(marker).unwrap(), b"retained");
+}
+
+#[test]
 fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();

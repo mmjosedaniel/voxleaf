@@ -1,0 +1,66 @@
+[
+  {
+    "name": "ordinary ASCII identity",
+    "value": "session:synthetic-1",
+    "valid": true
+  },
+  { "name": "one character", "value": "x", "valid": true },
+  { "name": "empty", "value": "", "valid": false },
+  { "name": "leading NEL", "value": "\u0085x", "valid": true },
+  { "name": "trailing NEL", "value": "x\u0085", "valid": true },
+  { "name": "non-whitespace C1", "value": "x\u0080", "valid": true },
+  { "name": "leading BOM", "value": "\uFEFFx", "valid": false },
+  { "name": "trailing BOM", "value": "x\uFEFF", "valid": false },
+  { "name": "interior BOM and spaces", "value": "x \uFEFF y", "valid": true },
+  {
+    "name": "interior line and paragraph separators",
+    "value": "x\u2028\u2029y",
+    "valid": true
+  },
+  {
+    "name": "interior line separator before trailing space",
+    "value": "x\u2028y ",
+    "valid": false
+  },
+  {
+    "name": "interior paragraph separator before trailing BOM",
+    "value": "x\u2029y\uFEFF",
+    "valid": false
+  },
+  { "name": "leading line separator", "value": "\u2028x", "valid": false },
+  {
+    "name": "trailing paragraph separator",
+    "value": "x\u2029",
+    "valid": false
+  },
+  { "name": "leading no-break space", "value": "\u00A0x", "valid": false },
+  { "name": "trailing ogham space", "value": "x\u1680", "valid": false },
+  { "name": "leading en quad", "value": "\u2000x", "valid": false },
+  { "name": "trailing hair space", "value": "x\u200A", "valid": false },
+  {
+    "name": "trailing narrow no-break space",
+    "value": "x\u202F",
+    "valid": false
+  },
+  {
+    "name": "leading medium mathematical space",
+    "value": "\u205Fx",
+    "valid": false
+  },
+  { "name": "trailing ideographic space", "value": "x\u3000", "valid": false },
+  { "name": "trailing line feed", "value": "x\n", "valid": false },
+  { "name": "interior C0", "value": "x\u001Fy", "valid": false },
+  { "name": "interior DEL", "value": "x\u007Fy", "valid": false },
+  {
+    "name": "exact astral bound",
+    "value": "\uD83D\uDE00",
+    "repeat": 128,
+    "valid": true
+  },
+  {
+    "name": "astral bound plus one",
+    "value": "\uD83D\uDE00",
+    "repeat": 129,
+    "valid": false
+  }
+]

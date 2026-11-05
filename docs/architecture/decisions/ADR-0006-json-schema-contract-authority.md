@@ -136,3 +136,27 @@ An interface-definition language could generate multi-language bindings and stro
 ### Generate Python and Rust models immediately
 
 Python has no transport DTO consumer yet, and Rust has no shared-contract consumer or IPC permission. Generating unused models would add tooling and public surfaces without evidence. Rejected until a real consumer exists.
+
+## 2026-11-04: Explicit current identifier whitespace semantics
+
+Current mutable primitive schemas spell out the intended ECMAScript edge-
+whitespace set instead of relying on each regex engine's `\s`, dot or final-
+newline behavior. C0 and DEL remain forbidden anywhere. Leading/trailing space,
+U+00A0, U+1680, U+2000-U+200A, U+2028/U+2029, U+202F, U+205F, U+3000 and U+FEFF
+are rejected; the corresponding interior characters remain valid. U+0085 and
+non-whitespace C1 characters remain valid. Empty identifiers and identifiers
+beyond 128 code points remain invalid; Unicode scalar identifiers therefore fit
+the existing 512-byte UTF-8 ceiling. The schema requires actual end of input.
+
+The common synthetic CCF identifier vectors exercise canonical and generated TS
+validators, TS constructors, current Python decoding and Rust control decoding.
+This corrects inconsistent acceptance without changing the serialized shape or
+protocol version. It does not redefine parser behavior for escaped unpaired
+surrogates. Current generated bindings remain generator-owned.
+
+Optional Chatterbox v7 deliberately packages historical v3 Python source and
+schema bytes. This change preserves that frozen authority and ordinary
+ASCII-produced request identities; it does not claim universal Unicode parity
+for that historical runtime. Extending that compatibility requires a separately
+versioned runtime decision. Current correction acceptance is tracked in the
+[CCF ledger](../../plans/evidence/confirmed-chat-findings/execution-ledger.md).

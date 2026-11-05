@@ -15,6 +15,7 @@ from benchmarks.contracts import AdapterOperationError
 from benchmarks.dual_worker_contracts import (
     CPU_WORKER_ROLE,
     GPU_WORKER_ROLE,
+    DualWorkerBenchmarkError,
     DualWorkerRole,
     DualWorkIdentity,
 )
@@ -106,6 +107,167 @@ def runtime_for(
         worker for worker in DeterministicDualWorkerRuntime().workers if worker.role in candidates
     )
     return ThreadedDualWorkerRuntime(candidates, identities)
+
+
+def _synthetic_output(
+    request: BatchGenerationRequest, **_kwargs: Any
+) -> tuple[BatchAudioUnit, ...]:
+    unit = request.units[0]
+    return (
+        BatchAudioUnit(
+            request.identity,
+            request.call_index,
+            unit.unit_id,
+            unit.source_sequence,
+            0,
+            24000,
+            24000,
+            1,
+            "float32",
+        ),
+    )
+
+
+def test_ccf_c10_obsolete_cancellation_preserves_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    role = GPU_WORKER_ROLE
+    candidate = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    runtime = runtime_for({role: candidate})
+    first, replacement = requests()[:2]
+    cancellations: list[str] = []
+    monkeypatch.setattr(candidate, "generate_batch", _synthetic_output)
+    monkeypatch.setattr(
+        candidate, "cancel", lambda request_id, **_kwargs: cancellations.append(request_id)
+    )
+    try:
+        runtime.submit(role, first)
+        assert runtime.next_completion(frozenset({role})).request == first
+        runtime.submit(role, replacement)
+        runtime.cancel(role, first.occurrence_id)
+        runtime.cancel(role, first.occurrence_id)
+        assert cancellations == []
+        completion = runtime.next_completion(frozenset({role}))
+        assert completion.request == replacement
+        assert completion.status == "completed"
+    finally:
+        runtime.close()
+
+
+def test_ccf_c10_cancelled_queue_reserves_role_until_adapter_dispatch_finishes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    role = GPU_WORKER_ROLE
+    candidate = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    runtime = runtime_for({role: candidate})
+    first, replacement = requests()[:2]
+    occupied, release_executor, dispatching, finish_dispatch = (Event() for _ in range(4))
+
+    def occupy() -> None:
+        occupied.set()
+        assert release_executor.wait(5)
+
+    def cancel(_request_id: str, *, cancel_idle: bool) -> None:
+        assert cancel_idle
+        dispatching.set()
+        assert finish_dispatch.wait(5)
+
+    blocker = runtime._executor.submit(occupy)
+    monkeypatch.setattr(candidate, "cancel", cancel)
+    monkeypatch.setattr(candidate, "generate_batch", _synthetic_output)
+    try:
+        assert occupied.wait(5)
+        runtime.submit(role, first)
+        queued = runtime._active[role].future
+        with ThreadPoolExecutor(max_workers=1) as canceller:
+            cancelling = canceller.submit(runtime.cancel, role, first.occurrence_id)
+            try:
+                assert dispatching.wait(5)
+                assert queued.cancelled()
+                with pytest.raises(DualWorkerBenchmarkError, match="resource-limit"):
+                    runtime.submit(role, replacement)
+            finally:
+                finish_dispatch.set()
+                cancelling.result(timeout=5)
+        release_executor.set()
+        blocker.result(timeout=5)
+        runtime.submit(role, replacement)
+        assert runtime.next_completion(frozenset({role})).request == replacement
+    finally:
+        release_executor.set()
+        blocker.result(timeout=5)
+        runtime.close()
+
+
+def test_ccf_c10_late_output_drains_before_reuse_and_cancel_is_idempotent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    role = GPU_WORKER_ROLE
+    candidate = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    runtime = runtime_for({role: candidate})
+    first, replacement = requests()[:2]
+    entered, release = Event(), Event()
+    cancellations: list[tuple[str, bool]] = []
+
+    def generate(request: BatchGenerationRequest, **_kwargs: Any) -> tuple[BatchAudioUnit, ...]:
+        entered.set()
+        assert release.wait(5)
+        return _synthetic_output(request)
+
+    def cancel(request_id: str, *, cancel_idle: bool) -> None:
+        cancellations.append((request_id, cancel_idle))
+
+    monkeypatch.setattr(candidate, "generate_batch", generate)
+    monkeypatch.setattr(candidate, "cancel", cancel)
+    try:
+        runtime.submit(role, first)
+        assert entered.wait(5)
+        active = runtime._active[role].future
+        runtime.cancel(role, first.occurrence_id)
+        runtime.cancel(role, first.occurrence_id)
+        assert cancellations == [(f"batch-{first.source_sequence}", True)]
+        with pytest.raises(DualWorkerBenchmarkError, match="resource-limit"):
+            runtime.submit(role, replacement)
+        release.set()
+        assert active.result(timeout=5).outputs
+        runtime.submit(role, replacement)
+        assert runtime.next_completion(frozenset({role})).request == replacement
+    finally:
+        release.set()
+        runtime.close()
+
+
+def test_ccf_c10_failed_cancellation_keeps_owner_for_exact_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    role = GPU_WORKER_ROLE
+    candidate = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    runtime = runtime_for({role: candidate})
+    first, replacement = requests()[:2]
+    cancellations: list[tuple[str, bool]] = []
+
+    def cancel(request_id: str, *, cancel_idle: bool) -> None:
+        cancellations.append((request_id, cancel_idle))
+        if len(cancellations) == 1:
+            raise AdapterOperationError("cleanup-failed")
+
+    monkeypatch.setattr(candidate, "generate_batch", _synthetic_output)
+    monkeypatch.setattr(candidate, "cancel", cancel)
+    try:
+        runtime.submit(role, first)
+        assert runtime._active[role].future.result(timeout=5).outputs
+        with pytest.raises(DualWorkerBenchmarkError, match="cleanup-failed"):
+            runtime.cancel(role, first.occurrence_id)
+        with pytest.raises(DualWorkerBenchmarkError, match="resource-limit"):
+            runtime.submit(role, replacement)
+        runtime.cancel(role, replacement.occurrence_id)
+        runtime.cancel(role, first.occurrence_id)
+        runtime.cancel(role, first.occurrence_id)
+        assert cancellations == [(f"batch-{first.source_sequence}", True)] * 2
+        runtime.submit(role, replacement)
+        assert runtime.next_completion(frozenset({role})).request == replacement
+    finally:
+        runtime.close()
 
 
 def test_efc_02_cancel_entered_work_prevents_lazy_reload_and_close_drains(

@@ -105,6 +105,22 @@ def test_caf_r4_2_common_range_and_identifier_vectors() -> None:
                 decode_control_payload(payload)
 
 
+def test_ccf_c05_portable_identifier_vectors_at_control_decoder() -> None:
+    vectors = json.loads((FIXTURE_ROOT / "ccf-identifier-vectors.json").read_text(encoding="utf-8"))
+    for vector in vectors:
+        identifier = vector["value"] * vector.get("repeat", 1)
+        message = load_fixture("valid-synthesize.json")
+        message["requestId"] = identifier
+        cast(dict[str, object], message["segment"])["sessionId"] = identifier
+        payload = json.dumps(message).encode("utf-8")
+        if vector["valid"]:
+            assert decode_control_payload(payload)["requestId"] == identifier, vector["name"]
+        else:
+            with pytest.raises(ProtocolFailure) as captured:
+                decode_control_payload(payload)
+            assert captured.value.reason is ProtocolReason.INVALID_MESSAGE, vector["name"]
+
+
 def test_framing_accepts_exact_limits_and_fragmented_or_coalesced_reads() -> None:
     control = bytes(MAX_CONTROL_PAYLOAD_BYTES)
     audio = bytes(MAX_AUDIO_PAYLOAD_BYTES)

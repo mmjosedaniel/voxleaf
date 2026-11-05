@@ -733,3 +733,25 @@ succeeds. Oversized narration preference envelopes are rejected before parsing
 or unbounded encoding, including during Reset; their bytes remain intact.
 When queued and active units use different playback rates, loaded duration is
 described as available listening time without attributing the total to one rate.
+
+## Confirmed chat findings corrections
+
+Initial Play prepares from the successfully settled visible fallback, including
+late narrator attachment, while preserving the precise saved checkpoint. A
+completed highlighted segment no longer owns automatic follow; typography
+reflow keeps its current visible location until a new audible segment starts.
+Terminal ellipsis followed by `›` retains the existing short transition pause.
+
+Before the first confirmed rendering, active startup keeps the startup label and
+Cancel start action, including while a slow-speed backend is preparing. A zero
+millisecond first-render measurement is valid. Stop invalidates undispatched
+hardware/configuration preflight without waiting for its obsolete result;
+already dispatched service work still requires containment.
+
+Reset reserves its owner before starting preference work. Book replacement is
+unavailable until Reset settles, and a successful current speed reset clears
+obsolete speed-fallback feedback. Reset remains best effort when a real
+preference write fails; it does not start playback automatically.
+
+Current execution and acceptance are recorded in the
+[CCF ledger](../plans/evidence/confirmed-chat-findings/execution-ledger.md).

@@ -28,7 +28,10 @@ import {
 } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
-import { NarrationOperationWorkBudget } from "./narration-work-controller.js";
+import {
+  NarrationOperationWorkBudget,
+  NarrationWorkController,
+} from "./narration-work-controller.js";
 import {
   NARRATION_V1_BATCH_POLICY,
   NARRATION_V1_SEGMENT_POLICY,
@@ -41,6 +44,7 @@ import {
 } from "./narration-prepared-segment.js";
 import {
   isApostropheContext as isBilingualApostropheContext,
+  NarrationLanguageClassifier,
   summarizeEnglishTitleContext,
   type NarrationEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
@@ -589,7 +593,7 @@ function observeSourceWindow(
 function titleContextAt(
   leaf: NarrationSourceTokenLeafEvent,
   continuation: ReadingLocatorV1,
-  defaultLanguage: "und" | "es" | "en",
+  classifier: NarrationLanguageClassifier,
   preceding: NarrationEnglishTitleContext | undefined,
   operation: MutablePreparationMeasurements,
 ): NonNullable<NarrationPreparationCheckpoint["englishTitleContext"]> {
@@ -612,7 +616,7 @@ function titleContextAt(
     summary: summarizeEnglishTitleContext(
       leaf.sourceTokens,
       end,
-      defaultLanguage,
+      classifier,
       preceding,
     ),
   });
@@ -690,11 +694,22 @@ export async function prepareNarrationBatch(
     operation.work.charge(locatorIndex.blocks.length);
     let sourceComplete = false;
     const segmentPolicy = narrationSegmentPolicy(request.profile);
+    const mutableNormalization =
+      request.profile === "narration-bilingual-v2" ||
+      request.profile === "narration-chatterbox-v1" ||
+      request.profile === "narration-piper-v2";
+    const languageWork = mutableNormalization
+      ? new NarrationWorkController(signal, scheduler, operation.work)
+      : undefined;
+    const classifier =
+      languageWork === undefined
+        ? undefined
+        : new NarrationLanguageClassifier(
+            request.defaultLanguage,
+            languageWork,
+          );
     const retainTitleContext =
-      request.defaultLanguage === "en" &&
-      (request.profile === "narration-bilingual-v2" ||
-        request.profile === "narration-chatterbox-v1" ||
-        request.profile === "narration-piper-v2");
+      request.defaultLanguage === "en" && classifier !== undefined;
 
     while (candidates.lookahead === undefined && !sourceComplete) {
       const window = await prepareNarrationSourceWindow(
@@ -816,16 +831,15 @@ export async function prepareNarrationBatch(
           ) {
             return narrationPreparationFailure("resource-limit-exceeded");
           }
+          if (classifier !== undefined)
+            await classifier.prepare(leaf.sourceTokens);
           const prepared = await prepareNarrationSourceLeaf(
             leaf,
             request.defaultLanguage,
             Object.freeze({
-              normalizationProfile:
-                request.profile === "narration-bilingual-v2" ||
-                request.profile === "narration-chatterbox-v1" ||
-                request.profile === "narration-piper-v2"
-                  ? "narration-bilingual-v2"
-                  : "narration-v1",
+              normalizationProfile: mutableNormalization
+                ? "narration-bilingual-v2"
+                : "narration-v1",
               maximumSegments: remainingSegmentEntries,
               retainedNarrationCodePointsMaximum: remainingNarrationCodePoints,
               retainedNarrationUtf8BytesMaximum: remainingNarrationUtf8Bytes,
@@ -833,6 +847,9 @@ export async function prepareNarrationBatch(
               signal,
               scheduler,
               operationWorkBudget: operation.work,
+              ...(classifier === undefined
+                ? {}
+                : { languageClassifier: classifier }),
               ...(precedingQuotationContext === undefined
                 ? {}
                 : { precedingQuotationContext }),
@@ -890,7 +907,7 @@ export async function prepareNarrationBatch(
               returnedTitleContext = titleContextAt(
                 leaf,
                 segment.sourceRange.end,
-                request.defaultLanguage,
+                classifier,
                 precedingTitleContext,
                 operation,
               );
@@ -904,7 +921,7 @@ export async function prepareNarrationBatch(
             ? titleContextAt(
                 leaf,
                 nextCursor,
-                request.defaultLanguage,
+                classifier,
                 precedingTitleContext,
                 operation,
               )
@@ -948,6 +965,13 @@ export async function prepareNarrationBatch(
       cursor = continuation;
     }
 
+    if (languageWork !== undefined && languageWork.workUnitCount > 0) {
+      languageWork.beforePublication();
+      operation.checkpointCount = addSafe(
+        operation.checkpointCount,
+        languageWork.checkpointCount,
+      );
+    }
     const returned = Object.freeze([...candidates.segments]);
     const start = createStart(resolution, returned);
     const measurements = batchMeasurements(returned, operation);

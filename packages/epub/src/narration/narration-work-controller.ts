@@ -79,11 +79,18 @@ export class NarrationWorkController {
     return this.#yieldCount;
   }
 
-  public async observe(): Promise<void> {
-    this.#operation?.charge();
-    this.#workUnitCount = addSafe(this.#workUnitCount, 1);
-    this.#sinceCheckpoint = addSafe(this.#sinceCheckpoint, 1);
-    this.#sinceYield = addSafe(this.#sinceYield, 1);
+  public async observe(units = 1): Promise<void> {
+    if (
+      !Number.isSafeInteger(units) ||
+      units < 1 ||
+      units >
+        NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenCheckpointsTarget
+    )
+      fail();
+    this.#operation?.charge(units);
+    this.#workUnitCount = addSafe(this.#workUnitCount, units);
+    this.#sinceCheckpoint = addSafe(this.#sinceCheckpoint, units);
+    this.#sinceYield = addSafe(this.#sinceYield, units);
 
     if (
       this.#sinceCheckpoint >=
