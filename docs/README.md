@@ -17,11 +17,14 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [confirmed chat findings plan](plans/active/confirmed-chat-findings-minimal-corrections.md)
-is prepared for 18 supported corrections, with five intentional, deferred or
-unconfirmed cases preserved. Implementation has not started. It maps previous
-fixes and validation to the remaining triggers and separates reusable artifacts
-from behavioral checks that require current evidence.
+The [completed confirmed chat findings plan](plans/completed/confirmed-chat-findings-minimal-corrections.md)
+resolves 18 supported corrections, with five intentional, deferred or unconfirmed
+cases preserved. CCF-R2-20261104 approves after closing the C08 mounted-geometry
+coverage gap. Selected deterministic, static, Chromium, Piper and exact optional
+local admission checks pass with original host resources restored. C05 remains
+limited to current consumers/current Piper; frozen Chatterbox Unicode parity is
+not claimed. The plan records selective evidence reuse, retained failed attempts
+and its separate final archival assessment. Changes remain uncommitted.
 
 The [completed chat audit follow-up](plans/completed/chat-audit-minimal-follow-up.md)
 resolves 27 bounded cases, including R7.3 reproduced before its production edit.

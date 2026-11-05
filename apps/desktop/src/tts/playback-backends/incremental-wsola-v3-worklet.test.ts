@@ -104,6 +104,7 @@ describe("real incremental WSOLA processor", () => {
       unitSequence: 1,
       activation: 1,
       sourceFrames: 96,
+      renderedFrames: 128,
     });
     quantum(processor);
     send(processor, { type: "resume", unitSequence: 1, activation: 2 });
@@ -118,6 +119,31 @@ describe("real incremental WSOLA processor", () => {
       currentFrame: 0,
       sourceFrames: 96,
     });
+  });
+  it("CCF-C20 reports bounded output frames through pause and exact partial-quantum completion", () => {
+    const processor = createProcessor();
+    send(processor, {
+      type: "arm",
+      input: new Float32Array(6001),
+      ratePercent: 75,
+      unitSequence: 1,
+    });
+    send(processor, { type: "start", unitSequence: 1, activation: 0 });
+    for (let i = 0; i < 47; i += 1) quantum(processor);
+    send(processor, { type: "pause", unitSequence: 1, activation: 1 });
+    for (let i = 0; i < 80; i += 1) quantum(processor);
+    send(processor, { type: "resume", unitSequence: 1, activation: 2 });
+    for (let i = 0; i < 20; i += 1) quantum(processor);
+    expect(
+      processor.port.postMessage.mock.calls
+        .map(([message]) => message)
+        .filter(({ type }) => ["rendered", "paused", "ended"].includes(type))
+        .map(({ type, renderedFrames }) => [type, renderedFrames]),
+    ).toEqual([
+      ["rendered", 6016],
+      ["paused", 6016],
+      ["ended", 8002],
+    ]);
   });
   it.each(["idle", "active", "paused"])(
     "MPA-01 terminal disposal rejects later work while %s",

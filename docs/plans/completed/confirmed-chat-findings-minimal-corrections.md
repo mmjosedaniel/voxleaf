@@ -9,10 +9,10 @@ behavior, policy questions and the resize claim that was not demonstrated.
 Reuse existing fixtures, tooling and verified artifacts; rerun only the checks
 whose responsibilities or evidence inputs require it.
 
-**Status: planning only, 2026-11-04. Implementation is not authorized by this
-plan-creation task and has not started.** The user authorized the plan, its local
-branch and a local commit. That authorization does not include implementation,
-push, pull request, merge, release or publication.
+**Status: implementation complete and accepted, 2026-11-04.** The subsequent execution
+request authorizes implementation and necessary validation. It does not authorize
+staging, commit, push, pull request, merge, release or publication. The planning
+commit is `4b10dc0a7cc400b5b3c1a9ac2010ceb1e801afef`.
 
 ## User-visible outcome
 
@@ -191,7 +191,9 @@ by subtracting nominal duration from a late completion callback.
 
 ### M0: Freeze the execution inputs and regression baseline
 
-**Status: not started.**
+**Status: complete.** Starting branch and HEAD match the planning commit;
+the worktree and index were clean. See the
+[execution ledger](../evidence/confirmed-chat-findings/execution-ledger.md).
 
 On later authorization, record starting HEAD, clean/dirty paths, target file
 identities and gate dependency closures in ignored
@@ -210,8 +212,10 @@ their complete inputs; otherwise build packages once before dependent tests.
 
 ### M1: Make the bounded owner corrections
 
-**Status: not started.** Execute the following six units without running a native
-build or full integration matrix after every case.
+**Status: complete.** All six units and the browser follow-up have focused
+red/green handoffs and pass the combined acceptance gates. CCF-R2-20261104 approves
+the implementation. Source writing is idle; the six units share one final native
+build and selective integration gates.
 
 #### U1: Mutable narration boundaries and classification cost
 
@@ -382,7 +386,10 @@ mutation of actual user data is needed for these deterministic regressions.
 
 ### M2: Run the minimum combined acceptance gates
 
-**Status: not started.** Use the gate table below after the relevant last edit.
+**Status: runtime validation complete.** Deterministic, Chromium, static, current
+core/native build, Piper and exact optional-admission gates pass with restoration.
+The documentation/review closeout remains in M3.
+Use the gate table below after the relevant last edit.
 Run cheap deterministic/static checks before package preparation and native
 execution. Rebuild exports only when consumed inputs changed; make one final
 native executable and share it between applicable host arms. Do not run the root
@@ -391,7 +398,14 @@ Required CI on a later authorized PR remains a separate obligation.
 
 ### M3: Independent review, documentation and closeout
 
-**Status: not started.** Delegate an independent read-only `change_reviewer`
+**Status: implementation accepted by CCF-R2-20261104.** The first independent
+review's C08 mounted locator/geometry gap is closed: original completed-follow
+behavior fails by 318 pixels, and the current correction passes with R7-04 and
+MAF-07 preserved. The final archival assessment is recorded separately as
+`docs/plans/evidence/confirmed-chat-findings/review-CCF-R3-20261104.md`, outside
+its own reviewed manifest. It assesses the final documentation and plan move;
+the R2 report and all original check receipts remain immutable.
+Delegate an independent read-only `change_reviewer`
 (GPT-6 Astra high) under the repository review policy after the complete patch
 and host evidence exist. The reviewer does not run tests or edit code. Give it
 the exact HEAD/diff/path identities, all dispositions, red/green records,
@@ -475,11 +489,11 @@ sandbox execution.
 | G2 | U1 source mapping/bounds and U3 current schema/identifier parity | Filtered shared/EPUB Vitest commands below | RUN after final relevant edits. Changing shared exports invalidates consuming checks. |
 | G3 | U2 mounted controls, placement, persistence, cancellation and render accounting | Filtered desktop Vitest command below | RUN once as a combined owner group; preserve existing regression controls. |
 | G4 | U3 current Python protocol, U5 occurrence ownership and U6 host recovery/build layout | Selected pytest and Node commands below | RUN; fake adapters and disposable paths, no model or real installer. |
-| G5 | U3/U4 native validation, receipt/root and lock-order paths in both build modes | `pnpm.cmd test:rust` | RUN once after final Rust edits. Do not additionally rerun the same default/release suites under another wrapper. Ignored host tests are not passes. |
+| G5 | U3/U4 native validation, receipt/root and lock-order paths in both build modes | `pnpm.cmd test:rust` | RUN after final Rust edits and G8 core-authority generation, before the desktop build: Rust embeds that manifest. Focused regressions supply cheap preparation checks. Ignored host tests are not passes. |
 | G6 | Few mounted Chromium sequences for browser-only ordering/geometry | Selected Playwright command below, after G0 | RUN new integrated journeys plus named existing controls; no full browser matrix by default. |
 | G7 | Relevant formatting, lint, type and generated drift | Static commands below | RUN once per final consumed closure. Later unrelated docs do not invalidate runtime gates. |
 | G8 | Current distributable core and one native executable | `pnpm.cmd package:piper-core:write-manifest`, `pnpm.cmd package:piper-core:check`, `pnpm.cmd build:desktop` | Regenerate core when U3 changes its consumed current Python bytes. Reuse verified model/locked payload inputs; one final native build after cheap gates. |
-| G9 | WebView2 direct/WSOLA integration, confirmed render, cancellation and cleanup on the built binary | Piper EN command below with `--exercise-playback-speeds` | RUN once. The existing flag selects its fixed six-rate series; do not claim a narrower flag exists or create a new runner merely to reduce count. No separate repeated one-rate arm. |
+| G9 | WebView2 direct/WSOLA integration, confirmed render, cancellation and cleanup on the built binary | Piper EN command below with `--exercise-playback-speeds`; follow-up with `--exercise-reader-corrections` | The first run passed six rates but omitted the selector that actually owns the new completion assertions. Run the existing reader-corrections mode on the same binary, without repeating the six-rate selector. Its base adaptive matrix is inseparable from that existing mode. Preserve both receipts; do not invent a narrower runner. |
 | G10 | U4 exact installed-root admission/retry/removal/restoration | `pnpm.cmd test:chatterbox:v7:local-admission` | RUN once using verified local artifacts. No model inference/download/quality campaign. Prior CAF duration was about 12 minutes; avoid repeated preparation. |
 | G11 | Native pending-start replacement containment if its dispatch/ownership boundary changes | Exact F08 command below | CONDITIONAL: run if U2 changes the dispatched-start/client/supervisor boundary or preflight proof cannot isolate it. Otherwise document unchanged closure and rely on retained unit controls plus current normal Piper cancellation. |
 | G12 | Current documentation, privacy, diff, evidence and independent acceptance | `pnpm.cmd check:evidence`; `git diff --check`; link inspection; `change_reviewer` | RUN on final documentation/patch. Planning-only docs are exempt from behavioral independent review. |
@@ -525,7 +539,7 @@ book replacement. Keep deterministic timing branches in unit tests. Select the
 existing alignment, waiting-render and remount controls in that same invocation:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop test:browser reader-narration-bugfixes.smoke.spec.ts reader-reflow-restoration.smoke.spec.ts --grep 'CCF-|CAF-1 |MAF-07|RIA-03|NSL-04'
+pnpm.cmd --% --filter @voxleaf/desktop test:browser reader-narration-bugfixes.smoke.spec.ts reader-reflow-restoration.smoke.spec.ts --grep "CCF-|CAF-1 |MAF-07|RIA-03|NSL-04|R7-04"
 ```
 
 Check that the collection includes every intended named test and no empty
@@ -556,6 +570,7 @@ G9 consumes the final binary, without calling another build wrapper:
 
 ```powershell
 node apps/desktop/scripts/native-startup-smoke.mjs --adaptive-tts-exact-host --tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1 --tts-language=en --exercise-playback-speeds
+node apps/desktop/scripts/native-startup-smoke.mjs --adaptive-tts-exact-host --tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1 --tts-language=en --exercise-reader-corrections
 ```
 
 Bind its result to the executable and relevant core/model hashes, rendered
@@ -625,8 +640,54 @@ resources before accepting or abandoning a native attempt.
   selection. Distinguished artifact reuse, behavioral equivalence and omission.
 - 2026-11-04: Created `codex/confirmed-chat-findings-plan` from the clean starting
   HEAD. Prepared this plan and active/documentation index entries only.
-- Implementation M0-M3, regression execution, runtime preparation, native runs
-  and behavioral independent review: **not started**.
+- 2026-11-04: Execution authorized. M0 confirms the expected clean branch/HEAD;
+  offline Corepack provides the required pnpm 11.15.1 without dependency changes.
+  U1 is assigned to the sole source writer; read-only U2 analysis runs separately.
+  No historical behavioral PASS is accepted for the new patch. Current execution
+  results and pending gates are tracked in the linked ledger.
+- 2026-11-04: U1 and U3/U4 handed off six corrected cases with focused host
+  regressions. Current shared/EPUB exports rebuilt; frozen optional authorities
+  unchanged. U2 received exclusive source-write ownership after that handoff.
+- 2026-11-04: U2/U5/U6 completed their focused corrections. The combined desktop
+  group exposed four existing controls; preserving immediate pump scheduling
+  and capturing transition-wait time before cancellation restored all 567 tests.
+  Python checks pass after correcting only new test typing and a local annotation.
+- 2026-11-04: C16 additionally rejects compiler overrides that can disagree with
+  Tauri's implicit x64 naming. Three new override regressions fail before this
+  guard and pass afterward; a canonical identical-byte rebuild passes throughout.
+- 2026-11-04: Selected Chromium checks passed five and failed two. Preserve both
+  failure artifacts. One geometry fixture missed the `getClientRects` route;
+  the slow-speed case exposed worklet activation before device-resume settlement.
+  U2 owns the bounded correction and affected-check renewal before native build.
+- 2026-11-04: Browser follow-up passes three corrected/control cases. Since the
+  WSOLA dependency and bundled artifact changed, renew the other four Chromium
+  cases and combined desktop group instead of claiming complete input equality.
+  All seven browser cases and all 567 selected desktop tests now pass.
+- 2026-11-04: Current core generation/check and static gates pass. Only the two
+  planned core authority/evidence JSON files change. Renewed Rust tests pass
+  176 default and 175 release-locked cases (eight ignored in each); both Clippy
+  modes pass. The single final desktop build succeeds; native gates are underway.
+- 2026-11-04: Both required Piper modes pass on the same binary. The initial
+  reader-corrections arm passed behavior but failed harness process cleanup;
+  exact owned-process recovery and one unchanged-command infrastructure retry
+  complete successfully. Preserve the failed receipt and isolated failure root.
+  Exact optional v7 admission/removal also passes without inference or downloads;
+  original sources/environment are unchanged and no new host resources remain.
+- 2026-11-04: Current gate-input comparison matches all selected responsibilities.
+  The installed capture differs only by Chromium's append-only diagnostic log;
+  preserve that raw difference and its explicit output-only reconciliation.
+  Independent review is the remaining acceptance gate; no Git mutation occurred.
+- 2026-11-04: CCF-R1-20261104 requests one C08 mounted-geometry coverage fix.
+  Its complete report is preserved in the evidence directory. One writer owns
+  the browser assertion and a guarded temporary original-controller RED run;
+  the exact accepted candidate production bytes must be restored before GREEN.
+  The 23-case classification and production scope are unchanged.
+- 2026-11-04: The strengthened C08 assertion has the intended RED and passes
+  all three selected reflow journeys after exact candidate restoration. Scoped
+  format/lint and full desktop types pass. CCF-R2-20261104 approves all 18 fixes
+  and the 25-group input-equivalence proof, with no open findings. Close the plan
+  and maintain indexes; a separate exact archival assessment covers that final
+  documentation. No staging, commit, push, PR, merge or publication is authorized.
 
 ## Discoveries and decisions
 
@@ -653,11 +714,20 @@ resources before accepting or abandoning a native attempt.
   Most savings come from reusing fixtures/artifacts, selected combined suites,
   one final build and omitting unrelated campaigns. Within-batch reuse still
   requires complete input equivalence and independent review.
+- Rust embeds the core manifest. The initial full Rust run preceded regenerated
+  current Python payload authority and must be renewed after generation. Keep
+  that premature result rather than presenting it as final artifact acceptance.
+- Final native coverage inspection found that new C09/C20 assertions belong to
+  `--exercise-reader-corrections`, not the six-rate selector. The first G9 run
+  passes its selected coverage and restoration but cannot prove those assertions.
+  The existing additional selector runs them with an unavoidable base adaptive
+  matrix, reusing the same verified binary/core and omitting a second six-rate
+  series. This is a documented correction of gate selection, not a flaky retry.
 
 ## Final validation results
 
-Planning-only checks on 2026-11-04 ran in local PowerShell outside the managed
-sandbox:
+The following planning-only checks on 2026-11-04 preceded the implementation
+authorization and ran in local PowerShell outside the managed sandbox:
 
 - Relative-link inspection resolved all 247 local links across this plan and
   the two updated indexes; no missing target was found.
@@ -674,7 +744,42 @@ The authorized planning diff contains only this new plan,
 `docs/plans/active/README.md` and `docs/README.md`. Review the complete staged diff
 and repeat the documentation guard/whitespace check before its local commit.
 
-No tests, application builds, model inference or implementation gates have been
-run for this task. No runtime PASS, completed correction, accepted implementation
-or publication is claimed. The planning-only documentation change is exempt from
-the behavioral `change_reviewer` requirement; future U1-U6 acceptance is not.
+The planning commit ran no tests, application builds, model inference or
+implementation gates and was exempt from behavioral review. No runtime or
+review PASS is implied by those planning checks.
+
+### Accepted implementation
+
+C02, C04-C12, C14, C16 and C18-C23 are corrected. C01/C03 preserve their
+intentional policies, C13/C17 remain explicit policy decisions, and C15 remains
+unconfirmed without a speculative change. C05 covers current consumers and
+current Piper only; the frozen Chatterbox runtime retains its historical
+protocol authority and has no new Unicode-parity claim.
+
+Current host acceptance passes 33 shared, 309 EPUB, 567 desktop, 75 Python,
+120 selected Node and 176/175 default/release-locked Rust tests (eight explicitly
+ignored in each Rust mode), plus seven selected Chromium journeys, relevant
+static/generated checks, the current core checks and one native build. The
+six-rate Piper and reader-corrections modes pass on the same binary; exact local
+optional admission/removal passes without inference. All original host resources
+are restored. The earlier native cleanup failure, its identity-checked recovery
+and the sole successful unchanged-command infrastructure retry remain preserved.
+Its precise infrastructure cause is not established.
+
+The [execution ledger](../evidence/confirmed-chat-findings/execution-ledger.md),
+[executed commands](../evidence/confirmed-chat-findings/validation-commands.md)
+and [changed-file inventory](../evidence/confirmed-chat-findings/changed-files.md)
+record exact commands, failures, results, restoration and scope. No historical
+behavioral PASS was reused for a changed responsibility. Current-batch reuse
+is bound to unchanged complete inputs, fixture/export membership and artifact
+identities; the sole installed-input difference is an explicitly reconciled
+135-byte Chromium output-log append. The
+[R2 review](../evidence/confirmed-chat-findings/review-CCF-R2-20261104.md) approves
+the exact implementation and closes CCF-R1-F1. Final archival review uses its
+separate immutable report named in M3.
+
+The worktree remains on `codex/confirmed-chat-findings-plan` at planning commit
+`4b10dc0a7cc400b5b3c1a9ac2010ceb1e801afef`, with an empty index and uncommitted
+task changes. No Git delivery or publication occurred. Physical speaker
+audibility, frozen-runtime Unicode parity, Chatterbox inference and unrelated
+installer/model/signing campaigns are outside this acceptance.

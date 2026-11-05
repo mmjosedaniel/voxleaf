@@ -2384,11 +2384,12 @@ export function createNativeTtsScenarios({
           JSON.stringify({ schemaVersion: 1, playbackRatePercent: ${rate} }));
         const OriginalContext = globalThis.AudioContext;
         const OriginalNode = globalThis.AudioWorkletNode;
-        const observation = { pending: false, delivered: false, created: 0, closed: 0, starts: 0 };
+        const observation = { pending: false, delivered: false, created: 0, closed: 0, starts: 0, renderedFrames: 0 };
         globalThis.__voxleafPausedEnded = observation;
-        const hold = (callback, event) => {
+        const hold = (callback, event, renderedFrames) => {
           if (observation.delivered || observation.pending) return callback(event);
           observation.pending = true;
+          observation.renderedFrames = renderedFrames;
           observation.release = () => {
             observation.pending = false;
             observation.delivered = true;
@@ -2404,7 +2405,7 @@ export function createNativeTtsScenarios({
             let callback;
             Object.defineProperty(source, "onended", { configurable: true,
               get: () => callback, set: value => { callback = value; } });
-            source.addEventListener("ended", event => { if (callback) hold(callback, event); });
+            source.addEventListener("ended", event => { if (callback) hold(callback, event, source.buffer?.length); });
             return source;
           }
           async close() { await super.close(); observation.closed += 1; }
@@ -2418,7 +2419,7 @@ export function createNativeTtsScenarios({
               get: () => callback, set: value => { callback = value; } });
             port.addEventListener("message", event => {
               if (!callback) return;
-              if (event.data?.type === "ended") hold(callback, event);
+              if (event.data?.type === "ended") hold(callback, event, event.data.renderedFrames);
               else callback(event);
             });
             port.start();
@@ -2456,6 +2457,22 @@ export function createNativeTtsScenarios({
           ),
           "Paused completion lost paused intent.",
         );
+        const renderReceipt = await driver.execute(`
+          const observation = globalThis.__voxleafPausedEnded;
+          const owner = document.querySelector(".product-narration");
+          return {
+            renderedFrames: observation.renderedFrames,
+            playbackMs: Number(owner?.getAttribute("data-narration-playback-ms"))
+          };
+        `);
+        assert(
+          Number.isSafeInteger(renderReceipt.renderedFrames) &&
+            renderReceipt.renderedFrames > 0 &&
+            Math.abs(
+              renderReceipt.playbackMs * 24 - renderReceipt.renderedFrames,
+            ) <= 1,
+          "Paused completion did not account for exactly one rendered unit.",
+        );
         await driver.click(
           await driver.findElement('[data-narration-action="resume"]'),
         );
@@ -2473,7 +2490,7 @@ export function createNativeTtsScenarios({
           STARTUP_TIMEOUT_MS,
         );
         console.error(
-          `CLB02_PAUSED_ENDED ${JSON.stringify({ profileId: ADAPTIVE_TTS_PROFILE_ID, language: ADAPTIVE_TTS_LANGUAGE, rate, paused: true, resumed: true, cleaned: true })}`,
+          `CLB02_PAUSED_ENDED ${JSON.stringify({ profileId: ADAPTIVE_TTS_PROFILE_ID, language: ADAPTIVE_TTS_LANGUAGE, rate, paused: true, resumed: true, cleaned: true, ...renderReceipt })}`,
         );
       } finally {
         await driver.execute(
@@ -2533,6 +2550,12 @@ export function createNativeTtsScenarios({
         4 * STARTUP_TIMEOUT_MS,
       );
       setStage("reader corrections pause before deferred worklet");
+      assert(
+        await driver.execute(`
+          return document.querySelector('[data-narration-action="stop"]')?.textContent?.trim() === "Cancel start";
+        `),
+        "Deferred native worklet did not retain Cancel start.",
+      );
       await driver.click(
         await driver.findElement('[data-narration-action="pause"]'),
       );
@@ -2574,6 +2597,12 @@ export function createNativeTtsScenarios({
         STARTUP_TIMEOUT_MS,
       );
       const audibleAtMs = now() - startedAt;
+      assert(
+        await driver.execute(`
+          return document.querySelector('[data-narration-action="stop"]')?.textContent?.trim() === "Stop";
+        `),
+        "Confirmed native rendering did not restore Stop.",
+      );
       const stopAt = now();
       await driver.click(
         await driver.findElement('[data-narration-action="stop"]'),

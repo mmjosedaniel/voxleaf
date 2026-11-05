@@ -32,6 +32,7 @@ function snapshot(): ProductNarrationSnapshot {
     state: undefined,
     failure: undefined,
     preparationFailure: undefined,
+    hasConfirmedRendering: false,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,
@@ -505,7 +506,7 @@ describe("product narration controls", () => {
     expect(coordinator.recover).toHaveBeenCalledOnce();
   });
 
-  it("uses truthful first-start phases and lets the safe stop path cancel startup", () => {
+  it("CCF-C09 uses confirmed rendering for startup wording independently of latency", () => {
     let current: ProductNarrationSnapshot = Object.freeze({
       ...snapshot(),
       state: Object.freeze({
@@ -562,8 +563,33 @@ describe("product narration controls", () => {
       serviceState: "ready",
     });
     subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(
+      screen.getByRole("button", { name: "Cancel start" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Preparing audio playback.")).toBeInTheDocument();
+    current = Object.freeze({
+      ...current,
+      hasConfirmedRendering: true,
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.getByText("Narration playing.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel start" })).toBeNull();
+    current = Object.freeze({
+      ...current,
+      metrics: { ...current.metrics, commandToAudibleMs: 0 },
+      state: Object.freeze({ ...current.state!, phase: "buffering" }),
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
+    current = Object.freeze({
+      ...current,
+      hasConfirmedRendering: false,
+      state: Object.freeze({ ...current.state!, phase: "complete" }),
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.getByText("Narration complete.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
   });
 
   it("discloses variable Chatterbox load cost before first audible playback", () => {

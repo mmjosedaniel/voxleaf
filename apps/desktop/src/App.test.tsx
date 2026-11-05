@@ -244,6 +244,7 @@ function narrationSnapshot(
     state: undefined,
     failure: undefined,
     preparationFailure: undefined,
+    hasConfirmedRendering: false,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,
@@ -3364,12 +3365,20 @@ describe("desktop reader lifecycle surface", () => {
     expect(writePosition).toHaveBeenCalledTimes(2);
   });
 
-  it("stops narration before resetting language and start preferences", async () => {
+  it("CCF-C12 stops before Reset and finishes its writes before book replacement", async () => {
     const publication = createTestPublication("Reset settings book");
-    const flow = createTestFlow(() =>
-      Promise.resolve({ status: "ready", publication }),
-    );
+    const replacement = createTestPublication("Replacement after reset");
+    const flow = createTestFlow(async (file) => ({
+      status: "ready",
+      publication: file.name === "replacement.epub" ? replacement : publication,
+    }));
     const narration = new ControlledNarrationCoordinator();
+    const nextNarration = new ControlledNarrationCoordinator();
+    let releaseLanguageReset!: (saved: boolean) => void;
+    const languageReset = new Promise<boolean>((resolve) => {
+      releaseLanguageReset = resolve;
+    });
+    const close = vi.spyOn(narration, "close");
     const listeners = new Set<() => void>();
     const snapshot: HardwareCompatibilitySnapshotV1 = Object.freeze({
       status: "compatible",
@@ -3395,7 +3404,7 @@ describe("desktop reader lifecycle surface", () => {
       check: vi.fn(async () => snapshot),
       resetLanguage: vi.fn(async () => {
         narration.configurationEvents.push("language-reset");
-        return true;
+        return languageReset;
       }),
       close: vi.fn(),
     } as unknown as HardwareProfileCompatibilityCoordinator;
@@ -3414,8 +3423,10 @@ describe("desktop reader lifecycle surface", () => {
       <App
         openFlow={flow}
         hardwareCompatibilityCoordinator={hardware}
-        createNarrationCoordinator={() =>
-          narration as unknown as ProductNarrationCoordinator
+        createNarrationCoordinator={(book) =>
+          (book === replacement
+            ? nextNarration
+            : narration) as unknown as ProductNarrationCoordinator
         }
         ReadyPublicationContent={SettledReader}
       />,
@@ -3427,6 +3438,21 @@ describe("desktop reader lifecycle surface", () => {
       screen.getByRole("button", { name: "Reset narration settings" }),
     );
 
+    try {
+      await waitFor(() =>
+        expect(narration.configurationEvents).toEqual([
+          "stop",
+          "language-reset",
+        ]),
+      );
+      const open = screen.getByLabelText("Open a book");
+      selectEpub("replacement.epub");
+      expect(flow.open).toHaveBeenCalledTimes(1);
+      expect(close).not.toHaveBeenCalled();
+      expect(open).toBeDisabled();
+    } finally {
+      await act(async () => releaseLanguageReset(true));
+    }
     await waitFor(() =>
       expect(narration.configurationEvents).toEqual([
         "stop",
@@ -3436,6 +3462,11 @@ describe("desktop reader lifecycle surface", () => {
         "refresh",
       ]),
     );
+    expect(screen.getByLabelText("Open a book")).toBeEnabled();
+    selectEpub("replacement.epub");
+    await screen.findByRole("heading", { name: "Replacement after reset" });
+    expect(close).toHaveBeenCalled();
+    expect(nextNarration.configurationEvents).toEqual([]);
   });
 
   it("contains renderer failures, clears publication data, and starts cleanup", async () => {

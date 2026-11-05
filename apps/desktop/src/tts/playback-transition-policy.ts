@@ -23,7 +23,7 @@ export type PlaybackTransitionPauseMs =
   0 | 150 | 300 | 400 | 600 | 750 | 900 | 1_200;
 
 const TERMINAL_ELLIPSIS =
-  /(?:\.{3}|\u2026)(?:["'\u00bb\u201d\u2019)\]}]*)\s*$/u;
+  /(?:\.{3}|\u2026)(?:["'\u00bb\u201d\u2019\u203a)\]}]*)\s*$/u;
 
 export function isPlaybackTransitionPauseMs(
   value: number,

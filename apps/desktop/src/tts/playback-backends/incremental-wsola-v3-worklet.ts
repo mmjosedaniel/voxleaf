@@ -5,6 +5,7 @@ const SYNTHESIS_HOP_FRAMES = GRAIN_FRAMES - OVERLAP_FRAMES;
 const SEARCH_RADIUS_FRAMES = 144;
 const CORRELATION_STEP_FRAMES = 4;
 const OUTPUT_RING_FRAMES = 4_096;
+const RENDER_RECEIPT_INTERVAL_FRAMES = 6_000;
 
 interface ArmMessage {
   readonly type: "arm";
@@ -73,6 +74,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   #paused = false;
   #ratePercent = 100;
   #renderedFrames = 0;
+  #reportedRenderedFrames = 0;
   #startedReported = false;
   #activation = 0;
   #resumePending = false;
@@ -128,6 +130,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
         type: "paused",
         activation: this.#activation,
         sourceFrames: this.#consumedSourceFrames(),
+        renderedFrames: this.#renderedFrames,
         unitSequence: this.#unitSequence,
       });
       return;
@@ -178,6 +181,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
     this.#analysisFrame = 0;
     this.#nextOutputFrame = 0;
     this.#renderedFrames = 0;
+    this.#reportedRenderedFrames = 0;
     this.#outputAccumulator.fill(0);
     this.#outputWeights.fill(0);
     this.#referenceOverlap.fill(0);
@@ -362,6 +366,16 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
         renderedFrames: completedRenderedFrames,
         sourceFrames: completedSourceFrames,
         unitSequence: completedSequence,
+      });
+    } else if (
+      this.#renderedFrames - this.#reportedRenderedFrames >=
+      RENDER_RECEIPT_INTERVAL_FRAMES
+    ) {
+      this.#reportedRenderedFrames = this.#renderedFrames;
+      this.port.postMessage({
+        type: "rendered",
+        renderedFrames: this.#renderedFrames,
+        unitSequence: this.#unitSequence,
       });
     }
     return true;

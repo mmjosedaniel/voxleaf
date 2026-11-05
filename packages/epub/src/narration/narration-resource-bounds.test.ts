@@ -234,6 +234,83 @@ it("SAF-10 discards warm lexical context on cancellation before retry", async ()
   }
   expect(fixture.archive.closeCount).toBe(1);
 });
+
+it("CCF-C21 charges long language tags once each across public preparation and titles", async () => {
+  const longTag = `en-x${"-abcdefgh".repeat(1_024)}`;
+  const measure = async (tag: string) => {
+    const fixture = createNarrationPublication([
+      { value: "before Dr. Morgan.", language: tag },
+      { value: "before Dr. Smith.", language: tag },
+      ...["a", "b", "c"].map((suffix) => ({
+        value: "before Dr. Quinn.",
+        language: `${tag}-${suffix}`,
+      })),
+      { value: "before Dr. Jones.", language: `${tag}-!` },
+    ]);
+    try {
+      const result = await fixture.publication.prepareNarration({
+        startLocator: fixture.start,
+        maximumSegments: 16,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+      });
+      if (result.status !== "complete")
+        throw new Error(`synthetic-language-preparation:${result.status}`);
+      expect(result.segments.map((segment) => segment.text)).toEqual([
+        "before Doctor Morgan.",
+        "before Doctor Smith.",
+        ...Array<string>(3).fill("before Doctor Quinn."),
+        "before Dr. Jones.",
+      ]);
+      const charged = result.measurements.workUnitsCharged;
+      if (charged === undefined)
+        throw new Error("synthetic-language-work-measurement-missing");
+      return charged;
+    } finally {
+      await fixture.publication.close();
+    }
+  };
+  expect((await measure(longTag)) - (await measure("en-x-abcdefgh"))).toBe(
+    5 * (longTag.length - "en-x-abcdefgh".length),
+  );
+});
+
+it("CCF-C21 yields within long-tag classification and cancels before publication", async () => {
+  const deferred = createDeferredYieldScheduler();
+  const fixture = createNarrationPublication(
+    [{ value: "before Dr. Morgan.", language: `en-x${"-abc".repeat(3_000)}` }],
+    { scheduler: deferred.scheduler },
+  );
+  const controller = new AbortController();
+  const request = {
+    startLocator: fixture.start,
+    maximumSegments: 1,
+    profile: "narration-piper-v2",
+    defaultLanguage: "en",
+  } as const;
+  try {
+    const active = fixture.publication.prepareNarration({
+      ...request,
+      signal: controller.signal,
+    });
+    const first = await Promise.race([
+      deferred.started.then(() => "yielded"),
+      active.then((result) => result.status),
+    ]);
+    expect(first).toBe("yielded");
+    controller.abort();
+    deferred.release();
+    expect(await active).toMatchObject({ status: "cancelled" });
+    const retry = await fixture.publication.prepareNarration(request);
+    if (retry.status !== "complete")
+      throw new Error(`synthetic-language-retry:${retry.status}`);
+    expect(retry.segments[0]?.text).toBe("before Doctor Morgan.");
+  } finally {
+    deferred.release();
+    await fixture.publication.close();
+  }
+});
+
 const RESOURCE_SNAPSHOT_KEYS = Object.freeze([
   "activeRequestCount",
   "retainedNarrationCodePoints",
@@ -526,7 +603,9 @@ interface NarrationPublicationOptions {
 }
 
 function createNarrationPublication(
-  texts: readonly string[],
+  texts: readonly (
+    string | { readonly value: string; readonly language: string }
+  )[],
   options: NarrationPublicationOptions = {},
 ): Readonly<{
   archive: SyntheticArchive;
@@ -562,13 +641,15 @@ function createNarrationPublication(
     throw new Error("synthetic narration resource fixture requires content");
   }
   const blocks = Object.freeze(
-    texts.map((value, index) => {
+    texts.map((entry, index) => {
+      const value = typeof entry === "string" ? entry : entry.value;
       const block = Object.freeze({
         kind: "paragraph" as const,
         children: Object.freeze([
           Object.freeze({
             kind: "text" as const,
             text: value as SensitivePublicationText,
+            ...(typeof entry === "string" ? {} : { language: entry.language }),
           }),
         ]),
       });

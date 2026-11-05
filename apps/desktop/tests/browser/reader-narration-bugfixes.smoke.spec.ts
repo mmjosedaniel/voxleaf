@@ -4,7 +4,7 @@ import report from "../../../../packages/shared/fixtures/contracts/host-profile-
 
 import { closeSettings, openSettings } from "./settings-helpers";
 
-test("CAF-1 contents dismissal and initial fallback retain the precise checkpoint", async ({
+test("CCF-C02 / CAF-1 contents dismissal and initial fallback retain the precise checkpoint", async ({
   page,
 }) => {
   await installSyntheticService(page, true, false, false, true);
@@ -16,8 +16,7 @@ test("CAF-1 contents dismissal and initial fallback retain the precise checkpoin
       await (
         await fixtures()
       ).buildMinimalEpubFixture({
-        chapterDocument:
-          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p id="target">Synthetic target passage for initial placement.</p></body></html>',
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p id="target">${"Synthetic target passage for initial placement. ".repeat(40)}</p></body></html>`,
         navigationDocument:
           '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#target">Target passage</a></li></ol></nav></body></html>',
       }),
@@ -44,12 +43,14 @@ test("CAF-1 contents dismissal and initial fallback retain the precise checkpoin
     const envelope = JSON.parse(
       localStorage.getItem("voxleaf.reader.positions")!,
     );
-    envelope.states[0].locator.textOffsetCodePoints = 10;
+    envelope.states[0].locator.textOffsetCodePoints = 800;
     return JSON.stringify(envelope);
   });
   await page.reload();
   await page.evaluate((value) => {
     localStorage.setItem("voxleaf.reader.positions", value);
+    const noLineRects = document.createRange().getClientRects();
+    Range.prototype.getClientRects = () => noLineRects;
     Range.prototype.getBoundingClientRect = () =>
       new DOMRect(0, 100_000, 10, 20);
     Reflect.get(globalThis, "__rnb").deferConfiguration = true;
@@ -1328,7 +1329,7 @@ test("NSL-03 Stop finishes containment before Prepared-120000 changes to Quick",
   ).toBe(0);
 });
 
-test("NSL-04 pending Reset stays owned across Settings close and protects mode and compact speed", async ({
+test("CCF-C12 / NSL-04 pending Reset protects mode, compact speed, and the current book", async ({
   page,
 }) => {
   await installSyntheticService(page, false, false, false, true);
@@ -1352,6 +1353,17 @@ test("NSL-04 pending Reset stays owned across Settings close and protects mode a
     )
     .toBe(true);
   await closeSettings(page, settings);
+  const bookPicker = page.getByLabel("Open a book");
+  await expect(bookPicker).toBeDisabled();
+  await bookPicker.evaluate((input: HTMLInputElement) => {
+    const files = new DataTransfer();
+    files.items.add(
+      new File(["synthetic blocked replacement"], "blocked.epub"),
+    );
+    input.files = files.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator(".product-narration")).toHaveCount(1);
   await expect(
     page.getByRole("combobox", { name: "Playback speed" }),
   ).toBeDisabled();
@@ -1375,6 +1387,7 @@ test("NSL-04 pending Reset stays owned across Settings close and protects mode a
     settings.getByRole("radio", { name: /Prepared playback/ }),
   ).toBeChecked();
   await closeSettings(page, settings);
+  await expect(bookPicker).toBeEnabled();
   await page
     .getByRole("combobox", { name: "Playback speed" })
     .selectOption("75");
@@ -3313,9 +3326,16 @@ test("NCC final RCF-16 device completion retains newer inspected viewport and ex
   }
 });
 
-test("RIA-03 pending device start and resume preserve heard state and exclude waiting metrics", async ({
-  page,
-}) => {
+for (const rate of [100, 75] as const) {
+  test(`CCF-C07/C09/C20 / RIA-03 preflight cancellation and confirmed rendering at ${rate}%`, ({
+    page,
+  }) => exerciseConfirmedRendering(page, rate));
+}
+
+async function exerciseConfirmedRendering(
+  page: Page,
+  rate: 100 | 75,
+): Promise<void> {
   await installSyntheticService(
     page,
     true,
@@ -3329,7 +3349,12 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
   );
   await page.addInitScript(() => {
     const Original = globalThis.AudioContext;
-    const gate = { pending: false, release: () => {}, reject: () => {} };
+    const gate = {
+      pending: false,
+      suspended: false,
+      release: () => {},
+      reject: () => {},
+    };
     Object.assign(globalThis, { __ria: gate });
     globalThis.AudioContext = class extends Original {
       override resume(): Promise<void> {
@@ -3344,6 +3369,10 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
             reject(new Error("synthetic device rejection"));
           };
         });
+      }
+      override async suspend(): Promise<void> {
+        await super.suspend();
+        gate.suspended = true;
       }
     };
   });
@@ -3362,11 +3391,41 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
   const narration = page.locator(".product-narration");
   const saved = () =>
     page.evaluate(() => localStorage.getItem("voxleaf.reader.positions"));
-  await page.locator('[data-narration-action="play"]').click();
+  const play = page.locator('[data-narration-action="play"]');
+  await expect(play).toBeEnabled();
+  if (rate === 75) {
+    await page
+      .getByRole("combobox", { name: "Playback speed" })
+      .selectOption("75");
+    await page.evaluate(() => {
+      Reflect.get(globalThis, "__rnb").deferConfiguration = true;
+    });
+    await play.click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").configurationPending,
+        ),
+      )
+      .toBe(true);
+    await page.getByRole("button", { name: "Cancel start" }).click();
+    await expect(play).toBeEnabled();
+    expect(
+      await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+    ).toBe(0);
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseConfiguration(),
+    );
+  }
+  await play.click();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").pending))
     .toBe(true);
   const before = await saved();
+  await expect(
+    page.getByRole("button", { name: "Cancel start" }),
+  ).toBeVisible();
+  await expect(narration.getByText("Preparing audio playback.")).toBeVisible();
   await page.waitForTimeout(400);
   await expect(narration).toHaveAttribute(
     "data-narration-command-to-audible-ms",
@@ -3383,14 +3442,26 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
       page.evaluate(() => CSS.highlights.has("voxleaf-narration-active")),
     )
     .toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeVisible();
   await page.locator('[data-narration-action="pause"]').click();
-  const paused = Number(
-    await narration.getAttribute("data-narration-playback-ms"),
-  );
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").suspended))
+    .toBe(true);
+  if (rate === 75)
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").workletPaused),
+      )
+      .toBe(true);
   await page.locator('[data-narration-action="resume"]').click();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").pending))
     .toBe(true);
+  const paused = Number(
+    await narration.getAttribute("data-narration-playback-ms"),
+  );
   await page.waitForTimeout(400);
   expect(
     Number(await narration.getAttribute("data-narration-playback-ms")),
@@ -3419,7 +3490,36 @@ test("RIA-03 pending device start and resume preserve heard state and exclude wa
       }),
     )
     .toBe(0);
-});
+
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").naturalAudioFrames = 120;
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-ccf-short.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>Short synthetic passage.</p></body></html>',
+      }),
+    ),
+  });
+  await expect(play).toBeEnabled();
+  await play.click();
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__ria").pending))
+    .toBe(true);
+  await page.evaluate(() => Reflect.get(globalThis, "__ria").release());
+  await expect(narration).toHaveAttribute("data-narration-phase", "complete");
+  await expect(narration).toHaveAttribute(
+    "data-narration-playback-ms",
+    String(Math.ceil(12_000 / rate) / 24),
+  );
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(play).toBeEnabled();
+}
 
 async function installSyntheticService(
   page: Page,
@@ -3512,6 +3612,7 @@ async function installSyntheticService(
           offset: number;
         }>,
         workletEnded: false,
+        workletPaused: false,
         workletFailed: false,
         workletMessages: [] as string[],
         workletNodes: [] as AudioWorkletNode[],
@@ -3638,6 +3739,8 @@ async function installSyntheticService(
             }
             this.port.addEventListener("message", (event) => {
               if (event.data.type === "ended") observations.ended += 1;
+              if (event.data.type === "paused")
+                observations.workletPaused = true;
             });
             this.port.start();
             if (auditWorkletFIFO) {

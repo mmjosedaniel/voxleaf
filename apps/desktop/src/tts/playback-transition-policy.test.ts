@@ -64,6 +64,19 @@ describe("playback transition pause policy v1", () => {
     }
   });
 
+  it("CCF-C19 recognizes both ellipses before the single guillemet at paragraph end", () => {
+    for (const text of ["‹Espera…›", "‹Espera...›"]) {
+      expect(
+        playbackTransitionPauseMsForPreparedSegment(segment("paragraph", text)),
+      ).toBe(900);
+      expect(
+        playbackTransitionPauseMsForPreparedSegment(
+          segment("paragraph", `${text} Luego.`),
+        ),
+      ).toBe(600);
+    }
+  });
+
   it("admits only frozen bounded numeric delays", () => {
     for (const value of [0, 150, 300, 400, 600, 750, 900, 1_200]) {
       expect(isPlaybackTransitionPauseMs(value)).toBe(true);

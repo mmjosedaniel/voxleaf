@@ -18,6 +18,7 @@ import type { XhtmlDocumentProjection } from "../document/xhtml-projector.js";
 import { createPublicationLocatorIndex } from "../locator/locator-index.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import {
+  NarrationLanguageClassifier,
   normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens,
   summarizeEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
@@ -145,7 +146,7 @@ it.each([
     const preceding = summarizeEnglishTitleContext(
       full.sourceTokens,
       cut,
-      "en",
+      new NarrationLanguageClassifier("en"),
     );
     const tokens = full.sourceTokens.slice(cut);
     const normalized = normalizeBilingualNarrationSourceTokens(
@@ -296,11 +297,30 @@ describe("narration normalization", () => {
   it.each([
     ["BNC-R1", "es", "21 E\u2060UR", "21 EUR"],
     ["BNC-R1", "es", "21 EU\u2060R", "21 EUR"],
+    [
+      "CCF-C06",
+      "en",
+      "120 EURASIAN birds",
+      "one hundred twenty EURASIAN birds",
+    ],
+    [
+      "CCF-C06",
+      "en",
+      "120 E\u2060URASIAN birds",
+      "one hundred twenty EURASIAN birds",
+    ],
+    ["CCF-C06", "en", "120 E\u2060UR birds", "120 EUR birds"],
     ["BNC-02", "en", "1\u20608", "18"],
     ["BNC-02", "en", "1\u200b8", "18"],
     ["CAF-R3.2", "en", "14:30%", "14:30%"],
     ["CAF-R3.2", "en", "$12.50%", "$12.50%"],
     ["CAF-R3.2", "es", "14:30%", "14:30%"],
+    ["CCF-C22", "en", "14:30 %", "14:30 %"],
+    ["CCF-C22", "es", "14:30\u2060\u00a0%", "14:30 %"],
+    ["CCF-C22", "en", "$12.50 %", "$12.50 %"],
+    ["CCF-C22", "es", "20 EUR %", "20 EUR %"],
+    ["CCF-C22", "en", "25 %", "twenty-five percent"],
+    ["CCF-C22", "en", "25%", "25%"],
     ["CAF-R3.2", "en", "25%%", "25%%"],
     ["BNC-02", "en", "1\u00ad8", "18"],
     ["BNC-02", "en", "a\u20608", "a8"],
@@ -312,6 +332,12 @@ describe("narration normalization", () => {
     ["BNC-03", "es", "21\u00a0\u00a0%", "21 %"],
     ["BNC-03", "es", "21\u202f\u202fEUR", "21 EUR"],
     ["BNC-04", "es", "20 °C-25 °C", "20 °C-25 °C"],
+    ["CCF-C18", "es", "20 °C–25 °C", "20 °C–25 °C"],
+    ["CCF-C18", "en", "20 °C – 25 °C", "20 °C – 25 °C"],
+    ["CCF-C18", "es", "20 °C - 25 °C", "20 °C - 25 °C"],
+    ["CCF-C18", "en", "20 °C– 20 °C", "20 °C– 20 °C"],
+    ["CCF-C18", "en", "20 °C – windy", "twenty degrees Celsius – windy"],
+    ["CCF-C18", "es", "Frío – 20 °C", "Frío – veinte grados Celsius"],
     ["BNC-04", "en", "20 °C/8", "20 °C/8"],
     ["BNC-04", "en", "20 °C+１", "20 °C+１"],
     ["BNC-04", "es", "(20 °C),", "(veinte grados Celsius),"],
@@ -1481,7 +1507,11 @@ it.each(["foreign", "code"] as const)(
         "en",
       ),
     );
-    const preceding = summarizeEnglishTitleContext(leaf.sourceTokens, 6, "en");
+    const preceding = summarizeEnglishTitleContext(
+      leaf.sourceTokens,
+      6,
+      new NarrationLanguageClassifier("en"),
+    );
     const normalized = normalizeBilingualNarrationSourceTokens(
       leaf.sourceTokens.slice(6),
       "en",

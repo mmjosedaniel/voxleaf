@@ -1,3 +1,10 @@
+import {
+  ProductNarrationCoordinator,
+  type ProductNarrationAudibleProgressObservation,
+  type ProductNarrationNavigationRequest,
+  type ProductNarrationSnapshot,
+} from "../tts/product-narration-coordinator";
+import { TtsProcessClient } from "../tts/process-client";
 import type {
   ContentDocumentId,
   OpenedPublication,
@@ -46,11 +53,6 @@ import type {
   SegmentHighlightRect,
 } from "./segment-highlight-controller";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
-import type {
-  ProductNarrationAudibleProgressObservation,
-  ProductNarrationNavigationRequest,
-  ProductNarrationSnapshot,
-} from "../tts/product-narration-coordinator";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "../tts/operational-recovery";
 
 const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
@@ -295,6 +297,8 @@ function narrationSnapshot(
           }),
     failure: undefined,
     preparationFailure: undefined,
+    hasConfirmedRendering:
+      phase === "playing" || phase === "paused" || phase === "complete",
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,
@@ -1043,6 +1047,106 @@ describe("navigable publication reader", () => {
         locator,
       });
       expect(persisted).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["mounted", "late"] as const)(
+    "CCF-C02 prepares from the fallback before enabling Play for a %s narrator",
+    async (attachment) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"A synthetic sentence for the next segment. ".repeat(40)}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-reader-open-failed");
+      const { publication } = opened;
+      const startLocator = publication.defaultStartLocator!;
+      const baseline = await publication.prepareNarration({
+        startLocator,
+        profile: "narration-bilingual-v2",
+        defaultLanguage: "en",
+        maximumSegments: 4,
+      });
+      if (baseline.status !== "batch" && baseline.status !== "complete")
+        throw new Error("synthetic-reader-prepare-failed");
+      const laterSegment = baseline.segments[1]!;
+      const initialLocator = decodeReadingLocatorV1({
+        ...laterSegment.sourceRange.start,
+        textOffsetCodePoints:
+          laterSegment.sourceRange.start.textOffsetCodePoints + 1,
+      });
+      expect(initialLocator.textOffsetCodePoints).toBeGreaterThan(
+        startLocator.textOffsetCodePoints,
+      );
+      const client = new TtsProcessClient();
+      vi.spyOn(client, "exactDemoAvailability").mockResolvedValue("available");
+      vi.spyOn(client, "profileConfigurationAvailability").mockResolvedValue(
+        "available",
+      );
+      vi.spyOn(client, "start").mockResolvedValue(client.observe());
+      vi.spyOn(client, "prepare").mockResolvedValue(client.observe());
+      const prepare = vi.spyOn(
+        Object.getPrototypeOf(publication) as OpenedPublication,
+        "prepareNarration",
+      );
+      const narrator = new ProductNarrationCoordinator(
+        publication,
+        initialLocator,
+        { client },
+      );
+      const environment = new ManualReaderReflowEnvironment();
+      vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+      const onSettledLocatorChange = vi.fn();
+      const viewProps = {
+        publication,
+        initialLocator,
+        restoreInitialLocator: true,
+        reflowEnvironment: environment,
+        onSettledLocatorChange,
+      };
+      try {
+        await narrator.checkAvailability();
+        narrator.beginReaderPlacement();
+        // Start synchronously from the first available publication snapshot.
+        const unsubscribe = narrator.subscribe(() => {
+          if (
+            narrator.observe().navigation.canStart &&
+            narrator.observe().navigation.playIntent === "inactive" &&
+            prepare.mock.calls.length === 0
+          )
+            narrator.startAtVisibleLocator();
+        });
+        try {
+          const view = render(
+            <ReaderPublicationContent
+              {...viewProps}
+              {...(attachment === "mounted"
+                ? { narrationSource: narrator }
+                : {})}
+            />,
+          );
+          act(() => environment.flushAll());
+          if (attachment === "late")
+            view.rerender(
+              <ReaderPublicationContent
+                {...viewProps}
+                narrationSource={narrator}
+                onNavigationSettlement={(settlement) =>
+                  narrator.settleReaderPlacement(settlement)
+                }
+              />,
+            );
+          await vi.waitFor(() => expect(prepare).toHaveBeenCalled());
+          expect(prepare.mock.calls[0]![0].startLocator).toEqual(startLocator);
+          expect(onSettledLocatorChange).not.toHaveBeenCalled();
+        } finally {
+          unsubscribe();
+        }
+      } finally {
+        prepare.mockRestore();
+        await narrator.close();
+        await publication.close();
+      }
     },
   );
 

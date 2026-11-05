@@ -70,6 +70,7 @@ function snapshot(
     state: phase === undefined ? undefined : uiState(phase),
     failure: phase === "failed" ? "tts-service-failed" : undefined,
     preparationFailure: undefined,
+    hasConfirmedRendering: false,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,

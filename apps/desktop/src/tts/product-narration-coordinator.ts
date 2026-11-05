@@ -125,6 +125,7 @@ export interface ProductNarrationSnapshot {
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
   readonly preparationFailure: NarrationPreparationFailureDetail | undefined;
+  readonly hasConfirmedRendering: boolean;
   readonly metrics: ProductNarrationMetrics;
   readonly serviceState: TtsProcessClientObservation["state"];
   readonly navigation: ProductNarrationNavigationSnapshot;
@@ -231,6 +232,11 @@ interface PendingNavigation {
   readonly stop: Promise<void>;
   restart: boolean;
   target: ReadingLocatorV1 | undefined;
+}
+
+interface PumpOperation {
+  promise?: Promise<void>;
+  startPreflight: boolean;
 }
 
 function defaultIdentifier(
@@ -418,7 +424,7 @@ export class ProductNarrationCoordinator {
   #volumePercent: number =
     ADAPTIVE_BUFFER_AUTHORITY_V1.playback.defaultVolumePercent;
   #playerAudibleUnsubscribe: (() => void) | undefined;
-  #operation: Promise<void> | undefined;
+  #operation: PumpOperation | undefined;
   #stopOperation: Promise<void> | undefined;
   #recoveryResetPending = false;
   #recoveryOperation: Promise<void> | undefined;
@@ -433,16 +439,17 @@ export class ProductNarrationCoordinator {
   #preparationFailure: NarrationPreparationFailureDetail | undefined;
   #terminalState: AdaptivePreparationUiState | undefined;
   #snapshot: ProductNarrationSnapshot;
+  #hasConfirmedRendering = false;
   #commandStartedAtMs: number | undefined;
   #commandToAudibleMs: number | undefined;
   #bufferingMs = 0;
   #intentionalWaitMs = 0;
-  #playbackMs = 0;
+  #renderedSampleFrames = 0;
   #underrunCount = 0;
   #lastPlayerUnderrunCount = 0;
   #lastMetricsAtMs: number | undefined;
   #lastPlayerPhase: AdaptivePcmPlayerObservation["state"] | undefined;
-  #lastPlayerAudible = false;
+  #lastPlayerRenderedSampleFrames = 0;
   #lastPlayerIntentionalWaitMs = 0;
   #acceptedAudioUnitCount = 0;
   #acceptedAudioSampleFrames = 0;
@@ -778,8 +785,13 @@ export class ProductNarrationCoordinator {
     if (this.#closed || !this.#canPersistPlaybackPreference) {
       return false;
     }
+    const revision = this.#playbackPreferenceRevision;
     const result = await this.#playbackPreferenceRepository.reset();
-    if (this.#closed || result.status !== "saved") {
+    if (
+      this.#closed ||
+      revision !== this.#playbackPreferenceRevision ||
+      result.status !== "saved"
+    ) {
       return false;
     }
     try {
@@ -791,6 +803,8 @@ export class ProductNarrationCoordinator {
       return false;
     }
     this.#playbackRatePercent = DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1;
+    this.#playbackRateFallback = false;
+    this.#playbackPreferenceRevision += 1;
     this.#updateRetainedPlaybackRate();
     this.#playbackPreferenceStatus = "ready";
     this.#publish();
@@ -1116,10 +1130,11 @@ export class ProductNarrationCoordinator {
     try {
       this.#recovery.resetEpisode();
       this.#bufferingMs = 0;
-      this.#playbackMs = 0;
+      this.#renderedSampleFrames = 0;
       this.#intentionalWaitMs = 0;
       this.#underrunCount = 0;
       const player = this.#player?.synchronize();
+      this.#lastPlayerRenderedSampleFrames = player?.renderedSampleFrames ?? 0;
       this.#lastPlayerUnderrunCount = player?.underrunCount ?? 0;
       this.#lastPlayerIntentionalWaitMs =
         player?.intentionalTransitionPauseMs ?? 0;
@@ -1155,11 +1170,12 @@ export class ProductNarrationCoordinator {
     // Only resetRecoveryEpisode clears them; Stop/Play and recovery replace owners.
     this.#lastPlayerUnderrunCount = 0;
     this.#lastPlayerIntentionalWaitMs = 0;
+    this.#lastPlayerRenderedSampleFrames = 0;
+    this.#hasConfirmedRendering = false;
     this.#commandToAudibleMs = undefined;
     this.#commandStartedAtMs = this.#clock.nowMs;
     this.#lastMetricsAtMs = this.#clock.nowMs;
     this.#lastPlayerPhase = "preparing";
-    this.#lastPlayerAudible = false;
     const runToken = ++this.#runToken;
     const identity = Object.freeze({
       sessionId: this.#createIdentifier!("session", runToken),
@@ -1182,12 +1198,15 @@ export class ProductNarrationCoordinator {
           observation.generationId === this.#identity.generationId
         ) {
           if (observation.kind === "segment-started") {
-            try {
-              if (this.#player !== undefined) {
-                this.#updateMetrics(this.#player.observe(), true);
+            if (!this.#hasConfirmedRendering) {
+              this.#hasConfirmedRendering = true;
+              if (this.#commandStartedAtMs !== undefined) {
+                // This is first confirmation, an upper bound when delivery is delayed.
+                this.#commandToAudibleMs = Math.max(
+                  0,
+                  this.#clock.nowMs - this.#commandStartedAtMs,
+                );
               }
-            } catch {
-              // Metrics cannot suppress the authoritative audible boundary.
             }
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
@@ -1423,8 +1442,8 @@ export class ProductNarrationCoordinator {
     // A preference-only teardown retains the final heard highlight. A stopped
     // or absent phase would clear it before the new consistent mode is published.
     if (completedState !== undefined) this.#terminalState = completedState;
-    this.#captureFinalMetrics(player);
     const transition = player.close();
+    this.#captureFinalMetrics(player);
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
@@ -1470,7 +1489,9 @@ export class ProductNarrationCoordinator {
     try {
       await this.#withinCleanupDeadline(
         Promise.all([
-          operation?.catch(() => undefined) ?? Promise.resolve(),
+          operation?.startPreflight === false
+            ? (operation.promise?.catch(() => undefined) ?? Promise.resolve())
+            : Promise.resolve(),
           player.waitForCleanup(),
         ]),
         cleanupDeadline,
@@ -1803,9 +1824,14 @@ export class ProductNarrationCoordinator {
       if (action === undefined || action.kind === "none") {
         return;
       }
-      const operation = this.#execute(action, runToken);
+      const operation: PumpOperation = {
+        startPreflight: action.kind === "start-service",
+      };
+      // Install ownership before an action can publish or invoke a callback.
       this.#operation = operation;
-      void operation.finally(() => {
+      const promise = this.#execute(action, runToken, operation);
+      operation.promise = promise;
+      void promise.finally(() => {
         if (this.#operation === operation) {
           this.#operation = undefined;
         }
@@ -1820,9 +1846,14 @@ export class ProductNarrationCoordinator {
   async #execute(
     action: Exclude<AdaptiveBufferSchedulerAction, { kind: "none" }>,
     runToken: number,
+    operation: PumpOperation,
   ): Promise<void> {
     const scheduler = this.#scheduler;
-    if (scheduler === undefined) {
+    const isCurrent = () =>
+      !this.#closed &&
+      runToken === this.#runToken &&
+      scheduler === this.#scheduler;
+    if (scheduler === undefined || !isCurrent()) {
       return;
     }
     try {
@@ -1835,12 +1866,7 @@ export class ProductNarrationCoordinator {
           const freshObservation = this.#profileCompatibility?.check;
           if (freshObservation !== undefined) {
             await this.#profileCompatibility!.check!("before-profile-start");
-            if (
-              this.#closed ||
-              runToken !== this.#runToken ||
-              scheduler !== this.#scheduler
-            )
-              return;
+            if (!isCurrent()) return;
           }
           const selectedProfileId =
             this.#profileCompatibility?.activeProfileId?.();
@@ -1880,23 +1906,13 @@ export class ProductNarrationCoordinator {
               this.#profileCompatibility.activeProfileId() === profileId) &&
             (this.#profileCompatibility?.activeLanguage === undefined ||
               this.#profileCompatibility.activeLanguage() === language);
-          if (
-            this.#closed ||
-            runToken !== this.#runToken ||
-            scheduler !== this.#scheduler
-          )
-            return;
+          if (!isCurrent()) return;
           const configurationAvailable =
             hardwareAllowed &&
             selectionMatches() &&
             (await this.#client.profileConfigurationAvailability(profileId)) ===
               "available";
-          if (
-            this.#closed ||
-            runToken !== this.#runToken ||
-            scheduler !== this.#scheduler
-          )
-            return;
+          if (!isCurrent()) return;
           if (!configurationAvailable || !selectionMatches()) {
             if (runToken === this.#runToken) {
               this.#availability = "unavailable";
@@ -1909,11 +1925,14 @@ export class ProductNarrationCoordinator {
             }
             return;
           }
+          if (!isCurrent()) return;
           scheduler.beginServiceStart();
           this.#publish();
+          if (!isCurrent()) return;
           this.#profileId = profileId;
           this.#language = language;
           this.#selectSegmentationContext(profileId, language);
+          operation.startPreflight = false;
           await this.#client.start(profileId, language);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
@@ -2146,10 +2165,7 @@ export class ProductNarrationCoordinator {
     }
   }
 
-  #updateMetrics(
-    player: AdaptivePcmPlayerObservation,
-    confirmedStart = false,
-  ): void {
+  #updateMetrics(player: AdaptivePcmPlayerObservation): void {
     const nowMs = this.#clock.nowMs;
     const intentionalWaitDelta = Math.max(
       0,
@@ -2159,27 +2175,21 @@ export class ProductNarrationCoordinator {
       const elapsed = nowMs - this.#lastMetricsAtMs;
       if (this.#lastPlayerPhase === "buffering") {
         this.#bufferingMs += elapsed;
-      } else if (this.#lastPlayerAudible) {
-        this.#playbackMs += Math.max(0, elapsed - intentionalWaitDelta);
       }
     }
+    this.#renderedSampleFrames += Math.max(
+      0,
+      player.renderedSampleFrames - this.#lastPlayerRenderedSampleFrames,
+    );
+    this.#lastPlayerRenderedSampleFrames = player.renderedSampleFrames;
     this.#intentionalWaitMs += intentionalWaitDelta;
     this.#underrunCount += Math.max(
       0,
       player.underrunCount - this.#lastPlayerUnderrunCount,
     );
     this.#lastPlayerUnderrunCount = player.underrunCount;
-    const audible = player.state === "playing" && player.rendering;
-    if (
-      (audible || confirmedStart) &&
-      this.#commandToAudibleMs === undefined &&
-      this.#commandStartedAtMs !== undefined
-    ) {
-      this.#commandToAudibleMs = Math.max(0, nowMs - this.#commandStartedAtMs);
-    }
     this.#lastMetricsAtMs = nowMs;
     this.#lastPlayerPhase = player.state;
-    this.#lastPlayerAudible = audible;
     this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
   }
 
@@ -2230,7 +2240,6 @@ export class ProductNarrationCoordinator {
     const scheduler = this.#scheduler;
     const player = this.#player;
     const containmentToken = ++this.#runToken;
-    this.#captureFinalMetrics(player);
     this.#identity = undefined;
     if (!wasRecovering) {
       this.#recovery.markIdentityInvalidated();
@@ -2238,6 +2247,7 @@ export class ProductNarrationCoordinator {
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
     const transition = player?.close();
+    this.#captureFinalMetrics(player);
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
@@ -2268,9 +2278,9 @@ export class ProductNarrationCoordinator {
           Math.min(cleanupDeadline, this.#clock.nowMs + terminationMaximumMs),
         );
       }
-      if (operation !== undefined) {
+      if (operation?.promise !== undefined) {
         await this.#withinCleanupDeadline(
-          operation.catch(() => undefined),
+          operation.promise.catch(() => undefined),
           cleanupDeadline,
         );
       }
@@ -2303,10 +2313,10 @@ export class ProductNarrationCoordinator {
       } catch {
         cleanupFailure ??= "cleanup-failed";
       }
-      if (operation !== undefined) {
+      if (operation?.promise !== undefined) {
         try {
           await this.#withinCleanupDeadline(
-            operation.catch(() => undefined),
+            operation.promise.catch(() => undefined),
             cleanupDeadline,
           );
         } catch {
@@ -2527,6 +2537,7 @@ export class ProductNarrationCoordinator {
       state,
       failure: this.#failure,
       preparationFailure: this.#preparationFailure,
+      hasConfirmedRendering: this.#hasConfirmedRendering,
       serviceState: this.#client.observe().state,
       metrics: Object.freeze({
         commandToAudibleMs: this.#commandToAudibleMs,
@@ -2539,7 +2550,16 @@ export class ProductNarrationCoordinator {
               this.#lastPlayerIntentionalWaitMs) -
               this.#lastPlayerIntentionalWaitMs,
           ),
-        playbackMs: this.#playbackMs,
+        playbackMs:
+          ((this.#renderedSampleFrames +
+            Math.max(
+              0,
+              (playerObservation?.renderedSampleFrames ??
+                this.#lastPlayerRenderedSampleFrames) -
+                this.#lastPlayerRenderedSampleFrames,
+            )) *
+            1_000) /
+          ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz,
         underrunCount:
           this.#underrunCount +
           Math.max(

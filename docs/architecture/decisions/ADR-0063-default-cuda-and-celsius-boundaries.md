@@ -46,3 +46,14 @@ A second qualifying GPU cannot grant admission to an insufficient default GPU.
 Physical multi-GPU proof remains distinct from ordered synthetic regression tests.
 Changing the frozen service or duplicating a normalizer would expand scope and
 invalidate historical authority; both are rejected.
+
+## 2026-11-04: Standalone Celsius range clarification
+
+The current mutable normalizer preserves both endpoints of unsupported Celsius
+ranges, including `20 °C–25 °C`, `20 °C – 25 °C` and `20 °C - 20 °C`.
+Compact ASCII ranges were already protected. This applies bounded same-prose
+context on both sides; an editorial dash without another Celsius endpoint does
+not itself prohibit an accepted standalone form. Existing language/code barriers,
+source ranges, limits and frozen v1 normalizers remain unchanged. The
+[CCF ledger](../../plans/evidence/confirmed-chat-findings/execution-ledger.md)
+tracks the new correction and its acceptance separately from the original record.

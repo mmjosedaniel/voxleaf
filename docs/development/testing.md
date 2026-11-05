@@ -2092,3 +2092,30 @@ start publishes a segment start; resume does not repeat it. Exact ended delivery
 still owns completion and the last frame. Command-to-audible and playback duration
 use that rendering authority, excluding device-start/resume waits. These are
 software rendering observations, not physical-speaker latency measurements.
+
+## Confirmed chat findings coverage
+
+The [CCF ledger](../plans/evidence/confirmed-chat-findings/execution-ledger.md)
+records focused pre-edit failures, corrected fixtures, combined host checks and
+the input proof required to retain an unaffected result. Historical PASS records
+remain historical. The current-contract vectors cover explicit identifier edge
+whitespace, internal controls and scalar/UTF-8 limits across TS, Python and Rust;
+they do not change or establish full Unicode parity for frozen Chatterbox bytes.
+
+Playback duration now sums confirmed output sample frames at 24 kHz, separately
+from source progress and wall-clock time. Direct playback samples its bounded
+source clock and final frame. WSOLA reports cumulative output frames periodically
+and on pause/end; the current-unit identity and monotonic bounds reject obsolete
+receipts. Completion folds short units even when no coordinator tick occurred.
+Paused intervals and device activation waits do not add rendered duration.
+Command-to-audible remains the elapsed time to the first software confirmation;
+callback delivery can make it an upper bound on actual processing start. Neither
+metric establishes physical speaker latency. Native CCF assertions compare
+completed-unit metric deltas with the backend's rendered output-frame count.
+
+Release-harness regressions use disposable filesystem/PowerShell seams. They
+distinguish proven no-launch recovery from uncertain partial installation,
+preserve primary failures when diagnostics fail, and reject noncanonical Cargo
+output/compiler configurations before build/signature/evidence steps. A
+canonical rebuild with identical output bytes remains valid. No real installer
+journey, signing, model inference or user-data deletion is implied by those tests.

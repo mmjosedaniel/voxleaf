@@ -266,6 +266,9 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       get playedSampleFrames() {
         return readFrames();
       },
+      get renderedSampleFrames() {
+        return readFrames();
+      },
       pause: () => {
         playedFrames = readFrames();
         resumed = false;
@@ -336,7 +339,12 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     let activation = 0;
     let resumed = false;
     let processing = false;
+    let startSent = false;
     let playedFrames = 0;
+    let renderedFrames = 0;
+    const maximumRenderedFrames = Math.ceil(
+      (remaining * 100) / playbackRatePercent,
+    );
     let stopped = false;
     const readFrames = () =>
       Math.min(
@@ -358,8 +366,16 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       void context
         .resume()
         .then(() => {
-          if (!stopped && this.#active === handle && token === activation)
-            resumed = true;
+          if (stopped || this.#active !== handle || token !== activation)
+            return;
+          resumed = true;
+          // An already-running context can process before resume settles.
+          wsola.node.port.postMessage({
+            type: startSent ? "resume" : "start",
+            unitSequence: request.sequence,
+            activation: token,
+          });
+          startSent = true;
         })
         .catch(() => {
           if (!stopped && this.#active === handle && token === activation)
@@ -375,16 +391,21 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       get playedSampleFrames() {
         return readFrames();
       },
+      get renderedSampleFrames() {
+        return renderedFrames;
+      },
       pause: () => {
         playedFrames = readFrames();
         processing = false;
         resumed = false;
         const token = ++activation;
-        wsola.node.port.postMessage({
-          type: "pause",
-          unitSequence: request.sequence,
-          activation,
-        });
+        if (startSent) {
+          wsola.node.port.postMessage({
+            type: "pause",
+            unitSequence: request.sequence,
+            activation,
+          });
+        }
         void context.suspend().catch(() => {
           if (!stopped && this.#active === handle && token === activation)
             callbacks.failed();
@@ -394,11 +415,6 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
         activation += 1;
         processing = false;
         resumed = false;
-        wsola.node.port.postMessage({
-          type: "resume",
-          unitSequence: request.sequence,
-          activation,
-        });
         resumeContext();
       },
       stop: () => {
@@ -433,10 +449,24 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       const type = Reflect.get(message, "type");
       const unitSequence = Reflect.get(message, "unitSequence");
       if (
+        unitSequence !== request.sequence ||
+        stopped ||
+        this.#active !== handle
+      )
+        return;
+      if (type === "rendered" || type === "paused" || type === "ended") {
+        const frames: unknown = Reflect.get(message, "renderedFrames");
+        if (
+          typeof frames === "number" &&
+          Number.isSafeInteger(frames) &&
+          frames >= renderedFrames &&
+          frames <= maximumRenderedFrames
+        ) {
+          renderedFrames = frames;
+        }
+      }
+      if (
         (type === "started" || type === "resumed" || type === "paused") &&
-        unitSequence === request.sequence &&
-        !stopped &&
-        this.#active === handle &&
         Reflect.get(message, "activation") === activation
       ) {
         const sourceFrames: unknown = Reflect.get(message, "sourceFrames");
@@ -462,22 +492,11 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
         return;
       }
       if (type === "failed") {
-        if (
-          unitSequence === request.sequence &&
-          !stopped &&
-          this.#active === handle
-        ) {
-          handle.stop();
-          callbacks.failed();
-        }
+        handle.stop();
+        callbacks.failed();
         return;
       }
-      if (
-        type === "ended" &&
-        unitSequence === request.sequence &&
-        !stopped &&
-        this.#active === handle
-      ) {
+      if (type === "ended") {
         handle.complete();
         wsola.node.port.onmessage = null;
         this.#active = undefined;
@@ -500,11 +519,6 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       },
       [input.buffer],
     );
-    wsola.node.port.postMessage({
-      type: "start",
-      unitSequence: request.sequence,
-      activation,
-    });
     resumeContext();
     return handle;
   }

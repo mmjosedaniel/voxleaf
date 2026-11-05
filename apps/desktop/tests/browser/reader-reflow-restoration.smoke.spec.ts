@@ -3,15 +3,25 @@ import { openEpubPublication } from "@voxleaf/epub";
 import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
+import { DEFAULT_READER_PREFERENCES } from "../../src/reader/reader-preferences";
 import { closeSettings, openSettings } from "./settings-helpers";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
 
-test("R7-04 audible advancement supersedes a pending typography restoration", async ({
+test("R7-04 audible advancement supersedes a pending typography restoration", ({
   page,
-}) => {
+}) => exerciseAudibleReflow(page, false));
+
+test("CCF-C08 completed decoration leaves typography restoration in control", ({
+  page,
+}) => exerciseAudibleReflow(page, true));
+
+async function exerciseAudibleReflow(
+  page: Page,
+  completeBeforeReflow: boolean,
+): Promise<void> {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.name));
   const fixture = (await import(
@@ -32,8 +42,10 @@ test("R7-04 audible advancement supersedes a pending typography restoration", as
   const initial = opened.publication.locators[5]!.startLocator;
   await opened.publication.close();
   await page.addInitScript(
-    ({ report, initial, key }) => {
+    ({ report, initial, key, displayPreference }) => {
       localStorage.clear();
+      if (displayPreference !== undefined)
+        localStorage.setItem(displayPreference.key, displayPreference.value);
       localStorage.setItem(
         key,
         JSON.stringify({
@@ -147,7 +159,22 @@ test("R7-04 audible advancement supersedes a pending typography restoration", as
         },
       });
     },
-    { report, initial, key: POSITION_STORAGE_KEY },
+    {
+      report,
+      initial,
+      key: POSITION_STORAGE_KEY,
+      ...(completeBeforeReflow
+        ? {
+            displayPreference: {
+              key: PREFERENCE_STORAGE_KEY,
+              value: JSON.stringify({
+                ...DEFAULT_READER_PREFERENCES,
+                contentWidth: "narrow",
+              }),
+            },
+          }
+        : {}),
+    },
   );
   await page.goto("/");
   await page.getByLabel("Open a book").setInputFiles({
@@ -163,53 +190,96 @@ test("R7-04 audible advancement supersedes a pending typography restoration", as
     .poll(() => page.evaluate(() => Reflect.get(globalThis, "__r7").starts))
     .toBe(1);
   const settings = await openSettings(page);
-  const proof = await page.evaluate(async () => {
-    const control = Reflect.get(globalThis, "__r7");
-    control.hold = true;
-    const select =
-      document.querySelector<HTMLSelectElement>("select#reader-text-scale") ??
-      Array.from(document.querySelectorAll("select")).find((element) =>
-        Array.from(element.options).some(
-          (option) => option.value === "extra-large",
-        ),
+  const proof = await page.evaluate(
+    async ({ completeBeforeReflow, readingLineInset }) => {
+      const control = Reflect.get(globalThis, "__r7");
+      const root = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
       )!;
-    select.value = "large";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    await Promise.resolve();
-    const pending = control.frames.size;
-    const root = document.querySelector<HTMLElement>(
-      '[data-reader-scroll-owner="true"]',
-    )!;
-    const before = root.scrollTop;
-    control.advance();
-    // Complete A is an exact audible settlement even during inter-unit delay.
-    await Promise.resolve();
-    for (let round = 0; round < 16; round += 1) {
-      const frames = [...control.frames.entries()] as Array<
-        [number, FrameRequestCallback]
-      >;
-      control.frames.clear();
-      for (const [, callback] of frames) callback(performance.now());
+      const highlights = (CSS as typeof CSS & { highlights: HighlightRegistry })
+        .highlights;
+      control.hold = true;
+      if (completeBeforeReflow) {
+        control.advance();
+        await Promise.resolve();
+      }
+      const completedRange = completeBeforeReflow
+        ? highlights.get("voxleaf-narration-active")?.values().next().value
+        : undefined;
+      const endpointDistances = () => {
+        if (!(completedRange instanceof Range)) return undefined;
+        const readingLine =
+          root.getBoundingClientRect().top + root.clientTop + readingLineInset;
+        const start = completedRange.cloneRange();
+        const end = completedRange.cloneRange();
+        start.collapse(true);
+        end.collapse(false);
+        return {
+          start: start.getBoundingClientRect().top - readingLine,
+          end: end.getBoundingClientRect().top - readingLine,
+        };
+      };
+      const beforeEndpoints = endpointDistances();
+      const select =
+        document.querySelector<HTMLSelectElement>("select#reader-text-scale") ??
+        Array.from(document.querySelectorAll("select")).find((element) =>
+          Array.from(element.options).some(
+            (option) => option.value === "extra-large",
+          ),
+        )!;
+      select.value = "large";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
       await Promise.resolve();
-    }
-    control.hold = false;
-    const highlight = (
-      CSS as typeof CSS & { highlights: HighlightRegistry }
-    ).highlights.get("voxleaf-narration-active");
-    return {
-      pending,
-      before,
-      after: root.scrollTop,
-      highlighted: highlight !== undefined,
-    };
-  });
-  expect(proof.pending).toBeGreaterThan(0);
+      const pending = control.frames.size;
+      const before = root.scrollTop;
+      if (!completeBeforeReflow) control.advance();
+      // Hold all reflow frames in this task while the buffered successor waits.
+      await Promise.resolve();
+      for (let round = 0; round < 16; round += 1) {
+        const frames = [...control.frames.entries()] as Array<
+          [number, FrameRequestCallback]
+        >;
+        control.frames.clear();
+        for (const [, callback] of frames) callback(performance.now());
+        await Promise.resolve();
+      }
+      control.hold = false;
+      return {
+        pending,
+        before,
+        after: root.scrollTop,
+        highlighted: highlights.has("voxleaf-narration-active"),
+        starts: control.starts,
+        beforeEndpoints,
+        afterEndpoints: endpointDistances(),
+      };
+    },
+    {
+      completeBeforeReflow,
+      readingLineInset: ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX,
+    },
+  );
   expect(proof.highlighted).toBe(true);
-  expect(Math.abs(proof.after - proof.before)).toBeLessThan(1);
+  if (completeBeforeReflow) {
+    expect(proof.starts).toBe(1);
+    expect(proof.beforeEndpoints).toBeDefined();
+    expect(proof.afterEndpoints).toBeDefined();
+    expect(
+      proof.beforeEndpoints!.end - proof.beforeEndpoints!.start,
+    ).toBeGreaterThan(10);
+    expect(Math.abs(proof.afterEndpoints!.end)).toBeLessThan(1);
+    expect(proof.afterEndpoints!.start).toBeLessThan(-10);
+    await expect(
+      page.locator('[data-reader-text-scale="large"]'),
+    ).toBeVisible();
+  } else {
+    expect(Math.abs(proof.after - proof.before)).toBeLessThan(1);
+  }
+  expect(proof.pending).toBeGreaterThan(0);
   await closeSettings(page, settings);
   await page.locator('[data-narration-action="stop"]').click();
   expect(errors).toEqual([]);
-});
+}
 
 test("EFC-01 same-chapter destination ref churn keeps geometry work bounded", async ({
   page,

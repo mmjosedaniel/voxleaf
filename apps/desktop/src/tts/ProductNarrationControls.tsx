@@ -53,8 +53,13 @@ export function ProductNarrationControls({
     state !== undefined &&
     (state.canStop || state.phase === "complete" || state.phase === "failed");
   const startupCanBeCancelled =
-    snapshot.metrics.commandToAudibleMs === undefined &&
-    (state?.phase === "preparing" || state?.phase === "buffering");
+    showStop &&
+    snapshot.failure === undefined &&
+    !snapshot.hasConfirmedRendering &&
+    (state.phase === "preparing" ||
+      state.phase === "buffering" ||
+      state.phase === "playing" ||
+      state.phase === "paused");
   const stopLabel = startupCanBeCancelled ? "Cancel start" : "Stop";
   const startupPolicy =
     snapshot.selection.kind === "quick"
@@ -137,7 +142,8 @@ export function ProductNarrationControls({
             </p>
           ) : null}
           {snapshot.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID &&
-          snapshot.metrics.commandToAudibleMs === undefined ? (
+          !snapshot.hasConfirmedRendering &&
+          (showStart || startupCanBeCancelled) ? (
             <p className="product-narration-policy">
               Chatterbox may take more than one minute to load. Narration and
               model controls can be temporarily unavailable and the computer may

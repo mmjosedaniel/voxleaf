@@ -141,6 +141,7 @@ const narration: ProductNarrationSnapshot = Object.freeze({
   state: undefined,
   failure: undefined,
   preparationFailure: undefined,
+  hasConfirmedRendering: false,
   metrics: Object.freeze({
     commandToAudibleMs: undefined,
     bufferingMs: 0,

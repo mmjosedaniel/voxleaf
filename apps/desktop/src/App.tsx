@@ -622,7 +622,11 @@ export function App({
 
     // Browser picker cancellation is not an error and does not replace the
     // current publication or its visible state.
-    if (file === null || file === undefined) {
+    if (
+      file === null ||
+      file === undefined ||
+      pendingNarrationReset.current !== undefined
+    ) {
       return;
     }
 
@@ -839,20 +843,22 @@ export function App({
     if (pendingNarrationReset.current !== undefined)
       return pendingNarrationReset.current;
     setNarrationResetPending(true);
-    const reset = narrationSettingsActions
-      .reset({
-        hardware: hardwareCompatibilityCoordinator,
-        coordinator: narrationCoordinator,
-        startPreference: narrationStartPreferenceRepository,
-        playbackPreference: narrationPlaybackPreferenceRepository,
-        onStartPreferenceReset: () => {
-          setFallbackNarrationStart({
-            selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
-            status: "ready",
-            canPersist: true,
-          });
-        },
-      })
+    const reset = Promise.resolve()
+      .then(() =>
+        narrationSettingsActions.reset({
+          hardware: hardwareCompatibilityCoordinator,
+          coordinator: narrationCoordinator,
+          startPreference: narrationStartPreferenceRepository,
+          playbackPreference: narrationPlaybackPreferenceRepository,
+          onStartPreferenceReset: () => {
+            setFallbackNarrationStart({
+              selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+              status: "ready",
+              canPersist: true,
+            });
+          },
+        }),
+      )
       .finally(() => {
         if (pendingNarrationReset.current === reset) {
           pendingNarrationReset.current = undefined;
@@ -879,7 +885,9 @@ export function App({
     viewState.status === "opening" ||
     isRestoringReader;
   const openDisabled =
-    viewState.status === "closing" || hasBlockingCloseFailure;
+    viewState.status === "closing" ||
+    hasBlockingCloseFailure ||
+    narrationResetPending;
   const lifecyclePresentation: LifecyclePresentation =
     viewState.status === "failure"
       ? { status: "failure", reason: viewState.reason }

@@ -304,8 +304,11 @@ export function ReaderPublicationContent({
         return;
       }
       initialRestorationStatus.current = settlement.status;
+      const narration = externalCallbacks.current.narrationSource;
+      if (settlement.status === "settled")
+        narration?.updateVisibleLocator?.(settlement.locator);
       if (settlement.status !== "superseded")
-        externalCallbacks.current.narrationSource?.settleReaderPlacement?.(
+        narration?.settleReaderPlacement?.(
           settlement.status === "unavailable"
             ? { status: "unavailable", reason: "chapter-too-large" }
             : { status: "settled", locator: settlement.locator },
@@ -372,16 +375,16 @@ export function ReaderPublicationContent({
       narrationSource.beginReaderPlacement?.();
       return;
     }
-    // Attachment replays availability, not a navigation or a position save.
+    // Attachment replays the visible start before making Play available.
+    if (coordinator.state.contentStatus === "render") {
+      narrationSource.updateVisibleLocator?.(coordinator.state.activeLocator);
+    }
     externalCallbacks.current.onNavigationSettlement?.(
       coordinator.state.contentStatus === "chapter-too-large"
         ? { status: "unavailable", reason: "chapter-too-large" }
         : { status: "settled", locator: coordinator.state.activeLocator },
       "reflow",
     );
-    if (coordinator.state.contentStatus === "render") {
-      narrationSource?.updateVisibleLocator?.(coordinator.state.activeLocator);
-    }
   }, [coordinator, narrationSource]);
   const leafSnapshot = useSyncExternalStore(
     paragraphLeafController.subscribe,

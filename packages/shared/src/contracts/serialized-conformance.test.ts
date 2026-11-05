@@ -19,6 +19,8 @@ import {
   validateReadingSessionV1Wire,
   validateTtsProtocolControlV1Wire,
 } from "../generated/validators/index.js";
+import { createSessionId } from "../primitives/identifiers.js";
+import { decodeTtsProtocolControlV1 } from "./tts-protocol-control.js";
 
 const CONTRACT_ROOT = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -139,27 +141,31 @@ async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, "utf8")) as unknown;
 }
 
+async function createCanonicalValidator() {
+  const schemas = await Promise.all(
+    SCHEMA_FILES.map((schemaFile) =>
+      readJson(resolve(SCHEMA_ROOT, schemaFile)),
+    ),
+  );
+  const validator = new Ajv2020({
+    allErrors: true,
+    coerceTypes: false,
+    removeAdditional: false,
+    strict: true,
+    useDefaults: false,
+  });
+  for (const schema of schemas) {
+    validator.addSchema(schema as AnySchema);
+  }
+  return validator;
+}
+
 describe("canonical serialized contract fixtures", () => {
   it("validates every shared fixture against its offline canonical schema", async () => {
     const manifest = decodeFixtureManifest(
       await readJson(resolve(CONTRACT_ROOT, "manifest.json")),
     );
-    const schemas = await Promise.all(
-      SCHEMA_FILES.map((schemaFile) =>
-        readJson(resolve(SCHEMA_ROOT, schemaFile)),
-      ),
-    );
-    const validator = new Ajv2020({
-      allErrors: true,
-      coerceTypes: false,
-      removeAdditional: false,
-      strict: true,
-      useDefaults: false,
-    });
-
-    for (const schema of schemas) {
-      validator.addSchema(schema as AnySchema);
-    }
+    const validator = await createCanonicalValidator();
 
     for (const fixtureCase of manifest.cases) {
       const validate = validator.getSchema(fixtureCase.schemaId);
@@ -182,6 +188,40 @@ describe("canonical serialized contract fixtures", () => {
         standaloneResult,
         `${fixtureCase.id}: standalone validator drifted from the canonical schema`,
       ).toBe(canonicalResult);
+    }
+  });
+
+  it("CCF-C05 agrees on portable identifier edges through canonical, generated and domain validation", async () => {
+    const fixtureRoot = resolve(CONTRACT_ROOT, "tts-protocol-control/v1");
+    const vectors = (await readJson(
+      resolve(fixtureRoot, "ccf-identifier-vectors.json"),
+    )) as { name: string; value: string; repeat?: number; valid: boolean }[];
+    const fixture = readRecord(
+      await readJson(resolve(fixtureRoot, "valid-synthesize.json")),
+    );
+    const validator = await createCanonicalValidator();
+    const validate = validator.getSchema(
+      "urn:voxleaf:schema:tts-protocol-control:v1",
+    )!;
+    for (const { name, value, repeat = 1, valid } of vectors) {
+      const identifier = value.repeat(repeat);
+      const message = {
+        ...fixture,
+        requestId: identifier,
+        segment: { ...readRecord(fixture.segment), sessionId: identifier },
+      };
+      expect(validate(message), name).toBe(valid);
+      expect(validateTtsProtocolControlV1Wire(message), name).toBe(valid);
+      if (valid) {
+        expect(createSessionId(identifier), name).toBe(identifier);
+        expect(decodeTtsProtocolControlV1(message), name).toMatchObject({
+          requestId: identifier,
+          segment: { sessionId: identifier },
+        });
+      } else {
+        expect(() => createSessionId(identifier), name).toThrow();
+        expect(() => decodeTtsProtocolControlV1(message), name).toThrow();
+      }
     }
   });
 

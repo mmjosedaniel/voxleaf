@@ -25,6 +25,7 @@ function expectPhaseMessage(
       availability: "unavailable",
       profileId: PIPER_CPU_FALLBACK_PROFILE_ID,
       failure: undefined,
+      hasConfirmedRendering: true,
       state: { phase: "preparing" },
       serviceState: "generating",
       recovery: { phase: "operational", action: undefined },

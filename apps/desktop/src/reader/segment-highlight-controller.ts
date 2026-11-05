@@ -60,6 +60,7 @@ interface ActiveSegmentProjection {
   readonly sourceRange: LocatorRangeV1;
   navigationRequested: boolean;
   followEligible: boolean;
+  completed: boolean;
 }
 
 function finiteRect(value: {
@@ -305,7 +306,13 @@ export class SegmentHighlightController {
     }
     const key = segmentKey(observation);
     if (observation.kind === "segment-completed") {
-      if (key === this.#activeKey && this.#active?.followEligible) {
+      const active = this.#active;
+      if (key !== this.#activeKey || active === undefined || active.completed)
+        return;
+      const settleEnd = active.followEligible;
+      active.completed = true;
+      active.followEligible = false;
+      if (settleEnd) {
         this.#cancelScheduledSettle?.();
         this.#cancelScheduledSettle = undefined;
         this.#settleActive(observation.sourceRange.end);
@@ -321,6 +328,7 @@ export class SegmentHighlightController {
       sourceRange: observation.sourceRange,
       navigationRequested: false,
       followEligible: true,
+      completed: false,
     };
     this.#activeKey = key;
     this.refresh();
@@ -347,7 +355,11 @@ export class SegmentHighlightController {
       (phase === undefined && this.#active !== undefined)
     ) {
       this.clear();
-    } else if (resumed && this.#active !== undefined) {
+    } else if (
+      resumed &&
+      this.#active !== undefined &&
+      !this.#active.completed
+    ) {
       this.#active.followEligible = true;
       this.refresh();
     }

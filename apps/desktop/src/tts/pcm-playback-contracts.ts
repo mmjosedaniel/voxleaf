@@ -28,6 +28,8 @@ export interface PcmPlaybackRequest {
 export interface PcmPlaybackHandle {
   readonly sequence: number;
   readonly playedSampleFrames: number;
+  /** Cumulative confirmed output frames at 24 kHz for this handle, including at natural end. */
+  readonly renderedSampleFrames: number;
   /** Current activation has confirmed processing; allocation is not rendering. */
   readonly rendering: boolean;
   pause(): void;

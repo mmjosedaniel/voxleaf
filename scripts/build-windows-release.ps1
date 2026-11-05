@@ -28,6 +28,86 @@ function Invoke-CheckedCommand {
   }
 }
 
+function Assert-CanonicalCargoLayout {
+  # Tauri runs Cargo metadata in src-tauri and appends any configured target
+  # triple before the release profile directory. All release consumers expect
+  # the implicit Windows x64 host under src-tauri/target/release.
+  Push-Location -LiteralPath $srcTauri
+  $previousEncoding = [Console]::OutputEncoding
+  try {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $ErrorActionPreference = "SilentlyContinue"
+    $global:LASTEXITCODE = -1
+    $metadataOutput = & cargo metadata --format-version 1 --no-deps --offline 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      throw "windows-release-cargo-layout"
+    }
+    $metadata = $metadataOutput | ConvertFrom-Json -ErrorAction Stop
+    if (-not $metadata.target_directory -or
+        [IO.Path]::GetFullPath($metadata.target_directory) -ine (Join-Path $srcTauri "target")) {
+      throw "windows-release-cargo-layout"
+    }
+
+    $global:LASTEXITCODE = -1
+    $rustVersion = & rustc -vV 2>$null
+    if ($LASTEXITCODE -ne 0 -or $rustVersion -cnotcontains "host: x86_64-pc-windows-msvc") {
+      throw "windows-release-cargo-layout"
+    }
+
+    # Stable Cargo metadata does not expose build.target or build.rustc.
+    # A compiler override can change Cargo's implicit host while Tauri
+    # still uses PATH rustc to select the NSIS architecture.
+    $configurationCheck = @'
+import os
+from pathlib import Path
+import sys
+import tomllib
+
+def check_layout():
+    backend = Path.cwd()
+    app = os.environ.get('TAURI_APP_PATH')
+    if app is not None and (not Path(app).is_absolute() or Path(app).resolve() != backend.resolve()):
+        return False
+    if any(name in os.environ for name in ('CARGO_BUILD_TARGET', 'RUSTC', 'CARGO_BUILD_RUSTC')):
+        return False
+    home_override = os.environ.get('CARGO_HOME')
+    cargo_home = Path(home_override) if home_override is not None else Path.home() / '.cargo'
+    if not cargo_home.is_absolute():
+        return False
+
+    directories = [parent / '.cargo' for parent in (backend, *backend.parents)]
+    for directory in [*directories, cargo_home]:
+        for name in ('config', 'config.toml'):
+            config = directory / name
+            try:
+                config.lstat()
+            except FileNotFoundError:
+                continue
+            with config.open('rb') as stream:
+                document = tomllib.load(stream)
+            if 'include' in document or {'target', 'rustc'}.intersection(document.get('build', {})):
+                return False
+            break
+    return True
+
+try:
+    sys.exit(0 if check_layout() else 1)
+except (OSError, ValueError, TypeError, RuntimeError):
+    sys.exit(1)
+'@
+    $global:LASTEXITCODE = -1
+    $configurationCheck | & uv run --no-project --offline --no-python-downloads --python 3.12.10 python -I -B - 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      throw "windows-release-cargo-layout"
+    }
+  } catch {
+    throw "windows-release-cargo-layout"
+  } finally {
+    [Console]::OutputEncoding = $previousEncoding
+    Pop-Location
+  }
+}
+
 function Get-ReleaseSignatureStatus {
   param([string]$BinaryStatus, [string]$InstallerStatus, [bool]$Signed)
   if ($Signed) {
@@ -66,6 +146,7 @@ function Invoke-DefenderArtifactScan {
 
 Push-Location $repositoryRoot
 try {
+  Assert-CanonicalCargoLayout
   Invoke-CheckedCommand node "apps/desktop/scripts/windows-release.mjs" "check" "--require-core"
 
   $configArgument = "src-tauri/tauri.release.conf.json"

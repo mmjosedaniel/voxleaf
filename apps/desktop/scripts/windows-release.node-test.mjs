@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { spawnSync } from "node:child_process";
 import {
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -26,6 +27,185 @@ import {
   validateClosedReleaseValues,
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
+
+for (const scenario of [
+  "environment directory",
+  "configured directory",
+  "environment target",
+  "configured target",
+  "included target",
+  "Cargo home target",
+  "RUSTC compiler",
+  "CARGO_BUILD_RUSTC compiler",
+  "configured compiler",
+  "canonical identical-byte rebuild",
+]) {
+  test(
+    `CCF-C16 release layout handles ${scenario}`,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const fixture = await mkdtemp(path.join(os.tmpdir(), "voxleaf-layout-"));
+      try {
+        const srcTauri = path.join(fixture, "apps/desktop/src-tauri");
+        const release = path.join(srcTauri, "target/release");
+        const binary = path.join(release, "voxleaf-desktop.exe");
+        const installer = path.join(
+          release,
+          "bundle/nsis/VoxLeaf_0.1.0_x64-setup.exe",
+        );
+        const checksum = `${installer}.sha256`;
+        const cargoHome = path.join(fixture, "cargo-home");
+        const trace = path.join(fixture, "trace");
+        const script = path.join(fixture, "scripts/build-windows-release.ps1");
+        await mkdir(path.dirname(script), { recursive: true });
+        await mkdir(path.dirname(installer), { recursive: true });
+        await mkdir(path.join(srcTauri, "src"));
+        await mkdir(cargoHome);
+        await mkdir(path.join(srcTauri, ".cargo"));
+        await copyFile(
+          path.join(repositoryRoot(), "scripts/build-windows-release.ps1"),
+          script,
+        );
+        await writeFile(
+          path.join(srcTauri, "Cargo.toml"),
+          '[package]\nname = "layout-fixture"\nversion = "0.1.0"\nedition = "2024"\n',
+        );
+        await writeFile(path.join(srcTauri, "src/main.rs"), "fn main() {}\n");
+        await writeFile(binary, "synthetic binary");
+        await writeFile(installer, "synthetic installer");
+        await writeFile(checksum, "previous receipt");
+        await writeFile(trace, "");
+        const cargoConfig = {
+          "configured directory": '[build]\ntarget-dir = "alternate-target"\n',
+          "configured target": 'build.target = ["x86_64-pc-windows-msvc"]\n',
+          "included target": 'include = ["layout.toml"]\n',
+          "configured compiler": 'build.rustc = "alternate-rustc.exe"\n',
+          "canonical identical-byte rebuild": "[build]\njobs = 1\n",
+        }[scenario];
+        if (cargoConfig !== undefined)
+          await writeFile(
+            path.join(srcTauri, ".cargo/config.toml"),
+            cargoConfig,
+          );
+        if (scenario === "included target")
+          await writeFile(
+            path.join(srcTauri, ".cargo/layout.toml"),
+            'build.target = "x86_64-pc-windows-msvc"\n',
+          );
+        if (scenario === "Cargo home target")
+          await writeFile(
+            path.join(cargoHome, "config"),
+            'build.target = "x86_64-pc-windows-msvc"\n',
+          );
+        const overridden = new Set([
+          "CARGO_HOME",
+          "CARGO_TARGET_DIR",
+          "CARGO_BUILD_TARGET_DIR",
+          "CARGO_BUILD_TARGET",
+          "CARGO_BUILD_RUSTC",
+          "RUSTC",
+          "TAURI_APP_PATH",
+          "PSMODULEPATH",
+        ]);
+        const result = spawnSync(
+          "powershell.exe",
+          [
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            `
+$ErrorActionPreference = 'Stop'
+function node {
+  if ($args[1] -eq 'evidence') { Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'evidence' }
+  $global:LASTEXITCODE = 0
+}
+function pnpm.cmd {
+  Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'builder'
+  if ($env:CCF_LAYOUT_CANONICAL -eq '1') {
+    [IO.File]::WriteAllText($env:CCF_LAYOUT_BINARY, 'synthetic binary')
+    [IO.File]::WriteAllText($env:CCF_LAYOUT_INSTALLER, 'synthetic installer')
+  }
+  $global:LASTEXITCODE = 0
+}
+function Get-AuthenticodeSignature {
+  Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'signature'
+  [pscustomobject]@{ Status = 'NotSigned' }
+}
+function Get-FileHash {
+  param($LiteralPath, $Algorithm)
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    [pscustomobject]@{ Hash = [BitConverter]::ToString($sha256.ComputeHash([IO.File]::ReadAllBytes($LiteralPath))).Replace('-', '') }
+  } finally {
+    $sha256.Dispose()
+  }
+}
+& $env:CCF_LAYOUT_SCRIPT
+`,
+          ],
+          {
+            encoding: "utf8",
+            timeout: 30_000,
+            env: {
+              ...Object.fromEntries(
+                Object.entries(process.env).filter(
+                  ([name]) => !overridden.has(name.toUpperCase()),
+                ),
+              ),
+              CARGO_HOME: cargoHome,
+              CARGO_TARGET_DIR:
+                scenario === "environment directory"
+                  ? "alternate-target"
+                  : undefined,
+              CARGO_BUILD_TARGET:
+                scenario === "environment target"
+                  ? "aarch64-pc-windows-msvc"
+                  : undefined,
+              RUSTC:
+                scenario === "RUSTC compiler"
+                  ? "alternate-rustc.exe"
+                  : undefined,
+              CARGO_BUILD_RUSTC:
+                scenario === "CARGO_BUILD_RUSTC compiler"
+                  ? "alternate-rustc.exe"
+                  : undefined,
+              CCF_LAYOUT_TRACE: trace,
+              CCF_LAYOUT_SCRIPT: script,
+              CCF_LAYOUT_BINARY: binary,
+              CCF_LAYOUT_INSTALLER: installer,
+              CCF_LAYOUT_CANONICAL:
+                scenario === "canonical identical-byte rebuild"
+                  ? "1"
+                  : undefined,
+            },
+          },
+        );
+        if (scenario === "canonical identical-byte rebuild") {
+          assert.equal(result.status, 0, result.stderr || result.stdout);
+          assert.deepEqual(
+            (await readFile(trace, "utf8")).trim().split(/\r?\n/u),
+            ["builder", "signature", "signature", "evidence"],
+          );
+          assert.match(
+            await readFile(checksum, "utf8"),
+            /^[a-f0-9]{64} \*VoxLeaf_/u,
+          );
+        } else {
+          assert.equal(result.status, 1, result.stderr || result.stdout);
+          assert.match(result.stderr, /windows-release-cargo-layout/u);
+          assert.equal(await readFile(trace, "utf8"), "");
+          assert.equal(await readFile(checksum, "utf8"), "previous receipt");
+        }
+        assert.equal(await readFile(binary, "utf8"), "synthetic binary");
+        assert.equal(await readFile(installer, "utf8"), "synthetic installer");
+      } finally {
+        await rm(fixture, { recursive: true, force: true });
+      }
+    },
+  );
+}
 
 test(
   "CAF-R1.5 real signature policy rejects invalid and indeterminate pairs",
