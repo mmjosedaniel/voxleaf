@@ -120,13 +120,19 @@ export async function openEpubPublication(
   options: OpenEpubPublicationOptions = {},
 ): Promise<OpenEpubPublicationResult> {
   let archive: OpenedEpubArchive | undefined;
+  const opening = new AbortController();
+  const abortOpening = (): void => opening.abort();
+  let callerSignal: AbortSignal | undefined;
   try {
+    callerSignal = options.signal;
+    callerSignal?.addEventListener("abort", abortOpening, { once: true });
+    if (callerSignal?.aborted) abortOpening();
     if (!(bytes instanceof Uint8Array)) {
       throw new EpubArchiveError("invalid-container");
     }
 
     archive = await openEpubArchive(bytes, {
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
+      signal: opening.signal,
     });
     let selectedPackage: ParsedPackageDocument | undefined;
     const candidateArchive = archive;
@@ -195,10 +201,19 @@ export async function openEpubPublication(
       locatorIndex,
       targetIndex,
     });
+    callerSignal?.removeEventListener("abort", abortOpening);
+    callerSignal = undefined;
+    archive.budget.checkpoint();
     archive = undefined;
     return epubOpenSuccess(publication);
   } catch (error: unknown) {
     await archive?.close().catch(() => undefined);
     return mapEpubFailure(error);
+  } finally {
+    try {
+      callerSignal?.removeEventListener("abort", abortOpening);
+    } catch {
+      // Cleanup must not replace the fixed failure or expose a caller exception.
+    }
   }
 }

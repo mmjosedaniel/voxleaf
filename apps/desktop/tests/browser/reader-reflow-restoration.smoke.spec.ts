@@ -757,6 +757,16 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
         canonicalOffset,
       );
       await expect(focusOwner).toBeFocused();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            (key) =>
+              JSON.parse(localStorage.getItem(key) ?? "{}").states?.[0]?.locator
+                .textOffsetCodePoints,
+            POSITION_STORAGE_KEY,
+          ),
+        )
+        .toBe(canonicalOffset);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,

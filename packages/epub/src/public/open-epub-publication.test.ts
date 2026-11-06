@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildMinimalEpub2Fixture,
   buildMinimalEpubFixture,
+  buildReaderRasterEpubFixture,
   EPUB2_CANONICAL_NCX_DOCTYPE,
   EPUB2_CANONICAL_XHTML11_DOCTYPE,
   minimalEpub2Guide,
@@ -42,6 +43,91 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it.each([false, true])(
+    "EBC-C17 contains throwing signal cleanup after failed=%s open",
+    async (failed) => {
+      const controller = new AbortController();
+      vi.spyOn(controller.signal, "removeEventListener").mockImplementation(
+        () => {
+          throw new Error("SYNTHETIC_PRIVATE_CLEANUP_CANARY");
+        },
+      );
+      const close = vi.spyOn(ZipReader.prototype, "close");
+      const bytes = await buildMinimalEpubFixture(
+        failed
+          ? { chapterDocument: '<html xmlns="http://www.w3.org/1999/xhtml">' }
+          : {},
+      );
+      const result = await openEpubPublication(bytes, {
+        signal: controller.signal,
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        detail: failed ? "malformed-xml" : "internal-failure",
+      });
+      expect(result).not.toHaveProperty("publication");
+      expect(JSON.stringify(result)).not.toContain(
+        "SYNTHETIC_PRIVATE_CLEANUP_CANARY",
+      );
+      expect(close).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("EBC-C17 cancels a real pending open and releases the archive", async () => {
+    const bytes = await buildMinimalEpubFixture();
+    const controller = new AbortController();
+    const close = vi.spyOn(ZipReader.prototype, "close");
+    let release: () => void = () => undefined;
+    let entered: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const pendingEntries = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const original = ZipReader.prototype.getEntriesGenerator;
+    vi.spyOn(ZipReader.prototype, "getEntriesGenerator").mockImplementation(
+      async function* (this: ZipReader<Uint8Array>, ...args) {
+        entered();
+        await gate;
+        return yield* original.apply(this, args);
+      },
+    );
+    const opening = openEpubPublication(bytes, { signal: controller.signal });
+    await pendingEntries;
+    controller.abort("SYNTHETIC_PRIVATE_ABORT_CANARY");
+    release();
+    const result = await opening;
+    expect(result).toMatchObject({
+      ok: false,
+      detail: "cancelled",
+      error: { code: "operation-cancelled" },
+    });
+    expect(result).not.toHaveProperty("publication");
+    expect(JSON.stringify(result)).not.toContain(
+      "SYNTHETIC_PRIVATE_ABORT_CANARY",
+    );
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+  it("EBC-C17 detaches the successful opening signal from later raster reads", async () => {
+    const controller = new AbortController();
+    const result = await openEpubPublication(
+      await buildReaderRasterEpubFixture(),
+      { signal: controller.signal },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("expected synthetic publication");
+    try {
+      controller.abort("private-canary");
+      const resource = result.publication.resources[0];
+      if (resource === undefined) throw new Error("expected synthetic raster");
+      expect(
+        (await result.publication.readResource(resource.id)).byteLength,
+      ).toBeGreaterThan(0);
+    } finally {
+      await result.publication.close();
+    }
+  });
   it.each([0, 1])(
     "CAF-R1.2 discarded fixed rendition honors raster limit plus %s",
     async (extra) => {

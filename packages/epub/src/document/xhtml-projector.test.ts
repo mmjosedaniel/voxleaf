@@ -43,6 +43,65 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("EBC-C13 accumulates repeated image occurrences across projections", async () => {
+    const source = xhtml(
+      '<h:p>X<h:img src="../images/cover.png" alt="é😀"/><h:img src="../images/cover.png" alt="é😀"/></h:p>',
+    ).replace(/<h:head>.*<\/h:head>/u, "");
+    await withArchive(
+      source,
+      { policy: { maxDecodedPublicationTextBytes: 25 } },
+      async (archive) => {
+        await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        expect(archive.budget.getSnapshot().decodedPublicationTextBytes).toBe(
+          13,
+        );
+        await expectProjectionActionError(
+          () =>
+            projectXhtmlDocument(
+              archive,
+              createPackageDocument(),
+              CHAPTER_PATH,
+            ),
+          "resource-limit-exceeded",
+        );
+      },
+    );
+  });
+  it.each([6, 7])(
+    "EBC-C13 counts normalized UTF-8 alt at limit %i",
+    async (limit) => {
+      const source = xhtml(
+        '<h:p>X<h:img src="../images/cover.png" alt=" é😀 "/></h:p>',
+      ).replace(/<h:head>.*<\/h:head>/u, "");
+      await withArchive(
+        source,
+        { policy: { maxDecodedPublicationTextBytes: limit } },
+        async (archive) => {
+          const project = () =>
+            projectXhtmlDocument(
+              archive,
+              createPackageDocument(),
+              CHAPTER_PATH,
+            );
+          if (limit === 6)
+            await expectProjectionActionError(
+              project,
+              "resource-limit-exceeded",
+            );
+          else {
+            await project();
+            expect(
+              archive.budget.getSnapshot().decodedPublicationTextBytes,
+            ).toBe(7);
+          }
+        },
+      );
+    },
+  );
   it.each(["0", "-3", "+7", "000000000005", "invalid", "2147483648", "1.5"])(
     "RCF-07 bounds explicit start/value %s",
     async (ordinal) => {

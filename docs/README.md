@@ -17,6 +17,8 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [EPUB budget/cancellation follow-up](plans/completed/epub-budget-cancellation-and-reflow-follow-up.md) corrects C13/C17 with focused and combined host checks. C15 is reproduced only in modeled ordering, with no production fix; C05 remains deferred to the next Chatterbox runtime update. The [execution ledger](plans/evidence/epub-budget-cancellation-reflow/execution-ledger.md) records R1 corrections and the final independent assessment. No Git delivery is included.
+
 The [completed confirmed chat findings plan](plans/completed/confirmed-chat-findings-minimal-corrections.md)
 resolves 18 supported corrections, with five intentional, deferred or unconfirmed
 cases preserved. CCF-R2-20261104 approves after closing the C08 mounted-geometry

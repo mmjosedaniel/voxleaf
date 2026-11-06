@@ -201,6 +201,27 @@ A renderer-oriented EPUB framework remains prohibited in the ingestion core. The
 
 ## Consequences
 
+### 2026-11-06: Retained alternative text and opening cancellation
+
+The existing 64 MiB decoded-publication-text budget includes each admitted
+image occurrence's normalized retained alternative text, measured in UTF-8
+equivalent bytes in addition to XML text/CDATA. Missing and present-empty
+descriptions remain distinct and consume zero additional bytes. Discarded
+images add no retained-description charge. Descriptions are never truncated;
+the exact combined maximum succeeds and the next byte fails without publishing
+partial content. This counter is not an exact process-memory measurement.
+Images still occupy one semantic source position and their descriptions are
+not added to narration.
+
+`openEpubPublication`'s caller signal controls only the unfinished open. A
+private forwarding controller remains connected through the final cancellation
+check and is detached on every exit. Aborting the caller signal after successful
+handoff has no effect on that publication's later operations. Request-scoped
+cancellation and publication-owned close retain their existing responsibilities;
+low-level archive lifetime cancellation and resource deadlines are unchanged.
+Acceptance and remaining C15/C05 limitations are recorded in the
+[follow-up ledger](../../plans/evidence/epub-budget-cancellation-reflow/execution-ledger.md).
+
 - Implemented ingestion has one exact support and budget authority, with every maximum and maximum-plus-one boundary tied to focused regression evidence.
 - Normal reading remains local: archive bytes, resources, publisher markup, and prose are not sent to a network service or extracted to disk.
 - A closed semantic projection prevents publisher markup from becoming trusted application UI.

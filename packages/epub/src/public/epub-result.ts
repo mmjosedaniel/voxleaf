@@ -26,6 +26,7 @@ export type OpenEpubPublicationResult =
   EpubFailure | OpenEpubPublicationSuccess;
 
 export interface OpenEpubPublicationOptions {
+  /** Cancels only opening; successful publications own subsequent operations. */
   readonly signal?: AbortSignal;
 }
 
