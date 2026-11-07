@@ -780,6 +780,96 @@ thread_local! {
 }
 
 #[cfg(windows)]
+fn remove_capacity_file_with_retry(
+    mut remove: impl FnMut() -> std::io::Result<()>,
+    deadline: Instant,
+) -> std::io::Result<()> {
+    loop {
+        match remove() {
+            Err(error) if error.raw_os_error() == Some(32) => {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                if remaining.is_zero() {
+                    return Err(error);
+                }
+                thread::sleep(POLL_INTERVAL.min(remaining));
+                if Instant::now() >= deadline {
+                    return Err(error);
+                }
+            }
+            result => return result,
+        }
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn sac12_capacity_cleanup_retries_transient_sharing_violation() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = std::env::temp_dir().join(format!(
+        "voxleaf-capacity-cleanup-{}-{}",
+        std::process::id(),
+        REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed)
+    ));
+    fs::create_dir(&root).unwrap();
+    let path = root.join("capacity");
+    fs::write(&path, "4096").unwrap();
+    // Permit reads/writes but deny deletion, deterministically reproducing OS 32.
+    let mut held = Some(
+        fs::OpenOptions::new()
+            .read(true)
+            .share_mode(3)
+            .open(&path)
+            .unwrap(),
+    );
+    let mut attempts = 0;
+    let mut first_error = None;
+    let result = remove_capacity_file_with_retry(
+        || {
+            attempts += 1;
+            let result = fs::remove_file(&path);
+            if attempts == 1 {
+                first_error = result.as_ref().err().and_then(std::io::Error::raw_os_error);
+                drop(held.take());
+            }
+            result
+        },
+        Instant::now() + Duration::from_secs(2),
+    );
+    if path.exists() {
+        fs::remove_file(&path).unwrap();
+    }
+    fs::remove_dir(root).unwrap();
+    assert_eq!(first_error, Some(32));
+    assert!(
+        result.is_ok(),
+        "transient sharing violation was not retried: {result:?}"
+    );
+    assert_eq!(attempts, 2);
+}
+
+#[cfg(windows)]
+#[test]
+fn sac12_capacity_cleanup_preserves_other_errors_and_expired_deadline() {
+    for code in [2, 5, 32] {
+        let mut attempts = 0;
+        let result = remove_capacity_file_with_retry(
+            || {
+                attempts += 1;
+                Err(std::io::Error::from_raw_os_error(code))
+            },
+            Instant::now()
+                + if code == 32 {
+                    Duration::ZERO
+                } else {
+                    Duration::from_secs(2)
+                },
+        );
+        assert_eq!(result.unwrap_err().raw_os_error(), Some(code));
+        assert_eq!(attempts, 1);
+    }
+}
+
+#[cfg(windows)]
 fn backpressure_session() -> (Arc<ServiceSession>, usize) {
     let root = std::env::temp_dir().join(format!(
         "voxleaf-stdin-capacity-{}-{}",
@@ -806,7 +896,7 @@ fn backpressure_session() -> (Arc<ServiceSession>, usize) {
         thread::sleep(POLL_INTERVAL);
     }
     let capacity = fs::read_to_string(&capacity_path).unwrap().parse().unwrap();
-    fs::remove_file(capacity_path).unwrap();
+    remove_capacity_file_with_retry(|| fs::remove_file(&capacity_path), deadline).unwrap();
     fs::remove_dir(root).unwrap();
     (session, capacity)
 }

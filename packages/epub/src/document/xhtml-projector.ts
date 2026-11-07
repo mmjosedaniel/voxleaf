@@ -16,7 +16,10 @@ import {
 } from "../paths/ocf-reference.js";
 import { EpubPathError } from "../paths/path-error.js";
 import { rasterImageResourceIdForManifestItem } from "../resource/raster-resource-catalog.js";
-import { createXmlEventReader } from "../xml/xml-event-reader.js";
+import {
+  createXmlEventReader,
+  decodedUtf8ByteLength,
+} from "../xml/xml-event-reader.js";
 import type {
   XmlEndElementEvent,
   XmlEvent,
@@ -1225,6 +1228,11 @@ class XhtmlProjector {
       alternativeTextValue === undefined
         ? undefined
         : normalizeAlternativeText(alternativeTextValue);
+    if (alternativeText !== undefined) {
+      this.#archive.budget.observeDecodedPublicationText(
+        decodedUtf8ByteLength(alternativeText, this.#archive.budget),
+      );
+    }
     this.appendRawInline(
       Object.freeze({
         kind: "raster-image",

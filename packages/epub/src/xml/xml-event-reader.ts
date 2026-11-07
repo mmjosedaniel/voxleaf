@@ -232,7 +232,7 @@ function emitSafely(consume: XmlEventConsumer, event: XmlEvent): void {
   }
 }
 
-function decodedUtf8ByteLength(
+export function decodedUtf8ByteLength(
   text: string,
   budget: EpubProcessingBudget,
 ): number {
