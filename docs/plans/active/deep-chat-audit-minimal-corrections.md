@@ -7,8 +7,9 @@ Planning date: 2026-11-09. Inspected source baseline:
 `codex/deep-chat-audit-execplan`.
 
 The current authorization covers this plan, its active-index entry, branch
-creation and one local documentation commit. It explicitly excludes executing
-the plan. Future implementation requires a new instruction; that instruction
+creation and local documentation delivery. The user subsequently delegated the
+seven remaining case decisions. It explicitly excludes executing the plan.
+Future implementation requires a new instruction; that instruction
 does not automatically authorize implementation commits, push, PR, merge,
 publication, signing or new benchmark/model promotion.
 
@@ -24,12 +25,14 @@ existing owners. Preserve successful earlier corrections, explicit product
 policies and frozen evaluation authorities. Establish a failing regression
 before each production correction, then reuse that regression for acceptance.
 
-The initial implementation scope contains **18 correction candidates**:
-01, 03, 05, 06, 08-15, 19-21 and 23-25. Case 02 is withdrawn; 04 and 07 preserve
-existing policy pending a separate design decision; 16-18 and 22 are deferred
-as described below. Every candidate is static until reproduced on the execution
-checkout. A disproved candidate receives an evidence-backed no-change decision.
-Do not force a patch or claim that all 25 cases were bugs or were fixed.
+The revised scope gives all 25 cases a decision: **23 corrections or bounded
+policy changes, one defensive hardening (16), and one withdrawn finding (02)**.
+The 23 cases are 01, 03-15 and 17-25. Cases 04/07 have explicit policy decisions;
+17/18/22 include versioned successor tooling in this plan. They are no longer
+deferred to another planning task. Every claimed defect remains static until
+reproduced on the execution checkout. A disproved candidate receives an
+evidence-backed no-change decision. Do not claim that all 25 cases were bugs
+or were fixed; the pinned Chatterbox engine has no demonstrated shape failure.
 
 Minimize verification by closing actual coverage gaps, grouping overlapping
 checks, reusing verified prepared artifacts and accepting an old result only
@@ -51,6 +54,13 @@ managed ancestors before deleting anything. Maintainer tools preserve process
 ownership, bound failed runs, verify complete framed shutdown, and cannot
 promote a lifecycle assertion without evidence tied to the actual installer.
 
+CUDA admission describes only the default visible ordinal actually used by
+inference. Retained TOC attribute text consumes the existing shared decoded-text
+budget. The mutable Chatterbox adapter rejects unsupported audio shapes before
+flattening. New Qwen batch and handoff tool versions cannot lose cleanup
+failures, strand a monitor or sample a restarted child as predecessor residue.
+These tool fixes do not themselves produce new hardware measurements.
+
 No new engine, accepted numeric grammar, automatic recovery, audio persistence,
 larger buffer, public TTS protocol or broader performance claim is introduced.
 
@@ -70,25 +80,25 @@ reproduction, implementation and independently accepted behavior.
 | DCR-01 | `ProductNarrationControls` requires operational recovery for Stop; explicit recovery remains `recovering` during load/warm, hiding Cancel start. | Preserve the terminal episode/one-restart policy from CAF R7.1. U1 exposes cancellation for the actually owned recoverable startup; it does not add another recovery attempt. |
 | DCR-02 | Visual block fallback can differ from the saved precise canonical locator. | **WITHDRAWN.** CAF R4.1 expressly preserves the precise checkpoint while publishing actual visual placement. Keep it as a regression control; do not overwrite precise persistence with temporary fallback. |
 | DCR-03 | Development StrictMode detaches a ref, cancels initial restoration, then reconnects while `initialRestorationStarted` still prevents retry. Play can remain pending. | Earlier StrictMode work covered effect cleanup, not this ref lifetime. U2 rearms only the cancelled pending placement; no production-wide remount rewrite. |
-| DCR-04 | Failure reading a secondary CUDA ordinal discards valid ordinal-0 facts, makes the report partial and can block CPU admission too. | **PRESERVE POLICY.** NLC-04/ADR-0063 retains every ordinal or fails closed. A future default-ordinal-only proposal must amend that decision and retain failure of ordinal 0; no GPU-selection change here. |
+| DCR-04 | Failure reading a secondary CUDA ordinal discards valid ordinal-0 facts, makes the report partial and can block CPU admission too. | **INCLUDE, U12.** Query only visible ordinal 0 after validating CUDA initialization/count. Amend ADR-0063's enumeration rule; retain fail-closed admission for an unknown/invalid default, LUID matching and DirectML behavior. Never fall through to another GPU or accept an unrelated partial report. |
 | DCR-05 | The evidence alias supplies a lifecycle PASS constant; `createPackageEvidence` promotes it without a lifecycle receipt bound to that installer. | M011 recorded manually paired runs; that procedure is not enforced by the alias. U8 binds an actual successful lifecycle receipt, retaining the separate Chatterbox journey and signature requirements. Historical receipts are not declared false. |
 | DCR-06 | Pause changes activation before queued `started` arrives; a later `paused` receipt has positive output frames but rendering is false, so partial start/checkpoint publication is lost. | RIA-03, CCF-C20, CLB-02 and CAF R7.3 cover different render/end/clock paths. U1 consumes positive current-unit output evidence once without restarting the paused clock or inferring physical speaker audibility. |
-| DCR-07 | EPUB3 TOC retained image alt/title fallback does not charge the shared decoded-text counter. | **PRESERVE SCOPE.** EBC C13/ADR-0007 charges admitted semantic image descriptions. TOC labels have independent limits. Define retained TOC attribute accounting before extending the budget; avoid double-charging XML text and eclipsed titles. |
+| DCR-07 | EPUB3 TOC retained image alt/title fallback does not charge the shared decoded-text counter. | **INCLUDE, U13.** Charge only normalized attribute-derived UTF-8 bytes retained in a TOC label, including title only when used. Attribute-only collapsed whitespace is charged once; already charged XML text/whitespace, hidden alt and eclipsed title are excluded. Preserve independent label/node limits; amend ADR-0007 explicitly. |
 | DCR-08 | Blocking batch receive lacks streaming's generation identity and can tear down the same Process concurrently with Cancel. | RCF-22 corrected streaming ownership. U7 extends concrete attempt ownership to batch cancellation and idempotent teardown without holding a lock across blocking receive. |
 | DCR-09 | `20 °C – 25,5 °C` and `20 °C – −5 °C` can expand the first endpoint because the right-neighbor recognizer accepts digits only. | CCF-C18 protects integer ranges and separators. U4 preserves the whole unsupported decimal/signed range, source mapping and bounded lookahead; no new number expansion. |
 | DCR-10 | After PCM acceptance, synchronous sink failure enters a catch that calls `failActiveSynthesis` with no active synthesis; `invalid-state` masks the error and a derived finally promise rejects unobserved. | MPA handles processor/preparation failures. U1 routes the typed sink failure to playback containment and settles only an owned active action. A later tick may already clean up, so do not assert an inevitable leak. |
-| DCR-11 | Bilingual and adapter-layout host firewall predicates accept partial restrictions rather than proving the effective unrestricted outbound block. | CAF R3.5 corrected Python preflight only. U9 checks effective store, profiles/service and rule filters using the actual PowerShell boundary, without modifying user firewall rules. |
+| DCR-11 | Bilingual, adapter-layout and handoff host firewall predicates accept partial restrictions rather than proving the effective unrestricted outbound block. | CAF R3.5 corrected Python preflight only. U9 checks the JS hosts against that effective-store/profile/service/filter contract. U10 makes the handoff caller reuse the existing Python WindowsFirewallNetworkProbe. Test actual PowerShell boundaries without modifying user firewall rules. This is another caller of 11, not a 26th case. |
 | DCR-12 | The adapter host accepts `stopped` plus process close/code 0 despite trailing malformed/partial/extra stdout records. | Service-layout and cleanup fixes did not validate terminal reader state. U9 requires clean final framing after stdio close while preserving queued `protocolRejected` delivery on the malformed-input route. |
 | DCR-13 | Batch controller marks itself active before initial clock/resource reads outside finally; an exception leaves it permanently busy. | Existing batch evaluation history does not fix controller lifetime. U7 protects acquisition and measurements while preserving the original exception and unrelated identity ownership. |
 | DCR-14 | Loopback reservation has no error handler; an asynchronous bind error can terminate Node after backup/install, bypassing restoration. | SAF-01/RAC-03/CCF-C04 cover other spawn/restoration paths. U8 fixes only reservation/listener ownership and propagates failure into the existing finalizer. |
 | DCR-15 | An early ANIM/ANMF marker sets animated=true, then a later VP8X can overwrite it with false and admit malformed input as static. | U5 makes animation evidence monotonic or rejects the contradictory order. This proves predecode rejection only, not an animation exploit accepted by the real decoder. |
-| DCR-16 | Chatterbox flattens before checking dimensionality, so hypothetical multichannel output could become concatenated mono. | **DEFER.** The pinned engine returns valid `(1,N)` mono; no admitted multichannel trigger was found. At the next runtime change, validate `(N,)`/`(1,N)` before flattening and reject other shapes. Frozen packaged modules need a versioned successor. |
-| DCR-17 | Official Qwen v4 stores a close failure in terminal_code after its last consumer, omitting it if residue is zero. | **DEFER TO A NEW EVALUATION VERSION.** Its profile freezes failure/cleanup/conclusion accounting. Record explicit close failure and fail the relevant audit in a successor; preserve rejected historical v4 results. |
-| DCR-18 | Official Qwen v4 starts its monitor before candidate factory/load but stops it only on normal completion. | **DEFER WITH DCR-17.** A successor must stop/join after candidate cleanup on every path without replacing the primary error with measurement validation. This is a daemon lifetime inside the historical CLI, not a demonstrated app leak. |
+| DCR-16 | Chatterbox flattens before checking dimensionality, so hypothetical multichannel output could become concatenated mono. | **INCLUDE AS HARDENING, U14.** Accept only bounded nonempty `(N,)`/`(1,N)` shapes before CPU copy/flattening in the mutable adapter. The pinned engine returns `(1,N)`; this is not a reproduced installed-v7 defect. Keep frozen packaged sources/payloads unchanged and state that deployment boundary explicitly. |
+| DCR-17 | Official Qwen v4 stores a close failure in terminal_code after its last consumer, omitting it if residue is zero. | **INCLUDE, U15, successor v13.** Record close failure independently of the generation diagnostic; fail cleanup audit and both dependent viability conclusions even with zero residue. Do not start another trial after unverified close. Freeze new authority/schema identities; preserve historical v4 derivation and results. |
+| DCR-18 | Official Qwen v4 starts its monitor before candidate factory/load but stops it only on normal completion. | **INCLUDE WITH 17, U15.** An outer owner finalizer covers monitor start, factory, load and trials. Always signal/attempt bounded join after candidate cleanup; preserve a primary failure and report incomplete cleanup separately. This is a tool lifetime defect, not a demonstrated app leak. |
 | DCR-19 | Removal rejects root/leaf reparse points but follows an intermediate managed ancestor redirected to a sibling within the root. Containment alone does not prove ownership. | VCA-02 and later removal work protect other links/cleanup states. U6 checks every owned ancestor before mutation. Do not extend the claim to promotion, which already checks its parent. |
 | DCR-20 | Replacement during pending containment can reject verified cleanup because the original TTS diagnostic survives; the sticky barrier blocks later books. Conversely, a non-TTS diagnostic can let App accept failed backend cleanup with zero unit counters. | VCA-05, CAF R7.1 and CCF-C07 remain necessary. U1 gives App an explicit idempotent verified-close outcome, independent of failure text, covering both directions. |
 | DCR-21 | Handoff CLI waits in its process/reader/queue loop without an overall deadline; the later wait(timeout=5) cannot bound that loop. | MAF-05 strengthened finally but does not make the loop exit. U10 adds a monotonic outer watchdog and bounded draining, retaining owned cleanup and primary failure. |
-| DCR-22 | Native handoff emits cleanup, sleeps 50 ms and restarts without observer acknowledgement; late sampling can count the successor as residue. | **DEFER TO A VERSIONED MEASUREMENT FOLLOW-UP.** The 50-ms cleanup delay is explicitly frozen in service-handoff-profile-v1.measurementAuthority, whose invalidation rules require a new version. A successor should use bounded phase-correlated acknowledgement; do not silently replace v1 timing or certify its old receipt again. |
+| DCR-22 | Native handoff emits cleanup, sleeps 50 ms and restarts without observer acknowledgement; late sampling can count the successor as residue. | **INCLUDE WITH 21, U10, handoff v2.** Hold the native runner at each cleanup boundary until the observer returns a matching, bounded acknowledgement after fresh zero-resource checks. Version the private measurement exchange/profile/result; preserve the M007 service protocol and old v1 evidence. |
 | DCR-23 | In development, saved Aiden plus EN→ES→EN can leave Piper visible while fresh pre-start probing restores Aiden; the identity guard then rejects Play. | U3 settles the language-specific choice from a fresh authoritative check before enabling start. Preserve saved explicit preference, stale-response rejection and release-locked exclusions. |
 | DCR-24 | Four valid blocks totaling 360,000 frames at 24 kHz/1x can sum to 14999.999999999998 ms, then floor to 14999 and delay Quick startup. | RCF-20 removed per-unit flooring. U1 sums remaining frames with exact rational arithmetic across active/future rates and floors once; no epsilon or per-rate floor. |
 | DCR-25 | A historical raw file modified in the index then deleted locally is exempted using worktree deletion although modified bytes remain staged. | The PR #229 exemption allows legitimate unstaged cleanup. U11 permits it only when the normal index entry still matches HEAD mode/blob. Current HEAD contains only four allowed non-Markdown evidence files; use synthetic repositories. |
@@ -114,8 +124,12 @@ per-file refactor baseline or refactor-validation report is substituted.
 | U7 | 08/13; high process ownership | `services/tts/benchmarks/isolation.py`, `batch_execution.py`; `dual_worker_runtime.py` only if needed by ownership; existing isolation/dual-worker/batch tests. No model execution or official v4 accounting edits. |
 | U8 | 05/14; high release evidence/restoration | `apps/desktop/scripts/{windows-release.mjs,ordinary-chatterbox-release-host.mjs}` and their Node tests; `scripts/test-windows-package-lifecycle.ps1`; evidence alias in root `package.json`. A directly tested receipt helper is permitted only if needed to test the actual producer without executing an installer in a unit test. |
 | U9 | 11/12; high verification | `apps/desktop/scripts/{bilingual-portfolio-host.mjs,tts-adapter-layout-host.mjs}` and their Node tests. At most one small shared predicate module if both real consumers justify it; no general harness redesign. |
-| U10 | 21; high tool cleanup | `services/tts/benchmarks/service_handoff_cli.py` and `test_service_handoff_cli.py`; unchanged authority tests as controls. Rust handoff runner/profile/schema/results remain unchanged because 22 is deferred. |
+| U10 | 21/22 and the handoff caller of 11; high native/tool ownership | `services/tts/benchmarks/service_handoff_cli.py`, `apps/desktop/src-tauri/src/tts_service_handoff.rs` and their direct tests; diagnostics dispatch only if needed to reject version mismatch. Add `benchmarks/tts/service-handoff-profile-v2.json`, `schemas/service-handoff-result-v2.schema.json` beneath that directory and `services/tts/benchmarks/service_handoff_v2_authority.py`. Preserve the v1 validator/files/results. Reuse `WindowsFirewallNetworkProbe` rather than another predicate. |
 | U11 | 25; low/medium tooling | `scripts/check-evidence.mjs`, `scripts/check-evidence.test.mjs`, and the exact exemption description in `docs/development/evidence-retention.md`. |
+| U12 | 04; high native admission | `apps/desktop/src-tauri/src/host_profile_detection/windows_probe.rs`, its directly coupled probe/normalization tests and ADR-0063. Add only the small native-call seam needed to test the actual ordinal selection. No report-schema, profile-ID or GPU selection change. |
+| U13 | 07; high EPUB budget | `packages/epub/src/navigation/navigation-document.ts`, its tests, existing public ingestion/budget tests and ADR-0007. Use the existing processing budget and UTF-8 counting helper; no new counter policy or general parser refactor. |
+| U14 | 16; medium defensive validation | `services/tts/src/voxleaf_tts/adapters/chatterbox.py` and `services/tts/tests/test_chatterbox_adapter.py`. Existing `test_chatterbox_sources.py` is a provenance control, not permission to edit frozen packaging. |
+| U15 | 17/18; high evaluation ownership/accounting | `services/tts/benchmarks/{batch_official.py,batch_cli.py,batch_result.py,batch_result_cli.py}` and existing official/CLI tests; new `v13_authority.py` and its direct tests. Add `benchmarks/tts/profile-v13.json` and `schemas/short-segment-batch-{raw,summary}-v13.schema.json` there. Reuse stable mechanics without a general evaluation framework. Preserve v4 authority/corpus/schemas/results and legacy derivation. |
 
 New behavioral tests should use `DCR-<case>` or `dcr_<case>` identifiers in the
 existing test locations. Browser additions belong to existing reader/reflow
@@ -131,8 +145,10 @@ journals stay in ignored `tmp/evidence/deep-chat-audit/<run>/`.
 Excluded: dependencies/locks, engine selection/support, historical receipts,
 completed plans, frozen v1 normalization, frozen Chatterbox runtime sources,
 official Qwen v4 and handoff-v1 evaluation authority, bulk formatting, new
-downloads, performance/quality campaigns and publication. Planned follow-ups
-16-18/22 must get separate version/scope decisions before changing those owners.
+downloads, performance/quality campaigns and publication. New v13/v2 tooling
+and its deterministic acceptance are included; new hardware result collection,
+model promotion and a new installed Chatterbox package are not. Version names
+are unoccupied at planning time; confirm before creating them at M0.
 
 ## 5. Relevant files and documentation
 
@@ -193,17 +209,120 @@ Retain separate journey and signing requirements; do not rewrite old receipts
 or claim a fresh signed/publication-ready release. Document any new CLI option
 and output location before using it; it is proposed, not an existing command.
 
-U10's watchdog must bound both outer waiting and inner queue draining and must
-not reset on every output line. Derive a conservative execution bound from the
-existing finite matrix/timeouts, outside measured successful-case intervals;
-do not change matrix order, delays, measurements or accepted historical results.
-Keep primary failure and bounded owned process/reader/sampler cleanup. A timeout
-without verified cleanup remains failed, never a successful benchmark receipt.
+U10's watchdog must bound outer waiting, inner draining and acknowledgement
+waiting without resetting on each line. Bound individual blocking operations,
+queued records and line sizes as well; an output flood cannot defer the deadline
+or grow memory indefinitely. Derive and freeze the execution/cleanup bounds
+from the finite matrix and existing operation timeouts. Keep primary failure
+and bounded owned process/reader/sampler cleanup. Timeout or incomplete cleanup
+never produces a successful benchmark receipt.
 
-Review the system diagram at closeout. The intended owner/process topology is
-unchanged; update it only if implementation actually changes a documented
-boundary. Review narration terminology/M005 for U4 without rewriting frozen
-history. U8's new evidence contract belongs in maintained release documentation.
+### Decisions for the seven previously excluded cases
+
+**02: Preserve the precise checkpoint.** ADR-0011 and CAF R4.1 distinguish a
+canonical persisted locator from temporary visual block placement. Overwriting
+the former would lose precision on reopen/reflow. Keep the existing behavior
+and existing checkpoint controls in U2/G3/G6; add no separate test merely to
+relabel a non-bug. Reconsider only if an actual loss of the canonical checkpoint
+is reproduced, which would be a different trigger.
+
+**04: Probe the device actually used.** Preserve CUDA library/init/count
+validation, then query only visible ordinal 0. Keep its compute capability,
+LUID and free-memory/context cleanup checks. Unknown or invalid ordinal 0 still
+fails closed; a healthy ordinal 1 never rescues it. Do not relax the global
+partial-report guard or silently select another GPU. This is smaller than
+representing partial inventories in the public report, and removes irrelevant
+secondary-device calls. Add a dated ADR-0063 amendment; retain its earlier
+decision and completed NLC history. Synthetic native-call tests establish call
+selection, not physical multi-GPU compatibility.
+
+**07: Charge retained attribute contributions once.** Track a bounded scalar
+count of normalized UTF-8 bytes contributed by visible XHTML `img.alt` and, only
+when the label is otherwise empty, its `title` fallback. Apply the existing
+shared budget before publishing the completed label. Keep the 1,024-code-point
+limit and parser checkpoints; do not allocate per-character provenance or copy
+the whole label just to account for it. Collapsed whitespace needs one small
+origin state: charge its one retained space only when the pending run came
+entirely from attributes. If XML whitespace participates, that space is already
+covered by XML decoding. Ignore leading/trailing collapsed whitespace, hidden
+or non-image alt, unused title and NCX text already charged by the XML reader.
+Mixed XML/attribute runs and split XML events must produce identical charges.
+Do not reset/refund the shared counter between rootfile candidates. If the same
+attribute is separately retained as a semantic image description, each retained
+use consumes budget; XML text is still not charged again. Document this bounded
+extension in ADR-0007 rather than raising the 64-MiB ceiling.
+
+**16: Harden the mutable adapter only.** Inspect shape before CPU transfer and
+flattening: allow `(N,)` and `(1,N)` with `0 < N <= MAX_AUDIO_SAMPLE_COUNT`;
+reject scalar, empty, multichannel/transposed and higher-rank output. Preserve
+existing dtype, finite-sample, byte-length and cancellation checks and byte-for-
+byte mono output. Use shape-aware model-free doubles that reproduce flattening,
+not the current double whose `reshape` simply returns itself. The pinned engine
+already emits `(1,N)`. Installed v7 sources come from immutable historical Git
+blobs through `packaging/chatterbox_sources.py`, not this mutable adapter.
+Therefore this plan does not claim to update v7 or rebuild/publish a model
+runtime solely for an unobserved shape. A future engine/package change must
+carry the guard through a new package authority and its own acceptance.
+
+**17 and 18: One bounded Qwen successor, v13.** Existing v5-v12 profiles are
+occupied. Reuse v4's corpus, candidate lock, model settings and finite matrix;
+create new profile/raw/summary and authority identities for changed failure and
+cleanup semantics. Record close failure in an independent typed failure set,
+even if a generation failure already exists or sampled residue is zero. The
+summary's cleanup audit and both dependent viability conclusions must fail;
+appending a diagnostic alone is insufficient. No further candidate/trial may
+start after unverified close. Preserve primary and cleanup failures without
+retaining exception text or inventing resource values.
+If close failure prevents required trials, emit a failed, non-derivable outcome
+instead of manufacturing missing records. Independently, derivation must reject
+or fail a complete raw record that contains cleanup failure despite zero residue.
+
+An outer ownership scope covers monitor start, factory, load, execution and
+cancellation trials. Candidate cleanup precedes monitor shutdown. Separate
+idempotent stop/join from metric validation so factory/load/measurement failure
+or interruption cannot skip shutdown or mask the primary error. A still-live
+thread remains owned and is reported as incomplete cleanup; do not discard its
+handle or call that PASS. Normal measurements still cover cancellation trials.
+Incomplete runs have a failed tool outcome, never fabricated complete evidence.
+
+Route new official execution explicitly to v13 and reject retired v4 official
+execution before model/preflight acquisition. Preserve v4 result validation and
+derivation byte semantics, historical hashes and rejected results; legacy raw
+derivation may still perform its existing owned cleanup. Use distinct v13 raw
+paths and receipt identities. Version selection is closed, not arbitrary profile
+loading. CPU admission for a future v13 measurement must reference that version's
+own qualifying GPU result, never the old v4 result. The successor remains
+**unmeasured** until a separately requested hardware evaluation; deterministic
+tests use synthetic admission/results and confer no model viability claim.
+
+**22: Acknowledge cleanup in handoff v2.** Replace the race with a private
+native-runner/observer exchange. After verified service cleanup, retain 50 ms
+of minimum quiescence, emit a versioned cleanup-ready event with phase and
+monotonic sequence, then wait for its matching acknowledgement before restarting
+or completing the final phase. The observer takes fresh zero-child/RAM/dedicated-
+and-shared-VRAM samples while the runner is held, and acknowledges only success.
+Nonzero/unknown observations fail; do not add retries or a longer resource grace
+period to make them pass. Require exactly four unique successful boundaries.
+Reject wrong/replayed/out-of-order acknowledgement, EOF, oversized records and
+timeout; retain one outstanding acknowledgement at most. Failure triggers owned
+cleanup, not a restart. Avoid unbounded stdin readers on both sides.
+
+Freeze new v2 profile/result/authority identities before any official run; keep
+matrix order and timed operation definitions, excluding observer waiting from
+the next operation's timing. The acknowledgement pipe is Python-to-maintainer-
+Rust only: M007 Rust-to-TTS service framing remains unchanged. A versioned private
+host entrypoint and initial handshake gate service launch; CLI/native version
+mismatch fails before starting TTS. Preserve v1 validation/evidence
+but do not issue new v1 receipts from modified tooling. Model-free delayed-reader
+and subprocess checks validate synchronization; they do not re-certify old
+hardware measurements or create a v2 performance result.
+
+Review the system diagram at closeout. Product process topology is unchanged;
+document the new maintainer acknowledgement flow wherever that flow is shown.
+Review narration terminology/M005 for U4 without rewriting frozen history.
+Document U8's receipt in maintained release guidance, U10/U15's new execution
+and legacy derivation routes in benchmark guidance, and U12/U13's policy changes
+in the maintained ADRs. Never label planned tools or unmeasured results complete.
 
 ## 7. Milestones
 
@@ -211,8 +330,10 @@ history. U8's new evidence contract belongs in maintained release documentation.
 
 **Status: Not started.** After implementation is authorized, re-read this plan
 and current HEAD/worktree; preserve unrelated work. Resolve path ownership and
-record source/test/configuration identities before edits. Verify all 18 triggers
-are still reachable and retain the seven no-change/versioned dispositions.
+record source/test/configuration identities before edits. Recheck the 23
+correction/policy cases, the bounded hardening case and the withdrawn case
+separately. Confirm v13/v2 version availability and freeze new authority and
+protocol limits before implementation tests; never overwrite an occupied name.
 
 Map each assertion below to existing tests before adding anything. Retrieve
 original receipts before considering reruns; missing proof is not PASS. Record
@@ -227,14 +348,20 @@ Do not run a whole-repository pre-change suite.
 ### M1: Reproduce and minimally correct owned units
 
 **Status: Not started.** Use one writer, sequentially. Suggested order is
-U11, U7, U9, U10, U8, U4/U5, U2/U3, U1, U6; an owner dependency can justify a
-recorded reorder. U1 and U6 require the highest review attention. Source changes
+U11, U7, U15, U9, U10, U8, U4/U13/U5, U2/U3, U1, U12/U6, U14; an owner
+dependency can justify a recorded reorder. U7 precedes U15 because they share
+batch lifecycle helpers. U10 alone owns the handoff caller of 11. U1, U6, U10,
+U12 and U15 require particular review attention. Source changes
 remain provisionally implemented until all applicable integration gates pass.
 
 For each unit run only its new focused regressions against unchanged production
 code, capture the intended failure, make the smallest correction, and rerun the
 same selection. A fixture failure is not a defect reproduction. If the trigger
 cannot be reached, stop that correction and record the narrower conclusion.
+For 16, a rejected synthetic shape proves the defensive contract, not a current
+engine failure. For successor tools, first reproduce the legacy race/lifetime/
+accounting failure with model-free inputs, then exercise the new version;
+missing imports or schemas are not RED evidence for the original defect.
 
 The missing behavioral assertions are:
 
@@ -249,8 +376,12 @@ The missing behavioral assertions are:
 | U7 | Deterministically coordinated batch receive+cancel with exactly one verified teardown, stale owner unable to terminate/consume successor, pre-dispatch cancellation and retry; initial clock/probe failure leaves the controller reusable with no publication. Use bounded barriers and real synthetic child ownership where needed, no model. |
 | U8 | Missing/foreign/tampered/incomplete lifecycle receipt rejected; correct matching receipt accepted only after producer cleanup; legacy alias cannot assert PASS. Async bind error on either reservation reaches existing restoration, preserves backup on uncertain cleanup, leaves no owned server/driver. Synthetic files/processes only in unit tests. |
 | U9 | Actual PowerShell predicate accepts the canonical effective rule and rejects partial profile/port/protocol/address/interface/service constraints, unavailable store and query error without changing firewall. Reader rejects malformed/partial/extra trailing data after stopped, accepts fragmented clean stopped/EOF, retains protocolRejected and bounds. |
-| U10 | A silent live child, continuously produced lines and a retained output reader reach one fixed watchdog; failure/interruption releases owned child/samplers or reports incomplete cleanup. Preserve valid event/matrix derivation and primary exception. Use a disposable synthetic subprocess and controlled samplers. |
+| U10 | Silent/live/flooding child and retained reader reach a fixed watchdog with bounded queue/records; delayed observation beyond 50 ms cannot encounter a successor before acknowledgement. Test the real private pipe exchange with a disposable child, four distinct receipts, wrong/replayed acknowledgements, unknown/nonzero samples, EOF, timeout and cleanup after interruption. Rust tests exercise native gating, not only a Python reimplementation. Version mismatch fails before service launch. Preserve v1 fixture validation, timed operation boundaries, primary failures and the reused effective-firewall predicate through its real caller. |
 | U11 | Historical unchanged local deletion still passes; staged modification plus local deletion fails; staged deletion, staged-new local deletion, neighbor paths, mode changes and read errors retain their intended behavior. Use isolated temporary Git repositories. |
+| U12 | Native-call seam with valid ordinal 0 and a secondary ordinal that would fail proves no secondary call is made. Invalid/unknown ordinal 0 plus healthy ordinal 1 remains rejected. Preserve init/count bounds, unavailable CUDA, unknown free memory, LUID mapping, context release and DirectML controls. A normal current-host probe is not multi-GPU evidence. |
+| U13 | Exact shared byte limit and one-byte overflow with multibyte alt/title; used versus eclipsed title; hidden/non-image alt; leading/trailing and mixed XML/attribute whitespace, split XML events, NCX and a navigation document also projected as spine content. Exercise the public shared-rootfile budget, normal labels, cancellation/checkpoints and existing label bounds without multiplying whole ingestion runs. |
+| U14 | Valid `(N,)`/`(1,N)` yield identical PCM; reject scalar, empty, two channels, transposed channel axis, higher rank and oversized N before transfer/reshape. Retain finite-sample/payload boundaries and prove installed-v7 source resolution still uses its frozen blobs. No GPU/model is needed for these checks. |
+| U15 | Close raises with zero residue and otherwise passing metrics: typed cleanup failure survives and both dependent conclusions fail. Preserve simultaneous primary failure; no next trial starts with uncertain ownership. Factory/load/controller/monitor failure and interruption always signal/join or explicitly retain/report the live monitor. Test normal cancellation-window coverage, failed metric validation, partial start and idempotent teardown. Exercise v13 CLI/derivation/schema/CPU-admission isolation and unchanged v4 historical derivation; use model-free candidates and bounded real threads/processes. |
 
 Acceptance: each retained correction has correctly attributed RED/GREEN receipts
 and a bounded diff. No unit acceptance claims cover pending integration/cleanup.
@@ -289,10 +420,12 @@ rerun only invalidated gates and obtain a new immutable APPROVE for the exact
 current patch. Missing evidence/reviewer is BLOCKED, not acceptance.
 
 Record all 25 dispositions, remaining uncertainty and actual commands. Review
-the system diagram and maintained behavior docs. Archive only after the 18-case
-scope and required acceptance are complete; preserve deferred cases explicitly
-and link any separately approved successor plan. This does not mean every
-historical concern is fixed. Future Git delivery needs its own authorization.
+the system diagram and maintained behavior docs. Archive only after all retained
+correction/policy cases, the mutable-adapter hardening and required acceptance
+are complete. Record 02 as withdrawn and v13/v2 as unmeasured unless actual new
+hardware evidence exists. State that installed v7 was not changed by 16. This
+does not mean every historical concern was a current product bug. Future
+implementation Git delivery needs its own authorization.
 
 ## 8. Testing and benchmark strategy
 
@@ -318,6 +451,12 @@ Original local receipt roots are
 `tmp/evidence/epub-budget-cancellation-reflow/20261106-01/`.
 Do not edit them or copy private host inventories into committed Markdown.
 
+The expanded scope also invalidates EBC's changed TOC/budget responsibility,
+native probe/handoff behavior and official-batch lifecycle/accounting results.
+Reuse their fixtures and prepared inputs where proven identical, not their
+old PASS for those changes. New profile/schema identities cannot inherit a
+historical evaluation result, even if model weights and the corpus are unchanged.
+
 Useful original costs: CCF G2-shared ~1.08 s; G2-epub ~41.52 s;
 G3-desktop-final ~5.34 s; G4-python ~7.18 s; G4-node ~62.28 s;
 G5/G7 Rust ~28.41 s; core regeneration ~60.99 s versus check ~7.29 s;
@@ -337,8 +476,10 @@ These are planning observations, not current duration guarantees.
 2. **Prepared artifacts:** reuse locked dependencies, synthetic fixtures,
    model/runtime downloads and unchanged Piper/Chatterbox payloads after exact
    manifests and full input verification. This does not reuse runtime PASS.
-   No current Python packaged service module is planned to change; benchmark
-   modules are separate. Verify that fact against the actual builder closure.
+   U14 changes a mutable service adapter but installed Chatterbox v7 resolves
+   historical source blobs. Verify every actual builder closure, including
+   Piper's, before declaring an archive reusable; never assume module names
+   prove exclusion. Do not rebuild frozen Chatterbox payloads for this guard.
 3. **Within this batch:** a focused GREEN can supply its exact assertions in the
    final report while unchanged, but does not replace missing owner integration.
    Run one final combined selected group after its last relevant edit. Later
@@ -362,16 +503,16 @@ already exist. Record each exit independently and stop dependent work on failure
 
 | Gate | Invariant / timing | Existing command or selection; invalidation |
 | --- | --- | --- |
-| G0 | Current workspace exports before consumers | `pnpm.cmd build:packages` once after U4; rebuild only if EPUB/shared/build inputs change. A verified identical shared output can be reused. |
+| G0 | Current workspace exports before consumers | `pnpm.cmd build:packages` once after U4/U13; rebuild only if EPUB/shared/build inputs change. A verified identical shared output can be reused. |
 | G1 | Actual missing behavior before/after each unit | Select new `DCR-`/`dcr_` cases in the existing Vitest/pytest/Node/Rust runners below. Keep failed assertions and fixture errors distinct. No broad pre-change rerun. |
-| G2 | Mutable narration, source ranges and resource bounds | Combined EPUB command below after final U4 and current exports. Changes to its transitive preparation closure invalidate it. |
+| G2 | Mutable narration, source ranges, TOC and shared resource bounds | Combined EPUB command below after final U4/U13 and current exports. Changes to its transitive preparation/ingestion closure invalidate it. |
 | G3 | UI, player, settings, persistence and raster ownership | Combined desktop command below after U1-U5. Shared files/tests make this one final group, not five repeated suites. |
-| G4 | Tool ownership and real PowerShell/Node boundary | Selected Python and Node commands below after U7-U10. Synthetic processes, streams/rules and temporary roots; no model/firewall mutation/real installer in unit tests. |
-| G5 | Native containment/removal in both feature modes | `pnpm.cmd test:rust` once after U6 and current embedded core authority. Preserve Windows junction and supervisor controls; ignored tests remain ignored, not passing host evidence. |
+| G4 | Tool ownership/accounting, shape validation and real PowerShell/Node boundary | Selected Python and Node commands below after U7-U10/U14/U15. Synthetic processes, real bounded monitor threads, streams/rules and temporary roots; no model/firewall mutation/real installer in unit tests. |
+| G5 | Native containment/removal, default CUDA and handoff gating in both feature modes | `pnpm.cmd test:rust` once after U6/U10/U12 and current embedded core authority. Keep actual ordinal-selection tests plus the existing production Windows probe smoke test; preserve junction and supervisor controls. This is not physical multi-GPU certification. Ignored tests remain ignored, not passing host evidence. |
 | G6 | Browser event ordering, StrictMode placement, real worklet and settings | Selected Playwright command below once after final exports/source. Add three cohesive DCR journeys: initial restore/language settlement; output receipt/Pause/Stop/recovery cancellation; A→B→C verified close. Add a small WebP rejection assertion to existing raster coverage if needed. Do not use the full browser matrix. |
 | G7 | Current format/lint/types | Configured TS, Python and Rust commands below once after their final inputs. Global scanners are invalidated by any relevant discovered-file change; scoped follow-up checks need an explicit coverage proof. |
 | G8 | Current artifact and packaged WebView2 playback | `pnpm.cmd package:piper-core:check`; `pnpm.cmd build:desktop`; then existing startup/Piper leaves below on that exact binary. Reuse payloads, not the old executable. Renew if frontend/native/imported artifact inputs change. |
-| G9 | Exact optional cleanup/admission and restoration | `pnpm.cmd test:chatterbox:v7:local-admission` once for U6 using verified local artifacts. This is not model inference or a new download. Its old ~12-minute PASS cannot accept changed removal. |
+| G9 | Exact optional cleanup/admission and restoration | `pnpm.cmd test:chatterbox:v7:local-admission` once for U6 using verified local artifacts. This is package admission, not a hardware-profile probe, model inference, a new download or proof of installed-v7 hardening. Its old ~12-minute PASS cannot accept changed removal. U12 is covered by G5, not by relabeling this receipt. |
 | G10 | Lifecycle receipt producer bound to final installer | `pnpm.cmd package:windows:verified-core`, then `pnpm.cmd package:windows:lifecycle` once, with owned recovery journal and exact NSIS identity. Capture the new receipt only after cleanup. Synthetic consumer tests cover matching/mismatching paired receipts; do not claim a current full Chatterbox journey or public-release PASS. |
 | G11 | Evidence/index behavior and docs | `pnpm.cmd test:evidence` once after U11, then `pnpm.cmd check:evidence`, `git diff --check` and changed-link inspection on final docs/patch. Repeat the guard on the final index if future staging is authorized; no need to rerun unchanged synthetic tests for that staging. |
 | G12 | Independent acceptance | Current immutable `change_reviewer` APPROVE covering the exact patch, actual/reused gate evidence and complete host restoration. Any patch drift requires a new assessment and only affected reruns. |
@@ -379,7 +520,7 @@ already exist. Record each exit independently and stop dependent work on failure
 G2:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/epub exec vitest run src/narration/narration-normalizer.test.ts src/narration/narration-resource-bounds.test.ts src/integration/narration-preparation-matrix.test.ts
+pnpm.cmd --filter @voxleaf/epub exec vitest run src/narration/narration-normalizer.test.ts src/narration/narration-resource-bounds.test.ts src/integration/narration-preparation-matrix.test.ts src/navigation/navigation-document.test.ts src/security/processing-budget.test.ts src/public/open-epub-publication.test.ts
 ```
 
 G3 (retain the named owner controls; add a suite only for an uncovered changed
@@ -392,14 +533,18 @@ pnpm.cmd --filter @voxleaf/desktop exec vitest run src/App.test.tsx src/reader/R
 G4:
 
 ```powershell
-uv run --project services/tts --locked pytest -p no:cacheprovider services/tts/tests/test_benchmark_isolation.py services/tts/tests/test_benchmark_dual_worker_runtime.py services/tts/tests/test_benchmark_batch_execution.py services/tts/tests/test_benchmark_batch_matrix.py services/tts/tests/test_benchmark_batch_cli.py services/tts/tests/test_benchmark_batch_official.py services/tts/tests/test_service_handoff_cli.py services/tts/tests/test_service_handoff_authority.py
+uv run --project services/tts --locked pytest -p no:cacheprovider services/tts/tests/test_benchmark_isolation.py services/tts/tests/test_benchmark_dual_worker_runtime.py services/tts/tests/test_benchmark_batch_execution.py services/tts/tests/test_benchmark_batch_matrix.py services/tts/tests/test_benchmark_batch_cli.py services/tts/tests/test_benchmark_batch_official.py services/tts/tests/test_benchmark_v4_authority.py services/tts/tests/test_service_handoff_cli.py services/tts/tests/test_service_handoff_authority.py services/tts/tests/test_chatterbox_adapter.py services/tts/tests/test_chatterbox_sources.py
 node --test apps/desktop/scripts/bilingual-portfolio-host.node-test.mjs apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs apps/desktop/scripts/windows-release.node-test.mjs apps/desktop/scripts/tts-adapter-layout-host.node-test.mjs
 ```
 
-The official-batch tests above are model-free compatibility controls for shared
-batch helpers; they do not execute or redefine official v4 evaluation. If U8
-needs a new receipt helper, exercise its actual PowerShell implementation from
-the existing Windows Node suite, not a separately implemented JS imitation.
+Extend the existing CLI/official suites with the successor regressions. Once
+created, append planned `services/tts/tests/test_benchmark_v13_authority.py` and
+`services/tts/tests/test_service_handoff_v2_authority.py` to that same Python run;
+these files do not exist yet. Their model-free positive/negative schema tests
+also verify unchanged v4/v1 historical hashes and derivation/validation. This
+does not execute or redefine a historical hardware evaluation. If U8 needs a
+new receipt helper, exercise its actual PowerShell implementation from the
+existing Windows Node suite, not a separately implemented JS imitation.
 
 G6 uses the existing Playwright runner. Windows `--%` preserves the regex pipe
 from cmd wrappers; verify selected names/counts so an empty collection cannot
@@ -446,10 +591,14 @@ if inspection proves the existing runner executes both complete invariant sets.
 U9 changes maintainer predicates/framing, not model output. Its actual
 PowerShell synthetic-rule checks and real synthetic framed-subprocess tests
 are the required acceptance; do not rerun all Piper/Chatterbox ES/EN candidate
-benchmarks merely to observe a healthy shutdown. U10 uses a real disposable
-child plus fake measurements to test the watchdog, preserving frozen successful
-measurement semantics. If implementation changes a successful measurement or
-the production protocol, stop for a versioned follow-up; do not reuse v1 PASS.
+benchmarks merely to observe a healthy shutdown. U10/U15 use disposable children,
+controlled measurements and actual monitor/pipe ownership to verify the changed
+boundaries. Existing Qwen v4 and handoff-v1 results remain historical; their
+numbers cannot be copied into v13/v2. No new full model matrix is required to
+accept tool correctness or U14's shape guard. Hardware/performance validation
+of the successors remains explicitly NOT RUN and is required before making
+any new corresponding measurement claim. A future requested hardware run must
+freeze its authority first and use separately identified output paths.
 
 ### Receipts, recovery and retry limits
 
@@ -490,15 +639,25 @@ a stall before cancellation using existing ownership rules.
   A canonical in-root path alone is not proof that the package owns that path.
 - Receipt changes cannot manufacture lifecycle success, overwrite historical
   evidence, skip cleanup, or silently attest signing/publication readiness.
-- Frozen Qwen/handoff policies remain deferred. The discovery that handoff's
-  50-ms delay is frozen prevents an in-place handshake change for DCR-22.
+- Default-only CUDA probing must not admit an invalid ordinal 0 or weaken the
+  global report guard. Retained TOC attributes must neither bypass the shared
+  budget nor double-charge XML, hidden text or unused fallbacks.
+- New v13/v2 identities prevent changed cleanup semantics from being presented
+  as old official results. Reject cross-version inputs/receipts before launch;
+  no historical GPU result grants CPU admission under the new authority.
+- Handoff acknowledgement must not introduce a deadlock or unbounded queue.
+  Cleanup failure must stop subsequent work; a lost thread handle or a swallowed
+  error is not successful teardown even when measured residue happens to be zero.
+- U14 hardens mutable code only. Keep installed-v7 provenance explicit and do
+  not claim its frozen module was patched or that a new runtime was validated.
 
 Rollback is a reviewed reversal of this plan's exact patch, preserving any
 unrelated edits; no reset/clean is authorized. Generated artifacts are rebuilt
 only through existing commands after restoring source inputs. Retain old
 receipts and backups until restoration has been verified. Stop and revise the
-plan if a small correction requires a new model, schema, package authority,
-algorithm or broader runtime contract.
+plan if a correction requires a new model, installed package authority, algorithm
+or runtime/public contract beyond the explicitly scoped v13/v2 maintainer-tool
+and lifecycle-receipt contracts.
 
 ## 10. Progress log
 
@@ -509,20 +668,37 @@ algorithm or broader runtime contract.
   Recorded concrete reuse candidates and invalidation boundaries; no historical
   result has been accepted as current execution evidence.
 - 2026-11-09: Found that DCR-22's cleanup delay is explicitly frozen by handoff
-  v1. Classified it as a versioned follow-up; initial scope is 18 corrections.
+  v1. The initial plan deferred it and selected 18 corrections; the decision
+  below supersedes that initial scope without changing historical authority.
 - 2026-11-09: Created the planning branch and drafted this plan plus active-index
   entry. No production/test/configuration file changed and no product tests,
   benchmarks, builds, installer or model command ran.
+- 2026-11-09: Committed the initial planning documents as `3e7b1c9`. The user
+  then delegated decisions for the seven omitted cases. Rechecked their actual
+  callers, policies, packaging provenance and frozen-version constraints.
+- 2026-11-09: Included default-only CUDA, retained TOC attribute accounting,
+  mutable shape hardening, Qwen v13 and handoff v2 tooling. Kept 02 withdrawn.
+  Expanded 11 to its same faulty handoff predicate and 17 through final viability
+  derivation. The revised map has 23 correction/policy cases plus one hardening;
+  hardware re-evaluation and installed-v7 changes remain outside scope.
+- 2026-11-09: Grouped 17/18 into U15 and 21/22 into U10; extended the existing
+  combined EPUB/Python/Rust gates. No product tests or implementation ran during
+  this decision pass. Prior runtime PASS remains historical, not current proof.
 
 ## 11. Discoveries and decisions
 
 - Keep the same 25 IDs; the signed Celsius endpoint and inverse replacement
   admission are extensions of 09/20, not inflated independent findings.
-- DCR-02 preserves CAF R4.1. DCR-04/07 require a separate requirement decision;
-  existing policy is not silently converted into a bug fix.
-- DCR-16 lacks a current engine trigger. DCR-17/18 belong to a frozen rejected
-  evaluation; DCR-22 changes frozen measurement timing. Their successor work is
-  specified in the register, not authorized as an in-place historical rewrite.
+- DCR-02 preserves CAF R4.1. The delegated decisions for 04/07 are explicit
+  amendments to maintained policies, with the constraints in section 6.
+- DCR-16 has no current engine trigger and is intentionally preventive. It is
+  included in mutable code, with no misleading installed-v7 completion claim.
+- Frozen authorities require versioning, not exclusion from this ExecPlan.
+  U15's v13 and U10's v2 are implementation scope; old authorities/results stay
+  immutable and new hardware outcomes stay unmeasured. Increasing a sleep or
+  merely adding a cleanup diagnostic would not solve the relevant boundary.
+- The handoff firewall predicate is another instance of 11. Reuse its existing
+  corrected Python owner instead of introducing another independent predicate.
 - Prepared payload reuse is the main available cost reduction. Current behavior
   tests on changed owners remain necessary; cheap unchanged unrelated suites
   are omitted by scope rather than described as recycled acceptance.
@@ -541,11 +717,13 @@ M0-M3, all RED/GREEN reproductions, current behavior checks, artifact comparison
 builds, browser/native/installer execution and independent implementation review
 remain pending. The planning investigation did not run them.
 
-Planning-only documentation validation on 2026-11-09 used normal local
-PowerShell outside the sandbox: `node scripts/check-evidence.mjs` (the configured
-`check:evidence` leaf) passed; `git diff --check` passed; relative-link inspection
-found no missing targets. Final staged whitespace, exact two-path scope and
-evidence checks are required before the authorized local documentation commit.
+Planning-only documentation validation of the revised plan on 2026-11-09 used
+normal local PowerShell outside the sandbox: `node scripts/check-evidence.mjs`
+(the configured `check:evidence` leaf) passed; `git diff --check` passed; relative-
+link inspection found all 33 local targets. Structural inspection confirmed
+the 25 unique case rows and 12 required sections. Final staged whitespace,
+exact two-path scope and evidence checks are required before the authorized
+local documentation commit.
 No test suite or implementation milestone ran. These checks do not execute this
 ExecPlan and are not runtime acceptance. A later executor must replace the
 pending implementation results with exact RUN/REUSED/NOT-APPLICABLE outcomes,
