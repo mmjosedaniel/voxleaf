@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans.
+- [Deep chat audit: minimal corrections and evidence reuse](deep-chat-audit-minimal-corrections.md)
+  is planning-only. It records all 25 revalidated cases, 18 bounded correction
+  candidates, preserved policies and versioned follow-ups, with focused gates
+  and explicit evidence-reuse rules. Implementation has not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
