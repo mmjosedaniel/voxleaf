@@ -1,0 +1,27 @@
+# Change Review Report
+
+Review ID: DCR-U3-R1-ASTRA-20261109-01
+Task ID: U3 / DCR-23, including the U2/DCR-03 browser interaction
+Verdict: APPROVE — local unit review only
+Base commit and reviewed HEAD: d375ecc84261c404e855c055e0ecc8949a97caaf
+
+Reviewed paths and identities: The closed 21-row manifest in [DCR-U3-EXEC-20261109-01](u3-dcr-23-execution.md), SHA-256 ffa6777c9f3fa20db32e63d88705bcbe65d2b8371a8c65b850ba3395cd61db4e, is incorporated verbatim by reference. Its first five rows are the reviewed U3 changes. Add this unchanged direct-caller support row: apps/desktop/src/tts/HardwareCompatibilityControls.tsx; status clean; SHA-256 c82e3973bb6b4dcacd807b106356c1fc9d4f57e0653144da7f13859abddafee4; filter-aware Git blob 73b50ffd51efbf843c2e48e837a247d9ce95a36e. Preserve the original receipt unchanged. The shared browser file includes the earlier U5 assertion; this report assesses its interaction with U3 without renewing U5's old whole-file identity. Other unit changes and root plan/evidence status edits are excluded from local acceptance.
+
+Identity recheck: PASS. Before/after inspection, HEAD remained the stated commit and the staged index was empty. All 21 supplied paths and the supplemental support path matched their recorded SHA-256, filter-aware blob and status. The saved review-patch.diff equals the current diff for the five owned paths. RED, owner GREEN and final browser GREEN before/after snapshots each match internally. The only changed path shared between the owner receipt and final browser receipt was the browser test; owner production/test inputs stayed unchanged. RED Settings-action and hardware-coordinator blobs equal HEAD.
+
+Acceptance review:
+- DCR-23: APPROVE locally. A successful language save now awaits the authoritative hardware compatibility check before refreshing narrator availability, inside the existing configuration-change barrier. This settles the eligible saved Aiden preference after EN→ES→EN before Play can proceed. The action awaits containment first, does not check/refresh after a rejected selection, and releases its barrier in finally.
+- Preference and concurrency controls: Settings disables language/profile/reset controls while selection is pending. An already-running probe is joined; its completion reconciles successfully completed newer language/profile choices against fresh hardware facts. Both successful and failed stale-probe language cases are asserted by existing owner tests. Explicit English Piper survives the browser language round trip. Narrator availability revision, closed-owner and run-token guards prevent an obsolete refresh from replacing a newer observation or reviving a closed session. Configuration changes require a subsequent explicit start; the patch adds no autoplay path.
+- Failure and development gates: Failed detection clears eligible profiles, then narrator refresh leaves Play unavailable; final Chromium explicitly verifies this. Existing owner controls retain unsupported-version handling, unavailable native development gating and containment-failure rejection. The change does not admit a development profile independently of the existing native gate.
+- U2/DCR-03 interaction: The actual browser journey retains initial restoration, focus and precise-checkpoint controls, then starts the selected Aiden profile through the synthetic native boundary. No U2 production changes were added. The existing U5 raster assertion remains intact. Product documentation describes the new settlement ordering without changing the architecture or privacy boundary.
+
+Test evidence reviewed: Attributed to supplied normal local PowerShell execution, Node v24.20.0 and pinned offline Corepack pnpm 11.15.1; I ran no tests, formatter or build.
+- `pnpm.cmd --filter @voxleaf/desktop test:browser reader-narration-bugfixes.smoke.spec.ts --grep DCR-03/23`: RED exit 1 at 21:18:58–21:19:08 UTC, with saved Aiden unchecked after returning to English on unchanged production. Final GREEN exit 0 at 21:20:57–21:21:03 UTC, one Chromium test passed, including the subsequently added failed-probe control.
+- `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/settings/narration-settings-actions.test.ts src/tts/hardware-profile-compatibility.test.ts src/tts/HardwareCompatibilityControls.test.tsx src/tts/product-narration-coordinator.test.ts`: exit 0, four files and 280 tests passed, 21:20:19–21:20:23 UTC. Reviewed assertions include deferred recheck before refresh, pending Settings controls, stale probe reconciliation, obsolete narrator availability rejection and explicit restart after language replacement.
+- Supplied scoped `pnpm.cmd exec prettier --write` and `pnpm.cmd exec eslint` over the receipt's first four paths both exited 0. This is a formatter-write result, not a claimed formatter-check run. Final source identities match the receipt.
+
+Findings: None.
+
+Remaining uncertainty: Global G3/G6/G7 and final integrated review remain pending. This local Chromium run uses synthetic native service responses; it does not establish real-model, packaged WebView2, installer or release-locked binary behavior. Existing export/build evidence is not renewed for final integration by this report.
+
+Required next action: No U3 correction required. Preserve this report and receipt, complete remaining campaign gates, and recheck exact identities before final acceptance. This approval is neither a Validation Report nor authorization to stage, commit, push or create a PR.

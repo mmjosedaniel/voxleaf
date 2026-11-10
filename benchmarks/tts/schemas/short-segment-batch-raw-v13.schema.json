@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13",
+  "title": "VoxLeaf Qwen short-segment batch raw v13",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusSha256",
+    "executionCommitSha",
+    "treeClean",
+    "resultPurpose",
+    "placementProfileId",
+    "cpuAdmission",
+    "candidateId",
+    "host",
+    "preflight",
+    "calls",
+    "units",
+    "cancellationTrials",
+    "playback",
+    "memory",
+    "cleanup",
+    "failureCodes",
+    "cleanupFailureCodes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-short-segment-batch-raw-v13"
+    },
+    "profileVersion": {
+      "const": "tts-short-segment-batch-profile-v13"
+    },
+    "profileSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/profileSha256"
+    },
+    "corpusSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/corpusSha256"
+    },
+    "executionCommitSha": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/executionCommitSha"
+    },
+    "treeClean": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/treeClean"
+    },
+    "resultPurpose": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/resultPurpose"
+    },
+    "placementProfileId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/placementProfileId"
+    },
+    "cpuAdmission": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/cpuAdmission"
+    },
+    "candidateId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/candidateId"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/host"
+    },
+    "preflight": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/preflight"
+    },
+    "calls": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/calls"
+    },
+    "units": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/units"
+    },
+    "cancellationTrials": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/cancellationTrials"
+    },
+    "playback": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/playback"
+    },
+    "memory": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/memory"
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workerProcessesRemaining",
+        "postCleanupProcessTreeRamBytes",
+        "postCleanupProcessTreeVramBytes",
+        "rawSessionRemoved",
+        "generatedAudioRemoved",
+        "sleepSettingRestored"
+      ],
+      "properties": {
+        "workerProcessesRemaining": {
+          "const": 0
+        },
+        "postCleanupProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "postCleanupProcessTreeVramBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rawSessionRemoved": {
+          "const": false
+        },
+        "generatedAudioRemoved": {
+          "const": true
+        },
+        "sleepSettingRestored": {
+          "const": true
+        }
+      }
+    },
+    "failureCodes": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/properties/failureCodes"
+    },
+    "cleanupFailureCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 4,
+      "items": {
+        "enum": [
+          "candidate-close",
+          "monitor-shutdown",
+          "worker-not-reaped",
+          "resource-residue"
+        ]
+      }
+    }
+  }
+}

@@ -341,9 +341,10 @@ class ControlledNarrationCoordinator {
 
   public resetRecoveryEpisode(): void {}
 
-  public close(): Promise<void> {
+  public close(): Promise<"contained" | "failed"> {
     return this.stop().then(() => {
       this.#publish({ ...this.#snapshot, serviceState: "stopped" });
+      return "contained";
     });
   }
 
@@ -406,7 +407,7 @@ class ControlledNarrationCoordinator {
 
 describe("App preference connection characterization", () => {
   it("RIA-01 late narrator receives oversized placement through the real mounted reader", async () => {
-    const closing = deferred<void>();
+    const closing = deferred<"contained" | "failed">();
     const first = new ControlledNarrationCoordinator();
     vi.spyOn(first, "close").mockReturnValue(closing.promise);
     vi.spyOn(first, "observe").mockReturnValue({
@@ -451,7 +452,7 @@ describe("App preference connection characterization", () => {
       });
       expect(factory).toHaveBeenCalledTimes(1);
       const saves = vi.mocked(repository.writePosition).mock.calls.length;
-      await act(async () => closing.resolve());
+      await act(async () => closing.resolve("contained"));
       await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
       expect(replacement.settleReaderPlacement).toHaveBeenLastCalledWith({
         status: "unavailable",
@@ -459,14 +460,14 @@ describe("App preference connection characterization", () => {
       });
       expect(repository.writePosition).toHaveBeenCalledTimes(saves);
     } finally {
-      closing.resolve();
+      closing.resolve("contained");
       view.unmount();
     }
   });
   it.each([false, true])(
     "RAC-01 Play uses B's current mounted locator after delayed A shutdown (scroll after release: %s)",
     async (afterRelease) => {
-      const closing = deferred<void>();
+      const closing = deferred<"contained" | "failed">();
       const first = new ControlledNarrationCoordinator();
       vi.spyOn(first, "close").mockReturnValue(closing.promise);
       vi.spyOn(first, "observe").mockReturnValue({
@@ -591,7 +592,7 @@ describe("App preference connection characterization", () => {
         act(() => notify());
         flush();
         expect(factory).toHaveBeenCalledTimes(1);
-        await act(async () => closing.resolve());
+        await act(async () => closing.resolve("contained"));
         await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
         if (afterRelease) {
           offset = 13;
@@ -602,7 +603,7 @@ describe("App preference connection characterization", () => {
         expect(started).toEqual([testLocatorAt(afterRelease ? 13 : 7)]);
         expect(internalStart).not.toHaveBeenCalled();
       } finally {
-        closing.resolve();
+        closing.resolve("contained");
         view.unmount();
       }
     },
@@ -664,6 +665,7 @@ describe("App preference connection characterization", () => {
     vi.spyOn(first, "close").mockImplementation(async () => {
       await client.shutdown();
       snapshot.serviceState = client.observe().state;
+      return "contained";
     });
     const factory = vi
       .fn()
@@ -703,7 +705,7 @@ describe("App preference connection characterization", () => {
   });
 
   it("SPM-F1 reports fallback startup rejection during replacement handoff and clears it on retry", async () => {
-    const closing = deferred<void>();
+    const closing = deferred<"contained" | "failed">();
     const first = new ControlledNarrationCoordinator();
     vi.spyOn(first, "close").mockReturnValue(closing.promise);
     const factory = vi
@@ -757,15 +759,21 @@ describe("App preference connection characterization", () => {
       expect(screen.queryByText(message)).not.toBeInTheDocument();
       expect(preference.write).toHaveBeenCalledTimes(2);
     } finally {
-      await act(async () => closing.resolve());
+      await act(async () => closing.resolve("contained"));
       view.unmount();
     }
   });
 
-  it.each(["success", "rejected", "uncontained"] as const)(
-    "VCA-05 waits for A containment across A-to-B-to-C replacement: %s",
+  it.each([
+    "success",
+    "rejected",
+    "uncontained",
+    "diagnostic-contained",
+    "backend-failed",
+  ] as const)(
+    "DCR-20 VCA-05 waits for A containment across A-to-B-to-C replacement: %s",
     async (outcome) => {
-      const closing = deferred<void>();
+      const closing = deferred<"contained" | "failed">();
       void closing.promise.catch(() => undefined);
       const first = new ControlledNarrationCoordinator();
       const replacement = new ControlledNarrationCoordinator();
@@ -773,6 +781,12 @@ describe("App preference connection characterization", () => {
       vi.spyOn(first, "observe").mockReturnValue({
         ...narrationSnapshot("inactive"),
         serviceState: outcome === "uncontained" ? "stopping" : "stopped",
+        failure:
+          outcome === "diagnostic-contained"
+            ? "tts-service-failed"
+            : outcome === "backend-failed"
+              ? "audio-playback-failed"
+              : undefined,
       });
       const play = vi.spyOn(replacement, "startAtVisibleLocator");
       const internalStart = vi.spyOn(replacement, "start");
@@ -816,10 +830,14 @@ describe("App preference connection characterization", () => {
         await act(async () =>
           outcome === "rejected"
             ? closing.reject(new Error("synthetic close failure"))
-            : closing.resolve(),
+            : closing.resolve(
+                outcome === "uncontained" || outcome === "backend-failed"
+                  ? "failed"
+                  : "contained",
+              ),
         );
       }
-      if (outcome === "success") {
+      if (outcome === "success" || outcome === "diagnostic-contained") {
         await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
         expect(factory.mock.calls[1]![0].book.metadata.title).toBe("C");
         expect(play).not.toHaveBeenCalled();
@@ -1313,6 +1331,7 @@ describe("App preference connection characterization", () => {
     });
     vi.spyOn(narrator, "close").mockImplementation(async () => {
       snapshot = { ...snapshot, serviceState: "stopped" };
+      return "contained";
     });
     vi.spyOn(narrator, "subscribe").mockImplementation((listener) => {
       events.push("subscribe");

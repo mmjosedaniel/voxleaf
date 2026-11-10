@@ -161,6 +161,64 @@ it("RCF-20 floors the summed effective duration once", () => {
   scheduler.releaseDiscardedAudioUnits(2);
 });
 
+it.each([
+  ["quick", -1],
+  ["quick", 0],
+  ["quick", 1],
+  ["prepared", -1],
+  ["prepared", 0],
+  ["prepared", 1],
+  ["refill", -1],
+  ["refill", 0],
+  ["refill", 1],
+] as const)(
+  "DCR-24 %s exact threshold at frame neighbor %s",
+  (phase, delta) => {
+    const scheduler = makeReadyScheduler(
+      createManualClock(0),
+      phase === "prepared"
+        ? { kind: "prepared", targetMs: 60_000 }
+        : { kind: "quick" },
+    );
+    const warmup = phase === "refill" ? 1 : 0;
+    prepare(
+      scheduler,
+      Array.from({ length: 4 + warmup }, (_, index) => segment(index + 1)),
+    );
+    if (warmup) {
+      synthesize(scheduler, ownedUnit(segment(1).segmentId, 15_000));
+      scheduler.consumeSampleFrames(360_000);
+      expect(scheduler.observe().playbackState).toBe("buffering");
+    }
+    const scale = phase === "quick" ? 1 : 4;
+    const counts = [
+      81_946 * scale,
+      86_529 * scale,
+      93_313 * scale,
+      98_212 * scale + delta,
+    ];
+    for (const [index, frames] of counts.entries()) {
+      const base = ownedUnit(segment(index + warmup + 1).segmentId, 1);
+      synthesize(scheduler, {
+        ...base,
+        metadata: {
+          ...base.metadata,
+          sampleCountSamples: frames,
+          payloadBytes: frames * 4,
+        },
+        payload: new Uint8Array(frames * 4),
+      });
+    }
+    expect(scheduler.observe()).toMatchObject({
+      effectiveListeningDurationMs: 15_000 * scale - (delta < 0 ? 1 : 0),
+      playbackState:
+        delta < 0 ? (warmup ? "buffering" : "preparing") : "playing",
+    });
+    scheduler.invalidate();
+    scheduler.releaseDiscardedAudioUnits(4);
+  },
+);
+
 it.each([-1, 0, 1])(
   "RCF-20 exact startup and partially consumed mixed rates, frame neighbor %s",
   (neighbor) => {

@@ -110,7 +110,10 @@ export function createNarrationSettingsActions(development: boolean) {
     },
     async selectLanguage(
       language: NarrationLanguageV1,
-      hardware: Pick<HardwareSettings, "selectLanguage">,
+      hardware: Pick<
+        HardwareProfileCompatibilityCoordinator,
+        "selectLanguage" | "check"
+      >,
       coordinator: NarrationSettings | undefined,
     ): Promise<boolean> {
       const release = coordinator?.beginConfigurationChange?.();
@@ -118,6 +121,7 @@ export function createNarrationSettingsActions(development: boolean) {
         await stopForConfigurationChange(coordinator);
         const selected = await hardware.selectLanguage(language);
         if (selected) {
+          await hardware.check("explicit-recheck");
           await coordinator?.refreshSelectedProfile();
         }
         return selected;

@@ -1,18 +1,20 @@
-"""Official frozen v4 batch execution and private raw-journal construction."""
+"""Official v13 batch execution and private raw-journal construction."""
 
 from __future__ import annotations
 
 import os
 import threading
 import time
-from collections.abc import Callable, Mapping, Sequence
-from contextlib import suppress
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Final, Literal, Protocol, cast
 
 from benchmarks.batch_contracts import (
     BatchAudioUnit,
+    BatchBenchmarkError,
     BatchCallObservation,
     BatchCandidate,
     BatchExecutionObservation,
@@ -26,6 +28,7 @@ from benchmarks.batch_execution import BoundedOrderedBatchController
 from benchmarks.batch_matrix import SystemBatchClock, frozen_v4_requests
 from benchmarks.batch_playback import PlaybackArrival, simulate_bounded_playback
 from benchmarks.contracts import (
+    AdapterOperationError,
     AdapterPlacementEvidence,
     CancellationResponse,
     PlacementProfileId,
@@ -35,12 +38,15 @@ from benchmarks.memory import (
     ProcessResourceSampler,
 )
 from benchmarks.v4_authority import (
-    AUTHORITY_COMMIT_SHA,
     CORPUS_SHA256,
     CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
-    MEMORY_STOP_CODES,
+)
+from benchmarks.v13_authority import (
     PROFILE_SHA256,
+    PROFILE_VERSION,
+    RAW_VERSION,
+    V13CpuAdmission,
 )
 
 COLD_LOAD_COUNT: Final = 5
@@ -51,14 +57,55 @@ MINIMUM_FREE_VRAM_BYTES: Final = 536_870_912
 IDENTITY_INVALIDATION_LIMIT_NS: Final = 500_000_000
 WORKER_TERMINATION_LIMIT_NS: Final = 2_000_000_000
 CLEANUP_LIMIT_NS: Final = 5_000_000_000
+MONITOR_JOIN_SECONDS: Final = 1.0
+
+type CleanupFailure = Literal[
+    "candidate-close", "monitor-shutdown", "worker-not-reaped", "resource-residue"
+]
 
 
 class OfficialBatchError(RuntimeError):
     """Fixed content-free official execution failure."""
 
-    def __init__(self, code: str) -> None:
-        super().__init__(f"tts-benchmark-v4-official:{code}")
+    def __init__(self, code: str, cleanup_failures: Sequence[CleanupFailure] = ()) -> None:
+        super().__init__(f"tts-benchmark-v13-official:{code}")
         self.code = code
+        self.cleanup_failures = set(cleanup_failures)
+
+
+@contextmanager
+def _cleanup_scope(cleanup: Callable[[], None], failure: CleanupFailure) -> Iterator[None]:
+    def finish() -> None:
+        try:
+            cleanup()
+        except OfficialBatchError:
+            raise
+        except Exception:
+            raise OfficialBatchError("cleanup-failed", (failure,)) from None
+
+    try:
+        yield
+    except BaseException as primary:
+        try:
+            finish()
+        except BaseException as secondary:
+            failures = (
+                secondary.cleanup_failures
+                if isinstance(secondary, OfficialBatchError) and secondary.cleanup_failures
+                else {failure}
+            )
+            if isinstance(primary, OfficialBatchError):
+                primary.cleanup_failures.update(failures)
+            else:
+                code: str
+                if isinstance(primary, (AdapterOperationError, BatchBenchmarkError)):
+                    code = primary.code
+                else:
+                    code = "interrupted" if isinstance(primary, KeyboardInterrupt) else "internal"
+                raise OfficialBatchError(code, sorted(failures)) from None
+        raise
+    else:
+        finish()
 
 
 class OfficialBatchCandidate(BatchCandidate, Protocol):
@@ -75,6 +122,16 @@ class OfficialBatchCandidate(BatchCandidate, Protocol):
 
 type OfficialCandidateFactory = Callable[[], OfficialBatchCandidate]
 type FreeVramProbe = Callable[[], int | None]
+
+
+def _close_candidate(candidate: OfficialBatchCandidate) -> None:
+    try:
+        candidate.close()
+        still_owned = candidate.worker_pid is not None
+    except Exception:
+        raise OfficialBatchError("cleanup-failed", ("candidate-close",)) from None
+    if still_owned:
+        raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
 
 
 @dataclass(frozen=True)
@@ -114,7 +171,9 @@ class OfficialMemoryMonitor(Protocol):
 
     def start(self) -> None: ...
 
-    def stop(self) -> OfficialMemoryResult: ...
+    def shutdown(self) -> None: ...
+
+    def measure(self) -> OfficialMemoryResult: ...
 
     def post_cleanup_resources(self) -> tuple[int, int]: ...
 
@@ -138,7 +197,9 @@ class ThreadedOfficialMemoryMonitor:
         self._free_vram_probe = free_vram_probe
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
+        self._finished = threading.Event()
         self._thread: threading.Thread | None = None
+        self._started = False
         self._sampling_failed = False
         self._peak_ram = 0
         self._peak_dedicated = 0
@@ -151,6 +212,10 @@ class ThreadedOfficialMemoryMonitor:
     def stop_code(self) -> str | None:
         with self._lock:
             return self._stop_code
+
+    @property
+    def shutdown_pending(self) -> bool:
+        return self._thread is not None
 
     def _set_stop_code(self, value: str) -> None:
         if self._stop_code is None:
@@ -210,8 +275,14 @@ class ThreadedOfficialMemoryMonitor:
         while not self._stop_event.wait(MEMORY_SAMPLE_SECONDS):
             self._sample_once()
 
+    def _run_owned(self) -> None:
+        try:
+            self._run()
+        finally:
+            self._finished.set()
+
     def start(self) -> None:
-        if self._thread is not None:
+        if self._thread is not None or self._started:
             raise OfficialBatchError("monitor-active")
         self._framework_tracker.reset()
         self._sample_once(force_free=True)
@@ -219,21 +290,31 @@ class ThreadedOfficialMemoryMonitor:
             raise OfficialBatchError("measurement")
         self._stop_event.clear()
         self._thread = threading.Thread(
-            target=self._run,
-            name="voxleaf-v4-official-memory",
+            target=self._run_owned,
+            name="voxleaf-v13-official-memory",
             daemon=True,
         )
         self._thread.start()
+        self._started = True
 
-    def stop(self) -> OfficialMemoryResult:
+    def shutdown(self) -> None:
+        self._stop_event.set()
         thread = self._thread
         if thread is None:
+            return
+        try:
+            thread.join(timeout=MONITOR_JOIN_SECONDS)
+        except RuntimeError:
+            raise OfficialBatchError("cleanup-failed", ("monitor-shutdown",)) from None
+        if thread.is_alive() or not self._finished.is_set():
+            raise OfficialBatchError("cleanup-failed", ("monitor-shutdown",))
+        self._thread = None
+
+    def measure(self) -> OfficialMemoryResult:
+        if not self._started or self._thread is not None:
             raise OfficialBatchError("monitor-inactive")
         self._sample_once(force_free=True)
-        self._stop_event.set()
-        thread.join(timeout=1)
-        self._thread = None
-        if thread.is_alive() or self._sampling_failed:
+        if self._sampling_failed:
             raise OfficialBatchError("measurement")
         framework = self._framework_tracker.peak_bytes()
         with self._lock:
@@ -376,14 +457,20 @@ def _execute_with_memory_stop(
         except BaseException as error:
             unexpected.append(error)
 
-    thread = threading.Thread(target=run, name="voxleaf-v4-batch-call")
-    thread.start()
+    thread = threading.Thread(target=run, name="voxleaf-v13-batch-call")
     cancelled_for_memory = False
-    while thread.is_alive():
-        thread.join(timeout=MEMORY_SAMPLE_SECONDS)
-        if monitor.stop_code is not None and not cancelled_for_memory:
-            cancelled_for_memory = True
-            candidate.cancel(f"batch-{request.call_index}")
+    try:
+        thread.start()
+        while thread.is_alive():
+            thread.join(timeout=MEMORY_SAMPLE_SECONDS)
+            if monitor.stop_code is not None and not cancelled_for_memory:
+                cancelled_for_memory = True
+                candidate.cancel(f"batch-{request.call_index}")
+    except BaseException:
+        with _cleanup_scope(
+            lambda: _cancel_and_reap_call(candidate, request, thread), "worker-not-reaped"
+        ):
+            raise
     if unexpected or not result:
         return _failed_observation(
             request,
@@ -391,6 +478,20 @@ def _execute_with_memory_stop(
             code="resource-limit" if cancelled_for_memory else "generation-failed",
         )
     return result[0]
+
+
+def _cancel_and_reap_call(
+    candidate: OfficialBatchCandidate,
+    request: BatchGenerationRequest,
+    thread: threading.Thread,
+) -> None:
+    if thread.ident is None or thread.is_alive():
+        try:
+            candidate.cancel(f"batch-{request.call_index}")
+        finally:
+            thread.join(timeout=2)
+        if thread.is_alive():
+            raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
 
 
 def _call_raw(observation: BatchExecutionObservation) -> dict[str, object]:
@@ -547,18 +648,18 @@ def _run_cancellation_trial(
             cleanup_ns=0,
         )
 
-    candidate = candidate_factory()
     request = _cancellation_request(repository_root, trial_index=trial_index)
     controller = BoundedOrderedBatchController(clock=SystemBatchClock())
-    candidate.load()
-    _require_placement(candidate, placement_profile_id)
+    candidate = candidate_factory()
     invalidation_ns = 0
     termination_ns: int | None = None
     completed_outputs: list[tuple[BatchAudioUnit, ...]] = []
     unexpected: list[BaseException] = []
     stale_publications = 0
     outcome_ok = False
-    try:
+    with _cleanup_scope(lambda: _close_candidate(candidate), "candidate-close"):
+        candidate.load()
+        _require_placement(candidate, placement_profile_id)
         if trial_id in ("accepted-before-audio", "during-batch-generation"):
 
             def generate() -> None:
@@ -567,19 +668,26 @@ def _run_cancellation_trial(
                 except BaseException as error:
                     unexpected.append(error)
 
-            thread = threading.Thread(target=generate, name=f"voxleaf-v4-{trial_id}")
-            thread.start()
-            if trial_id == "during-batch-generation":
-                thread.join(timeout=0.5)
-            invalidation_started = time.perf_counter_ns()
-            invalidation_ns = time.perf_counter_ns() - invalidation_started
-            termination_started = time.perf_counter_ns()
-            candidate.cancel(f"batch-{request.call_index}")
-            termination_ns = time.perf_counter_ns() - termination_started
-            thread.join(timeout=2)
+            thread = threading.Thread(target=generate, name=f"voxleaf-v13-{trial_id}")
+            try:
+                thread.start()
+                if trial_id == "during-batch-generation":
+                    thread.join(timeout=0.5)
+                invalidation_started = time.perf_counter_ns()
+                invalidation_ns = time.perf_counter_ns() - invalidation_started
+                termination_started = time.perf_counter_ns()
+                candidate.cancel(f"batch-{request.call_index}")
+                termination_ns = time.perf_counter_ns() - termination_started
+                thread.join(timeout=2)
+                if thread.is_alive():
+                    raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
+            except BaseException:
+                with _cleanup_scope(
+                    lambda: _cancel_and_reap_call(candidate, request, thread), "worker-not-reaped"
+                ):
+                    raise
             outcome_ok = (
-                not thread.is_alive()
-                and not completed_outputs
+                not completed_outputs
                 and invalidation_ns <= IDENTITY_INVALIDATION_LIMIT_NS
                 and termination_ns <= WORKER_TERMINATION_LIMIT_NS
             )
@@ -618,13 +726,8 @@ def _run_cancellation_trial(
             )
         else:
             raise OfficialBatchError("cancellation-trial")
-    finally:
         cleanup_started = time.perf_counter_ns()
-        try:
-            candidate.close()
-        except Exception:
-            outcome_ok = False
-        cleanup_ns = time.perf_counter_ns() - cleanup_started
+    cleanup_ns = time.perf_counter_ns() - cleanup_started
     worker_exited = candidate.worker_pid is None
     passed = (
         outcome_ok
@@ -649,7 +752,7 @@ def _run_cancellation_trial(
     )
 
 
-def execute_official_v4(
+def execute_official_v13(
     repository_root: Path,
     *,
     execution_commit_sha: str,
@@ -658,9 +761,9 @@ def execute_official_v4(
     candidate_factory: OfficialCandidateFactory,
     monitor: OfficialMemoryMonitor,
     placement_profile_id: str = FULL_GPU_PROFILE_ID,
-    cpu_admission: Mapping[str, object] | None = None,
+    cpu_admission: V13CpuAdmission | None = None,
 ) -> OfficialExecution:
-    """Run one exact official v4 placement and return private raw evidence."""
+    """Run one exact official v13 placement and return private raw evidence."""
 
     if placement_profile_id == FULL_GPU_PROFILE_ID:
         admission: Mapping[str, object] = {
@@ -671,14 +774,9 @@ def execute_official_v4(
         if cpu_admission is not None:
             raise OfficialBatchError("placement")
     elif placement_profile_id == CPU_PROFILE_ID:
-        if (
-            cpu_admission is None
-            or cpu_admission.get("status") != "admitted"
-            or cpu_admission.get("fullGpuMemoryStopCode") not in MEMORY_STOP_CODES
-            or not isinstance(cpu_admission.get("fullGpuResultSha256"), str)
-        ):
+        if not isinstance(cpu_admission, V13CpuAdmission):
             raise OfficialBatchError("placement")
-        admission = dict(cpu_admission)
+        admission = cpu_admission.as_raw()
     else:
         raise OfficialBatchError("placement")
 
@@ -686,18 +784,16 @@ def execute_official_v4(
     load_observations: list[dict[str, int]] = []
     for index in range(1, COLD_LOAD_COUNT + 1):
         candidate = candidate_factory()
-        started = clock.now_ns()
-        try:
-            candidate.load()
-            _require_placement(candidate, placement_profile_id)
-            load_ns = max(1, clock.now_ns() - started)
-            cleanup_started = clock.now_ns()
-            candidate.close()
-            cleanup_ns = clock.now_ns() - cleanup_started
-        except Exception as error:
-            with suppress(Exception):
-                candidate.close()
-            raise OfficialBatchError("cold-load") from error
+        with _cleanup_scope(partial(_close_candidate, candidate), "candidate-close"):
+            try:
+                started = clock.now_ns()
+                candidate.load()
+                _require_placement(candidate, placement_profile_id)
+                load_ns = max(1, clock.now_ns() - started)
+                cleanup_started = clock.now_ns()
+            except Exception:
+                raise OfficialBatchError("cold-load") from None
+        cleanup_ns = clock.now_ns() - cleanup_started
         load_observations.append(
             {
                 "observationIndex": index,
@@ -706,17 +802,100 @@ def execute_official_v4(
             }
         )
 
-    monitor.start()
-    candidate = candidate_factory()
+    with _cleanup_scope(monitor.shutdown, "monitor-shutdown"):
+        monitor.start()
+        observations = _run_measured_batch(
+            repository_root, clock, candidate_factory, monitor, placement_profile_id
+        )
+        cancellation_trials = _run_cancellation_trials(
+            repository_root, candidate_factory, monitor, placement_profile_id
+        )
+
+    memory = monitor.measure()
+    post_cleanup_ram, post_cleanup_vram = monitor.post_cleanup_resources()
+    playback, playback_failure = _playback_raw(observations)
+    failure_codes = {
+        cast(str, observation.call.failure_code)
+        for observation in observations
+        if observation.call.failure_code is not None
+    }
+    if memory.memory_stop_code is not None:
+        failure_codes.add(memory.memory_stop_code)
+    if playback_failure is not None:
+        failure_codes.add(playback_failure)
+    if any(trial["passed"] is not True for trial in cancellation_trials):
+        failure_codes.add("cancellation-failed")
+    cleanup_failures: list[CleanupFailure] = []
+    if post_cleanup_ram != 0 or post_cleanup_vram != 0:
+        failure_codes.add("cleanup-failed")
+        cleanup_failures.append("resource-residue")
+
+    raw = {
+        "schemaVersion": RAW_VERSION,
+        "profileVersion": PROFILE_VERSION,
+        "profileSha256": PROFILE_SHA256,
+        "corpusSha256": CORPUS_SHA256,
+        "executionCommitSha": execution_commit_sha,
+        "treeClean": True,
+        "resultPurpose": "official",
+        "placementProfileId": placement_profile_id,
+        "cpuAdmission": dict(admission),
+        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+        "host": dict(host),
+        "preflight": dict(preflight),
+        "calls": [_call_raw(observation) for observation in observations],
+        "units": [_unit_raw(unit) for observation in observations for unit in observation.units],
+        "cancellationTrials": cancellation_trials,
+        "playback": playback,
+        "memory": memory.as_raw(),
+        "cleanup": {
+            "workerProcessesRemaining": 0,
+            "postCleanupProcessTreeRamBytes": post_cleanup_ram,
+            "postCleanupProcessTreeVramBytes": post_cleanup_vram,
+            "rawSessionRemoved": False,
+            "generatedAudioRemoved": True,
+            "sleepSettingRestored": True,
+        },
+        "cleanupFailureCodes": cleanup_failures,
+        "failureCodes": sorted(failure_codes),
+    }
+    return OfficialExecution(raw=raw, load_observations=tuple(load_observations))
+
+
+def _run_measured_batch(
+    repository_root: Path,
+    clock: SystemBatchClock,
+    candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
+    placement_profile_id: str,
+) -> list[BatchExecutionObservation]:
     controller = BoundedOrderedBatchController(clock=clock)
     observations: list[BatchExecutionObservation] = []
     terminal_code: str | None = None
-    try:
+    candidate = candidate_factory()
+
+    def close_candidate() -> None:
+        try:
+            _close_candidate(candidate)
+        except OfficialBatchError as cleanup:
+            primary = next(
+                (
+                    observation.call.failure_code
+                    for observation in observations
+                    if observation.call.failure_code is not None
+                ),
+                terminal_code,
+            )
+            if primary is not None:
+                raise OfficialBatchError(primary, sorted(cleanup.cleanup_failures)) from None
+            raise
+
+    with _cleanup_scope(close_candidate, "candidate-close"):
         candidate.load()
         _require_placement(candidate, placement_profile_id)
         requests = frozen_v4_requests(
             repository_root,
-            identity=BatchWorkIdentity("v4-private-session", "v4-generation"),
+            identity=BatchWorkIdentity("v13-private-session", "v13-generation"),
         )
         for request in requests:
             if terminal_code is not None:
@@ -736,12 +915,15 @@ def execute_official_v4(
                 or candidate.worker_pid is None
             ):
                 terminal_code = observation.call.failure_code or "generation-failed"
-    finally:
-        try:
-            candidate.close()
-        except Exception:
-            terminal_code = terminal_code or "cleanup-failed"
+    return observations
 
+
+def _run_cancellation_trials(
+    repository_root: Path,
+    candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
+    placement_profile_id: str,
+) -> list[dict[str, object]]:
     cancellation_order = (
         "before-dispatch",
         "accepted-before-audio",
@@ -749,107 +931,39 @@ def execute_official_v4(
         "after-complete-before-publication",
         "after-first-unit-publication",
     )
-    cancellation_trials: list[dict[str, object]] = []
     if monitor.stop_code is None:
-        for index, trial_id in enumerate(cancellation_order, start=1):
-            try:
-                cancellation_trials.append(
-                    _run_cancellation_trial(
-                        repository_root,
-                        trial_index=index,
-                        trial_id=trial_id,
-                        candidate_factory=candidate_factory,
-                        placement_profile_id=placement_profile_id,
-                    )
-                )
-            except Exception:
-                cancellation_trials.append(
-                    _trial_result(
-                        trial_id=trial_id,
-                        passed=False,
-                        stop_mode=(
-                            "identity-invalidation"
-                            if trial_id == "before-dispatch"
-                            else "worker-process-termination"
-                        ),
-                        invalidation_ns=0,
-                        termination_ns=None,
-                        worker_exited=True,
-                        cleanup_ns=0,
-                    )
-                )
-    else:
-        cancellation_trials = [
-            _trial_result(
+        return [
+            _run_cancellation_trial(
+                repository_root,
+                trial_index=index,
                 trial_id=trial_id,
-                passed=False,
-                stop_mode=(
-                    "identity-invalidation"
-                    if trial_id == "before-dispatch"
-                    else "worker-process-termination"
-                ),
-                invalidation_ns=0,
-                termination_ns=None,
-                worker_exited=True,
-                cleanup_ns=0,
+                candidate_factory=candidate_factory,
+                placement_profile_id=placement_profile_id,
             )
-            for trial_id in cancellation_order
+            for index, trial_id in enumerate(cancellation_order, start=1)
         ]
-
-    memory = monitor.stop()
-    post_cleanup_ram, post_cleanup_vram = monitor.post_cleanup_resources()
-    playback, playback_failure = _playback_raw(observations)
-    failure_codes = {
-        cast(str, observation.call.failure_code)
-        for observation in observations
-        if observation.call.failure_code is not None
-    }
-    if memory.memory_stop_code is not None:
-        failure_codes.add(memory.memory_stop_code)
-    if playback_failure is not None:
-        failure_codes.add(playback_failure)
-    if any(trial["passed"] is not True for trial in cancellation_trials):
-        failure_codes.add("cancellation-failed")
-    if post_cleanup_ram != 0 or post_cleanup_vram != 0:
-        failure_codes.add("cleanup-failed")
-
-    raw = {
-        "schemaVersion": "tts-short-segment-batch-raw-v4",
-        "profileVersion": "tts-short-segment-batch-profile-v4",
-        "profileSha256": PROFILE_SHA256,
-        "corpusSha256": CORPUS_SHA256,
-        "authorityCommitSha": AUTHORITY_COMMIT_SHA,
-        "executionCommitSha": execution_commit_sha,
-        "treeClean": True,
-        "resultPurpose": "official",
-        "placementProfileId": placement_profile_id,
-        "cpuAdmission": dict(admission),
-        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
-        "host": dict(host),
-        "preflight": dict(preflight),
-        "calls": [_call_raw(observation) for observation in observations],
-        "units": [_unit_raw(unit) for observation in observations for unit in observation.units],
-        "cancellationTrials": cancellation_trials,
-        "playback": playback,
-        "memory": memory.as_raw(),
-        "cleanup": {
-            "workerProcessesRemaining": 0,
-            "postCleanupProcessTreeRamBytes": post_cleanup_ram,
-            "postCleanupProcessTreeVramBytes": post_cleanup_vram,
-            "rawSessionRemoved": True,
-            "generatedAudioRemoved": True,
-            "sleepSettingRestored": True,
-        },
-        "failureCodes": sorted(failure_codes),
-    }
-    return OfficialExecution(
-        raw=raw,
-        load_observations=tuple(load_observations),
-    )
+    return [
+        _trial_result(
+            trial_id=trial_id,
+            passed=False,
+            stop_mode=(
+                "identity-invalidation"
+                if trial_id == "before-dispatch"
+                else "worker-process-termination"
+            ),
+            invalidation_ns=0,
+            termination_ns=None,
+            worker_exited=True,
+            cleanup_ns=0,
+        )
+        for trial_id in cancellation_order
+    ]
 
 
-def official_raw_root(repository_root: Path, session_id: str) -> Path:
-    root = (repository_root / "benchmarks/results/raw/short-segment-batch-v4").resolve()
+def official_raw_root(
+    repository_root: Path, session_id: str, *, version: Literal["v4", "v13"] = "v4"
+) -> Path:
+    root = (repository_root / "benchmarks/results/raw" / f"short-segment-batch-{version}").resolve()
     session = (root / session_id).resolve()
     if session.parent != root or not session_id:
         raise OfficialBatchError("session")

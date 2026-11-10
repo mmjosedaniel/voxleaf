@@ -287,24 +287,14 @@ export function App({
     )
       return;
     setNarrationHandoff("pending");
-    const close = (async () => {
-      await narrationCoordinator?.close();
-      const snapshot = narrationCoordinator?.observe();
-      return (
-        snapshot === undefined ||
-        (snapshot.serviceState === "stopped" &&
-          snapshot.metrics.retainedAudioUnitCount === 0 &&
-          snapshot.metrics.discardedAudioUnitCount === 0 &&
-          snapshot.failure !== "tts-service-failed")
-      );
-    })();
+    const close = narrationCoordinator?.close() ?? Promise.resolve("contained");
     const barrier = Promise.all([
       narrationCloseBarrier.current,
       close,
       pendingChatterboxRemoval.current?.catch(() => undefined),
     ]).then(
       ([previousContained, currentContained]) =>
-        previousContained && currentContained,
+        previousContained && currentContained === "contained",
       () => false,
     );
     narrationCloseBarrier.current = barrier;

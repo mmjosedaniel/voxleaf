@@ -422,11 +422,11 @@ export class AdaptivePcmPlayer {
     }
   }
 
-  #confirmRendering(completed = false): void {
+  #confirmRendering(outputConfirmed = false): void {
     if (
       this.#startPublished ||
       this.#activeUnit === undefined ||
-      (!completed && !this.#handle?.rendering)
+      (!outputConfirmed && !this.#handle?.rendering)
     )
       return;
     this.#startPublished = true;
@@ -486,7 +486,7 @@ export class AdaptivePcmPlayer {
     ) {
       this.#beginTransitionPause(completedUnit.transitionPauseMs);
     }
-    this.synchronize();
+    this.#synchronizeAfterDeviceEvent();
   }
 
   #refreshProgress(forceComplete = false): void {
@@ -495,12 +495,24 @@ export class AdaptivePcmPlayer {
     if (
       handle === undefined ||
       unit === undefined ||
-      handle.sequence !== unit.sequence ||
+      handle.sequence !== unit.sequence
+    ) {
+      return;
+    }
+    const playbackState = this.#scheduler.observe().playbackState;
+    if (
+      !forceComplete &&
+      playbackState === "paused" &&
+      handle.renderedSampleFrames > 0
+    ) {
+      // A delayed device receipt confirms output without resuming the clock.
+      this.#confirmRendering(true);
+      return;
+    }
+    if (
       (!forceComplete && !handle.rendering) ||
-      (this.#scheduler.observe().playbackState !== "playing" &&
-        !(
-          forceComplete && this.#scheduler.observe().playbackState === "paused"
-        ))
+      (playbackState !== "playing" &&
+        !(forceComplete && playbackState === "paused"))
     ) {
       return;
     }
@@ -612,7 +624,20 @@ export class AdaptivePcmPlayer {
     }
     this.#transitionPause = undefined;
     this.#completedTransitionPauseCount += 1;
-    this.synchronize();
+    this.#synchronizeAfterDeviceEvent();
+  }
+
+  #synchronizeAfterDeviceEvent(): void {
+    try {
+      this.synchronize();
+    } catch (error) {
+      // Allocation already marked the player failed. The coordinator's
+      // playback tick observes it without an exception escaping the callback.
+      if (!(
+        error instanceof PcmPlaybackError && error.code === "playback-failure"
+      ))
+        throw error;
+    }
   }
 
   #settleElapsedTransitionPause(): void {

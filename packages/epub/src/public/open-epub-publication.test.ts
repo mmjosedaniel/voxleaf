@@ -14,9 +14,11 @@ import {
   minimalNavigationDocument,
   minimalNcxDocument,
   minimalPackageDocument,
+  syntheticStaticPngBytes,
 } from "../../test-support/epub-fixture.js";
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
+import * as archiveInventory from "../archive/archive-inventory.js";
 import { mapEpubFailure } from "./epub-result.js";
 import { openEpubPublication } from "./open-epub-publication.js";
 import * as locatorIndex from "../locator/locator-index.js";
@@ -43,6 +45,79 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("DCR-07 shares retained TOC and semantic image bytes across rootfiles", async () => {
+    const selected = minimalPackageDocument()
+      .replace(
+        "</manifest>",
+        '<item id="image" href="cover.png" media-type="image/png"/></manifest>',
+      )
+      .replace("</spine>", '<itemref idref="nav"/></spine>');
+    const fixed = selected.replace(
+      "</metadata>",
+      '<meta property="rendition:layout">pre-paginated</meta></metadata>',
+    );
+    const fixture = (alt: string): Promise<Uint8Array> =>
+      buildMinimalEpubFixture({
+        packageDocument: selected,
+        navigationDocument: minimalNavigationDocument().replace(
+          "Chapter One</a>",
+          `Chapter One<img src="cover.png" alt="${alt}"/></a>`,
+        ),
+        containerDocument:
+          '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        additionalEntries: [
+          { name: "EPUB/fixed.opf", content: fixed },
+          { name: "EPUB/cover.png", content: syntheticStaticPngBytes() },
+        ],
+      });
+    let ceiling: number | undefined;
+    let usedBudget: archiveInventory.OpenedEpubArchive["budget"] | undefined;
+    const openArchive = archiveInventory.openEpubArchive;
+    const opens = vi
+      .spyOn(archiveInventory, "openEpubArchive")
+      .mockImplementation(async (bytes, options) => {
+        const archive = await openArchive(bytes, {
+          ...options,
+          ...(ceiling === undefined
+            ? {}
+            : { policy: { maxDecodedPublicationTextBytes: ceiling } }),
+        });
+        usedBudget = archive.budget;
+        return archive;
+      });
+    const empty = await openEpubPublication(await fixture(""));
+    if (!empty.ok || usedBudget === undefined)
+      throw new Error("expected synthetic fixture");
+    const base = usedBudget.getSnapshot().decodedPublicationTextBytes;
+    await empty.publication.close();
+
+    const alt = "é";
+    const bytes = await fixture(alt);
+    // Both renditions parse the TOC and project the navigation spine document.
+    ceiling = base + 2 * 2 * 2;
+    const exact = await openEpubPublication(bytes);
+    if (!exact.ok || usedBudget === undefined)
+      throw new Error("expected exact-byte publication");
+    try {
+      expect(exact.publication.navigation[0]?.label).toBe("Chapter Oneé");
+      expect(usedBudget.getSnapshot().decodedPublicationTextBytes).toBe(
+        ceiling,
+      );
+      expect(opens).toHaveBeenCalledTimes(2);
+    } finally {
+      await exact.publication.close();
+    }
+
+    ceiling -= 1;
+    const overflow = await openEpubPublication(bytes);
+    if (overflow.ok) await overflow.publication.close();
+    expect(overflow).toMatchObject({
+      ok: false,
+      detail: "resource-limit-exceeded",
+    });
+    expect(overflow).not.toHaveProperty("publication");
+  });
+
   it.each([false, true])(
     "EBC-C17 contains throwing signal cleanup after failed=%s open",
     async (failed) => {

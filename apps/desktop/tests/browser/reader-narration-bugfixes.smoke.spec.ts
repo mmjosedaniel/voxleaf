@@ -1,13 +1,26 @@
+import { syntheticEarlyAnimatedWebp } from "../fixtures/webp-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import type { NarrationSegmentV1 } from "@voxleaf/shared";
 import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
 import { closeSettings, openSettings } from "./settings-helpers";
 
-test("CCF-C02 / CAF-1 contents dismissal and initial fallback retain the precise checkpoint", async ({
+test("DCR-03/23 CCF-C02 restores placement and settles language before Play", async ({
   page,
 }) => {
-  await installSyntheticService(page, true, false, false, true);
+  const aiden = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
+  await installSyntheticService(
+    page,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    aiden,
+  );
   await page.goto("/");
   const file = {
     name: "caf-placement.epub",
@@ -73,13 +86,66 @@ test("CCF-C02 / CAF-1 contents dismissal and initial fallback retain the precise
   expect(
     await page.evaluate(() => localStorage.getItem("voxleaf.reader.positions")),
   ).toBe(stored);
+  const settings = await openSettings(page);
+  const englishProfile = page.getByRole("radio", {
+    name: "Qwen and Aiden English quality profile (Development)",
+  });
+  const english = page.getByRole("radio", { name: "English", exact: true });
+  const spanish = page.getByRole("radio", { name: "Spanish", exact: true });
+  await expect(englishProfile).toBeChecked();
+  await spanish.check();
+  await expect(
+    page.getByRole("radio", {
+      name: "Piper and davefx Spanish fast CPU profile",
+    }),
+  ).toBeChecked();
+  await english.check();
+  await expect(englishProfile).toBeChecked();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(0);
+  await closeSettings(page, settings);
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
   await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").startedProfile),
+    )
+    .toBe(aiden);
   await expect
     .poll(() =>
       page.evaluate(() => Reflect.get(globalThis, "__rnb").prepared[0]?.offset),
     )
     .toBe(0);
   await page.locator('[data-narration-action="stop"]').click();
+  const reopened = await openSettings(page);
+  const piperEnglish = page.getByRole("radio", {
+    name: "Piper and joe English fast CPU profile",
+  });
+  await piperEnglish.click();
+  await expect(piperEnglish).toBeChecked();
+  await spanish.check();
+  await english.check();
+  await expect(piperEnglish).toBeChecked();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").failProbe = true;
+  });
+  await spanish.check();
+  await expect(
+    page.getByText(
+      "No evaluated local narration profile is available for Spanish.",
+    ),
+  ).toBeVisible();
+  await closeSettings(page, reopened);
+  await expect(
+    page.locator('[data-narration-action="play"]'),
+  ).not.toBeEnabled();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
 });
 
 test("CAF-2 removal failure retries and same-book reinstall refreshes without autoplay", async ({
@@ -1654,10 +1720,20 @@ test("SAF-09 an obsolete Chatterbox selection cannot replace B's playing Piper o
     .toBe(0);
 });
 
-test("SAF-15 decorative ready and unavailable rasters have no Chromium image role", async ({
+test("DCR-15 SAF-15 decorative ready and unavailable rasters have no Chromium image role", async ({
   page,
 }) => {
   const fixture = await fixtures();
+  await page.addInitScript(() => {
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    let webpObjectUrls = 0;
+    URL.createObjectURL = (object) => {
+      if (object instanceof Blob && object.type === "image/webp")
+        webpObjectUrls += 1;
+      return createObjectURL(object);
+    };
+    Reflect.set(globalThis, "__dcrWebpObjectUrls", () => webpObjectUrls);
+  });
   await page.goto("/");
   await page.getByLabel("Open a book").setInputFiles({
     name: "synthetic-saf-decorative.epub",
@@ -1665,15 +1741,19 @@ test("SAF-15 decorative ready and unavailable rasters have no Chromium image rol
     buffer: Buffer.from(
       await fixture.buildMinimalEpubFixture({
         packageDocument:
-          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:saf-decorative</dc:identifier><dc:title>Synthetic decorative images</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="image" href="images/cover.png" media-type="image/png"/><item id="broken" href="images/broken.png" media-type="image/png"/></manifest><spine><itemref idref="chapter"/></spine></package>',
+          '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:saf-decorative</dc:identifier><dc:title>Synthetic decorative images</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="image" href="images/cover.png" media-type="image/png"/><item id="broken" href="images/broken.png" media-type="image/png"/><item id="early-webp" href="images/early.webp" media-type="image/webp"/></manifest><spine><itemref idref="chapter"/></spine></package>',
         chapterDocument:
-          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic images</title></head><body><p>Decorative <img src="../images/cover.png" alt=""/> and unavailable <img src="../images/broken.png" alt="  "/>.</p><p>Missing <img src="../images/cover.png"/> and named <img src="../images/cover.png" alt="Synthetic named image"/>.</p></body></html>',
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic images</title></head><body><p>Decorative <img src="../images/cover.png" alt=""/> and unavailable <img src="../images/broken.png" alt="  "/>.</p><p>Missing <img src="../images/cover.png"/> and named <img src="../images/cover.png" alt="Synthetic named image"/>.</p><p><img src="../images/early.webp" alt="Synthetic unsupported WebP"/></p></body></html>',
         additionalEntries: [
           {
             name: "EPUB/images/cover.png",
             content: fixture.syntheticStaticPngBytes(),
           },
           { name: "EPUB/images/broken.png", content: Uint8Array.of(0, 1, 2) },
+          {
+            name: "EPUB/images/early.webp",
+            content: syntheticEarlyAnimatedWebp("ANIM"),
+          },
         ],
       }),
     ),
@@ -1681,11 +1761,19 @@ test("SAF-15 decorative ready and unavailable rasters have no Chromium image rol
   const reader = page.locator(".semantic-document");
   await expect(reader.locator("img")).toHaveCount(3);
   await expect(reader.locator('img[alt=""]')).toHaveCount(1);
-  await expect(reader.locator(".semantic-raster-unavailable")).toHaveAttribute(
-    "aria-hidden",
-    "true",
-  );
-  await expect(reader.getByRole("img")).toHaveCount(2);
+  await expect(
+    reader.locator('.semantic-raster-unavailable[aria-hidden="true"]'),
+  ).toHaveAttribute("aria-hidden", "true");
+  await expect(reader.getByRole("img")).toHaveCount(3);
+  await expect(
+    reader.getByRole("img", {
+      name: "Synthetic unsupported WebP. Image unavailable.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__dcrWebpObjectUrls")()),
+  ).toBe(0);
   await expect(
     reader.getByRole("img", { name: "Publication image", exact: true }),
   ).toBeVisible();
@@ -1699,37 +1787,161 @@ test("SAF-15 decorative ready and unavailable rasters have no Chromium image rol
   ).toBe(1);
 });
 
-test("RAC-01 delayed handoff starts B at the passage observed during A shutdown", async ({
+test("DCR-01/06/10 output and recovery cancel stay inside the active playback owner", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true, false, true, true);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.name));
+  await page.goto("/");
+  await page.evaluate(() => {
+    const createBuffer = AudioContext.prototype.createBuffer;
+    let fail = true;
+    AudioContext.prototype.createBuffer = function (...args) {
+      if (fail) {
+        fail = false;
+        throw new DOMException(
+          "synthetic PCM allocation failure",
+          "NotSupportedError",
+        );
+      }
+      return createBuffer.apply(this, args);
+    };
+    const state = Reflect.get(globalThis, "__rnb");
+    state.naturalAudioFrames = 360_000;
+    const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+    const invoke = native.invoke;
+    native.invoke = async (command: string, args: unknown) => {
+      if (command === "prepare_tts_service" && state.service === 2) {
+        state.recoveryWarmPending = true;
+        await new Promise<void>((resolve) => {
+          state.releaseRecoveryWarm = resolve;
+        });
+      }
+      return invoke(command, args);
+    };
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-output-recovery.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"Synthetic audio fixture for playback ownership. ".repeat(30)}</p></body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  const play = page.locator('[data-narration-action="play"]');
+  await play.click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-failure",
+    "audio-playback-failed",
+  );
+  expect(pageErrors).toEqual([]);
+  await page.getByRole("button", { name: "Restart local narration" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__rnb").recoveryWarmPending),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "Cancel start" }).click();
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__rnb").releaseRecoveryWarm(),
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-service-state",
+    "stopped",
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-play-intent",
+    "inactive",
+  );
+  await expect(
+    narration.locator('[data-narration-action="recover"]'),
+  ).toHaveCount(0);
+  await page
+    .getByRole("combobox", { name: "Playback speed" })
+    .selectOption("75");
+  await play.click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").workletMessages.includes("rendered"),
+      ),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").releasePausedReceipt(),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+  await expect(
+    narration.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeVisible();
+  await expect(narration).not.toHaveAttribute(
+    "data-narration-command-to-audible-ms",
+    "",
+  );
+  await narration.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-service-state",
+    "stopped",
+  );
+  expect(pageErrors).toEqual([]);
+});
+
+test("DCR-20 RAC-01 verified close admits C at its observed passage after A fails", async ({
   page,
 }) => {
   await installSyntheticService(page, false, false, false, true);
   await page.setViewportSize({ width: 640, height: 480 });
   await page.goto("/");
   await page.evaluate(() => {
-    Reflect.get(globalThis, "__rnb").audioFrames = 480_000;
+    const state = Reflect.get(globalThis, "__rnb");
+    state.audioFrames = 480_000;
+    state.holdAfter = 1;
   });
-  const open = async (replacement: boolean) =>
+  const open = async (book: "A" | "B" | "C") =>
     page.getByLabel("Open a book").setInputFiles({
-      name: replacement ? "synthetic-rac-b.epub" : "synthetic-rac-a.epub",
+      name: `synthetic-rac-${book}.epub`,
       mimeType: "application/epub+zip",
       buffer: Buffer.from(
         await (
           await fixtures()
         ).buildMinimalEpubFixture({
-          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 60 }, (_, i) => `<p>${replacement && i === 25 ? "Target passage for replacement." : `Synthetic ${replacement ? "replacement" : "original"} passage with quiet paths and ordinary details.`}</p>`).join("")}</body></html>`,
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 60 }, (_, i) => `<p>${book === "C" && i === 25 ? "Target passage for replacement." : `Synthetic ${book} passage with quiet paths and ordinary details.`}</p>`).join("")}</body></html>`,
         }),
       ),
     });
-  await open(false);
+  await open("A");
   await page.locator('[data-narration-action="play"]').click();
   await expect(page.locator(".product-narration")).toHaveAttribute(
     "data-narration-phase",
     "playing",
   );
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, "__rnb").blocked))
+    .toBe(true);
   await page.evaluate(() => {
-    Reflect.get(globalThis, "__rnb").deferShutdown = true;
+    const state = Reflect.get(globalThis, "__rnb");
+    state.deferShutdown = true;
+    state.failSynthesis();
   });
-  await open(true);
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-failure",
+    "tts-service-failed",
+  );
+  await open("B");
+  await expect(page.locator(".semantic-document p").first()).toHaveText(
+    "Synthetic B passage with quiet paths and ordinary details.",
+  );
+  await open("C");
   await expect(page.locator(".semantic-document p").nth(25)).toHaveText(
     "Target passage for replacement.",
   );
@@ -1757,9 +1969,13 @@ test("RAC-01 delayed handoff starts B at the passage observed during A shutdown"
   await page.evaluate(() => {
     const state = Reflect.get(globalThis, "__rnb");
     state.prepared.length = 0;
+    state.holdAfter = Number.MAX_SAFE_INTEGER;
     state.deferShutdown = false;
     state.releaseShutdown();
   });
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+  ).toBe(1);
   await page.locator('[data-narration-action="play"]').click();
   await expect
     .poll(() =>
@@ -3531,6 +3747,7 @@ async function installSyntheticService(
   optionalSelection = false,
   selectedChatterbox = false,
   mpaPlayback = false,
+  syntheticDevelopmentProfile?: string,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -3543,10 +3760,20 @@ async function installSyntheticService(
       optionalSelection,
       selectedChatterbox,
       mpaPlayback,
+      syntheticDevelopmentProfile,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
       sessionStorage.setItem("nlc-initialized", "true");
+      if (syntheticDevelopmentProfile !== undefined) {
+        localStorage.setItem(
+          "voxleaf.tts.profile-preference",
+          JSON.stringify({
+            schemaVersion: 1,
+            profileId: syntheticDevelopmentProfile,
+          }),
+        );
+      }
       if (optionalSelection) {
         Object.assign(hostReport, {
           cudaComputeCapability: { status: "known", major: 12, minor: 0 },
@@ -3586,10 +3813,12 @@ async function installSyntheticService(
       const observations = {
         hostReport,
         probes: 0,
+        failProbe: false,
         deferProbe: false,
         releaseProbe: () => {},
         deferConfiguration: false,
         configurationPending: false,
+        startedProfile: undefined as string | undefined,
         releaseConfiguration: () => {},
         optionalMutations: [] as string[],
         optionalRecovered: false,
@@ -3619,6 +3848,7 @@ async function installSyntheticService(
         workletLifecycle: [] as string[][],
         failedDeliveredToSequence: -1,
         releaseWorkletMessages: () => {},
+        releasePausedReceipt: () => 0,
         tailMinimum: 0,
         synthesized: 0,
         ended: 0,
@@ -3786,6 +4016,15 @@ async function installSyntheticService(
                   consumer?.(event);
                 }
               };
+              observations.releasePausedReceipt = () => {
+                const index = queued.findIndex(
+                  (event) => event.data.type === "paused",
+                );
+                if (index < 0) return 0;
+                const event = queued.splice(index, 1)[0]!;
+                consumer?.(event);
+                return event.data.renderedFrames as number;
+              };
             }
             if (holdFinalCompletion) {
               const port = this.port;
@@ -3860,11 +4099,12 @@ async function installSyntheticService(
         __TAURI_INTERNALS__: {
           invoke: async (
             command: string,
-            args?: { segment: NarrationSegmentV1 },
+            args?: { segment: NarrationSegmentV1; profileId?: string },
           ) => {
             switch (command) {
               case "detect_host_profile_compatibility":
                 observations.probes += 1;
+                if (observations.failProbe) throw "tts-service-unavailable";
                 if (observations.deferProbe)
                   await new Promise<void>((resolve) => {
                     observations.releaseProbe = () => {
@@ -3940,8 +4180,9 @@ async function installSyntheticService(
                 }
                 return true;
               case "exact_tts_demo_available":
-                return false;
+                return syntheticDevelopmentProfile !== undefined;
               case "start_tts_service":
+                observations.startedProfile = args?.profileId;
                 observations.service += 1;
                 return [
                   state("handshaking"),
@@ -4031,6 +4272,7 @@ async function installSyntheticService(
       optionalSelection,
       selectedChatterbox,
       mpaPlayback,
+      syntheticDevelopmentProfile,
     },
   );
 }

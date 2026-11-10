@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
  * supersede that probe while a real unmount still releases the resource.
  */
 export function useStrictModeSafeResourceCleanup<
-  Resource extends { readonly close: () => void | Promise<void> },
+  Resource extends { readonly close: () => void | Promise<unknown> },
 >(resource: Resource | undefined): void {
   const activeResource = useRef<Resource | undefined>(undefined);
   const cleanupToken = useRef<{ superseded: boolean } | undefined>(undefined);

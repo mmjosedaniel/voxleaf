@@ -107,12 +107,9 @@ test("curated exceptions allow only their exact paths", (t) => {
   assert.throws(repo.check, /other\/initial-inventory\.json\.txt/);
 });
 
-test("permits an exact HEAD deletion before staging, but rejects its neighboring raw file", (t) => {
-  const repo = repository(t);
-  const deleted = "docs/plans/evidence/run/raw.log.txt";
-  const neighbor = "docs/plans/evidence/run/raw.log.txt.extra";
-  repo.write(deleted);
-  repo.git("add", "--", deleted);
+function commitHistoricalRaw(repo, path) {
+  repo.write(path);
+  repo.git("add", "--", path);
   repo.git(
     "-c",
     "user.name=Evidence Test",
@@ -125,12 +122,51 @@ test("permits an exact HEAD deletion before staging, but rejects its neighboring
     "-m",
     "historical raw output",
   );
+}
+
+test("permits an exact HEAD deletion before staging, but rejects its neighboring raw file", (t) => {
+  const repo = repository(t);
+  const deleted = "docs/plans/evidence/run/raw.log.txt";
+  const neighbor = "docs/plans/evidence/run/raw.log.txt.extra";
+  commitHistoricalRaw(repo, deleted);
   rmSync(join(repo.root, deleted));
   assert.doesNotThrow(repo.check);
   repo.write(neighbor);
   repo.git("add", "--", neighbor);
   assert.throws(repo.check, (error) => error.message.includes(neighbor));
 });
+
+test("permits a staged deletion of historical raw evidence", (t) => {
+  const repo = repository(t);
+  const path = "docs/plans/evidence/run/removed.log.txt";
+  commitHistoricalRaw(repo, path);
+  repo.git("rm", "--", path);
+  assert.doesNotThrow(repo.check);
+});
+
+for (const change of ["blob", "mode"]) {
+  test(`rejects a staged ${change} change to historical raw evidence deleted locally`, (t) => {
+    const repo = repository(t);
+    const path = "docs/plans/evidence/run with spaces/changed.log.txt";
+    commitHistoricalRaw(repo, path);
+    if (change === "blob") {
+      repo.write(path, "different staged bytes\n");
+      repo.git("add", "--", path);
+    } else {
+      repo.git("update-index", "--chmod=+x", "--", path);
+      assert.deepEqual(
+        repo.git("rev-parse", `HEAD:${path}`),
+        repo.git("rev-parse", `:${path}`),
+      );
+    }
+    rmSync(join(repo.root, path));
+    assert.throws(repo.check, (error) => {
+      assert.match(error.message, /Raw evidence is tracked/);
+      assert.ok(error.message.includes(path));
+      return true;
+    });
+  });
+}
 
 test("a staged new raw file is rejected even if subsequently deleted locally", (t) => {
   const repo = repository(t);

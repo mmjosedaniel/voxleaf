@@ -11,9 +11,23 @@ export const ANTIVIRUS_STATUSES = new Set([
   "not-available",
   "windows-defender-no-threats",
 ]);
-export const LIFECYCLE_STATUSES = new Set([
-  "not-run",
-  "local-install-first-start-repair-uninstall-passed",
+const LIFECYCLE_PASSED = "local-install-first-start-repair-uninstall-passed";
+const LIFECYCLE_RECEIPT_PATH =
+  "tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json";
+const LIFECYCLE_CHECKS = Object.freeze({
+  install: true,
+  firstStart: true,
+  repair: true,
+  defaultUninstallAfterRepair: true,
+  cleanupVerified: true,
+});
+const LIFECYCLE_MATRIX = Object.freeze([
+  ["default-preserve", false, false],
+  ["chatterbox-only", true, false],
+  ["preferences-only", false, true],
+  ["both-explicit", true, true],
+  ["legacy-both", true, true],
+  ["invalid-values-preserve", false, false],
 ]);
 const ORDINARY_CHATTERBOX_JOURNEY_STEPS = Object.freeze([
   "preflight",
@@ -245,9 +259,10 @@ export function validateClosedReleaseValues(documents) {
     ]?.includes("--ordinary-chatterbox-receipt") ||
     !rootPackage.scripts?.[
       "package:windows:ordinary-chatterbox:evidence"
-    ]?.includes(
-      "--lifecycle-status local-install-first-start-repair-uninstall-passed",
-    ) ||
+    ]?.includes(`--lifecycle-receipt ${LIFECYCLE_RECEIPT_PATH}`) ||
+    rootPackage.scripts?.[
+      "package:windows:ordinary-chatterbox:evidence"
+    ]?.includes("--lifecycle-status") ||
     !rootPackage.scripts?.["test:rust"]?.includes(
       "--features release-locked-runtime",
     ) ||
@@ -430,18 +445,90 @@ export function validateOrdinaryChatterboxReceipt(receipt, installerIdentity) {
   }
 }
 
+function hasFields(value, fields) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === fields.length &&
+    fields.every((key) => Object.hasOwn(value, key))
+  );
+}
+
+function matchesRecord(value, expected) {
+  return (
+    hasFields(value, Object.keys(expected)) &&
+    Object.entries(expected).every(([key, item]) => value[key] === item)
+  );
+}
+
+function utcMilliseconds(value) {
+  if (typeof value !== "string") return Number.NaN;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value
+    ? parsed
+    : Number.NaN;
+}
+
+function validateLifecycleReceipt(receipt, installerIdentity, installerStats) {
+  if (
+    !hasFields(receipt, [
+      "schemaVersion",
+      "status",
+      "installer",
+      "startedAtUtc",
+      "completedAtUtc",
+      "checks",
+      "uninstallOptionMatrix",
+    ]) ||
+    receipt.schemaVersion !== 1 ||
+    receipt.status !== "passed" ||
+    !matchesRecord(receipt.installer, {
+      ...installerIdentity,
+      // PowerShell's millisecond format truncates the finer NTFS timestamp.
+      modifiedAtUtc: new Date(Math.trunc(installerStats.mtimeMs)).toISOString(),
+    }) ||
+    !matchesRecord(receipt.checks, LIFECYCLE_CHECKS) ||
+    !Array.isArray(receipt.uninstallOptionMatrix) ||
+    receipt.uninstallOptionMatrix.length !== LIFECYCLE_MATRIX.length ||
+    !LIFECYCLE_MATRIX.every(
+      ([scenario, chatterboxRemoved, preferencesAndRecoveryRemoved], index) =>
+        matchesRecord(receipt.uninstallOptionMatrix[index], {
+          scenario,
+          chatterboxRemoved,
+          preferencesAndRecoveryRemoved,
+          unrelatedDataPreserved: true,
+        }),
+    )
+  ) {
+    fail("lifecycle-receipt");
+  }
+  const started = utcMilliseconds(receipt.startedAtUtc);
+  const completed = utcMilliseconds(receipt.completedAtUtc);
+  if (
+    !Number.isFinite(started) ||
+    !Number.isFinite(completed) ||
+    started < Math.trunc(installerStats.mtimeMs) ||
+    completed < started ||
+    completed > Date.now()
+  ) {
+    fail("lifecycle-receipt");
+  }
+}
+
 export async function createPackageEvidence({
   root,
   installer,
   binary,
   signatureStatus,
   antivirusStatus,
-  lifecycleStatus,
+  lifecycleStatus = "not-run",
+  lifecycleReceipt,
   ordinaryChatterboxReceipt,
 }) {
   if (!SIGNATURE_STATUSES.has(signatureStatus)) fail("signature-status");
   if (!ANTIVIRUS_STATUSES.has(antivirusStatus)) fail("antivirus-status");
-  if (!LIFECYCLE_STATUSES.has(lifecycleStatus)) fail("lifecycle-status");
+  if (lifecycleStatus !== "not-run") fail("lifecycle-status");
   const installerName = path.basename(installer);
   if (installerName !== `VoxLeaf_${APP_VERSION}_x64-setup.exe`) {
     fail("installer-identity");
@@ -459,6 +546,13 @@ export async function createPackageEvidence({
     sizeBytes: binaryStats.size,
     sha256: await sha256(binary),
   };
+  if (lifecycleReceipt !== undefined) {
+    validateLifecycleReceipt(
+      lifecycleReceipt,
+      installerIdentity,
+      installerStats,
+    );
+  }
   if (ordinaryChatterboxReceipt !== undefined) {
     validateOrdinaryChatterboxReceipt(
       ordinaryChatterboxReceipt,
@@ -469,8 +563,10 @@ export async function createPackageEvidence({
     ordinaryChatterboxReceipt === undefined
       ? "not-run"
       : "representative-compatible-host-passed";
+  const lifecycleOutcome =
+    lifecycleReceipt === undefined ? "not-run" : LIFECYCLE_PASSED;
   const localReleaseGatesPassed =
-    lifecycleStatus === "local-install-first-start-repair-uninstall-passed" &&
+    lifecycleOutcome === LIFECYCLE_PASSED &&
     ordinaryChatterboxStatus === "representative-compatible-host-passed";
   return {
     schemaVersion: 2,
@@ -543,7 +639,7 @@ export async function createPackageEvidence({
       credentialStoredInRepository: false,
     },
     lifecycle: {
-      status: lifecycleStatus,
+      status: lifecycleOutcome,
       representativeNormalUserHostRequired: true,
       localReleaseGatesPassed,
       explicitApplicationDataRemovalStructurallyVerified: true,
@@ -575,6 +671,15 @@ async function main(arguments_) {
   if (command === "evidence") {
     await validateReleaseConfiguration(root, true);
     const receiptPath = option(rest, "--ordinary-chatterbox-receipt");
+    const lifecyclePath = option(rest, "--lifecycle-receipt");
+    let lifecycleReceipt;
+    if (lifecyclePath !== undefined) {
+      try {
+        lifecycleReceipt = await readJson(path.resolve(root, lifecyclePath));
+      } catch {
+        fail("lifecycle-receipt");
+      }
+    }
     const evidence = await createPackageEvidence({
       root,
       installer: option(rest, "--installer"),
@@ -582,6 +687,7 @@ async function main(arguments_) {
       signatureStatus: option(rest, "--signature-status", "unsigned-local"),
       antivirusStatus: option(rest, "--antivirus-status", "not-run"),
       lifecycleStatus: option(rest, "--lifecycle-status", "not-run"),
+      lifecycleReceipt,
       ordinaryChatterboxReceipt:
         receiptPath === undefined
           ? undefined

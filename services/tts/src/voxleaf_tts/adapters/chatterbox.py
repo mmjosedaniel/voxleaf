@@ -311,6 +311,15 @@ class ChatterboxMultilingualTtsEngine:
                     audio_prompt_path=None,
                     **GENERATION_SETTINGS,
                 )
+            shape = waveform.shape
+            if len(shape) == 2 and shape[0] == 1:
+                shape = shape[1:]
+            if (
+                len(shape) != 1
+                or type(shape[0]) is not int
+                or not 0 < shape[0] <= MAX_AUDIO_SAMPLE_COUNT
+            ):
+                raise EngineFailure(EngineFailureCode.FAILURE)
             numpy = self._numpy_module()
             samples = numpy.asarray(
                 waveform.detach().to("cpu").reshape(-1).numpy(),
@@ -320,6 +329,7 @@ class ChatterboxMultilingualTtsEngine:
             sample_count = int(samples.size)
             if (
                 samples.ndim != 1
+                or sample_count != shape[0]
                 or sample_count <= 0
                 or sample_count > MAX_AUDIO_SAMPLE_COUNT
                 or not bool(numpy.isfinite(samples).all())

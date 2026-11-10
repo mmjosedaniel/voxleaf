@@ -21,6 +21,7 @@ import {
   createNativeResourceObservation,
   captureOwnedProcessTree,
   terminateOwnedProcesses,
+  nativeProcessObservationFailureCode,
   waitForOwnedProcessesToExit,
 } from "./native-smoke/resource-observation.mjs";
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
@@ -212,6 +213,19 @@ const FIXED_FAILURE_CODES = new Map([
     "native-restart-process-wait-invalid",
   ],
   ["Native smoke cleanup failed.", "native-cleanup-failed"],
+  [
+    "Native cleanup pre-DELETE capture failed.",
+    "native-cleanup-pre-delete-capture",
+  ],
+  [
+    "Native cleanup post-DELETE capture failed.",
+    "native-cleanup-post-delete-capture",
+  ],
+  [
+    "Native cleanup tree termination failed.",
+    "native-cleanup-tree-termination",
+  ],
+  ["Native cleanup root stop failed.", "native-cleanup-root-stop"],
   [
     "Native owned-process cleanup could not be verified.",
     "native-process-ownership-unverified",
@@ -509,6 +523,8 @@ function failureCode(error) {
   if (invariantCode !== undefined) {
     return invariantCode;
   }
+  const processCode = nativeProcessObservationFailureCode(error);
+  if (processCode !== undefined) return processCode;
   if (!(error instanceof Error)) {
     return "unexpected-error";
   }
@@ -522,11 +538,14 @@ export function nativeSmokeFailureCodes(error) {
   // fixed codes escape; raw errors can contain paths, driver data or book text.
   for (let index = 0; index < pending.length; index++) {
     const current = pending[index];
+    if (nativeProcessObservationFailureCode(current) !== undefined) {
+      codes.add("native-process-ownership-unverified");
+    }
     codes.add(failureCode(current));
     if (current instanceof AggregateError) {
-      pending.push(...current.errors.slice(0, 8 - pending.length));
+      pending.push(...current.errors.slice(0, 16 - pending.length));
     } else if (current instanceof Error && current.cause !== undefined) {
-      if (pending.length < 8) pending.push(current.cause);
+      if (pending.length < 16) pending.push(current.cause);
     }
   }
   return [...codes];
@@ -1077,8 +1096,18 @@ export async function cleanupNativeRun({
   child,
   temporaryDirectory,
   identities = [],
+  terminate = terminateOwnedProcesses,
 }) {
   const errors = [];
+  const attempt = async (action, message) => {
+    try {
+      await action();
+    } catch (error) {
+      errors.push(
+        message === undefined ? error : new Error(message, { cause: error }),
+      );
+    }
+  };
   if (
     child?.pid !== undefined &&
     identities.length === 0 &&
@@ -1088,39 +1117,29 @@ export async function cleanupNativeRun({
       new Error("Native owned-process cleanup could not be verified."),
     );
   }
-  await settleObservations();
-  await driver?.settleRequests?.();
+  await attempt(settleObservations);
+  await attempt(() => driver?.settleRequests?.());
   const capture = async () => {
     if (
       child?.pid !== undefined &&
       child.exitCode === null &&
       child.signalCode === null
     ) {
-      try {
-        identities = await captureCurrentChildProcesses(child, identities);
-      } catch (error) {
-        errors.push(error);
-      }
+      identities = await captureCurrentChildProcesses(child, identities);
     }
   };
-  await capture();
-  try {
-    await driver?.deleteSession();
-  } catch (error) {
-    errors.push(error);
-  }
-  await capture();
-  let stopped = false;
-  try {
-    if (identities.length > 0) await terminateOwnedProcesses(identities);
+  await attempt(capture, "Native cleanup pre-DELETE capture failed.");
+  await attempt(() => driver?.deleteSession());
+  await attempt(capture, "Native cleanup post-DELETE capture failed.");
+  await attempt(async () => {
+    if (identities.length > 0) await terminate(identities);
+  }, "Native cleanup tree termination failed.");
+  await attempt(async () => {
     if (child !== undefined) await stopChild(child);
-    stopped = true;
-  } catch (error) {
-    errors.push(error);
-  }
+  }, "Native cleanup root stop failed.");
   // Uncertain process ownership retains recovery material rather than deleting
   // a profile that may still be in use.
-  if (stopped && errors.length === 0) {
+  if (errors.length === 0) {
     try {
       await rm(temporaryDirectory, {
         force: true,

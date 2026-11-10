@@ -587,11 +587,22 @@ function hasCelsiusRangeNeighbor(
     );
   }
 
+  const afterDigits = (): string | undefined => {
+    let following: string | undefined;
+    do {
+      following = next();
+    } while (isNumericContextCodePoint(following));
+    return following;
+  };
   let value = next(true);
+  if (/[+−-]/u.test(value ?? "")) value = next();
   if (!isNumericContextCodePoint(value)) return exhausted;
-  do {
+  value = afterDigits();
+  if (value === "." || value === ",") {
     value = next();
-  } while (isNumericContextCodePoint(value));
+    if (!isNumericContextCodePoint(value)) return exhausted;
+    value = afterDigits();
+  }
   if (isOrdinaryWhitespace(value ?? "")) value = next(true);
   return (
     (value === "°" && next() === "C" && !isWordContextCodePoint(next())) ||

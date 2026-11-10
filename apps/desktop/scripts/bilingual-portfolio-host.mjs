@@ -7,7 +7,8 @@ import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const FIREWALL_RULE_NAME = "VoxLeaf TTS Benchmark Offline";
+import { effectiveFirewallBlockScript } from "./effective-firewall-block.mjs";
+
 const PROFILE_ARGUMENT = "--profile=";
 const LANGUAGE_ARGUMENT = "--language=";
 const PREFLIGHT_ONLY_ARGUMENT = "--preflight-only";
@@ -145,16 +146,8 @@ function encodedPowerShellString(value) {
   return Buffer.from(value, "utf16le").toString("base64");
 }
 
-function firewallBlockExists(executable) {
-  const encodedExecutable = encodedPowerShellString(path.resolve(executable));
-  const encodedRuleName = encodedPowerShellString(FIREWALL_RULE_NAME);
-  const script = [
-    `$target=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedExecutable}'))`,
-    `$ruleName=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedRuleName}'))`,
-    "$matches=@(Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Outbound' -and $_.Action -eq 'Block' } | Get-NetFirewallApplicationFilter | Where-Object { [IO.Path]::GetFullPath($_.Program).Equals([IO.Path]::GetFullPath($target), [StringComparison]::OrdinalIgnoreCase) })",
-    "[Console]::Out.Write($(if ($matches.Count -gt 0) { 'true' } else { 'false' }))",
-  ].join("; ");
-  return powershellText(script) === "true";
+export function firewallBlockExists(executable) {
+  return powershellText(effectiveFirewallBlockScript(executable)) === "true";
 }
 
 function processIdsForExecutable(executable) {

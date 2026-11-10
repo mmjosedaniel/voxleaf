@@ -154,6 +154,8 @@ compatibility probe is pending, the probe evaluates the latest successful choice
 against its fresh hardware facts. It cannot restore an older preference or
 override a new hardware rejection. Selecting a development-only profile updates
 the device summary immediately while preserving its existing admission gates.
+After a language selection in Settings, a compatibility check settles the
+current language and eligible saved profile before Play is available again.
 
 Preparation failures remain visible after successful resource cleanup. Stop,
 reset, or a new explicit narration action clears the diagnostic; cleanup failure
@@ -747,6 +749,16 @@ Cancel start action, including while a slow-speed backend is preparing. A zero
 millisecond first-render measurement is valid. Stop invalidates undispatched
 hardware/configuration preflight without waiting for its obsolete result;
 already dispatched service work still requires containment.
+
+Cancel start remains available during an explicitly requested recovery's owned
+startup. Cancellation joins the same containment boundary and does not grant
+another recovery attempt. A current positive device output receipt may confirm
+the first segment after Pause without restarting playback or advancing the paused
+clock. Book replacement waits for verified disposal of the previous narrator
+and service even when a diagnostic from that run remains visible.
+
+Quick, prepared and refill readiness sum the remaining source frames at their
+active and future rates, then round down the combined duration once.
 
 Reset reserves its owner before starting preference work. Book replacement is
 unavailable until Reset settles, and a successful current speed reset clears

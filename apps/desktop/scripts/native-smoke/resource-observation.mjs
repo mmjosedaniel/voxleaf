@@ -6,23 +6,53 @@ import { setTimeout as wait } from "node:timers/promises";
 import { URL } from "node:url";
 import { assertNativeSmokeInvariants } from "../native-smoke-invariants.mjs";
 
-function inspectOwnedProcesses(script) {
+const OWNERSHIP_FAILURE = "Native owned-process cleanup could not be verified.";
+const PROCESS_FAILURE_CODES = new Set([
+  "native-process-query-timeout",
+  "native-process-query-failed",
+  "native-process-output-invalid",
+  "native-process-identity-unavailable",
+  "native-process-termination-failed",
+  "native-process-exit-unverified",
+]);
+
+class NativeProcessObservationError extends Error {
+  constructor(code) {
+    super(OWNERSHIP_FAILURE);
+    this.code = code;
+  }
+}
+
+export function nativeProcessObservationFailureCode(error) {
+  return error instanceof NativeProcessObservationError &&
+    PROCESS_FAILURE_CODES.has(error.code)
+    ? error.code
+    : undefined;
+}
+
+export function inspectOwnedProcesses(script, execFile = executeFile) {
   return new Promise((resolve, reject) => {
-    executeFile(
+    execFile(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", script],
       { encoding: "utf8", timeout: 15_000, windowsHide: true },
       (error, stdout) => {
         if (error !== null)
           reject(
-            new Error("Native owned-process cleanup could not be verified."),
+            new NativeProcessObservationError(
+              error.killed && error.signal === "SIGTERM"
+                ? "native-process-query-timeout"
+                : "native-process-query-failed",
+            ),
           );
         else {
           try {
             resolve(JSON.parse(stdout));
           } catch {
             reject(
-              new Error("Native owned-process cleanup could not be verified."),
+              new NativeProcessObservationError(
+                "native-process-output-invalid",
+              ),
             );
           }
         }
@@ -93,17 +123,45 @@ export async function captureOwnedProcessTree(
   return records;
 }
 
-export async function terminateOwnedProcesses(records) {
-  const result = await inspectOwnedProcesses(
+export async function terminateOwnedProcesses(
+  records,
+  inspect = inspectOwnedProcesses,
+) {
+  const failures = await inspect(
     [
       "$ErrorActionPreference='Stop'",
       `$known=ConvertFrom-Json -InputObject ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encodedIdentities(records)}')))`,
-      "foreach($record in ($known | Sort-Object depth -Descending)) { $process=Get-Process -Id ([int]$record.pid) -ErrorAction SilentlyContinue; if($null -eq $process){continue}; try {$null=$process.Handle; if($process.StartTime.ToUniversalTime().Ticks.ToString() -eq $record.created -and $process.Path -eq $record.executable){$process.Kill(); if(-not $process.WaitForExit(5000)){throw 'exit uncertain'}}} finally {$process.Dispose()} }",
-      "[Console]::Out.Write('true')",
+      "$timer=[Diagnostics.Stopwatch]::StartNew()",
+      "$failures=[Collections.Generic.HashSet[string]]::new()",
+      "$pending=[Collections.Generic.List[object]]::new()",
+      "try {",
+      "foreach($record in ($known | Sort-Object depth -Descending)) {",
+      "if($timer.ElapsedMilliseconds -ge 10000){[void]$failures.Add('native-process-exit-unverified'); break}",
+      "$process=$null; try {$process=Get-Process -Id ([int]$record.pid) -ErrorAction Stop} catch {if($_.FullyQualifiedErrorId -notlike 'NoProcessFoundForGivenId,*'){[void]$failures.Add('native-process-identity-unavailable')}; continue}",
+      "try {",
+      "if($process.HasExited){continue}",
+      "try {$null=$process.Handle; $created=$process.StartTime.ToUniversalTime().Ticks.ToString(); $executable=$process.Path; if([string]::IsNullOrEmpty($executable)){throw 'identity unavailable'}} catch {if(-not $process.HasExited){[void]$failures.Add('native-process-identity-unavailable')}; continue}",
+      "if($created -ne $record.created -or $executable -ne $record.executable){continue}",
+      "try {$process.Kill(); $pending.Add($process); $process=$null} catch {if(-not $process.HasExited){[void]$failures.Add('native-process-termination-failed')}}",
+      "} catch {[void]$failures.Add('native-process-identity-unavailable')} finally {if($null -ne $process){$process.Dispose()}}",
+      "}",
+      "foreach($process in $pending) {try {if(-not $process.WaitForExit([int][Math]::Max(0,10000-$timer.ElapsedMilliseconds))){[void]$failures.Add('native-process-exit-unverified')}} catch {[void]$failures.Add('native-process-exit-unverified')}}",
+      "} finally {foreach($process in $pending){$process.Dispose()}}",
+      "ConvertTo-Json -InputObject @($failures | Sort-Object) -Compress",
     ].join("; "),
   );
-  if (result !== true)
-    throw new Error("Native owned-process cleanup could not be verified.");
+  if (
+    !Array.isArray(failures) ||
+    !failures.every((code) => PROCESS_FAILURE_CODES.has(code))
+  ) {
+    throw new NativeProcessObservationError("native-process-output-invalid");
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map((code) => new NativeProcessObservationError(code)),
+      OWNERSHIP_FAILURE,
+    );
+  }
 }
 
 export async function waitForOwnedProcessesToExit(

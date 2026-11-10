@@ -26,6 +26,7 @@ import {
 } from "./adaptive-preparation";
 import {
   AdaptivePcmPlayer,
+  PcmPlaybackError,
   WebAudioPcmPlaybackBackend,
   type AdaptivePcmAudibleProgressObservation,
   type AdaptivePcmPlayerObservation,
@@ -96,6 +97,8 @@ export type ProductNarrationFailureCode =
   | "narration-preparation-failed"
   | "tts-profile-unavailable"
   | "tts-service-failed";
+
+export type ProductNarrationCloseOutcome = "contained" | "failed";
 
 export interface ProductNarrationMetrics {
   readonly commandToAudibleMs: number | undefined;
@@ -430,7 +433,7 @@ export class ProductNarrationCoordinator {
   #recoveryOperation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
-  #closeOperation: Promise<void> | undefined;
+  #closeOperation: Promise<ProductNarrationCloseOutcome> | undefined;
   #runToken = 0;
   #nextSequence = 0;
   #activeScope: TtsGenerationScope | undefined;
@@ -1390,16 +1393,21 @@ export class ProductNarrationCoordinator {
       return "failed";
     }
     this.#publish();
+    return token === this.#runToken && this.#verifiedStoppedOwnership()
+      ? "contained"
+      : "failed";
+  }
+
+  #verifiedStoppedOwnership(): boolean {
     const service = this.#client.observe();
-    return token === this.#runToken &&
+    return (
       this.#scheduler === undefined &&
       this.#player === undefined &&
       service.state === "stopped" &&
       service.serviceInstanceId === undefined &&
       !service.hasActiveGeneration &&
       service.retainedAudioUnits === 0
-      ? "contained"
-      : "failed";
+    );
   }
 
   #stopActiveRun(completedState?: AdaptivePreparationUiState): Promise<void> {
@@ -1424,8 +1432,10 @@ export class ProductNarrationCoordinator {
   ): Promise<void> {
     if (this.#scheduler === undefined || this.#player === undefined) {
       this.#terminalState = completedState;
-      this.#failure = undefined;
-      this.#preparationFailure = undefined;
+      if (!this.#closed) {
+        this.#failure = undefined;
+        this.#preparationFailure = undefined;
+      }
       this.#publish();
       return;
     }
@@ -1520,7 +1530,8 @@ export class ProductNarrationCoordinator {
       // A failed operation may already have settled the service boundary.
     }
     if (cleanupFailed) {
-      this.#failure = "tts-service-failed";
+      if (!this.#closed || this.#failure === undefined)
+        this.#failure = "tts-service-failed";
       this.#availability = "unavailable";
       this.#terminalState = this.#stateFromActiveOwners();
       if (this.#recovery.observe().phase === "operational") {
@@ -1541,7 +1552,7 @@ export class ProductNarrationCoordinator {
       this.#failure === "narration-preparation-failed"
         ? this.#stateFromActiveOwners()
         : completedState;
-    if (this.#failure !== "narration-preparation-failed") {
+    if (!this.#closed && this.#failure !== "narration-preparation-failed") {
       this.#failure = undefined;
       this.#preparationFailure = undefined;
     }
@@ -1555,16 +1566,23 @@ export class ProductNarrationCoordinator {
     this.#publish();
   }
 
-  public close(): Promise<void> {
+  public close(): Promise<ProductNarrationCloseOutcome> {
     if (this.#closeOperation !== undefined) return this.#closeOperation;
     this.#closed = true;
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
-    this.#closeOperation = this.stop().then(() => {
-      this.#listeners.clear();
-      this.#audibleProgressListeners.clear();
-      this.#navigationListeners.clear();
-    });
+    this.#pausedNavigationState = undefined;
+    this.#closeOperation = Promise.resolve()
+      .then(() => this.#stopActiveRun())
+      .then((): ProductNarrationCloseOutcome =>
+        this.#verifiedStoppedOwnership() ? "contained" : "failed",
+      )
+      .catch((): ProductNarrationCloseOutcome => "failed")
+      .finally(() => {
+        this.#listeners.clear();
+        this.#audibleProgressListeners.clear();
+        this.#navigationListeners.clear();
+      });
     return this.#closeOperation;
   }
 
@@ -1966,11 +1984,17 @@ export class ProductNarrationCoordinator {
       if (runToken !== this.#runToken) {
         return;
       }
-      if (action.kind === "prepare-narration") {
+      if (
+        error instanceof PcmPlaybackError &&
+        error.code === "playback-failure"
+      ) {
+        this.#fail("audio-playback-failed", runToken, "playback", error);
+      } else if (action.kind === "prepare-narration") {
         scheduler.failNarrationPreparation();
         this.#failPreparation(runToken);
       } else if (action.kind === "synthesize") {
-        scheduler.failActiveSynthesis();
+        if (scheduler.observe().serviceState === "generating")
+          scheduler.failActiveSynthesis();
         this.#fail("tts-service-failed", runToken, "synthesize", error);
       } else {
         scheduler.failServiceTransition();

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import {
   mkdtemp,
@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import test, { after } from "node:test";
+import { URL } from "node:url";
 
 import {
   assertNoDevelopmentEnvironment,
@@ -38,6 +39,104 @@ import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+for (const [failedSlot, uncertain] of [
+  [1, false],
+  [2, false],
+  [2, true],
+]) {
+  test(
+    `DCR-14 async reservation error ${failedSlot} runs owned restoration (uncertain=${uncertain})`,
+    {
+      skip: process.platform !== "win32",
+    },
+    async () => {
+      const owned = await mkdtemp(path.join(root, "dcr-reservation-"));
+      const module = new URL(
+        "./ordinary-chatterbox-release-host.mjs",
+        import.meta.url,
+      ).href;
+      const script = `
+import net from 'node:net';
+import {syncBuiltinESMExports} from 'node:module';
+import {mkdir,writeFile,readFile,rmdir,access} from 'node:fs/promises';
+import path from 'node:path';
+const [owned, failedSlot, uncertain] = process.argv.slice(1);
+const servers=[];
+const create=net.createServer;
+net.createServer=()=>{
+  const server=create();
+  servers.push(server);
+  if (servers.length === Number(failedSlot)) {
+    server.listen=()=>{
+      queueMicrotask(()=>server.emit('error',Object.assign(new Error('synthetic async bind'),{code:'EADDRINUSE'})));
+      return server;
+    };
+  }
+  return server;
+};
+syncBuiltinESMExports();
+const {runJourney}=await import(${JSON.stringify(module)});
+const data=path.join(owned,'com.voxleaf.desktop');
+const backup=data+'.ordinary-chatterbox-harness-backup-'+process.pid;
+const installedRoot=path.join(owned,'VoxLeaf');
+const installer=path.join(owned,'synthetic-installer.exe');
+const driver=path.join(owned,'synthetic-driver.exe');
+const receipt=path.join(owned,'receipt.json');
+await mkdir(data);
+await writeFile(path.join(data,'sentinel'),'original');
+await writeFile(installer,'synthetic installer');
+await writeFile(driver,'synthetic driver');
+let uninstalls=0;
+let failure;
+try {
+  await runJourney({installedRoot,installer,tauriDriver:driver,edgeDriver:driver,receipt,mode:'journey'},process.env,{
+    runInstaller: async()=>{await mkdir(installedRoot);await mkdir(data);await writeFile(path.join(data,'sentinel'),'temporary');},
+    runPreflight: async()=>({artifact:{executable:installer}}),
+    runUninstaller: async()=>{uninstalls++;if(uncertain==='true')throw new Error('synthetic-uninstall-uncertain');await rmdir(installedRoot);},
+  });
+} catch(error) {failure=error;}
+const exists=async(value)=>{try{await access(value);return true;}catch{return false;}};
+console.log(JSON.stringify({
+  errors: failure instanceof AggregateError ? failure.errors.map((item)=>item.message) : [failure?.message],
+  uninstalls, servers:servers.length, retained:servers.some((server)=>server.listening),
+  data:await readFile(path.join(data,'sentinel'),'utf8'),
+  backup:await exists(backup), original:await exists(backup) ? await readFile(path.join(backup,'sentinel'),'utf8') : null,
+  installed:await exists(installedRoot), receipt:await exists(receipt),
+}));
+`;
+      const result = spawnSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "-e",
+          script,
+          owned,
+          String(failedSlot),
+          String(uncertain),
+        ],
+        {
+          encoding: "utf8",
+          windowsHide: true,
+          timeout: 10_000,
+          env: { ...process.env, LOCALAPPDATA: owned, USERPROFILE: owned },
+        },
+      );
+      assert.equal(result.error, undefined);
+      assert.equal(result.status, 0, result.stderr);
+      const outcome = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
+      assert.ok(outcome.errors.some((error) => /driver-port/u.test(error)));
+      assert.equal(outcome.uninstalls, 1);
+      assert.equal(outcome.servers, 2);
+      assert.equal(outcome.retained, false);
+      assert.equal(outcome.receipt, false);
+      assert.equal(outcome.backup, uncertain);
+      assert.equal(outcome.installed, uncertain);
+      assert.equal(outcome.data, uncertain ? "temporary" : "original");
+      assert.equal(outcome.original, uncertain ? "original" : null);
+    },
+  );
+}
 
 for (const mode of ["missing-driver", "spawn-failure", "uncertain-cleanup"]) {
   test(`SAF-01 ${mode} preserves synthetic original through the journey`, async () => {

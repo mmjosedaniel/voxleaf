@@ -17,6 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed deep chat audit plan](plans/completed/deep-chat-audit-minimal-corrections.md)
+records 25 dispositions and independent integrated approval. The
+[execution ledger](plans/evidence/deep-chat-audit/execution-ledger.md) records
+the host checks, preserved failures and verified restoration.
+
 The [EPUB budget/cancellation follow-up](plans/completed/epub-budget-cancellation-and-reflow-follow-up.md) corrects C13/C17 with focused and combined host checks. C15 is reproduced only in modeled ordering, with no production fix; C05 remains deferred to the next Chatterbox runtime update. The [execution ledger](plans/evidence/epub-budget-cancellation-reflow/execution-ledger.md) records R1 corrections and the final independent assessment. No Git delivery is included.
 
 The [completed confirmed chat findings plan](plans/completed/confirmed-chat-findings-minimal-corrections.md)

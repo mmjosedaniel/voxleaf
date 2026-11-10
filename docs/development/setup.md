@@ -436,9 +436,10 @@ playback, sustainable throughput, production packaging, or general hardware
 support. Default development, portable checks, CI, and the existing visual
 reader remain model-free when the keys are absent.
 
-The frozen Milestone 5 handoff matrix uses the same three keys and firewall
-rule. It is hardware-specific, excluded from root checks and CI, and must be
-run only from a clean exact-host state:
+The maintainer handoff matrix uses the same three keys and an unrestricted
+effective firewall block for the exact interpreter. V2 preserves the frozen
+Milestone 5 cases and requires committed v2 authority in a clean exact-host
+state. This hardware command is excluded from root checks and CI:
 
 ```powershell
 pnpm.cmd test:tts:handoff-host
@@ -448,9 +449,10 @@ The command builds the release application and emits one schema-validated,
 content-safe JSON result. It exercises the nine frozen cold/warm, backpressure,
 invalidation, cancellation, crash, and exit cases without retries while
 sampling descendant RAM, dedicated/shared GPU memory, cleanup, listeners, and
-external connections. It never writes generated audio. A pass is constrained
-host evidence only; it does not approve production playback or generalize to
-other hardware.
+external connections. At each of four cleanup boundaries the native diagnostic
+waits for the observer to verify zero descendants and resources before it
+restarts or completes. The command writes no generated audio. The historical
+v1 result remains available. V2 is unmeasured on hardware.
 
 The M008 Milestone 5 packaged adaptive-demo matrix uses the same exact
 configuration and firewall rule:
@@ -545,6 +547,16 @@ pnpm.cmd package:windows:check
 pnpm.cmd package:windows
 pnpm.cmd package:windows:lifecycle
 ```
+
+The lifecycle script writes
+`tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json` after the
+install, first-start, repair, uninstall matrix and restoration finish. The
+receipt records the exact installer name, size, SHA-256 and modification time.
+`-LifecycleReceipt` can select a different directory with the same receipt
+filename when invoking the PowerShell script directly. The ordinary Chatterbox
+evidence command supplies this receipt through `--lifecycle-receipt`. Local
+release evidence requires both the matching lifecycle receipt and the separate
+ordinary journey receipt. The signature gate remains separate.
 
 `package:windows` rebuilds and verifies the exact Piper core, then creates the
 ignored current-user NSIS artifact at

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v13",
+  "title": "VoxLeaf Qwen short-segment batch summary v13",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusVersion",
+    "corpusSha256",
+    "executionCommitSha",
+    "placementProfileId",
+    "cpuAdmission",
+    "candidateId",
+    "host",
+    "counts",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "playback",
+    "quality",
+    "audits",
+    "conclusions",
+    "failureCodes",
+    "limitations",
+    "cleanupFailureCodes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-short-segment-batch-summary-v13"
+    },
+    "profileVersion": {
+      "const": "tts-short-segment-batch-profile-v13"
+    },
+    "profileSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/profileSha256"
+    },
+    "corpusVersion": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/corpusVersion"
+    },
+    "corpusSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/corpusSha256"
+    },
+    "executionCommitSha": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/executionCommitSha"
+    },
+    "placementProfileId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/placementProfileId"
+    },
+    "cpuAdmission": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/cpuAdmission"
+    },
+    "candidateId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/candidateId"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/host"
+    },
+    "counts": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/counts"
+    },
+    "aggregates": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/aggregates"
+    },
+    "memory": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/memory"
+    },
+    "cancellation": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/cancellation"
+    },
+    "playback": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/playback"
+    },
+    "quality": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/quality"
+    },
+    "audits": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/audits"
+    },
+    "conclusions": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/conclusions"
+    },
+    "failureCodes": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/failureCodes"
+    },
+    "limitations": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4#/properties/limitations"
+    },
+    "cleanupFailureCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 4,
+      "items": {
+        "enum": [
+          "candidate-close",
+          "monitor-shutdown",
+          "worker-not-reaped",
+          "resource-residue"
+        ]
+      }
+    }
+  }
+}

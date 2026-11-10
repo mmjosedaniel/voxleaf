@@ -20,6 +20,7 @@ from voxleaf_tts.adapters.chatterbox import (
     ChatterboxMultilingualTtsEngine,
 )
 from voxleaf_tts.engine import EngineFailure, EngineFailureCode
+from voxleaf_tts.protocol import MAX_AUDIO_SAMPLE_COUNT
 
 
 class FakeSamples:
@@ -62,21 +63,32 @@ class FakeNumpy(ModuleType):
 
 
 class FakeTensor:
-    def __init__(self, samples: FakeSamples) -> None:
+    def __init__(
+        self,
+        samples: FakeSamples,
+        shape: tuple[int, ...] | None = None,
+        operations: list[str] | None = None,
+    ) -> None:
         self._samples = samples
+        self.shape = (samples.size,) if shape is None else shape
+        self.operations = [] if operations is None else operations
 
     def detach(self) -> FakeTensor:
+        self.operations.append("detach")
         return self
 
     def to(self, device: str) -> FakeTensor:
         assert device == "cpu"
+        self.operations.append("cpu")
         return self
 
     def reshape(self, size: int) -> FakeTensor:
         assert size == -1
-        return self
+        self.operations.append("flatten")
+        return FakeTensor(self._samples, (self._samples.size,), self.operations)
 
     def numpy(self) -> FakeSamples:
+        assert len(self.shape) == 1
         return self._samples
 
 
@@ -254,6 +266,61 @@ def test_cancel_is_identity_bound_and_cleans_the_loaded_model(
     assert not adapter.has_active_operation
     assert calls["cleaned"] is True
     assert adapter.capabilities().local_speech_generation == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("shape", "samples"),
+    [
+        ((), [0.25]),
+        ((0,), []),
+        ((1, 0), []),
+        ((2, 2), [0.0, 0.25, -0.25, 0.5]),
+        ((4, 1), [0.0, 0.25, -0.25, 0.5]),
+        ((1, 1, 4), [0.0, 0.25, -0.25, 0.5]),
+        ((1, MAX_AUDIO_SAMPLE_COUNT + 1), [0.25]),
+    ],
+)
+def test_dcr_16_rejects_waveform_shape_before_transfer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    shape: tuple[int, ...],
+    samples: list[float],
+) -> None:
+    adapter, _calls = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    adapter.warm()
+    waveform = FakeTensor(FakeSamples(samples), shape)
+    monkeypatch.setattr(FakeModel, "generate", lambda *_args, **_kwargs: waveform)
+    adapter.begin("request:test", _segment("Synthetic local sentence."))
+
+    with pytest.raises(EngineFailure) as failure:
+        adapter.settle()
+
+    assert failure.value.code == EngineFailureCode.FAILURE
+    assert waveform.operations == []
+    assert not adapter.has_active_operation
+
+
+@pytest.mark.parametrize("shape", [(4,), (1, 4)])
+def test_dcr_16_valid_mono_shapes_have_identical_pcm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    shape: tuple[int, ...],
+) -> None:
+    adapter, _calls = _adapter(tmp_path, monkeypatch)
+    adapter.load()
+    adapter.warm()
+    samples = [0.0, 0.25, -0.25, 0.5]
+    waveform = FakeTensor(FakeSamples(samples), shape)
+    monkeypatch.setattr(FakeModel, "generate", lambda *_args, **_kwargs: waveform)
+    identity = adapter.begin("request:test", _segment("Synthetic local sentence."))
+    completed, result = adapter.settle()
+
+    assert completed == identity
+    assert result.channel_count == 1
+    assert result.sample_rate_hz == 24_000
+    assert result.payload == struct.pack("<4f", *samples)
+    assert waveform.operations == ["detach", "cpu", "flatten"]
 
 
 @pytest.mark.parametrize(

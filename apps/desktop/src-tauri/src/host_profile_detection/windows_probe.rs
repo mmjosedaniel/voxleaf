@@ -384,41 +384,49 @@ fn cuda() -> ProbeValue<Vec<NativeProviderDevice>> {
     if unsafe { device_count(&mut count) } != CUDA_SUCCESS {
         return ProbeValue::Unknown;
     }
+    probe_cuda_devices(
+        count,
+        |device, ordinal| unsafe { device_get(device, ordinal) },
+        compute_capability,
+        device_luid,
+        |device| cuda_free_memory(&library, device),
+    )
+}
+
+fn probe_cuda_devices(
+    count: i32,
+    mut device_get: impl FnMut(&mut i32, i32) -> i32,
+    compute_capability: CuDeviceComputeCapability,
+    device_luid: CuDeviceGetLuid,
+    mut free_memory: impl FnMut(i32) -> Option<u64>,
+) -> ProbeValue<Vec<NativeProviderDevice>> {
     if count == 0 {
         return ProbeValue::Unavailable;
     }
     if count < 0 || count as usize > MAXIMUM_NATIVE_ADAPTERS {
         return ProbeValue::Malformed;
     }
-    let mut devices = Vec::with_capacity(count as usize);
-    for ordinal in 0..count {
-        let mut device = 0_i32;
-        let mut major = 0_i32;
-        let mut minor = 0_i32;
-        let mut luid = [0_i8; 8];
-        let mut node_mask = 0_u32;
-        if unsafe { device_get(&mut device, ordinal) } != CUDA_SUCCESS
-            || unsafe { compute_capability(&mut major, &mut minor, device) } != CUDA_SUCCESS
-            || unsafe { device_luid(luid.as_mut_ptr(), &mut node_mask, device) } != CUDA_SUCCESS
-        {
-            return ProbeValue::Unknown;
-        }
-        let Some(precisions) = cuda_precisions_for_compute_capability(major, minor) else {
-            return ProbeValue::Malformed;
-        };
-        let luid = u64::from_le_bytes(luid.map(|value| value as u8));
-        devices.push(NativeProviderDevice {
-            luid,
-            precisions,
-            cuda_compute_capability: Some((major as u8, minor as u8)),
-            cuda_available_memory_bytes: if ordinal == 0 {
-                cuda_free_memory(&library, device)
-            } else {
-                None
-            },
-        });
+    let mut device = 0_i32;
+    let mut major = 0_i32;
+    let mut minor = 0_i32;
+    let mut luid = [0_i8; 8];
+    let mut node_mask = 0_u32;
+    if device_get(&mut device, 0) != CUDA_SUCCESS
+        || unsafe { compute_capability(&mut major, &mut minor, device) } != CUDA_SUCCESS
+        || unsafe { device_luid(luid.as_mut_ptr(), &mut node_mask, device) } != CUDA_SUCCESS
+    {
+        return ProbeValue::Unknown;
     }
-    ProbeValue::Known(devices)
+    let Some(precisions) = cuda_precisions_for_compute_capability(major, minor) else {
+        return ProbeValue::Malformed;
+    };
+    let luid = u64::from_le_bytes(luid.map(|value| value as u8));
+    ProbeValue::Known(vec![NativeProviderDevice {
+        luid,
+        precisions,
+        cuda_compute_capability: Some((major as u8, minor as u8)),
+        cuda_available_memory_bytes: free_memory(device),
+    }])
 }
 
 fn cuda_free_memory(library: &CudaLibrary, device: i32) -> Option<u64> {
@@ -461,5 +469,102 @@ impl HostProbePort for WindowsHostProbe {
             cuda_devices: cuda(),
             directml_devices,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    unsafe extern "system" fn compute(major: *mut i32, minor: *mut i32, _device: i32) -> i32 {
+        unsafe {
+            *major = 8;
+            *minor = 9;
+        }
+        CUDA_SUCCESS
+    }
+
+    unsafe extern "system" fn luid(bytes: *mut i8, _mask: *mut u32, device: i32) -> i32 {
+        unsafe { *bytes = device as i8 };
+        CUDA_SUCCESS
+    }
+
+    #[test]
+    fn dcr_04_secondary_failure_does_not_discard_default_cuda() {
+        let mut ordinals = Vec::new();
+        let mut memory_devices = Vec::new();
+        let result = probe_cuda_devices(
+            2,
+            |device, ordinal| {
+                ordinals.push(ordinal);
+                *device = 42;
+                if ordinal == 0 { CUDA_SUCCESS } else { 1 }
+            },
+            compute,
+            luid,
+            |device| {
+                memory_devices.push(device);
+                Some(8_388_608)
+            },
+        );
+        assert_eq!(ordinals, [0]);
+        assert_eq!(memory_devices, [42]);
+        let ProbeValue::Known(devices) = result else {
+            panic!("default CUDA facts missing")
+        };
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].luid, 42);
+        assert_eq!(devices[0].cuda_compute_capability, Some((8, 9)));
+        assert_eq!(devices[0].cuda_available_memory_bytes, Some(8_388_608));
+    }
+
+    #[test]
+    fn dcr_04_invalid_default_does_not_fall_through_to_healthy_secondary() {
+        let mut ordinals = Vec::new();
+        let result = probe_cuda_devices(
+            2,
+            |device, ordinal| {
+                ordinals.push(ordinal);
+                *device = 42;
+                if ordinal == 0 { 1 } else { CUDA_SUCCESS }
+            },
+            compute,
+            luid,
+            |_| panic!("memory query after failed default"),
+        );
+        assert_eq!(ordinals, [0]);
+        assert!(matches!(result, ProbeValue::Unknown));
+    }
+
+    #[test]
+    fn dcr_04_preserves_count_bounds_and_unknown_default_free_memory() {
+        for count in [0, -1, MAXIMUM_NATIVE_ADAPTERS as i32 + 1] {
+            let result = probe_cuda_devices(
+                count,
+                |_, _| panic!("device query without an admissible count"),
+                compute,
+                luid,
+                |_| panic!("memory query without an admissible count"),
+            );
+            assert!(if count == 0 {
+                matches!(result, ProbeValue::Unavailable)
+            } else {
+                matches!(result, ProbeValue::Malformed)
+            });
+        }
+        let result = probe_cuda_devices(
+            1,
+            |device, _| {
+                *device = 42;
+                CUDA_SUCCESS
+            },
+            compute,
+            luid,
+            |_| None,
+        );
+        let ProbeValue::Known(devices) = result else {
+            panic!("default CUDA facts missing")
+        };
+        assert_eq!(devices[0].cuda_available_memory_bytes, None);
     }
 }

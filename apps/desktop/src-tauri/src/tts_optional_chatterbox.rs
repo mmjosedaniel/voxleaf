@@ -746,12 +746,19 @@ fn promotion_backup_root(root: &Path) -> PathBuf {
 
 // Only an explicit NotFound proves absence; inaccessible or dangling entries
 // must remain discoverable and must fail closed during removal.
-fn owned_path_present(path: &Path) -> bool {
+fn owned_path_metadata(path: &Path) -> std::io::Result<fs::Metadata> {
     #[cfg(test)]
-    let metadata = tests::owned_path_metadata(path);
+    {
+        tests::owned_path_metadata(path)
+    }
     #[cfg(not(test))]
-    let metadata = fs::symlink_metadata(path);
-    !matches!(metadata, Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+    {
+        fs::symlink_metadata(path)
+    }
+}
+
+fn owned_path_present(path: &Path) -> bool {
+    !matches!(owned_path_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
 }
 
 fn retained_package_exists(root: &Path) -> bool {
@@ -814,6 +821,28 @@ fn remove_contained_directory(root: &Path, directory: &Path) -> Result<(), Optio
     }
     canonical_contained_directory(root, directory)?;
     fs::remove_dir_all(directory).map_err(|_| OptionalProfileError::CleanupFailed)
+}
+
+fn verify_owned_removal_chain(root: &Path, directory: &Path) -> Result<bool, OptionalProfileError> {
+    let relative = directory
+        .strip_prefix(root)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let mut components = relative.components();
+    let mut current = root.to_path_buf();
+    loop {
+        match owned_path_metadata(&current) {
+            Ok(metadata) if metadata.is_dir() && !is_symlink_or_reparse_point(&metadata) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            _ => return Err(OptionalProfileError::VerificationFailed),
+        }
+        match components.next() {
+            Some(std::path::Component::Normal(name)) => current.push(name),
+            None => break,
+            _ => return Err(OptionalProfileError::VerificationFailed),
+        }
+    }
+    canonical_contained_directory(root, directory)?;
+    Ok(true)
 }
 
 fn clean_staging(root: &Path) -> Result<(), OptionalProfileError> {
@@ -2394,29 +2423,32 @@ impl OptionalChatterboxManager {
             };
         }
         let result = with_installed_runtime_lock(|| {
-            let package = package_root(root);
             invalidate_verified_runtime_receipt();
-            remove_contained_directory(root, &package)?;
-            remove_promotion_backup(root)?;
-            let retained_v6 = retained_v6_package_root(root);
-            if owned_path_present(&retained_v6) {
-                canonical_contained_directory(root, &retained_v6)?;
-                fs::remove_dir_all(&retained_v6)
-                    .map_err(|_| OptionalProfileError::CleanupFailed)?;
+            let backup = promotion_backup_root(root);
+            let candidates = [
+                package_root(root),
+                backup.clone(),
+                retained_v6_package_root(root),
+                retained_v5_package_root(root),
+                retained_v3_package_root(root),
+                retained_package_root(root),
+                legacy_package_root(root),
+                profile_root(root).join("cache"),
+                staging_root(root),
+            ];
+            let mut verified = Vec::with_capacity(candidates.len());
+            // Validate every managed chain before removing even the first package.
+            for directory in candidates {
+                if verify_owned_removal_chain(root, &directory)? {
+                    if directory == backup {
+                        validate_backup_tree(&directory, 0)?;
+                    }
+                    verified.push(directory);
+                }
             }
-            let retained_v5 = retained_v5_package_root(root);
-            if owned_path_present(&retained_v5) {
-                canonical_contained_directory(root, &retained_v5)?;
-                fs::remove_dir_all(&retained_v5)
-                    .map_err(|_| OptionalProfileError::CleanupFailed)?;
+            for directory in verified {
+                remove_contained_directory(root, &directory)?;
             }
-            remove_contained_directory(root, &retained_v3_package_root(root))?;
-            remove_contained_directory(root, &retained_package_root(root))?;
-            let legacy = legacy_package_root(root);
-            remove_contained_directory(root, &legacy)?;
-            let cache = profile_root(root).join("cache");
-            remove_contained_directory(root, &cache)?;
-            clean_staging(root)?;
             invalidate_verified_runtime_receipt();
             Ok(())
         });

@@ -2,7 +2,10 @@ import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
 import type { ParsedPackageDocument } from "../package/package-document.js";
-import { createXmlEventReader } from "../xml/xml-event-reader.js";
+import {
+  createXmlEventReader,
+  decodedUtf8ByteLength,
+} from "../xml/xml-event-reader.js";
 import type {
   XmlEvent,
   XmlExpandedName,
@@ -55,7 +58,8 @@ interface LabelBuilder {
   readonly fallbackTitle?: string;
   text: string;
   codePointCount: number;
-  pendingWhitespace: boolean;
+  pendingWhitespace: "attribute" | "xml" | undefined;
+  retainedAttributeBytes: number;
 }
 
 interface ListItemBuilder {
@@ -223,7 +227,7 @@ class NavigationDocumentParser {
 
       const alt = attribute(event, "", "alt");
       if (alt !== undefined && namesEqual(event.name, XHTML_NAMESPACE, "img")) {
-        this.appendLabelText(this.#label, alt);
+        this.appendLabelText(this.#label, alt, "attribute");
       }
       return;
     }
@@ -309,7 +313,8 @@ class NavigationDocumentParser {
         ...(fallbackTitle === undefined ? {} : { fallbackTitle }),
         text: "",
         codePointCount: 0,
-        pendingWhitespace: false,
+        pendingWhitespace: undefined,
+        retainedAttributeBytes: 0,
       };
       return;
     }
@@ -384,7 +389,7 @@ class NavigationDocumentParser {
 
     if (this.#label !== undefined) {
       if (this.#hiddenLabelDepth !== undefined) return;
-      this.appendLabelText(this.#label, text);
+      this.appendLabelText(this.#label, text, "xml");
       return;
     }
 
@@ -423,10 +428,15 @@ class NavigationDocumentParser {
     }
 
     if (label.text.length === 0 && label.fallbackTitle !== undefined) {
-      this.appendLabelText(label, label.fallbackTitle);
+      this.appendLabelText(label, label.fallbackTitle, "attribute");
     }
     if (label.text.length === 0) {
       return fail("malformed-package");
+    }
+    if (label.retainedAttributeBytes > 0) {
+      this.#archive.budget.observeDecodedPublicationText(
+        label.retainedAttributeBytes,
+      );
     }
 
     item.labelKind = label.kind;
@@ -498,7 +508,11 @@ class NavigationDocumentParser {
     list.parentItem.stage = "after-list";
   }
 
-  private appendLabelText(label: LabelBuilder, value: string): void {
+  private appendLabelText(
+    label: LabelBuilder,
+    value: string,
+    source: "attribute" | "xml",
+  ): void {
     let iteration = 0;
     for (const character of value) {
       if (iteration % 4_096 === 0) {
@@ -507,8 +521,8 @@ class NavigationDocumentParser {
       iteration += 1;
 
       if (ASCII_WHITESPACE.test(character)) {
-        if (label.text.length > 0) {
-          label.pendingWhitespace = true;
+        if (label.text.length > 0 && label.pendingWhitespace !== "xml") {
+          label.pendingWhitespace = source;
         }
         continue;
       }
@@ -519,14 +533,23 @@ class NavigationDocumentParser {
       }
 
       if (label.pendingWhitespace) {
+        if (label.pendingWhitespace === "attribute") {
+          label.retainedAttributeBytes += 1;
+        }
         label.text += " ";
         label.codePointCount += 1;
-        label.pendingWhitespace = false;
+        label.pendingWhitespace = undefined;
       }
       label.text += character;
       label.codePointCount += 1;
       if (label.codePointCount > MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS) {
         return fail("malformed-package");
+      }
+      if (source === "attribute") {
+        label.retainedAttributeBytes += decodedUtf8ByteLength(
+          character,
+          this.#archive.budget,
+        );
       }
     }
   }
