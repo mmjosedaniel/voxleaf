@@ -12,6 +12,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from multiprocessing.context import SpawnContext
 from multiprocessing.process import BaseProcess
+from threading import RLock
 from typing import Final, Protocol, cast
 
 from benchmarks.batch_contracts import (
@@ -280,6 +281,11 @@ class _ProcessGeneration(Iterator[AudioChunk]):
         raise AssertionError("unreachable")
 
 
+@dataclass(frozen=True)
+class _BatchAttempt:
+    connection: _WorkerConnection
+
+
 class IsolatedBenchmarkAdapter:
     """Run one real adapter in a spawn-isolated, hard-terminable worker."""
 
@@ -304,14 +310,18 @@ class IsolatedBenchmarkAdapter:
         self._connection: _WorkerConnection | None = None
         self._loaded = False
         self._cleanup_pending = False
+        self._cleanup_request_id: str | None = None
         self._active_request_id: str | None = None
         self._active_generation: _ProcessGeneration | None = None
+        self._active_batch: _BatchAttempt | None = None
+        self._worker_lock = RLock()
         self._cancelled_request_ids: set[str] = set()
 
     @property
     def worker_pid(self) -> int | None:
-        process = self._process
-        return process.pid if process is not None and process.is_alive() else None
+        with self._worker_lock:
+            process = self._process
+            return process.pid if process is not None and process.is_alive() else None
 
     def capabilities(self) -> AdapterCapabilities:
         return self._capabilities
@@ -350,27 +360,38 @@ class IsolatedBenchmarkAdapter:
             self.abort("crash")
 
     def receive(
-        self, timeout_seconds: float, *, generation: _ProcessGeneration | None = None
+        self,
+        timeout_seconds: float,
+        *,
+        generation: _ProcessGeneration | None = None,
+        batch: _BatchAttempt | None = None,
     ) -> _Message:
         if generation is not None:
             generation.require_current()
-        connection = self._connection if generation is None else generation.connection
+        connection = self._connection
+        if generation is not None:
+            connection = generation.connection
+        if batch is not None:
+            connection = batch.connection
         if connection is None:
             raise AdapterOperationError("crash")
         try:
-            if not connection.poll(timeout_seconds):
+            ready = connection.poll(timeout_seconds)
+            with self._worker_lock:
                 if generation is not None:
                     generation.require_current()
-                self.abort("timeout")
-            if generation is not None:
-                generation.require_current()
+                if batch is not None:
+                    self._require_batch(batch)
+                if not ready:
+                    self.abort("timeout")
             return cast(_Message, connection.recv())
-        except AdapterOperationError:
-            raise
         except (EOFError, OSError):
-            if generation is not None:
-                generation.require_current()
-            self.abort("crash")
+            with self._worker_lock:
+                if generation is not None:
+                    generation.require_current()
+                if batch is not None:
+                    self._require_batch(batch)
+                self.abort("crash")
         raise AssertionError("unreachable")
 
     def raise_response(self, response: _Message) -> None:
@@ -395,7 +416,9 @@ class IsolatedBenchmarkAdapter:
             observer(peak)
 
     def _expect_ok(self, timeout_seconds: float) -> None:
-        response = self.receive(timeout_seconds)
+        self._accept_ok(self.receive(timeout_seconds))
+
+    def _accept_ok(self, response: _Message) -> None:
         if len(response) == 3 and response[0] == "ok":
             self.observe_framework_peak(response[1])
             evidence = response[2]
@@ -445,30 +468,55 @@ class IsolatedBenchmarkAdapter:
     ) -> tuple[BatchAudioUnit, ...]:
         """Run one bounded complete-waveform batch in the isolated worker."""
 
-        if self._active_request_id is not None:
-            raise AdapterOperationError("invalid-request")
-        if require_loaded:
-            if not self._loaded:
-                raise AdapterOperationError("invalid-request")
-        else:
-            self._ensure_loaded()
         request_id = f"batch-{request.call_index}"
-        self._active_request_id = request_id
-        self._send(("generate-batch", request))
-        response = self.receive(self.timeouts.request_seconds)
+        with self._worker_lock:
+            if self._active_request_id is not None or self.was_cancelled(request_id):
+                raise AdapterOperationError("invalid-request")
+            needs_load = not self._loaded
+            if needs_load:
+                if require_loaded:
+                    raise AdapterOperationError("invalid-request")
+                self._start()
+            connection = self._connection
+            if connection is None:
+                raise AdapterOperationError("crash")
+            batch = _BatchAttempt(connection)
+            self._active_batch = batch
+            self._active_request_id = request_id
         try:
-            if len(response) == 3 and response[0] == "batch":
-                raw_outputs = response[1]
-                if not isinstance(raw_outputs, tuple) or not all(
-                    isinstance(output, BatchAudioUnit) for output in raw_outputs
-                ):
-                    self.abort("invalid-output")
-                self.observe_framework_peak(response[2])
-                return cast(tuple[BatchAudioUnit, ...], raw_outputs)
-            self.raise_response(response)
-            raise AssertionError("unreachable")
+            if needs_load:
+                with self._worker_lock:
+                    self._require_batch(batch)
+                    self._send(("load",))
+                response = self.receive(self.timeouts.load_seconds, batch=batch)
+                with self._worker_lock:
+                    self._require_batch(batch)
+                    self._accept_ok(response)
+                    self._loaded = True
+            with self._worker_lock:
+                self._require_batch(batch)
+                self._send(("generate-batch", request))
+            response = self.receive(self.timeouts.request_seconds, batch=batch)
+            with self._worker_lock:
+                self._require_batch(batch)
+                if len(response) == 3 and response[0] == "batch":
+                    raw_outputs = response[1]
+                    if not isinstance(raw_outputs, tuple) or not all(
+                        isinstance(output, BatchAudioUnit) for output in raw_outputs
+                    ):
+                        self.abort("invalid-output")
+                    self.observe_framework_peak(response[2])
+                    return cast(tuple[BatchAudioUnit, ...], raw_outputs)
+                self.raise_response(response)
+                raise AssertionError("unreachable")
         finally:
-            self.finish_request(request_id)
+            with self._worker_lock:
+                if self._active_batch is batch:
+                    self.finish_request(request_id)
+
+    def _require_batch(self, batch: _BatchAttempt) -> None:
+        if self._active_batch is not batch:
+            raise AdapterOperationError("invalid-request")
 
     def was_cancelled(self, request_id: str) -> bool:
         return request_id in self._cancelled_request_ids
@@ -477,13 +525,24 @@ class IsolatedBenchmarkAdapter:
         if self._active_request_id == request_id:
             self._active_request_id = None
             self._active_generation = None
+            self._active_batch = None
 
     def cancel(self, request_id: str, *, cancel_idle: bool = False) -> CancellationResponse:
-        self._cancelled_request_ids.add(request_id)
-        if self._active_request_id == request_id or (
-            cancel_idle and self._active_request_id is None
-        ):
-            self._terminate_worker()
+        with self._worker_lock:
+            already_cancelled = self.was_cancelled(request_id)
+            self._cancelled_request_ids.add(request_id)
+            if (
+                self._active_request_id == request_id
+                or self._cleanup_request_id == request_id
+                or (
+                    cancel_idle
+                    and not already_cancelled
+                    and self._active_request_id is None
+                    and not self._cleanup_pending
+                )
+            ):
+                self._cleanup_request_id = request_id
+                self._terminate_worker()
         return CancellationResponse(acknowledged=True, stop_mode="worker-termination")
 
     def framework_memory_high_water_bytes(self) -> int | None:
@@ -494,19 +553,27 @@ class IsolatedBenchmarkAdapter:
         raise AdapterOperationError(code)
 
     def _terminate_worker(self) -> None:
+        with self._worker_lock:
+            self._terminate_owned_worker()
+
+    def _terminate_owned_worker(self) -> None:
         process = self._process
         connection = self._connection
         self._cleanup_pending = True
+        if self._active_request_id is not None:
+            self._cleanup_request_id = self._active_request_id
         self._loaded = False
         self._placement_evidence = None
         self._active_request_id = None
         self._active_generation = None
+        self._active_batch = None
         try:
             if connection is not None:
                 connection.close()
                 self._connection = None
             if process is None:
                 self._cleanup_pending = False
+                self._cleanup_request_id = None
                 return
             pid = process.pid
             if process.is_alive() and pid is not None:
@@ -536,6 +603,7 @@ class IsolatedBenchmarkAdapter:
             process.close()
             self._process = None
             self._cleanup_pending = False
+            self._cleanup_request_id = None
         except Exception:
             raise AdapterOperationError("cleanup-failed") from None
 

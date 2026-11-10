@@ -1,0 +1,22 @@
+{
+  "profileVersion": "tts-short-segment-batch-profile-v13",
+  "purpose": "development-only-short-segment-shared-model-batch-feasibility",
+  "predecessorMechanics": {
+    "path": "benchmarks/tts/profile-v4.json",
+    "sha256": "836895786f4cc041ce1b3818a5f74635cbc1edcd1e2a57f3ebddf84bd1ed3b68"
+  },
+  "privateRawSchema": {
+    "path": "benchmarks/tts/schemas/short-segment-batch-raw-v13.schema.json",
+    "sha256": "60ab2b6626fbad23075e54a7b20abf77969856d46e0c60d4047759f51937e6d8"
+  },
+  "contentSafeSummarySchema": {
+    "path": "benchmarks/tts/schemas/short-segment-batch-summary-v13.schema.json",
+    "sha256": "b7197252ecf43ad83c9895151d3e7bd7278de80366e244f7ba510453d0e5cd0b"
+  },
+  "failurePolicy": {
+    "unverifiedCleanupStopsFurtherTrials": true,
+    "incompleteRunEligibleForDerivation": false,
+    "cleanupFailureInvalidatesBothViabilityConclusions": true,
+    "monitorJoinTimeoutMilliseconds": 1000
+  }
+}

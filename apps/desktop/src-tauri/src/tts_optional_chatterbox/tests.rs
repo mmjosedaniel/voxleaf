@@ -808,6 +808,8 @@ fn saf02_restart_exposes_cache_left_after_partial_locked_removal() {
 fn saf02_denied_cache_metadata_remains_discoverable_and_fails_closed() {
     let root = TestRoot::new();
     let cache = profile_root(&root.0).join("cache");
+    // Metadata can fail at the leaf only once its real parent is reachable.
+    fs::create_dir(cache.parent().unwrap()).unwrap();
     VCA_DENIED_METADATA.with(|slot| *slot.borrow_mut() = Some(cache.clone()));
     let manager = OptionalChatterboxManager::default();
     let discovered = manager.snapshot_at(&root.0).unwrap().state;
@@ -1790,6 +1792,84 @@ fn clb05_failed_promotion_cleanup_leaves_removable_owned_backup() {
     restarted.remove_with_manifest(&root.0, &authority).unwrap();
     assert!(!backup.exists());
     assert!(!active.exists());
+}
+
+#[cfg(windows)]
+#[test]
+fn dcr_19_rejects_intermediate_junction_to_owned_root_sibling() {
+    assert_intermediate_junction_blocks_removal(true, true);
+}
+
+#[cfg(windows)]
+#[test]
+fn dcr_19_rejects_intermediate_junction_to_outside_root_before_any_deletion() {
+    assert_intermediate_junction_blocks_removal(false, true);
+}
+
+#[cfg(windows)]
+#[test]
+fn dcr_19_rejects_intermediate_junction_even_when_managed_leaf_is_absent() {
+    assert_intermediate_junction_blocks_removal(true, false);
+}
+
+#[cfg(windows)]
+fn assert_intermediate_junction_blocks_removal(in_root: bool, leaf_present: bool) {
+    let root = TestRoot::new();
+    let outside = TestRoot::new();
+    let target = if in_root {
+        root.0.join("sibling")
+    } else {
+        outside.0.join("sibling")
+    };
+    fs::create_dir(&target).unwrap();
+    fs::write(target.join("unrelated.bin"), b"unrelated").unwrap();
+    let redirected = target.join(PROFILE_ID);
+    let redirected_marker = redirected.join("redirected.bin");
+    if leaf_present {
+        fs::create_dir(&redirected).unwrap();
+        fs::write(&redirected_marker, b"redirected").unwrap();
+    }
+    let current = package_root(&root.0);
+    let current_marker = current.join("current.bin");
+    fs::create_dir_all(&current).unwrap();
+    fs::write(&current_marker, b"current").unwrap();
+    let junction = root.0.join("staging");
+    let status = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", "New-Item -ItemType Junction -Path $env:VOXLEAF_TEST_LINK -Target $env:VOXLEAF_TEST_TARGET -ErrorAction Stop | Out-Null"])
+        .env("VOXLEAF_TEST_LINK", &junction)
+        .env("VOXLEAF_TEST_TARGET", &target)
+        .status()
+        .unwrap();
+    assert!(status.success());
+
+    let manager = OptionalChatterboxManager::default();
+    let result = manager.remove_at(&root.0);
+    let current_retained = fs::read(&current_marker).ok();
+    let redirected_retained = fs::read(&redirected_marker).ok();
+    // Remove only the test link before assertions or temporary-root teardown.
+    fs::remove_dir(&junction).unwrap();
+    assert_eq!(
+        (
+            result.err(),
+            current_retained.as_deref(),
+            redirected_retained.as_deref()
+        ),
+        (
+            Some(OptionalProfileError::VerificationFailed),
+            Some(b"current".as_slice()),
+            leaf_present.then_some(b"redirected".as_slice()),
+        ),
+    );
+    manager.remove_at(&root.0).unwrap();
+    assert!(!current.exists());
+    assert_eq!(
+        fs::read(target.join("unrelated.bin")).unwrap(),
+        b"unrelated"
+    );
+    assert_eq!(
+        fs::read(redirected_marker).ok().as_deref(),
+        leaf_present.then_some(b"redirected".as_slice()),
+    );
 }
 
 #[cfg(windows)]

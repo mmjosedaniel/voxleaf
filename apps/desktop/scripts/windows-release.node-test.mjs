@@ -9,6 +9,7 @@ import {
   readdir,
   realpath,
   rm,
+  stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -283,6 +284,7 @@ for (const mode of [
   "missing-uninstaller",
   "failed-uninstaller",
   "hanging-uninstaller",
+  "installer-drift",
   "success",
 ]) {
   test(
@@ -308,8 +310,13 @@ $fixtureInstallRoot = Join-Path $env:LOCALAPPDATA 'VoxLeaf'
 $fixtureDataRoot = Join-Path $env:LOCALAPPDATA 'com.voxleaf.desktop'
 New-Item -ItemType Directory -Path $fixtureDataRoot | Out-Null
 [IO.File]::WriteAllText((Join-Path $fixtureDataRoot 'original.marker'), 'original')
-$fixtureInstaller = Join-Path $fixtureRoot 'fixture-installer.exe'
+$fixtureInstaller = Join-Path $fixtureRoot 'VoxLeaf_0.1.0_x64-setup.exe'
 [IO.File]::WriteAllText($fixtureInstaller, 'not executable')
+$fixtureWriteUtc = [DateTime]::UtcNow.AddSeconds(-2)
+$fixtureWriteUtc = $fixtureWriteUtc.AddTicks(7500 - ($fixtureWriteUtc.Ticks % 10000))
+[IO.File]::SetLastWriteTimeUtc($fixtureInstaller, $fixtureWriteUtc)
+$fixtureReceipt = Join-Path $fixtureRoot 'windows-lifecycle-receipt-v1.json'
+[IO.File]::WriteAllText($fixtureReceipt, 'stale prior receipt')
 $fixtureEvents = [Collections.Generic.List[string]]::new()
 $fixtureJournalSeen = [Collections.Generic.List[bool]]::new()
 function Start-Sleep { param($Seconds) }
@@ -365,6 +372,9 @@ function Start-Process {
     if ($ArgumentList -contains '/REMOVE_APP_DATA=1' -or $ArgumentList -contains '/REMOVE_PREFERENCES_AND_RECOVERY=1') {
       if (Test-Path -LiteralPath $preferenceRoot) { Remove-Item -LiteralPath $preferenceRoot -Recurse -Force }
     }
+    if ($fixtureMode -eq 'installer-drift' -and @($fixtureEvents | Where-Object { $_ -eq 'uninstall' }).Count -eq 7) {
+      [IO.File]::AppendAllText($fixtureInstaller, 'changed installer')
+    }
     return New-FixturePackageProcess 0
   }
   if ($FilePath -eq (Join-Path $fixtureInstallRoot 'voxleaf-desktop.exe')) {
@@ -378,12 +388,13 @@ function Start-Process {
   throw 'synthetic-unexpected-process'
 }
 $fixtureFailure = $null
-try { & ${quote(path.join(repositoryRoot(), "scripts", "test-windows-package-lifecycle.ps1"))} -Installer $fixtureInstaller | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
+try { & ${quote(path.join(repositoryRoot(), "scripts", "test-windows-package-lifecycle.ps1"))} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
 $blockedCleanup = $fixtureMode -in @('missing-uninstaller','failed-uninstaller','hanging-uninstaller')
 if ($fixtureMode -eq 'success') { if ($null -ne $fixtureFailure) { throw $fixtureFailure } }
 elseif ($null -eq $fixtureFailure) { throw 'synthetic-missing-primary-failure' }
 if ($fixtureMode -eq 'partial' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-failed') { throw 'synthetic-primary-failure-lost' }
 if ($fixtureMode -eq 'interrupted' -and $fixtureFailure -ne 'synthetic-interruption') { throw 'synthetic-interruption-lost' }
+if ($fixtureMode -eq 'installer-drift' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-drift') { throw 'synthetic-installer-drift-not-rejected' }
 if ($fixtureMode -eq 'hanging-uninstaller') {
   if ($fixtureFailure -ne 'synthetic-after-install') { throw 'synthetic-primary-failure-lost' }
   if ($fixtureEvents.Contains('unbounded-uninstall-wait') -or -not $fixtureEvents.Contains('bounded-uninstall-wait')) { throw 'synthetic-unbounded-uninstall' }
@@ -403,6 +414,13 @@ if ($blockedCleanup) {
   if (@(Get-ChildItem -LiteralPath $env:TEMP).Count -ne 0) { throw 'synthetic-temporary-root-left-behind' }
 }
 if ($fixtureJournalSeen.Count -eq 0 -or $fixtureJournalSeen.Contains($false)) { throw 'synthetic-preinstall-journal-missing' }
+if ($fixtureMode -eq 'success') {
+  $record = Get-Content -Raw -LiteralPath $fixtureReceipt | ConvertFrom-Json
+  if ($record.schemaVersion -ne 1 -or $record.status -ne 'passed' -or -not $record.checks.cleanupVerified -or
+      $record.installer.fileName -ne 'VoxLeaf_0.1.0_x64-setup.exe' -or $record.installer.sizeBytes -ne (Get-Item -LiteralPath $fixtureInstaller).Length -or
+      $record.installer.sha256 -ne (Get-FileHash -LiteralPath $fixtureInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -or
+      $record.uninstallOptionMatrix.Count -ne 6) { throw 'synthetic-lifecycle-receipt-invalid' }
+} elseif (Test-Path -LiteralPath $fixtureReceipt) { throw 'synthetic-unsafe-lifecycle-receipt' }
 Write-Output 'ownership-cleanup-order-and-recovery-verified'
 `;
         const script = path.join(root, "fixture.ps1");
@@ -427,6 +445,39 @@ Write-Output 'ownership-cleanup-order-and-recovery-verified'
           result.stdout,
           /ownership-cleanup-order-and-recovery-verified/,
         );
+        if (mode === "success") {
+          const installer = path.join(
+            root,
+            `VoxLeaf_${APP_VERSION}_x64-setup.exe`,
+          );
+          const binary = path.join(root, "voxleaf-desktop.exe");
+          await writeFile(binary, "synthetic binary");
+          const lifecycleReceipt = JSON.parse(
+            await readFile(
+              path.join(root, "windows-lifecycle-receipt-v1.json"),
+              "utf8",
+            ),
+          );
+          const installerStats = await stat(installer);
+          const truncated = new Date(
+            Math.trunc(installerStats.mtimeMs),
+          ).toISOString();
+          assert.notEqual(installerStats.mtime.toISOString(), truncated);
+          assert.equal(lifecycleReceipt.installer.modifiedAtUtc, truncated);
+          const evidence = await createPackageEvidence({
+            root: repositoryRoot(),
+            installer,
+            binary,
+            signatureStatus: "unsigned-local",
+            antivirusStatus: "not-run",
+            lifecycleReceipt,
+          });
+          assert.equal(
+            evidence.lifecycle.status,
+            "local-install-first-start-repair-uninstall-passed",
+          );
+          assert.equal(evidence.lifecycle.localReleaseGatesPassed, false);
+        }
       } finally {
         await rm(root, { recursive: true, force: true });
       }
@@ -908,7 +959,7 @@ test("the ordinary release requires one downloadable manifest and locked runtime
         ] = value.rootPackage.scripts[
           "package:windows:ordinary-chatterbox:evidence"
         ].replace(
-          "--lifecycle-status local-install-first-start-repair-uninstall-passed ",
+          "--lifecycle-receipt tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json ",
           "",
         )),
       "release-runtime-boundary",
@@ -956,7 +1007,7 @@ test("the release authority rejects broad uninstall roots and incomplete lifecyc
   }
 });
 
-test("content-safe evidence distinguishes unsigned local and signed public gates", async (t) => {
+test("DCR-05 content-safe evidence distinguishes unsigned local and signed public gates", async (t) => {
   const temporary = await mkdtemp(
     path.join(os.tmpdir(), "voxleaf-release-test-"),
   );
@@ -997,14 +1048,99 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
     installer,
     executable: installedBinary,
   });
-  const signed = await createPackageEvidence({
+  await assert.rejects(
+    () =>
+      createPackageEvidence({
+        root: repositoryRoot(),
+        installer,
+        binary,
+        signatureStatus: "signed-valid",
+        antivirusStatus: "not-run",
+        lifecycleStatus: "local-install-first-start-repair-uninstall-passed",
+        ordinaryChatterboxReceipt: receipt,
+      }),
+    /windows-release:lifecycle-status/u,
+  );
+  const installerStats = await stat(installer);
+  const now = new Date().toISOString();
+  const lifecycleReceipt = {
+    schemaVersion: 1,
+    status: "passed",
+    installer: {
+      ...receipt.artifact.installer,
+      modifiedAtUtc: new Date(Math.trunc(installerStats.mtimeMs)).toISOString(),
+    },
+    startedAtUtc: now,
+    completedAtUtc: now,
+    checks: {
+      install: true,
+      firstStart: true,
+      repair: true,
+      defaultUninstallAfterRepair: true,
+      cleanupVerified: true,
+    },
+    uninstallOptionMatrix: [
+      ["default-preserve", false, false],
+      ["chatterbox-only", true, false],
+      ["preferences-only", false, true],
+      ["both-explicit", true, true],
+      ["legacy-both", true, true],
+      ["invalid-values-preserve", false, false],
+    ].map(([scenario, chatterboxRemoved, preferencesAndRecoveryRemoved]) => ({
+      scenario,
+      chatterboxRemoved,
+      preferencesAndRecoveryRemoved,
+      unrelatedDataPreserved: true,
+    })),
+  };
+  const signedInputs = {
     root: repositoryRoot(),
     installer,
     binary,
     signatureStatus: "signed-valid",
     antivirusStatus: "windows-defender-no-threats",
-    lifecycleStatus: "local-install-first-start-repair-uninstall-passed",
     ordinaryChatterboxReceipt: receipt,
+  };
+  const missing = await createPackageEvidence(signedInputs);
+  assert.equal(missing.lifecycle.localReleaseGatesPassed, false);
+  assert.equal(missing.signature.publicPublicationAllowed, false);
+  for (const mutate of [
+    (value) => {
+      value.installer.sha256 = "0".repeat(64);
+    },
+    (value) => {
+      value.installer.modifiedAtUtc = "2000-01-01T00:00:00.000Z";
+    },
+    (value) => {
+      value.startedAtUtc = "2000-01-01T00:00:00.000Z";
+    },
+    (value) => {
+      value.checks.cleanupVerified = false;
+    },
+    (value) => {
+      value.uninstallOptionMatrix.pop();
+    },
+    (value) => {
+      value.uninstallOptionMatrix[0].unrelatedDataPreserved = false;
+    },
+    (value) => {
+      value.completedAtUtc = "malformed";
+    },
+    (value) => {
+      value.extra = true;
+    },
+  ]) {
+    const invalid = JSON.parse(JSON.stringify(lifecycleReceipt));
+    mutate(invalid);
+    await assert.rejects(
+      () =>
+        createPackageEvidence({ ...signedInputs, lifecycleReceipt: invalid }),
+      /windows-release:lifecycle-receipt/u,
+    );
+  }
+  const signed = await createPackageEvidence({
+    ...signedInputs,
+    lifecycleReceipt,
   });
   assert.equal(signed.signature.executableAndInstallerVerified, true);
   assert.equal(signed.signature.publicPublicationAllowed, true);

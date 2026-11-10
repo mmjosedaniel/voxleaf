@@ -1,4 +1,4 @@
-"""Derive and validate the content-safe v4 summary from private raw evidence."""
+"""Derive content-safe Qwen batch summaries from versioned private evidence."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from benchmarks.v4_authority import (
     load_frozen_cpu_admission,
     validate_v4_result,
 )
+from benchmarks.v13_authority import SUMMARY_VERSION, validate_v13_result
 
 
 class BatchResultError(RuntimeError):
@@ -130,6 +131,41 @@ def derive_v4_summary(
             raise BatchResultError("cpu-admission")
     elif placement_profile_id != FULL_GPU_PROFILE_ID:
         raise BatchResultError("placement")
+    summary = _derive_summary(raw, load_value, raw_session_removed=True)
+    validate_v4_result(
+        repository_root,
+        summary,
+        summary=True,
+        ancestry_checker=ancestry_checker,
+    )
+    return summary
+
+
+def derive_v13_summary(
+    repository_root: Path,
+    raw_value: object,
+    load_value: object,
+    *,
+    raw_session_removed: bool,
+    execution_checker: Callable[[str], bool] | None = None,
+) -> dict[str, object]:
+    validate_v13_result(
+        repository_root, raw_value, summary=False, execution_checker=execution_checker
+    )
+    raw = _mapping(raw_value, "raw")
+    summary = _derive_summary(raw, load_value, raw_session_removed=raw_session_removed, v13=True)
+    validate_v13_result(repository_root, summary, summary=True, execution_checker=execution_checker)
+    return summary
+
+
+def _derive_summary(
+    raw: Mapping[str, object],
+    load_value: object,
+    *,
+    raw_session_removed: bool,
+    v13: bool = False,
+) -> dict[str, object]:
+    placement_profile_id = raw["placementProfileId"]
     loads = _load_observations(load_value)
     calls = tuple(_mapping(item, "calls") for item in _sequence(raw.get("calls"), "calls"))
     units = tuple(_mapping(item, "units") for item in _sequence(raw.get("units"), "units"))
@@ -270,6 +306,11 @@ def derive_v4_summary(
             "playback",
         ),
     }
+    raw_failures = [
+        cast(str, value) for value in _sequence(raw.get("failureCodes"), "failure-codes")
+    ]
+    cleanup_failures = raw["cleanupFailureCodes"] if v13 else []
+    typed_cleanup_failed = v13 and (bool(cleanup_failures) or "cleanup-failed" in raw_failures)
     audits = {
         "offline": raw_preflight.get("offlineEnvironmentVerified") is True,
         "artifacts": raw_preflight.get("artifactHashesVerified") is True,
@@ -285,18 +326,18 @@ def derive_v4_summary(
             raw_cleanup.get("workerProcessesRemaining") == 0
             and raw_cleanup.get("postCleanupProcessTreeRamBytes") == 0
             and raw_cleanup.get("postCleanupProcessTreeVramBytes") == 0
-            and raw_cleanup.get("rawSessionRemoved") is True
+            and (raw_session_removed if v13 else raw_cleanup.get("rawSessionRemoved") is True)
             and raw_cleanup.get("generatedAudioRemoved") is True
             and raw_cleanup.get("sleepSettingRestored") is True
+            and not typed_cleanup_failed
         ),
         "noSharedGpuPaging": (_integer(raw_memory.get("peakSharedGpuMemoryBytes"), "memory") == 0),
         "noDiskOffload": True,
         "approvedPlacement": placement_profile_id in (FULL_GPU_PROFILE_ID, CPU_PROFILE_ID),
     }
     all_audits = all(audits.values())
-    raw_failures = [
-        cast(str, value) for value in _sequence(raw.get("failureCodes"), "failure-codes")
-    ]
+    if v13 and not audits["cleanup"]:
+        raw_failures.append("cleanup-failed")
 
     standard_failed: list[str] = []
     if load_p95 > 60:
@@ -353,12 +394,16 @@ def derive_v4_summary(
 
     failure_codes = sorted(set(raw_failures + standard_failed + scheduling_failed))
     summary: dict[str, object] = {
-        "schemaVersion": "tts-short-segment-batch-summary-v4",
+        "schemaVersion": SUMMARY_VERSION if v13 else "tts-short-segment-batch-summary-v4",
         "profileVersion": raw["profileVersion"],
         "profileSha256": raw["profileSha256"],
         "corpusVersion": "tts-short-segment-corpus-v4",
         "corpusSha256": raw["corpusSha256"],
-        "authorityCommitSha": raw["authorityCommitSha"],
+        **(
+            {"cleanupFailureCodes": cleanup_failures}
+            if v13
+            else {"authorityCommitSha": raw["authorityCommitSha"]}
+        ),
         "executionCommitSha": raw["executionCommitSha"],
         "placementProfileId": raw["placementProfileId"],
         "cpuAdmission": raw["cpuAdmission"],
@@ -408,12 +453,6 @@ def derive_v4_summary(
             "development-benchmark-not-production-runtime",
         ],
     }
-    validate_v4_result(
-        repository_root,
-        summary,
-        summary=True,
-        ancestry_checker=ancestry_checker,
-    )
     return summary
 
 

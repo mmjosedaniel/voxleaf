@@ -24,6 +24,7 @@ import {
   nativeRunnerArguments,
   selectPortfolioArms,
 } from "./bilingual-portfolio-host.mjs";
+import { effectiveFirewallBlockScript } from "./effective-firewall-block.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -305,22 +306,10 @@ function powershell(script) {
   if (result.error || result.status !== 0) fail("host-observation");
   return result.stdout.trim();
 }
-function encoded(value) {
-  return Buffer.from(value, "utf16le").toString("base64");
-}
-function psString(value) {
-  return `[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${encoded(value)}'))`;
-}
-function assertFirewall(executable) {
-  const script =
-    `$target=${psString(executable)};` +
-    "$profiles=@(Get-NetFirewallProfile);if ($profiles.Count -ne 3 -or @($profiles | Where-Object {-not $_.Enabled}).Count) {exit 1};" +
-    "if ((Get-Service MpsSvc).Status -ne 'Running') {exit 1};" +
-    "$rules=@(Get-NetFirewallRule -DisplayName 'VoxLeaf TTS Benchmark Offline' -ErrorAction SilentlyContinue | " +
-    "Where-Object {$_.Enabled -eq 'True' -and $_.Direction -eq 'Outbound' -and $_.Action -eq 'Block' -and $_.Profile -eq 'Any'} | " +
-    "Get-NetFirewallApplicationFilter | Where-Object {[IO.Path]::GetFullPath($_.Program).Equals($target,[StringComparison]::OrdinalIgnoreCase)});" +
-    "if ($rules.Count -lt 1) {exit 1};[Console]::Out.Write('blocked')";
-  if (powershell(script) !== "blocked") fail("firewall");
+export function assertFirewall(executable) {
+  if (powershell(effectiveFirewallBlockScript(executable)) !== "true") {
+    fail("firewall");
+  }
 }
 function processes() {
   const output = powershell(
@@ -703,6 +692,7 @@ export class FrameReader {
     this.queuedBytes = 0;
     this.waiter = undefined;
     this.error = undefined;
+    this.ended = false;
     stream.on("data", (block) => {
       try {
         this.add(block);
@@ -710,14 +700,16 @@ export class FrameReader {
         this.reject(error);
       }
     });
-    stream.on("end", () =>
-      this.reject(new Error("tts-adapter-layout-host:unexpected-eof")),
-    );
+    stream.on("end", () => {
+      this.ended = true;
+      this.waiter?.reject(new Error("tts-adapter-layout-host:unexpected-eof"));
+      this.waiter = undefined;
+    });
     stream.on("error", (error) => this.reject(error));
   }
   reject(error) {
-    this.error = error;
-    this.waiter?.reject(error);
+    this.error ??= error;
+    this.waiter?.reject(this.error);
     this.waiter = undefined;
   }
   add(block) {
@@ -768,6 +760,7 @@ export class FrameReader {
       return record;
     }
     if (this.error) throw this.error;
+    if (this.ended) fail("unexpected-eof");
     if (this.waiter) fail("concurrent-reader");
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -785,6 +778,12 @@ export class FrameReader {
         },
       };
     });
+  }
+  assertCleanEnd() {
+    if (this.error) throw this.error;
+    if (!this.ended || this.buffer.length || this.records.length) {
+      fail("shutdown-framing");
+    }
   }
 }
 function control(record, instance) {
@@ -1162,6 +1161,27 @@ async function receiveState(
   }
   fail("state-bound");
 }
+
+export async function shutdownService({ send, reader, instance, exit }) {
+  send("shutdown");
+  await receiveState(reader, instance, "stopped", CLEANUP_TIMEOUT_MS);
+  let timer;
+  try {
+    const exited = await Promise.race([
+      exit,
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("tts-adapter-layout-host:shutdown-timeout")),
+          CLEANUP_TIMEOUT_MS,
+        );
+      }),
+    ]);
+    if (exited.code !== 0 || exited.signal !== null) fail("shutdown");
+    reader.assertCleanEnd();
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function prepareService(child, reader, instance) {
   const send = (kind) =>
     child.stdin.write(
@@ -1336,13 +1356,7 @@ async function candidateArm(options, root, language, service) {
         workIdentity(message),
       );
       assertNoNetwork(processTrees.get(child).observe(processes()));
-      send("shutdown");
-      await receiveState(reader, instance, "stopped", CLEANUP_TIMEOUT_MS);
-      const exited = await Promise.race([
-        exit,
-        delay(CLEANUP_TIMEOUT_MS).then(() => fail("shutdown-timeout")),
-      ]);
-      if (exited.code !== 0 || exited.signal !== null) fail("shutdown");
+      await shutdownService({ send, reader, instance, exit });
       return { ...generation, cleanShutdown: true };
     },
   );

@@ -1,4 +1,4 @@
-"""Run the frozen M007 exact-host handoff matrix without retaining private payloads."""
+"""Run the v2 observer handoff matrix without retaining private payloads."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import threading
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Final, TextIO, cast
+from typing import IO, Final, cast
 
 from benchmarks.memory import (
     GPU_PROCESS_SHARED_MEMORY_COUNTER,
@@ -21,20 +21,40 @@ from benchmarks.memory import (
     WindowsGpuProcessMemorySampler,
     WindowsProcessResourceSampler,
 )
+from benchmarks.preflight import WindowsFirewallNetworkProbe
 from benchmarks.service_handoff_authority import (
     PROFILE_SHA256,
     nearest_rank_p95,
     validate_service_handoff_result,
 )
+from benchmarks.service_handoff_v2_authority import (
+    ACK_TIMEOUT_SECONDS,
+    CLEANUP_ORDER,
+    NATIVE_QUEUE_RECORDS,
+    NATIVE_RECORD_BYTES,
+    NATIVE_RECORD_COUNT,
+    OBSERVER_RECORD_BYTES,
+    OBSERVER_VERSION,
+    PROCESS_REAP_SECONDS,
+    READER_JOIN_SECONDS,
+    RUN_TIMEOUT_SECONDS,
+    validate_handoff_v2_result,
+    verify_execution_authority,
+)
+from benchmarks.service_handoff_v2_authority import (
+    PROFILE_SHA256 as V2_PROFILE_SHA256,
+)
+from benchmarks.service_handoff_v2_authority import (
+    PROFILE_VERSION as V2_PROFILE_VERSION,
+)
 
 AUTHORITY_COMMIT_SHA: Final = "28fe4349eb40d137e3389b2f8e3c8d76f8fa7bb3"
-HOST_ARGUMENT: Final = "--voxleaf-tts-exact-handoff-host"
+HOST_ARGUMENT: Final = "--voxleaf-tts-exact-handoff-host-v2"
 REQUIRED_ENVIRONMENT: Final = (
     "VOXLEAF_TTS_DEV_ENABLED",
     "VOXLEAF_TTS_DEV_PYTHON",
     "VOXLEAF_TTS_DEV_MODEL_ROOT",
 )
-FIREWALL_RULE_NAME: Final = "VoxLeaf TTS Benchmark Offline"
 ALLOWED_PHASES: Final = frozenset(
     (
         "service-start",
@@ -64,9 +84,72 @@ def _release_executable(repository_root: Path) -> Path:
     return repository_root / "apps/desktop/src-tauri/target/release/voxleaf-desktop.exe"
 
 
-def _read_lines(stream: TextIO, output: queue.SimpleQueue[str]) -> None:
-    for line in stream:
-        output.put(line)
+type _OutputRecord = bytes | ServiceHandoffRunError | None
+
+
+def _read_lines(
+    stream: IO[bytes], output: queue.Queue[_OutputRecord], stop: threading.Event
+) -> None:
+    while not stop.is_set():
+        record: _OutputRecord
+        try:
+            record = stream.readline(NATIVE_RECORD_BYTES + 1)
+            if not record:
+                record = None
+            elif len(record) > NATIVE_RECORD_BYTES or not record.endswith(b"\n"):
+                record = _fail("native-record-bound")
+        except (OSError, ValueError):
+            record = _fail("native-output")
+        while not stop.is_set():
+            try:
+                output.put(record, timeout=0.05)
+                break
+            except queue.Full:
+                continue
+        if not isinstance(record, bytes):
+            return
+
+
+def _remaining(deadline: float) -> float:
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise _fail("deadline")
+    return remaining
+
+
+def _send_observer_record(stream: IO[bytes], record: Mapping[str, object]) -> None:
+    payload = json.dumps(record, separators=(",", ":")).encode("ascii") + b"\n"
+    if len(payload) > OBSERVER_RECORD_BYTES:
+        raise _fail("observer-record-bound")
+    try:
+        # Native sends a boundary only after consuming the previous record.
+        # At most one small record can be outstanding in the owned pipe.
+        if stream.write(payload) != len(payload):
+            raise _fail("observer-write")
+        stream.flush()
+    except (OSError, ValueError):
+        raise _fail("observer-write") from None
+
+
+def _verify_zero_cleanup(
+    dedicated: WindowsProcessResourceSampler,
+    shared: WindowsProcessResourceSampler,
+    pid: int,
+) -> tuple[ProcessResourceSample, ProcessResourceSample]:
+    expected = frozenset((pid,))
+    if dedicated.process_tree_ids(pid) != expected:
+        raise _fail("intermediate-cleanup")
+    cleanup = dedicated.sample(pid)
+    cleanup_shared = shared.sample(pid)
+    if (
+        cleanup.process_tree_ram_bytes != 0
+        or cleanup_shared.process_tree_ram_bytes != 0
+        or cleanup.process_tree_vram_bytes != 0
+        or cleanup_shared.process_tree_vram_bytes != 0
+        or dedicated.process_tree_ids(pid) != expected
+    ):
+        raise _fail("intermediate-cleanup")
+    return cleanup, cleanup_shared
 
 
 def _parse_event(line: str) -> Mapping[str, object]:
@@ -95,37 +178,13 @@ def _parse_event(line: str) -> Mapping[str, object]:
 
 
 def _verify_firewall(candidate_python: str) -> None:
-    if os.environ.get("VOXLEAF_TTS_DEV_PYTHON") != candidate_python:
-        raise _fail("firewall")
-    script = (
-        "$candidate=$env:VOXLEAF_TTS_DEV_PYTHON;"
-        f"$rule=Get-NetFirewallRule -DisplayName '{FIREWALL_RULE_NAME}' "
-        "-ErrorAction SilentlyContinue | "
-        "Where-Object {$_.Enabled -eq 'True' -and $_.Direction -eq 'Outbound' "
-        "-and $_.Action -eq 'Block'};"
-        "$match=$rule | Get-NetFirewallApplicationFilter | "
-        "Where-Object {$_.Program -eq $candidate};"
-        "if ($null -eq $match) { exit 1 }"
-    )
-    completed = subprocess.run(
-        [
-            "powershell.exe",
-            "-NoLogo",
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            script,
-        ],
-        check=False,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        timeout=15,
-    )
-    if completed.returncode != 0:
+    if os.environ.get(
+        "VOXLEAF_TTS_DEV_PYTHON"
+    ) != candidate_python or not WindowsFirewallNetworkProbe().active(Path(candidate_python)):
         raise _fail("firewall")
 
 
-def _network_counts(process_ids: frozenset[int]) -> tuple[int, int]:
+def _network_counts(process_ids: frozenset[int], *, deadline: float) -> tuple[int, int]:
     if not process_ids:
         return (0, 0)
     listeners = 0
@@ -138,7 +197,7 @@ def _network_counts(process_ids: frozenset[int]) -> tuple[int, int]:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=10,
+            timeout=min(10, _remaining(deadline)),
         )
         if completed.returncode != 0:
             raise _fail("network-observation")
@@ -195,6 +254,7 @@ def _final_result(
     cleanup_shared: ProcessResourceSample,
     listener_count: int,
     external_connection_count: int,
+    cleanup_acknowledgements: list[dict[str, object]] | None = None,
 ) -> Mapping[str, object]:
     raw_cases = native_result.get("cases")
     raw_timings = native_result.get("timings")
@@ -219,7 +279,7 @@ def _final_result(
         or external_connection_count != 0
     ):
         raise _fail("cleanup")
-    result: Mapping[str, object] = {
+    result: dict[str, object] = {
         "schemaVersion": 1,
         "profileVersion": "tts-service-handoff-profile-v1",
         "profileSha256": PROFILE_SHA256,
@@ -278,10 +338,29 @@ def _final_result(
             "generalHardwareSupport": "not-claimed",
         },
     }
+    if cleanup_acknowledgements is not None:
+        result.pop("authorityCommitSha")
+        result.update(
+            schemaVersion=2,
+            profileVersion=V2_PROFILE_VERSION,
+            profileSha256=V2_PROFILE_SHA256,
+            observerProtocolVersion=OBSERVER_VERSION,
+            cleanupAcknowledgements=cleanup_acknowledgements,
+        )
+        return validate_handoff_v2_result(repository_root, result)
     return validate_service_handoff_result(repository_root, result)
 
 
 def _execution_commit(repository_root: Path) -> str:
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=repository_root,
+        check=False,
+        capture_output=True,
+        timeout=10,
+    )
+    if status.returncode != 0 or status.stdout:
+        raise _fail("execution-tree")
     completed = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=repository_root,
@@ -311,39 +390,43 @@ def run() -> Mapping[str, object]:
         raise _fail("executable")
     _verify_firewall(os.environ["VOXLEAF_TTS_DEV_PYTHON"])
     execution_commit_sha = _execution_commit(repository_root)
-    if execution_commit_sha == AUTHORITY_COMMIT_SHA:
-        raise _fail("implementation-before-authority")
+    verify_execution_authority(repository_root, execution_commit_sha)
 
-    process = subprocess.Popen(
+    read_stop = threading.Event()
+    process: subprocess.Popen[bytes] = subprocess.Popen(
         [str(executable), HOST_ARGUMENT],
         cwd=repository_root,
         env=os.environ.copy(),
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
-        encoding="utf-8",
-        errors="strict",
     )
     dedicated_gpu: WindowsGpuProcessMemorySampler | None = None
     shared_gpu: WindowsGpuProcessMemorySampler | None = None
     reader: threading.Thread | None = None
     primary_error: BaseException | None = None
     try:
-        if process.stdout is None:
+        deadline = time.monotonic() + RUN_TIMEOUT_SECONDS
+        if process.stdout is None or process.stdin is None:
             raise _fail("native-output")
         dedicated_gpu = WindowsGpuProcessMemorySampler()
         shared_gpu = WindowsGpuProcessMemorySampler(GPU_PROCESS_SHARED_MEMORY_COUNTER)
         dedicated_sampler = WindowsProcessResourceSampler(vram_sampler=dedicated_gpu)
         shared_sampler = WindowsProcessResourceSampler(vram_sampler=shared_gpu)
-        lines: queue.SimpleQueue[str] = queue.SimpleQueue()
+        lines: queue.Queue[_OutputRecord] = queue.Queue(maxsize=NATIVE_QUEUE_RECORDS)
         reader = threading.Thread(
             target=_read_lines,
-            args=(process.stdout, lines),
+            args=(process.stdout, lines, read_stop),
             name="voxleaf-service-handoff-output",
             daemon=True,
         )
         reader.start()
+        hello = {"kind": "hello", "version": OBSERVER_VERSION}
+        handshake_deadline = min(deadline, time.monotonic() + ACK_TIMEOUT_SECONDS)
+        _send_observer_record(process.stdin, hello)
+        greeted = False
+        stdout_eof = False
+        record_count = 0
         native_result: Mapping[str, object] | None = None
         peak_ram = 0
         peak_dedicated = 0
@@ -351,9 +434,11 @@ def run() -> Mapping[str, object]:
         peak_allocations = 0
         listener_count = 0
         external_connection_count = 0
-        cleanup_observations = 0
+        cleanup_acknowledgements: list[dict[str, object]] = []
         network_observations: set[str] = set()
-        while process.poll() is None or reader.is_alive() or not lines.empty():
+        interval = RAM_SAMPLING_INTERVAL_MILLISECONDS / 1_000
+        while process.poll() is None or not stdout_eof:
+            remaining = _remaining(deadline if greeted else handshake_deadline)
             sample = dedicated_sampler.sample(process.pid)
             shared = shared_sampler.sample(process.pid)
             if sample.process_tree_vram_bytes is None or shared.process_tree_vram_bytes is None:
@@ -362,40 +447,84 @@ def run() -> Mapping[str, object]:
             peak_dedicated = max(peak_dedicated, sample.process_tree_vram_bytes)
             peak_shared = max(peak_shared, shared.process_tree_vram_bytes)
             peak_allocations = max(peak_allocations, sample.gpu_provider_allocations)
-            while not lines.empty():
-                event = _parse_event(lines.get())
-                if event["kind"] == "nativeResult":
-                    if native_result is not None:
-                        raise _fail("duplicate-native-result")
-                    native_result = event
-                    continue
-                if event["requiresZeroChildren"] is True:
-                    cleanup_sample = dedicated_sampler.sample(process.pid)
-                    cleanup_shared_sample = shared_sampler.sample(process.pid)
-                    if (
-                        cleanup_sample.process_tree_ram_bytes != 0
-                        or cleanup_sample.process_tree_vram_bytes != 0
-                        or cleanup_shared_sample.process_tree_vram_bytes != 0
-                    ):
-                        raise _fail("intermediate-cleanup")
-                    cleanup_observations += 1
-                if event["observeNetwork"] is True:
-                    phase = cast(str, event["phase"])
-                    if phase not in network_observations:
-                        ids = dedicated_sampler.process_tree_ids(process.pid)
-                        listeners, external = _network_counts(ids)
-                        listener_count = max(listener_count, listeners)
-                        external_connection_count = max(external_connection_count, external)
-                        network_observations.add(phase)
-            time.sleep(RAM_SAMPLING_INTERVAL_MILLISECONDS / 1_000)
-        reader.join(timeout=1)
-        return_code = process.wait(timeout=5)
-        if return_code != 0 or reader.is_alive() or native_result is None:
+            if stdout_eof:
+                time.sleep(min(interval, remaining))
+                continue
+            try:
+                line = lines.get(timeout=min(interval, remaining))
+            except queue.Empty:
+                continue
+            _remaining(deadline if greeted else handshake_deadline)
+            if line is None:
+                stdout_eof = True
+                continue
+            if isinstance(line, ServiceHandoffRunError):
+                raise line
+            record_count += 1
+            if record_count > NATIVE_RECORD_COUNT:
+                raise _fail("native-output-bound")
+            try:
+                decoded = line.decode("utf-8")
+                value = cast(object, json.loads(decoded))
+            except (UnicodeError, json.JSONDecodeError):
+                raise _fail("native-output") from None
+            if not greeted:
+                if (
+                    not isinstance(value, dict)
+                    or type(value.get("version")) is not int
+                    or value != hello
+                ):
+                    raise _fail("observer-version")
+                greeted = True
+                continue
+            if native_result is not None:
+                raise _fail("trailing-native-output")
+            if isinstance(value, dict) and value.get("kind") == "cleanupReady":
+                index = len(cleanup_acknowledgements)
+                if index >= len(CLEANUP_ORDER):
+                    raise _fail("cleanup-order")
+                receipt: dict[str, object] = {"phase": CLEANUP_ORDER[index], "sequence": index + 1}
+                if (
+                    type(value.get("version")) is not int
+                    or type(value.get("sequence")) is not int
+                    or value != {"kind": "cleanupReady", "version": OBSERVER_VERSION, **receipt}
+                ):
+                    raise _fail("cleanup-order")
+                _verify_zero_cleanup(dedicated_sampler, shared_sampler, process.pid)
+                _remaining(deadline)
+                _send_observer_record(
+                    process.stdin,
+                    {
+                        "kind": "cleanupAck",
+                        "version": OBSERVER_VERSION,
+                        **receipt,
+                    },
+                )
+                cleanup_acknowledgements.append(receipt)
+                continue
+            event = _parse_event(decoded)
+            if event["kind"] == "nativeResult":
+                if len(cleanup_acknowledgements) != len(CLEANUP_ORDER):
+                    raise _fail("cleanup-observations")
+                native_result = event
+                continue
+            phase = cast(str, event["phase"])
+            if phase == "cleanup" or event["requiresZeroChildren"] is True:
+                raise _fail("observer-version")
+            if event["observeNetwork"] is True and phase not in network_observations:
+                ids = dedicated_sampler.process_tree_ids(process.pid)
+                listeners, external = _network_counts(ids, deadline=deadline)
+                listener_count = max(listener_count, listeners)
+                external_connection_count = max(external_connection_count, external)
+                network_observations.add(phase)
+        reader.join(timeout=min(READER_JOIN_SECONDS, _remaining(deadline)))
+        return_code = process.wait(timeout=min(PROCESS_REAP_SECONDS, _remaining(deadline)))
+        if return_code != 0 or reader.is_alive() or not greeted or native_result is None:
             raise _fail("native-process")
-        if cleanup_observations != 4:
-            raise _fail("cleanup-observations")
-        cleanup = dedicated_sampler.sample(process.pid)
-        cleanup_shared = shared_sampler.sample(process.pid)
+        cleanup, cleanup_shared = _verify_zero_cleanup(
+            dedicated_sampler, shared_sampler, process.pid
+        )
+        _remaining(deadline)
         return _final_result(
             repository_root,
             native_result,
@@ -408,26 +537,33 @@ def run() -> Mapping[str, object]:
             cleanup_shared=cleanup_shared,
             listener_count=listener_count,
             external_connection_count=external_connection_count,
+            cleanup_acknowledgements=cleanup_acknowledgements,
         )
     except BaseException as error:
         primary_error = error
         raise
     finally:
         cleanup_failed = False
+        read_stop.set()
         try:
             if process.poll() is None:
                 process.kill()
-            process.wait(timeout=5)
+            process.wait(timeout=PROCESS_REAP_SECONDS)
         except (OSError, subprocess.SubprocessError):
             cleanup_failed = True
         if reader is not None and reader.ident is not None:
-            reader.join(timeout=1)
+            try:
+                reader.join(timeout=READER_JOIN_SECONDS)
+            except (RuntimeError, KeyboardInterrupt):
+                cleanup_failed = True
         reader_alive = reader is not None and reader.is_alive()
         cleanup_failed = cleanup_failed or reader_alive
         # Closing a buffered stream while its reader still blocks can hang.
-        if process.stdout is not None and not reader_alive:
+        for stream in (process.stdin, None if reader_alive else process.stdout):
+            if stream is None:
+                continue
             try:
-                process.stdout.close()
+                stream.close()
             except OSError:
                 cleanup_failed = True
         for sampler in (dedicated_gpu, shared_gpu):
@@ -452,7 +588,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return 2
     try:
         result = run()
-    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        subprocess.SubprocessError,
+        KeyboardInterrupt,
+    ) as error:
         print("Exact-host service handoff matrix failed.", file=sys.stderr)
         if "tts-service-handoff-run:cleanup-failed" in getattr(error, "__notes__", ()):
             print("Exact-host service handoff cleanup failed.", file=sys.stderr)

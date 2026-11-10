@@ -70,12 +70,27 @@ export function checkEvidence(
   const deletedPaths = new Set(
     gitPaths(["diff", "--name-only", "--diff-filter=D", "-z", "HEAD", "--"]),
   );
+  // Cached diff compares index entries with HEAD without consulting worktree
+  // state. Disable rename pairing so the comparison stays path-specific.
+  const stagedEvidenceChanges = new Set(
+    gitPaths([
+      "diff-index",
+      "--cached",
+      "--name-only",
+      "--no-renames",
+      "--ignore-submodules=none",
+      "-z",
+      "HEAD",
+      "--",
+      evidenceRoot,
+    ]),
+  );
   const violations = [...new Set(indexedPaths)].filter(
     (path) =>
       path.startsWith(evidenceRoot) &&
       !path.endsWith(".md") &&
       !curatedIdentities.has(path) &&
-      !deletedPaths.has(path),
+      (!deletedPaths.has(path) || stagedEvidenceChanges.has(path)),
   );
   if (violations.length > 0) {
     throw new Error(

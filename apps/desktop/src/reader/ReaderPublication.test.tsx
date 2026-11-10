@@ -1050,8 +1050,8 @@ describe("navigable publication reader", () => {
     },
   );
 
-  it.each(["mounted", "late"] as const)(
-    "CCF-C02 prepares from the fallback before enabling Play for a %s narrator",
+  it.each(["mounted", "late", "DCR-03 StrictMode"] as const)(
+    "CCF-C02 prepares from the settled position before enabling Play for a %s narrator",
     async (attachment) => {
       const opened = await openEpubPublication(
         await buildMinimalEpubFixture({
@@ -1095,14 +1095,19 @@ describe("navigable publication reader", () => {
         { client },
       );
       const environment = new ManualReaderReflowEnvironment();
-      vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+      const strictMode = attachment === "DCR-03 StrictMode";
+      if (!strictMode)
+        vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+      const observeViewport = vi.spyOn(environment, "observeViewport");
       const onSettledLocatorChange = vi.fn();
+      const onInitialRestorationSettled = vi.fn();
       const viewProps = {
         publication,
         initialLocator,
         restoreInitialLocator: true,
         reflowEnvironment: environment,
         onSettledLocatorChange,
+        onInitialRestorationSettled,
       };
       try {
         await narrator.checkAvailability();
@@ -1117,15 +1122,26 @@ describe("navigable publication reader", () => {
             narrator.startAtVisibleLocator();
         });
         try {
-          const view = render(
+          const content = (
             <ReaderPublicationContent
               {...viewProps}
-              {...(attachment === "mounted"
-                ? { narrationSource: narrator }
-                : {})}
-            />,
+              {...(attachment !== "late" ? { narrationSource: narrator } : {})}
+            />
           );
+          const view = render(
+            strictMode ? <StrictMode>{content}</StrictMode> : content,
+          );
+          if (strictMode) {
+            expect(observeViewport).toHaveBeenCalledTimes(2);
+            expect(narrator.observe().navigation.canStart).toBe(false);
+            expect(prepare).not.toHaveBeenCalled();
+          }
           act(() => environment.flushAll());
+          const expectedLocator = strictMode ? initialLocator : startLocator;
+          expect(onInitialRestorationSettled).toHaveBeenCalledExactlyOnceWith({
+            status: "settled",
+            locator: expectedLocator,
+          });
           if (attachment === "late")
             view.rerender(
               <ReaderPublicationContent
@@ -1137,7 +1153,9 @@ describe("navigable publication reader", () => {
               />,
             );
           await vi.waitFor(() => expect(prepare).toHaveBeenCalled());
-          expect(prepare.mock.calls[0]![0].startLocator).toEqual(startLocator);
+          expect(prepare.mock.calls[0]![0].startLocator).toEqual(
+            expectedLocator,
+          );
           expect(onSettledLocatorChange).not.toHaveBeenCalled();
         } finally {
           unsubscribe();
@@ -1146,6 +1164,47 @@ describe("navigable publication reader", () => {
         prepare.mockRestore();
         await narrator.close();
         await publication.close();
+      }
+    },
+  );
+
+  it.each(["navigation", "unmount"] as const)(
+    "DCR-03 does not revive initial StrictMode placement after %s",
+    (termination) => {
+      const environment = new ManualReaderReflowEnvironment();
+      const initial = decodeReadingLocatorV1({
+        ...OPENING_LOCATED_BLOCK.startLocator,
+        textOffsetCodePoints: 3,
+      });
+      const settled = vi.fn();
+      const publication = createPublication();
+      const view = render(
+        <StrictMode>
+          <ReaderPublicationContent
+            publication={publication}
+            initialLocator={initial}
+            restoreInitialLocator
+            reflowEnvironment={environment}
+            onInitialRestorationSettled={settled}
+          />
+        </StrictMode>,
+      );
+      if (termination === "navigation") {
+        fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      } else {
+        view.unmount();
+      }
+      act(() => environment.flushAll());
+      if (termination === "navigation") {
+        expect(settled).toHaveBeenCalledExactlyOnceWith({
+          status: "superseded",
+          locator: OPENING_LOCATED_BLOCK.startLocator,
+        });
+        expect(
+          screen.getByRole("heading", { name: "Continuation" }),
+        ).toHaveFocus();
+      } else {
+        expect(settled).not.toHaveBeenCalled();
       }
     },
   );

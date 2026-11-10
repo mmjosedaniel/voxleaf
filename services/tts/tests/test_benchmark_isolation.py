@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
+from threading import Event
 from typing import NoReturn
 
 import pytest
@@ -220,6 +223,154 @@ def _batch_request() -> BatchGenerationRequest:
             BatchUnitRequest("es-v4-dialogue", 1, "Dos."),
         ),
     )
+
+
+@pytest.mark.parametrize("retired_receive", ["timeout", "response"])
+def test_dcr_08_retired_batch_receive_cannot_abort_replacement(
+    monkeypatch: pytest.MonkeyPatch, retired_receive: str
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    adapter.load()
+    connection = adapter._connection
+    assert connection is not None
+    waiting, release = Event(), Event()
+    original_receive = connection.recv
+
+    def await_replacement() -> None:
+        waiting.set()
+        assert release.wait(5)
+
+    def delayed_timeout(_timeout: float) -> bool:
+        await_replacement()
+        return False
+
+    def delayed_response() -> object:
+        response = original_receive()
+        await_replacement()
+        return response
+
+    if retired_receive == "timeout":
+        monkeypatch.setattr(connection, "poll", delayed_timeout)
+    else:
+        monkeypatch.setattr(connection, "recv", delayed_response)
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            retired = executor.submit(adapter.generate_batch, _batch_request())
+            try:
+                assert waiting.wait(5)
+                adapter.cancel("batch-1")
+                assert adapter.worker_pid is None
+                replacement = adapter.generate_batch(replace(_batch_request(), call_index=2))
+                assert len(replacement) == 2
+                replacement_pid = adapter.worker_pid
+                assert replacement_pid is not None
+            finally:
+                release.set()
+            with pytest.raises(AdapterOperationError):
+                retired.result(timeout=5)
+            adapter.cancel("batch-1", cancel_idle=True)
+            assert adapter.worker_pid == replacement_pid
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_dcr_08_cancel_and_blocked_receive_reap_one_owned_worker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    adapter.load()
+    connection, process = adapter._connection, adapter._process
+    assert connection is not None and process is not None
+    poll_entered, poll_release, closing = Event(), Event(), Event()
+    original_close = process.close
+    closed: list[None] = []
+
+    def interrupted_poll(_timeout: float) -> bool:
+        poll_entered.set()
+        assert poll_release.wait(5)
+        raise EOFError
+
+    def counted_close() -> None:
+        closing.set()
+        poll_release.set()
+        original_close()
+        closed.append(None)
+
+    monkeypatch.setattr(connection, "poll", interrupted_poll)
+    monkeypatch.setattr(process, "close", counted_close)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            generating = executor.submit(adapter.generate_batch, _batch_request())
+            try:
+                assert poll_entered.wait(5)
+                cancelled = executor.submit(adapter.cancel, "batch-1")
+                assert closing.wait(5)
+                assert cancelled.result(timeout=5).acknowledged
+                with pytest.raises(AdapterOperationError, match="invalid-request"):
+                    generating.result(timeout=5)
+                adapter.cancel("batch-1")
+            finally:
+                poll_release.set()
+        assert len(closed) == 1
+        assert adapter.worker_pid is None
+    finally:
+        adapter.close()
+
+
+def test_dcr_08_cancelled_batch_cannot_dispatch_before_a_fresh_request() -> None:
+    adapter = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    try:
+        adapter.cancel("batch-1")
+        with pytest.raises(AdapterOperationError, match="invalid-request"):
+            adapter.generate_batch(_batch_request())
+        assert adapter.worker_pid is None
+        assert len(adapter.generate_batch(replace(_batch_request(), call_index=2))) == 2
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_dcr_08_failed_batch_cancellation_can_retry_exact_teardown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(DeterministicBatchCandidateFactory(), forbidden_values=())
+    adapter.load()
+    connection, process = adapter._connection, adapter._process
+    assert connection is not None and process is not None
+    waiting, release = Event(), Event()
+    original_close = process.close
+
+    def delayed_timeout(_timeout: float) -> bool:
+        waiting.set()
+        assert release.wait(5)
+        return False
+
+    def fail_close() -> None:
+        raise OSError("synthetic close failure")
+
+    monkeypatch.setattr(connection, "poll", delayed_timeout)
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            retired = executor.submit(adapter.generate_batch, _batch_request())
+            try:
+                assert waiting.wait(5)
+                with monkeypatch.context() as patch:
+                    patch.setattr(process, "close", fail_close)
+                    with pytest.raises(AdapterOperationError, match="cleanup-failed"):
+                        adapter.cancel("batch-1")
+                    assert adapter._process is process
+                    with pytest.raises(AdapterOperationError, match="cleanup-failed"):
+                        adapter.generate_batch(replace(_batch_request(), call_index=2))
+                assert process.close == original_close
+                assert adapter.cancel("batch-1").acknowledged
+                assert adapter._process is None
+            finally:
+                release.set()
+            with pytest.raises(AdapterOperationError, match="invalid-request"):
+                retired.result(timeout=5)
+    finally:
+        adapter.close()
 
 
 def test_worker_termination_discards_late_output_and_restarts_one_clean_worker() -> None:

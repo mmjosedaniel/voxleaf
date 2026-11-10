@@ -641,7 +641,7 @@ function parseWebp(bytes: Uint8Array): ParsedRasterImageMetadata | undefined {
         return undefined;
       }
       canvasDimensions = [widthMinusOne + 1, heightMinusOne + 1];
-      animated = (flags & 0x02) !== 0;
+      animated ||= (flags & 0x02) !== 0;
     } else if (hasAsciiAt(bytes, "VP8 ", offset)) {
       if (payloadDimensions !== undefined) {
         return undefined;

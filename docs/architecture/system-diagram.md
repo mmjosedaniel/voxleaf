@@ -16,6 +16,12 @@ invariants, see the [architecture overview](overview.md). For milestone
 authority, see the [roadmap](../plans/roadmap.md) and
 [completed plans](../plans/completed/README.md).
 
+The maintainer handoff v2 diagnostic adds a private pipe between its observer
+and native runner. The runner gates service launch on a version handshake and
+holds four cleanup boundaries for zero-resource acknowledgement. The product
+service transport remains v1. Handoff v2 has model-free checks and awaits a
+hardware measurement.
+
 ## Status legend
 
 The optional-download diagnostic addition in ADR-0059 stays inside the native

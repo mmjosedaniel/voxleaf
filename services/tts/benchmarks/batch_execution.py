@@ -199,16 +199,17 @@ class BoundedOrderedBatchController:
         if self._active:
             raise BatchBenchmarkError("resource-limit")
         self._active = True
-        self.identity_gate.activate(request.identity)
-        accepted_ns = self._now_ns()
-        snapshots = [self._snapshot()]
+        activated = False
         try:
+            self.identity_gate.activate(request.identity)
+            activated = True
+            accepted_ns = self._now_ns()
+            snapshots = [self._snapshot()]
             try:
                 outputs = tuple(candidate.generate_batch(request))
             except BatchBenchmarkError as error:
                 completed_ns = self._now_ns()
                 snapshots.append(self._snapshot())
-                self.identity_gate.invalidate()
                 return _failure_observation(
                     request,
                     accepted_ns=accepted_ns,
@@ -219,7 +220,6 @@ class BoundedOrderedBatchController:
             except Exception:
                 completed_ns = self._now_ns()
                 snapshots.append(self._snapshot())
-                self.identity_gate.invalidate()
                 return _failure_observation(
                     request,
                     accepted_ns=accepted_ns,
@@ -269,7 +269,6 @@ class BoundedOrderedBatchController:
                 )
             )
             if invalid_identity or invalid_shape:
-                self.identity_gate.invalidate()
                 return _failure_observation(
                     request,
                     accepted_ns=accepted_ns,
@@ -300,7 +299,6 @@ class BoundedOrderedBatchController:
                     )
                 )
                 self._published_sequence += 1
-            self.identity_gate.invalidate()
             return BatchExecutionObservation(
                 call=BatchCallObservation(
                     call_index=request.call_index,
@@ -322,7 +320,8 @@ class BoundedOrderedBatchController:
                 resource_peak=_maximum_resources(snapshots),
             )
         finally:
-            self.identity_gate.invalidate()
+            if activated and self.identity_gate.accepts(request.identity):
+                self.identity_gate.invalidate()
             self._active = False
 
     def close(self, candidate: BatchCandidate) -> None:

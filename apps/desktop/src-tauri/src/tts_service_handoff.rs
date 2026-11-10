@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
-    io::{self, Write},
-    sync::Arc,
+    io::{self, BufRead, BufReader, Read, Write},
+    sync::{Arc, mpsc},
     thread,
     time::{Duration, Instant},
 };
@@ -16,7 +16,8 @@ use crate::{
     },
 };
 
-pub const HOST_ARGUMENT: &str = "--voxleaf-tts-exact-handoff-host";
+pub const HOST_ARGUMENT: &str = "--voxleaf-tts-exact-handoff-host-v2";
+pub const HOST_ARGUMENT_PREFIX: &str = "--voxleaf-tts-exact-handoff-host";
 
 const PROFILE: &str = include_str!("../../../../benchmarks/tts/service-handoff-profile-v1.json");
 const SEGMENT_FIXTURE: &str = include_str!(
@@ -25,6 +26,9 @@ const SEGMENT_FIXTURE: &str = include_str!(
 const ACTIVE_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
 const CLEANUP_OBSERVATION_DELAY: Duration = Duration::from_millis(50);
+const OBSERVER_VERSION: u32 = 2;
+const OBSERVER_INPUT_BYTES: u64 = 256;
+const OBSERVER_TIMEOUT: Duration = Duration::from_secs(30);
 const SAMPLE_RATE_HZ: f64 = 24_000.0;
 const BYTES_PER_SAMPLE: f64 = 4.0;
 
@@ -149,6 +153,8 @@ impl Drop for BoundedConsumer {
 }
 
 pub fn run_host() -> Result<(), &'static str> {
+    let observer = ObserverPipe::new(BufReader::new(io::stdin()))?;
+    admit_observer(&observer)?;
     let profile: Value =
         serde_json::from_str(PROFILE).map_err(|_| TtsNativeFailure::InternalFailure.code())?;
     let inputs = profile_inputs(&profile)?;
@@ -263,7 +269,7 @@ pub fn run_host() -> Result<(), &'static str> {
         TerminationAction::Cancel,
     )?);
     sequence += 1;
-    observe_cleanup()?;
+    observe_cleanup(&observer, "accepted-before-output-cancellation", 1)?;
     restart_prepare_milliseconds.push(restart_exact(&supervisor)?);
 
     cases.push(run_termination_case(
@@ -283,7 +289,7 @@ pub fn run_host() -> Result<(), &'static str> {
         TerminationAction::Cancel,
     )?);
     sequence += 1;
-    observe_cleanup()?;
+    observe_cleanup(&observer, "mid-generation-cancellation", 2)?;
     restart_prepare_milliseconds.push(restart_exact(&supervisor)?);
 
     cases.push(run_termination_case(
@@ -303,7 +309,7 @@ pub fn run_host() -> Result<(), &'static str> {
         TerminationAction::Crash,
     )?);
     sequence += 1;
-    observe_cleanup()?;
+    observe_cleanup(&observer, "child-crash", 3)?;
     restart_prepare_milliseconds.push(restart_exact(&supervisor)?);
 
     cases.push(run_termination_case(
@@ -322,7 +328,7 @@ pub fn run_host() -> Result<(), &'static str> {
         ),
         TerminationAction::ApplicationExit,
     )?);
-    observe_cleanup()?;
+    observe_cleanup(&observer, "application-exit", 4)?;
 
     emit_json(&json!({
         "kind": "nativeResult",
@@ -422,10 +428,78 @@ fn restart_exact(supervisor: &TtsServiceSupervisor) -> Result<f64, &'static str>
     Ok(milliseconds(started.elapsed()))
 }
 
-fn observe_cleanup() -> Result<(), &'static str> {
-    emit_phase("cleanup", true, false)?;
+struct ObserverPipe {
+    request: mpsc::SyncSender<()>,
+    response: mpsc::Receiver<Result<Value, &'static str>>,
+}
+
+impl ObserverPipe {
+    fn new(mut input: impl BufRead + Send + 'static) -> Result<Self, &'static str> {
+        let (request, demand) = mpsc::sync_channel(1);
+        let (reply, response) = mpsc::sync_channel(1);
+        // If the observer holds stdin open after a deadline, this single
+        // bounded reader can remain blocked only until the diagnostic exits.
+        thread::Builder::new()
+            .name("voxleaf-handoff-observer".into())
+            .spawn(move || {
+                while demand.recv().is_ok() {
+                    if reply.send(read_observer_record(&mut input)).is_err() {
+                        return;
+                    }
+                }
+            })
+            .map_err(|_| "observer-reader")?;
+        Ok(Self { request, response })
+    }
+
+    fn require(&self, expected: Value, timeout: Duration) -> Result<(), &'static str> {
+        self.request.try_send(()).map_err(|_| "observer-reader")?;
+        let actual = self
+            .response
+            .recv_timeout(timeout)
+            .map_err(|_| "observer-timeout")??;
+        if actual != expected {
+            return Err("observer-record");
+        }
+        Ok(())
+    }
+}
+
+fn read_observer_record(input: &mut impl BufRead) -> Result<Value, &'static str> {
+    let mut record = Vec::with_capacity(OBSERVER_INPUT_BYTES as usize);
+    input
+        .take(OBSERVER_INPUT_BYTES + 1)
+        .read_until(b'\n', &mut record)
+        .map_err(|_| "observer-read")?;
+    if record.is_empty() {
+        return Err("observer-eof");
+    }
+    if record.len() as u64 > OBSERVER_INPUT_BYTES || record.last() != Some(&b'\n') {
+        return Err("observer-record-bound");
+    }
+    serde_json::from_slice(&record).map_err(|_| "observer-record")
+}
+
+fn admit_observer(observer: &ObserverPipe) -> Result<(), &'static str> {
+    let hello = json!({"kind":"hello", "version":OBSERVER_VERSION});
+    observer.require(hello.clone(), OBSERVER_TIMEOUT)?;
+    emit_json(&hello)
+}
+
+fn observe_cleanup(
+    observer: &ObserverPipe,
+    phase: &'static str,
+    sequence: u32,
+) -> Result<(), &'static str> {
     thread::sleep(CLEANUP_OBSERVATION_DELAY);
-    Ok(())
+    emit_json(&json!({
+        "kind":"cleanupReady", "version":OBSERVER_VERSION,
+        "phase":phase, "sequence":sequence,
+    }))?;
+    observer.require(
+        json!({"kind":"cleanupAck", "version":OBSERVER_VERSION, "phase":phase, "sequence":sequence}),
+        OBSERVER_TIMEOUT,
+    )
 }
 
 fn profile_inputs(profile: &Value) -> Result<HashMap<&str, &str>, &'static str> {

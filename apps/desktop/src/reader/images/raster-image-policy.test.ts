@@ -1,3 +1,4 @@
+import { syntheticEarlyAnimatedWebp } from "../../../tests/fixtures/webp-fixture";
 import {
   pngExifChunk,
   pngExifChunkFromTiff,
@@ -252,6 +253,35 @@ function createAnimatedWebp(
 }
 
 describe("raster image predecode policy", () => {
+  it.each(["ANIM", "ANMF"] as const)(
+    "DCR-15 preserves early %s evidence through VP8X",
+    (marker) => {
+      expect(
+        inspectRasterImageMetadata(
+          syntheticEarlyAnimatedWebp(marker),
+          "image/webp",
+        ).status,
+      ).toBe("rejected");
+      expect(
+        inspectRasterImageMetadata(
+          syntheticEarlyAnimatedWebp(marker, 0x02),
+          "image/webp",
+        ).status,
+      ).toBe("rejected");
+      const truncated = syntheticEarlyAnimatedWebp(marker).slice(0, -1);
+      new DataView(truncated.buffer).setUint32(
+        4,
+        truncated.byteLength - 8,
+        true,
+      );
+      expect(inspectRasterImageMetadata(truncated, "image/webp").status).toBe(
+        "rejected",
+      );
+      expect(
+        inspectRasterImageMetadata(createWebp(2, 2), "image/webp").status,
+      ).toBe("accepted");
+    },
+  );
   it.each([true, false])(
     "SAC-09 interprets bounded EXIF orientation with littleEndian=%s",
     (littleEndian) => {

@@ -113,6 +113,44 @@ def test_generation_replacement_rejects_every_completed_output_as_stale() -> Non
     ]
 
 
+@pytest.mark.parametrize("failing_read", ["now_ns", "snapshot"])
+def test_dcr_13_initial_measurement_failure_releases_batch_controller(
+    monkeypatch: pytest.MonkeyPatch, failing_read: str
+) -> None:
+    clock = FakeBatchClock()
+    probe = FakeBatchResourceProbe()
+    controller = BoundedOrderedBatchController(clock=clock, resource_probe=probe)
+    candidate = DeterministicBatchCandidate(clock)
+    request = _request()
+    expected = RuntimeError("synthetic initial read failure")
+
+    def fail() -> None:
+        raise expected
+
+    with monkeypatch.context() as patch:
+        patch.setattr(clock if failing_read == "now_ns" else probe, failing_read, fail)
+        with pytest.raises(RuntimeError) as observed:
+            controller.execute(candidate, request)
+    assert observed.value is expected
+
+    retry = controller.execute(candidate, request)
+    assert retry.call.status == "completed"
+    assert [unit.published_sequence for unit in retry.units] == [0, 1]
+
+
+def test_dcr_13_failed_acquisition_preserves_unrelated_identity() -> None:
+    clock = FakeBatchClock()
+    controller = BoundedOrderedBatchController(clock=clock)
+    candidate = DeterministicBatchCandidate(clock)
+    unrelated = BatchWorkIdentity("another-session", "another-generation")
+    controller.identity_gate.activate(unrelated)
+    with pytest.raises(BatchBenchmarkError, match="resource-limit"):
+        controller.execute(candidate, _request())
+    assert controller.identity_gate.accepts(unrelated)
+    controller.identity_gate.invalidate()
+    assert controller.execute(candidate, _request()).call.status == "completed"
+
+
 def test_cleanup_failure_is_fixed_and_content_free() -> None:
     clock = FakeBatchClock()
     controller = BoundedOrderedBatchController(clock=clock)

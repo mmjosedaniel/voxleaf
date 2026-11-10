@@ -939,20 +939,33 @@ export class AdaptiveBufferScheduler {
   }
 
   #effectiveListeningDurationMs(): number {
+    const { activeRatePercent, selectedRatePercent } = this.#playbackRateState;
+    const { sampleRateHz } = ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat;
+    let activeFrames = 0;
+    let futureFrames = 0;
+    for (const retained of this.#audioUnits) {
+      const remaining = retained.sampleFrames - retained.consumedSampleFrames;
+      if (
+        activeRatePercent !== null &&
+        retained.sequence === this.#activePlaybackSequence
+      ) {
+        activeFrames += remaining;
+      } else {
+        futureFrames += remaining;
+      }
+    }
+    if (activeRatePercent === null || activeFrames === 0) {
+      return Math.floor(
+        (futureFrames * 100_000) / (sampleRateHz * selectedRatePercent),
+      );
+    }
+    // At most 43,200,000 retained frames at rates <= 100 keep the
+    // numerator below 2^53. Divide and floor only after combining both rates.
     return Math.floor(
-      this.#audioUnits.reduce((total, retained) => {
-        const remaining = retained.sampleFrames - retained.consumedSampleFrames;
-        const rate =
-          retained.sequence === this.#activePlaybackSequence &&
-          this.#playbackRateState.activeRatePercent !== null
-            ? this.#playbackRateState.activeRatePercent
-            : this.#playbackRateState.selectedRatePercent;
-        return (
-          total +
-          (remaining * 100_000) /
-            (ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz * rate)
-        );
-      }, 0),
+      (100_000 *
+        (activeFrames * selectedRatePercent +
+          futureFrames * activeRatePercent)) /
+        (sampleRateHz * activeRatePercent * selectedRatePercent),
     );
   }
 

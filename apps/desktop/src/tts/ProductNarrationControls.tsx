@@ -48,13 +48,21 @@ export function ProductNarrationControls({
   const showStart = state === undefined && operational;
   const showPause = state?.canPause === true;
   const showResume = state?.canResume === true;
+  const recoveringStartup =
+    snapshot.recovery.phase === "recovering" &&
+    snapshot.navigation.playIntent === "playing" &&
+    !snapshot.hasConfirmedRendering &&
+    state?.canStop === true &&
+    (state.phase === "preparing" ||
+      state.phase === "buffering" ||
+      state.phase === "playing");
   const showStop =
-    operational &&
+    (operational || recoveringStartup) &&
     state !== undefined &&
     (state.canStop || state.phase === "complete" || state.phase === "failed");
   const startupCanBeCancelled =
     showStop &&
-    snapshot.failure === undefined &&
+    (snapshot.failure === undefined || recoveringStartup) &&
     !snapshot.hasConfirmedRendering &&
     (state.phase === "preparing" ||
       state.phase === "buffering" ||

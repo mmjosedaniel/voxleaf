@@ -454,7 +454,13 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
         this.#active !== handle
       )
         return;
-      if (type === "rendered" || type === "paused" || type === "ended") {
+      const currentActivation =
+        Reflect.get(message, "activation") === activation;
+      if (
+        type === "rendered" ||
+        type === "ended" ||
+        (type === "paused" && currentActivation)
+      ) {
         const frames: unknown = Reflect.get(message, "renderedFrames");
         if (
           typeof frames === "number" &&
@@ -467,7 +473,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       }
       if (
         (type === "started" || type === "resumed" || type === "paused") &&
-        Reflect.get(message, "activation") === activation
+        currentActivation
       ) {
         const sourceFrames: unknown = Reflect.get(message, "sourceFrames");
         const currentFrame: unknown = Reflect.get(message, "currentFrame");

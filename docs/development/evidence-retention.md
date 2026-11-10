@@ -46,10 +46,11 @@ forced additions. `pnpm test:evidence` exercises the guard in isolated temporary
 Git repositories. Both commands start `check` and `check:portable`, so existing
 CI jobs run them without a workflow edit.
 
-Before staging an authorized cleanup, the guard excludes only exact paths
-reported as deletions relative to HEAD. A newly staged raw file remains rejected
-even if it is subsequently removed from the worktree. Git execution/index read
-failures stop the check; a missing Git installation is not a passing result.
+Before staging an authorized cleanup, the guard excludes an exact raw path
+reported as deleted relative to HEAD only if its index entry still matches the
+HEAD file's mode and blob. Staged additions and modifications remain rejected
+when the worktree copy is removed. Git execution and index read failures stop
+the check.
 
 The same guard checks all tracked and non-ignored untracked Markdown (`.md`,
 case-insensitive) for literal Windows, macOS and Linux home-directory paths.

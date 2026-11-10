@@ -16,6 +16,7 @@ import { JSDOM } from "jsdom";
 
 import {
   createNativeResourceObservation,
+  inspectOwnedProcesses,
   captureOwnedProcessTree,
   terminateOwnedProcesses,
   waitForOwnedProcessesToExit,
@@ -148,7 +149,7 @@ test("PSC-CI bounds nested failure diagnostics and tolerates cyclic causes", () 
   assert.deepEqual(nativeSmokeFailureCodes(failure), ["unexpected-error"]);
   const aggregate = new AggregateError(
     [
-      ...Array.from({ length: 7 }, () => failure),
+      ...Array.from({ length: 15 }, () => failure),
       new Error("Tauri WebDriver exited before startup."),
     ],
     "Native smoke cleanup failed.",
@@ -158,6 +159,50 @@ test("PSC-CI bounds nested failure diagnostics and tolerates cyclic causes", () 
     "unexpected-error",
   ]);
 });
+
+test("SAF-13 process inspection distinguishes timeout and invalid output without leaking data", async () => {
+  for (const [error, code] of [
+    [{ killed: true, signal: "SIGTERM" }, "native-process-query-timeout"],
+    [null, "native-process-output-invalid"],
+  ]) {
+    const failure = await inspectOwnedProcesses(
+      "synthetic",
+      (_file, _args, _options, done) =>
+        done(error, "private path and publication text"),
+    ).catch((cause) => cause);
+    assert.deepEqual(nativeSmokeFailureCodes(failure), [
+      "native-process-ownership-unverified",
+      code,
+    ]);
+  }
+});
+
+test(
+  "SAF-13 termination continues after failure and skips a reused PID",
+  {
+    skip: process.platform !== "win32",
+  },
+  async () => {
+    const setup = [
+      "$visited=[Collections.Generic.List[int]]::new()",
+      "function Get-Process { param([int]$Id, $ErrorAction); $process=[pscustomobject]@{Id=$Id; HasExited=$false; Handle=1; StartTime=[DateTime]::new(100,[DateTimeKind]::Utc); Path='synthetic.exe'}; Add-Member -InputObject $process -MemberType ScriptMethod -Name Dispose -Value {}; Add-Member -InputObject $process -MemberType ScriptMethod -Name Kill -Value {$visited.Add($this.Id); if($this.Id -eq 103){throw 'private error'}}; Add-Member -InputObject $process -MemberType ScriptMethod -Name WaitForExit -Value {$true} -PassThru }",
+    ].join("; ");
+    const records = [
+      { pid: 101, created: "100", executable: "synthetic.exe", depth: 0 },
+      { pid: 102, created: "90", executable: "synthetic.exe", depth: 1 },
+      { pid: 103, created: "100", executable: "synthetic.exe", depth: 2 },
+    ];
+    const failure = await terminateOwnedProcesses(records, (script) =>
+      inspectOwnedProcesses(
+        `${setup}; ${script}; if(($visited -join ',') -ne '103,101'){throw 'incorrect owners attempted'}`,
+      ),
+    ).catch((cause) => cause);
+    assert.deepEqual(nativeSmokeFailureCodes(failure), [
+      "native-process-ownership-unverified",
+      "native-process-termination-failed",
+    ]);
+  },
+);
 
 for (const stage of ["before", "during"]) {
   test(`SAF-R1 does not adopt a root whose ChildProcess exits ${stage} inspection`, async () => {
@@ -375,6 +420,7 @@ for (const mode of [
   "normal",
   "cleanup-failure",
   "uncertain-ownership",
+  "termination-failure",
 ]) {
   test(
     `SAF-13 ${mode} settles owned work and cleans a real driver/app/worker tree`,
@@ -436,7 +482,11 @@ for (const mode of [
               } else if (mode === "deadline") {
                 await wait(10_000, undefined, { signal });
                 lateWork = true;
-              } else if (mode === "cleanup-failure") throw primary;
+              } else if (
+                mode === "cleanup-failure" ||
+                mode === "termination-failure"
+              )
+                throw primary;
             } finally {
               settled = true;
             }
@@ -447,6 +497,15 @@ for (const mode of [
               child,
               temporaryDirectory: owned,
               identities,
+              terminate:
+                mode === "termination-failure"
+                  ? async (records) => {
+                      await terminateOwnedProcesses(
+                        records.filter(({ pid }) => pid !== child.pid),
+                      );
+                      throw cleanupFailure;
+                    }
+                  : terminateOwnedProcesses,
               driver: client ?? {
                 async deleteSession() {
                   if (mode === "cleanup-failure") throw cleanupFailure;
@@ -472,16 +531,33 @@ for (const mode of [
           assert(
             result.errors.some((error) => error instanceof AggregateError),
           );
+          const codes = nativeSmokeFailureCodes(result);
+          assert(codes.includes("native-cleanup-pre-delete-capture"));
+          assert(codes.includes("native-cleanup-post-delete-capture"));
         } else {
           assert(result instanceof AggregateError);
           assert(result.errors.includes(primary));
           assert(
             result.errors.some((error) =>
-              error.errors?.includes(cleanupFailure),
+              error.errors?.some(
+                (inner) =>
+                  inner === cleanupFailure || inner.cause === cleanupFailure,
+              ),
             ),
           );
+          if (mode === "termination-failure") {
+            assert(
+              nativeSmokeFailureCodes(result).includes(
+                "native-cleanup-tree-termination",
+              ),
+            );
+          }
         }
-        if (mode === "cleanup-failure" || mode === "uncertain-ownership")
+        if (
+          mode === "cleanup-failure" ||
+          mode === "uncertain-ownership" ||
+          mode === "termination-failure"
+        )
           await access(owned);
         else await assert.rejects(access(owned), { code: "ENOENT" });
       } finally {

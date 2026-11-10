@@ -204,6 +204,12 @@ failure/recovery and real bundled-worklet FIFO cases in one invocation.
 
 ## Narration and Chatterbox correctness regressions
 
+The mutable Chatterbox adapter accepts a nonempty bounded mono waveform shaped
+`(N,)` or `(1,N)`. Model-free tests reject other shapes before transfer to CPU
+or flattening, and compare valid mono output bytes. Installed Chatterbox v7
+resolves frozen source blobs. These tests cover the mutable adapter and do
+not establish a shape defect or a code change in that installed runtime.
+
 The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) uses selected
 `NCC`/`ncc_` regressions followed by one foundation check. Coordinator tests join
 the real player, persistence bridge and save owner while the frame counter reaches
@@ -479,6 +485,10 @@ It performs no inference and neither mutates the user's installation nor
 establishes complete HTTP delivery. The separate ignored
 `optional_v7_exact_local_acquisition_replay` test retains the combined admission
 and ES/EN synthesis/cancellation journey when that broader gate is required.
+
+The Windows removal tests also exercise actual intermediate junctions. Removal
+validates every managed path from its root through its leaf before deleting
+any package, including a redirected ancestor whose expected leaf is absent.
 
 V6 preparation and installed integration are separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
@@ -1136,6 +1146,19 @@ schema-valid safe result reproduces the same shared-memory stop and VRAM
 boundary before media, and its private raw session was also deleted. Default
 tests and CI remain model-free.
 
+New official `benchmark:tts:batch` execution requires an explicit
+`profileVersion` of `tts-short-segment-batch-profile-v13`. The disposable
+mechanics pilot still uses v4. Official v13 uses the frozen v4 matrix and
+candidate settings, with a separate byte-verified authority and raw session
+directory. Candidate close and monitor shutdown failures produce a failed,
+non-derivable receipt when required measurements cannot finish.
+`benchmark:tts:batch:derive` uses the same explicit v13 version to read and
+remove that session before deriving the summary. Legacy v4 derivation still
+accepts its original input and cleans only the v4 session. V13 CPU admission
+requires a qualifying committed v13 GPU result. Its pinned schema is checked
+in the offline base environment before model acquisition. V13 has deterministic
+checks and awaits hardware measurement.
+
 Milestone 6 adds the separately frozen `v5` authority and
 `test_benchmark_v5_authority.py`. Its model-free coverage verifies byte-stable
 profile/corpus/schemas, complete GPU and CPU identities, exact schedules,
@@ -1178,18 +1201,21 @@ sustainable throughput, distribution, or general hardware support.
 
 ## Exact M007 service-handoff matrix
 
-`pnpm.cmd test:tts:handoff-host` is the frozen Windows/CUDA-only M007
-Milestone 5 matrix. It uses the same exact environment and firewall
-requirements as the focused diagnostic, builds the release host, and executes
-the nine authority-ordered cases once with no retries. The matrix covers cold
+`pnpm.cmd test:tts:handoff-host` builds the Windows/CUDA release host and runs
+the v2 observer over the nine frozen M007 Milestone 5 cases with no retries.
+The matrix covers cold
 neutral and warm Spanish delivery, blocked-consumer backpressure, invalidation
 before dispatch and after completion, accepted and mid-generation
 cancellation, child crash, and application exit. Its runner samples descendant
 RAM and dedicated/shared GPU memory, confirms one GPU allocator, checks
 intermediate and final cleanup, and rejects listeners, external connections,
-audio persistence, and content-bearing output.
+audio persistence, and content-bearing output. V2 adds a version handshake
+before starting the service and waits for four ordered zero-resource cleanup
+acknowledgements outside the timed operations. The output line, queue, run
+deadline and cleanup waits are bounded. Model-free tests cover the exchange.
+V2 remains unmeasured on hardware.
 
-The first authoritative run passed. Delivered units were 11.28 and 14.88
+The historical v1 authoritative run passed. Delivered units were 11.28 and 14.88
 playable seconds at RTF 1.425 and 1.437; first-audio and completion p95 were
 both about 21.38 seconds because this adapter publishes complete units only.
 Native handoff p95 was about 0.234 ms, termination p95 about 5.70 ms, and

@@ -514,6 +514,15 @@ export function ReaderPublicationContent({
   }, [completeInitialRestoration, coordinator, reflowRestorer]);
   const setReaderViewportRef = useCallback(
     (element: HTMLDivElement | null): void => {
+      if (
+        element === null &&
+        initialRestorationStatus.current === "pending" &&
+        reflowRestorer.restoring
+      ) {
+        // Detaching the viewport cancels this placement. A ref replay can
+        // retry it when the viewport, document and destination reconnect.
+        initialRestorationStarted.current = false;
+      }
       readerViewportRef.current = element;
       visualLocatorTracker.setRoot(element);
       reflowRestorer.setRoot(element);

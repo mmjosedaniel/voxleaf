@@ -222,6 +222,17 @@ low-level archive lifetime cancellation and resource deadlines are unchanged.
 Acceptance and remaining C15/C05 limitations are recorded in the
 [follow-up ledger](../../plans/evidence/epub-budget-cancellation-reflow/execution-ledger.md).
 
+### 2026-11-09: Retained EPUB 3 TOC label attributes
+
+The shared decoded-publication-text budget includes normalized UTF-8 bytes
+retained from visible XHTML image alternative text and a label's title fallback
+when used. A collapsed separator counts once if it comes entirely from
+attributes. When XML text also contributes whitespace, the XML reader has
+already charged it. Discarded whitespace, unused title, hidden image and
+non-image attributes do not add a label charge. NCX still uses the XML text
+charge. When a navigation document is also projected into semantic content,
+each retained representation is charged through its existing owner.
+
 - Implemented ingestion has one exact support and budget authority, with every maximum and maximum-plus-one boundary tied to focused regression evidence.
 - Normal reading remains local: archive bytes, resources, publisher markup, and prose are not sent to a network service or extracted to disk.
 - A closed semantic projection prevents publisher markup from becoming trusted application UI.

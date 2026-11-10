@@ -494,7 +494,7 @@ it("RCF-05 real containment failure prevents settings persistence", async () => 
     await expect(
       createNarrationSettingsActions(true).selectLanguage(
         "es",
-        { selectLanguage },
+        { selectLanguage, check: vi.fn() },
         coordinator,
       ),
     ).rejects.toThrow();
@@ -504,6 +504,84 @@ it("RCF-05 real containment failure prevents settings persistence", async () => 
     await coordinator.close();
   }
 });
+
+it("DCR-01 can cancel the owned warming recovery without another retry", async () => {
+  const { coordinator, client } = createHarness();
+  let release = () => {};
+  const warming = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const prepare = vi
+    .spyOn(client, "prepare")
+    .mockRejectedValueOnce(
+      new ProductNarrationRecoveryError("model-warm-failed"),
+    )
+    .mockImplementationOnce(async () => {
+      client.state = "warming";
+      await warming;
+      return client.observe();
+    });
+  const view = render(createElement(ProductNarrationControls, { coordinator }));
+  try {
+    await act(() => coordinator.checkAvailability());
+    fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
+    const recover = await screen.findByRole("button", {
+      name: "Restart local narration",
+    });
+    fireEvent.click(recover);
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledTimes(2));
+    expect(coordinator.observe().recovery.phase).toBe("recovering");
+    expect(client.observe().state).toBe("warming");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel start" }));
+    release();
+    await vi.waitFor(() =>
+      expect(coordinator.observe().serviceState).toBe("stopped"),
+    );
+    expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+    expect(client.startedProfiles).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Restart local narration" }),
+    ).not.toBeInTheDocument();
+  } finally {
+    release();
+    view.unmount();
+    await coordinator.close();
+  }
+});
+
+it.each(["contained", "failed"] as const)(
+  "DCR-20 explicit close joins verified backend outcome %s during TTS containment",
+  async (outcome) => {
+    const { coordinator, client, backend } = createHarness();
+    let release = () => {};
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const dispose = vi.spyOn(backend, "close").mockImplementation(async () => {
+      await pending;
+      if (outcome === "failed")
+        throw new Error("synthetic backend cleanup failure");
+    });
+    vi.spyOn(client, "prepare").mockRejectedValueOnce(
+      new ProductNarrationRecoveryError("model-warm-failed"),
+    );
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => dispose.mock.calls.length === 1);
+    const first = coordinator.close();
+    const second = coordinator.close();
+    try {
+      expect(first).toBe(second);
+      expect(coordinator.observe().failure).toBe("tts-service-failed");
+    } finally {
+      release();
+    }
+    await expect(first).resolves.toBe(outcome);
+    expect(coordinator.observe().failure).toBe("tts-service-failed");
+    expect(coordinator.observe().serviceState).toBe("stopped");
+    expect(dispose).toHaveBeenCalledOnce();
+  },
+);
 
 it.each(["saved", "unavailable"] as const)(
   "CCF-C11 / RCF-19 preserves fallback after speed save %s until a successful reset",
@@ -1090,7 +1168,7 @@ describe("product narration coordinator", () => {
         (accepted) => ({ accepted }),
         (error: unknown) => ({ error }),
       );
-      let closing: Promise<void> | undefined;
+      let closing: ReturnType<typeof coordinator.close> | undefined;
       try {
         await Promise.resolve();
         await Promise.resolve();
@@ -1774,7 +1852,7 @@ describe("product narration coordinator", () => {
       const { coordinator, client, prepareNarration } = createHarness({
         profileCompatibility: compatibility,
       });
-      let cleanup: Promise<void> | undefined;
+      let cleanup: Promise<void | "contained" | "failed"> | undefined;
       try {
         await coordinator.checkAvailability();
         coordinator.start();
@@ -2313,7 +2391,7 @@ describe("product narration coordinator", () => {
         });
       coordinator.updateVisibleLocator(END_LOCATOR);
       coordinator.startAtVisibleLocator();
-      let stopped: Promise<void> | undefined;
+      let stopped: Promise<void | "contained" | "failed"> | undefined;
       try {
         expect(held).toHaveBeenCalledTimes(1);
         if (action === "supersede") {

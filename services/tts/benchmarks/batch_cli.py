@@ -1,4 +1,4 @@
-"""Explicit reviewed command for the v4 batch hardware mechanics run."""
+"""Explicit command for a v4 mechanics pilot or official v13 execution."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from benchmarks.adapters.manifest import (
     CandidateConfiguration,
     load_v3_candidate_profile,
 )
-from benchmarks.batch_contracts import BatchResourceSnapshot, BatchWorkIdentity
+from benchmarks.batch_contracts import BatchBenchmarkError, BatchResourceSnapshot, BatchWorkIdentity
 from benchmarks.batch_matrix import (
     MatrixPurpose,
     execute_v4_batch_mechanics,
@@ -25,11 +25,13 @@ from benchmarks.batch_matrix import (
 )
 from benchmarks.batch_official import (
     OfficialBatchCandidate,
+    OfficialBatchError,
     ThreadedOfficialMemoryMonitor,
     ensure_raw_root_is_ignored,
-    execute_official_v4,
+    execute_official_v13,
     official_raw_root,
 )
+from benchmarks.contracts import AdapterOperationError
 from benchmarks.memory import (
     GPU_PROCESS_SHARED_MEMORY_COUNTER,
     FrameworkVramTracker,
@@ -46,8 +48,13 @@ from benchmarks.preflight import (
 from benchmarks.v4_authority import (
     CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
-    load_frozen_cpu_admission,
     load_frozen_v4_mechanics_authority,
+)
+from benchmarks.v13_authority import (
+    PROFILE_VERSION,
+    V13AuthorityError,
+    load_v13_cpu_admission_from_base,
+    load_v13_mechanics_authority,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -122,6 +129,8 @@ def _payload() -> dict[str, object]:
     payload = cast(dict[str, object], value)
     purpose = payload.get("resultPurpose")
     expected_fields = OFFICIAL_INPUT_FIELDS if purpose == "official" else INPUT_FIELDS
+    if purpose == "official" and "profileVersion" in payload:
+        expected_fields |= {"profileVersion"}
     if set(payload) != expected_fields:
         raise BatchCommandError("input")
     if purpose == "official" and (
@@ -190,7 +199,6 @@ def _normalized_cpu_model(value: str) -> str:
 
 
 def _run(payload: dict[str, object]) -> dict[str, object]:
-    load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     purpose = cast(MatrixPurpose, payload.get("resultPurpose"))
     placement_profile_id = payload.get("placementProfileId")
     if (
@@ -200,8 +208,14 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         or (placement_profile_id == CPU_PROFILE_ID and purpose != "official")
     ):
         raise BatchCommandError("authority")
+    if purpose == "official":
+        if payload.get("profileVersion") != PROFILE_VERSION:
+            raise BatchCommandError("official-version")
+        authority = load_v13_mechanics_authority(REPOSITORY_ROOT)
+    else:
+        authority = load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     cpu_admission = (
-        load_frozen_cpu_admission(REPOSITORY_ROOT).as_raw()
+        load_v13_cpu_admission_from_base(REPOSITORY_ROOT)
         if placement_profile_id == CPU_PROFILE_ID
         else None
     )
@@ -250,7 +264,6 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         or host.free_vram_bytes < 8_174_698_496
     ):
         raise BatchCommandError("preflight")
-    authority = load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     forbidden = tuple(
         cast(str, unit[key])
         for raw_unit in cast(list[dict[str, object]], authority.corpus["units"])
@@ -280,12 +293,14 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
             ),
         )
 
+    monitor: ThreadedOfficialMemoryMonitor | None = None
     try:
         if purpose == "official":
             ensure_raw_root_is_ignored(REPOSITORY_ROOT)
             session = official_raw_root(
                 REPOSITORY_ROOT,
                 cast(str, payload["sessionId"]),
+                version="v13",
             )
             if session.exists():
                 raise BatchCommandError("session")
@@ -296,8 +311,9 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                 framework_tracker=tracker,
                 free_vram_probe=_free_vram_bytes,
             )
+            session_created = False
             try:
-                execution = execute_official_v4(
+                execution = execute_official_v13(
                     REPOSITORY_ROOT,
                     execution_commit_sha=receipt.commit_sha,
                     host=_host_raw(host),
@@ -308,6 +324,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                     cpu_admission=cpu_admission,
                 )
                 session.mkdir(parents=True)
+                session_created = True
                 (session / "raw.json").write_text(
                     json.dumps(
                         execution.raw,
@@ -327,16 +344,17 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                     + "\n",
                     encoding="utf-8",
                 )
-            except Exception:
-                if session.exists():
+            except BaseException:
+                if session_created:
                     shutil.rmtree(session)
                 raise
             return {
-                "schemaVersion": "tts-v4-batch-official-receipt-v1",
+                "schemaVersion": "tts-v13-batch-official-receipt-v1",
                 "resultPurpose": "official",
                 "sessionId": payload["sessionId"],
                 "status": "complete",
                 "eligibleForDerivation": True,
+                "cleanupFailureCodes": execution.raw["cleanupFailureCodes"],
                 "failureCodes": execution.raw["failureCodes"],
             }
         candidate = candidate_factory()
@@ -353,8 +371,9 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
             ),
         )
     finally:
-        dedicated_gpu.close()
-        shared_gpu.close()
+        if monitor is None or not monitor.shutdown_pending:
+            dedicated_gpu.close()
+            shared_gpu.close()
 
 
 def main() -> int:
@@ -365,8 +384,28 @@ def main() -> int:
         result = _run(_payload())
         print(receipt_json(result))
         return 0 if result.get("eligibleForDerivation") is True or not result["failureCodes"] else 1
+    except (
+        OfficialBatchError,
+        AdapterOperationError,
+        BatchBenchmarkError,
+        KeyboardInterrupt,
+    ) as error:
+        result = {
+            "schemaVersion": "tts-v13-batch-official-receipt-v1",
+            "resultPurpose": "official",
+            "status": "fail",
+            "eligibleForDerivation": False,
+            "failureCode": "interrupted" if isinstance(error, KeyboardInterrupt) else error.code,
+            "cleanupFailureCodes": sorted(error.cleanup_failures)
+            if isinstance(error, OfficialBatchError)
+            else [],
+        }
+        print(receipt_json(result))
+        return 2
     except Exception as error:
-        code = error.code if isinstance(error, BatchCommandError) else "internal"
+        code = (
+            error.code if isinstance(error, (BatchCommandError, V13AuthorityError)) else "internal"
+        )
         print(json.dumps({"status": "fail", "failureCode": code}, separators=(",", ":")))
         return 2
 

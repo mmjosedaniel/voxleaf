@@ -4,6 +4,7 @@ import {
   ZipWriter,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { minimalNcxDocument } from "../../test-support/epub-fixture.js";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
 import {
@@ -38,6 +39,86 @@ afterEach(() => {
 });
 
 describe("EPUB 3 navigation document parsing", () => {
+  const retainedLabelCases = [
+    ["multibyte alt", '<h:img alt=" é "/><h:img alt=" 🙂 "/>', "", "é 🙂", 7],
+    ["used title", "<h:img/>", ' title=" β   é "', "β é", 5],
+    [
+      "attribute then XML whitespace",
+      'A<h:img alt="  "/><h:em> </h:em><h:img alt=" é "/>B',
+      "",
+      "A é B",
+      6,
+    ],
+    [
+      "XML then attribute whitespace",
+      'A<h:em> </h:em><h:img alt=" é "/><h:em> </h:em>B',
+      "",
+      "A é B",
+      6,
+    ],
+    [
+      "eclipsed and discarded attributes",
+      '<h:span alt="unused non-image">A</h:span><h:img hidden="" alt="unused hidden"/><img xmlns="urn:foreign" alt="unused foreign"/><h:img alt=" é "/>',
+      ' title="unused title"',
+      "A é",
+      4,
+    ],
+  ] as const;
+
+  it.each(retainedLabelCases)(
+    "DCR-07 accounts for retained %s at the exact byte boundary",
+    async (_case, content, attributes, label, extraBytes) => {
+      const xml = navigationDocument(
+        `<h:li><h:a href="text/chapter.xhtml"${attributes}>${content}</h:a></h:li>`,
+      );
+      const exact = 15 + extraBytes; // XML title "Ignored" and heading "Contents".
+      await withArchive(
+        xml,
+        { policy: { maxDecodedPublicationTextBytes: exact } },
+        async (archive) => {
+          const result = await parseNavigationDocument(
+            archive,
+            createPackageDocument(),
+          );
+          expect(result.roots[0]?.label).toBe(label);
+          expect(archive.budget.getSnapshot().decodedPublicationTextBytes).toBe(
+            exact,
+          );
+        },
+      );
+      await expectNavigationError(
+        xml,
+        { policy: { maxDecodedPublicationTextBytes: exact - 1 } },
+        "resource-limit-exceeded",
+      );
+    },
+  );
+
+  it("DCR-07 leaves NCX labels charged only by the XML reader", async () => {
+    const xml = minimalNcxDocument().replace(
+      "urn:synthetic:minimal-epub2",
+      "urn:synthetic:navigation",
+    );
+    const expected = encoder.encode(
+      "Synthetic minimal EPUB 2 publicationChapter One",
+    ).length;
+    const packageDocument = createPackageDocument();
+    await withArchive(
+      xml,
+      { policy: { maxDecodedPublicationTextBytes: expected } },
+      async (archive) => {
+        const result = await parseNavigationDocument(archive, {
+          ...packageDocument,
+          navigation: { ...packageDocument.navigation, kind: "ncx" },
+        });
+        expect(result.roots[0]?.label).toBe("Chapter One");
+        expect(archive.budget.getSnapshot().decodedPublicationTextBytes).toBe(
+          expected,
+        );
+      },
+    );
+  });
+
   it.each(["ignored", "x".repeat(1100)])(
     "CAF-R3.4 only XHTML images contribute alt (%s)",
     async (alt) => {

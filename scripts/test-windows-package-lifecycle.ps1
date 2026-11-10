@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-  [string]$Installer = ""
+  [string]$Installer = "",
+  [string]$LifecycleReceipt = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +18,44 @@ if (-not $Installer) {
 $Installer = (Resolve-Path -LiteralPath $Installer).Path
 
 . (Join-Path $PSScriptRoot "windows-package-lifecycle-data.ps1")
+
+function Get-LifecycleInstallerIdentity {
+  $file = Get-Item -LiteralPath $Installer
+  if ($file.PSIsContainer -or $file.Length -le 0) { throw "windows-release-lifecycle-installer-identity" }
+  [ordered]@{
+    fileName = $file.Name
+    sizeBytes = $file.Length
+    sha256 = (Get-FileHash -LiteralPath $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+    modifiedAtUtc = $file.LastWriteTimeUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture)
+  }
+}
+
+if (-not $LifecycleReceipt) {
+  $LifecycleReceipt = Join-Path $repositoryRoot "tmp\evidence\windows-release\windows-lifecycle-receipt-v1.json"
+}
+$LifecycleReceipt = [IO.Path]::GetFullPath($LifecycleReceipt)
+$receiptDirectory = [IO.Path]::GetDirectoryName($LifecycleReceipt)
+if ([string]::Equals($LifecycleReceipt, $Installer, [StringComparison]::OrdinalIgnoreCase) -or
+    [IO.Path]::GetFileName($LifecycleReceipt) -ne "windows-lifecycle-receipt-v1.json") {
+  throw "windows-release-lifecycle-receipt-path"
+}
+for ($directory = $receiptDirectory; $directory; $directory = [IO.Path]::GetDirectoryName($directory)) {
+  try {
+    $attributes = [IO.File]::GetAttributes($directory)
+    if (($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+      throw "windows-release-lifecycle-receipt-reparse"
+    }
+  } catch [IO.FileNotFoundException] {
+  } catch [IO.DirectoryNotFoundException] {
+  }
+}
+[IO.Directory]::CreateDirectory($receiptDirectory) | Out-Null
+if (Test-Path -LiteralPath $LifecycleReceipt) {
+  Assert-NoReparsePoints $LifecycleReceipt "windows-release-lifecycle-receipt-reparse"
+  [IO.File]::Delete($LifecycleReceipt)
+}
+$installerIdentity = Get-LifecycleInstallerIdentity
+$startedAtUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture)
 
 $installRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA $productName))
 $expectedInstallRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA $productName))
@@ -381,5 +420,33 @@ if ($null -ne $primaryFailure) {
 }
 if ($cleanupFailures.Count -ne 0) {
   throw "windows-release-lifecycle-cleanup-incomplete"
+}
+
+$finalInstallerIdentity = Get-LifecycleInstallerIdentity
+if (($installerIdentity | ConvertTo-Json -Compress) -cne ($finalInstallerIdentity | ConvertTo-Json -Compress)) {
+  throw "windows-release-lifecycle-installer-drift"
+}
+$completedAtUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture)
+$lifecycleReceiptJson = [ordered]@{
+  schemaVersion = 1
+  status = "passed"
+  installer = $installerIdentity
+  startedAtUtc = $startedAtUtc
+  completedAtUtc = $completedAtUtc
+  checks = [ordered]@{
+    install = $true
+    firstStart = $true
+    repair = $true
+    defaultUninstallAfterRepair = $true
+    cleanupVerified = $true
+  }
+  uninstallOptionMatrix = $matrixResults
+} | ConvertTo-Json -Depth 6
+$receiptTemporary = Join-Path $receiptDirectory ".voxleaf-lifecycle-$runId.tmp"
+try {
+  [IO.File]::WriteAllText($receiptTemporary, "$lifecycleReceiptJson`n", [Text.UTF8Encoding]::new($false))
+  [IO.File]::Move($receiptTemporary, $LifecycleReceipt)
+} finally {
+  if (Test-Path -LiteralPath $receiptTemporary) { [IO.File]::Delete($receiptTemporary) }
 }
 $resultJson

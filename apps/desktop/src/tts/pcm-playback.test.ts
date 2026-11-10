@@ -999,6 +999,122 @@ it("CCF-C20 / RIA-03 WSOLA reports actual output separately from clock-estimated
   await backend.close();
 });
 
+it("DCR-10 contains createBuffer failure from the successor device callback", async () => {
+  const clock = createManualClock(0);
+  const first = segment(1);
+  const second = segment(2);
+  const scheduler = readyScheduler(clock, [first, second], true);
+  const firstUnit = synthesize(scheduler, first, 15_000);
+  const secondUnit = synthesize(scheduler, second, 15_000);
+  const context = new FakeAudioContext();
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+  );
+  const player = new AdaptivePcmPlayer(scheduler, backend, (release) =>
+    release(),
+  );
+  player.synchronize();
+  await Promise.resolve();
+  const allocate = vi
+    .spyOn(context, "createBuffer")
+    .mockImplementationOnce(() => {
+      throw new DOMException("synthetic allocation fault", "NotSupportedError");
+    });
+  expect(() => context.sources[0]!.end()).not.toThrow();
+  expect(allocate).toHaveBeenCalledOnce();
+  expect(player.synchronize().state).toBe("failed");
+  player.close();
+  await player.waitForCleanup();
+  expect(context.closeCount).toBe(1);
+  expect(firstUnit.releaseCount).toBe(1);
+  expect(secondUnit.releaseCount).toBe(1);
+});
+
+it("DCR-06 confirms output once from a current positive paused receipt", async () => {
+  const clock = createManualClock(0);
+  const first = segment(1);
+  const scheduler = readyScheduler(clock, [first], true);
+  scheduler.selectPlaybackRatePercent(75);
+  synthesize(scheduler, first, 15_000);
+  const context = new FakeAudioContext();
+  const node = new FakeWsolaNode();
+  const backend = new WebAudioPcmPlaybackBackend(
+    () => context as unknown as AudioContext,
+    async () => ({ node: node as unknown as AudioWorkletNode, close: vi.fn() }),
+  );
+  await backend.preparePlaybackRate(75);
+  const player = new AdaptivePcmPlayer(scheduler, backend);
+  const progress = vi.fn();
+  player.subscribeAudibleProgress(progress);
+  player.synchronize();
+  await Promise.resolve();
+  expect(player.pause().state).toBe("paused");
+  node.port.emit({
+    type: "started",
+    unitSequence: 0,
+    activation: 0,
+    currentFrame: 0,
+    sourceFrames: 0,
+  });
+  node.port.emit({
+    type: "paused",
+    unitSequence: 0,
+    activation: 1,
+    sourceFrames: 0,
+    renderedFrames: 0,
+  });
+  node.port.emit({
+    type: "paused",
+    unitSequence: 1,
+    activation: 1,
+    sourceFrames: 480,
+    renderedFrames: 640,
+  });
+  player.synchronize();
+  expect(progress).not.toHaveBeenCalled();
+  node.port.emit({
+    type: "paused",
+    unitSequence: 0,
+    activation: 0,
+    sourceFrames: 480,
+    renderedFrames: 640,
+  });
+  player.synchronize();
+  expect(progress).not.toHaveBeenCalled();
+  node.port.emit({
+    type: "paused",
+    unitSequence: 0,
+    activation: 1,
+    sourceFrames: 480,
+    renderedFrames: 640,
+  });
+  clock.advanceBy(500);
+  const retained = scheduler.observe().playableSampleFrames;
+  expect(player.synchronize()).toMatchObject({
+    state: "paused",
+    renderedSampleFrames: 640,
+  });
+  expect(progress).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ kind: "segment-started", sequence: 0 }),
+  );
+  clock.advanceBy(500);
+  player.synchronize();
+  expect(progress).toHaveBeenCalledOnce();
+  expect(scheduler.observe().playableSampleFrames).toBe(retained);
+  node.port.emit({
+    type: "ended",
+    unitSequence: 0,
+    sourceFrames: 360_000,
+    renderedFrames: 480_000,
+  });
+  expect(progress.mock.calls.map(([event]) => event.kind)).toEqual([
+    "segment-started",
+    "segment-completed",
+  ]);
+  player.close();
+  await player.waitForCleanup();
+});
+
 it.each([1, 0.75])(
   "CCF-C20 / RIA-03 waits for current device activation across pauses and successors at rate %s",
   async (rate) => {

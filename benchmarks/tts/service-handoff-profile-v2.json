@@ -1,0 +1,41 @@
+{
+  "profileVersion": "tts-service-handoff-profile-v2",
+  "predecessorMatrix": {
+    "path": "benchmarks/tts/service-handoff-profile-v1.json",
+    "sha256": "1ec39e6bd45064bb8ddd65b43e5ffee76b5a546bb2766f11af2d9c0ee116a2d3"
+  },
+  "resultSchema": {
+    "path": "benchmarks/tts/schemas/service-handoff-result-v2.schema.json",
+    "sha256": "a205b0996e691ddf4a7c70ec1b20cf26321f0b6fb790d6165ea02d18534d53a0"
+  },
+  "observerProtocol": {
+    "version": 2,
+    "maximumObserverRecordBytes": 256,
+    "maximumNativeRecordBytes": 16384,
+    "maximumQueuedNativeRecords": 8,
+    "maximumNativeRecords": 48,
+    "minimumQuiescenceMilliseconds": 50,
+    "acknowledgementTimeoutMilliseconds": 30000,
+    "cleanupOrder": [
+      "accepted-before-output-cancellation",
+      "mid-generation-cancellation",
+      "child-crash",
+      "application-exit"
+    ],
+    "runDeadlineSeconds": 1650,
+    "runBudgetSeconds": {
+      "serviceStartsLoadsAndWarms": 980,
+      "completeSynthesis": 360,
+      "activeWaitAndTermination": 28,
+      "observerHandshakeAndAcknowledgements": 150,
+      "networkObservations": 120,
+      "otherBoundedNativeOperationsAndQuiescence": 12
+    },
+    "ownedProcessReapTimeoutSeconds": 5,
+    "ownedOutputReaderJoinTimeoutSeconds": 1
+  },
+  "predecessorResultSchema": {
+    "path": "benchmarks/tts/schemas/service-handoff-result-v1.schema.json",
+    "sha256": "f8e88a350875b7249a9224809cfe1a250c9f5a1d3155c48e3a7e623047c0e251"
+  }
+}

@@ -57,3 +57,28 @@ not itself prohibit an accepted standalone form. Existing language/code barriers
 source ranges, limits and frozen v1 normalizers remain unchanged. The
 [CCF ledger](../../plans/evidence/confirmed-chat-findings/execution-ledger.md)
 tracks the new correction and its acceptance separately from the original record.
+
+## 2026-11-09: Decimal and signed Celsius range endpoints
+
+The mutable normalizer preserves both endpoints when either uses an attached
+sign or a comma or dot decimal, as in `20 °C – 25,5 °C` and `20 °C–−5 °C`.
+The guard uses the existing bounded same-prose lookahead. Standalone Celsius
+expansion, editorial dashes, locator mapping and the frozen v1 authority keep
+their existing rules.
+
+## 2026-11-09: Query only the default CUDA ordinal on Windows
+
+This amendment supersedes the Windows enumeration rule recorded in the
+2026-10-26 decision above. The current Windows probe validates CUDA
+initialization and the visible device count, then queries `cuDeviceGet` only for
+ordinal 0. A secondary ordinal cannot discard valid default-device facts or
+rescue an unknown or invalid default. Default-device capability, LUID matching
+and free-memory checks still govern admission. DirectML ranking, report shape,
+thresholds and native-private identities remain unchanged.
+
+The [DCR-04 execution receipt](../../plans/evidence/deep-chat-audit/u12-dcr-04-execution.md)
+records the original-enumeration reproduction and the current ordinal-0
+regressions. The [current U12 review](../../plans/evidence/deep-chat-audit/review-U12-R2.md)
+binds the same production behavior and both native feature-mode results
+after the test module relocation. The ordered synthetic regression does not
+establish physical multi-GPU behavior.

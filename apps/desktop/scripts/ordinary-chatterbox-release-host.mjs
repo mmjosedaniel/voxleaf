@@ -479,17 +479,57 @@ export async function waitForStableInstallRootAbsence(
   fail("uninstall-root-retained");
 }
 
-async function reserveLoopbackPort() {
+async function reserveLoopbackPorts() {
   const { createServer } = await import("node:net");
-  const server = createServer();
-  server.unref();
-  server.listen(0, "127.0.0.1");
-  await new Promise((resolve) => server.once("listening", resolve));
-  const address = server.address();
-  if (typeof address !== "object" || address === null) fail("driver-port");
-  server.close();
-  await new Promise((resolve) => server.once("close", resolve));
-  return address.port;
+  const servers = [];
+  try {
+    const reservations = await Promise.allSettled(
+      [0, 1].map(async () => {
+        const server = createServer();
+        servers.push(server);
+        server.unref();
+        await new Promise((resolve, reject) => {
+          const listening = () => {
+            server.off("error", failed);
+            resolve();
+          };
+          const failed = (error) => {
+            server.off("listening", listening);
+            server.off("error", failed);
+            reject(error);
+          };
+          server.once("error", failed);
+          server.once("listening", listening);
+          try {
+            server.listen(0, "127.0.0.1");
+          } catch (error) {
+            failed(error);
+          }
+        });
+        const address = server.address();
+        if (typeof address !== "object" || address === null)
+          fail("driver-port");
+        return address.port;
+      }),
+    );
+    return reservations.map((reservation) => {
+      if (reservation.status !== "fulfilled") fail("driver-port");
+      return reservation.value;
+    });
+  } finally {
+    const closed = await Promise.allSettled(
+      servers
+        .filter((server) => server.listening)
+        .map(
+          (server) =>
+            new Promise((resolve, reject) => {
+              server.close((error) => (error ? reject(error) : resolve()));
+            }),
+        ),
+    );
+    if (closed.some((result) => result.status === "rejected"))
+      fail("driver-port");
+  }
 }
 
 class SessionCleanupError extends AggregateError {
@@ -534,10 +574,7 @@ async function createOrdinarySession({ executable, environment }) {
   ) {
     fail("webdriver-path");
   }
-  const [driverPort, nativePort] = await Promise.all([
-    reserveLoopbackPort(),
-    reserveLoopbackPort(),
-  ]);
+  const [driverPort, nativePort] = await reserveLoopbackPorts();
   const profileDirectory = await mkdtemp(
     path.join(tmpdir(), "voxleaf-ordinary-webdriver-"),
   );

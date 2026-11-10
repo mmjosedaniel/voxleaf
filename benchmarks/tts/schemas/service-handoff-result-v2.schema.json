@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voxleaf.local/schemas/service-handoff-result-v2.schema.json",
+  "title": "VoxLeaf exact-host service handoff result v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "executionCommitSha",
+    "attemptOrdinal",
+    "automaticRetries",
+    "status",
+    "candidateId",
+    "protocolVersion",
+    "cases",
+    "timings",
+    "resources",
+    "cleanup",
+    "privacy",
+    "conclusions",
+    "observerProtocolVersion",
+    "cleanupAcknowledgements"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "profileVersion": {
+      "const": "tts-service-handoff-profile-v2"
+    },
+    "profileSha256": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/profileSha256"
+    },
+    "executionCommitSha": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/executionCommitSha"
+    },
+    "attemptOrdinal": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/attemptOrdinal"
+    },
+    "automaticRetries": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/automaticRetries"
+    },
+    "status": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/status"
+    },
+    "candidateId": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/candidateId"
+    },
+    "protocolVersion": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/protocolVersion"
+    },
+    "cases": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/cases"
+    },
+    "timings": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/timings"
+    },
+    "resources": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/resources"
+    },
+    "cleanup": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/cleanup"
+    },
+    "privacy": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/privacy"
+    },
+    "conclusions": {
+      "$ref": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json#/properties/conclusions"
+    },
+    "observerProtocolVersion": {
+      "const": 2
+    },
+    "cleanupAcknowledgements": {
+      "const": [
+        {
+          "phase": "accepted-before-output-cancellation",
+          "sequence": 1
+        },
+        {
+          "phase": "mid-generation-cancellation",
+          "sequence": 2
+        },
+        {
+          "phase": "child-crash",
+          "sequence": 3
+        },
+        {
+          "phase": "application-exit",
+          "sequence": 4
+        }
+      ]
+    }
+  }
+}

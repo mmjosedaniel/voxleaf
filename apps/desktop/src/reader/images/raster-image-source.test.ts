@@ -8,6 +8,7 @@ import {
   jpegDensityExifSegment,
   syntheticJpegBytes,
 } from "../../../tests/fixtures/jpeg-fixture";
+import { syntheticEarlyAnimatedWebp } from "../../../tests/fixtures/webp-fixture";
 
 import { createRasterImageSafetyPolicy } from "./raster-image-policy";
 import {
@@ -119,6 +120,22 @@ afterEach(() => {
 });
 
 describe("bounded raster image source lifecycle", () => {
+  it.each(["ANIM", "ANMF"] as const)(
+    "DCR-15 blocks %s before a URL or decoder is used",
+    async (marker) => {
+      const adapter = new FakeBrowserAdapter();
+      adapter.decode.mockResolvedValue({ widthPixels: 2, heightPixels: 2 });
+      const manager = new RasterImageSourceManager(undefined, adapter);
+      const result = await manager.prepare(
+        syntheticEarlyAnimatedWebp(marker),
+        "image/webp",
+      );
+      if (result.status === "ready") result.source.release();
+      expect(result.status).toBe("rejected");
+      expect(adapter.created).toEqual([]);
+      expect(adapter.decode).not.toHaveBeenCalled();
+    },
+  );
   it("RIA-02 density does not accept arbitrary decoder sizes and cancels with one release", async () => {
     const adapter = new FakeBrowserAdapter();
     const manager = new RasterImageSourceManager(undefined, adapter);

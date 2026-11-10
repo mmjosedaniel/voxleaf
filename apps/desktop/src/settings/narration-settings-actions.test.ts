@@ -37,6 +37,10 @@ function fixture(development = false) {
     playback: call("playback", true),
     profile: call("profile", true),
     language: call("language", true),
+    hardwareCheck: call(
+      "hardware-check",
+      new HardwareProfileCompatibilityCoordinator().observe(),
+    ),
     languageReset: call("language-reset", true),
     optional: call("optional", {
       ...snapshot,
@@ -59,6 +63,7 @@ function fixture(development = false) {
   const hardware = {
     selectProfile: steps.profile,
     selectLanguage: steps.language,
+    check: steps.hardwareCheck,
     resetLanguage: steps.languageReset,
   };
   const optional = { select: steps.optional, remove: steps.remove };
@@ -262,7 +267,13 @@ describe("narration settings actions", () => {
       undefined,
       f.optional,
     );
-    expect(f.events).toEqual(["legacy-stop", "language", "refresh", "profile"]);
+    expect(f.events).toEqual([
+      "legacy-stop",
+      "language",
+      "hardware-check",
+      "refresh",
+      "profile",
+    ]);
   });
 
   it.each([
@@ -310,11 +321,14 @@ describe("narration settings actions", () => {
       const stop = deferred<"contained">();
       const selected = deferred<boolean>();
       const refresh = deferred<undefined>();
+      const snapshot = new HardwareProfileCompatibilityCoordinator().observe();
+      const hardwareCheck = deferred<typeof snapshot>();
       f.steps.stop.mockReturnValueOnce(stop.promise);
       f.steps[kind]
         .mockReturnValueOnce(selected.promise)
         .mockResolvedValueOnce(false);
       f.steps.refresh.mockReturnValue(refresh.promise);
+      f.steps.hardwareCheck.mockReturnValue(hardwareCheck.promise);
       const pending = f.run[kind]();
       expect(f.steps[kind]).not.toHaveBeenCalled();
       stop.resolve("contained");
@@ -328,12 +342,25 @@ describe("narration settings actions", () => {
         settled = true;
       });
       selected.resolve(true);
+      if (kind === "language") {
+        await vi.waitFor(() =>
+          expect(f.steps.hardwareCheck).toHaveBeenCalledExactlyOnceWith(
+            "explicit-recheck",
+          ),
+        );
+        expect(f.steps.refresh).not.toHaveBeenCalled();
+        expect(settled).toBe(false);
+        hardwareCheck.resolve(snapshot);
+      }
       await vi.waitFor(() => expect(f.steps.refresh).toHaveBeenCalledOnce());
       expect(settled).toBe(false);
       refresh.resolve(undefined);
       await expect(pending).resolves.toBe(true);
       await expect(f.run[kind]()).resolves.toBe(false);
       expect(f.steps.refresh).toHaveBeenCalledOnce();
+      expect(f.steps.hardwareCheck).toHaveBeenCalledTimes(
+        kind === "language" ? 1 : 0,
+      );
       expect(f.steps.optional).not.toHaveBeenCalled();
     },
   );

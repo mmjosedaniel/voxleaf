@@ -69,6 +69,13 @@ pub(crate) fn dispatch_if_requested() {
         Some(argument) if argument == std::ffi::OsStr::new(tts_service_handoff::HOST_ARGUMENT) => {
             exit_with_diagnostic_status(tts_service_handoff::run_host().is_ok());
         }
+        Some(argument)
+            if argument.to_str().is_some_and(|value| {
+                value.starts_with(tts_service_handoff::HOST_ARGUMENT_PREFIX)
+            }) =>
+        {
+            exit_with_diagnostic_status(false);
+        }
         _ => {}
     }
 }

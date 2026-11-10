@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { spawnSync } from "node:child_process";
+import childProcess, { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   access,
@@ -13,14 +13,17 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { syncBuiltinESMExports } from "node:module";
 import path from "node:path";
 import process from "node:process";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { firewallBlockExists } from "./bilingual-portfolio-host.mjs";
 import {
   AuditReader,
   assertAudio,
+  assertFirewall,
   assertNoNetwork,
   assertWorkIdentity,
   childEnvironment,
@@ -29,6 +32,7 @@ import {
   parseArguments,
   ProcessTree,
   pythonAuditPolicy,
+  shutdownService,
   terminateTree,
   verifyModuleClosure,
   verifyRootBinding,
@@ -41,6 +45,214 @@ const lockedPython = path.resolve(
   "../../../services/tts/.venv",
   process.platform === "win32" ? "Scripts/python.exe" : "bin/python",
 );
+
+const firewallFixture = `
+function Get-NetFirewallProfile { param($PolicyStore)
+  foreach($name in @('Domain','Private','Public')) {
+    [pscustomobject]@{
+      Name=$(if($env:DCR_CASE -eq 'wrong-profile-set' -and $name -eq 'Private'){'Public'}else{$name})
+      Enabled=($env:DCR_CASE -ne 'disabled-profile')
+    }
+  }
+}
+function Get-Service { [pscustomobject]@{Status=$(if($env:DCR_CASE -eq 'service-down'){'Stopped'}else{'Running'})} }
+function Get-NetFirewallRule { [CmdletBinding()]param($DisplayName,$PolicyStore)
+  if ($env:DCR_CASE -eq 'query-error') { throw 'synthetic firewall query error' }
+  if ($PolicyStore -eq 'ActiveStore' -and $env:DCR_CASE -eq 'inactive') { return }
+  $rule=[pscustomobject]@{
+    Enabled='True';Direction='Outbound';Action='Block'
+    PrimaryStatus=$(if($env:DCR_CASE -eq 'not-ok'){'Degraded'}else{'OK'})
+    Profile=$(if($env:DCR_CASE -eq 'rule-profile'){'Public'}else{'Any'})
+  }
+  $rule
+  if ($env:DCR_CASE -eq 'duplicate-rule') { $rule }
+}
+function Get-NetFirewallApplicationFilter { process {
+  [pscustomobject]@{Program=$(if($env:DCR_CASE -eq 'wrong-program'){'different.exe'}else{$env:DCR_EXECUTABLE})}
+  if ($env:DCR_CASE -eq 'duplicate-application') { [pscustomobject]@{Program=$env:DCR_EXECUTABLE} }
+} }
+function Get-NetFirewallAddressFilter { process { [pscustomobject]@{
+  LocalAddress='Any'
+  RemoteAddress=$(if($env:DCR_CASE -eq 'address'){'127.0.0.1'}else{'Any'})
+} } }
+function Get-NetFirewallPortFilter { process { [pscustomobject]@{
+  Protocol=$(if($env:DCR_CASE -eq 'protocol'){'TCP'}else{'Any'})
+  LocalPort='Any'
+  RemotePort=$(if($env:DCR_CASE -eq 'port'){'443'}else{'Any'})
+} } }
+function Get-NetFirewallServiceFilter { process { [pscustomobject]@{
+  Service=$(if($env:DCR_CASE -eq 'service'){'Dnscache'}else{'Any'})
+} } }
+function Get-NetFirewallInterfaceFilter { process { [pscustomobject]@{
+  InterfaceAlias=$(if($env:DCR_CASE -eq 'interface'){'Ethernet'}else{'Any'})
+} } }
+function Get-NetFirewallInterfaceTypeFilter { process { [pscustomobject]@{
+  InterfaceType=$(if($env:DCR_CASE -eq 'interface-type'){'Wired'}else{'Any'})
+} } }
+`;
+
+test(
+  "DCR-11 both host callers require an unrestricted effective firewall rule",
+  {
+    skip: process.platform !== "win32",
+  },
+  async (t) => {
+    const realSpawn = childProcess.spawnSync;
+    let scenario;
+    const mocked = t.mock.method(
+      childProcess,
+      "spawnSync",
+      (program, args, options) => {
+        assert.equal(program, "powershell.exe");
+        return realSpawn(
+          program,
+          [...args.slice(0, -1), firewallFixture + args.at(-1)],
+          {
+            ...options,
+            env: {
+              ...process.env,
+              ...options.env,
+              DCR_CASE: scenario,
+              DCR_EXECUTABLE: process.execPath,
+            },
+          },
+        );
+      },
+    );
+    syncBuiltinESMExports();
+    try {
+      for (const [name, check] of [
+        ["bilingual", () => firewallBlockExists(process.execPath)],
+        [
+          "adapter",
+          () => {
+            assertFirewall(process.execPath);
+            return true;
+          },
+        ],
+      ]) {
+        for (const entry of [
+          "valid",
+          "wrong-profile-set",
+          "disabled-profile",
+          "service-down",
+          "inactive",
+          "not-ok",
+          "rule-profile",
+          "duplicate-rule",
+          "wrong-program",
+          "duplicate-application",
+          "address",
+          "protocol",
+          "port",
+          "service",
+          "interface",
+          "interface-type",
+          "query-error",
+        ]) {
+          await t.test(`${name} ${entry}`, () => {
+            scenario = entry;
+            let accepted = false;
+            try {
+              accepted = check();
+            } catch (error) {
+              assert.match(
+                error.message,
+                /host-observation|firewall|inspection/iu,
+              );
+            }
+            assert.equal(accepted, entry === "valid");
+          });
+        }
+      }
+    } finally {
+      mocked.mock.restore();
+      syncBuiltinESMExports();
+    }
+  },
+);
+
+test("DCR-12 stopped requires clean stdout EOF with no trailing frame", async (t) => {
+  const instance = "service:synthetic-layout";
+  const stopped = encodeControl({
+    schemaVersion: 1,
+    protocolVersion: 1,
+    kind: "state",
+    state: "stopped",
+    serviceInstanceId: instance,
+  });
+  for (const [name, tail] of [
+    ["clean", Buffer.alloc(0)],
+    ["malformed", Buffer.alloc(12, 0x78)],
+    ["partial", Buffer.from("VLTP")],
+    ["extra", stopped],
+  ]) {
+    await t.test(name, async () => {
+      const first = stopped.subarray(0, 8).toString("base64");
+      const final = Buffer.concat([stopped.subarray(8), tail]).toString(
+        "base64",
+      );
+      const child = spawn(
+        process.execPath,
+        [
+          "-e",
+          `process.stdout.write(Buffer.from('${first}','base64'));setTimeout(()=>process.stdout.end(Buffer.from('${final}','base64')),20);`,
+        ],
+        {
+          stdio: ["ignore", "pipe", "ignore"],
+          windowsHide: true,
+        },
+      );
+      const exit = new Promise((resolve, reject) => {
+        child.once("error", reject);
+        child.once("close", (code, signal) => resolve({ code, signal }));
+      });
+      try {
+        const result = shutdownService({
+          send: (command) => assert.equal(command, "shutdown"),
+          reader: new FrameReader(child.stdout),
+          instance,
+          exit,
+        });
+        if (name === "clean") await result;
+        else await assert.rejects(result, /frame-header|shutdown-framing/u);
+      } finally {
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+        await exit;
+      }
+    });
+  }
+});
+
+test("DCR-12 queued protocolRejected remains readable after EOF and nonzero exit", async () => {
+  const rejected = encodeControl({
+    schemaVersion: 1,
+    protocolVersion: 1,
+    kind: "protocolRejected",
+    reason: "over-limit",
+  });
+  const child = spawn(
+    process.execPath,
+    [
+      "-e",
+      `process.stdout.end(Buffer.from('${rejected.toString("base64")}','base64'));process.exitCode=1;`,
+    ],
+    {
+      stdio: ["ignore", "pipe", "ignore"],
+      windowsHide: true,
+    },
+  );
+  const reader = new FrameReader(child.stdout);
+  const code = await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", resolve);
+  });
+  assert.equal(code, 1);
+  const { payload } = await reader.next();
+  assert.equal(JSON.parse(payload.toString("utf8")).kind, "protocolRejected");
+  await assert.rejects(reader.next(), /unexpected-eof/u);
+});
+
 test("real locked Python denies execution, sockets and writes even when callers catch denial", async () => {
   await access(lockedPython);
   const root = await mkdtemp(path.join(tmpdir(), "voxleaf-audit-policy-"));

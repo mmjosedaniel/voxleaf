@@ -16,6 +16,12 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Deep chat audit: minimal corrections and evidence reuse](deep-chat-audit-minimal-corrections.md)
+  records 25 dispositions accepted by DCR-G12-R2-ASTRA-20261110-01. DCR-02
+  remains withdrawn and DCR-16 is limited to mutable-adapter hardening.
+  Current host checks and verified restoration are recorded in the
+  [execution ledger](../evidence/deep-chat-audit/execution-ledger.md).
+
 - [EPUB text budget, opening cancellation and reflow investigation](epub-budget-cancellation-and-reflow-follow-up.md): C13/C17 corrected and host validated; C15 reproduced only in modeled ordering, without production correction; C05 deferred to the next Chatterbox update. The evidence directory holds the final independent verdict after R1 corrections. No Git delivery.
 
 - [Minimal corrections for confirmed chat findings](confirmed-chat-findings-minimal-corrections.md): all 18 supported cases accepted by CCF-R2-20261104 after the C08 mounted-geometry coverage correction; five deliberate, deferred or unconfirmed dispositions remain. Current deterministic/static, seven Chromium journeys, six-rate Piper plus reader corrections and exact optional local admission pass with original resources restored. C05 covers current consumers/current Piper without claiming frozen Chatterbox Unicode parity. Input-equivalent results and verified artifacts are reused explicitly; the cleanup failure and successful bounded retry remain recorded. The plan names its separate final archival assessment. Changes remain uncommitted; no Git delivery or publication.
