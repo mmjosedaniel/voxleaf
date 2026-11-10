@@ -726,7 +726,7 @@ export function App({
     ): void => {
       if (reason === "reflow") {
         narrationCoordinator?.preserveActiveLocator(locator);
-        positionSaveCoordinator?.scheduleReflow(locator);
+        positionSaveCoordinator?.scheduleReflow();
       } else {
         narrationCoordinator?.settleExternalNavigation(locator);
         positionSaveCoordinator?.scheduleImmediate(locator);

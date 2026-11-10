@@ -6,10 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Reader position and image lifecycle minimal corrections](reader-position-and-image-lifecycle.md):
-  planned protection of canonical checkpoints across visual fallback/reflow and
-  bounded viewport image recycling, with combined regression and host-acceptance
-  criteria. Implementation and validation have not started.
+No active implementation plans.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

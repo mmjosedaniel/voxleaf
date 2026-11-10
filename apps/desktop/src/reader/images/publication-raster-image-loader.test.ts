@@ -1,3 +1,9 @@
+import { RasterImageSourceManager } from "./raster-image-source";
+import {
+  createRasterImageSafetyPolicy,
+  type RasterImageSafetyPolicyOverrides,
+} from "./raster-image-policy";
+import { syntheticStaticPngBytes } from "../../../../../packages/epub/test-support/epub-fixture";
 import type {
   OpenedPublication,
   RasterImageMediaType,
@@ -9,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   PublicationRasterImageLoader,
   type RasterImageSourcePreparer,
+  type PublicationRasterImagePresentation,
 } from "./publication-raster-image-loader";
 import type {
   RasterImageSource,
@@ -96,6 +103,184 @@ function createPublication(
 }
 
 describe("publication raster image loader", () => {
+  function boundedHarness(overrides: RasterImageSafetyPolicyOverrides = {}) {
+    const created: string[] = [];
+    const revoked: string[] = [];
+    const manager = new RasterImageSourceManager(
+      createRasterImageSafetyPolicy(overrides),
+      {
+        createObjectUrl: () => {
+          const url = `blob:rpi-${created.length}`;
+          created.push(url);
+          return url;
+        },
+        decodeObjectUrl: async () => ({ widthPixels: 1, heightPixels: 1 }),
+        revokeObjectUrl: (url) => {
+          revoked.push(url);
+        },
+      },
+    );
+    const read = vi.fn(async () => syntheticStaticPngBytes());
+    const loader = new PublicationRasterImageLoader(
+      createPublication(read),
+      manager,
+    );
+    const watch = () => {
+      const changed =
+        vi.fn<(result: PublicationRasterImagePresentation) => void>();
+      return { changed, occurrence: loader.watch(FIRST_RESOURCE_ID, changed) };
+    };
+    return { loader, manager, created, revoked, read, watch };
+  }
+
+  it.each([
+    { maximumLiveSources: 1 },
+    { maximumDecodedPixels: 1, maximumLiveDecodedPixels: 1 },
+  ])(
+    "RPI-02 waits without spinning and retries visible demand on live release %j",
+    async (policy) => {
+      const { loader, manager, read, created, revoked, watch } =
+        boundedHarness(policy);
+      const first = watch();
+      const waiting = watch();
+      first.occurrence.setVisibility("visible");
+      waiting.occurrence.setVisibility("visible");
+      await vi.waitFor(() =>
+        expect(waiting.changed).toHaveBeenLastCalledWith({
+          status: "deferred",
+          reason: "live",
+        }),
+      );
+      await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(0));
+      expect(read).toHaveBeenCalledTimes(2);
+      expect(manager.liveSourceCount).toBe(1);
+      for (let index = 0; index < 20; index += 1)
+        waiting.occurrence.setVisibility("visible");
+      await Promise.resolve();
+      expect(read).toHaveBeenCalledTimes(2);
+      first.occurrence.setVisibility("outside");
+      await vi.waitFor(() =>
+        expect(waiting.changed.mock.lastCall?.[0].status).toBe("ready"),
+      );
+      expect(read).toHaveBeenCalledTimes(3);
+      expect(manager.liveDecodedPixels).toBe(1);
+      await loader.close();
+      expect(manager.liveSourceCount).toBe(0);
+      expect(revoked).toEqual(created);
+    },
+  );
+
+  it("RPI-02 evicts only prefetch for visible demand and does not oscillate", async () => {
+    const { loader, watch, read, manager } = boundedHarness({
+      maximumLiveSources: 1,
+    });
+    const near = watch();
+    near.occurrence.setVisibility("near");
+    await vi.waitFor(() =>
+      expect(near.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    const visible = watch();
+    visible.occurrence.setVisibility("visible");
+    await vi.waitFor(() =>
+      expect(visible.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    expect(near.changed).toHaveBeenLastCalledWith({ status: "loading" });
+    const reads = read.mock.calls.length;
+    await Promise.resolve();
+    expect(read).toHaveBeenCalledTimes(reads);
+    expect(manager.liveSourceCount).toBe(1);
+    visible.occurrence.setVisibility("outside");
+    near.occurrence.setVisibility("visible");
+    await vi.waitFor(() =>
+      expect(near.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    await loader.close();
+  });
+
+  it("RPI-02 keeps more than eight visible occurrences bounded and retries without re-entry", async () => {
+    const { loader, manager, watch, read, created, revoked } = boundedHarness();
+    const images = Array.from({ length: 12 }, watch);
+    for (const image of images) image.occurrence.setVisibility("visible");
+    await vi.waitFor(() =>
+      expect(images[11]!.changed.mock.lastCall?.[0].status).toBe("deferred"),
+    );
+    await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(0));
+    expect(manager.liveSourceCount).toBe(8);
+    expect(read).toHaveBeenCalledTimes(12);
+    images[0]!.occurrence.close();
+    await vi.waitFor(() =>
+      expect(images[8]!.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    expect(manager.liveSourceCount).toBe(8);
+    for (const image of images) image.occurrence.close();
+    await loader.close();
+    expect(manager.liveSourceCount).toBe(0);
+    expect(new Set(revoked)).toEqual(new Set(created));
+    expect(revoked).toHaveLength(created.length);
+  });
+
+  it("RPI-02 resumes after queue drain without a live-source release", async () => {
+    const { loader, watch, read } = boundedHarness();
+    const firstRead = deferred<Uint8Array>();
+    read.mockReturnValueOnce(firstRead.promise);
+    for (let index = 1; index < 8; index += 1)
+      read.mockResolvedValueOnce(Uint8Array.of(0));
+    const admitted = Array.from({ length: 8 }, () =>
+      loader.load(FIRST_RESOURCE_ID),
+    );
+    const image = watch();
+    image.occurrence.setVisibility("visible");
+    await Promise.resolve();
+    expect(loader.outstandingLoadCount).toBe(8);
+    firstRead.resolve(Uint8Array.of(0));
+    await Promise.all(admitted);
+    await vi.waitFor(() =>
+      expect(image.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    expect(read).toHaveBeenCalledTimes(9);
+    await loader.close();
+  });
+
+  it("RPI-02 keeps permanent rejection local across visibility and capacity changes", async () => {
+    const { loader, watch, read } = boundedHarness();
+    read.mockResolvedValueOnce(Uint8Array.of(0));
+    const invalid = watch();
+    invalid.occurrence.setVisibility("visible");
+    await vi.waitFor(() =>
+      expect(invalid.changed.mock.lastCall?.[0].status).toBe("unavailable"),
+    );
+    const valid = watch();
+    valid.occurrence.setVisibility("visible");
+    await vi.waitFor(() =>
+      expect(valid.changed.mock.lastCall?.[0].status).toBe("ready"),
+    );
+    valid.occurrence.close();
+    invalid.occurrence.setVisibility("outside");
+    invalid.occurrence.setVisibility("visible");
+    await Promise.resolve();
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(invalid.changed.mock.lastCall?.[0].status).toBe("unavailable");
+    await loader.close();
+  });
+
+  it("RPI-02 drops a retired slow read and clears its bytes without decoding", async () => {
+    const { loader, watch, read, created } = boundedHarness();
+    const pending = deferred<Uint8Array>();
+    read.mockReturnValueOnce(pending.promise);
+    const image = watch();
+    image.occurrence.setVisibility("visible");
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+    image.occurrence.close();
+    const bytes = syntheticStaticPngBytes();
+    pending.resolve(bytes);
+    await loader.close();
+    expect(created).toHaveLength(0);
+    expect(bytes.every((byte) => byte === 0)).toBe(true);
+    expect(
+      image.changed.mock.calls.every(([result]) => result.status !== "ready"),
+    ).toBe(true);
+  });
+
   it("serializes bounded publication reads and clears caller-owned bytes", async () => {
     const firstRead = deferred<Uint8Array>();
     const firstBytes = Uint8Array.of(1, 2, 3);
@@ -170,7 +355,10 @@ describe("publication raster image loader", () => {
     const excess = loader.load(FIRST_RESOURCE_ID);
 
     expect(loader.outstandingLoadCount).toBe(8);
-    await expect(excess).resolves.toEqual({ status: "unavailable" });
+    await expect(excess).resolves.toEqual({
+      status: "deferred",
+      reason: "queue",
+    });
     firstRead.resolve(Uint8Array.of(1));
     const results = await Promise.all(admitted);
     expect(results.every((result) => result.status === "ready")).toBe(true);

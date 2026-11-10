@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [reader position and image lifecycle follow-up](plans/completed/reader-position-and-image-lifecycle.md)
+protects canonical checkpoints across presentation-only changes and recycles
+bounded image capacity by viewport visibility. Current host regression and
+resource gates passed, with independent implementation approval
+RPI-CR-R1-20261110; its closeout record contains the final documentary review.
+
 The [completed deep chat audit plan](plans/completed/deep-chat-audit-minimal-corrections.md)
 records 25 dispositions and independent integrated approval. The
 [execution ledger](plans/evidence/deep-chat-audit/execution-ledger.md) records

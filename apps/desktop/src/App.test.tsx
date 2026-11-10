@@ -3008,11 +3008,14 @@ describe("desktop reader lifecycle surface", () => {
       ...TEST_LOCATED_BLOCK.startLocator,
       textOffsetCodePoints: 99,
     });
-    const canonicalLocator = TEST_LOCATED_BLOCK.startLocator;
+    const canonicalLocator = decodeReadingLocatorV1({
+      ...TEST_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 3,
+    });
     vi.mocked(publication.resolveLocator).mockImplementation(
       (input: unknown) => {
         const locator = input as ReadingLocatorV1;
-        return locator.textOffsetCodePoints > 0
+        return locator.textOffsetCodePoints === 99
           ? Object.freeze({
               status: "recovered",
               reason: "nearest-offset",
@@ -3038,7 +3041,7 @@ describe("desktop reader lifecycle surface", () => {
         if (props.initialLocator !== undefined) {
           props.onInitialRestorationSettled?.({
             status: "settled",
-            locator: props.initialLocator,
+            locator: TEST_LOCATED_BLOCK.startLocator,
           });
         }
       };

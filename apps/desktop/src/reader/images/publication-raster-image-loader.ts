@@ -19,13 +19,38 @@ export interface PublicationRasterImageLoadOptions {
 
 export type PublicationRasterImageLoadResult =
   | Readonly<{ status: "ready"; source: RasterImageSource }>
+  | Readonly<{ status: "deferred"; reason: "queue" | "live" }>
   | Readonly<{ status: "cancelled" | "unavailable" }>;
+
+export type RasterImageVisibility = "outside" | "near" | "visible";
+export type PublicationRasterImagePresentation =
+  PublicationRasterImageLoadResult | Readonly<{ status: "loading" }>;
+export interface PublicationRasterImageOccurrence {
+  setVisibility(visibility: RasterImageVisibility): void;
+  fail(source: RasterImageSource): void;
+  close(): void;
+}
 
 export interface PublicationRasterImageLoadPort {
   load(
     resourceId: RasterImageResourceId,
     options?: PublicationRasterImageLoadOptions,
   ): Promise<PublicationRasterImageLoadResult>;
+  watch(
+    resourceId: RasterImageResourceId,
+    onChange: (result: PublicationRasterImagePresentation) => void,
+  ): PublicationRasterImageOccurrence;
+}
+
+interface WatchedImage {
+  readonly resourceId: RasterImageResourceId;
+  readonly onChange: (result: PublicationRasterImagePresentation) => void;
+  visibility: RasterImageVisibility;
+  controller: AbortController | undefined;
+  source: RasterImageSource | undefined;
+  blockedRevision: number | undefined;
+  preempted: boolean;
+  failed: boolean;
 }
 
 export interface RasterImageSourcePreparer {
@@ -71,6 +96,11 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
   #activeWork: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
   #closed = false;
+  // Metadata only, bounded by the mounted chapter's admitted DOM nodes. No
+  // resource bytes or promises are retained for waiting occurrences.
+  readonly #watched = new Set<WatchedImage>();
+  #liveRevision = 0;
+  #pumpScheduled = false;
 
   public constructor(
     publication: OpenedPublication,
@@ -91,6 +121,163 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
     return (this.#active === undefined ? 0 : 1) + this.#queue.length;
   }
 
+  public watch(
+    resourceId: RasterImageResourceId,
+    onChange: (result: PublicationRasterImagePresentation) => void,
+  ): PublicationRasterImageOccurrence {
+    if (this.#closed) {
+      let active = true;
+      queueMicrotask(() => {
+        if (active) onChange(FIXED_UNAVAILABLE_RESULT);
+      });
+      return {
+        setVisibility: () => undefined,
+        fail: () => undefined,
+        close: () => {
+          active = false;
+        },
+      };
+    }
+    const image: WatchedImage = {
+      resourceId,
+      onChange,
+      visibility: "outside",
+      controller: undefined,
+      source: undefined,
+      blockedRevision: undefined,
+      preempted: false,
+      failed: false,
+    };
+    this.#watched.add(image);
+    return {
+      setVisibility: (visibility) => {
+        if (!this.#watched.has(image) || image.visibility === visibility)
+          return;
+        image.visibility = visibility;
+        image.preempted = false;
+        image.blockedRevision = undefined;
+        if (visibility === "outside") this.retireImage(image);
+        else if (
+          !image.failed &&
+          image.source === undefined &&
+          image.controller === undefined
+        )
+          image.onChange({ status: "loading" });
+        this.schedulePump();
+      },
+      fail: (source) => {
+        if (!this.#watched.has(image) || image.source !== source) return;
+        image.failed = true;
+        this.retireImage(image);
+        image.onChange(FIXED_UNAVAILABLE_RESULT);
+      },
+      close: () => {
+        if (this.#watched.delete(image)) this.retireImage(image, false);
+      },
+    };
+  }
+
+  private retireImage(image: WatchedImage, notify = true): void {
+    const controller = image.controller;
+    image.controller = undefined;
+    controller?.abort();
+    const source = image.source;
+    image.source = undefined;
+    // Remove the presentation before releasing its URL. A retired occurrence
+    // cannot own a completion that arrives after this point.
+    if (notify && !image.failed) image.onChange({ status: "loading" });
+    source?.release();
+  }
+
+  private schedulePump(): void {
+    if (this.#closed || this.#pumpScheduled) return;
+    this.#pumpScheduled = true;
+    queueMicrotask(() => {
+      this.#pumpScheduled = false;
+      if (!this.#closed) this.pumpImages();
+    });
+  }
+
+  private pumpImages(): void {
+    // Visible demand precedes prefetch; insertion order breaks ties. A rejected
+    // live-budget attempt waits for RELEASE, not merely for its own queue slot.
+    for (const visibility of ["visible", "near"] as const) {
+      for (const image of this.#watched) {
+        if (
+          image.visibility !== visibility ||
+          image.failed ||
+          image.preempted ||
+          image.controller ||
+          image.source
+        )
+          continue;
+        if (this.outstandingLoadCount >= MAXIMUM_OUTSTANDING_LOADS) return;
+        if (image.blockedRevision === this.#liveRevision) {
+          if (visibility !== "visible") continue;
+          const victim = [...this.#watched].find(
+            (candidate) =>
+              candidate.visibility === "near" && candidate.source !== undefined,
+          );
+          if (victim === undefined) continue;
+          victim.preempted = true;
+          this.retireImage(victim);
+        }
+        const controller = new AbortController();
+        const revision = this.#liveRevision;
+        image.controller = controller;
+        void this.load(image.resourceId, { signal: controller.signal }).then(
+          (result) => {
+            if (
+              image.controller !== controller ||
+              !this.#watched.has(image) ||
+              this.#closed
+            ) {
+              if (result.status === "ready") result.source.release();
+              return;
+            }
+            if (result.status !== "ready") image.controller = undefined;
+            if (result.status === "ready") image.source = result.source;
+            else if (result.status === "deferred") {
+              if (result.reason === "live") image.blockedRevision = revision;
+            } else image.failed = true;
+            image.onChange(result);
+            this.schedulePump();
+          },
+          () => {
+            if (
+              image.controller !== controller ||
+              !this.#watched.has(image) ||
+              this.#closed
+            )
+              return;
+            image.controller = undefined;
+            image.failed = true;
+            image.onChange(FIXED_UNAVAILABLE_RESULT);
+            this.schedulePump();
+          },
+        );
+      }
+    }
+  }
+
+  private trackSource(source: RasterImageSource): RasterImageSource {
+    return Object.freeze({
+      objectUrl: source.objectUrl,
+      widthPixels: source.widthPixels,
+      heightPixels: source.heightPixels,
+      decodedPixels: source.decodedPixels,
+      get released() {
+        return source.released;
+      },
+      release: () => {
+        if (source.released) return;
+        source.release();
+        this.#liveRevision += 1;
+        this.schedulePump();
+      },
+    });
+  }
+
   public load(
     resourceId: RasterImageResourceId,
     options: PublicationRasterImageLoadOptions = {},
@@ -107,7 +294,7 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
       return Promise.resolve(FIXED_CANCELLED_RESULT);
     }
     if (this.outstandingLoadCount >= MAXIMUM_OUTSTANDING_LOADS) {
-      return Promise.resolve(FIXED_UNAVAILABLE_RESULT);
+      return Promise.resolve({ status: "deferred", reason: "queue" });
     }
 
     return new Promise((resolve) => {
@@ -120,6 +307,7 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
             this.#queue.splice(queueIndex, 1);
           }
           this.settle(request, FIXED_CANCELLED_RESULT);
+          this.schedulePump();
         }
       };
       const request: PendingLoad = {
@@ -148,6 +336,8 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
     }
 
     this.#closed = true;
+    for (const image of this.#watched) this.retireImage(image, false);
+    this.#watched.clear();
     this.#active?.controller.abort();
     for (const request of this.#queue.splice(0)) {
       request.controller.abort();
@@ -166,6 +356,7 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
     if (this.#closed || request.controller.signal.aborted) {
       this.settle(request, FIXED_CANCELLED_RESULT);
       this.startNext();
+      this.schedulePump();
       return;
     }
 
@@ -191,6 +382,7 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
       }
       this.#activeWork = undefined;
       this.startNext();
+      this.schedulePump();
     });
   }
 
@@ -238,9 +430,15 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
         case "cancelled":
           return FIXED_CANCELLED_RESULT;
         case "rejected":
+          if (
+            prepared.reason === "capacity-exceeded" ||
+            prepared.reason === "decode-busy"
+          ) {
+            return { status: "deferred", reason: "live" };
+          }
           return FIXED_UNAVAILABLE_RESULT;
         case "ready":
-          return readyResult(prepared.source);
+          return readyResult(this.trackSource(prepared.source));
       }
       return FIXED_UNAVAILABLE_RESULT;
     } catch {

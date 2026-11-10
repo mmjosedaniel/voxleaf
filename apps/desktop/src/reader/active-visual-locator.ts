@@ -6,6 +6,7 @@ import type { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 export const ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX = 24;
 
 const CARET_INLINE_INSET_PX = 1;
+const SETTLED_PLACEMENT_TOLERANCE_PX = 1;
 const NOOP = (): void => undefined;
 
 export interface VisualLocatorRect {
@@ -38,6 +39,45 @@ interface MeasuredVisualBlock {
   readonly element: HTMLElement;
   readonly locatedBlock: PublicationLocatedBlock;
   readonly rect: VisualLocatorRect;
+}
+
+interface SettledVisualPlacement {
+  readonly element: HTMLElement;
+  readonly block: VisualLocatorRect;
+  readonly viewport: VisualLocatorRect;
+}
+
+function samePlacement(
+  previous: SettledVisualPlacement,
+  element: HTMLElement,
+  block: VisualLocatorRect,
+  viewport: VisualLocatorRect,
+): boolean {
+  const near = (left: number, right: number): boolean =>
+    Math.abs(left - right) <= SETTLED_PLACEMENT_TOLERANCE_PX;
+  return (
+    previous.element === element &&
+    near(
+      previous.block.top - previous.viewport.top,
+      block.top - viewport.top,
+    ) &&
+    near(
+      previous.block.left - previous.viewport.left,
+      block.left - viewport.left,
+    ) &&
+    near(
+      previous.block.right - previous.block.left,
+      block.right - block.left,
+    ) &&
+    near(
+      previous.viewport.right - previous.viewport.left,
+      viewport.right - viewport.left,
+    ) &&
+    near(
+      previous.viewport.bottom - previous.viewport.top,
+      viewport.bottom - viewport.top,
+    )
+  );
 }
 
 function finiteRect(
@@ -336,6 +376,7 @@ export class ActiveVisualLocatorTracker {
   #cancelObservation: (() => void) | undefined;
   #cancelScheduledSample: (() => void) | undefined;
   #lastLocator: ReadingLocatorV1 | undefined;
+  #settledPlacement: SettledVisualPlacement | undefined;
   #suspensionDepth = 0;
   #dirty = false;
   #closed = false;
@@ -476,6 +517,26 @@ export class ActiveVisualLocatorTracker {
   public setCurrentLocator(locator: ReadingLocatorV1): void {
     if (!this.#closed) {
       this.#lastLocator = locator;
+      this.#settledPlacement = undefined;
+      const root = this.#root;
+      if (root === undefined) return;
+      try {
+        const { locatedBlock } = this.#publication.resolveLocator(locator);
+        const element = this.#mapper.elementFor(locatedBlock);
+        const viewport = this.#environment.viewportRect(root);
+        const block =
+          element === undefined
+            ? undefined
+            : this.#environment.blockRect(element);
+        if (
+          element !== undefined &&
+          viewport !== undefined &&
+          block !== undefined
+        )
+          this.#settledPlacement = { element, block, viewport };
+      } catch {
+        // Missing geometry cannot prevent later genuine progress sampling.
+      }
     }
   }
 
@@ -519,6 +580,16 @@ export class ActiveVisualLocatorTracker {
     }
 
     const { element, locatedBlock, rect } = selected;
+    // Scroll anchoring and delayed layout notifications can leave the exact
+    // same passage on the reading line. Sampling the line's first caret would
+    // then replace a settled interior offset even though reading did not move.
+    // Retain that checkpoint only while its measured placement is unchanged.
+    if (
+      this.#settledPlacement !== undefined &&
+      samePlacement(this.#settledPlacement, element, rect, viewport)
+    )
+      return;
+    this.#settledPlacement = undefined;
     let candidate = locatedBlock.startLocator;
     if (isLeafBlock(locatedBlock) && crossesReadingLine(rect, readingLine)) {
       const left = Math.max(rect.left, viewport.left);
@@ -561,6 +632,7 @@ export class ActiveVisualLocatorTracker {
   }
 
   #teardownRoot(): void {
+    this.#settledPlacement = undefined;
     this.#cancelScheduledSample?.();
     this.#cancelScheduledSample = undefined;
     this.#cancelObservation?.();

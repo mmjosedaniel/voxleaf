@@ -1128,7 +1128,7 @@ test("proves production reader resources remain bounded across repeated lifecycl
         mimeType: "application/epub+zip",
         buffer: Buffer.from("not-an-epub"),
       });
-      await expect(page.getByRole("status")).toHaveText(
+      await expect(page.locator("#open-status")).toHaveText(
         "That file is not a valid supported EPUB.",
       );
       await page.waitForTimeout(OBSERVATION_WINDOW_MS);

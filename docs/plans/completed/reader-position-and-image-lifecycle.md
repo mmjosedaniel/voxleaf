@@ -1,11 +1,13 @@
 # Reader position and image lifecycle minimal corrections
 
-Status: planned, 2026-11-10. Implementation and behavioral acceptance are pending.
-The current request authorizes this ExecPlan, its active-index entry, a local
-branch and a documentation commit. It does not request implementation or tests.
-The preceding investigation was static. No test, browser journey, benchmark or
-build has been run for this plan, and historical PASS results are not acceptance
-evidence for the proposed changes.
+Status: complete, 2026-11-10. M0-M3 implementation, current host checks and
+independent review passed on the planning branch. Review RPI-CR-R1-20261110
+returned APPROVE with no actionable findings.
+Implementation commits, push and PR are not authorized. Initial implementation
+HEAD is `26f92365eed3d30cbcb57eb2867b848d3beb28c4`, with clean index/worktree.
+The preceding investigation was static. Current implementation evidence is in
+the [execution ledger](../evidence/reader-position-and-image-lifecycle/execution-ledger.md).
+Historical PASS results are not acceptance evidence for these changes.
 
 Planning base: `2e464daacaeaca2a53c83d8f63d1b00ea2b27840` on `main`, with a
 clean worktree and index. Planning branch: `codex/reader-position-image-execplan`.
@@ -41,7 +43,11 @@ all possible EPUB/browser combinations are guaranteed to produce no findings.
   the safe accessible fallback. More images simultaneously visible than the
   safety budgets allow may still show placeholders until capacity is available.
 
-## Current state
+## Current state and initial classification
+
+The table records the planning baseline. M0 reproduced RPI-01 with controlled
+missing range geometry and RPI-02 in ordinary Chromium before production edits.
+M1/M2 implement the corrections below; M3 acceptance and cleanup are complete.
 
 | Case | Current evidence and classification | Missing protection or coverage |
 | --- | --- | --- |
@@ -87,7 +93,7 @@ virtualization, generic resource framework, broad refactor or silent test remova
 No installer/signing, acquisition, GPU/model-quality or full TTS matrix campaign
 is needed for this desktop-only scope.
 
-This planning commit changes only this file and `docs/plans/active/README.md`.
+The original planning commit changed only this file and the active-plan index.
 Future implementation records any necessary scope expansion and affected gates
 before editing additional responsibilities.
 
@@ -169,7 +175,8 @@ source merely to prefetch another. Keep deterministic ordering when the visible
 set itself exceeds capacity. Capacity becomes reusable without leaving the chapter.
 
 Keep policy and queue ownership in `PublicationRasterImageLoader`. The component
-reports eligibility, renders the closed result and releases its owned handle.
+reports eligibility, renders the closed result and closes its occurrence handle;
+the loader owns and releases that occurrence's decoded source.
 The existing source manager remains the final predecode and live-budget guard.
 Do not add a competing generic cache or a second scheduler.
 
@@ -235,7 +242,10 @@ in `docs/plans/evidence/reader-position-and-image-lifecycle/execution-ledger.md`
 when execution begins. Confirm fixed limits and document any extra files needed.
 If evidence contradicts a claimed cause, correct the plan before changing code.
 
-Status: not started. Validation: pending, no commands run.
+Status: complete. Validation: four expected RPI-01 failures (each appearance
+option changed saved offset 3 to 0) and the expected ninth-image failure in real
+Chromium, both before production edits. The ledger distinguishes controlled
+geometry from natural browser behavior and records corrected harness setup.
 
 ### M1: protect canonical progress through presentation changes
 
@@ -244,7 +254,12 @@ change needed. Complete P1-P5 below, including pending-save and post-fix manual
 scroll controls. Preserve actual visible settlement, Play gating and paused/heard
 state. Run the affected deterministic checks before preparing browser/native work.
 
-Status: not started. Validation: pending.
+Status: complete. `scheduleReflow()` takes no
+locator and expedites only already admitted progress. Reader/narrator visual
+settlement is unchanged. Combined C1 testing additionally requires the visual
+tracker to ignore unchanged settled geometry after a late image notification.
+The full desktop suite includes canonical recovery,
+legitimate offset zero, pending passive saves, heard precedence and ownership.
 
 ### M2: recycle image capacity with stable placement
 
@@ -253,7 +268,11 @@ only the required CSS/viewport wiring. Complete I1-I5 below. Add no generalized
 cache or scheduler abstraction. Run deterministic limits/cancellation checks
 before browser/native preparation. Document the changed capacity policy.
 
-Status: not started. Validation: pending.
+Status: complete; deterministic and host checks pass. The existing loader watches
+occurrences, prioritizes visible demand, retires outside sources, distinguishes
+queue/live pressure and retries on capacity changes. The component retains
+numeric geometry and observes both the actual viewport and its 256 px margin.
+Source-manager guards and all four safety budgets are unchanged.
 
 ### M3: combined user journeys, host acceptance and independent review
 
@@ -270,7 +289,11 @@ Archive the plan and update active/completed/documentation indexes only after
 required gates and cleanup pass. This planning request does not authorize future
 implementation commits, push, PR, merge or publication.
 
-Status: not started. Validation and independent review: pending.
+Status: complete. Independent review RPI-CR-R1-20261110 is APPROVE without
+findings. Current host results are
+1,246 Vitest plus 223 Node tests, 68 Chromium cases, packaged WebView2, both
+reader benchmarks, format/lint/types and evidence retention. The ledger binds
+results to current code inputs; no historical runtime result is reused.
 
 ## Testing and benchmark strategy
 
@@ -292,7 +315,7 @@ Status: not started. Validation and independent review: pending.
 
 ### Existing command gates
 
-All execution belongs to a later implementation phase. Run validation in normal
+Implementation execution is authorized. Run validation in normal
 local Windows PowerShell outside the managed sandbox, from the repository root.
 The commands below exist in current package configuration. Recheck them before
 execution; do not append file filters to the desktop `test` script, whose Vitest
@@ -356,11 +379,12 @@ older plans.
   historical dispositions, relevant requirements and configured commands.
 - [x] 2026-11-10: Created the focused planning branch and this ExecPlan with its
   active-index entry. No runtime/test code changed and no tests executed.
-- [ ] M0: Reproduce and record the targeted missing sequences.
-- [ ] M1: Implement and verify RPI-01.
-- [ ] M2: Implement and verify RPI-02.
-- [ ] M3: Complete combined host gates, cleanup, documentation and independent
-  approval, then archive.
+- [x] M0: Reproduce and record the targeted missing sequences.
+- [x] M1: Implement RPI-01; deterministic regression checks pass.
+- [x] M2: Implement RPI-02; deterministic regression checks pass.
+- [x] M3: Complete combined host gates, cleanup, documentation and independent
+  approval, then archive after RPI-CR-R1-20261110. The separate documentary
+  closure review is retained with the [closeout record](../evidence/reader-position-and-image-lifecycle/closeout.md).
 
 ## Discoveries and decisions
 
@@ -375,23 +399,44 @@ older plans.
 - Store the invariant/event tables and permanent regressions near their owners
   so future reviews can trace admission and capacity decisions. Do not silence
   static diagnostics or mark cases fixed solely to stop repeated findings.
-- This documentation-only delivery records proposed behavior. Behavioral
-  acceptance, host checks and independent change review belong to implementation.
+- pnpm 11.15.1 is available through the existing Corepack cache. A task-local
+  ignored shim also fixes nested command resolution; global pnpm remains intact.
+- RPI-01 changes the save coordinator and its App caller. C1 additionally
+  reproduced offset 100 becoming 85 after real image decode without movement.
+  Active-visual tracking now retains a settled locator while measured placement
+  is unchanged, within the existing one-pixel tolerance. The guard expires on
+  actual displacement and never freezes valid offset-zero progress. No new
+  locator-provenance contract or reflow-engine change was necessary.
+- Additional integration paths are the new synthetic fixture `.mjs`/`.d.mts`
+  and browser `reader-image-lifecycle.smoke.spec.ts`. Native coverage extends
+  the existing startup and reader-scenarios files. The package-reader matrix's
+  visibility test adapter adopts the new three-state callback.
+- Waiting image registrations contain metadata only and are bounded by the
+  mounted chapter's existing 80,000 admitted-node ceiling. No visited-ID cache
+  or encoded-byte cache is added. ADR-0071 records the lifecycle decision.
+- The canonical system diagram still matches: publication/session ownership,
+  the safe-document boundary, local decoding, persistence and TTS topology are
+  unchanged. No diagram edge or process change is needed.
 
 ## Final validation results
 
-Planning only. Source/history/configuration inspection completed. Runtime
-implementation, new regression execution, Chromium/WebView2 runs, benchmarks
-and independent behavioral approval are **not started**. No prior PASS is reused.
+Implementation, host validation and independent acceptance are complete. See
+the [execution ledger](../evidence/reader-position-and-image-lifecycle/execution-ledger.md)
+for exact commands, counts, initial failures, resource observations and input
+identities. Both runtime fixes and the combined image-layout guard pass current
+desktop, Chromium, WebView2 and benchmark gates. No prior PASS is reused.
+Independent [RPI-CR-R1-20261110](../evidence/reader-position-and-image-lifecycle/review-report-01.md)
+approved the exact implementation patch with no findings. The final documentary
+closure and identity recheck are recorded in the linked closeout receipt. The
+plan was archived only after its implementation acceptance gates passed.
 
-Documentation checks on 2026-11-10, from normal local PowerShell outside the
+Historical planning checks on 2026-11-10, from normal local PowerShell outside the
 sandbox: `pnpm.cmd check:evidence` stopped before executing the checker because
 installed pnpm `11.25.0` differs from required `11.15.1`. Running the exact script
 defined by that command, `node scripts/check-evidence.mjs`, passed. No toolchain
-or dependency was changed. Resolve the pnpm prerequisite before future package
-validation; the direct documentation check is not evidence that test commands
-are ready. No tests were executed.
+or dependency was changed during planning. Implementation resolved this
+prerequisite with the task-local 11.15.1 shim; the original direct documentation
+check remains planning evidence only.
 
-The planning delivery contains only this ExecPlan and its active-index entry.
-Its Git diff and commit are inspected separately; the local commit does not
-claim that either reader change is implemented or accepted.
+The planning commit contains only this ExecPlan and its active-index entry.
+Implementation remains uncommitted as requested; no push or PR is authorized.

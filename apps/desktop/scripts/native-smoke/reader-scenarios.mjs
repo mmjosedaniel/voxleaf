@@ -1416,7 +1416,152 @@ export function createNativeReaderScenarios({
     );
   }
 
+  async function exerciseNativeImageLifecycle(
+    driver,
+    fixturePath,
+    dismissalPath,
+    locator,
+    setStage,
+  ) {
+    setStage("RPI-02 native image recycling");
+    await installNativeResourceInstrumentation(driver);
+    await injectNativeFile(driver, fixturePath);
+    await waitForCondition(
+      driver,
+      `return document.querySelectorAll('.semantic-raster-host').length === 12;`,
+    );
+    for (let index = 0; index < 12; index += 1) {
+      setStage(`RPI-02 native image ${index + 1} decode`);
+      await driver.execute(
+        `document.querySelectorAll('.semantic-raster-host')[${index}].scrollIntoView({ block: 'center' }); return true;`,
+      );
+      await waitForCondition(
+        driver,
+        `const image = document.querySelectorAll('.semantic-raster-host')[${index}]?.querySelector('img'); return image?.complete && image.naturalWidth === 1 && image.src.startsWith('blob:');`,
+      );
+      if (index === 0)
+        await driver.execute(
+          `globalThis.__rpiFirstSource = document.querySelector('.semantic-raster-host').querySelector('img').src; return true;`,
+        );
+      assert(
+        (await nativeResourceInstrumentation(driver)).activeObjectUrls <= 8,
+        "RPI image source capacity exceeded.",
+      );
+    }
+    setStage("RPI-02 native image retirement and revisit");
+    assert(
+      await driver.execute(
+        `return document.querySelector('.semantic-raster-host').querySelector('img') === null;`,
+      ),
+      "RPI offscreen image retained its source.",
+    );
+    await driver.execute(
+      `document.querySelector('.semantic-raster-host').scrollIntoView({ block: 'center' }); return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `const image = document.querySelector('.semantic-raster-host').querySelector('img'); return image?.naturalWidth === 1 && image.src !== globalThis.__rpiFirstSource;`,
+    );
+    await replaceNativePublicationForCleanup(driver, dismissalPath);
+    const released = await nativeResourceInstrumentation(driver);
+    assert(
+      released.activeObjectUrls === 0 &&
+        released.activeIntersectionObservers === 0 &&
+        released.activeResizeObservers === 0,
+      "RPI image owner cleanup failed.",
+    );
+
+    setStage("RPI-01 native fallback and appearance checkpoint");
+    await driver.execute(`
+      const locator = ${JSON.stringify(locator)};
+      const envelope = JSON.parse(localStorage.getItem('voxleaf.reader.positions') ?? '{"schemaVersion":1,"states":[]}');
+      envelope.states = [{ schemaVersion: 1, bookIdentity: locator.bookIdentity, locator, preferences: {} }, ...envelope.states.filter(state => state.bookIdentity.value !== locator.bookIdentity.value)];
+      localStorage.setItem('voxleaf.reader.positions', JSON.stringify(envelope));
+      const original = Range.prototype.getClientRects;
+      globalThis.__rpiRangeOriginal = original;
+      globalThis.__rpiRangeObservations = 0;
+      Range.prototype.getClientRects = function () {
+        if (this.startContainer.parentElement?.closest('p')?.textContent?.startsWith('RPI passage 8.')) {
+          globalThis.__rpiRangeObservations += 1;
+          throw new Error('synthetic-rpi-range-unavailable');
+        }
+        return original.call(this);
+      };
+      return true;
+    `);
+    await injectNativeFile(driver, fixturePath);
+    await waitForCondition(
+      driver,
+      `return document.querySelector('.semantic-reader')?.getAttribute('aria-busy') !== 'true' && globalThis.__rpiRangeObservations > 0;`,
+    );
+    const preserved = `const current = JSON.parse(localStorage.getItem('voxleaf.reader.positions')).states.find(state => state.bookIdentity.value === ${JSON.stringify(locator.bookIdentity.value)}); return JSON.stringify(current?.locator) === ${JSON.stringify(JSON.stringify(locator))};`;
+    await openReaderSettings(driver);
+    for (const [name, value] of [
+      ["textScale", "large"],
+      ["lineSpacing", "spacious"],
+      ["contentWidth", "wide"],
+      ["theme", "dark"],
+    ]) {
+      await driver.execute(
+        `const control = document.querySelector('select[name="${name}"]'); control.value = '${value}'; control.dispatchEvent(new Event('change', { bubbles: true })); return true;`,
+      );
+      await delay(650);
+      assert(
+        await driver.execute(preserved),
+        "RPI appearance replaced the canonical checkpoint.",
+      );
+    }
+    // Restore the disposable profile's defaults before the existing native
+    // interaction matrix. The saved RPI checkpoint remains for process restart.
+    for (const [name, value] of [
+      ["textScale", "standard"],
+      ["lineSpacing", "comfortable"],
+      ["contentWidth", "standard"],
+      ["theme", "system"],
+    ]) {
+      await driver.execute(
+        `const control = document.querySelector('select[name="${name}"]'); control.value = '${value}'; control.dispatchEvent(new Event('change', { bubbles: true })); return true;`,
+      );
+    }
+    await closeReaderSettings(driver);
+    await delay(650);
+    await driver.execute(
+      `Range.prototype.getClientRects = globalThis.__rpiRangeOriginal; delete globalThis.__rpiRangeOriginal; delete globalThis.__rpiFirstSource; window.dispatchEvent(new Event('pagehide')); return true;`,
+    );
+    await replaceNativePublicationForCleanup(driver, dismissalPath);
+    assert(
+      await driver.execute(preserved),
+      "RPI close replaced the canonical checkpoint.",
+    );
+  }
+
+  async function restoreNativeImageCheckpoint(driver, fixturePath, locator) {
+    await injectNativeFile(driver, fixturePath);
+    await waitForCondition(
+      driver,
+      `
+      const reader = document.querySelector('.semantic-reader');
+      const viewport = document.querySelector('[data-reader-scroll-owner="true"]');
+      const paragraph = Array.from(document.querySelectorAll('.semantic-document p')).find(element => element.textContent.startsWith('RPI passage 8.'));
+      if (!reader || !viewport || !paragraph || reader.getAttribute('aria-busy') === 'true') return false;
+      const range = document.createRange();
+      range.setStart(paragraph.firstChild, 100); range.setEnd(paragraph.firstChild, 101);
+      const rect = range.getBoundingClientRect(); const bounds = viewport.getBoundingClientRect();
+      return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+    `,
+    );
+    await delay(650);
+    assert(
+      await driver.execute(
+        `const current = JSON.parse(localStorage.getItem('voxleaf.reader.positions')).states.find(state => state.bookIdentity.value === ${JSON.stringify(locator.bookIdentity.value)}); return JSON.stringify(current?.locator) === ${JSON.stringify(JSON.stringify(locator))};`,
+      ),
+      "RPI canonical checkpoint did not survive process restart.",
+    );
+  }
+
   return {
+    exerciseNativeImageLifecycle,
+    restoreNativeImageCheckpoint,
     runNativeReaderInteraction,
     observeSavedPositionRestoration,
     exerciseNativeReaderInteractionMatrix,

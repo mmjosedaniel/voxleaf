@@ -1,0 +1,76 @@
+# RPI exact review identities
+
+Base and HEAD: `26f92365eed3d30cbcb57eb2867b848d3beb28c4`. Branch: `codex/reader-position-image-execplan`.
+No pre-existing worktree changes; index empty. CLEAN denotes an unchanged supporting path.
+Review request, identity manifest and immutable review reports are metadata outside their own manifest.
+
+| Status | Repository path | Raw SHA-256 | Filter-aware blob |
+| --- | --- | --- | --- |
+| CLEAN | `.agents/PLANS.md` | `f54345a6ee7dd2eeccd56a2c05a854da9178758b7e4adbf21f025122676fa00c` | `960ef8eb5000901a8a945c69ea6386179add517c` |
+| CLEAN | `AGENTS.md` | `b2c6b7baca13b2345265410fe3947b4c20f2fc3064ba00e83e10c64895b0b424` | `c06bfb24454caf9e9a7af6820425f627d9ff3b4e` |
+| CLEAN | `apps/desktop/package.json` | `7f9dbeef3386d8f886c1428870759dbbcfb10fcb9cbe3dbfe5216cd3e8707afa` | `46b13978c4094f004349ba762f31bddeb104cb9f` |
+| CLEAN | `apps/desktop/playwright.benchmark.config.ts` | `a65ed011b33826f4c4905a2f87787279e3e85191d410861d7ef54f02fbe9c32c` | `ce4dfce9af71d002bde37a5b0d59029a3d4df174` |
+| CLEAN | `apps/desktop/playwright.config.ts` | `8b6b8a163b02a949a4e6cd91fcbeff71cb6053e5a646a87552f75b58be8011b1` | `e14e28a44dcc92215549dcc1042fa0e26cf422a7` |
+| CLEAN | `apps/desktop/scripts/native-smoke.node-test.mjs` | `b66d95d556cafb868e6f3469b413f92d666aa909caee14e3b1e4197d44db05d7` | `78febbad00c27ffbebc47c1a3873e9a6715c7e16` |
+| M | `apps/desktop/scripts/native-smoke/reader-scenarios.mjs` | `29107029bdcaabb10dee1fa16f290b99fe7f9ca5bee4421cb3c8e44af32449ca` | `4be979b5986721e679435d02c0626b207896018b` |
+| CLEAN | `apps/desktop/scripts/native-smoke/resource-observation.mjs` | `ca9bf8c9dc06b3879e14bb74d81e811262158d77e1d5bb5e3babb02d4a6ed692` | `77ec2f890a62d7127fa6b7d4778fb7da41873486` |
+| M | `apps/desktop/scripts/native-startup-smoke.mjs` | `046a92bfb6635263d2529a9e7a95936aa5851998a8e308bbabcaca5c3221d9d7` | `ab5662c16e7e372a05abe2bfa6a9f7870ce7cbdf` |
+| CLEAN | `apps/desktop/scripts/native-webdriver-client.mjs` | `1e5bb9d331902a09df3540cf5a58ac70c474c2aaf5985fe57d2d4ca0f7beacad` | `128398a1cd241b3473eb7348fd75112d83355d13` |
+| M | `apps/desktop/src/App.test.tsx` | `0d7a39e99c4ed2bf3870a0133a84450c9e3301817d1149db4b96866411c15381` | `c291a31d4da4a1448a2b360d5b4419d544e7cdcb` |
+| M | `apps/desktop/src/App.tsx` | `580f0c8651ad40c5737626698b487a5d978a5cc1dd7cbe8c878b37723554d159` | `ca66daa57a614c4edd016c9d4fd967a3f3e721bd` |
+| M | `apps/desktop/src/integration/package-reader-matrix.test.tsx` | `d9f9e4aa6c7329edbc0a6cff13af1ab420c72eeea9ccf9ae9bb8d27abad6d9ad` | `4cd7344c81ed97c7c047c9cd45ab3856a66250c5` |
+| CLEAN | `apps/desktop/src/persistence/narration-position-save-bridge.test.ts` | `7abc25e2193c58205af3025b16272954a9bed9d1c8fcb976123541b04c5d8b71` | `198fee7e643ceb52300b3c2f5fb471ef9ee9310f` |
+| CLEAN | `apps/desktop/src/persistence/narration-position-save-bridge.ts` | `a22b4e7275b6b8be1aafdeeb9950b9ad2a800e12b9e6759da92be4e6532da1d9` | `d5cf12e70d364ce2b5c95345808d4670b88b62d4` |
+| CLEAN | `apps/desktop/src/persistence/reader-position-repository.test.ts` | `10f2605c633868e4613c707ed209040f025a7c074847804a071a9f4fb13c5771` | `38870121d47af1fefe7ae8c236babe6b4c18394e` |
+| CLEAN | `apps/desktop/src/persistence/reader-position-repository.ts` | `87eb0962d1287e9992e20f2fdd65f27bc91d1d85b50621a3ced05a8e403ab5ef` | `a0d5fa9a61ca3fad63d5087b16087c7a515c231e` |
+| CLEAN | `apps/desktop/src/persistence/reader-position-restore-coordinator.test.ts` | `98a486172f3ad1540f3f57093b29f776fe424e74b466ec480f1dd64eb42b7514` | `765ad60e86e7302d480d148a5e07f1d14d6f77fc` |
+| CLEAN | `apps/desktop/src/persistence/reader-position-restore-coordinator.ts` | `2758fd107d5ed7fca5c7747a85fb6b82aff4672a9b0e91039e46602bc825363a` | `0f9e65f4c22e5e74257bdc37138b8f62f4ef015c` |
+| M | `apps/desktop/src/persistence/reader-position-save-coordinator.test.ts` | `a0a8d72528e60931de43765d8d976ceeba19840ab8def3e021292cca9deb0201` | `f7c225459fe6307cfcbdc9dd73561dcdefaf08ad` |
+| M | `apps/desktop/src/persistence/reader-position-save-coordinator.ts` | `0e01bb97a4c569dedce1d0c6cc06c6e05a10cdd7be10e0121710a01510df5350` | `f153973dc942a9c1775eaff76aa812d93fc44106` |
+| M | `apps/desktop/src/reader/active-visual-locator.test.ts` | `f2007de98895cf20e3604291535341eef35270eedf21c91d1f87eb2ce1d1e202` | `2b81b3da2d9d09f1e2b372858006b7a779c8b772` |
+| M | `apps/desktop/src/reader/active-visual-locator.ts` | `4b76de1bd254e10fe5485e6b858f76651335db4f035d85a873daa7786d8e34a8` | `7ea2bcedbf92632cf46bf49196167bee05734ab1` |
+| M | `apps/desktop/src/reader/images/publication-raster-image-loader.test.ts` | `2896c5e15a104d0d015ea36ab7f135774cad0bae45cfd24a39f16a321479ec59` | `16cc516904263c4ef925bd1d0eeb0da5a5bd0a0d` |
+| M | `apps/desktop/src/reader/images/publication-raster-image-loader.ts` | `167d6ff7cb535c5eafc12b34c4d10d56a554a49b43460402cf9f63b7498d95de` | `a2084be46289817ad1d12983754e28b0a3472288` |
+| CLEAN | `apps/desktop/src/reader/images/raster-image-policy.test.ts` | `a76f21eb70d229623f76744dd94710594ba4777c904adc1cdd4c73cc61d012db` | `fd6378d96ef687bbc35fcd287eb0d659d3f7925c` |
+| CLEAN | `apps/desktop/src/reader/images/raster-image-policy.ts` | `e76f99e6ce74732389248c8c6962a628b7d290b594614aa801a95f1531533dc3` | `735e3c873e170fc71cc9d9d02f4d2ccdd0526111` |
+| CLEAN | `apps/desktop/src/reader/images/raster-image-source.test.ts` | `f3b2fb1e6411bed94d85731ec75888860971f4a159fffe612e3296c14b81c912` | `b030466100fc498d320e773cd934405bb885981c` |
+| CLEAN | `apps/desktop/src/reader/images/raster-image-source.ts` | `bc6ac39865b922172ce5212158f9e3c585c53efa35eb182b246a54c98d2c611f` | `d8727fddd5aff26466166e43e0de68d070b73f7d` |
+| M | `apps/desktop/src/reader/images/SemanticRasterImage.test.tsx` | `4ff292b8a0b9e18dbf19d9437cb26553ddaccee365351085c620e82bf0dd60c0` | `52589d5c57f408a47e81fb8e07a0fde913aeb41b` |
+| M | `apps/desktop/src/reader/images/SemanticRasterImage.tsx` | `383b233de727dbbfccdb34871c6244915884e32bb5ec3298cc620af13267ce16` | `16aa231baad49674da6fc478cb683f023cb0f05f` |
+| CLEAN | `apps/desktop/src/reader/reader-navigation.ts` | `4a35482455d2843fce2fa7f2eec37ed5bc889137775e9d7ae2a7044063c72638` | `21f81ff61d806c34306db73fac0054e573414e4a` |
+| CLEAN | `apps/desktop/src/reader/reader-reflow-restoration.test.ts` | `6e39dc96441f54af8ff42ffef7a2ef2373d8b45cbd77308d2aa482eb038b8fee` | `c30c318d9ac02b62868c056a38fa2d8f63f5f816` |
+| CLEAN | `apps/desktop/src/reader/reader-reflow-restoration.ts` | `b172851bb56633762a0a9b2ac913894ebd9b036ed89696c094ca871d7e5a4e8b` | `f79392438ac4b7ddff5b1e5ea5ef8403205ae787` |
+| M | `apps/desktop/src/reader/ReaderPublication.test.tsx` | `472c8b291ca56adbc1655d5ac6f026685f124c1088a1ce73c83d5f8fe7cf018b` | `658199580151b5a3d8461c8ea438acf35eef739a` |
+| CLEAN | `apps/desktop/src/reader/ReaderPublication.tsx` | `086208cb9e6465fae489c6b540a3b8a90f8dee2ec659f67068db760a18224ca4` | `706a3e7f0634c545ab1fd96b3a3d2c71d176a109` |
+| CLEAN | `apps/desktop/src/reader/segment-highlight-controller.ts` | `734d45dcec4e0916c7c7d5b3c018af67b95ba3433f5f42be344b7779bcdb8647` | `e115fd2b3c0e96202e7fa76a9335492152a30648` |
+| CLEAN | `apps/desktop/src/reader/semantic-document-render-plan.ts` | `0418227d278ec8435287030f14f606d8707f80a5c16f6bff889e650b3dd43cf9` | `af8771b6ea21a56cfbdbb6517ecd7243f5464bfa` |
+| CLEAN | `apps/desktop/src/reader/semantic-dom-range-mapper.ts` | `d46ed8de65e2568e8852c9ba37c5eff956a351ae904a2e65541d042c5f8ff291` | `7f3c2ed6b3a72c500077d701d41bf5ace7e73606` |
+| CLEAN | `apps/desktop/src/reader/SemanticDocument.tsx` | `b1fda81333856a1ce98d4a49a766d24183459cb1c48ac3e2847f46045f22970d` | `1f851d9dd5d2e3bc23d2861503e5ced044794d5c` |
+| M | `apps/desktop/src/styles/reader.css` | `7175b760ceb49b8846d8dfc42fb20bf01dfdb2fa5edf4ce903fdbe3eeff08f0e` | `5f9bed8ae1a76915bcb82e4d995938a8a7a466ea` |
+| CLEAN | `apps/desktop/src/tts/product-narration-coordinator.ts` | `b111678a407947d973a4a709b9062bce3786e0545db34eda8ad159e35c61b252` | `9e9fa365a2803ff7df8967be9cb4191c55be05e9` |
+| CLEAN | `apps/desktop/tests/browser/active-visual-locator.smoke.spec.ts` | `b8a7945a172b300ea114bcbb32fdcfd984384a022da6732327d63881699da5df` | `a997c3e5427bd165ca103b3353a76217e66a3e20` |
+| ?? | `apps/desktop/tests/browser/reader-image-lifecycle.smoke.spec.ts` | `4c95a8323acf52c1cd2e3e27539d042caaf2b79cf1a49cd5f6f23131f07262d5` | `271d267f022280cb6eb06dd3458f78f4e860ea3e` |
+| CLEAN | `apps/desktop/tests/browser/reader-narration-bugfixes.smoke.spec.ts` | `d0fead1e5fbe6f926d44c1e2ea4a3bf7051d74e0f8e30232c6a32b7662f8c347` | `a53fc00c3adb4ee0b723662162c336aac5241464` |
+| M | `apps/desktop/tests/browser/reader-performance.benchmark.spec.ts` | `0afbcee9675ab7cb9ffb6dc905370d3cfe6c2d8b46ae46820dd16be8c3533a16` | `2bda63ce3249a8f4bc1d0651034f450765767e18` |
+| CLEAN | `apps/desktop/tests/browser/reader-reflow-restoration.smoke.spec.ts` | `9acf886297b058d2f46f3a0403b146656b0a9e8ae3439e539707f3766e5cf18b` | `5efa2f12462d74d02a12f0122f68841894a6efdd` |
+| ?? | `apps/desktop/tests/fixtures/reader-image-lifecycle-fixture.d.mts` | `f1b1d22ea9053b20ece94ea2c4a1e55f6971e782afee44bc6cb5610e1a434996` | `044b7085344b9656e3ff142b72efb32b8fe28966` |
+| ?? | `apps/desktop/tests/fixtures/reader-image-lifecycle-fixture.mjs` | `fccd0d57f4593d7a747ede261605340fd9406c91df9b60a62b43e74882c066d4` | `7d108899f8a90b6eceec21501176c5e4e1419e86` |
+| M | `docs/architecture/decisions/ADR-0010-bounded-raster-image-decode.md` | `7ce9ce99595aa6ade79c2dd2e837bc1f88591ab0c44d987f1929d265e5502afe` | `a464e442893a6161f763a4050d8baf25bac9c095` |
+| M | `docs/architecture/decisions/ADR-0011-bounded-web-storage-reader-state.md` | `149020c7233b1d6cf7f9cb24f7da1a2eed773b44f9c37058f68f3b7b519a5572` | `f11f8132b1918386a021f831ac75746536d7a9db` |
+| CLEAN | `docs/architecture/decisions/ADR-0070-explicit-placement-and-recovery-boundaries.md` | `aa0575e6fc52b7382ad8475fa0dad765263a7ae178c9a50f6cfbb2d5b4efb710` | `74e7f277930b817e0e45d14d2d360177b60d1b8e` |
+| ?? | `docs/architecture/decisions/ADR-0071-reader-checkpoint-and-image-lifetime.md` | `91a94fc31e5c9043546296f2f01121b8aa48dc06929e74d04c6e7b449dbd03c8` | `31aa5ef920b0a4b3ef554d835d71447095c60ec9` |
+| M | `docs/architecture/decisions/README.md` | `b375917c2a4b18f09b193107b9eeb25f3951a735958b8b6be09f3050a8161020` | `d69d75c0554109fc1fff31daacd3d5a112888597` |
+| M | `docs/architecture/overview.md` | `fb89241660451319572497853f002d5505656e5bc597830ad691a3cf9c622624` | `70c1fea28e3b1ad9baa530d506140329885c7227` |
+| CLEAN | `docs/architecture/performance-budget.md` | `9baf754f4405708ebb5fe69c5fb09ce4a962ff63f36fe43a07f5956aae389f3a` | `3fb07919a03652bb177697a5a0300d0dc187c1f8` |
+| CLEAN | `docs/architecture/system-diagram.md` | `83d9721f6da42a9aded10077d3b0fa61c291977f58114b2e0e37c28809d2384d` | `c0d0a5262783798de1ec5a447f5a0447485aebb0` |
+| CLEAN | `docs/development/agentic-change-review.md` | `de4c430a5de120d9c900d6bad0bebbfeec81673614b30f242f3154efbedcfc39` | `373443e17547185e2294d906bdc9cb489daca67c` |
+| CLEAN | `docs/development/evidence-retention.md` | `5b5c1af58a90612736c9e195f1b12e9d6add01098befae708ccb58ab7f29db58` | `010a798e0f6d4237e9f0eaa98dd3079d1bbf1db2` |
+| M | `docs/development/testing.md` | `246de7a0ec1e5f371e431f46888cfcdd79666c0d371d2255046c53b85f3b5a68` | `bd644c3ce21e73e80691e70ea10888aa4cb74907` |
+| M | `docs/plans/active/reader-position-and-image-lifecycle.md` | `5c71808a6bc16d31dedee9201014d35de2711b004136fe16c76bfa3016802250` | `622e1d163d50eeedfde37696415e17f30f0dcfdc` |
+| M | `docs/plans/active/README.md` | `f5387fee2bdf3ec6d8666dd8b35685c12561b233f744f1d1ceb71644717f17e5` | `63b6aded08d125641baf1b0e060693fbee139c77` |
+| ?? | `docs/plans/evidence/reader-position-and-image-lifecycle/execution-ledger.md` | `f40eba905935c0332cf6b0194f5578b35442519d37d189e18f6a81cc365a57ae` | `606bb10a8815c8b6f53e4e40dc6dad26bdac384a` |
+| M | `docs/product/mvp.md` | `eb56f620e6342bfac67b5e2bfe8e0b80337f00ee668d5bac3a1d273929c75dd7` | `1271b1530c79fba11b68c5a80ace235d9413e7d9` |
+| CLEAN | `package.json` | `79134a72340811937f176832fc52f2848bfcfff5ac63bff6125041fbfea290d6` | `fd94e123a32a6b4a44d5ccb296cd89e25b319232` |
+| CLEAN | `packages/epub/test-support/epub-fixture.ts` | `40913ad7819f2da210c9d42e4613af3adcf9a300136136c3c6620a547a945b33` | `08bc02121283468b113ab16aa897bd5984661b72` |
+| CLEAN | `pnpm-lock.yaml` | `e23e87936bfbe6dc82c51ef08fe9e4788ad9317d09dac20d997fdb16d25c8426` | `acf5034202c5933f5c1dff89beff28587c826088` |
+| CLEAN | `pnpm-workspace.yaml` | `efb8ff9911192e80897352cbacccc0cb1d53ef130b64bb98f813c973694f5363` | `b6615e1277536c992be3a14cdaa04235a1117330` |
