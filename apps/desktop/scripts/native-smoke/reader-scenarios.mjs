@@ -1416,6 +1416,46 @@ export function createNativeReaderScenarios({
     );
   }
 
+  async function waitForNativeImage(driver, index, condition) {
+    try {
+      await waitForCondition(driver, condition);
+    } catch (error) {
+      let observation = { observation: "unavailable" };
+      try {
+        const geometry = await driver.execute(`
+          const host = document.querySelectorAll('.semantic-raster-host')[${index}];
+          const root = document.querySelector('[data-reader-scroll-owner="true"]');
+          const image = host?.querySelector('img');
+          const bounds = element => {
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+          };
+          return {
+            target: bounds(host), viewport: bounds(root),
+            scrollTop: root?.scrollTop ?? null,
+            documentVisible: document.visibilityState === 'visible',
+            readerBusy: document.querySelector('.semantic-reader')?.getAttribute('aria-busy') === 'true',
+            presentation: !host ? 'missing' : image ? 'image' : host.querySelector('.semantic-raster-unavailable') ? 'unavailable' : 'loading',
+            complete: image?.complete === true,
+            naturalWidth: image?.naturalWidth ?? 0,
+            localSource: image?.src.startsWith('blob:') === true,
+          };
+        `);
+        observation = {
+          geometry,
+          resources: await nativeResourceInstrumentation(driver),
+        };
+      } catch {
+        // Failed diagnostics must preserve the original condition failure.
+      }
+      console.error(
+        `Native image condition failed for occurrence ${index + 1}: ${JSON.stringify(observation)}`,
+      );
+      throw error;
+    }
+  }
+
   async function exerciseNativeImageLifecycle(
     driver,
     fixturePath,
@@ -1435,8 +1475,9 @@ export function createNativeReaderScenarios({
       await driver.execute(
         `document.querySelectorAll('.semantic-raster-host')[${index}].scrollIntoView({ block: 'center' }); return true;`,
       );
-      await waitForCondition(
+      await waitForNativeImage(
         driver,
+        index,
         `const image = document.querySelectorAll('.semantic-raster-host')[${index}]?.querySelector('img'); return image?.complete && image.naturalWidth === 1 && image.src.startsWith('blob:');`,
       );
       if (index === 0)
@@ -1458,8 +1499,9 @@ export function createNativeReaderScenarios({
     await driver.execute(
       `document.querySelector('.semantic-raster-host').scrollIntoView({ block: 'center' }); return true;`,
     );
-    await waitForCondition(
+    await waitForNativeImage(
       driver,
+      0,
       `const image = document.querySelector('.semantic-raster-host').querySelector('img'); return image?.naturalWidth === 1 && image.src !== globalThis.__rpiFirstSource;`,
     );
     await replaceNativePublicationForCleanup(driver, dismissalPath);

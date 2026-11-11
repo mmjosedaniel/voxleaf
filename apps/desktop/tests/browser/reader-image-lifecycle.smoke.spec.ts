@@ -306,9 +306,38 @@ for (const [forcedFallback, delayedImages] of [
       ).__rpiRange.force = false;
     });
     const viewport = page.locator('[data-reader-scroll-owner="true"]');
+    // These fixture paragraphs have consecutive canonical anchors. Place the
+    // reading line inside the next one: a fixed wheel distance can land in a
+    // gap whose nearest block is still the original visual fallback.
+    const nextParagraph = page
+      .locator(".semantic-document p")
+      .filter({ hasText: "RPI passage 8." })
+      .nth(1);
+    const wheelDistance = await nextParagraph.evaluate((element) => {
+      const root = element.closest<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
+      const readingLine =
+        root.getBoundingClientRect().top + root.clientTop + 24;
+      return element.getBoundingClientRect().top - readingLine + 24;
+    });
     await viewport.hover();
-    await page.mouse.wheel(0, 700);
-    await expect.poll(saved).not.toEqual(initial);
+    await page.mouse.wheel(0, wheelDistance);
+    await expect
+      .poll(() =>
+        nextParagraph.evaluate((element) => {
+          const root = element.closest<HTMLElement>(
+            '[data-reader-scroll-owner="true"]',
+          )!;
+          const line = root.getBoundingClientRect().top + root.clientTop + 24;
+          const bounds = element.getBoundingClientRect();
+          return bounds.top < line && bounds.bottom > line;
+        }),
+      )
+      .toBe(true);
+    await expect.poll(saved).toMatchObject({
+      anchor: { anchorIndex: initial.anchor.anchorIndex + 1 },
+    });
     await settle();
     const intentional = await saved();
     await page.reload();

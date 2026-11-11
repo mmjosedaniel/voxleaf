@@ -1391,6 +1391,79 @@ test("restoration polling returns exact settlement or the last pending observati
   }
 });
 
+test("RPI-CI image failure reports content-free geometry and preserves the original error", async (t) => {
+  const messages = [];
+  t.mock.method(console, "error", (message) => messages.push(message));
+  for (const geometryAvailable of [true, false]) {
+    messages.length = 0;
+    const dom = new JSDOM(
+      `<div class="semantic-reader"><div data-reader-scroll-owner="true">${Array.from(
+        { length: 12 },
+        (_, index) =>
+          `<span class="semantic-raster-host">private-publication-text${index === 0 ? '<img src="blob:private-source">' : '<span class="semantic-raster-placeholder">private-alt</span>'}</span>`,
+      ).join("")}</div></div>`,
+    );
+    const root = dom.window.document.querySelector(
+      '[data-reader-scroll-owner="true"]',
+    );
+    root.scrollTop = 42;
+    const bounds = { top: 10, bottom: 110, left: 20, right: 220 };
+    for (const element of [
+      root,
+      ...dom.window.document.querySelectorAll(".semantic-raster-host"),
+    ]) {
+      element.scrollIntoView = () => undefined;
+      element.getBoundingClientRect = () => {
+        if (!geometryAvailable) throw new Error("private-geometry-error");
+        return bounds;
+      };
+    }
+    const context = { document: dom.window.document };
+    const driver = {
+      execute: async (body) =>
+        runInNewContext(`(function() { ${body} })()`, context),
+    };
+    const failure = new WebDriverClientError("webdriver-condition-timeout");
+    let conditions = 0;
+    const subject = createNativeReaderScenarios({
+      assert,
+      injectNativeFile: async () => undefined,
+      installNativeResourceInstrumentation: async () => undefined,
+      nativeResourceInstrumentation: async () => ({ activeObjectUrls: 1 }),
+      waitForCondition: async () => {
+        if (++conditions === 3) throw failure;
+      },
+    });
+    try {
+      await assert.rejects(
+        subject.exerciseNativeImageLifecycle(
+          driver,
+          "synthetic",
+          "dismissal",
+          {},
+          () => undefined,
+        ),
+        (error) => error === failure,
+      );
+      assert.equal(conditions, 3);
+      assert.equal(messages.length, 1);
+      assert.doesNotMatch(messages[0], /private-/u);
+      const observation = JSON.parse(messages[0].split(": ")[1]);
+      if (geometryAvailable) {
+        assert.equal(observation.geometry.scrollTop, 42);
+        assert.equal(observation.geometry.presentation, "loading");
+        assert.deepEqual(observation.geometry.target, bounds);
+        assert.deepEqual(observation.geometry.viewport, bounds);
+        assert.equal(observation.resources.activeObjectUrls, 1);
+      } else {
+        assert.deepEqual(observation, { observation: "unavailable" });
+      }
+    } finally {
+      dom.window.close();
+    }
+  }
+});
+
 test("fresh helper imports perform no process, filesystem, hardware, timer, or console work", async () => {
   const urls = [
     "resource-observation",
