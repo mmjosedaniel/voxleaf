@@ -424,12 +424,41 @@ describe("reader position save coordinator", () => {
 
     coordinator.schedulePassive(locator);
     environment.advance(499);
-    expect(coordinator.scheduleReflow(locator)).toBe(true);
+    expect(coordinator.scheduleReflow()).toBe(true);
     environment.advance(0);
     await coordinator.flush();
 
     expect(repository.writePosition).toHaveBeenCalledTimes(1);
     expect(environment.scheduledCount).toBe(0);
+  });
+
+  it("RPI-01 admits genuine movement after preserving a restored checkpoint", async () => {
+    const repository = createRepository();
+    const environment = new ManualSaveEnvironment();
+    const coordinator = new ReaderPositionSaveCoordinator(
+      createPublication(),
+      repository,
+      {
+        environment,
+        initialLocator: locatorAt(10),
+        persistInitialLocatorOnFlush: false,
+      },
+    );
+    expect(coordinator.scheduleReflow()).toBe(false);
+    await coordinator.flush();
+    expect(repository.writePosition).not.toHaveBeenCalled();
+    coordinator.schedulePassive(locatorAt(0));
+    expect(coordinator.scheduleReflow()).toBe(true);
+    environment.advance(0);
+    await coordinator.flush();
+    expect(repository.writePosition.mock.calls[0]?.[0].locator).toEqual(
+      locatorAt(0),
+    );
+    coordinator.scheduleImmediate(locatorAt(25));
+    await coordinator.close();
+    expect(repository.writePosition.mock.calls.at(-1)?.[0].locator).toEqual(
+      locatorAt(25),
+    );
   });
 
   it("persists audible starts and advances only after matching completion", async () => {
@@ -494,7 +523,7 @@ describe("reader position save coordinator", () => {
     environment.advance(0);
     await coordinator.finishNarration();
 
-    expect(coordinator.scheduleReflow(locatorAt(4))).toBe(false);
+    expect(coordinator.scheduleReflow()).toBe(false);
     await coordinator.flush();
     expect(repository.writePosition).toHaveBeenCalledTimes(1);
     expect(

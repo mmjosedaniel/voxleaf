@@ -830,6 +830,18 @@ The Task 1.2 release probe passed in native Windows WebView2 while the Tauri she
 
 ## Raster image decode boundary
 
+[ADR-0071](decisions/ADR-0071-reader-checkpoint-and-image-lifetime.md) adds
+viewport occurrence ownership to the existing loader: outside work is retired,
+visible demand precedes prefetch, and transient pressure waits for relevant
+capacity/visibility changes. Previously decoded geometry remains in memory for
+stable layout during eviction. The manager's immutable limits and package read
+boundary are unchanged. The same follow-up makes reflow saving operate only on
+already admitted progress, preserving the separation of visual placement,
+canonical persistence and heard checkpoints. The visual tracker keeps one
+transient settled-placement snapshot so unchanged image/anchoring notifications
+cannot turn an interior offset into the line's first caret. Real displacement
+resumes ordinary sampling. See its plan for current acceptance.
+
 JPEG EXIF density may produce a separately verified intrinsic size for decoder
 agreement. Physical SOF dimensions, with orientation, remain the ready source's
 size and allocation charge. Optional density parsing follows only bounded IFD0

@@ -4,6 +4,10 @@
 
 Accepted.
 
+[ADR-0071](ADR-0071-reader-checkpoint-and-image-lifetime.md) updates viewport
+source retention and transient-capacity retry. Its implementation/acceptance
+record governs that follow-up; the safety limits below remain unchanged.
+
 ## Implementation status
 
 Implemented and integrated by Milestone 4 Task 3.3. One publication-scoped loader caps active-plus-queued work at eight, serializes resource reads and the manager's one active browser decode, clears caller-owned byte copies, and releases or aborts every source on image/document/publication replacement and close. Semantic images load near the viewport, retain accessible alternative text or fixed fallback text, and expose no resource identity. Deterministic limits plus production Chromium and packaged-WebView2 evidence cover local Blob rendering, CSP, lifecycle release, and zero external requests. No third-party raster decoder, native command/plugin/capability, cache, or network origin was added.

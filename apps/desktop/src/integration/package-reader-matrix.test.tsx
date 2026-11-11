@@ -220,9 +220,9 @@ function expectContentFreeReaderState(serialized: string): void {
 
 function immediateVisibility(
   _element: HTMLElement,
-  onVisible: () => void,
+  onVisible: (visibility: "visible") => void,
 ): () => void {
-  queueMicrotask(onVisible);
+  queueMicrotask(() => onVisible("visible"));
   return () => undefined;
 }
 

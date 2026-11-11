@@ -54,6 +54,8 @@ import type {
 } from "./segment-highlight-controller";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "../tts/operational-recovery";
+import { createWebStorageReaderPositionRepository } from "../persistence/reader-position-repository";
+import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
 
 const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
@@ -1250,6 +1252,87 @@ describe("navigable publication reader", () => {
     expect(persisted).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { textScale: "large" },
+    { lineSpacing: "spacious" },
+    { contentWidth: "wide" },
+    { theme: "dark" },
+  ] as const)(
+    "RPI-01 keeps the saved interior checkpoint through fallback and appearance %j",
+    async (change) => {
+      const publication = createPublication();
+      const initial = decodeReadingLocatorV1({
+        ...OPENING_LOCATED_BLOCK.startLocator,
+        textOffsetCodePoints: 3,
+      });
+      vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+        status: "exact",
+        reason: "exact",
+        locator: decodeReadingLocatorV1(input),
+        locatedBlock: OPENING_LOCATED_BLOCK,
+      }));
+      const values = new Map<string, string>();
+      const repository = createWebStorageReaderPositionRepository({
+        storage: () => ({
+          getItem: (key) => values.get(key) ?? null,
+          setItem: (key, value) => {
+            values.set(key, value);
+          },
+        }),
+      });
+      const seed = new ReaderPositionSaveCoordinator(publication, repository, {
+        initialLocator: initial,
+      });
+      await seed.close();
+      const saver = new ReaderPositionSaveCoordinator(publication, repository, {
+        initialLocator: initial,
+        persistInitialLocatorOnFlush: false,
+      });
+      const environment = new ManualReaderReflowEnvironment();
+      vi.spyOn(environment, "rangeRect").mockReturnValue(undefined);
+      const source = new ManualReaderNarrationSource();
+      const props = {
+        publication,
+        initialLocator: initial,
+        restoreInitialLocator: true,
+        reflowEnvironment: environment,
+        narrationSource: source,
+        onActiveLocatorChange: (locator: ReadingLocatorV1) => {
+          saver.schedulePassive(locator);
+        },
+        onSettledLocatorChange: (locator: ReadingLocatorV1, reason: string) => {
+          if (reason === "reflow") saver.scheduleReflow();
+          else saver.scheduleImmediate(locator);
+        },
+      };
+      const view = render(
+        <ReaderPublicationContent
+          {...props}
+          preferences={DEFAULT_READER_PREFERENCES}
+        />,
+      );
+      act(() => environment.flushAll());
+      expect(source.settleReaderPlacement).toHaveBeenLastCalledWith({
+        status: "settled",
+        locator: OPENING_LOCATED_BLOCK.startLocator,
+      });
+      view.rerender(
+        <ReaderPublicationContent
+          {...props}
+          preferences={{ ...DEFAULT_READER_PREFERENCES, ...change }}
+        />,
+      );
+      act(() => environment.flushAll());
+      await saver.flush();
+      await saver.close();
+      view.unmount();
+      const reopened = await repository.readPosition(publication.book.identity);
+      expect(reopened.status).toBe("ready");
+      if (reopened.status === "ready")
+        expect(reopened.state.locator).toEqual(initial);
+    },
+  );
+
   it.each(["Close contents", "Close table of contents", "failure"])(
     "CAF-R2.5 restores contents trigger focus on %s",
     async (dismissal) => {
@@ -1453,6 +1536,8 @@ describe("navigable publication reader", () => {
     expect(source.startLocators).toEqual([]);
 
     visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 5);
+    // Model a changed viewport, not a second caret query at the settled line.
+    visual.rects.set("Opening", { top: 2, right: 210, bottom: 42, left: 10 });
     act(() => {
       visual.notify();
       visual.flush();
@@ -1780,6 +1865,13 @@ describe("navigable publication reader", () => {
       narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
     });
     environment.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
+
+    environment.rects.set("Opening", {
+      top: 2,
+      right: 210,
+      bottom: 42,
+      left: 10,
+    });
 
     act(() => {
       environment.notify();

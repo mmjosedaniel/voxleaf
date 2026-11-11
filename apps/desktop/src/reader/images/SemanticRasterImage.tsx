@@ -3,86 +3,73 @@ import type {
   SemanticTextDirection,
   SensitivePublicationText,
 } from "@voxleaf/epub";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-} from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 
 import type {
   PublicationRasterImageLoadPort,
-  PublicationRasterImageLoadResult,
+  PublicationRasterImageOccurrence,
+  RasterImageVisibility,
 } from "./publication-raster-image-loader";
 import type { RasterImageSource } from "./raster-image-source";
 
 export type ObserveRasterImageVisibility = (
   element: HTMLElement,
-  onVisible: () => void,
+  onVisibility: (visibility: RasterImageVisibility) => void,
 ) => () => void;
 
 type RasterImagePresentation =
   | Readonly<{ status: "loading" | "unavailable" }>
   | Readonly<{ status: "ready"; source: RasterImageSource }>;
 
-const FIXED_LOADING_PRESENTATION: RasterImagePresentation = Object.freeze({
-  status: "loading",
-});
-const FIXED_UNAVAILABLE_PRESENTATION: RasterImagePresentation = Object.freeze({
-  status: "unavailable",
-});
 const DEFAULT_IMAGE_LABEL = "Publication image";
 const VISIBILITY_ROOT_MARGIN = "256px 0px";
 
 const observeRasterImageVisibility: ObserveRasterImageVisibility = (
   element,
-  onVisible,
+  onVisibility,
 ) => {
-  if (typeof IntersectionObserver === "undefined") {
-    let active = true;
+  let active = true;
+  let near = false;
+  let visible = false;
+  let fallbackMode = false;
+  const observers: IntersectionObserver[] = [];
+  const root = element.closest('[data-reader-scroll-owner="true"]');
+  const fallback = (): void => {
+    fallbackMode = true;
+    for (const observer of observers) observer.disconnect();
     queueMicrotask(() => {
-      if (active) {
-        onVisible();
-      }
+      if (active) onVisibility("visible");
     });
-    return () => {
-      active = false;
-    };
-  }
-
-  let settled = false;
-  let observer: IntersectionObserver | undefined;
-  const markVisible = (): void => {
-    if (settled) {
-      return;
-    }
-    settled = true;
-    observer?.disconnect();
-    onVisible();
   };
-
   try {
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries.some(
-            (entry) => entry.isIntersecting || entry.intersectionRatio > 0,
-          )
-        ) {
-          markVisible();
-        }
-      },
-      { rootMargin: VISIBILITY_ROOT_MARGIN },
-    );
-    observer.observe(element);
+    if (typeof IntersectionObserver === "undefined") fallback();
+    else {
+      for (const margin of [false, true]) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (!active || fallbackMode) return;
+            const entry = entries.find(
+              (candidate) => candidate.target === element,
+            );
+            if (entry === undefined) return;
+            const intersects =
+              entry.isIntersecting || entry.intersectionRatio > 0;
+            if (margin) near = intersects;
+            else visible = intersects;
+            onVisibility(visible ? "visible" : near ? "near" : "outside");
+          },
+          { root, rootMargin: margin ? VISIBILITY_ROOT_MARGIN : "0px" },
+        );
+        observers.push(observer);
+        observer.observe(element);
+      }
+    }
   } catch {
-    queueMicrotask(markVisible);
+    fallback();
   }
-
   return () => {
-    settled = true;
-    observer?.disconnect();
+    active = false;
+    for (const observer of observers) observer.disconnect();
   };
 };
 
@@ -95,12 +82,11 @@ export interface SemanticRasterImageElementProps {
   readonly direction?: SemanticTextDirection | undefined;
 }
 
-function presentationFor(
-  result: PublicationRasterImageLoadResult,
-): RasterImagePresentation {
-  return result.status === "ready"
-    ? Object.freeze({ status: "ready", source: result.source })
-    : FIXED_UNAVAILABLE_PRESENTATION;
+interface ImageState {
+  readonly resourceId: RasterImageResourceId;
+  readonly loader: PublicationRasterImageLoadPort;
+  readonly presentation: RasterImagePresentation;
+  readonly dimensions: readonly [number, number] | undefined;
 }
 
 export function SemanticRasterImageElement({
@@ -112,73 +98,72 @@ export function SemanticRasterImageElement({
   direction,
 }: SemanticRasterImageElementProps): ReactElement {
   const hostRef = useRef<HTMLSpanElement | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [presentation, setPresentation] = useState<RasterImagePresentation>(
-    loader === undefined
-      ? FIXED_UNAVAILABLE_PRESENTATION
-      : FIXED_LOADING_PRESENTATION,
+  const occurrenceRef = useRef<PublicationRasterImageOccurrence | undefined>(
+    undefined,
   );
+  const [state, setState] = useState<ImageState | undefined>(undefined);
+  const current =
+    state?.resourceId === resourceId && state.loader === loader
+      ? state
+      : undefined;
+  const presentation: RasterImagePresentation = current?.presentation ?? {
+    status: loader === undefined ? "unavailable" : "loading",
+  };
   const label = alternativeText ?? DEFAULT_IMAGE_LABEL;
   const decorative = alternativeText === "";
 
   useEffect(() => {
-    if (loader === undefined) {
-      return;
-    }
-
     const host = hostRef.current;
-    if (host === null) {
-      return;
-    }
-    return observeVisibility(host, () => setVisible(true));
+    if (loader === undefined || host === null) return;
+    const occurrence = loader.watch(resourceId, (result) => {
+      setState((previous) => ({
+        resourceId,
+        loader,
+        presentation:
+          result.status === "ready"
+            ? result
+            : {
+                status:
+                  result.status === "unavailable" ||
+                  result.status === "cancelled"
+                    ? "unavailable"
+                    : "loading",
+              },
+        dimensions:
+          result.status === "ready"
+            ? [result.source.widthPixels, result.source.heightPixels]
+            : previous?.resourceId === resourceId && previous.loader === loader
+              ? previous.dimensions
+              : undefined,
+      }));
+    });
+    occurrenceRef.current = occurrence;
+    const stopObserving = observeVisibility(host, (visibility) =>
+      occurrence.setVisibility(visibility),
+    );
+    return () => {
+      occurrenceRef.current = undefined;
+      stopObserving();
+      occurrence.close();
+    };
   }, [loader, observeVisibility, resourceId]);
 
-  useEffect(() => {
-    if (!visible || loader === undefined) {
-      return;
-    }
-
-    const controller = new AbortController();
-    let active = true;
-    let ownedSource: RasterImageSource | undefined;
-
-    void loader.load(resourceId, { signal: controller.signal }).then(
-      (result) => {
-        if (!active) {
-          if (result.status === "ready") {
-            result.source.release();
-          }
-          return;
-        }
-        if (result.status === "ready") {
-          ownedSource = result.source;
-        }
-        setPresentation(presentationFor(result));
-      },
-      () => {
-        if (active) {
-          setPresentation(FIXED_UNAVAILABLE_PRESENTATION);
-        }
-      },
-    );
-
-    return () => {
-      active = false;
-      controller.abort();
-      ownedSource?.release();
-    };
-  }, [loader, resourceId, visible]);
-
-  const handleImageError = useCallback(() => {
-    if (presentation.status === "ready") {
-      presentation.source.release();
-      setPresentation(FIXED_UNAVAILABLE_PRESENTATION);
-    }
-  }, [presentation]);
-
-  if (presentation.status === "ready") {
-    return (
-      <span ref={hostRef} className="semantic-raster-host">
+  const dimensions = current?.dimensions;
+  const unavailable = presentation.status === "unavailable";
+  return (
+    <span
+      ref={hostRef}
+      className={`semantic-raster-host${dimensions === undefined ? "" : " semantic-raster-reserved"}`}
+      style={
+        dimensions === undefined
+          ? undefined
+          : {
+              width: dimensions[0],
+              aspectRatio: `${dimensions[0]} / ${dimensions[1]}`,
+            }
+      }
+    >
+      {presentation.status === "ready" ? (
         <img
           className="semantic-raster-image"
           src={presentation.source.objectUrl}
@@ -188,33 +173,26 @@ export function SemanticRasterImageElement({
           lang={language}
           dir={direction}
           decoding="async"
-          onError={handleImageError}
+          onError={() => occurrenceRef.current?.fail(presentation.source)}
         />
-      </span>
-    );
-  }
-
-  const unavailable = presentation.status === "unavailable";
-  return (
-    <span ref={hostRef} className="semantic-raster-host">
-      <span
-        className={`semantic-raster-placeholder${
-          unavailable ? " semantic-raster-unavailable" : ""
-        }`}
-        role={decorative ? undefined : "img"}
-        aria-hidden={decorative ? true : undefined}
-        aria-label={
-          decorative
-            ? undefined
-            : `${label}. Image ${unavailable ? "unavailable" : "loading"}.`
-        }
-        lang={language}
-        dir={direction}
-      >
-        <span aria-hidden="true">
-          {unavailable ? "Image unavailable" : "Loading image"}
+      ) : (
+        <span
+          className={`semantic-raster-placeholder${unavailable ? " semantic-raster-unavailable" : ""}`}
+          role={decorative ? undefined : "img"}
+          aria-hidden={decorative ? true : undefined}
+          aria-label={
+            decorative
+              ? undefined
+              : `${label}. Image ${unavailable ? "unavailable" : "loading"}.`
+          }
+          lang={language}
+          dir={direction}
+        >
+          <span aria-hidden="true">
+            {unavailable ? "Image unavailable" : "Loading image"}
+          </span>
         </span>
-      </span>
+      )}
     </span>
   );
 }

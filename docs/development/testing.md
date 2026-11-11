@@ -904,6 +904,21 @@ queued/stale work, byte clearing, and exact revocation behavior. Repeat native
 startup after material Tauri/WebView2, CSP, Blob/object-URL, image-decoder,
 raster-loader, or raster-boundary changes.
 
+### Reader position and image lifecycle
+
+The [reader lifecycle plan](../plans/completed/reader-position-and-image-lifecycle.md)
+adds RPI-01/RPI-02/C1 regression coverage in the existing desktop suites and
+`reader-image-lifecycle.smoke.spec.ts`. A shared synthetic twelve-image fixture
+is also exercised by `test:native-startup`, including canonical checkpoint
+survival through its actual process restart. Controlled missing-range geometry
+is identified explicitly; ordinary browser layout is tested separately. Queue,
+live-source and live-pixel pressure have separate deterministic cases. Existing
+`benchmark:reader` and `benchmark:reader:native` thresholds remain the resource
+and latency gates. The execution ledger records current results; older reader
+PASS counts do not validate this follow-up. The delayed-image case controls only
+decoder completion timing; real range geometry and persistence remain intact.
+Unchanged-placement guards and genuine subsequent movement are tested together.
+
 ### EPUB ingestion matrix traceability
 
 The public integration matrix uses the production defaults and public API. It proves one rich repeated success plus representative archive, package, navigation, semantic-document, resource, cancellation, locator, and closed-lifecycle failures. Every expected open failure returns a fixed shared-decoder-valid error without a partial publication, closes retained archive state, emits no sensitive canary or console output, and invokes no network or worker capability.

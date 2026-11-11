@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0071: Checkpoint and image lifetime](ADR-0071-reader-checkpoint-and-image-lifetime.md): accepted checkpoint preservation through reflow and bounded image recycling by viewport visibility, with current-task host validation and independent review.
+
 - [ADR-0070: Explicit placement and recovery boundaries](ADR-0070-explicit-placement-and-recovery-boundaries.md): validated rendition fallback, known predecessor navigation, paused inspection, future-speed recovery and explicit package cleanup.
 
 - [ADR-0069: Bounded PNG orientation](ADR-0069-bounded-png-orientation.md): extends bounded IFD0 metadata to PNG eXIf with exact decoder agreement; current acceptance is tracked in the R8 plan.

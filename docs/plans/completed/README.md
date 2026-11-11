@@ -16,6 +16,12 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Reader position and image lifecycle minimal corrections](reader-position-and-image-lifecycle.md)
+  protects canonical checkpoints through presentation changes and recycles image
+  capacity by viewport visibility. RPI-CR-R1-20261110 approved the implementation;
+  current-task desktop, Chromium/WebView2, static and resource gates passed.
+  The plan and its closeout record preserve exact evidence and limitations.
+
 - [Deep chat audit: minimal corrections and evidence reuse](deep-chat-audit-minimal-corrections.md)
   records 25 dispositions accepted by DCR-G12-R2-ASTRA-20261110-01. DCR-02
   remains withdrawn and DCR-16 is limited to mutable-adapter hardening.

@@ -90,7 +90,11 @@ The reader coordinator may schedule only a locator already normalized by the act
 - Table-of-contents, internal-link, previous/next, chapter, direct-locator, and settled preference-reflow navigation request one immediate coalesced save.
 - Book replacement or explicit close attempts a final save of the latest validated locator, then closes the publication regardless of storage success.
 - When the document becomes hidden and on `pagehide`, the owner attempts to flush the latest already validated state. It does not depend on an asynchronous `beforeunload` operation.
-- Preference changes write the global preference envelope after validation; the corresponding logical locator is saved only after reflow restoration has settled.
+- Preference changes write the global preference envelope after validation.
+  Settled reflow can expedite an already admitted pending logical-position save;
+  it does not admit its presentation locator as new progress. Temporary block
+  fallback therefore cannot replace a precise saved offset. See
+  [ADR-0071](ADR-0071-reader-checkpoint-and-image-lifetime.md).
 
 The implementation must use deterministic fake-clock tests at 499 ms and 500 ms and prove supersession, immediate coalescing, lifecycle flush, and no write per scroll event. Storage failure never delays navigation, prevents book closure, or changes the in-memory active locator.
 

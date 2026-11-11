@@ -1,4 +1,5 @@
 import type {
+  OpenedPublication,
   RasterImageResourceId,
   SensitivePublicationText,
 } from "@voxleaf/epub";
@@ -11,10 +12,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { StrictMode } from "react";
 
-import type {
-  PublicationRasterImageLoadPort,
-  PublicationRasterImageLoadResult,
+import {
+  PublicationRasterImageLoader,
+  type PublicationRasterImageLoadPort,
+  type PublicationRasterImageLoadResult,
+  type RasterImageVisibility,
 } from "./publication-raster-image-loader";
 import type { RasterImageSource } from "./raster-image-source";
 import {
@@ -62,23 +66,126 @@ function createSource(): {
 function controlledVisibility(): {
   readonly observe: ObserveRasterImageVisibility;
   readonly reveal: () => void;
+  readonly set: (visibility: RasterImageVisibility) => void;
   readonly disconnect: ReturnType<typeof vi.fn>;
 } {
-  let onVisible: (() => void) | undefined;
+  let onVisible: ((visibility: RasterImageVisibility) => void) | undefined;
   const disconnect = vi.fn();
   return {
     observe: vi.fn((_element, callback) => {
       onVisible = callback;
       return disconnect;
     }),
-    reveal: () => onVisible?.(),
+    reveal: () => onVisible?.("visible"),
+    set: (visibility) => onVisible?.(visibility),
     disconnect,
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+function managedLoader(
+  load: PublicationRasterImageLoadPort["load"],
+): PublicationRasterImageLoadPort {
+  const loader = new PublicationRasterImageLoader({
+    resources: [],
+    closed: false,
+  } as unknown as OpenedPublication);
+  vi.spyOn(loader, "load").mockImplementation(load);
+  return loader;
+}
 
 describe("semantic raster image", () => {
+  it("RPI-02 releases offscreen sources while reserving their footprint and reloads on return", async () => {
+    const first = createSource();
+    const second = createSource();
+    const load = vi
+      .fn<PublicationRasterImageLoadPort["load"]>()
+      .mockResolvedValueOnce({ status: "ready", source: first.source })
+      .mockResolvedValueOnce({ status: "ready", source: second.source });
+    const visibility = controlledVisibility();
+    const { container, unmount } = render(
+      <StrictMode>
+        <SemanticRasterImageElement
+          resourceId={RESOURCE_ID}
+          loader={managedLoader(load)}
+          observeVisibility={visibility.observe}
+        />
+      </StrictMode>,
+    );
+    act(() => visibility.reveal());
+    await waitFor(() => expect(container.querySelector("img")).not.toBeNull());
+    const host = container.querySelector<HTMLElement>(".semantic-raster-host")!;
+    const width = host.style.width;
+    const ratio = host.style.aspectRatio;
+    act(() => visibility.set("outside"));
+    expect(container.querySelector("img")).toBeNull();
+    expect(first.release).toHaveBeenCalledTimes(1);
+    expect(width).toBe("320px");
+    expect(host.style.width).toBe(width);
+    expect(host.style.aspectRatio).toBe(ratio);
+    act(() => visibility.reveal());
+    await waitFor(() => expect(container.querySelector("img")).not.toBeNull());
+    expect(load).toHaveBeenCalledTimes(2);
+    unmount();
+    expect(second.release).toHaveBeenCalledTimes(1);
+    expect(visibility.disconnect).toHaveBeenCalledTimes(2);
+  });
+
+  it("RPI-02 discards a slow obsolete completion after re-entry", async () => {
+    const first = createSource();
+    const second = createSource();
+    const pending = deferred<PublicationRasterImageLoadResult>();
+    const load = vi
+      .fn<PublicationRasterImageLoadPort["load"]>()
+      .mockReturnValueOnce(pending.promise)
+      .mockResolvedValueOnce({ status: "ready", source: second.source });
+    const visibility = controlledVisibility();
+    const { container, unmount } = render(
+      <SemanticRasterImageElement
+        resourceId={RESOURCE_ID}
+        loader={managedLoader(load)}
+        observeVisibility={visibility.observe}
+      />,
+    );
+    act(() => visibility.reveal());
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    act(() => visibility.set("outside"));
+    expect(load.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    act(() => visibility.reveal());
+    await waitFor(() => expect(container.querySelector("img")).not.toBeNull());
+    await act(async () => {
+      pending.resolve({ status: "ready", source: first.source });
+      await pending.promise;
+    });
+    expect(first.release).toHaveBeenCalledTimes(1);
+    expect(second.release).not.toHaveBeenCalled();
+    unmount();
+    expect(second.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("RPI-02 remains bounded when intersection observation is unavailable", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    const { source, release } = createSource();
+    const load = vi
+      .fn<PublicationRasterImageLoadPort["load"]>()
+      .mockResolvedValue({ status: "ready", source });
+    const { container, unmount } = render(
+      <SemanticRasterImageElement
+        resourceId={RESOURCE_ID}
+        loader={managedLoader(load)}
+      />,
+    );
+    await waitFor(() => expect(container.querySelector("img")).not.toBeNull());
+    expect(load).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
   it("SAF-15 keeps decorative loading, ready and failed images unnamed and releases them", async () => {
     const pending = deferred<PublicationRasterImageLoadResult>();
     const visibility = controlledVisibility();
@@ -87,7 +194,7 @@ describe("semantic raster image", () => {
       <SemanticRasterImageElement
         resourceId={RESOURCE_ID}
         alternativeText={"" as SensitivePublicationText}
-        loader={{ load: () => pending.promise }}
+        loader={managedLoader(() => pending.promise)}
         observeVisibility={visibility.observe}
       />,
     );
@@ -122,7 +229,7 @@ describe("semantic raster image", () => {
     const load = vi.fn<PublicationRasterImageLoadPort["load"]>(
       () => pending.promise,
     );
-    const loader: PublicationRasterImageLoadPort = { load };
+    const loader = managedLoader(load);
     const visibility = controlledVisibility();
     const { source, release } = createSource();
     const { unmount } = render(
@@ -180,7 +287,7 @@ describe("semantic raster image", () => {
       <SemanticRasterImageElement
         resourceId={RESOURCE_ID}
         alternativeText={ALTERNATIVE_TEXT}
-        loader={{ load }}
+        loader={managedLoader(load)}
         observeVisibility={visibility.observe}
       />,
     );
@@ -205,7 +312,7 @@ describe("semantic raster image", () => {
     const { container } = render(
       <SemanticRasterImageElement
         resourceId={RESOURCE_ID}
-        loader={{ load }}
+        loader={managedLoader(load)}
         observeVisibility={visibility.observe}
       />,
     );
@@ -233,7 +340,7 @@ describe("semantic raster image", () => {
       <SemanticRasterImageElement
         resourceId={RESOURCE_ID}
         alternativeText={ALTERNATIVE_TEXT}
-        loader={{ load }}
+        loader={managedLoader(load)}
         observeVisibility={visibility.observe}
       />,
     );

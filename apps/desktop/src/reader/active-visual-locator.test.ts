@@ -386,6 +386,53 @@ function createHarness(
 }
 
 describe("active visual locator tracking", () => {
+  it.each([0, 2])(
+    "RPI-C1 ignores unchanged settled placement, then admits real movement to offset %s",
+    (offset) => {
+      const block = locatedBlock(paragraph("Alpha"), 0, 5);
+      const harness = createHarness([block]);
+      const element = harness.elements[0]!;
+      harness.environment.rects.set(element, rect(10, 50));
+      const canonical = decodeReadingLocatorV1({
+        ...block.startLocator,
+        textOffsetCodePoints: 4,
+      });
+      harness.tracker.setCurrentLocator(canonical);
+      harness.environment.range = harness.mapper.rangeFor(block, offset);
+      harness.environment.flush();
+      expect(harness.emitted).toEqual([]);
+      // An anchored image/rounding notification leaves the same reading line.
+      harness.environment.rects.set(element, rect(10.5, 50.5));
+      harness.tracker.requestSample();
+      harness.environment.flush();
+      expect(harness.emitted).toEqual([]);
+      // Actual movement retires the placement guard, including valid offset zero.
+      harness.environment.rects.set(element, rect(18, 58));
+      harness.tracker.requestSample();
+      harness.environment.flush();
+      expect(harness.emitted).toEqual([
+        { ...block.startLocator, textOffsetCodePoints: offset },
+      ]);
+      harness.close();
+    },
+  );
+
+  it("RPI-C1 missing settlement geometry does not freeze sampling", () => {
+    const block = locatedBlock(paragraph("Alpha"), 0, 5);
+    const harness = createHarness([block]);
+    harness.tracker.setCurrentLocator(
+      decodeReadingLocatorV1({
+        ...block.startLocator,
+        textOffsetCodePoints: 4,
+      }),
+    );
+    harness.environment.rects.set(harness.elements[0]!, rect(10, 50));
+    harness.environment.range = harness.mapper.rangeFor(block, 1);
+    harness.environment.flush();
+    expect(harness.emitted[0]?.textOffsetCodePoints).toBe(1);
+    harness.close();
+  });
+
   it("selects deterministic top, partial, between-block, and document-end positions", () => {
     const first = locatedBlock(paragraph("Alpha"), 0, 5);
     const second = locatedBlock(paragraph("Bravo"), 1, 5);

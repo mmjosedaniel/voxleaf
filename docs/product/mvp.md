@@ -356,6 +356,13 @@ regional profile, Kokoro, and additional voices remain in the
 
 ## MVP capability status
 
+The [reader lifecycle follow-up](../plans/completed/reader-position-and-image-lifecycle.md)
+protects canonical saved positions across temporary visual fallback and appearance
+changes. Its image policy releases offscreen sources and retries visible images
+when bounded capacity becomes available, including later images in long chapters.
+Simultaneous source/pixel limits, safe failure placeholders and heard-position
+precedence remain unchanged. Current validation status is recorded in that plan.
+
 Implemented and validated:
 
 - Open a bounded supported EPUB from local storage without retaining a path.

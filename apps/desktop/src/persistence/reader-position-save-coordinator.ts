@@ -238,11 +238,17 @@ export class ReaderPositionSaveCoordinator {
     return scheduled;
   }
 
-  public scheduleReflow(locator: ReadingLocatorV1): boolean {
-    if (this.#narrationActive || this.#protectHeardCheckpoint) {
+  public scheduleReflow(): boolean {
+    if (
+      this.#narrationActive ||
+      this.#protectHeardCheckpoint ||
+      !this.#positionSaveRequested
+    ) {
       return false;
     }
-    return this.#schedulePosition(locator, "immediate");
+    // Layout may settle at a temporary block fallback. It can expedite an
+    // admitted checkpoint, but cannot admit presentation geometry as progress.
+    return this.#schedulePosition(this.#latestLocator, "immediate");
   }
 
   public beginNarration(): boolean {

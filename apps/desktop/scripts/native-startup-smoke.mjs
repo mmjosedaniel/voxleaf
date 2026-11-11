@@ -27,6 +27,10 @@ import {
 import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
 import { buildOrientedRasterEpubFixture } from "../tests/fixtures/oriented-raster-epub-fixture.mjs";
 import {
+  buildReaderImageLifecycleFixture,
+  readerImageLifecycleCheckpoint,
+} from "../tests/fixtures/reader-image-lifecycle-fixture.mjs";
+import {
   syntheticNarrationSentences,
   chatterboxPlaybackSpeedParagraph,
 } from "./native-smoke/narration-fixture.mjs";
@@ -410,6 +414,18 @@ const FIXED_FAILURE_CODES = new Map([
     "tts-service-lifecycle-probe-failed",
   ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
+  ["RPI image source capacity exceeded.", "rpi-source-capacity"],
+  ["RPI offscreen image retained its source.", "rpi-source-retirement"],
+  ["RPI image owner cleanup failed.", "rpi-owner-cleanup"],
+  [
+    "RPI appearance replaced the canonical checkpoint.",
+    "rpi-appearance-checkpoint",
+  ],
+  ["RPI close replaced the canonical checkpoint.", "rpi-close-checkpoint"],
+  [
+    "RPI canonical checkpoint did not survive process restart.",
+    "rpi-restart-checkpoint",
+  ],
 ]);
 
 function assert(condition, message) {
@@ -481,6 +497,8 @@ const {
   exerciseNativeSynchronizationFeasibility,
   replaceNativePublicationForCleanup,
   runNativeReaderPerformanceBenchmark,
+  exerciseNativeImageLifecycle,
+  restoreNativeImageCheckpoint,
 } = createNativeReaderScenarios({
   delay,
   assert,
@@ -1184,6 +1202,11 @@ async function run() {
           "webview-profile",
         );
         const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+        const imageLifecyclePath = path.join(
+          temporaryDirectory,
+          "synthetic-image-lifecycle.epub",
+        );
+        let imageLifecycleLocator;
         const orientedFixturePath = path.join(
           temporaryDirectory,
           "synthetic-oriented.epub",
@@ -1312,6 +1335,11 @@ async function run() {
             buildOrientedRasterEpubFixture().then((bytes) =>
               writeFile(orientedFixturePath, bytes, { flag: "wx" }),
             ),
+            buildReaderImageLifecycleFixture().then(async (bytes) => {
+              imageLifecycleLocator =
+                await readerImageLifecycleCheckpoint(bytes);
+              await writeFile(imageLifecyclePath, bytes, { flag: "wx" });
+            }),
             writeFile(fileIngressFixturePaths.replacement, replacementFixture, {
               flag: "wx",
             }),
@@ -1592,6 +1620,16 @@ async function run() {
         );
 
         stage = "native reader interaction matrix";
+        await exerciseNativeImageLifecycle(
+          driver,
+          imageLifecyclePath,
+          dismissalFixturePath,
+          imageLifecycleLocator,
+          (nextStage) => {
+            stage = nextStage;
+          },
+        );
+        await injectNativeFile(driver, fixturePath);
         await exerciseNativeReaderInteractionMatrix(driver, (nextStage) => {
           stage = nextStage;
         });
@@ -1842,6 +1880,14 @@ async function run() {
           (await driver.findElements('img[alt*="orientation"]')).length === 0,
           "Native oriented raster image remained mounted after close.",
         );
+
+        stage = "RPI-01 native exact checkpoint after process restart";
+        await restoreNativeImageCheckpoint(
+          driver,
+          imageLifecyclePath,
+          imageLifecycleLocator,
+        );
+        await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
 
         const externalLoadedResourceCount = await driver.execute(
           `return performance.getEntriesByType("resource").filter((entry) => {
