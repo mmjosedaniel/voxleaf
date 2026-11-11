@@ -398,6 +398,7 @@ signing limitations. The static security scan and its limits remain in the
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [Five-pass audit: revalidation and minimal corrections](plans/active/five-pass-audit-revalidation-and-corrections.md): planned correction campaign with 25 retained candidates, four excluded/conditional dispositions, historical-evidence reuse rules and independent per-case review; not yet executed.
 - [`plans/completed/validated-chat-findings-corrections.md`](plans/completed/validated-chat-findings-corrections.md): fourteen corrected findings and R01/R02, confirmed native/worklet races, passing final-byte host validation/integrity/cleanup and independent R3 implementation approval with scoped evidence reuse; the plan identifies the exact archive/link review.
 - [Test integrity and lifecycle harness safety](plans/completed/test-integrity-and-harness-safety.md): eleven corrections completed; G1-G8, real installer lifecycle, verified user-data restoration/reinstallation and independent review pass.
 - [`plans/completed/narration-state-and-optional-package-corrections.md`](plans/completed/narration-state-and-optional-package-corrections.md): accepted package-operation, availability, preference, volume, preparation-error and compatibility-status corrections; 169 focused tests and full repository/Chromium/WebView2 checks pass with independent Astra approval.

@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No active implementation plans.
+- [Five-pass audit: revalidation and minimal corrections](five-pass-audit-revalidation-and-corrections.md): planned revalidation of 25 retained candidates, four explicit excluded/conditional dispositions, minimal fixes and evidence-based test reuse. Implementation has not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
