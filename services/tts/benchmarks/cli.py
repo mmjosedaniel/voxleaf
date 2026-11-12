@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import ctypes
 import json
+import queue
 import re
 import subprocess
 import sys
+import threading
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextlib import suppress
 from ctypes import wintypes
 from pathlib import Path
-from typing import Final, NoReturn, Protocol, cast
+from typing import IO, Final, NoReturn, Protocol, cast
 
 from benchmarks.adapters.manifest import (
     CandidateConfiguration,
@@ -31,6 +34,7 @@ from benchmarks.preflight import (
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 SERVICE_ROOT: Final = REPOSITORY_ROOT / "services" / "tts"
 MAXIMUM_STDIN_BYTES: Final = 16_384
+MAXIMUM_WORKER_STDOUT_BYTES: Final = 16_384
 MEASUREMENT_TIMEOUT_SECONDS: Final = 7_200
 PREFLIGHT_FIELDS: Final = frozenset(
     (
@@ -367,7 +371,7 @@ class _MeasurementJob:
             self._kernel.CloseHandle(self._handle)
             _fail("cleanup-failed")
 
-    def assign(self, process: subprocess.Popen[str]) -> None:
+    def assign(self, process: subprocess.Popen[bytes]) -> None:
         # Popen owns this exact CreateProcess handle; no PID lookup or name kill.
         handle = int(cast(_WindowsProcessHandle, process)._handle)
         if not self._kernel.AssignProcessToJobObject(self._handle, handle):
@@ -422,35 +426,139 @@ class _MeasurementJob:
             self._kernel.CloseHandle(self._handle)
 
 
+def _read_worker_stdout(stream: IO[bytes]) -> str:
+    output = bytearray()
+    while len(output) <= MAXIMUM_WORKER_STDOUT_BYTES:
+        chunk = stream.read(MAXIMUM_WORKER_STDOUT_BYTES + 1 - len(output))
+        if not chunk:
+            try:
+                return output.decode("utf-8")
+            except UnicodeDecodeError:
+                _fail("invalid-worker-output")
+        output.extend(chunk)
+    _fail("invalid-worker-output")
+
+
+def _write_worker_stdin(stream: IO[bytes], payload: bytes) -> None:
+    remaining = memoryview(payload)
+    with suppress(BrokenPipeError):
+        while remaining:
+            count = stream.write(remaining)
+            if not count:
+                raise OSError("measurement stdin did not accept data")
+            remaining = remaining[count:]
+
+
+def _measurement_time_left(command: tuple[str, ...], deadline: float) -> float:
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired(command, MEASUREMENT_TIMEOUT_SECONDS)
+    return remaining
+
+
+def _transfer_measurement_pipes(
+    process: subprocess.Popen[bytes],
+    command: tuple[str, ...],
+    payload: bytes,
+    deadline: float,
+    owners: dict[IO[bytes], threading.Thread],
+) -> str:
+    stdin, stdout = process.stdin, process.stdout
+    if stdin is None or stdout is None:
+        _fail("measurement-unavailable")
+    outcomes: queue.Queue[str | None | BaseException] = queue.Queue()
+
+    def transfer(stream: IO[bytes], action: Callable[[IO[bytes]], str | None]) -> None:
+        try:
+            with stream:
+                result = action(stream)
+        except BaseException as error:
+            outcomes.put(error)
+        else:
+            outcomes.put(result)
+
+    def write(stream: IO[bytes]) -> None:
+        _write_worker_stdin(stream, payload)
+
+    for stream, action in ((stdout, _read_worker_stdout), (stdin, write)):
+        owner = threading.Thread(target=transfer, args=(stream, action), daemon=True)
+        owners[stream] = owner
+        try:
+            owner.start()
+        except RuntimeError:
+            del owners[stream]
+            _fail("measurement-unavailable")
+
+    output = ""
+    for _ in range(2):
+        try:
+            outcome = outcomes.get(timeout=_measurement_time_left(command, deadline))
+        except queue.Empty:
+            raise subprocess.TimeoutExpired(command, MEASUREMENT_TIMEOUT_SECONDS) from None
+        if isinstance(outcome, BaseException):
+            raise outcome
+        if outcome is not None:
+            output = outcome
+    return output
+
+
+def _reap_measurement_process(
+    process: subprocess.Popen[bytes], owners: dict[IO[bytes], threading.Thread], deadline: float
+) -> None:
+    try:
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=max(0.001, deadline - time.monotonic()))
+    finally:
+        unfinished = False
+        for stream in (process.stdin, process.stdout):
+            if stream is None:
+                continue
+            owner = owners.get(stream)
+            if owner is None:
+                stream.close()
+            elif owner.ident is None:
+                # An interruption during start may leave the owner about to run.
+                unfinished = True
+            else:
+                owner.join(timeout=max(0.0, deadline - time.monotonic()))
+                unfinished |= owner.is_alive()
+        if unfinished:
+            _fail("cleanup-failed")
+
+
 def _measure_process(command: tuple[str, ...], payload: str) -> subprocess.CompletedProcess[str]:
+    if len(payload) > MAXIMUM_STDIN_BYTES:
+        _fail("invalid-input")
+    data = payload.encode("utf-8")
+    if len(data) > MAXIMUM_STDIN_BYTES:
+        _fail("invalid-input")
+    deadline = time.monotonic() + MEASUREMENT_TIMEOUT_SECONDS
     job = _MeasurementJob()
-    process: subprocess.Popen[str] | None = None
+    process: subprocess.Popen[bytes] | None = None
+    owners: dict[IO[bytes], threading.Thread] = {}
     try:
         process = subprocess.Popen(
             command,
             cwd=SERVICE_ROOT,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+            stderr=subprocess.DEVNULL,
+            bufsize=0,
             creationflags=0x08000000 | 0x00000004,  # NO_WINDOW | SUSPENDED
         )
         # Assignment precedes even the interpreter launcher's first instruction.
         job.assign(process)
-        stdout, stderr = process.communicate(payload, timeout=MEASUREMENT_TIMEOUT_SECONDS)
-        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+        stdout = _transfer_measurement_pipes(process, command, data, deadline, owners)
+        returncode = process.wait(timeout=_measurement_time_left(command, deadline))
+        return subprocess.CompletedProcess(command, returncode, stdout, "")
     finally:
-        deadline = time.monotonic() + 5
+        cleanup_deadline = time.monotonic() + 5
         try:
-            job.close(deadline)
+            job.close(cleanup_deadline)
         finally:
             if process is not None:
-                if process.poll() is None:
-                    process.kill()
-                process.wait(timeout=max(0.001, deadline - time.monotonic()))
-                for stream in (process.stdin, process.stdout, process.stderr):
-                    if stream is not None:
-                        stream.close()
+                _reap_measurement_process(process, owners, cleanup_deadline)
 
 
 def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:
@@ -475,10 +583,11 @@ def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:
             ),
             json.dumps(value, ensure_ascii=True, separators=(",", ":")),
         )
-        if len(completed.stdout.encode("utf-8")) > MAXIMUM_STDIN_BYTES:
-            _fail("invalid-worker-output")
         worker_value = cast(object, json.loads(completed.stdout))
         worker_receipt = _validated_worker_receipt(worker_value, request)
+        expected_exit = 0 if worker_receipt["status"] == "pass" else 2
+        if completed.returncode != expected_exit:
+            _fail("invalid-worker-output")
     except (
         OSError,
         subprocess.SubprocessError,
@@ -493,7 +602,7 @@ def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:
             },
             2,
         )
-    return worker_receipt, 0 if worker_receipt["status"] == "pass" else 2
+    return worker_receipt, expected_exit
 
 
 def _run_measurement_worker(value: object) -> tuple[dict[str, object], int]:

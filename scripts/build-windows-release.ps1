@@ -2,7 +2,7 @@
 param(
   [switch]$Sign,
   [switch]$ScanWithDefender,
-  [ValidateSet("not-run", "local-install-first-start-repair-uninstall-passed")]
+  [ValidateSet("not-run")]
   [string]$LifecycleStatus = "not-run"
 )
 

@@ -64,6 +64,7 @@ export interface RasterImageSourcePreparer {
 
 interface PendingLoad {
   readonly resource: RasterImageResource;
+  readonly occurrence: WatchedImage | undefined;
   readonly controller: AbortController;
   readonly callerSignal: AbortSignal | undefined;
   readonly abortFromCaller: () => void;
@@ -99,6 +100,12 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
   // Metadata only, bounded by the mounted chapter's admitted DOM nodes. No
   // resource bytes or promises are retained for waiting occurrences.
   readonly #watched = new Set<WatchedImage>();
+  // Associate an internal load call with its occurrence without extending
+  // the public load options or retaining a second queue.
+  readonly #loadOccurrences = new WeakMap<
+    PublicationRasterImageLoadOptions,
+    WatchedImage
+  >();
   #liveRevision = 0;
   #pumpScheduled = false;
 
@@ -198,10 +205,12 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
     });
   }
 
-  private pumpImages(): void {
+  private pumpImages(visibleOnly = false): void {
     // Visible demand precedes prefetch; insertion order breaks ties. A rejected
     // live-budget attempt waits for RELEASE, not merely for its own queue slot.
-    for (const visibility of ["visible", "near"] as const) {
+    for (const visibility of visibleOnly
+      ? (["visible"] as const)
+      : (["visible", "near"] as const)) {
       for (const image of this.#watched) {
         if (
           image.visibility !== visibility ||
@@ -225,7 +234,9 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
         const controller = new AbortController();
         const revision = this.#liveRevision;
         image.controller = controller;
-        void this.load(image.resourceId, { signal: controller.signal }).then(
+        const options = { signal: controller.signal };
+        this.#loadOccurrences.set(options, image);
+        void this.load(image.resourceId, options).then(
           (result) => {
             if (
               image.controller !== controller ||
@@ -312,6 +323,7 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
       };
       const request: PendingLoad = {
         resource,
+        occurrence: this.#loadOccurrences.get(options),
         controller,
         callerSignal: options.signal,
         abortFromCaller,
@@ -391,6 +403,20 @@ export class PublicationRasterImageLoader implements PublicationRasterImageLoadP
       return;
     }
 
+    const visibleIndex = this.#queue.findIndex(
+      (request) => request.occurrence?.visibility === "visible",
+    );
+    if (visibleIndex >= 0) {
+      const [next] = this.#queue.splice(visibleIndex, 1);
+      this.start(next!);
+      return;
+    }
+
+    // An active load plus a full prefetch queue may have kept visible demand
+    // outside the queue. Give it the freed slot before starting prefetch.
+    if (this.#queue.length === 0) return;
+    this.pumpImages(true);
+    if (this.#active !== undefined) return;
     const next = this.#queue.shift();
     if (next !== undefined) {
       this.start(next);

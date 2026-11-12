@@ -11,7 +11,7 @@ import type { ProductNarrationCoordinator } from "../tts/product-narration-coord
 
 type HardwareSettings = Pick<
   HardwareProfileCompatibilityCoordinator,
-  "selectProfile" | "selectLanguage" | "resetLanguage"
+  "selectProfile" | "selectLanguage"
 >;
 type NarrationSettings = Pick<
   ProductNarrationCoordinator,
@@ -97,8 +97,21 @@ export function createNarrationSettingsActions(development: boolean) {
     },
     async removeChatterbox(
       coordinator: NarrationSettings | undefined,
-      optional: Pick<OptionalChatterboxClient, "remove">,
+      optional: Pick<
+        OptionalChatterboxClient,
+        "remove" | "observe" | "downloadPending"
+      >,
+      onAdmitted?: () => void,
     ): Promise<void> {
+      if (
+        optional.downloadPending ||
+        ["confirming", "downloading", "verifying", "removing"].includes(
+          optional.observe().state,
+        )
+      ) {
+        throw new Error("Chatterbox is busy.");
+      }
+      onAdmitted?.();
       const release = coordinator?.beginConfigurationChange?.();
       try {
         await stopForConfigurationChange(coordinator);
@@ -136,7 +149,10 @@ export function createNarrationSettingsActions(development: boolean) {
       playbackPreference,
       onStartPreferenceReset,
     }: {
-      hardware: Pick<HardwareSettings, "resetLanguage">;
+      hardware: Pick<
+        HardwareProfileCompatibilityCoordinator,
+        "resetLanguage" | "check"
+      >;
       coordinator: NarrationSettings | undefined;
       startPreference: Pick<NarrationStartPreferenceRepository, "reset">;
       playbackPreference: Pick<NarrationPlaybackPreferenceRepository, "reset">;
@@ -158,6 +174,7 @@ export function createNarrationSettingsActions(development: boolean) {
           onStartPreferenceReset();
         }
         if (languageReset) {
+          await hardware.check("explicit-recheck");
           await coordinator?.refreshSelectedProfile();
         }
         return languageReset && startReset && playbackReset;

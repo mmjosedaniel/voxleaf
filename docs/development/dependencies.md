@@ -162,6 +162,15 @@ Torch/Torchaudio rather than calling them clean. No known high or critical
 reachable core or optional package vulnerability may be silently accepted. See
 [`release-security-and-distribution.md`](release-security-and-distribution.md).
 
+Core Python inventory retains an explicit source-distribution artifact as source
+provenance. When only wheels are available, selection targets Windows x64 and
+CPython 3.12, including compatible stable-ABI and universal tags, independently
+of lockfile order or the generator's host. Distinct equally preferred artifacts
+or no compatible registry artifact fail explicitly; local project provenance
+remains separate. This bounded fixed-target selector uses the standard library
+and adds no dependency. Installed runtime validation and generated package
+checks remain separate from inventory artifact selection.
+
 On 2026-10-06, the release audit policy was reconciled with RustSec's withdrawal
 of `RUSTSEC-2024-0411` through `RUSTSEC-2024-0420` on 2026-08-14. The GTK3
 bindings resumed maintenance; see the upstream
@@ -181,6 +190,19 @@ failed the optional Chatterbox graph: `transformers==5.5.0` reports
 previously hidden by the earlier Rust policy mismatch. That historical checkpoint
 did not advance the passing audit date. The subsequent bounded v3 update below
 resolves those findings without advisory suppression.
+
+On 2026-11-12, the VoxLeaf release dependency/audit-policy maintainer reviewed
+[RUSTSEC-2026-0486](https://rustsec.org/advisories/RUSTSEC-2026-0486.html), an
+informational unsoundness notice for locked `rustix 1.1.4`. The package is absent
+from the locked `x86_64-pc-windows-msvc` normal/build dependency graph. The policy
+records that exact tuple as non-Windows-reachable; this is not a safety claim
+for Unix or development/test graphs. The complete production audit passes with
+eight informational notices, five Windows-reachable, and the same four Python
+advisory blind spots. New notices or changed reachability still fail the gate.
+Dependencies and locks are unchanged. The policy's `auditDate: 2026-10-27`
+remains the existing packaged component-inventory checkpoint, not the date of
+this scan. See the dated [CI follow-up](../plans/evidence/five-pass-audit/ci-follow-up.md)
+for current evidence and the separate native-harness correction.
 
 The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers

@@ -433,6 +433,57 @@ describe("active visual locator tracking", () => {
     harness.close();
   });
 
+  it.each(["root", "document", "explicit placement", "close"] as const)(
+    "five-pass 5.1 retires an unfinished follow at %s",
+    (boundary) => {
+      const first = locatedBlock(paragraph("Alpha"), 0, 5);
+      const second = locatedBlock(paragraph("Bravo"), 1, 5);
+      const { tracker, mapper, root, elements, emitted, environment, close } =
+        createHarness([first, second], {
+          initialLocator: decodeReadingLocatorV1({
+            ...first.startLocator,
+            textOffsetCodePoints: 4,
+          }),
+        });
+      const replacement = document.createElement("article");
+      try {
+        const element = elements[0]!;
+        root.scrollTop = 100;
+        environment.rects.set(element, rect(10, 50));
+        environment.rects.set(elements[1]!, rect(150, 190));
+        environment.range = mapper.rangeFor(first, 1);
+        tracker.recordAutomaticFollowPlacement(first.startLocator);
+        environment.flush();
+        expect(emitted).toEqual([]);
+
+        if (boundary === "root") {
+          document.body.append(replacement);
+          replacement.append(element);
+          replacement.scrollTop = root.scrollTop;
+          tracker.setRoot(replacement);
+          // Moving a live DOM node retargets its old Range endpoints.
+          environment.range = mapper.rangeFor(first, 1);
+        } else if (boundary === "document") {
+          const unregister = tracker.registerBlock(element, first);
+          unregister();
+          tracker.registerBlock(element, first);
+        } else if (boundary === "explicit placement") {
+          tracker.setCurrentLocator(second.startLocator);
+        } else {
+          tracker.close();
+        }
+        environment.notify();
+        environment.flush();
+        expect(emitted.map((locator) => locator.textOffsetCodePoints)).toEqual(
+          boundary === "close" ? [] : [1],
+        );
+      } finally {
+        close();
+        replacement.remove();
+      }
+    },
+  );
+
   it("selects deterministic top, partial, between-block, and document-end positions", () => {
     const first = locatedBlock(paragraph("Alpha"), 0, 5);
     const second = locatedBlock(paragraph("Bravo"), 1, 5);

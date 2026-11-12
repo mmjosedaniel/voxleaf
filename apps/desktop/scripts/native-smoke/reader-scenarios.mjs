@@ -1416,9 +1416,9 @@ export function createNativeReaderScenarios({
     );
   }
 
-  async function waitForNativeImage(driver, index, condition) {
+  async function waitForNativeImage(driver, index, condition, deadline) {
     try {
-      await waitForCondition(driver, condition);
+      await waitForCondition(driver, condition, Math.max(0, deadline - now()));
     } catch (error) {
       let observation = { observation: "unavailable" };
       try {
@@ -1456,6 +1456,39 @@ export function createNativeReaderScenarios({
     }
   }
 
+  async function placeNativeImage(driver, index, deadline) {
+    const target = `
+      const root = document.querySelector('.semantic-reader [data-reader-scroll-owner="true"]');
+      const host = root?.querySelectorAll('.semantic-raster-host')[${index}];
+    `;
+    assert(
+      await driver.execute(`${target}
+        if (!host) return false;
+        const viewport = root.getBoundingClientRect();
+        const image = host.getBoundingClientRect();
+        const center = viewport.top + root.clientTop + root.clientHeight / 2;
+        root.scrollTo({ top: root.scrollTop + (image.top + image.bottom) / 2 - center, behavior: 'instant' });
+        return true;
+      `),
+      "RPI image placement target missing.",
+    );
+    await waitForNativeImage(
+      driver,
+      index,
+      `${target}
+        if (!host || root.clientHeight <= 0 || root.clientWidth <= 0) return false;
+        const viewport = root.getBoundingClientRect();
+        const image = host.getBoundingClientRect();
+        const top = viewport.top + root.clientTop;
+        const left = viewport.left + root.clientLeft;
+        return image.bottom > image.top && image.right > image.left &&
+          image.bottom > top && image.top < top + root.clientHeight &&
+          image.right > left && image.left < left + root.clientWidth;
+      `,
+      deadline,
+    );
+  }
+
   async function exerciseNativeImageLifecycle(
     driver,
     fixturePath,
@@ -1468,17 +1501,20 @@ export function createNativeReaderScenarios({
     await injectNativeFile(driver, fixturePath);
     await waitForCondition(
       driver,
-      `return document.querySelectorAll('.semantic-raster-host').length === 12;`,
+      `const reader = document.querySelector('.semantic-reader');
+       const root = reader?.querySelector('[data-reader-scroll-owner="true"]');
+       return reader?.getAttribute('aria-busy') !== 'true' && root?.querySelectorAll('.semantic-raster-host').length === 12;`,
     );
     for (let index = 0; index < 12; index += 1) {
+      const deadline = now() + STARTUP_TIMEOUT_MS;
+      setStage(`RPI-02 native image ${index + 1} placement`);
+      await placeNativeImage(driver, index, deadline);
       setStage(`RPI-02 native image ${index + 1} decode`);
-      await driver.execute(
-        `document.querySelectorAll('.semantic-raster-host')[${index}].scrollIntoView({ block: 'center' }); return true;`,
-      );
       await waitForNativeImage(
         driver,
         index,
         `const image = document.querySelectorAll('.semantic-raster-host')[${index}]?.querySelector('img'); return image?.complete && image.naturalWidth === 1 && image.src.startsWith('blob:');`,
+        deadline,
       );
       if (index === 0)
         await driver.execute(
@@ -1496,13 +1532,15 @@ export function createNativeReaderScenarios({
       ),
       "RPI offscreen image retained its source.",
     );
-    await driver.execute(
-      `document.querySelector('.semantic-raster-host').scrollIntoView({ block: 'center' }); return true;`,
-    );
+    const revisitDeadline = now() + STARTUP_TIMEOUT_MS;
+    setStage("RPI-02 native image revisit placement");
+    await placeNativeImage(driver, 0, revisitDeadline);
+    setStage("RPI-02 native image revisit decode");
     await waitForNativeImage(
       driver,
       0,
       `const image = document.querySelector('.semantic-raster-host').querySelector('img'); return image?.naturalWidth === 1 && image.src !== globalThis.__rpiFirstSource;`,
+      revisitDeadline,
     );
     await replaceNativePublicationForCleanup(driver, dismissalPath);
     const released = await nativeResourceInstrumentation(driver);

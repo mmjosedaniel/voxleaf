@@ -82,3 +82,15 @@ regressions. The [current U12 review](../../plans/evidence/deep-chat-audit/revie
 binds the same production behavior and both native feature-mode results
 after the test module relocation. The ordered synthetic regression does not
 establish physical multi-GPU behavior.
+
+## 2026-11-11: Shared-unit Celsius ranges
+
+The mutable normalizer must preserve the whole shared-unit range, including
+`18–20 °C`, `18 - 20 °C`, English `8 – 20 °C` and Spanish `21 - 20 °C`.
+The first endpoint must not expand independently through a lexical number rule.
+Bounded same-prose, same-language context distinguishes these ranges from a
+standalone signed value or an editorial dash. Existing two-unit signed/decimal
+range protection, displayed text, exact source mapping and frozen v1 authority
+remain unchanged. Implementation and acceptance are tracked in the
+[five-pass execution ledger](../../plans/evidence/five-pass-audit/execution-ledger.md);
+the current campaign's combined gates remain pending.

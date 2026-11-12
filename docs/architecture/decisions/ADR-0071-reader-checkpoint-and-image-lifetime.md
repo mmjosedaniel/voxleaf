@@ -77,3 +77,24 @@ Historical DCR-02 remains withdrawn and C15 is not promoted to a new reproduced
 production defect. The plan's current host gates pass and exact implementation
 review RPI-CR-R1-20261110 is APPROVE. The linked evidence, rather than this ADR
 alone, establishes that bounded acceptance.
+
+## 2026-11-11: Protect automatic follow before settlement
+
+An instant narration follow can move the viewport before its scheduled locator
+settlement. If Stop cancels that settlement, a delayed scroll notification still
+belongs to that automatic movement and cannot admit a new passive checkpoint.
+
+The follow owner records actual displacement at initiation, including corrective
+follow scrolls. The existing tracker retains one measured block/viewport placement
+and scroll offset without changing its locator or admitting a save. An unchanged
+placement suppresses the delayed sample; real displacement, explicit placement,
+root/document replacement or disposal retires that protection. Missing geometry
+and a clamped scroll that did not move introduce no new suppression.
+
+This extends the existing transient geometry guard; it adds no input-event
+classification, timer, persisted geometry, process, schema or persistence owner.
+Controlled Chromium evidence distinguishes stable-height late-scroll reproduction
+from responsive reflow, which can independently protect the checkpoint. Current
+case and combined acceptance are tracked in the
+[five-pass execution ledger](../../plans/evidence/five-pass-audit/execution-ledger.md);
+the new campaign's integration gates remain pending.

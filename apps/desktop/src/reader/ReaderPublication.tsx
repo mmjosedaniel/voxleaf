@@ -16,6 +16,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type {
+  FocusEvent as ReactFocusEvent,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   ReactElement,
@@ -405,6 +406,14 @@ export function ReaderPublicationContent({
   const readerViewportRef = useRef<HTMLDivElement | null>(null);
   const [readerContentRoot, setReaderContentRoot] =
     useState<HTMLDivElement | null>(null);
+  const paragraphLeafPlacement = useRef<{
+    hovered: PublicationLocatedBlock | undefined;
+    focused: PublicationLocatedBlock | undefined;
+  }>({ hovered: undefined, focused: undefined });
+  const setReaderContentRef = useCallback((root: HTMLDivElement | null) => {
+    paragraphLeafPlacement.current = { hovered: undefined, focused: undefined };
+    setReaderContentRoot(root);
+  }, []);
   const navigationRef = useRef<HTMLElement | null>(null);
   const contentsTriggerRef = useRef<HTMLButtonElement | null>(null);
   const closeContents = useCallback(() => {
@@ -477,6 +486,8 @@ export function ReaderPublicationContent({
         narrationSource?.updateVisibleLocator?.(locator);
         resume({ requestSample: false });
       },
+      recordAutomaticFollowPlacement: (locator: ReadingLocatorV1) =>
+        visualLocatorTracker.recordAutomaticFollowPlacement(locator),
       suspendVisualSampling: () => visualLocatorTracker.suspend(),
     };
     segmentHighlightController.setCallbacks(callbacks);
@@ -749,9 +760,41 @@ export function ReaderPublicationContent({
     },
     [narrationSource, paragraphLeafController],
   );
-  const restoreVisualParagraphLeaf = useCallback((): void => {
-    paragraphLeafController.setPreviewLocator(state.activeLocator);
-  }, [paragraphLeafController, state.activeLocator]);
+  const projectParagraphLeafPreview = useCallback((): void => {
+    const current = coordinator.state;
+    const placement = paragraphLeafPlacement.current;
+    const ownsCurrentOccurrence = (
+      block: PublicationLocatedBlock | undefined,
+    ): boolean =>
+      block !== undefined &&
+      current.contentStatus !== "chapter-too-large" &&
+      block.documentId === current.activeDocument.id &&
+      block.startLocator.spineItemIndex ===
+        current.activeLocator.spineItemIndex;
+    if (!ownsCurrentOccurrence(placement.hovered))
+      placement.hovered = undefined;
+    if (!ownsCurrentOccurrence(placement.focused))
+      placement.focused = undefined;
+    paragraphLeafController.setPreviewLocator(
+      (placement.focused ?? placement.hovered)?.startLocator ??
+        current.activeLocator,
+    );
+  }, [coordinator, paragraphLeafController]);
+  const releaseParagraphLeafHover = useCallback((): void => {
+    paragraphLeafPlacement.current.hovered = undefined;
+    projectParagraphLeafPreview();
+  }, [projectParagraphLeafPreview]);
+  const updateParagraphLeafFocus = useCallback(
+    (event: ReactFocusEvent<HTMLDivElement>): void => {
+      if (!event.target.classList.contains("paragraph-leaf")) return;
+      paragraphLeafPlacement.current.focused =
+        event.type === "focus"
+          ? paragraphLeafController.getSnapshot().locatedBlock
+          : undefined;
+      projectParagraphLeafPreview();
+    },
+    [paragraphLeafController, projectParagraphLeafPreview],
+  );
   const previewParagraphLeafAtPointer = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>): void => {
       const target = event.target;
@@ -771,10 +814,11 @@ export function ReaderPublicationContent({
         locatedBlock?.block.kind === "heading" ||
         locatedBlock?.block.kind === "paragraph"
       ) {
-        paragraphLeafController.setPreviewLocator(locatedBlock.startLocator);
+        paragraphLeafPlacement.current.hovered = locatedBlock;
+        projectParagraphLeafPreview();
       }
     },
-    [activeDomRangeMapper, paragraphLeafController],
+    [activeDomRangeMapper, projectParagraphLeafPreview],
   );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
@@ -858,8 +902,14 @@ export function ReaderPublicationContent({
     return unsubscribe;
   }, [activeDomRangeMapper, segmentHighlightController]);
   useLayoutEffect(() => {
-    paragraphLeafController.setPreviewLocator(state.activeLocator);
-  }, [paragraphLeafController, state.activeLocator]);
+    projectParagraphLeafPreview();
+  }, [
+    projectParagraphLeafPreview,
+    readerContentRoot,
+    state.activeDocument.id,
+    state.activeLocator,
+    state.contentStatus,
+  ]);
   useEffect(() => {
     if (narrationSource === undefined) {
       return;
@@ -1090,12 +1140,14 @@ export function ReaderPublicationContent({
           <div className="reader-layout">
             <div className="reader-reading-pane">
               <div
-                ref={setReaderContentRoot}
+                ref={setReaderContentRef}
                 id={contentId}
                 className="reader-content"
                 onPointerOver={previewParagraphLeafAtPointer}
-                onPointerLeave={restoreVisualParagraphLeaf}
-                onPointerCancel={restoreVisualParagraphLeaf}
+                onPointerLeave={releaseParagraphLeafHover}
+                onPointerCancel={releaseParagraphLeafHover}
+                onFocus={updateParagraphLeafFocus}
+                onBlur={updateParagraphLeafFocus}
               >
                 <ParagraphLeaf
                   contentRoot={readerContentRoot}

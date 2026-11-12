@@ -15,6 +15,7 @@ import {
   AdaptiveBufferScheduler,
   type AdaptiveBufferAudioUnit,
   type AdaptiveBufferPreparedSegment,
+  type AdaptiveBufferStartMode,
 } from "./adaptive-buffer-scheduler";
 import {
   AdaptivePcmPlayer,
@@ -772,10 +773,9 @@ function readyScheduler(
   clock: ManualClock,
   segments: readonly AdaptiveBufferPreparedSegment[],
   complete: boolean,
+  mode: AdaptiveBufferStartMode = { kind: "quick" },
 ): AdaptiveBufferScheduler {
-  const scheduler = new AdaptiveBufferScheduler(clock, IDENTITY, {
-    kind: "quick",
-  });
+  const scheduler = new AdaptiveBufferScheduler(clock, IDENTITY, mode);
   scheduler.beginServiceStart();
   scheduler.markServiceStarted();
   scheduler.beginServicePrepare();
@@ -1392,6 +1392,55 @@ describe("adaptive PCM playback", () => {
           }
           player.close();
         }
+      }
+    },
+  );
+
+  it.each([false, true])(
+    "five-pass 3.2 waits for Prepared lead at the new rate before first allocation (paused: %s)",
+    async (paused) => {
+      const clock = createManualClock(0);
+      const segments = [segment(1), segment(2), segment(3), segment(4)];
+      const scheduler = readyScheduler(clock, segments, false, {
+        kind: "prepared",
+        targetMs: 60_000,
+      });
+      scheduler.selectPlaybackRatePercent(75);
+      for (const prepared of segments.slice(0, 3)) {
+        synthesize(scheduler, prepared, 15_000);
+      }
+      const backend = new ManualPcmPlaybackBackend(clock);
+      let release!: () => void;
+      const ratePreparation = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const prepare = vi
+        .spyOn(backend, "preparePlaybackRate")
+        .mockReturnValueOnce(ratePreparation);
+      const player = new AdaptivePcmPlayer(scheduler, backend);
+      try {
+        player.synchronize();
+        expect(prepare).toHaveBeenCalledExactlyOnceWith(75);
+        expect(backend.startedSequences).toEqual([]);
+        if (paused) expect(player.pause().state).toBe("paused");
+
+        player.setPlaybackRatePercent(100);
+        const waiting = paused ? player.resume() : player.synchronize();
+        expect(backend.startedSequences).toEqual([]);
+        expect(waiting.state).toBe("preparing");
+        release();
+        await ratePreparation;
+        player.synchronize();
+        expect(backend.startedSequences).toEqual([]);
+
+        synthesize(scheduler, segments[3]!, 15_000);
+        expect(player.synchronize().state).toBe("playing");
+        expect(backend.startedSequences).toEqual([0]);
+        expect(backend.startedRates).toEqual([1]);
+      } finally {
+        release();
+        player.close();
+        await player.waitForCleanup();
       }
     },
   );

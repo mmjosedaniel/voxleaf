@@ -300,6 +300,16 @@ class Qwen3TtsAdapter:
     ) -> tuple[BatchAudioUnit, ...]:
         """Run exactly one v4 batch while returning payload-free unit metadata."""
 
+        return self._generate_batch(request)
+
+    def generate_batch_with_entry_witness(
+        self, request: BatchGenerationRequest, entered: Callable[[], None]
+    ) -> tuple[BatchAudioUnit, ...]:
+        return self._generate_batch(request, entered=entered)
+
+    def _generate_batch(
+        self, request: BatchGenerationRequest, *, entered: Callable[[], None] | None = None
+    ) -> tuple[BatchAudioUnit, ...]:
         model = self._model
         generation = self._profile.generation_settings
         instruction = self._profile.instruction
@@ -315,6 +325,8 @@ class Qwen3TtsAdapter:
             generation_kwargs = generation.as_qwen_kwargs()
             if self._diagnostic_max_new_tokens is not None:
                 generation_kwargs["max_new_tokens"] = self._diagnostic_max_new_tokens
+            if entered is not None:
+                entered()
             waveforms, sample_rate = model.generate_custom_voice(
                 text=[unit.text for unit in request.units],
                 language=[unit.language for unit in request.units],

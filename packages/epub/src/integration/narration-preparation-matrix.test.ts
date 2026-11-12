@@ -152,6 +152,13 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     ["DCR-09", "en", "20 °C-+5 °C", "20 °C-+5 °C"],
     ["DCR-09", "es", "25,5 °C–20 °C", "25,5 °C–20 °C"],
     ["DCR-09", "en", "−5 °C – 20 °C", "−5 °C – 20 °C"],
+    ["five-pass 1.4", "es", "18–20 °C", "18–20 °C"],
+    ["five-pass 1.4", "en", "18–20 °C", "18–20 °C"],
+    ["five-pass 1.4", "es", "18 - 20 °C", "18 - 20 °C"],
+    ["five-pass 1.4", "en", "18 - 20 °C", "18 - 20 °C"],
+    ["five-pass 1.4", "en", "8 – 20 °C", "8 – 20 °C"],
+    ["five-pass 1.4", "es", "21 - 20 °C", "21 - 20 °C"],
+    ["five-pass 1.4", "en", "𝟙–20 °C", "𝟙–20 °C"],
     ["CCF-C22", "es", "14:30 %", "14:30 %"],
     ["CCF-C22", "en", "$12.50 %", "$12.50 %"],
     [
@@ -172,6 +179,69 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
       const publication = opened.publication;
       const before = JSON.stringify(publication.documents);
       try {
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-bilingual-v2",
+          "narration-chatterbox-v1",
+        ] as const) {
+          const all = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            16,
+            profile,
+            language,
+          );
+          const single = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            language,
+          );
+          expect(single.segments).toEqual(all.segments);
+          expect(all.segments.map((segment) => segment.text)).toEqual([
+            expected,
+            "Fin.",
+          ]);
+          expect(all.segments[0]!.sourceRange.start).toEqual(
+            publication.defaultStartLocator,
+          );
+          expect(all.segments[0]!.sourceRange.end.textOffsetCodePoints).toBe(
+            Array.from(source).length,
+          );
+          for (const [index, segment] of all.segments.entries())
+            assertPublicSegment(publication, segment, index);
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each([
+    ["en", "en-12", "8", "8"],
+    ["en", "en-US-US", "8", "8"],
+    ["en", "en-ab12", "8", "8"],
+    ["en", "en-abcde-ABCDE", "8", "8"],
+    ["es", "es-419-MX", "21", "21"],
+    ["es", "es-419", "21", "veintiuno"],
+    ["en", "EN-gb-OED", "8", "eight"],
+    ["en", "en-Latn-US-1901-u-ca-x-a", "8", "eight"],
+  ] as const)(
+    "five-pass 2.5 public language tag %s %s retains display and source ranges",
+    async (language, tag, source, expected) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language}"><head><title>Synthetic</title></head><body><p lang="${tag}">${source}</p><p>Fin.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok)
+        throw new Error("synthetic-language-structure-open-failed");
+      const { publication } = opened;
+      const before = JSON.stringify(publication.documents);
+      try {
+        expect(publication.locators[0]?.block).toMatchObject({ language: tag });
         for (const profile of [
           "narration-piper-v2",
           "narration-bilingual-v2",

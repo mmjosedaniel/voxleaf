@@ -17,6 +17,13 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed five-pass audit](plans/completed/five-pass-audit-revalidation-and-corrections.md)
+records24 corrections and the already-correct case4.4, with four original
+excluded or conditional dispositions preserved. Independent integrated review
+FPA-INTEGRATED-CR-R1-20261111 approved the implementation and selected host gates.
+Its [ledger](plans/evidence/five-pass-audit/execution-ledger.md) records exact
+evidence reuse, native Piper/resource results and installer lifecycle/restoration.
+
 The [reader position and image lifecycle follow-up](plans/completed/reader-position-and-image-lifecycle.md)
 protects canonical checkpoints across presentation-only changes and recycles
 bounded image capacity by viewport visibility. Current host regression and
@@ -398,6 +405,7 @@ signing limitations. The static security scan and its limits remain in the
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
+- [Five-pass audit: revalidation and minimal corrections](plans/completed/five-pass-audit-revalidation-and-corrections.md): completed25 retained dispositions and four preserved exclusions/conditions, with per-case and integrated independent approval, current host validation and explicit evidence reuse.
 - [`plans/completed/validated-chat-findings-corrections.md`](plans/completed/validated-chat-findings-corrections.md): fourteen corrected findings and R01/R02, confirmed native/worklet races, passing final-byte host validation/integrity/cleanup and independent R3 implementation approval with scoped evidence reuse; the plan identifies the exact archive/link review.
 - [Test integrity and lifecycle harness safety](plans/completed/test-integrity-and-harness-safety.md): eleven corrections completed; G1-G8, real installer lifecycle, verified user-data restoration/reinstallation and independent review pass.
 - [`plans/completed/narration-state-and-optional-package-corrections.md`](plans/completed/narration-state-and-optional-package-corrections.md): accepted package-operation, availability, preference, volume, preparation-error and compatibility-status corrections; 169 focused tests and full repository/Chromium/WebView2 checks pass with independent Astra approval.

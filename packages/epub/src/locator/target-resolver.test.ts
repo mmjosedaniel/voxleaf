@@ -112,6 +112,49 @@ describe("semantic publication target resolution", () => {
     expect(Object.isFrozen(resolution)).toBe(true);
   });
 
+  it("five-pass 4.2 resolves an empty fragment exactly to the admitted document start", () => {
+    const { locatorIndex, targetIndex } = indexes(
+      [
+        spineProjection(
+          0,
+          ["Document start", "Another passage"],
+          [undefined, "later"],
+        ),
+      ],
+      1,
+    );
+    const first = requiredBlock(locatorIndex.spines[0]?.blocks[0]);
+    for (const target of [
+      { documentId: "document:0" },
+      { documentId: "document:0", fragment: "" },
+    ]) {
+      const resolution = resolvePublicationTarget(
+        targetIndex,
+        target,
+        createEpubProcessingBudget(),
+      );
+      expect(resolution).toEqual({
+        status: "exact",
+        reason: "document-start",
+        locator: first.startLocator,
+        locatedBlock: first,
+      });
+      expect(Object.isFrozen(resolution)).toBe(true);
+    }
+    expect(
+      resolvePublicationTarget(
+        targetIndex,
+        { documentId: "document:0", fragment: "missing" },
+        createEpubProcessingBudget(),
+      ),
+    ).toEqual({
+      status: "recovered",
+      reason: "fragment-unresolved",
+      locator: first.startLocator,
+      locatedBlock: first,
+    });
+  });
+
   it("returns fixed unavailable outcomes without target details or fabricated locators", () => {
     const projections = Object.freeze([
       spineProjection(0, ["Available"], ["available"]),

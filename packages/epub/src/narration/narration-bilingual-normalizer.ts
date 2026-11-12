@@ -209,15 +209,19 @@ function* isWellFormedLanguageTag(value: string): Generator<number, boolean> {
   const step =
     NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenCheckpointsTarget;
   let subtagLength = 0;
+  let subtagLetters = 0;
   let subtagIndex = 0;
   let subtagStart = 0;
-  let privateUse = false;
+  let stage: "extlang" | "region" | "variant" | "extension" | "private-use" =
+    "extlang";
+  let extlangs = 0;
   let needsPayload = false;
   const singletons = new Set<string>();
+  let variants: Set<string> | undefined;
 
   const acceptSubtag = (end: number): boolean => {
     if (subtagIndex === 0) return true;
-    if (privateUse) {
+    if (stage === "private-use") {
       needsPayload = false;
       return true;
     }
@@ -226,11 +230,48 @@ function* isWellFormedLanguageTag(value: string): Generator<number, boolean> {
       const singleton = value.slice(subtagStart, end).toLowerCase();
       if (singletons.has(singleton)) return false;
       singletons.add(singleton);
-      privateUse = singleton === "x";
+      stage = singleton === "x" ? "private-use" : "extension";
       needsPayload = true;
-    } else {
-      needsPayload = false;
+      return true;
     }
+    if (stage === "extension") {
+      needsPayload = false;
+      return true;
+    }
+
+    const allLetters = subtagLetters === subtagLength;
+    if (stage === "extlang" && allLetters) {
+      if (subtagLength === 3) {
+        if (extlangs === 3) return false;
+        extlangs += 1;
+        return true;
+      }
+      if (subtagLength === 4) {
+        stage = "region";
+        return true;
+      }
+    }
+    if (
+      stage !== "variant" &&
+      ((subtagLength === 2 && allLetters) ||
+        (subtagLength === 3 && subtagLetters === 0))
+    ) {
+      stage = "variant";
+      return true;
+    }
+    if (
+      subtagLength < 5 &&
+      !(subtagLength === 4 && isAsciiDigit(value.charCodeAt(subtagStart)))
+    ) {
+      return false;
+    }
+    // Retain only short keys for variants of the current tag. Extension and
+    // private-use payloads never enter this set.
+    const variant = value.slice(subtagStart, end).toLowerCase();
+    variants ??= new Set<string>();
+    if (variants.has(variant)) return false;
+    variants.add(variant);
+    stage = "variant";
     return true;
   };
 
@@ -248,17 +289,20 @@ function* isWellFormedLanguageTag(value: string): Generator<number, boolean> {
       }
       subtagIndex += 1;
       subtagLength = 0;
+      subtagLetters = 0;
       subtagStart = index + 1;
       continue;
     }
 
+    const letter = isAsciiAlpha(code);
     if (
-      !(isAsciiAlpha(code) || (subtagIndex > 0 && isAsciiDigit(code))) ||
+      !(letter || (subtagIndex > 0 && isAsciiDigit(code))) ||
       subtagLength >= 8
     ) {
       return false;
     }
     subtagLength += 1;
+    if (letter) subtagLetters += 1;
   }
 
   return (
@@ -280,6 +324,10 @@ function* classifyLanguageTag(
     return (yield* isWellFormedLanguageTag(value)) ? "es" : "und";
   }
   if (primary === "en" && defaultLanguage === "en") {
+    if (value.length === 9 && value.slice(2).toLowerCase() === "-gb-oed") {
+      yield value.length;
+      return "en";
+    }
     return (yield* isWellFormedLanguageTag(value)) ? "en" : "und";
   }
   return "und";
@@ -551,7 +599,7 @@ function hasCelsiusRangeNeighbor(
   languages: readonly NarrationNormalizationLanguage[],
   start: number,
   direction: -1 | 1,
-  language: "es" | "en",
+  language: NarrationNormalizationLanguage,
 ): boolean {
   let cursor = start;
   let exhausted = false;
@@ -577,16 +625,6 @@ function hasCelsiusRangeNeighbor(
   const separator = next(true);
   if (separator !== "-" && separator !== "–") return exhausted;
 
-  // Require a Celsius endpoint across the dash, so prose dashes remain punctuation.
-  if (direction === -1) {
-    return (
-      (next(true) === "C" &&
-        next() === "°" &&
-        isNumericContextCodePoint(next(true))) ||
-      exhausted
-    );
-  }
-
   const afterDigits = (): string | undefined => {
     let following: string | undefined;
     do {
@@ -594,6 +632,19 @@ function hasCelsiusRangeNeighbor(
     } while (isNumericContextCodePoint(following));
     return following;
   };
+  if (direction === -1) {
+    const endpoint = next(true);
+    if (endpoint === "C") {
+      return (
+        (next() === "°" && isNumericContextCodePoint(next(true))) || exhausted
+      );
+    }
+    // The trailing unit can apply to a bare numeric endpoint on the left.
+    // An attached word's final digits do not establish such an endpoint.
+    if (!isNumericContextCodePoint(endpoint)) return exhausted;
+    return !isWordContextCodePoint(afterDigits()) || exhausted;
+  }
+
   let value = next(true);
   if (/[+−-]/u.test(value ?? "")) value = next();
   if (!isNumericContextCodePoint(value)) return exhausted;
@@ -948,14 +999,21 @@ function matchesLexicalForm(
     !isLexicalBoundary(before.value) ||
     !isLexicalBoundary(after.value) ||
     (form.kind === "number" &&
-      hasAttachedNumericSyntax(
+      (hasAttachedNumericSyntax(
         tokens,
         languages,
         before,
         after,
         endIndexExclusive,
         requiredLanguage,
-      )) ||
+      ) ||
+        hasCelsiusRangeNeighbor(
+          tokens,
+          languages,
+          endIndexExclusive,
+          1,
+          requiredLanguage,
+        ))) ||
     (form.kind === "abbreviation" &&
       (before.value === "." || after.value === "."))
   ) {

@@ -223,6 +223,12 @@ export function OptionalChatterboxControls({
     () => client.downloadPending,
     () => client.downloadPending,
   );
+  const cancelRequested = useSyncExternalStore(
+    (listener) => client.subscribe(listener),
+    () => client.cancelPending,
+    () => client.cancelPending,
+  );
+  const actionPending = pending || cancelRequested;
   const [exporting, setExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
   const storageFootprintBytes = snapshot.installedBytes;
@@ -369,7 +375,7 @@ export function OptionalChatterboxControls({
           <p role="status">{acquisitionBlockMessage}</p>
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || actionPending}
             onClick={() => run(() => client.recheckCompatibility(onRecheck))}
           >
             Recheck device compatibility
@@ -387,7 +393,7 @@ export function OptionalChatterboxControls({
       {snapshot.state === "absent" ? (
         <button
           type="button"
-          disabled={disabled || pending || !acquisitionAllowed}
+          disabled={disabled || actionPending || !acquisitionAllowed}
           onClick={() => run(() => client.select())}
         >
           Review Chatterbox download
@@ -426,7 +432,10 @@ export function OptionalChatterboxControls({
           <button
             type="button"
             disabled={
-              disabled || pending || downloadRequested || !acquisitionAllowed
+              disabled ||
+              actionPending ||
+              downloadRequested ||
+              !acquisitionAllowed
             }
             onClick={download}
           >
@@ -434,7 +443,7 @@ export function OptionalChatterboxControls({
           </button>
           <button
             type="button"
-            disabled={pending && !downloadRequested}
+            disabled={cancelRequested || (pending && !downloadRequested)}
             onClick={() => run(() => client.cancel())}
           >
             Cancel
@@ -454,7 +463,7 @@ export function OptionalChatterboxControls({
           <p>{CANCELLATION_SCOPE_COPY}</p>
           <button
             type="button"
-            disabled={pending && !downloadRequested}
+            disabled={cancelRequested || (pending && !downloadRequested)}
             onClick={() => run(() => client.cancel())}
           >
             Cancel download
@@ -466,7 +475,7 @@ export function OptionalChatterboxControls({
           {active ? null : (
             <button
               type="button"
-              disabled={disabled || pending || !activationAllowed}
+              disabled={disabled || actionPending || !activationAllowed}
               onClick={() => void activate()}
             >
               Activate Chatterbox
@@ -474,7 +483,7 @@ export function OptionalChatterboxControls({
           )}
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || actionPending}
             onClick={() =>
               run(
                 onRemove,
@@ -490,7 +499,7 @@ export function OptionalChatterboxControls({
         <div>
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || actionPending}
             onClick={() =>
               run(
                 recheckCompatibility
@@ -509,7 +518,7 @@ export function OptionalChatterboxControls({
           </button>
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || actionPending}
             onClick={() =>
               run(
                 onRemove,

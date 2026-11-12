@@ -2084,6 +2084,7 @@ impl OptionalChatterboxManager {
         if matches!(
             current.state,
             OptionalProfileState::Installed
+                | OptionalProfileState::Confirming
                 | OptionalProfileState::Downloading
                 | OptionalProfileState::Verifying
                 | OptionalProfileState::Removing
@@ -2091,13 +2092,14 @@ impl OptionalChatterboxManager {
             return Ok(current);
         }
         // Verification above can overlap another command. Recheck admission
-        // while replacing the operation so an active worker keeps its flag.
+        // while replacing the operation so a confirmation token or active worker stays owned.
         let mut operation = self
             .operation
             .lock()
             .map_err(|_| OptionalProfileError::Busy)?;
         if let Some(
-            state @ (OptionalProfileState::Downloading
+            state @ (OptionalProfileState::Confirming
+            | OptionalProfileState::Downloading
             | OptionalProfileState::Verifying
             | OptionalProfileState::Installed
             | OptionalProfileState::Removing),
@@ -2376,6 +2378,7 @@ impl OptionalChatterboxManager {
             .unwrap_or_else(|| snapshot_from(&manifest, state, 0, None)))
     }
 
+    #[cfg(test)]
     fn remove_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
         self.remove_with_manifest(root, &manifest)
@@ -2386,42 +2389,65 @@ impl OptionalChatterboxManager {
         root: &Path,
         supervisor: &crate::tts_service_supervisor::TtsServiceSupervisor,
     ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
-        let _admission = supervisor
-            .stop_for_optional_removal()
-            .map_err(|_| OptionalProfileError::CleanupFailed)?;
+        let manifest = exact_manifest()?;
+        let previous = self.reserve_removal()?;
+        let _admission = match supervisor.stop_for_optional_removal() {
+            Ok(admission) => admission,
+            Err(_) => {
+                *self
+                    .operation
+                    .lock()
+                    .map_err(|_| OptionalProfileError::CleanupFailed)? = previous;
+                return Err(OptionalProfileError::CleanupFailed);
+            }
+        };
         #[cfg(test)]
         tests::maf_after_service_stop();
-        self.remove_at(root)
+        self.remove_reserved(root, &manifest)
     }
 
+    #[cfg(test)]
     fn remove_with_manifest(
         &self,
         root: &Path,
         manifest: &OptionalPackageManifest,
     ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
-        {
-            let mut operation = self
-                .operation
-                .lock()
-                .map_err(|_| OptionalProfileError::Busy)?;
-            if operation.worker_active
-                || matches!(
-                    operation.state,
-                    Some(
-                        OptionalProfileState::Confirming
-                            | OptionalProfileState::Downloading
-                            | OptionalProfileState::Verifying
-                            | OptionalProfileState::Removing
-                    )
+        self.reserve_removal()?;
+        self.remove_reserved(root, manifest)
+    }
+
+    fn reserve_removal(&self) -> Result<Operation, OptionalProfileError> {
+        let mut operation = self
+            .operation
+            .lock()
+            .map_err(|_| OptionalProfileError::Busy)?;
+        if operation.worker_active
+            || matches!(
+                operation.state,
+                Some(
+                    OptionalProfileState::Confirming
+                        | OptionalProfileState::Downloading
+                        | OptionalProfileState::Verifying
+                        | OptionalProfileState::Removing
                 )
-            {
-                return Err(OptionalProfileError::Busy);
-            }
-            *operation = Operation {
+            )
+        {
+            return Err(OptionalProfileError::Busy);
+        }
+        Ok(std::mem::replace(
+            &mut *operation,
+            Operation {
                 state: Some(OptionalProfileState::Removing),
                 ..Operation::default()
-            };
-        }
+            },
+        ))
+    }
+
+    fn remove_reserved(
+        &self,
+        root: &Path,
+        manifest: &OptionalPackageManifest,
+    ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let result = with_installed_runtime_lock(|| {
             invalidate_verified_runtime_receipt();
             let backup = promotion_backup_root(root);

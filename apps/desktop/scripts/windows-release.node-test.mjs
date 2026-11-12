@@ -40,6 +40,8 @@ for (const scenario of [
   "CARGO_BUILD_RUSTC compiler",
   "configured compiler",
   "canonical identical-byte rebuild",
+  "five-pass 1.8 legacy lifecycle argument",
+  "five-pass 1.8 explicit not-run argument",
 ]) {
   test(
     `CCF-C16 release layout handles ${scenario}`,
@@ -47,6 +49,12 @@ for (const scenario of [
     async () => {
       const fixture = await mkdtemp(path.join(os.tmpdir(), "voxleaf-layout-"));
       try {
+        const legacyLifecycle =
+          scenario === "five-pass 1.8 legacy lifecycle argument";
+        const explicitNotRun =
+          scenario === "five-pass 1.8 explicit not-run argument";
+        const canonical =
+          scenario === "canonical identical-byte rebuild" || explicitNotRun;
         const srcTauri = path.join(fixture, "apps/desktop/src-tauri");
         const release = path.join(srcTauri, "target/release");
         const binary = path.join(release, "voxleaf-desktop.exe");
@@ -119,7 +127,14 @@ for (const scenario of [
             `
 $ErrorActionPreference = 'Stop'
 function node {
-  if ($args[1] -eq 'evidence') { Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'evidence' }
+  if ($args[1] -eq 'evidence') {
+    Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'evidence'
+    $statusIndex = [Array]::IndexOf($args, '--lifecycle-status')
+    if ($statusIndex -lt 0 -or $args[$statusIndex + 1] -ne 'not-run') {
+      $global:LASTEXITCODE = 1
+      return
+    }
+  }
   $global:LASTEXITCODE = 0
 }
 function pnpm.cmd {
@@ -143,7 +158,11 @@ function Get-FileHash {
     $sha256.Dispose()
   }
 }
-& $env:CCF_LAYOUT_SCRIPT
+if ($env:CCF_LAYOUT_LIFECYCLE) {
+  & $env:CCF_LAYOUT_SCRIPT -LifecycleStatus $env:CCF_LAYOUT_LIFECYCLE
+} else {
+  & $env:CCF_LAYOUT_SCRIPT
+}
 `,
           ],
           {
@@ -177,13 +196,22 @@ function Get-FileHash {
               CCF_LAYOUT_BINARY: binary,
               CCF_LAYOUT_INSTALLER: installer,
               CCF_LAYOUT_CANONICAL:
-                scenario === "canonical identical-byte rebuild"
-                  ? "1"
+                canonical || legacyLifecycle ? "1" : undefined,
+              CCF_LAYOUT_LIFECYCLE: legacyLifecycle
+                ? "local-install-first-start-repair-uninstall-passed"
+                : explicitNotRun
+                  ? "not-run"
                   : undefined,
             },
           },
         );
-        if (scenario === "canonical identical-byte rebuild") {
+        if (legacyLifecycle) {
+          assert.equal(result.status, 1, result.stderr || result.stdout);
+          assert.equal(await readFile(trace, "utf8"), "");
+          assert.equal(await readFile(checksum, "utf8"), "previous receipt");
+          assert.match(result.stderr, /ParameterArgumentValidationError/u);
+          assert.match(result.stderr, /LifecycleStatus/u);
+        } else if (canonical) {
           assert.equal(result.status, 0, result.stderr || result.stdout);
           assert.deepEqual(
             (await readFile(trace, "utf8")).trim().split(/\r?\n/u),
@@ -276,6 +304,28 @@ for ($index = 0; $index -lt $optionalRoots.Count; $index++) {
   },
 );
 
+async function lifecycleFixtureScript(root, installerOverrides) {
+  const scripts = path.join(root, "scripts");
+  await mkdir(scripts);
+  const lifecycle = "test-windows-package-lifecycle.ps1";
+  const installer = "windows-package-lifecycle-installer.ps1";
+  for (const file of [lifecycle, "windows-package-lifecycle-data.ps1"]) {
+    await copyFile(
+      path.join(repositoryRoot(), "scripts", file),
+      path.join(scripts, file),
+    );
+  }
+  const helper = await readFile(
+    path.join(repositoryRoot(), "scripts", installer),
+    "utf8",
+  );
+  await writeFile(
+    path.join(scripts, installer),
+    `${helper}\n${installerOverrides}\n`,
+  );
+  return path.join(scripts, lifecycle);
+}
+
 for (const mode of [
   "partial",
   "post-install",
@@ -298,6 +348,18 @@ for (const mode of [
       );
       const quote = (value) => `'${value.replaceAll("'", "''")}'`;
       try {
+        const lifecycle = await lifecycleFixtureScript(
+          root,
+          String.raw`
+function Invoke-LifecycleInstallerJob {
+  param($InstallerPath, $RecordRoot, $Journal, $CleanupFailed)
+  & $RecordRoot 0 ([DateTime]::UtcNow.ToString('o'))
+  & $Journal
+  $process = Start-Process -FilePath $InstallerPath -ArgumentList '/S' -WindowStyle Hidden -PassThru
+  return $process.ExitCode
+}
+`,
+        );
         const source = String.raw`
 $ErrorActionPreference = 'Stop'
 $fixtureRoot = ${quote(root)}
@@ -388,7 +450,7 @@ function Start-Process {
   throw 'synthetic-unexpected-process'
 }
 $fixtureFailure = $null
-try { & ${quote(path.join(repositoryRoot(), "scripts", "test-windows-package-lifecycle.ps1"))} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
+try { & ${quote(lifecycle)} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
 $blockedCleanup = $fixtureMode -in @('missing-uninstaller','failed-uninstaller','hanging-uninstaller')
 if ($fixtureMode -eq 'success') { if ($null -ne $fixtureFailure) { throw $fixtureFailure } }
 elseif ($null -eq $fixtureFailure) { throw 'synthetic-missing-primary-failure' }
@@ -477,6 +539,234 @@ Write-Output 'ownership-cleanup-order-and-recovery-verified'
             "local-install-first-start-repair-uninstall-passed",
           );
           assert.equal(evidence.lifecycle.localReleaseGatesPassed, false);
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+}
+
+for (const mode of ["timeout", "unverified", "completed"]) {
+  test(
+    `five-pass 5.3 bounds a real installer descendant before uninstall: ${mode}`,
+    { skip: process.platform !== "win32" },
+    async () => {
+      const root = await mkdtemp(
+        path.join(await realpath(os.tmpdir()), "voxleaf-installer-job-"),
+      );
+      const quote = (value) => `'${value.replaceAll("'", "''")}'`;
+      try {
+        const lifecycle = await lifecycleFixtureScript(
+          root,
+          String.raw`
+function Get-LifecycleInstallerBudgetMilliseconds { 1800 }
+${
+  mode === "unverified"
+    ? String.raw`
+function Stop-LifecycleInstallerJob {
+  param($Job)
+  $Job.TerminateAndReap(10000)
+  throw 'fixture-unverified-reap'
+}
+`
+    : ""
+}
+`,
+        );
+        const script = path.join(root, "fixture.ps1");
+        await writeFile(
+          script,
+          String.raw`
+$ErrorActionPreference = 'Stop'
+$fixtureRoot = ${quote(root)}
+$fixtureMode = ${quote(mode)}
+$env:VOXLEAF_INSTALLER_JOB_FIXTURE = $fixtureRoot
+$env:VOXLEAF_INSTALLER_JOB_FIXTURE_MODE = $fixtureMode
+$env:LOCALAPPDATA = Join-Path $fixtureRoot 'local'
+$env:TEMP = Join-Path $fixtureRoot 'temp'
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Path $env:LOCALAPPDATA,$env:TEMP -Force | Out-Null
+$fixtureData = Join-Path $env:LOCALAPPDATA 'com.voxleaf.desktop'
+$fixtureInstall = Join-Path $env:LOCALAPPDATA 'VoxLeaf'
+New-Item -ItemType Directory -Path $fixtureData | Out-Null
+[IO.File]::WriteAllText((Join-Path $fixtureData 'original.marker'), 'original')
+$fixtureInstaller = Join-Path $fixtureRoot 'VoxLeaf_0.1.0_x64-setup.exe'
+$fixtureReceipt = Join-Path $fixtureRoot 'windows-lifecycle-receipt-v1.json'
+[IO.File]::WriteAllText($fixtureReceipt, 'stale prior receipt')
+$fixtureCode = @'
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+public static class LifecycleJobFixture {
+    static void Record(string root, string name, Process process) {
+        File.WriteAllText(Path.Combine(root, name + ".pid"),
+            process.Id + "|" + process.StartTime.ToUniversalTime().Ticks);
+    }
+    public static int Main(string[] args) {
+        string root = Environment.GetEnvironmentVariable("VOXLEAF_INSTALLER_JOB_FIXTURE");
+        using (Process current = Process.GetCurrentProcess()) {
+            if (args[0] == "--sentinel") {
+                Record(root, "sentinel", current);
+                Thread.Sleep(18000);
+                return 0;
+            }
+            if (args[0] == "--child") {
+                Record(root, "child", current);
+                Thread.Sleep(Environment.GetEnvironmentVariable("VOXLEAF_INSTALLER_JOB_FIXTURE_MODE") == "completed" ? 350 : 4200);
+                File.WriteAllText(Path.Combine(root, "natural-exit"), "expired");
+                return 0;
+            }
+            if (args[0] != "/S") return 2;
+            Record(root, "installer", current);
+            string[] journals = Directory.GetFiles(
+                Environment.GetEnvironmentVariable("TEMP"), "recovery.json", SearchOption.AllDirectories);
+            if (journals.Length == 1)
+                File.Copy(journals[0], Path.Combine(root, "journal-before-child.json"));
+            string install = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "VoxLeaf");
+            Directory.CreateDirectory(install);
+            File.WriteAllText(Path.Combine(install, "uninstall.exe"), "synthetic");
+            var start = new ProcessStartInfo(current.MainModule.FileName, "--child");
+            start.UseShellExecute = false;
+            start.CreateNoWindow = true;
+            using (Process child = Process.Start(start)) { }
+            return 0;
+        }
+    }
+}
+'@
+Add-Type -TypeDefinition $fixtureCode -OutputAssembly $fixtureInstaller -OutputType ConsoleApplication
+$outside = Microsoft.PowerShell.Management\Start-Process -FilePath $fixtureInstaller -ArgumentList '--sentinel' -WindowStyle Hidden -PassThru
+$fixtureUninstalls = [Collections.Generic.List[string]]::new()
+function Assert-FixtureIdentityGone {
+  param([int]$Id, [long]$StartedTicks, [string]$Name)
+  $process = Get-Process -Id $Id -ErrorAction SilentlyContinue
+  if ($process -and $process.StartTime.ToUniversalTime().Ticks -eq $StartedTicks) {
+    throw "fixture-owned-process-still-running:$Name"
+  }
+}
+function Assert-FixtureProcessGone {
+  param([string]$Name)
+  $identity = [IO.File]::ReadAllText((Join-Path $fixtureRoot "$Name.pid")).Split('|')
+  Assert-FixtureIdentityGone ([int]$identity[0]) ([long]$identity[1]) $Name
+}
+function Start-Process {
+  param($FilePath, $ArgumentList, [switch]$Wait, [switch]$PassThru, $WindowStyle)
+  if ($FilePath -eq $fixtureInstaller) {
+    return (Microsoft.PowerShell.Management\Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -WindowStyle Hidden -Wait:$Wait -PassThru)
+  }
+  if ((Split-Path $FilePath -Leaf) -ne 'owned-uninstall.exe') { throw 'fixture-unexpected-process' }
+  Assert-FixtureProcessGone 'installer'
+  Assert-FixtureProcessGone 'child'
+  if ($outside.HasExited) { throw 'fixture-outside-sentinel-stopped' }
+  if (Test-Path -LiteralPath (Join-Path $fixtureData 'original.marker')) { throw 'fixture-restored-before-uninstall' }
+  $backups = @(Get-ChildItem -LiteralPath $env:LOCALAPPDATA -Directory -Filter '.voxleaf-package-lifecycle-backup-*')
+  if ($backups.Count -ne 1 -or [IO.File]::ReadAllText((Join-Path $backups[0].FullName 'original.marker')) -ne 'original') { throw 'fixture-backup-missing-at-uninstall' }
+  if (@(Get-ChildItem -LiteralPath $env:TEMP -Recurse -Filter recovery.json).Count -ne 1) { throw 'fixture-journal-missing-at-uninstall' }
+  $fixtureUninstalls.Add('verified')
+  Assert-ExactChildPath $env:LOCALAPPDATA $fixtureInstall 'fixture-install-path'
+  Remove-Item -LiteralPath $fixtureInstall -Recurse -Force
+  $process = [pscustomobject]@{ ExitCode=0; HasExited=$true; Id=0; StartTime=[DateTime]::UtcNow }
+  $process | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milliseconds) return $true }
+  return $process
+}
+function Assert-FixtureRecoveryRetained {
+  $backups = @(Get-ChildItem -LiteralPath $env:LOCALAPPDATA -Directory -Filter '.voxleaf-package-lifecycle-backup-*')
+  if ($backups.Count -ne 1 -or [IO.File]::ReadAllText((Join-Path $backups[0].FullName 'original.marker')) -ne 'original') { throw 'fixture-original-backup-not-retained' }
+  $journals = @(Get-ChildItem -LiteralPath $env:TEMP -Recurse -Filter recovery.json)
+  if ($journals.Count -ne 1) { throw 'fixture-recovery-journal-not-retained' }
+  return (Get-Content -LiteralPath $journals[0].FullName -Raw | ConvertFrom-Json)
+}
+try {
+  $failure = $null
+  try { & ${quote(lifecycle)} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null }
+  catch { $failure=$_.Exception.Message }
+  $natural = Test-Path -LiteralPath (Join-Path $fixtureRoot 'natural-exit')
+  Write-Output "fixture-observation: child-ready=$(Test-Path -LiteralPath (Join-Path $fixtureRoot 'child.pid')); natural-exit=$natural; uninstall-count=$($fixtureUninstalls.Count); primary=$failure"
+  $expected = if ($fixtureMode -eq 'completed') { 'windows-release-lifecycle-installed-file-missing' } else { 'windows-release-lifecycle-installer-timeout' }
+  if ($failure -ne $expected) { throw 'fixture-installer-primary-failure' }
+  if ($natural -ne ($fixtureMode -eq 'completed') -or $outside.HasExited) { throw 'fixture-bounded-cleanup-not-verified' }
+  Assert-FixtureProcessGone 'installer'
+  Assert-FixtureProcessGone 'child'
+  $journalBeforeChild = Get-Content -LiteralPath (Join-Path $fixtureRoot 'journal-before-child.json') -Raw | ConvertFrom-Json
+  $rootIdentity = [IO.File]::ReadAllText((Join-Path $fixtureRoot 'installer.pid')).Split('|')
+  if ($journalBeforeChild.installerRootProcess.id -ne [int]$rootIdentity[0] -or
+      ([DateTime]$journalBeforeChild.installerRootProcess.startedUtc).ToUniversalTime().Ticks -ne [long]$rootIdentity[1]) {
+    throw 'fixture-suspended-root-not-journaled-before-resume'
+  }
+  if ($fixtureMode -eq 'unverified') {
+    if ($fixtureUninstalls.Count -ne 0 -or -not (Test-Path -LiteralPath $fixtureInstall) -or
+        (Test-Path -LiteralPath (Join-Path $fixtureData 'original.marker'))) { throw 'fixture-unsafe-cleanup-after-unverified-reap' }
+    $journal = Assert-FixtureRecoveryRetained
+    if (-not $journal.installerCleanupUnverified -or $journal.installerRootProcess.id -ne [int]$rootIdentity[0]) {
+      throw 'fixture-unverified-installer-identity-not-retained'
+    }
+  } else {
+    if ($fixtureUninstalls.Count -ne 1 -or (Test-Path -LiteralPath $fixtureInstall)) { throw 'fixture-owned-install-retained' }
+    if ([IO.File]::ReadAllText((Join-Path $fixtureData 'original.marker')) -ne 'original') { throw 'fixture-original-not-restored' }
+  }
+  if (Test-Path -LiteralPath $fixtureReceipt) { throw 'fixture-unsafe-receipt' }
+  if ($fixtureMode -eq 'completed') {
+    . ${quote(path.join(path.dirname(lifecycle), "windows-package-lifecycle-installer.ps1"))}
+    $fixtureSuspendedId = $null
+    $fixtureSuspendedStarted = $null
+    $journalFailure = $null
+    try {
+      Invoke-LifecycleInstallerJob -InstallerPath $fixtureInstaller -RecordRoot {
+        param($Id, $StartedUtc)
+        $script:fixtureSuspendedId = $Id
+        $script:fixtureSuspendedStarted = ([DateTime]$StartedUtc).ToUniversalTime().Ticks
+      } -Journal { throw 'fixture-suspended-journal-write-failed' } -CleanupFailed {
+        throw 'fixture-suspended-cleanup-failed'
+      } | Out-Null
+    } catch { $journalFailure = $_.Exception.Message }
+    if ($journalFailure -ne 'fixture-suspended-journal-write-failed' -or -not $fixtureSuspendedId) {
+      throw 'fixture-suspended-journal-failure-not-preserved'
+    }
+    Assert-FixtureIdentityGone $fixtureSuspendedId $fixtureSuspendedStarted 'journal-failure'
+    # Exercise the same exact-root cleanup used when Job assignment fails.
+    $unassigned = [VoxLeaf.LifecycleInstallerJob]::Create($fixtureInstaller)
+    try {
+      $unassignedId = $unassigned.ProcessId
+      $unassignedStarted = $unassigned.StartedUtc.Ticks
+      $unassigned.TerminateAndReap(10000)
+    } finally { $unassigned.Dispose() }
+    Assert-FixtureIdentityGone $unassignedId $unassignedStarted 'unassigned'
+    $currentRoot = [IO.File]::ReadAllText((Join-Path $fixtureRoot 'installer.pid')).Split('|')
+    if (($currentRoot -join '|') -ne ($rootIdentity -join '|') -or (Test-Path -LiteralPath $fixtureInstall)) {
+      throw 'fixture-suspended-root-was-resumed'
+    }
+  }
+  Write-Output 'installer-job-and-cleanup-verified'
+} finally {
+  if (-not $outside.HasExited) { $outside.Kill(); if (-not $outside.WaitForExit(5000)) { throw 'fixture-sentinel-reap-failed' } }
+  $outside.Dispose()
+}
+`,
+        );
+        const result = spawnSync(
+          "powershell.exe",
+          ["-NoProfile", "-NonInteractive", "-File", script],
+          {
+            encoding: "utf8",
+            timeout: 30_000,
+            windowsHide: true,
+            env: Object.fromEntries(
+              Object.entries(process.env).filter(
+                ([name]) => name.toLowerCase() !== "psmodulepath",
+              ),
+            ),
+          },
+        );
+        assert.equal(result.error, undefined);
+        assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+        assert.match(result.stdout, /installer-job-and-cleanup-verified/u);
+        if (mode === "unverified") {
+          assert.match(
+            result.stdout,
+            /installer-cleanup-unverified:fixture-unverified-reap/u,
+          );
         }
       } finally {
         await rm(root, { recursive: true, force: true });
@@ -1007,7 +1297,7 @@ test("the release authority rejects broad uninstall roots and incomplete lifecyc
   }
 });
 
-test("DCR-05 content-safe evidence distinguishes unsigned local and signed public gates", async (t) => {
+test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of object key order", async (t) => {
   const temporary = await mkdtemp(
     path.join(os.tmpdir(), "voxleaf-release-test-"),
   );
@@ -1129,6 +1419,33 @@ test("DCR-05 content-safe evidence distinguishes unsigned local and signed publi
     (value) => {
       value.extra = true;
     },
+    (value) => {
+      delete value.status;
+    },
+    (value) => {
+      value.installer.extra = true;
+    },
+    (value) => {
+      delete value.installer.fileName;
+    },
+    (value) => {
+      value.installer.sizeBytes += 1;
+    },
+    (value) => {
+      value.checks.extra = true;
+    },
+    (value) => {
+      delete value.checks.repair;
+    },
+    (value) => {
+      value.uninstallOptionMatrix[0].extra = true;
+    },
+    (value) => {
+      delete value.uninstallOptionMatrix[0].chatterboxRemoved;
+    },
+    (value) => {
+      value.uninstallOptionMatrix.reverse();
+    },
   ]) {
     const invalid = JSON.parse(JSON.stringify(lifecycleReceipt));
     mutate(invalid);
@@ -1142,6 +1459,23 @@ test("DCR-05 content-safe evidence distinguishes unsigned local and signed publi
     ...signedInputs,
     lifecycleReceipt,
   });
+  const reverseKeys = (record) =>
+    Object.fromEntries(Object.entries(record).reverse());
+  const reordered = reverseKeys({
+    ...lifecycleReceipt,
+    installer: reverseKeys(lifecycleReceipt.installer),
+    checks: reverseKeys(lifecycleReceipt.checks),
+    uninstallOptionMatrix:
+      lifecycleReceipt.uninstallOptionMatrix.map(reverseKeys),
+  });
+  assert.notEqual(JSON.stringify(reordered), JSON.stringify(lifecycleReceipt));
+  assert.deepEqual(
+    await createPackageEvidence({
+      ...signedInputs,
+      lifecycleReceipt: reordered,
+    }),
+    signed,
+  );
   assert.equal(signed.signature.executableAndInstallerVerified, true);
   assert.equal(signed.signature.publicPublicationAllowed, true);
   assert.equal(signed.lifecycle.localReleaseGatesPassed, true);

@@ -41,14 +41,15 @@ interface MeasuredVisualBlock {
   readonly rect: VisualLocatorRect;
 }
 
-interface SettledVisualPlacement {
+interface ProtectedVisualPlacement {
   readonly element: HTMLElement;
   readonly block: VisualLocatorRect;
   readonly viewport: VisualLocatorRect;
+  readonly automaticFollowScrollTop?: number;
 }
 
 function samePlacement(
-  previous: SettledVisualPlacement,
+  previous: ProtectedVisualPlacement,
   element: HTMLElement,
   block: VisualLocatorRect,
   viewport: VisualLocatorRect,
@@ -376,7 +377,7 @@ export class ActiveVisualLocatorTracker {
   #cancelObservation: (() => void) | undefined;
   #cancelScheduledSample: (() => void) | undefined;
   #lastLocator: ReadingLocatorV1 | undefined;
-  #settledPlacement: SettledVisualPlacement | undefined;
+  #protectedPlacement: ProtectedVisualPlacement | undefined;
   #suspensionDepth = 0;
   #dirty = false;
   #closed = false;
@@ -517,27 +518,38 @@ export class ActiveVisualLocatorTracker {
   public setCurrentLocator(locator: ReadingLocatorV1): void {
     if (!this.#closed) {
       this.#lastLocator = locator;
-      this.#settledPlacement = undefined;
-      const root = this.#root;
-      if (root === undefined) return;
-      try {
-        const { locatedBlock } = this.#publication.resolveLocator(locator);
-        const element = this.#mapper.elementFor(locatedBlock);
-        const viewport = this.#environment.viewportRect(root);
-        const block =
-          element === undefined
-            ? undefined
-            : this.#environment.blockRect(element);
-        if (
-          element !== undefined &&
-          viewport !== undefined &&
-          block !== undefined
-        )
-          this.#settledPlacement = { element, block, viewport };
-      } catch {
-        // Missing geometry cannot prevent later genuine progress sampling.
-      }
+      this.#protectedPlacement = this.#measurePlacement(locator);
     }
+  }
+
+  public recordAutomaticFollowPlacement(locator: ReadingLocatorV1): void {
+    const root = this.#root;
+    if (this.#closed || root === undefined) return;
+    const placement = this.#measurePlacement(locator);
+    this.#protectedPlacement =
+      placement === undefined
+        ? undefined
+        : { ...placement, automaticFollowScrollTop: root.scrollTop };
+  }
+
+  #measurePlacement(
+    locator: ReadingLocatorV1,
+  ): ProtectedVisualPlacement | undefined {
+    const root = this.#root;
+    if (root === undefined) return;
+    try {
+      const { locatedBlock } = this.#publication.resolveLocator(locator);
+      const element = this.#mapper.elementFor(locatedBlock);
+      if (element === undefined) return;
+      const viewport = this.#environment.viewportRect(root);
+      const block = this.#environment.blockRect(element);
+      if (viewport !== undefined && block !== undefined) {
+        return { element, block, viewport };
+      }
+    } catch {
+      // Missing geometry cannot prevent later genuine progress sampling.
+    }
+    return undefined;
   }
 
   public close(): void {
@@ -558,6 +570,23 @@ export class ActiveVisualLocatorTracker {
     const viewport = this.#environment.viewportRect(root);
     if (viewport === undefined) {
       return;
+    }
+    const placement = this.#protectedPlacement;
+    if (placement?.automaticFollowScrollTop !== undefined) {
+      // An unfinished follow may leave the reading line in another block.
+      // Compare its actual placement before choosing a passive candidate.
+      if (
+        root.scrollTop === placement.automaticFollowScrollTop &&
+        this.#locatedBlocksByElement.has(placement.element)
+      ) {
+        const block = this.#environment.blockRect(placement.element);
+        if (
+          block !== undefined &&
+          samePlacement(placement, placement.element, block, viewport)
+        )
+          return;
+      }
+      this.#protectedPlacement = undefined;
     }
     const readingLine = Math.min(
       viewport.bottom,
@@ -585,11 +614,11 @@ export class ActiveVisualLocatorTracker {
     // then replace a settled interior offset even though reading did not move.
     // Retain that checkpoint only while its measured placement is unchanged.
     if (
-      this.#settledPlacement !== undefined &&
-      samePlacement(this.#settledPlacement, element, rect, viewport)
+      this.#protectedPlacement !== undefined &&
+      samePlacement(this.#protectedPlacement, element, rect, viewport)
     )
       return;
-    this.#settledPlacement = undefined;
+    this.#protectedPlacement = undefined;
     let candidate = locatedBlock.startLocator;
     if (isLeafBlock(locatedBlock) && crossesReadingLine(rect, readingLine)) {
       const left = Math.max(rect.left, viewport.left);
@@ -632,7 +661,7 @@ export class ActiveVisualLocatorTracker {
   }
 
   #teardownRoot(): void {
-    this.#settledPlacement = undefined;
+    this.#protectedPlacement = undefined;
     this.#cancelScheduledSample?.();
     this.#cancelScheduledSample = undefined;
     this.#cancelObservation?.();
@@ -645,6 +674,12 @@ export class ActiveVisualLocatorTracker {
       return;
     }
     this.#locatedBlocksByElement.delete(element);
+    if (
+      this.#protectedPlacement?.element === element &&
+      this.#protectedPlacement.automaticFollowScrollTop !== undefined
+    ) {
+      this.#protectedPlacement = undefined;
+    }
     this.#staleElementCount += 1;
     if (this.#locatedBlocksByElement.size === 0) {
       this.#leafElements = [];

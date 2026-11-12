@@ -154,8 +154,12 @@ compatibility probe is pending, the probe evaluates the latest successful choice
 against its fresh hardware facts. It cannot restore an older preference or
 override a new hardware rejection. Selecting a development-only profile updates
 the device summary immediately while preserving its existing admission gates.
-After a language selection in Settings, a compatibility check settles the
-current language and eligible saved profile before Play is available again.
+After a language selection or successful language reset in Settings, a
+compatibility check must settle the current language and eligible saved profile
+before Play is available again. Reset retains its configuration barrier through
+that check and the narrator refresh. The completed
+[five-pass case3.3](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+records this Reset correction and integrated approval `FPA-INTEGRATED-CR-R1-20261111`.
 
 Preparation failures remain visible after successful resource cleanup. Stop,
 reset, or a new explicit narration action clears the diagnostic; cleanup failure
@@ -636,6 +640,13 @@ removal excludes configuration/spawn admission, verifies service termination,
 and revokes the previously verified runtime before deleting package files.
 Failed termination prevents deletion; failed deletion remains retryable.
 
+Known busy optional acquisition, including installed-package cleanup still owned
+by its download, must reject Remove before stopping narration. Native removal
+reserves its operation before service containment and restores the entire prior
+operation when Stop fails. The existing admission guard remains held through
+deletion. The completed [five-pass case 2.2](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+records this ordering correction and integrated approval `FPA-INTEGRATED-CR-R1-20261111`.
+
 Selecting an already loaded, healthy Chatterbox profile preserves that owner
 when its admitted continuation remains valid. Fresh starts, changed profiles
 or languages, failed owners and explicit compatibility rechecks retain their
@@ -646,6 +657,15 @@ fresh-start compatibility choice. An optional download remains observable when
 Settings is closed and reopened during host preflight or transfer; reopening
 does not authorize a second download. Cancellation remains available during
 preflight. Native admission belongs to the original confirmation attempt.
+
+If cancellation reaches an installation that has already committed, Settings
+retains the paired acquisition until its cleanup settles. After both responses,
+one fresh read-only observation exposes the final cleanup result. Reopening
+Settings preserves pending cancellation and does not permit duplicate Cancel,
+Download, Activate or Remove actions. A later admitted action supersedes the
+older observation; cleanup retry remains explicit and committed files remain
+installed. The completed [five-pass ADD-01](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+records this correction and integrated approval `FPA-INTEGRATED-CR-R1-20261111`.
 
 The compact speed control reports failed persistence while retaining the applied
 in-memory speed. A later successful choice clears that feedback; a newer saved

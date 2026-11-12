@@ -233,7 +233,7 @@ interface PendingNavigation {
   readonly event: ProductNarrationNavigationEvent;
   readonly priorIntent: Exclude<ProductNarrationPlayIntent, "inactive">;
   readonly stop: Promise<void>;
-  restart: boolean;
+  readonly restart: boolean;
   target: ReadingLocatorV1 | undefined;
 }
 
@@ -412,7 +412,8 @@ export class ProductNarrationCoordinator {
   #playbackPreferenceHydration: Promise<void> | undefined;
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
-  #latestHeardLocator: ReadingLocatorV1;
+  #attemptedStartLocator: ReadingLocatorV1;
+  #latestHeardLocator: ReadingLocatorV1 | undefined;
   #audibleRange: LocatorRangeV1 | undefined;
   #playIntent: ProductNarrationPlayIntent = "inactive";
   #readerPlacementAvailable = true;
@@ -465,7 +466,7 @@ export class ProductNarrationCoordinator {
     this.#publication = publication;
     this.#activeLocator = initialLocator;
     this.#visibleLocator = initialLocator;
-    this.#latestHeardLocator = initialLocator;
+    this.#attemptedStartLocator = initialLocator;
     this.#client = dependencies.client ?? new TtsProcessClient();
     this.#profileCompatibility = dependencies.profileCompatibility;
     this.#startPreferenceRepository =
@@ -1084,8 +1085,8 @@ export class ProductNarrationCoordinator {
       return;
     }
     this.#recovery.requestRecovery();
-    this.#activeLocator = this.#latestHeardLocator;
-    this.#visibleLocator = this.#latestHeardLocator;
+    this.#activeLocator =
+      this.#latestHeardLocator ?? this.#attemptedStartLocator;
     this.#publish();
     this.#startRun();
   }
@@ -1164,7 +1165,8 @@ export class ProductNarrationCoordinator {
     this.#preparationFailure = undefined;
     this.#estimator.reset();
     this.#prepared.clear();
-    this.#continuation = this.#activeLocator;
+    this.#attemptedStartLocator = this.#activeLocator;
+    this.#continuation = this.#attemptedStartLocator;
     this.#lastPreparedBoundary = undefined;
     this.#nextSequence = 0;
     this.#acceptedAudioUnitCount = 0;
@@ -1592,10 +1594,15 @@ export class ProductNarrationCoordinator {
   ): PendingNavigation {
     const existing = this.#pendingNavigation;
     if (existing !== undefined) {
-      if (forceRestart) {
-        existing.restart = true;
-      }
-      return existing;
+      const pending: PendingNavigation = {
+        ...existing,
+        revision: ++this.#navigationRevision,
+        event,
+        restart: forceRestart || existing.priorIntent === "playing",
+        target: undefined,
+      };
+      this.#pendingNavigation = pending;
+      return pending;
     }
     if (this.#playIntent === "inactive" && !forceRestart) {
       throw new Error("content-free-navigation-state");

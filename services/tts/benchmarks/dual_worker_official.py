@@ -33,6 +33,7 @@ from benchmarks.memory import (
 
 GIB: Final = 1024**3
 RAM_SAMPLE_SECONDS: Final = 0.05
+MONITOR_JOIN_SECONDS: Final = 1.0
 MAXIMUM_COMBINED_RAM_BYTES: Final = 20 * GIB
 MINIMUM_AVAILABLE_RAM_BYTES: Final = 4 * GIB
 MINIMUM_COMMIT_HEADROOM_BYTES: Final = 4 * GIB
@@ -103,7 +104,9 @@ class DualWorkerMemoryMonitor:
         self._stop_code: str | None = None
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
-        self._failed = False
+        self._sampling_failures: list[BaseException] = []
+        self._close_failures: list[BaseException] = []
+        self._probes_closed = False
 
     @property
     def stop_code(self) -> str | None:
@@ -168,37 +171,79 @@ class DualWorkerMemoryMonitor:
         elif commit_headroom < MINIMUM_COMMIT_HEADROOM_BYTES:
             self._stop_code = "commit-headroom"
 
-    def _run(self) -> None:
-        while not self._stop.wait(RAM_SAMPLE_SECONDS):
-            try:
-                self.sample_once()
-            except Exception:
-                self._failed = True
-                self._stop_code = "resource-limit"
-                return
-
-    def start(self) -> None:
-        self.sample_once()
-        self._thread = threading.Thread(
-            target=self._run,
-            name="voxleaf-v5-memory",
-            daemon=True,
-        )
-        self._thread.start()
-
-    def finish(self) -> MonitorResult:
+    def _sample_owned(self) -> bool:
         try:
             self.sample_once()
-        except Exception:
-            self._failed = True
+        except BaseException as error:
+            self._sampling_failures.append(error)
             self._stop_code = "resource-limit"
-        self._stop.set()
+            return False
+        return True
+
+    def _close_probes(self) -> None:
+        self._probes_closed = True
+        for probe in (self._dedicated, self._shared):
+            try:
+                probe.close()
+            except BaseException as error:
+                self._close_failures.append(error)
+
+    def _run(self, handoff: threading.Event) -> None:
+        # Starting a thread can fail even after it has entered this function.
+        handoff.wait()
+        if self._thread is not threading.current_thread():
+            return
+        try:
+            while not self._stop.wait(RAM_SAMPLE_SECONDS):
+                if not self._sample_owned():
+                    self._stop.wait()
+                    break
+            self._sample_owned()
+        finally:
+            self._close_probes()
+
+    def start(self) -> None:
+        if self._thread is not None or self._probes_closed:
+            raise DualWorkerBenchmarkError("resource-limit")
+        handoff = threading.Event()
+        try:
+            self.sample_once()
+            thread = threading.Thread(
+                target=self._run,
+                args=(handoff,),
+                name="voxleaf-v5-memory",
+                daemon=True,
+            )
+            thread.start()
+            self._thread = thread
+        except BaseException as error:
+            if self._thread is not None:
+                self._stop.set()
+            else:
+                self._close_probes()
+                if self._close_failures:
+                    raise error from BaseExceptionGroup("v5 probe cleanup", self._close_failures)
+            raise
+        finally:
+            handoff.set()
+
+    def finish(self) -> MonitorResult:
         thread = self._thread
-        if thread is not None:
-            thread.join(timeout=1)
-        self._dedicated.close()
-        self._shared.close()
-        if self._failed or not self._samples:
+        if thread is None:
+            raise DualWorkerBenchmarkError("resource-limit")
+        self._stop.set()
+        try:
+            thread.join(timeout=MONITOR_JOIN_SECONDS)
+        except RuntimeError as error:
+            raise DualWorkerBenchmarkError("cleanup-failed") from error
+        if thread.is_alive():
+            raise DualWorkerBenchmarkError("cleanup-failed")
+        failures = self._sampling_failures + self._close_failures
+        if failures:
+            raise DualWorkerBenchmarkError(
+                "cleanup-failed" if self._close_failures else "resource-limit"
+            ) from BaseExceptionGroup("v5 memory monitor", failures)
+        if not self._samples:
             raise DualWorkerBenchmarkError("resource-limit")
         return MonitorResult(tuple(self._samples), self._stop_code)
 

@@ -870,6 +870,14 @@ Do not use or commit a private or copyrighted EPUB for this matrix. The checked-
 
 The white-window defect demonstrated that the Chromium production-preview smoke does not apply the packaged Tauri CSP: the former Ajv runtime compilation was blocked before React mounted even though browser and unit tests passed. Run `pnpm.cmd test:native-startup` on native Windows to build the release executable and launch it through Tauri's loopback-only WebDriver bridge with a disposable isolated WebView2 profile. The packaged matrix verifies the hidden supervisor host's normal/cancel/crash/restart/shutdown/descendant-cleanup matrix; root/main mount; the M007 low-level protocol exchange; typed model-free service start/prepare/generate/health/shutdown; exact binary WebView response and release; active cancellation with zero stale publication; repository-authored comprehensive EPUB open; same-file reselection and old-image URL release; picker cancellation; ready-publication replacement; deterministic active-read cancellation; exact/max-plus-one file-size boundaries and valid recovery; local Blob decode; the narrow window without horizontal overflow; logical Tab/End order plus keyboard skip/return, PageDown, TOC, and chapter operation; application-owned destination focus; 125% page scale; dark system theme, forced colors, reduced motion, and visible focus; closed preference persistence; canonical continuation persistence; complete process closure; restart with the same disposable profile; exact-file reselection; exact continuation/preference restoration without moving the focused file input; publication close/image removal; zero page/console errors; and zero external requests. The harness allows 90 seconds for each cold WebView startup on hosted Windows runners and exposes only fixed stage/failure-code pairs; it never logs the fixture, filename, URL, page error, console value, driver response, publication content, locator, preference values, image bytes, local executable paths, or synthetic PCM, and removes its temporary profile and files.
 
+The completed [five-pass case5.4](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+requires WebDriver deadline classification through response-body consumption,
+including a response whose headers arrived before its body stalled. Explicit
+operation cancellation takes precedence over request timeout; a completed
+malformed JSON body remains response-invalid. Session deletion keeps its
+independent cleanup signal. The owning Node tests use held loopback responses;
+native acceptance must use the final shared client after this correction.
+
 Task 2.5 replaced runtime compilation with committed generated predicates, made Ajv generation/test-only, removed `unsafe-eval`, and added a Vite production-build guard that rejects every Ajv module plus runtime `eval`/`Function` construction. Re-run `pnpm.cmd test:native-startup` after every Tauri/WebView2, CSP, shared-validator generation, publication-open bundling, file-ingress, native-startup, or TTS binary-response change. The valid open/close proves that the generated book validator executes in WebView2, while the integrated ingress cases above retain Task 2.3's packaged interaction evidence.
 
 This native command runs only on Windows and is separate from `pnpm.cmd check:portable`. The harness resolves PATH-installed `tauri-driver.exe` and `msedgedriver.exe` to absolute child-process paths while retaining `VOXLEAF_TAURI_DRIVER_PATH` and `VOXLEAF_EDGE_DRIVER_PATH` overrides. The authoritative Windows CI job checks Microsoft's documented machine/user registry locations for an installed Evergreen WebView2 Runtime, downloads and silently runs Microsoft's architecture-selecting bootstrapper only when the runtime is absent, and verifies a nonzero installed version. It installs exact `tauri-driver` `2.0.6`, builds pinned `msedgedriver-tool` revision `8c4b34f51b45f5cf08013366d703de464ab871d1`, downloads the EdgeDriver matching that runtime, verifies Microsoft's signature, and passes both explicit tool paths to the smoke. The driver processes use two ephemeral loopback ports and are test-only. The M007 child protocol itself opens no socket or network listener; it uses redirected standard streams owned by the release executable.
@@ -1469,6 +1477,13 @@ emits only content-free timing, underrun, intentional-transition, RAM/VRAM,
 cancellation, synchronization, and cleanup observations. It is manual,
 Windows/exact-host only, excluded from CI, and must not be run with private
 EPUBs.
+
+The two Piper arms retain language transitions, requested-profile confirmation
+and the six playback speeds. They do not request activation of an alternate
+profile: each language has one Piper profile, and the other visible option can
+require an optional Chatterbox installation. The other portfolio arms retain
+the alternate-profile exercise. Selecting only Piper with the runner's existing
+profile/language filters still enforces its offline and process-cleanup checks.
 
 Pull request #159 passed the required Ubuntu portable and Windows native checks
 and merged the M010.1 closeout.

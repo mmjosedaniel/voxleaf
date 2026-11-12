@@ -11436,9 +11436,9 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "services/tts/release/core/uv.lock",
-        "lockedArtifact": "https://files.pythonhosted.org/packages/b3/bd/2ac094311163b803e3626c3937461d6900934bd56cca7601f6150ff860c3/onnxruntime-1.31.0-cp312-cp312-macosx_14_0_arm64.whl",
-        "sizeBytes": 20882054,
-        "value": "aaab9b3af536b06ca27ab5e35e3d429c97457ce76cf298af103f687e8b9975c0"
+        "lockedArtifact": "https://files.pythonhosted.org/packages/be/ed/b12cea136ccd7b03d924f46b8393faf7ceac21115c0c50e729faa248cf23/onnxruntime-1.31.0-cp312-cp312-win_amd64.whl",
+        "sizeBytes": 14888841,
+        "value": "09d56445c1753e66e0912de69d3f0184016ad9a191dcd6925bf5dd570d2bfbe5"
       },
       "license": {
         "evidence": "installed package licence classifier",

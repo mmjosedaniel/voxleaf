@@ -28,6 +28,16 @@ displayed language attributes remain intact. Current host acceptance and
 independent approval are recorded in that ledger; the earlier BNC results do
 not validate these new paths.
 
+The completed [five-pass correction](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+requires structural language-tag validation for the current English/Spanish
+normalizers: ordered subtags, duplicate variant/extension rejection, and the
+existing admitted grandfathered/private-use forms. This follows the syntax in
+[RFC 5646](https://www.rfc-editor.org/rfc/rfc5646.html#section-2.1), without IANA
+registry validation or a network dependency. Malformed tags retain literal
+narration; displayed attributes and source locations remain unchanged. Incremental
+work and cancellation limits still apply. Its acceptance remains tracked in the
+[current ledger](../plans/evidence/five-pass-audit/execution-ledger.md).
+
 The [completed narration logic corrections](../plans/completed/narration-logic-corrections.md)
 restore manual-position persistence after natural narration completion and contain
 changed/unavailable compatibility selections before applying a new preparation
@@ -520,6 +530,12 @@ download and activation remain separate user actions.
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+- Reselecting the same optional package during acquisition must preserve its
+  confirmation/download ownership and eventual result, including after reopening
+  Settings. A genuinely newer cancellation or removal retains its existing stale
+  result protection. The completed
+  [five-pass plan](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+  records this correction and integrated approval `FPA-INTEGRATED-CR-R1-20261111`.
 - Cancelling an acquisition already in progress removes the current operation's
   incomplete application-owned staging and partial files, returns the optional
   package to absent, and retains no unsupported resumable state. It never

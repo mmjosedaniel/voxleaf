@@ -4573,6 +4573,86 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it.each([
+    { older: "boundary", paused: false, replaced: false },
+    { older: "boundary", paused: true, replaced: false },
+    { older: "paragraph", paused: false, replaced: false },
+    { older: "paragraph", paused: true, replaced: false },
+    { older: "paragraph", paused: false, replaced: true },
+  ])(
+    "five-pass 1.1 lets a newer chapter supersede a delayed $older request (paused: $paused, replaced: $replaced)",
+    async ({ older, paused, replaced }) => {
+      const chapterTarget = sourceRange(24, 36).start;
+      const { coordinator, client, prepareNarration } = createHarness({
+        result: completeSegments([
+          preparedSegment("Synthetic first passage."),
+          preparedSegment("Synthetic next passage.", sourceRange(12, 24)),
+        ]),
+      });
+      const requests = vi.fn();
+      coordinator.subscribeNavigationRequests(requests);
+      const shutdown = client.shutdown.bind(client);
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const stop = vi
+        .spyOn(client, "shutdown")
+        .mockImplementationOnce(async () => {
+          await barrier;
+          return shutdown();
+        });
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "playing",
+        );
+        expect(coordinator.observe().navigation.canGoNext).toBe(true);
+        if (paused) coordinator.pause();
+        if (older === "boundary") {
+          coordinator.goToNextBoundary();
+        } else {
+          expect(coordinator.startAtLocator(START_LOCATOR)).toBe(true);
+        }
+        await settleUntil(() => stop.mock.calls.length === 1);
+        const chapter =
+          coordinator.beginExternalNavigation("chapter-navigation");
+        expect(requests).not.toHaveBeenCalled();
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+        const closing = replaced ? coordinator.close() : undefined;
+        release();
+        await chapter;
+        expect(requests).not.toHaveBeenCalled();
+        expect(stop).toHaveBeenCalledTimes(1);
+
+        if (closing !== undefined) {
+          await expect(closing).resolves.toBe("contained");
+          coordinator.settleExternalNavigation(chapterTarget);
+          expect(prepareNarration).toHaveBeenCalledTimes(1);
+          expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+          return;
+        }
+        coordinator.settleExternalNavigation(chapterTarget);
+        await settleUntil(() => !coordinator.observe().navigation.settling);
+        expect(coordinator.observe().navigation.playIntent).toBe(
+          paused ? "paused" : "playing",
+        );
+        if (paused) {
+          expect(prepareNarration).toHaveBeenCalledTimes(1);
+          coordinator.resume();
+        }
+        await settleUntil(() => prepareNarration.mock.calls.length === 2);
+        expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+          chapterTarget,
+        );
+      } finally {
+        release();
+        await coordinator.close();
+      }
+    },
+  );
+
   it("places an explicit paragraph leaf target before starting an inactive run", async () => {
     const { coordinator, prepareNarration } = createHarness();
     const requests: ProductNarrationNavigationRequest[] = [];
@@ -4737,6 +4817,8 @@ describe("product narration coordinator", () => {
         release = resolve;
       });
       const optional = {
+        observe: () => new OptionalChatterboxClient().observe(),
+        downloadPending: false,
         remove: vi.fn(async () => {
           await removal;
           throw new Error("synthetic removal failure");
@@ -4857,8 +4939,11 @@ describe("product narration coordinator", () => {
               coordinator.observe().recovery.phase,
             ),
           );
+          const check = vi.fn(async () =>
+            new HardwareProfileCompatibilityCoordinator().observe(),
+          );
           const resetting = createNarrationSettingsActions(false).reset({
-            hardware: { resetLanguage: async () => true },
+            hardware: { resetLanguage: async () => true, check },
             coordinator,
             startPreference: repository,
             playbackPreference: { reset: async () => ({ status: "saved" }) },
@@ -4873,6 +4958,9 @@ describe("product narration coordinator", () => {
           expect(repository.reset).toHaveBeenCalledTimes(
             scenario === "contained" ? 1 : 0,
           );
+          if (scenario === "contained")
+            expect(check).toHaveBeenCalledExactlyOnceWith("explicit-recheck");
+          else expect(check).not.toHaveBeenCalled();
           expect(coordinator.observe().selection).toEqual(
             scenario === "contained" ? { kind: "quick" } : prepared,
           );
@@ -5536,6 +5624,93 @@ describe("product narration coordinator", () => {
         expect(starts).toBe(2);
         expect(coordinator.observe().recovery.canRecover).toBe(false);
       } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
+  it("five-pass 3.1 recovers the first attempted start before any confirmed audio", async () => {
+    const attempted = sourceRange(20, 40);
+    const inspected = sourceRange(40, 60).start;
+    const { coordinator, backend, intervals, prepareNarration } = createHarness(
+      {
+        result: completeSegments([preparedSegment("Synthetic B.", attempted)]),
+      },
+    );
+    try {
+      backend.deferStart = true;
+      await coordinator.checkAvailability();
+      coordinator.updateVisibleLocator(attempted.start);
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      expect(prepareNarration.mock.calls[0]?.[0].startLocator).toEqual(
+        attempted.start,
+      );
+      expect(coordinator.observe().hasConfirmedRendering).toBe(false);
+      backend.active!.callbacks.failed();
+      intervals[0]!();
+      await settleUntil(() => coordinator.observe().recovery.canRecover);
+      coordinator.updateVisibleLocator(inspected);
+
+      coordinator.recover();
+      await settleUntil(() => prepareNarration.mock.calls.length === 2);
+      expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+        attempted.start,
+      );
+    } finally {
+      await coordinator.close();
+    }
+  });
+
+  it.each([false, true])(
+    "five-pass 4.1 cancels recovery without replacing the next Play location (manual move: %s)",
+    async (manualMove) => {
+      const inspected = sourceRange(20, 40).start;
+      const later = sourceRange(40, 60).start;
+      const { coordinator, client, backend, intervals, prepareNarration } =
+        createHarness();
+      let releaseWarmup: (() => void) | undefined;
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => coordinator.observe().hasConfirmedRendering);
+        expect(prepareNarration.mock.calls[0]?.[0].startLocator).toEqual(
+          START_LOCATOR,
+        );
+        coordinator.updateVisibleLocator(inspected);
+        backend.active!.callbacks.failed();
+        intervals[0]!();
+        await settleUntil(() => coordinator.observe().recovery.canRecover);
+
+        vi.spyOn(client, "prepare").mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              releaseWarmup = () => resolve(client.observe());
+            }),
+        );
+        coordinator.recover();
+        await settleUntil(() => releaseWarmup !== undefined);
+        expect(coordinator.observe().recovery.phase).toBe("recovering");
+        expect(coordinator.observe().hasConfirmedRendering).toBe(false);
+
+        const stopping = coordinator.stop();
+        if (manualMove) coordinator.updateVisibleLocator(later);
+        releaseWarmup!();
+        await stopping;
+        expect(coordinator.observe()).toMatchObject({
+          navigation: { playIntent: "inactive" },
+          recovery: { phase: "operational", explicitAttemptUsed: true },
+        });
+        expect(prepareNarration).toHaveBeenCalledTimes(1);
+        expect(backend.active).toBeUndefined();
+
+        coordinator.startAtVisibleLocator();
+        await settleUntil(() => prepareNarration.mock.calls.length === 2);
+        expect(prepareNarration.mock.calls[1]![0].startLocator).toEqual(
+          manualMove ? later : inspected,
+        );
+      } finally {
+        releaseWarmup?.();
         await coordinator.close();
       }
     },

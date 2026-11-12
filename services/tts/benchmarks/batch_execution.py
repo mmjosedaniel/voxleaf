@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Final, Literal
 
 from benchmarks.batch_contracts import (
+    BatchAudioUnit,
     BatchBenchmarkError,
     BatchCallObservation,
     BatchCandidate,
@@ -46,6 +47,17 @@ class BatchIdentityGate:
 
     def accepts(self, identity: BatchWorkIdentity) -> bool:
         return self.active == identity
+
+
+@dataclass
+class BatchCancellationPublication:
+    """Exercise the real release gate at one exact cancellation boundary."""
+
+    stage: Literal["before-dispatch", "before-publication", "after-first-publication"]
+    invalidate: Callable[[], None]
+    candidate_calls: int = 0
+    published_before_invalidation: int = 0
+    suppressed: int = 0
 
 
 def _zero_resources() -> BatchResourceSnapshot:
@@ -190,10 +202,11 @@ class BoundedOrderedBatchController:
 
     def execute(
         self,
-        candidate: BatchCandidate,
+        candidate: BatchCandidate | None,
         request: BatchGenerationRequest,
         *,
         before_publication: BeforePublication | None = None,
+        cancellation: BatchCancellationPublication | None = None,
     ) -> BatchExecutionObservation:
         _validate_request(request)
         if self._active:
@@ -205,9 +218,25 @@ class BoundedOrderedBatchController:
             activated = True
             accepted_ns = self._now_ns()
             snapshots = [self._snapshot()]
+            if cancellation is not None and cancellation.stage == "before-dispatch":
+                cancellation.invalidate()
+                if not self.identity_gate.accepts(request.identity):
+                    return _failure_observation(
+                        request,
+                        accepted_ns=accepted_ns,
+                        completed_ns=None,
+                        code="stale-identity",
+                        resource_peak=_maximum_resources(snapshots),
+                    )
+            if candidate is None:
+                raise BatchBenchmarkError("generation-failed")
             try:
+                if cancellation is not None:
+                    cancellation.candidate_calls += 1
                 outputs = tuple(candidate.generate_batch(request))
             except BatchBenchmarkError as error:
+                if cancellation is not None:
+                    raise
                 completed_ns = self._now_ns()
                 snapshots.append(self._snapshot())
                 return _failure_observation(
@@ -218,6 +247,8 @@ class BoundedOrderedBatchController:
                     resource_peak=_maximum_resources(snapshots),
                 )
             except Exception:
+                if cancellation is not None:
+                    raise
                 completed_ns = self._now_ns()
                 snapshots.append(self._snapshot())
                 return _failure_observation(
@@ -279,7 +310,13 @@ class BoundedOrderedBatchController:
 
             wall_ns = completed_ns - accepted_ns
             observations: list[BatchUnitObservation] = []
+            published: list[BatchAudioUnit] = []
+            if cancellation is not None and cancellation.stage == "before-publication":
+                cancellation.invalidate()
             for output in outputs:
+                if cancellation is not None and not self.identity_gate.accepts(output.identity):
+                    cancellation.suppressed += 1
+                    continue
                 duration = output.sample_count / output.sample_rate_hz
                 observations.append(
                     BatchUnitObservation(
@@ -298,7 +335,31 @@ class BoundedOrderedBatchController:
                         failure_code=None,
                     )
                 )
+                published.append(output)
                 self._published_sequence += 1
+                if (
+                    cancellation is not None
+                    and cancellation.stage == "after-first-publication"
+                    and len(published) == 1
+                ):
+                    cancellation.published_before_invalidation = len(published)
+                    cancellation.invalidate()
+            if cancellation is not None and cancellation.suppressed:
+                failure = _failure_observation(
+                    request,
+                    accepted_ns=accepted_ns,
+                    completed_ns=completed_ns,
+                    code="stale-identity",
+                    resource_peak=_maximum_resources(snapshots),
+                )
+                return BatchExecutionObservation(
+                    call=failure.call,
+                    units=tuple(observations),
+                    published=tuple(published),
+                    peak_retained_units=len(outputs),
+                    peak_active_batches=1,
+                    resource_peak=failure.resource_peak,
+                )
             return BatchExecutionObservation(
                 call=BatchCallObservation(
                     call_index=request.call_index,
@@ -314,7 +375,7 @@ class BoundedOrderedBatchController:
                     failure_code=None,
                 ),
                 units=tuple(observations),
-                published=outputs,
+                published=tuple(published),
                 peak_retained_units=len(outputs),
                 peak_active_batches=1,
                 resource_peak=_maximum_resources(snapshots),

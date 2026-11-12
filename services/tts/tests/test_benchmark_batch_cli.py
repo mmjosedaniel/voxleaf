@@ -13,7 +13,8 @@ import pytest
 from benchmarks import batch_cli, batch_result_cli
 from benchmarks.batch_official import OfficialBatchError, OfficialExecution, official_raw_root
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
-from benchmarks.v13_authority import PROFILE_VERSION
+from benchmarks.v13_authority import PROFILE_VERSION as V13_PROFILE_VERSION
+from benchmarks.v14_authority import PROFILE_VERSION
 
 
 def _input() -> dict[str, object]:
@@ -114,15 +115,17 @@ def test_targeted_cpu_arm_is_official_only() -> None:
         batch_cli._run(payload)
 
 
-@pytest.mark.parametrize("version", [None, "tts-short-segment-batch-profile-v4", "unknown"])
-def test_dcr_17_official_execution_requires_explicit_v13_before_acquisition(
+@pytest.mark.parametrize(
+    "version", [None, "tts-short-segment-batch-profile-v4", V13_PROFILE_VERSION, "unknown"]
+)
+def test_official_execution_requires_explicit_v14_before_acquisition(
     monkeypatch: pytest.MonkeyPatch, version: str | None
 ) -> None:
     def unexpected(*_args: object, **_kwargs: object) -> None:
         pytest.fail("retired or unknown version acquired authority or host resources")
 
     monkeypatch.setattr(batch_cli, "run_local_preflight", unexpected)
-    monkeypatch.setattr(batch_cli, "load_v13_mechanics_authority", unexpected)
+    monkeypatch.setattr(batch_cli, "load_v14_mechanics_authority", unexpected)
     monkeypatch.setattr(batch_cli, "load_frozen_v4_mechanics_authority", unexpected)
     payload = _input()
     payload.update(resultPurpose="official", sessionId="a" * 32)
@@ -145,7 +148,7 @@ def test_dcr_17_failed_execution_receipt_is_not_derivable(
     monkeypatch.setattr(batch_cli, "_run", failed_run)
     assert batch_cli.main() == 2
     assert json.loads(capsys.readouterr().out) == {
-        "schemaVersion": "tts-v13-batch-official-receipt-v1",
+        "schemaVersion": "tts-v14-batch-official-receipt-v1",
         "resultPurpose": "official",
         "status": "fail",
         "eligibleForDerivation": False,
@@ -154,11 +157,12 @@ def test_dcr_17_failed_execution_receipt_is_not_derivable(
     }
 
 
-def test_dcr_17_official_cli_writes_only_v13_session_after_runner_success(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize("stopped", [False, True])
+def test_official_cli_writes_only_v14_session_after_runner_success(
+    stopped: bool, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     session_id = "c" * 32
-    session = official_raw_root(tmp_path, session_id, version="v13")
+    session = official_raw_root(tmp_path, session_id, version="v14")
     root_calls: list[str] = []
 
     class Sampler:
@@ -170,10 +174,12 @@ def test_dcr_17_official_cli_writes_only_v13_session_after_runner_success(
         assert kwargs["execution_commit_sha"] == "a" * 40
         assert not session.exists()
         root_calls.append("run")
+        if stopped:
+            raise OfficialBatchError("shared-gpu-memory")
         return OfficialExecution({"cleanupFailureCodes": [], "failureCodes": []}, ())
 
     def raw_root(_repo: Path, identifier: str, *, version: str) -> Path:
-        assert identifier == session_id and version == "v13"
+        assert identifier == session_id and version == "v14"
         return session
 
     monkeypatch.setattr(
@@ -193,7 +199,7 @@ def test_dcr_17_official_cli_writes_only_v13_session_after_runner_success(
     )
     monkeypatch.setattr(batch_cli, "WindowsGpuProcessMemorySampler", lambda *_args: Sampler())
     monkeypatch.setattr(batch_cli, "WindowsProcessResourceSampler", lambda **_kwargs: object())
-    monkeypatch.setattr(batch_cli, "execute_official_v13", execute)
+    monkeypatch.setattr(batch_cli, "execute_official_v14", execute)
     monkeypatch.setattr(batch_cli, "official_raw_root", raw_root)
     payload = _input()
     payload.update(
@@ -202,6 +208,12 @@ def test_dcr_17_official_cli_writes_only_v13_session_after_runner_success(
         profileVersion=PROFILE_VERSION,
         candidatePython=sys.executable,
     )
+    if stopped:
+        with pytest.raises(OfficialBatchError, match=":shared-gpu-memory$"):
+            batch_cli._run(payload)
+        assert not session.exists()
+        assert root_calls == ["run", "close-sampler", "close-sampler"]
+        return
     receipt = batch_cli._run(payload)
     assert receipt["eligibleForDerivation"] is True
     assert json.loads((session / "raw.json").read_text(encoding="utf-8")) == {
@@ -209,6 +221,7 @@ def test_dcr_17_official_cli_writes_only_v13_session_after_runner_success(
         "failureCodes": [],
     }
     assert not official_raw_root(tmp_path, session_id).exists()
+    assert not official_raw_root(tmp_path, session_id, version="v13").exists()
     assert root_calls == ["run", "close-sampler", "close-sampler"]
 
 
@@ -218,7 +231,8 @@ def test_dcr_17_versioned_derivation_deletes_only_its_owned_session(
     session_id = "a" * 32
     legacy = official_raw_root(tmp_path, session_id)
     successor = official_raw_root(tmp_path, session_id, version="v13")
-    for session in (legacy, successor):
+    current = official_raw_root(tmp_path, session_id, version="v14")
+    for session in (legacy, successor, current):
         session.mkdir(parents=True)
         (session / "raw.json").write_text('{"schemaVersion":"synthetic"}', encoding="utf-8")
         (session / "loads.json").write_text("[]", encoding="utf-8")
@@ -233,9 +247,24 @@ def test_dcr_17_versioned_derivation_deletes_only_its_owned_session(
 
     monkeypatch.setattr(batch_result_cli, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.setattr(batch_result_cli, "derive_v13_summary", derive_v13)
+
+    def derive_v14(
+        root: Path, raw: object, loads: object, *, raw_session_removed: bool
+    ) -> dict[str, object]:
+        assert root == tmp_path
+        assert raw == {"schemaVersion": "synthetic"} and loads == []
+        assert (
+            raw_session_removed and not current.exists() and legacy.exists() and successor.exists()
+        )
+        return {"version": 14}
+
+    monkeypatch.setattr(batch_result_cli, "derive_v14_summary", derive_v14)
     assert batch_result_cli._run({"sessionId": session_id, "profileVersion": PROFILE_VERSION}) == {
-        "version": 13
+        "version": 14
     }
+    assert batch_result_cli._run(
+        {"sessionId": session_id, "profileVersion": V13_PROFILE_VERSION}
+    ) == {"version": 13}
     monkeypatch.setattr(batch_result_cli, "derive_v4_summary", lambda *_args: {"version": 4})
     assert batch_result_cli._run({"sessionId": session_id}) == {"version": 4}
-    assert not legacy.exists() and not successor.exists()
+    assert not legacy.exists() and not successor.exists() and not current.exists()

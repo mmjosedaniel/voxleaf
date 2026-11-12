@@ -1896,6 +1896,86 @@ describe("navigable publication reader", () => {
     );
   });
 
+  it.each(["initial", "corrective", "clamped", "missing geometry"] as const)(
+    "five-pass 5.1 handles a late scroll after a %s follow",
+    (follow) => {
+      const mapper = new SemanticDomRangeMapper();
+      const visual = new ManualVisualLocatorEnvironment();
+      const highlight = new ManualSegmentHighlightEnvironment();
+      const narration = new ManualReaderNarrationSource();
+      const onActiveLocatorChange = vi.fn();
+      const publication = createPublication();
+      publication.resolveLocator = vi.fn((input: unknown) => ({
+        status: "exact" as const,
+        reason: "exact" as const,
+        locator: decodeReadingLocatorV1(input),
+        locatedBlock: OPENING_LOCATED_BLOCK,
+      }));
+      const visible = { top: 10, right: 210, bottom: 50, left: 10 };
+      const { container } = render(
+        <ReaderPublicationContent
+          publication={publication}
+          domRangeMapper={mapper}
+          visualLocatorEnvironment={visual}
+          narrationSource={narration}
+          segmentHighlightEnvironment={highlight}
+          onActiveLocatorChange={onActiveLocatorChange}
+        />,
+      );
+      const root = container.querySelector<HTMLElement>(".reader-viewport")!;
+      root.scrollTop = 10;
+      visual.rects.set("Opening", visible);
+      visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
+      const notifyScroll = () =>
+        act(() => {
+          visual.notify();
+          visual.flush();
+        });
+      notifyScroll();
+      expect(onActiveLocatorChange).toHaveBeenCalledWith(
+        expect.objectContaining({ textOffsetCodePoints: 4 }),
+      );
+      onActiveLocatorChange.mockClear();
+
+      highlight.range = { top: 180, bottom: 200 };
+      vi.spyOn(highlight, "scrollBy").mockImplementation((viewport, top) => {
+        highlight.scrolls.push(top);
+        if (follow !== "clamped") viewport.scrollTop += top;
+        if (follow === "missing geometry") visual.rects.delete("Opening");
+      });
+      const range = decodeLocatorRangeV1({
+        ...entireLocatedBlockRange(OPENING_LOCATED_BLOCK),
+        start: {
+          ...OPENING_LOCATED_BLOCK.startLocator,
+          textOffsetCodePoints: 2,
+        },
+      });
+      act(() => narration.start(range, 0));
+      expect(highlight.scheduled).toHaveLength(1);
+      if (follow === "corrective") act(() => highlight.scheduled.shift()!());
+      expect(highlight.scrolls).toHaveLength(follow === "corrective" ? 2 : 1);
+      act(() => narration.stop());
+      expect(highlight.scheduled).toHaveLength(0);
+      visual.rects.set("Opening", visible);
+      visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 1);
+      notifyScroll();
+      if (follow === "clamped" || follow === "missing geometry") {
+        expect(onActiveLocatorChange).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ textOffsetCodePoints: 1 }),
+        );
+      } else {
+        expect(onActiveLocatorChange).not.toHaveBeenCalled();
+      }
+
+      root.scrollTop += 1;
+      visual.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 6);
+      notifyScroll();
+      expect(onActiveLocatorChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ textOffsetCodePoints: 6 }),
+      );
+    },
+  );
+
   it("RAC-01 publishes passive positions and reflow settlement only to current callbacks", () => {
     const publication = createPublication();
     publication.resolveLocator = vi.fn((input: unknown) => ({
@@ -2335,6 +2415,114 @@ describe("navigable publication reader", () => {
         name: "Start narration at the beginning of the saved paragraph",
       }),
     ).toHaveAttribute("data-leaf-state", "checkpoint");
+  });
+
+  it.each(["pointer", "focus"] as const)(
+    "five-pass 5.2 retains the %s paragraph target while the visible position advances",
+    (owner) => {
+      const narration = Object.assign(new ManualReaderNarrationSource(), {
+        updateVisibleLocator: vi.fn(),
+      });
+      const highlight = new ManualSegmentHighlightEnvironment();
+      const { container } = render(
+        <ReaderPublicationContent
+          publication={createPublication({ includeOpeningLinkLocator: true })}
+          narrationSource={narration}
+          segmentHighlightEnvironment={highlight}
+        />,
+      );
+      const paragraph = container.querySelector(".semantic-document p")!;
+      const reader = container.querySelector(".reader-content")!;
+      const chapter = screen.getByRole("button", { name: "Next chapter" });
+      const a = OPENING_LOCATED_BLOCK.startLocator;
+      const advance = (offset: number) => {
+        const start = decodeReadingLocatorV1({
+          ...a,
+          textOffsetCodePoints: offset,
+        });
+        act(() =>
+          narration.start(
+            decodeLocatorRangeV1({
+              ...entireLocatedBlockRange(OPENING_LOCATED_BLOCK),
+              start,
+            }),
+            offset,
+          ),
+        );
+        expect(narration.updateVisibleLocator).toHaveBeenLastCalledWith(start);
+        expect(highlight.scrolls).toEqual([]);
+      };
+      const placePreview = () => {
+        fireEvent.pointerOver(paragraph);
+        const leaf = screen.getByRole("button", {
+          name: "Start narration at this paragraph",
+        });
+        if (owner === "focus") {
+          act(() => leaf.focus());
+          fireEvent.pointerLeave(reader);
+        }
+        return leaf;
+      };
+      advance(0);
+      const leaf = placePreview();
+      advance(2);
+      expect(leaf).toHaveAttribute("data-leaf-state", "preview");
+      if (owner === "focus") {
+        expect(leaf).toHaveFocus();
+        act(() => chapter.focus());
+      } else {
+        fireEvent.pointerLeave(reader);
+      }
+      expect(leaf).toHaveAttribute("data-leaf-state", "audible");
+
+      const next = placePreview();
+      advance(4);
+      expect(next).toHaveAttribute("data-leaf-state", "preview");
+      fireEvent.click(next);
+      expect(narration.startLocators).toEqual([
+        OPENING_LINK_LOCATED_BLOCK.startLocator,
+      ]);
+    },
+  );
+
+  it("five-pass 5.2 releases paragraph placement on document replacement and disposal", () => {
+    const narration = new ManualReaderNarrationSource();
+    const { container, unmount } = render(
+      <ReaderPublicationContent
+        publication={createPublication({ includeOpeningLinkLocator: true })}
+        narrationSource={narration}
+      />,
+    );
+    fireEvent.pointerOver(container.querySelector(".semantic-document p")!);
+    const leaf = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    act(() => leaf.focus());
+    expect(leaf).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Start narration at this paragraph" }),
+    );
+    expect(narration.startLocators).toEqual([
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+    ]);
+    unmount();
+    expect(narration.stateListenerCount).toBe(0);
+    expect(narration.progressListenerCount).toBe(0);
+
+    const reopened = new ManualReaderNarrationSource();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication({ includeOpeningLinkLocator: true })}
+        narrationSource={reopened}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Start narration at this paragraph" }),
+    );
+    expect(reopened.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+    ]);
   });
 
   it.each(["keyboard", "pointer", "touch"] as const)(

@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v14",
+  "title": "VoxLeaf Qwen short-segment batch raw v14",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusSha256",
+    "executionCommitSha",
+    "treeClean",
+    "resultPurpose",
+    "placementProfileId",
+    "cpuAdmission",
+    "candidateId",
+    "host",
+    "preflight",
+    "calls",
+    "units",
+    "cancellationTrials",
+    "playback",
+    "memory",
+    "cleanup",
+    "failureCodes",
+    "cleanupFailureCodes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-short-segment-batch-raw-v14"
+    },
+    "profileVersion": {
+      "const": "tts-short-segment-batch-profile-v14"
+    },
+    "profileSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/profileSha256"
+    },
+    "corpusSha256": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/corpusSha256"
+    },
+    "executionCommitSha": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/executionCommitSha"
+    },
+    "treeClean": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/treeClean"
+    },
+    "resultPurpose": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/resultPurpose"
+    },
+    "placementProfileId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/placementProfileId"
+    },
+    "cpuAdmission": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/cpuAdmission"
+    },
+    "candidateId": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/candidateId"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/host"
+    },
+    "preflight": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/preflight"
+    },
+    "calls": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/calls"
+    },
+    "units": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/units"
+    },
+    "cancellationTrials": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v14#/$defs/cancellationTrial"
+      }
+    },
+    "playback": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/playback"
+    },
+    "memory": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/memory"
+    },
+    "cleanup": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/cleanup"
+    },
+    "failureCodes": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/failureCodes"
+    },
+    "cleanupFailureCodes": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v13#/properties/cleanupFailureCodes"
+    }
+  },
+  "$defs": {
+    "cancellationTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trialId",
+        "trialIndex",
+        "callIndex",
+        "witnessedPhase",
+        "outcome",
+        "candidateCalls",
+        "publishedBeforeInvalidation",
+        "stalePublishedUnits",
+        "suppressedByGate",
+        "identityInvalidationNanoseconds",
+        "workerTerminationNanoseconds",
+        "workerExited",
+        "cleanupNanoseconds"
+      ],
+      "properties": {
+        "trialId": {
+          "enum": [
+            "before-dispatch",
+            "accepted-before-audio",
+            "during-batch-generation",
+            "after-complete-before-publication",
+            "after-first-unit-publication"
+          ]
+        },
+        "trialIndex": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "callIndex": {
+          "type": "integer",
+          "minimum": 101,
+          "maximum": 105
+        },
+        "witnessedPhase": {
+          "enum": [
+            null,
+            "before-dispatch",
+            "worker-accepted",
+            "adapter-entry",
+            "before-publication",
+            "after-first-publication"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "dispatch-rejected",
+            "worker-cancelled",
+            "publication-rejected",
+            "unexpected-failure",
+            "completed"
+          ]
+        },
+        "candidateCalls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "publishedBeforeInvalidation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "stalePublishedUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "suppressedByGate": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 2
+        },
+        "identityInvalidationNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "workerTerminationNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "workerExited": {
+          "type": ["boolean", "null"]
+        },
+        "cleanupNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

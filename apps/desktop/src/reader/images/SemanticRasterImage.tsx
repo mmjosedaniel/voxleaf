@@ -48,9 +48,15 @@ const observeRasterImageVisibility: ObserveRasterImageVisibility = (
         const observer = new IntersectionObserver(
           (entries) => {
             if (!active || fallbackMode) return;
-            const entry = entries.find(
-              (candidate) => candidate.target === element,
-            );
+            let entry: IntersectionObserverEntry | undefined;
+            for (const candidate of entries) {
+              if (
+                candidate.target === element &&
+                (entry === undefined || candidate.time >= entry.time)
+              ) {
+                entry = candidate;
+              }
+            }
             if (entry === undefined) return;
             const intersects =
               entry.isIntersecting || entry.intersectionRatio > 0;

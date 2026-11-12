@@ -323,6 +323,43 @@ fn ccf_c14_retry_with_receipt_preserves_root_and_authority_checks() {
 }
 
 #[test]
+fn five_pass_2_1_reselection_preserves_preflight_confirmation() {
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    let transfers = Arc::new(AtomicU64::new(0));
+    let observed = Arc::clone(&transfers);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move |_, _| {
+            observed.fetch_add(1, Ordering::SeqCst);
+            Err(OptionalProfileError::DownloadFailed)
+        }));
+    });
+    manager.select_at(&root.0).unwrap();
+    let token = manager.download_attempt().unwrap();
+    let mut retained = false;
+    let result = download_at_if_host_admitted(&manager, &root.0, || {
+        let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
+        assert_eq!(selected.state, OptionalProfileState::Confirming);
+        retained = Arc::ptr_eq(&token, &manager.download_attempt().unwrap());
+        true
+    });
+    assert!(
+        retained,
+        "reselection replaced the admitted preflight token: {result:?}"
+    );
+    #[cfg(windows)]
+    {
+        assert_eq!(result, Err(OptionalProfileError::DownloadFailed));
+        assert_eq!(transfers.load(Ordering::SeqCst), 1);
+    }
+    #[cfg(not(windows))]
+    {
+        assert_eq!(result, Err(OptionalProfileError::Unavailable));
+        assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    }
+}
+
+#[test]
 fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();
@@ -1234,6 +1271,8 @@ fn maf_04_removal_excludes_verified_configuration_and_real_spawn() {
     let supervisor = Arc::new(crate::tts_service_supervisor::TtsServiceSupervisor::default());
     let (stopped, observed_stop) = std::sync::mpsc::sync_channel(1);
     let (release, released) = std::sync::mpsc::sync_channel(1);
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    let removing_manager = Arc::clone(&manager);
     let removing_supervisor = Arc::clone(&supervisor);
     let removing_root = root.0.clone();
     let removing = thread::spawn(move || {
@@ -1244,18 +1283,27 @@ fn maf_04_removal_excludes_verified_configuration_and_real_spawn() {
                 released.recv_timeout(Duration::from_secs(15)).unwrap();
             }))
         });
-        OptionalChatterboxManager::default()
-            .remove_after_service_stop(&removing_root, &removing_supervisor)
+        removing_manager.remove_after_service_stop(&removing_root, &removing_supervisor)
     });
     observed_stop.recv_timeout(Duration::from_secs(15)).unwrap();
     // The package still exists: this ordering can genuinely launch a child.
     assert!(package.join("runtime/python.exe").is_file());
+    let snapshot = manager.snapshot_at(&root.0);
+    let selected = manager.select_at(&root.0);
+    let download = manager.download_at(&root.0);
+    let competing = manager.remove_after_service_stop(&root.0, &supervisor);
+    let direct = manager.remove_at(&root.0);
     let configured = supervisor.maf_configure_installed();
     let (started, published) = supervisor.maf_start_and_contain_installed();
     release.send(()).unwrap();
     let removed = removing.join().unwrap();
     assert!(removed.is_ok());
     assert!(!package.exists());
+    assert_eq!(snapshot.unwrap().state, OptionalProfileState::Removing);
+    assert_eq!(selected.unwrap().state, OptionalProfileState::Removing);
+    assert_eq!(download, Err(OptionalProfileError::Invalid));
+    assert_eq!(competing, Err(OptionalProfileError::Busy));
+    assert_eq!(direct, Err(OptionalProfileError::Busy));
     assert_eq!(
         configured,
         Err(crate::tts_service_protocol::TtsNativeFailure::Busy)
@@ -1395,6 +1443,52 @@ pub(super) fn run_after_commit_hook() {
     if let Some(hook) = hook {
         hook();
     }
+}
+
+#[test]
+fn five_pass_2_2_post_commit_busy_removal_precedes_supervisor_stop() {
+    let root = TestRoot::new();
+    let staging = staging_root(&root.0).join("operation/package");
+    let authority = write_runtime(&staging);
+    let manager = Arc::new(OptionalChatterboxManager::default());
+    let cancellation = Arc::new(AtomicBool::new(false));
+    manager.set_operation(
+        OptionalProfileState::Verifying,
+        42,
+        None,
+        Some(Arc::clone(&cancellation)),
+    );
+    let supervisor = Arc::new(
+        crate::tts_service_supervisor::TtsServiceSupervisor::lcf_unverified_termination_fixture(),
+    );
+    let callback_manager = Arc::clone(&manager);
+    let callback_supervisor = Arc::clone(&supervisor);
+    let callback_root = root.0.clone();
+    let (observed, removal) = std::sync::mpsc::channel();
+    AFTER_COMMIT_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move || {
+            let snapshot = callback_manager.snapshot_at(&callback_root).unwrap();
+            let worker_active = callback_manager.operation.lock().unwrap().worker_active;
+            let result =
+                callback_manager.remove_after_service_stop(&callback_root, &callback_supervisor);
+            observed.send((snapshot, worker_active, result)).unwrap();
+        }));
+    });
+    with_installed_runtime_lock(|| {
+        promote(
+            &root.0,
+            &staging,
+            &authority,
+            Some((&manager, &cancellation)),
+        )
+    })
+    .unwrap();
+    let (snapshot, worker_active, result) = removal.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Installed);
+    assert!(worker_active);
+    assert!(package_root(&root.0).join("runtime/python.exe").is_file());
+    supervisor.lcf_repair_termination_fixture();
+    assert_eq!(result, Err(OptionalProfileError::Busy));
 }
 
 #[test]
@@ -1712,28 +1806,54 @@ fn removal_failure_is_reported_and_can_be_retried_after_repair() {
 
 #[test]
 fn maf_04_removal_stops_before_deletion_when_termination_is_unverified() {
-    let root = TestRoot::new();
-    let package = package_root(&root.0);
-    fs::create_dir_all(&package).unwrap();
-    let sentinel = package.join("synthetic.bin");
-    fs::write(&sentinel, b"owned package").unwrap();
-    let manager = OptionalChatterboxManager::default();
-    let supervisor =
-        crate::tts_service_supervisor::TtsServiceSupervisor::lcf_unverified_termination_fixture();
-    let result = manager.remove_after_service_stop(&root.0, &supervisor);
-    let bytes = fs::read(&sentinel);
-    assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
-    assert_eq!(bytes.unwrap(), b"owned package");
-    assert!(manager.operation.lock().unwrap().state.is_none());
-    supervisor.lcf_repair_termination_fixture();
-    assert_eq!(
-        manager
-            .remove_after_service_stop(&root.0, &supervisor)
-            .unwrap()
-            .state,
-        OptionalProfileState::Absent
-    );
-    assert!(!package.exists());
+    for prior_failure in [false, true] {
+        let root = TestRoot::new();
+        let package = package_root(&root.0);
+        fs::create_dir_all(&package).unwrap();
+        let sentinel = package.join("synthetic.bin");
+        fs::write(&sentinel, b"owned package").unwrap();
+        let manager = OptionalChatterboxManager::default();
+        let prior_state = prior_failure.then_some(OptionalProfileState::Failed);
+        let prior_bytes = if prior_failure { 42 } else { 0 };
+        let prior_code = prior_failure.then_some(OptionalProfileError::CleanupFailed.code());
+        let prior_receipt = prior_failure.then(|| {
+            (
+                canonical_managed_root(&root.0).unwrap(),
+                runtime_authority_key(&exact_manifest().unwrap()).unwrap(),
+            )
+        });
+        *manager.operation.lock().unwrap() = Operation {
+            state: prior_state.clone(),
+            downloaded_bytes: prior_bytes,
+            failure: prior_code,
+            post_commit_cleanup: prior_receipt.clone(),
+            ..Operation::default()
+        };
+        let supervisor =
+            crate::tts_service_supervisor::TtsServiceSupervisor::lcf_unverified_termination_fixture(
+            );
+        let result = manager.remove_after_service_stop(&root.0, &supervisor);
+        assert_eq!(result, Err(OptionalProfileError::CleanupFailed));
+        assert_eq!(fs::read(&sentinel).unwrap(), b"owned package");
+        {
+            let operation = manager.operation.lock().unwrap();
+            assert_eq!(operation.state, prior_state);
+            assert_eq!(operation.downloaded_bytes, prior_bytes);
+            assert_eq!(operation.failure, prior_code);
+            assert_eq!(operation.post_commit_cleanup, prior_receipt);
+            assert!(!operation.worker_active);
+            assert!(operation.cancellation.is_none());
+        }
+        supervisor.lcf_repair_termination_fixture();
+        assert_eq!(
+            manager
+                .remove_after_service_stop(&root.0, &supervisor)
+                .unwrap()
+                .state,
+            OptionalProfileState::Absent
+        );
+        assert!(!package.exists());
+    }
 }
 
 #[test]

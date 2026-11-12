@@ -25,6 +25,7 @@ export const BILINGUAL_PORTFOLIO_ARMS = Object.freeze([
   Object.freeze({
     profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
     language: "es",
+    exerciseProfileSwitch: false,
     exercisePlaybackSpeeds: true,
     requiredEnvironment: Object.freeze([
       "VOXLEAF_TTS_PIPER_ENABLED",
@@ -35,6 +36,7 @@ export const BILINGUAL_PORTFOLIO_ARMS = Object.freeze([
   Object.freeze({
     profileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
     language: "en",
+    exerciseProfileSwitch: false,
     exercisePlaybackSpeeds: true,
     requiredEnvironment: Object.freeze([
       "VOXLEAF_TTS_PIPER_EN_ENABLED",
@@ -101,12 +103,13 @@ export function selectPortfolioArms(args) {
 export function nativeRunnerArguments({
   profileId,
   language,
+  exerciseProfileSwitch = true,
   exercisePlaybackSpeeds = false,
 }) {
   const arguments_ = [
     `--operation-timeout-ms=${ARM_TIMEOUT_MS}`,
     "--adaptive-tts-exact-host",
-    "--exercise-profile-switch",
+    ...(exerciseProfileSwitch ? ["--exercise-profile-switch"] : []),
     `--tts-profile=${profileId}`,
     `--tts-language=${language}`,
   ];

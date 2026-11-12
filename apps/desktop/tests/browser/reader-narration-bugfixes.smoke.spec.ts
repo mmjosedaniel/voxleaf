@@ -1,5 +1,6 @@
 import { syntheticEarlyAnimatedWebp } from "../fixtures/webp-fixture";
 import { expect, test, type Page } from "@playwright/test";
+import { openEpubPublication } from "@voxleaf/epub";
 import type { NarrationSegmentV1 } from "@voxleaf/shared";
 import report from "../../../../packages/shared/fixtures/contracts/host-profile-compatibility-report/v1/valid-synthetic.json" with { type: "json" };
 
@@ -348,6 +349,8 @@ async function fixtures() {
       import.meta.url,
     ).href
   ) as Promise<{
+    minimalPackageDocument(): string;
+    minimalNavigationDocument(): string;
     buildReaderRasterEpubFixture(options: {
       delayedViewport: boolean;
     }): Promise<Uint8Array>;
@@ -2176,6 +2179,335 @@ test("VUC-01 Resume follow then Stop and fresh Play uses the visible heard passa
   }
 });
 
+test("five-pass 5.1 preserves the heard checkpoint when Stop precedes follow settlement", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true, false, false, true);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").naturalAudioFrames = 480_000;
+  });
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"The quiet reader follows the path through the garden and remembers each ordinary detail. ".repeat(100)}</p>${"<p>Separate synthetic inspection passage.</p>".repeat(50)}</body></html>`;
+  const bytes = await (
+    await fixtures()
+  ).buildMinimalEpubFixture({ chapterDocument });
+  const opened = await openEpubPublication(bytes);
+  if (!opened.ok) throw new Error("synthetic-follow-fixture-open-failed");
+  const start = opened.publication.resolveLocator({
+    ...opened.publication.locators[0]!.startLocator,
+    textOffsetCodePoints: 2_000,
+  });
+  expect(start.locator.textOffsetCodePoints).toBe(2_000);
+  await opened.publication.close();
+  await page.evaluate((locator) => {
+    localStorage.setItem(
+      "voxleaf.reader.positions",
+      JSON.stringify({
+        schemaVersion: 1,
+        states: [
+          {
+            schemaVersion: 1,
+            bookIdentity: locator.bookIdentity,
+            locator,
+            preferences: {},
+          },
+        ],
+      }),
+    );
+  }, start.locator);
+  const file = {
+    name: "synthetic-five-pass-follow.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  };
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  const settleFrames = () =>
+    page.evaluate(async () => {
+      for (let frame = 0; frame < 4; frame += 1)
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+    });
+  const viewport = page.getByRole("region", {
+    name: "Publication reading viewport",
+  });
+  const passages = page.locator(".semantic-document p");
+  const narration = page.locator(".product-narration");
+  const play = page.locator('[data-narration-action="play"]');
+  const pause = page.locator('[data-narration-action="pause"]');
+  const resume = page.locator('[data-narration-action="resume"]');
+  const stop = page.locator('[data-narration-action="stop"]');
+  await page.getByLabel("Open a book").setInputFiles(file);
+  await expect(page.getByRole("status")).toHaveText(
+    "Reading position restored.",
+  );
+  await expect(play).toBeEnabled();
+  await play.click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  const heard = await page.evaluate(
+    () => Reflect.get(globalThis, "__rnb").prepared[0].sourceRange.start,
+  );
+  expect(heard.textOffsetCodePoints).toBeGreaterThan(0);
+  await expect.poll(saved).toEqual(heard);
+  await settleFrames();
+  await pause.click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "paused");
+  await page.mouse.move(0, 0);
+  await passages.nth(25).evaluate((target) => {
+    const root = target.closest<HTMLElement>(".reader-viewport")!;
+    const readingLine = root.getBoundingClientRect().top + root.clientTop + 24;
+    root.scrollTop += target.getBoundingClientRect().top - readingLine;
+  });
+  await expect(page.locator(".paragraph-leaf")).toHaveAttribute(
+    "data-leaf-state",
+    "preview",
+  );
+  await expect
+    .poll(() =>
+      passages.nth(25).evaluate((target) => {
+        const host = target
+          .closest(".reader-content")!
+          .querySelector<HTMLElement>(".paragraph-leaf-host")!;
+        return Math.abs(
+          Number.parseFloat(
+            host.style.getPropertyValue("--paragraph-leaf-top"),
+          ) -
+            (target.getBoundingClientRect().top -
+              host.parentElement!.getBoundingClientRect().top),
+        );
+      }),
+    )
+    .toBeLessThan(1);
+
+  await viewport.evaluate((root) => {
+    const view = root.ownerDocument.defaultView!;
+    const scrollBy = root.scrollBy.bind(root);
+    const raf = view.requestAnimationFrame;
+    const cancel = view.cancelAnimationFrame;
+    const heldFrame = -51;
+    const sampledPlacement = () => {
+      const passage = root.querySelector(".semantic-document p")!;
+      const block = passage.getBoundingClientRect();
+      const bounds = root.getBoundingClientRect();
+      const y = bounds.top + root.clientTop + 24;
+      const x = Math.max(bounds.left + root.clientLeft, block.left) + 1;
+      const caret = document.caretPositionFromPoint?.(x, y);
+      let offset = 0;
+      if (
+        caret !== null &&
+        caret !== undefined &&
+        passage.contains(caret.offsetNode)
+      ) {
+        const prefix = document.createRange();
+        prefix.selectNodeContents(passage);
+        prefix.setEnd(caret.offsetNode, caret.offset);
+        offset = Array.from(prefix.toString()).length;
+      }
+      return {
+        scrollTop: root.scrollTop,
+        viewportWidth: root.clientWidth,
+        viewportHeight: root.clientHeight,
+        compactHeight: document
+          .querySelector(".product-narration-compact")!
+          .getBoundingClientRect().height,
+        summaryHeight: document
+          .querySelector(".product-narration-summary")!
+          .getBoundingClientRect().height,
+        actionsHeight: document
+          .querySelector(".product-narration-compact-actions")!
+          .getBoundingClientRect().height,
+        blockTop: block.top - bounds.top,
+        crossing: block.top <= y && block.bottom >= y,
+        offset,
+      };
+    };
+    const trace = {
+      before: 0,
+      after: 0,
+      scheduled: false,
+      cancelled: false,
+      event: undefined as Event | undefined,
+      delivered: false,
+      caretReads: 0,
+      rangeReads: 0,
+      writes: [] as number[],
+      atStop: undefined as ReturnType<typeof sampledPlacement> | undefined,
+      cancelledAtRelease: false,
+    };
+    const capture = (event: Event) => {
+      if (!trace.scheduled || event.target !== root || !event.isTrusted) return;
+      trace.event ??= event;
+      event.stopImmediatePropagation();
+    };
+    root.addEventListener("scroll", capture, true);
+    Object.defineProperty(root, "scrollBy", {
+      configurable: true,
+      value: (options: ScrollToOptions) => {
+        trace.before = root.scrollTop;
+        scrollBy(options);
+        trace.after = root.scrollTop;
+        if (trace.before === trace.after) return;
+        // The follow controller schedules settlement directly after this native scroll.
+        view.requestAnimationFrame = () => {
+          view.requestAnimationFrame = raf;
+          trace.scheduled = true;
+          return heldFrame;
+        };
+      },
+    });
+    view.cancelAnimationFrame = (id) => {
+      if (id === heldFrame) trace.cancelled = true;
+      else cancel.call(view, id);
+    };
+    const caret = document.caretPositionFromPoint;
+    const range = document.caretRangeFromPoint;
+    const write = Storage.prototype.setItem;
+    const narration = document.querySelector(".product-narration")!;
+    const stopSettlement = new MutationObserver(() => {
+      const play = narration.querySelector<HTMLButtonElement>(
+        '[data-narration-action="play"]',
+      );
+      if (
+        play === null ||
+        play.disabled ||
+        narration.getAttribute("data-narration-play-intent") !== "inactive"
+      )
+        return;
+      stopSettlement.disconnect();
+      trace.atStop = sampledPlacement();
+      trace.cancelledAtRelease = trace.cancelled;
+      root.removeEventListener("scroll", capture, true);
+      Reflect.deleteProperty(root, "scrollBy");
+      view.requestAnimationFrame = raf;
+      view.cancelAnimationFrame = cancel;
+      root.addEventListener(
+        "scroll",
+        () => {
+          trace.delivered = true;
+        },
+        { once: true },
+      );
+      document.caretPositionFromPoint = (...args) => {
+        trace.caretReads += 1;
+        return caret.call(document, ...args);
+      };
+      document.caretRangeFromPoint = (...args) => {
+        trace.rangeReads += 1;
+        return range.call(document, ...args);
+      };
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "voxleaf.reader.positions") {
+          trace.writes.push(
+            JSON.parse(value).states[0].locator.textOffsetCodePoints,
+          );
+        }
+        write.call(this, key, value);
+      };
+      root.dispatchEvent(new Event("scroll"));
+    });
+    stopSettlement.observe(narration, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+    Reflect.set(globalThis, "__fivePassFollow", {
+      trace,
+      sampledPlacement,
+      summarize: () => {
+        document.caretPositionFromPoint = caret;
+        document.caretRangeFromPoint = range;
+        Storage.prototype.setItem = write;
+        return {
+          atStop: trace.atStop,
+          cancelledAtRelease: trace.cancelledAtRelease,
+          delivered: trace.delivered,
+          caretReads: trace.caretReads,
+          rangeReads: trace.rangeReads,
+          writes: trace.writes,
+        };
+      },
+    });
+  });
+  const beforeFollow = await page.evaluate(() =>
+    Reflect.get(globalThis, "__fivePassFollow").sampledPlacement(),
+  );
+  await resume.click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          Reflect.get(globalThis, "__fivePassFollow").trace.event?.isTrusted ??
+          false,
+      ),
+    )
+    .toBe(true);
+  const automatic = await page.evaluate(() => {
+    const control = Reflect.get(globalThis, "__fivePassFollow");
+    return {
+      ...control.sampledPlacement(),
+      before: control.trace.before,
+      after: control.trace.after,
+    };
+  });
+  expect(automatic.before - automatic.after).toBeGreaterThan(100);
+  expect(automatic.crossing).toBe(true);
+  expect(automatic.offset).not.toBe(heard.textOffsetCodePoints);
+  await stop.click();
+  await expect(play).toBeEnabled();
+  await expect(narration).toHaveAttribute(
+    "data-narration-play-intent",
+    "inactive",
+  );
+  await settleFrames();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await settleFrames();
+  const delivered = await page.evaluate(() =>
+    Reflect.get(globalThis, "__fivePassFollow").summarize(),
+  );
+  const afterReplay = await page.evaluate(() =>
+    Reflect.get(globalThis, "__fivePassFollow").sampledPlacement(),
+  );
+  console.log("five-pass 5.1 controlled delivery", {
+    heard: heard.textOffsetCodePoints,
+    beforeFollow,
+    automatic,
+    delivered,
+    afterReplay,
+  });
+  expect(delivered.cancelledAtRelease).toBe(true);
+  expect(delivered.delivered).toBe(true);
+  expect(delivered.atStop.crossing).toBe(true);
+  expect(delivered.atStop.offset).not.toBe(heard.textOffsetCodePoints);
+  for (const placement of [automatic, delivered.atStop, afterReplay]) {
+    expect(placement.viewportWidth).toBe(beforeFollow.viewportWidth);
+    expect(placement.viewportHeight).toBe(beforeFollow.viewportHeight);
+  }
+  expect(await saved()).toEqual(heard);
+
+  const reopen = async () => {
+    await page.reload();
+    await page.getByLabel("Open a book").setInputFiles(file);
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored.",
+    );
+    await expect(play).toBeEnabled();
+  };
+  await reopen();
+  expect(await saved()).toEqual(heard);
+  await viewport.hover();
+  await page.mouse.wheel(0, 700);
+  await expect.poll(saved).not.toEqual(heard);
+  const manual = await saved();
+  await reopen();
+  expect(await saved()).toEqual(manual);
+});
+
 test("RAC-07 mid-unit Resume follows the active range once and preserves inspection", async ({
   page,
 }) => {
@@ -3748,6 +4080,7 @@ async function installSyntheticService(
   selectedChatterbox = false,
   mpaPlayback = false,
   syntheticDevelopmentProfile?: string,
+  preparedTargetMs = 600_000,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -3761,6 +4094,7 @@ async function installSyntheticService(
       selectedChatterbox,
       mpaPlayback,
       syntheticDevelopmentProfile,
+      preparedTargetMs,
     }) => {
       if (!naturalCompletion || !sessionStorage.getItem("nlc-initialized"))
         localStorage.clear();
@@ -3807,7 +4141,7 @@ async function installSyntheticService(
           JSON.stringify({
             schemaVersion: 1,
             mode: "prepared",
-            preparedTargetMs: 600_000,
+            preparedTargetMs,
           }),
         );
       const observations = {
@@ -4273,9 +4607,690 @@ async function installSyntheticService(
       selectedChatterbox,
       mpaPlayback,
       syntheticDevelopmentProfile,
+      preparedTargetMs,
     },
   );
 }
+
+function auditPassages(count: number): string {
+  return Array.from(
+    { length: count },
+    (_, index) =>
+      `<p id="audit-${index}">Synthetic audit passage ${index}. Quiet readers inspect this ordinary paragraph.</p>`,
+  ).join("");
+}
+
+async function openAuditPassages(
+  page: Page,
+  count: number,
+  nextChapter = false,
+) {
+  const fixture = await fixtures();
+  const bytes = await fixture.buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Audit passages</title></head><body>${auditPassages(count)}</body></html>`,
+    ...(nextChapter
+      ? {
+          packageDocument: fixture
+            .minimalPackageDocument()
+            .replace(
+              "</manifest>",
+              '<item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/></manifest>',
+            )
+            .replace("</spine>", '<itemref idref="final"/></spine>'),
+          navigationDocument: fixture
+            .minimalNavigationDocument()
+            .replace("#chapter-one", ""),
+          additionalEntries: [
+            {
+              name: "EPUB/text/final.xhtml",
+              content:
+                '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Final audit</title></head><body><h1>Final audit chapter</h1><p>Final audit content.</p></body></html>',
+            },
+          ],
+        }
+      : {
+          navigationDocument: fixture
+            .minimalNavigationDocument()
+            .replace("#chapter-one", ""),
+        }),
+  });
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-audit-passages.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  });
+  await expect(page.locator('[data-narration-action="play"]')).toBeEnabled();
+}
+
+async function sampleAuditPassage(page: Page, index: number) {
+  await page.mouse.move(0, 0);
+  await page.locator(".reader-viewport").evaluate((root, targetIndex) => {
+    const target = root.querySelectorAll(".semantic-document p")[targetIndex]!;
+    root.scrollTop +=
+      target.getBoundingClientRect().top -
+      root.getBoundingClientRect().top -
+      24;
+  }, index);
+  await expectAuditLeafAt(page, index);
+}
+
+async function expectAuditLeafAt(page: Page, index: number) {
+  await expect
+    .poll(() =>
+      page.evaluate((targetIndex) => {
+        const host = document.querySelector<HTMLElement>(
+          ".paragraph-leaf-host",
+        )!;
+        const target = document.querySelectorAll(".semantic-document p")[
+          targetIndex
+        ]!;
+        return Math.abs(
+          Number.parseFloat(
+            host.style.getPropertyValue("--paragraph-leaf-top"),
+          ) -
+            (target.getBoundingClientRect().top -
+              host.parentElement!.getBoundingClientRect().top),
+        );
+      }, index),
+    )
+    .toBeLessThan(1);
+}
+
+for (const intent of ["playing boundary", "paused leaf"] as const) {
+  test(`five-pass 1.1 latest chapter owns playback over a delayed ${intent}`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, false, false, false, true);
+    await page.goto("/");
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.audioFrames = 480_000;
+      state.auditSynthesisPending = 0;
+      state.auditSynthesis = [];
+      const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+      const invoke = native.invoke;
+      native.invoke = async (
+        command: string,
+        args?: { segment?: NarrationSegmentV1 },
+      ) => {
+        if (command !== "synthesize_tts_segment" || args?.segment === undefined)
+          return invoke(command, args);
+        const { generationId, sourceRange } = args.segment;
+        state.auditSynthesis.push({
+          generationId,
+          spine: sourceRange.start.spineItemIndex,
+        });
+        state.auditSynthesisPending += 1;
+        try {
+          return await invoke(command, args);
+        } finally {
+          state.auditSynthesisPending -= 1;
+        }
+      };
+    });
+    await openAuditPassages(page, 3, true);
+    const narration = page.locator(".product-narration");
+    await page.locator('[data-narration-action="details-toggle"]').click();
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await expect
+      .poll(async () =>
+        Number(await narration.getAttribute("data-narration-accepted-units")),
+      )
+      .toBeGreaterThanOrEqual(3);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").auditSynthesisPending,
+        ),
+      )
+      .toBe(0);
+    const initial = await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.deferShutdown = true;
+      return { generation: state.lastGeneration };
+    });
+    try {
+      if (intent === "paused leaf") {
+        await page.locator('[data-narration-action="pause"]').click();
+        await expect(narration).toHaveAttribute(
+          "data-narration-phase",
+          "paused",
+        );
+        await page.locator(".semantic-document p").nth(1).hover();
+        await page.locator(".paragraph-leaf").click();
+      } else
+        await page.locator('[data-narration-action="next-passage"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(() => Reflect.get(globalThis, "__rnb").shutdownPending),
+        )
+        .toBe(true);
+      await page.getByRole("button", { name: "Next chapter" }).click();
+      await expect(page.locator(".semantic-document p").first()).toHaveText(
+        /Synthetic audit passage 0/,
+      );
+    } finally {
+      await page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        state.deferShutdown = false;
+        state.releaseShutdown();
+      });
+    }
+    await expect(
+      page.getByRole("heading", { name: "Final audit chapter", exact: true }),
+    ).toBeVisible();
+    if (intent === "paused leaf") {
+      await expect(narration).toHaveAttribute(
+        "data-narration-play-intent",
+        "paused",
+      );
+      await page.locator('[data-narration-action="resume"]').click();
+    }
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    const final = await page.evaluate((initialGeneration) => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return {
+        shutdowns: state.shutdownCalls,
+        generation: state.lastGeneration,
+        next: state.auditSynthesis.filter(
+          (record: { generationId: string }) =>
+            record.generationId !== initialGeneration,
+        ) as Array<{ generationId: string; spine: number }>,
+      };
+    }, initial.generation);
+    expect(final.shutdowns).toBe(1);
+    expect(final.generation).not.toBe(initial.generation);
+    expect(final.next.length).toBeGreaterThan(0);
+    expect(new Set(final.next.map(({ spine }) => spine))).toEqual(new Set([1]));
+    expect(new Set(final.next.map(({ generationId }) => generationId))).toEqual(
+      new Set([final.generation]),
+    );
+    await page.locator('[data-narration-action="stop"]').click();
+  });
+}
+
+test("five-pass 3.1 first failed playback recovers from the attempted visible passage", async ({
+  page,
+}) => {
+  await installSyntheticService(page, true, false, false, true);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    const nativeBuffer = AudioContext.prototype.createBuffer;
+    let fail = true;
+    AudioContext.prototype.createBuffer = function (...args) {
+      if (fail) {
+        fail = false;
+        throw new DOMException(
+          "synthetic first allocation failure",
+          "NotSupportedError",
+        );
+      }
+      return nativeBuffer.apply(this, args);
+    };
+    Reflect.get(globalThis, "__rnb").naturalAudioFrames = 480_000;
+  });
+  await openAuditPassages(page, 80);
+  const narration = page.locator(".product-narration");
+  await sampleAuditPassage(page, 25);
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute(
+    "data-narration-failure",
+    "audio-playback-failed",
+  );
+  await expect(narration).toHaveAttribute(
+    "data-narration-command-to-audible-ms",
+    "",
+  );
+  const firstAnchor = (service: number) =>
+    page.evaluate((target) => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return state.requests.find(
+        (request: { service: number }) => request.service === target,
+      )?.anchor;
+    }, service);
+  expect(await firstAnchor(1)).toBe(25);
+  const recover = page.locator('[data-narration-action="recover"]');
+  await expect(recover).toBeEnabled();
+  // The recovery notice can resize the viewport and restore B. Deliver the
+  // inspection after ResizeObserver and the restorer's 12-frame bound.
+  const geometry = await page
+    .locator(".reader-viewport")
+    .evaluate(async (root) => {
+      const nextFrame = () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const measure = () => [
+        root.clientWidth,
+        root.clientHeight,
+        root.scrollTop,
+      ];
+      for (let frame = 0; frame < 14; frame += 1) await nextFrame();
+      const before = measure();
+      await nextFrame();
+      return { before, after: measure() };
+    });
+  expect(geometry.after).toEqual(geometry.before);
+  await expectAuditLeafAt(page, 25);
+  await sampleAuditPassage(page, 45);
+  await recover.click();
+  await expect.poll(() => firstAnchor(2)).toBe(25);
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+for (const moveAgain of [false, true]) {
+  test(`five-pass 4.1 cancelled recovery preserves the manual visible passage (move again=${moveAgain})`, async ({
+    page,
+  }) => {
+    await installSyntheticService(
+      page,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+    );
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/");
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.naturalAudioFrames = 480_000;
+      const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+      const invoke = native.invoke;
+      native.invoke = async (command: string, args: unknown) => {
+        if (command === "prepare_tts_service" && state.service === 2) {
+          state.auditWarmPending = true;
+          await new Promise<void>((resolve) => {
+            state.releaseAuditWarm = resolve;
+          });
+        }
+        return invoke(command, args);
+      };
+    });
+    await openAuditPassages(page, 80);
+    const narration = page.locator(".product-narration");
+    await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-command-to-audible-ms",
+      /^\d+$/,
+    );
+    await sampleAuditPassage(page, 25);
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").workletNodes[0].dispatchEvent(
+        new ErrorEvent("error"),
+      ),
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-recovery-phase",
+      "recovery-available",
+    );
+    await page.locator('[data-narration-action="recover"]').click();
+    try {
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => Reflect.get(globalThis, "__rnb").auditWarmPending,
+          ),
+        )
+        .toBe(true);
+      if (moveAgain) await sampleAuditPassage(page, 45);
+      await page.getByRole("button", { name: "Cancel start" }).click();
+    } finally {
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").releaseAuditWarm?.(),
+      );
+    }
+    await expect(narration).toHaveAttribute(
+      "data-narration-play-intent",
+      "inactive",
+    );
+    const play = page.locator('[data-narration-action="play"]');
+    await expect(play).toBeEnabled();
+    await play.click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = Reflect.get(globalThis, "__rnb");
+          return state.requests.find(
+            (request: { service: number }) => request.service === 3,
+          )?.anchor;
+        }),
+      )
+      .toBe(moveAgain ? 45 : 25);
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await page.locator('[data-narration-action="stop"]').click();
+  });
+}
+
+test("five-pass 3.2 rechecks Prepared lead before first source allocation", async ({
+  page,
+}) => {
+  await installSyntheticService(
+    page,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    undefined,
+    60_000,
+  );
+  await page.goto("/");
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.audioFrames = 360_000;
+    state.auditSourceStarts = 0;
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      state.auditSourceStarts += 1;
+      return start.apply(this, args);
+    };
+    const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+    const invoke = native.invoke;
+    let synthesis = 0;
+    native.invoke = async (command: string, args: unknown) => {
+      const result = await invoke(command, args);
+      if (command === "synthesize_tts_segment" && ++synthesis === 4) {
+        state.auditFourthPending = true;
+        await new Promise<void>((resolve) => {
+          state.releaseAuditFourth = resolve;
+        });
+        state.auditFourthPending = false;
+      }
+      return result;
+    };
+  });
+  await openAuditPassages(page, 6);
+  const narration = page.locator(".product-narration");
+  const speed = page.getByLabel("Playback speed", { exact: true });
+  try {
+    await speed.selectOption("75");
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-target-ms",
+      "60000",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-accepted-sample-frames",
+      "1080000",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+      )
+      .toBe(true);
+    await speed.selectOption("100");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").auditFourthPending,
+        ),
+      )
+      .toBe(true);
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "preparing",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-playable-ms",
+      "45000",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "none",
+    );
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").release());
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+      )
+      .toBe(false);
+    expect(
+      await page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").auditSourceStarts,
+      ),
+    ).toBe(0);
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseAuditFourth(),
+    );
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "100",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").auditSourceStarts),
+      )
+      .toBeGreaterThan(0);
+    await expect(narration).toHaveAttribute(
+      "data-narration-command-to-audible-ms",
+      /^\d+$/,
+    );
+  } finally {
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.release();
+      state.releaseAuditFourth?.();
+    });
+  }
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+for (const owner of ["pointer", "focus"] as const) {
+  test(`five-pass 5.2 ${owner} leaf retains its paragraph through audible progress`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, true, false, false, true);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/");
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.naturalAudioFrames = 480_000;
+      const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+      const invoke = native.invoke;
+      let synthesis = 0;
+      native.invoke = async (command: string, args: unknown) => {
+        const result = await invoke(command, args);
+        if (command === "synthesize_tts_segment" && ++synthesis === 1)
+          return new Float32Array(48_000).buffer;
+        return result;
+      };
+      const create = AudioContext.prototype.createBufferSource;
+      let firstSource = true;
+      AudioContext.prototype.createBufferSource = function () {
+        const source = create.call(this);
+        if (!firstSource) return source;
+        firstSource = false;
+        const onended = Object.getOwnPropertyDescriptor(
+          AudioScheduledSourceNode.prototype,
+          "onended",
+        )!;
+        Object.defineProperty(source, "onended", {
+          configurable: true,
+          get: () => onended.get!.call(source),
+          set: (callback: ((event: Event) => void) | null) =>
+            onended.set!.call(
+              source,
+              callback === null
+                ? null
+                : (event: Event) => {
+                    state.auditCompletionPending = true;
+                    state.releaseAuditCompletion = () => {
+                      state.auditCompletionPending = false;
+                      callback.call(source, event);
+                    };
+                  },
+            ),
+        });
+        return source;
+      };
+    });
+    const fixture = await fixtures();
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-leaf-ownership.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await fixture.buildMinimalEpubFixture({
+          navigationDocument: fixture
+            .minimalNavigationDocument()
+            .replace("#chapter-one", ""),
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Leaf ownership</title></head><body><p>${"The listener reads this quiet passage while the paragraph stays within the viewport. ".repeat(4)}</p><p>Inspected paragraph B.</p><p>Separate synthetic passage C.</p></body></html>`,
+        }),
+      ),
+    });
+    const narration = page.locator(".product-narration");
+    const viewport = page.locator(".reader-viewport");
+    const passageB = page.locator(".semantic-document p").nth(1);
+    const leaf = page.locator(".paragraph-leaf");
+    const highlightOffset = () =>
+      page.evaluate(
+        () =>
+          [...(CSS.highlights.get("voxleaf-narration-active") ?? [])][0]
+            ?.startOffset,
+      );
+    await page.locator('[data-narration-action="play"]').click();
+    try {
+      await expect(narration).toHaveAttribute(
+        "data-narration-phase",
+        "playing",
+      );
+      await expect.poll(highlightOffset).toBe(0);
+      const next = await page.evaluate(
+        () => Reflect.get(globalThis, "__rnb").prepared[1].sourceRange.start,
+      );
+      expect(next.anchor.anchorIndex).toBe(0);
+      expect(next.textOffsetCodePoints).toBeGreaterThan(0);
+      await expect(passageB).toBeInViewport({ ratio: 1 });
+      const scroll = await viewport.evaluate((element) => element.scrollTop);
+      await passageB.hover();
+      await expectAuditLeafAt(page, 1);
+      if (owner === "focus") {
+        await leaf.focus();
+        await page.mouse.move(0, 0);
+        await expect(leaf).toBeFocused();
+      }
+      expect(await viewport.evaluate((element) => element.scrollTop)).toBe(
+        scroll,
+      );
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => Reflect.get(globalThis, "__rnb").auditCompletionPending,
+          ),
+        )
+        .toBe(true);
+      await page.evaluate(() =>
+        Reflect.get(globalThis, "__rnb").releaseAuditCompletion(),
+      );
+      await expect.poll(highlightOffset).toBe(next.textOffsetCodePoints);
+      await expectAuditLeafAt(page, 1);
+      expect(await viewport.evaluate((element) => element.scrollTop)).toBe(
+        scroll,
+      );
+      if (owner === "focus")
+        await leaf.evaluate((element) => (element as HTMLElement).blur());
+      else await page.mouse.move(0, 0);
+      await expectAuditLeafAt(page, 0);
+      await passageB.hover();
+      await expectAuditLeafAt(page, 1);
+      await leaf.click();
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const state = Reflect.get(globalThis, "__rnb");
+            return state.requests.find(
+              (request: { service: number }) => request.service === 2,
+            )?.anchor;
+          }),
+        )
+        .toBe(1);
+    } finally {
+      await page.evaluate(() => {
+        const state = Reflect.get(globalThis, "__rnb");
+        if (state.auditCompletionPending) state.releaseAuditCompletion();
+      });
+    }
+    await page.locator('[data-narration-action="stop"]').click();
+  });
+}
+
+test("five-pass 4.2 empty EPUB fragments are exact reader destinations", async ({
+  page,
+}) => {
+  const fixture = await fixtures();
+  const bytes = await fixture.buildMinimalEpubFixture({
+    packageDocument: fixture
+      .minimalPackageDocument()
+      .replace(
+        "</manifest>",
+        '<item id="alias" href="text/alias.xhtml" media-type="application/xhtml+xml" properties="scripted" fallback="final"/><item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/></manifest>',
+      )
+      .replace(
+        "</spine>",
+        '<itemref idref="alias"/><itemref idref="final"/></spine>',
+      ),
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Opening</title></head><body><h1>Opening</h1><p><a href="alias.xhtml#">Inline alias start</a> <a href="final.xhtml#">Inline direct start</a></p></body></html>',
+    navigationDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><ol><li><a href="text/alias.xhtml">Alias without fragment</a></li><li><a href="text/alias.xhtml#">Alias empty fragment</a></li><li><a href="text/final.xhtml#">Direct empty fragment</a></li><li><a href="text/alias.xhtml#missing">Alias missing fragment</a></li></ol></nav></body></html>',
+    additionalEntries: [
+      { name: "EPUB/text/alias.xhtml", content: "unused fallback source" },
+      {
+        name: "EPUB/text/final.xhtml",
+        content:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Final</title></head><body><h1>Final start</h1><p>Synthetic final passage.</p></body></html>',
+      },
+    ],
+  });
+  const opened = await openEpubPublication(bytes);
+  if (!opened.ok) throw new Error("synthetic empty-fragment fixture failed");
+  const start = opened.publication.locators.find(
+    (block) => block.startLocator.spineItemIndex === 1,
+  )!.startLocator;
+  await opened.publication.close();
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-empty-fragment.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  });
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions") ?? "{}")
+          .states?.[0]?.locator,
+    );
+  const status = page.locator(".reader-navigation-status");
+  const exact = "Moved to the requested reading location.";
+  const recovered =
+    "The requested location was unavailable. Moved to the start of its reading section.";
+  for (const [label, message] of [
+    ["Alias without fragment", exact],
+    ["Alias empty fragment", exact],
+    ["Direct empty fragment", exact],
+    ["Alias missing fragment", recovered],
+  ] as const) {
+    await page.getByRole("button", { name: "Show table of contents" }).click();
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await expect(status).toHaveText(message);
+    await expect.poll(saved).toEqual(start);
+  }
+  for (const label of ["Inline alias start", "Inline direct start"]) {
+    await page.getByRole("button", { name: "Previous chapter" }).click();
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await expect(status).toHaveText(exact);
+    await expect.poll(saved).toEqual(start);
+  }
+});
 
 test("R8-06 late chapter navigation preserves Settings focus", async ({
   page,

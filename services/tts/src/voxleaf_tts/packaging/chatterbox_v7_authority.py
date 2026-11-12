@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import copy
+import shutil
+import stat
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Final, cast
@@ -172,19 +175,92 @@ def _runtime_evidence(
     }
 
 
+def _authority_payloads(
+    receipt: dict[str, object], manifest: dict[str, object]
+) -> tuple[tuple[str, bytes], ...]:
+    return tuple(
+        (name, render_successor_authority(content))
+        for name, content in (
+            ("publication-v7.json", receipt),
+            ("optional-package-manifest-v7.json", manifest),
+            ("runtime-package-evidence-v7.json", _runtime_evidence(receipt, manifest)),
+        )
+    )
+
+
+def _restore_target(candidate: Path, target: Path, original: Path | None) -> None:
+    if original is not None:
+        # Keep the independent recovery copy even if this replace raises after moving.
+        restore = original.with_name(f"restore-{target.name}")
+        shutil.copyfile(original, restore)
+        restore.replace(target)
+        return
+    try:
+        candidate.lstat()
+    except FileNotFoundError:
+        # A same-volume replace consumed our staged file. Only then do we own output.
+        target.unlink(missing_ok=True)
+
+
+def _publish_authority(destination: Path, payloads: tuple[tuple[str, bytes], ...]) -> None:
+    stage = Path(tempfile.mkdtemp(prefix=".authority-v7-", dir=destination))
+    entries: list[tuple[Path, Path, Path | None]] = []
+    attempted: list[tuple[Path, Path, Path | None]] = []
+    try:
+        for name, payload in payloads:
+            candidate = stage / f"candidate-{name}"
+            candidate.write_bytes(payload)
+            if candidate.read_bytes() != payload:
+                raise ReleaseChatterboxError("chatterbox-security-authority-stage-invalid")
+            target = destination / name
+            original: Path | None = None
+            try:
+                target_mode = target.lstat().st_mode
+            except FileNotFoundError:
+                pass
+            else:
+                if not stat.S_ISREG(target_mode):
+                    raise ReleaseChatterboxError("chatterbox-security-authority-target-invalid")
+                original = stage / f"original-{name}"
+                shutil.copyfile(target, original)
+            entries.append((candidate, target, original))
+
+        for entry in entries:
+            candidate, target, _original = entry
+            attempted.append(entry)
+            candidate.replace(target)
+    except BaseException as primary:
+        failures: list[BaseException] = []
+        for candidate, target, original in reversed(attempted):
+            try:
+                _restore_target(candidate, target, original)
+            except BaseException as error:
+                failures.append(error)
+        if not failures:
+            try:
+                shutil.rmtree(stage)
+            except BaseException as error:
+                failures.append(error)
+        if failures:
+            raise BaseExceptionGroup(
+                f"chatterbox-security-authority-recovery:{stage.name}", [primary, *failures]
+            ) from None
+        raise
+
+    try:
+        shutil.rmtree(stage)
+    except BaseException as error:
+        error.add_note(f"chatterbox-security-authority-committed-stage-cleanup:{stage.name}")
+        raise
+
+
 def write_security_authority(publication: Path, root: Path | None = None) -> None:
     base = root or repository_root()
     manifest = security_acquisition_manifest(base)
     receipt = _publication_record(
         _load_json(publication, "chatterbox-publication-invalid"), manifest
     )
-    destination = base / AUTHORITY_DIRECTORY
-    for name, content in (
-        ("publication-v7.json", receipt),
-        ("optional-package-manifest-v7.json", manifest),
-        ("runtime-package-evidence-v7.json", _runtime_evidence(receipt, manifest)),
-    ):
-        (destination / name).write_bytes(render_successor_authority(content))
+    _publish_authority(base / AUTHORITY_DIRECTORY, _authority_payloads(receipt, manifest))
 
 
 def check_security_authority(root: Path | None = None) -> None:
@@ -194,10 +270,6 @@ def check_security_authority(root: Path | None = None) -> None:
     receipt = _publication_record(
         _load_json(destination / "publication-v7.json", "chatterbox-publication-invalid"), manifest
     )
-    for name, expected in (
-        ("publication-v7.json", receipt),
-        ("optional-package-manifest-v7.json", manifest),
-        ("runtime-package-evidence-v7.json", _runtime_evidence(receipt, manifest)),
-    ):
-        if (destination / name).read_bytes() != render_successor_authority(expected):
+    for name, expected in _authority_payloads(receipt, manifest):
+        if (destination / name).read_bytes() != expected:
             raise ReleaseChatterboxError("chatterbox-security-authority-stale")

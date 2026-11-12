@@ -324,7 +324,9 @@ export class WebDriverClient {
       throw new WebDriverClientError(
         operationSignal?.aborted
           ? "webdriver-operation-cancelled"
-          : "webdriver-response-invalid",
+          : timeoutSignal.aborted
+            ? "webdriver-request-timeout"
+            : "webdriver-response-invalid",
       );
     }
 

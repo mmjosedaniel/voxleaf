@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "notices/CORE-COMPONENT-INVENTORY.json",
-      "sha256": "431b44948a98e9845b499f67e138b30db56f5103c72f75a999a927aaee7c0a3f",
-      "sizeBytes": 36166
+      "sha256": "6538b2325b792badadd913c3c0ea7df0ac97cd3dca440a2a3abbcac5d8e895d5",
+      "sizeBytes": 36158
     },
     {
       "path": "notices/ESPEAK-NG-GPL-3.0.txt",
@@ -10119,7 +10119,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 306336791,
+  "payloadBytes": 306336783,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

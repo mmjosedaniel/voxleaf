@@ -212,7 +212,8 @@ export class OptionalChatterboxClient {
   #nextRequestId = 0;
   #actionGeneration = 0;
   #refreshInFlight: Promise<OptionalChatterboxSnapshot> | undefined;
-  #downloadAttempt: object | undefined;
+  #downloadAttempt: Promise<OptionalChatterboxSnapshot> | undefined;
+  #cancelGeneration: number | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
     this.#invoke = invokePort;
@@ -224,6 +225,10 @@ export class OptionalChatterboxClient {
 
   public get downloadPending(): boolean {
     return this.#downloadAttempt !== undefined;
+  }
+
+  public get cancelPending(): boolean {
+    return this.#cancelGeneration === this.#actionGeneration;
   }
 
   public async readDownloadDiagnostic(): Promise<
@@ -240,9 +245,10 @@ export class OptionalChatterboxClient {
   }
 
   public async refresh(): Promise<OptionalChatterboxSnapshot> {
-    if (this.#refreshInFlight !== undefined) {
-      return this.#refreshInFlight;
-    }
+    return this.#refreshInFlight ?? this.#startSnapshotRead();
+  }
+
+  #startSnapshotRead(): Promise<OptionalChatterboxSnapshot> {
     const request = this.#call("optional_chatterbox_snapshot");
     this.#refreshInFlight = request;
     void request.finally(() => {
@@ -254,6 +260,7 @@ export class OptionalChatterboxClient {
   }
 
   public async select(): Promise<OptionalChatterboxSnapshot> {
+    if (this.downloadPending) return this.#snapshot;
     return this.#call("select_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
@@ -266,8 +273,10 @@ export class OptionalChatterboxClient {
   public async recheckCompatibility(
     check: () => Promise<boolean>,
   ): Promise<OptionalChatterboxSnapshot> {
+    const cancelling = this.cancelPending;
     const generation = ++this.#actionGeneration;
     ++this.#nextRequestId;
+    if (cancelling) this.#publish();
     const allowed = await check();
     if (!allowed || generation !== this.#actionGeneration) {
       return this.#snapshot;
@@ -277,13 +286,13 @@ export class OptionalChatterboxClient {
   }
 
   public async download(): Promise<OptionalChatterboxSnapshot> {
-    const attempt = {};
+    const attempt = this.#call("download_optional_chatterbox", {
+      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+    });
     this.#downloadAttempt = attempt;
     this.#publish();
     try {
-      return await this.#call("download_optional_chatterbox", {
-        profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
-      });
+      return await attempt;
     } finally {
       if (this.#downloadAttempt === attempt) {
         this.#downloadAttempt = undefined;
@@ -293,9 +302,32 @@ export class OptionalChatterboxClient {
   }
 
   public async cancel(): Promise<OptionalChatterboxSnapshot> {
-    return this.#call("cancel_optional_chatterbox", {
+    if (this.cancelPending) return this.#snapshot;
+    const pairedDownload = this.#downloadAttempt;
+    const generation = this.#actionGeneration + 1;
+    this.#cancelGeneration = generation;
+    const request = this.#call("cancel_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
+    this.#publish();
+    try {
+      const cancelled = await request;
+      if (generation !== this.#actionGeneration) return cancelled;
+      if (cancelled.state !== "installed" || pairedDownload === undefined) {
+        if (this.#downloadAttempt === pairedDownload)
+          this.#downloadAttempt = undefined;
+        return cancelled;
+      }
+      // Installed acknowledges the commit. The paired download still owns cleanup.
+      await pairedDownload;
+      if (generation !== this.#actionGeneration) return this.#snapshot;
+      return await this.#startSnapshotRead();
+    } finally {
+      if (this.#cancelGeneration === generation) {
+        this.#cancelGeneration = undefined;
+        this.#publish();
+      }
+    }
   }
 
   public async remove(): Promise<OptionalChatterboxSnapshot> {
@@ -310,14 +342,18 @@ export class OptionalChatterboxClient {
   ): Promise<OptionalChatterboxSnapshot> {
     const isRefresh =
       command === "optional_chatterbox_snapshot" && args?.retryCleanup !== true;
-    if (!isRefresh && command !== "download_optional_chatterbox") {
-      this.#downloadAttempt = undefined;
-      this.#publish();
-    }
     const actionGeneration = isRefresh
       ? this.#actionGeneration
       : ++this.#actionGeneration;
     const requestId = ++this.#nextRequestId;
+    if (
+      !isRefresh &&
+      command !== "download_optional_chatterbox" &&
+      command !== "cancel_optional_chatterbox"
+    ) {
+      this.#downloadAttempt = undefined;
+      this.#publish();
+    }
     let result: OptionalChatterboxSnapshot;
     try {
       result = decodeSnapshot(await this.#invoke(command, args));

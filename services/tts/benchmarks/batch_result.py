@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
+from benchmarks import v14_authority
 from benchmarks.metrics import nanoseconds_to_seconds, nearest_rank
 from benchmarks.v4_authority import (
     CPU_PROFILE_ID,
@@ -153,9 +154,58 @@ def derive_v13_summary(
         repository_root, raw_value, summary=False, execution_checker=execution_checker
     )
     raw = _mapping(raw_value, "raw")
-    summary = _derive_summary(raw, load_value, raw_session_removed=raw_session_removed, v13=True)
+    summary = _derive_summary(
+        raw, load_value, raw_session_removed=raw_session_removed, version="v13"
+    )
     validate_v13_result(repository_root, summary, summary=True, execution_checker=execution_checker)
     return summary
+
+
+def derive_v14_summary(
+    repository_root: Path,
+    raw_value: object,
+    load_value: object,
+    *,
+    raw_session_removed: bool,
+    execution_checker: Callable[[str], bool] | None = None,
+) -> dict[str, object]:
+    v14_authority.validate_v14_result(
+        repository_root, raw_value, summary=False, execution_checker=execution_checker
+    )
+    raw = _mapping(raw_value, "raw")
+    summary = _derive_summary(
+        raw, load_value, raw_session_removed=raw_session_removed, version="v14"
+    )
+    v14_authority.validate_v14_result(
+        repository_root, summary, summary=True, execution_checker=execution_checker
+    )
+    return summary
+
+
+def _legacy_cancellation_summary(
+    trials: Sequence[Mapping[str, object]], stale_played: int
+) -> dict[str, object]:
+    termination_values = [
+        _integer(trial.get("workerTerminationNanoseconds"), "cancellation")
+        for trial in trials
+        if trial.get("workerTerminationNanoseconds") is not None
+    ]
+    return {
+        "trialCount": len(trials),
+        "passedTrialCount": sum(trial.get("passed") is True for trial in trials),
+        "maximumIdentityInvalidationMilliseconds": max(
+            (
+                _integer(trial.get("identityInvalidationNanoseconds"), "cancellation") / 1_000_000
+                for trial in trials
+            ),
+            default=0,
+        ),
+        "maximumWorkerTerminationMilliseconds": max(termination_values, default=0) / 1_000_000,
+        "stalePublishedUnits": sum(
+            _integer(trial.get("stalePublishedUnits"), "cancellation") for trial in trials
+        ),
+        "stalePlayedUnits": stale_played,
+    }
 
 
 def _derive_summary(
@@ -163,8 +213,9 @@ def _derive_summary(
     load_value: object,
     *,
     raw_session_removed: bool,
-    v13: bool = False,
+    version: Literal["v4", "v13", "v14"] = "v4",
 ) -> dict[str, object]:
+    successor = version != "v4"
     placement_profile_id = raw["placementProfileId"]
     loads = _load_observations(load_value)
     calls = tuple(_mapping(item, "calls") for item in _sequence(raw.get("calls"), "calls"))
@@ -281,36 +332,19 @@ def _derive_summary(
         _mapping(item, "cancellation")
         for item in _sequence(raw.get("cancellationTrials"), "cancellation")
     )
-    passed_trials = sum(trial.get("passed") is True for trial in trials)
-    termination_values = [
-        _integer(trial.get("workerTerminationNanoseconds"), "cancellation")
-        for trial in trials
-        if trial.get("workerTerminationNanoseconds") is not None
-    ]
-    cancellation = {
-        "trialCount": len(trials),
-        "passedTrialCount": passed_trials,
-        "maximumIdentityInvalidationMilliseconds": max(
-            (
-                _integer(trial.get("identityInvalidationNanoseconds"), "cancellation") / 1_000_000
-                for trial in trials
-            ),
-            default=0,
-        ),
-        "maximumWorkerTerminationMilliseconds": (max(termination_values, default=0) / 1_000_000),
-        "stalePublishedUnits": sum(
-            _integer(trial.get("stalePublishedUnits"), "cancellation") for trial in trials
-        ),
-        "stalePlayedUnits": _integer(
-            raw_playback.get("stalePlayedUnits"),
-            "playback",
-        ),
-    }
+    stale_played = _integer(raw_playback.get("stalePlayedUnits"), "playback")
+    if version == "v14":
+        cancellation = v14_authority.summarize_trials(trials, stale_played)
+    else:
+        cancellation = _legacy_cancellation_summary(trials, stale_played)
+    passed_trials = cancellation["passedTrialCount"]
     raw_failures = [
         cast(str, value) for value in _sequence(raw.get("failureCodes"), "failure-codes")
     ]
-    cleanup_failures = raw["cleanupFailureCodes"] if v13 else []
-    typed_cleanup_failed = v13 and (bool(cleanup_failures) or "cleanup-failed" in raw_failures)
+    cleanup_failures = raw["cleanupFailureCodes"] if successor else []
+    typed_cleanup_failed = successor and (
+        bool(cleanup_failures) or "cleanup-failed" in raw_failures
+    )
     audits = {
         "offline": raw_preflight.get("offlineEnvironmentVerified") is True,
         "artifacts": raw_preflight.get("artifactHashesVerified") is True,
@@ -326,7 +360,7 @@ def _derive_summary(
             raw_cleanup.get("workerProcessesRemaining") == 0
             and raw_cleanup.get("postCleanupProcessTreeRamBytes") == 0
             and raw_cleanup.get("postCleanupProcessTreeVramBytes") == 0
-            and (raw_session_removed if v13 else raw_cleanup.get("rawSessionRemoved") is True)
+            and (raw_session_removed if successor else raw_cleanup.get("rawSessionRemoved") is True)
             and raw_cleanup.get("generatedAudioRemoved") is True
             and raw_cleanup.get("sleepSettingRestored") is True
             and not typed_cleanup_failed
@@ -336,7 +370,7 @@ def _derive_summary(
         "approvedPlacement": placement_profile_id in (FULL_GPU_PROFILE_ID, CPU_PROFILE_ID),
     }
     all_audits = all(audits.values())
-    if v13 and not audits["cleanup"]:
+    if successor and not audits["cleanup"]:
         raw_failures.append("cleanup-failed")
 
     standard_failed: list[str] = []
@@ -394,14 +428,20 @@ def _derive_summary(
 
     failure_codes = sorted(set(raw_failures + standard_failed + scheduling_failed))
     summary: dict[str, object] = {
-        "schemaVersion": SUMMARY_VERSION if v13 else "tts-short-segment-batch-summary-v4",
+        "schemaVersion": (
+            v14_authority.SUMMARY_VERSION
+            if version == "v14"
+            else SUMMARY_VERSION
+            if version == "v13"
+            else "tts-short-segment-batch-summary-v4"
+        ),
         "profileVersion": raw["profileVersion"],
         "profileSha256": raw["profileSha256"],
         "corpusVersion": "tts-short-segment-corpus-v4",
         "corpusSha256": raw["corpusSha256"],
         **(
             {"cleanupFailureCodes": cleanup_failures}
-            if v13
+            if successor
             else {"authorityCommitSha": raw["authorityCommitSha"]}
         ),
         "executionCommitSha": raw["executionCommitSha"],
@@ -425,6 +465,7 @@ def _derive_summary(
         "aggregates": aggregates,
         "memory": dict(raw_memory),
         "cancellation": cancellation,
+        **({"cancellationProof": [dict(trial) for trial in trials]} if version == "v14" else {}),
         "playback": dict(raw_playback),
         "quality": {
             "status": "not-admitted",

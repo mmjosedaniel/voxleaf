@@ -799,6 +799,9 @@ export function App({
         narrationSettingsActions.removeChatterbox(
           narrationCoordinator,
           optionalChatterbox,
+          narrationCoordinator === undefined
+            ? containNarrationForReplacement
+            : undefined,
         ),
       )
       .finally(() => {
@@ -806,7 +809,6 @@ export function App({
           pendingChatterboxRemoval.current = undefined;
       });
     pendingChatterboxRemoval.current = removal;
-    if (narrationCoordinator === undefined) containNarrationForReplacement();
     return removal;
   }, [
     containNarrationForReplacement,

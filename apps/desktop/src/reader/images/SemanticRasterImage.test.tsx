@@ -99,7 +99,127 @@ function managedLoader(
   return loader;
 }
 
+function captureDefaultObservers() {
+  const observers = new Map<
+    string,
+    {
+      readonly root: Element | Document | null;
+      readonly observe: ReturnType<typeof vi.fn>;
+      readonly disconnect: ReturnType<typeof vi.fn>;
+      deliver(entries: IntersectionObserverEntry[]): void;
+    }
+  >();
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      constructor(
+        callback: IntersectionObserverCallback,
+        options: IntersectionObserverInit,
+      ) {
+        observers.set(options.rootMargin!, {
+          root: options.root ?? null,
+          observe: this.observe,
+          disconnect: this.disconnect,
+          deliver: (entries) =>
+            callback(entries, this as unknown as IntersectionObserver),
+        });
+      }
+
+      readonly observe = vi.fn();
+      readonly disconnect = vi.fn();
+    },
+  );
+  const occurrence = { setVisibility: vi.fn(), fail: vi.fn(), close: vi.fn() };
+  const loader = {
+    load: vi.fn(),
+    watch: vi.fn(() => occurrence),
+  } satisfies PublicationRasterImageLoadPort;
+  const { container, unmount } = render(
+    <div data-reader-scroll-owner="true">
+      <SemanticRasterImageElement resourceId={RESOURCE_ID} loader={loader} />
+    </div>,
+  );
+  const root = container.firstElementChild!;
+  const host = root.querySelector(".semantic-raster-host")!;
+  const visible = observers.get("0px")!;
+  const near = observers.get("256px 0px")!;
+  for (const observer of [visible, near]) {
+    expect(observer.root).toBe(root);
+    expect(observer.observe).toHaveBeenCalledExactlyOnceWith(host);
+  }
+  return { root, host, visible, near, occurrence, unmount };
+}
+
+function intersectionEntry(
+  target: Element,
+  time: number,
+  isIntersecting: boolean,
+  intersectionRatio = isIntersecting ? 1 : 0,
+): IntersectionObserverEntry {
+  const bounds = target.getBoundingClientRect();
+  return {
+    target,
+    time,
+    isIntersecting,
+    intersectionRatio,
+    boundingClientRect: bounds,
+    intersectionRect: bounds,
+    rootBounds: null,
+  };
+}
+
 describe("semantic raster image", () => {
+  it.each(["visible", "near"] as const)(
+    "five-pass 2.4 uses the newest matching %s entry independent of array order",
+    (visibility) => {
+      const observations = captureDefaultObservers();
+      const { root, host, occurrence } = observations;
+      const observer = observations[visibility];
+      observer.deliver([intersectionEntry(root, 3, true)]);
+      expect(occurrence.setVisibility).not.toHaveBeenCalled();
+
+      observer.deliver([
+        intersectionEntry(host, 10, false),
+        intersectionEntry(host, 20, false, 0.25),
+        intersectionEntry(root, 30, false),
+      ]);
+      expect(occurrence.setVisibility).toHaveBeenLastCalledWith(visibility);
+      observer.deliver([
+        intersectionEntry(host, 40, false),
+        intersectionEntry(host, 35, true),
+      ]);
+      expect(occurrence.setVisibility).toHaveBeenLastCalledWith("outside");
+      observer.deliver([
+        intersectionEntry(host, 50, true),
+        intersectionEntry(host, 50, false),
+      ]);
+      expect(occurrence.setVisibility).toHaveBeenLastCalledWith("outside");
+    },
+  );
+
+  it("five-pass 2.4 combines observer states independently and ignores late callbacks", () => {
+    const { host, visible, near, occurrence, unmount } =
+      captureDefaultObservers();
+    near.deliver([intersectionEntry(host, 100, true)]);
+    visible.deliver([intersectionEntry(host, 5, true)]);
+    near.deliver([intersectionEntry(host, 110, false)]);
+    visible.deliver([intersectionEntry(host, 10, false)]);
+    expect(occurrence.setVisibility.mock.calls).toEqual([
+      ["near"],
+      ["visible"],
+      ["visible"],
+      ["outside"],
+    ]);
+
+    unmount();
+    expect(occurrence.close).toHaveBeenCalledTimes(1);
+    expect(visible.disconnect).toHaveBeenCalledTimes(1);
+    expect(near.disconnect).toHaveBeenCalledTimes(1);
+    visible.deliver([intersectionEntry(host, 200, true)]);
+    near.deliver([intersectionEntry(host, 200, true)]);
+    expect(occurrence.setVisibility).toHaveBeenCalledTimes(4);
+  });
+
   it("RPI-02 releases offscreen sources while reserving their footprint and reloads on return", async () => {
     const first = createSource();
     const second = createSource();

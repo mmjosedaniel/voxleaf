@@ -47,6 +47,7 @@ export interface SegmentHighlightEnvironment {
 export interface SegmentHighlightControllerCallbacks {
   readonly navigateToLocator: (locator: ReadingLocatorV1) => void;
   readonly settleLocator: (locator: ReadingLocatorV1) => void;
+  readonly recordAutomaticFollowPlacement?: (locator: ReadingLocatorV1) => void;
   readonly suspendVisualSampling: () => (
     options?: ActiveVisualLocatorResumeOptions,
   ) => void;
@@ -443,7 +444,7 @@ export class SegmentHighlightController {
 
     this.#ensureVisualSamplingSuspended();
     this.#cancelScheduledSettle?.();
-    this.#environment.scrollBy(root, rect.top - comfortTop);
+    this.#scrollFollow(root, rect.top - comfortTop, start);
     const expectedKey = this.#activeKey;
     this.#scheduleFollowSettlement(
       root,
@@ -481,6 +482,18 @@ export class SegmentHighlightController {
     this.#resumeVisualSampling ??= this.#callbacks?.suspendVisualSampling();
   }
 
+  #scrollFollow(
+    root: HTMLElement,
+    top: number,
+    locator: ReadingLocatorV1,
+  ): void {
+    const before = root.scrollTop;
+    this.#environment.scrollBy(root, top);
+    if (root.scrollTop !== before) {
+      this.#callbacks?.recordAutomaticFollowPlacement?.(locator);
+    }
+  }
+
   #scheduleFollowSettlement(
     root: HTMLElement,
     range: Range,
@@ -506,7 +519,7 @@ export class SegmentHighlightController {
           viewport.bottom -
           SYNCHRONIZATION_AUTHORITY_V1.following.comfortInsetPx;
         if (rect.bottom < comfortTop || rect.top > comfortBottom) {
-          this.#environment.scrollBy(root, rect.top - comfortTop);
+          this.#scrollFollow(root, rect.top - comfortTop, locator);
           this.#scheduleFollowSettlement(
             root,
             range,

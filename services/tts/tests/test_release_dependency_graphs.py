@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import tomllib
 from pathlib import Path
+from types import ModuleType
 from typing import cast
+
+import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 RELEASE_ROOT = REPOSITORY_ROOT / "services" / "tts" / "release"
@@ -16,6 +20,165 @@ CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox" / "requirements.lock"
 AUDIT_POLICY = RELEASE_ROOT / "audit-policy.json"
 COMPONENT_INVENTORY = RELEASE_ROOT / "component-inventory-v1.json"
 PYTHON_LICENSE_EVIDENCE = RELEASE_ROOT / "python-license-evidence.json"
+ONNX_WINDOWS_WHEEL = (
+    "https://files.pythonhosted.org/packages/be/ed/"
+    "b12cea136ccd7b03d924f46b8393faf7ceac21115c0c50e729faa248cf23/"
+    "onnxruntime-1.31.0-cp312-cp312-win_amd64.whl"
+)
+ONNX_WINDOWS_INTEGRITY = {
+    "algorithm": "SHA-256",
+    "value": "09d56445c1753e66e0912de69d3f0184016ad9a191dcd6925bf5dd570d2bfbe5",
+    "lockedArtifact": ONNX_WINDOWS_WHEEL,
+    "sizeBytes": 14_888_841,
+    "lock": "services/tts/release/core/uv.lock",
+}
+
+
+@pytest.fixture
+def inventory_tool() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "release_inventory", REPOSITORY_ROOT / "scripts/release_inventory.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_five_pass_3_4_onnx_identifies_exact_windows_artifact(inventory_tool: ModuleType) -> None:
+    components = inventory_tool._uv_components(inventory_tool._python_licenses())
+    onnx = next(component for component in components if component["name"] == "onnxruntime")
+    assert onnx["integrity"] == ONNX_WINDOWS_INTEGRITY
+
+
+def _wheel_url(filename: str) -> str:
+    return f"https://example.invalid/{filename}"
+
+
+def _synthetic_core_component(
+    inventory_tool: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    wheels: tuple[str, ...],
+    *,
+    sdist: str | None = None,
+    registry: bool = True,
+) -> dict[str, object]:
+    lock = tmp_path / "uv.lock"
+
+    def artifact(url: str) -> str:
+        digest = hashlib.sha256(url.encode()).hexdigest()
+        return f'{{ url = {json.dumps(url)}, hash = "sha256:{digest}", size = 42 }}'
+
+    source = '{ registry = "https://pypi.org/simple" }' if registry else '{ editable = "../../" }'
+    rows = ", ".join(artifact(url) for url in wheels)
+    lock.write_text(
+        f'[[package]]\nname = "example"\nversion = "1"\nsource = {source}\n'
+        + (f"sdist = {artifact(sdist)}\n" if sdist is not None else "")
+        + f"wheels = [{rows}]\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(inventory_tool, "CORE_LOCK", lock)
+    licenses = {"example==1": {"license": "MIT", "evidence": "synthetic"}}
+    return cast(dict[str, object], inventory_tool._uv_components(licenses)[0])
+
+
+def test_five_pass_3_4_preference_is_independent_of_lock_order(
+    inventory_tool: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    windows = _wheel_url("example-1-cp312-cp312-win_amd64.whl")
+    wheels = (
+        _wheel_url("example-1-cp312-cp312-macosx_11_0_arm64.whl"),
+        _wheel_url("example-1-py3-none-any.whl"),
+        windows,
+        _wheel_url("example-1-cp311-abi3-win_amd64.whl"),
+    )
+    for order in (wheels, tuple(reversed(wheels))):
+        component = _synthetic_core_component(inventory_tool, tmp_path, monkeypatch, order)
+        assert cast(dict[str, object], component["integrity"])["lockedArtifact"] == windows
+
+
+@pytest.mark.parametrize(
+    ("preferred", "alternate"),
+    [
+        ("cp311.cp312-abi3.cp312-win32.win_amd64.whl", "cp312-abi3-win_amd64.whl"),
+        ("cp312-none-win_amd64.whl", "cp311-abi3-win_amd64.whl"),
+        ("cp310-abi3-win_amd64.whl", "py312-none-win_amd64.whl"),
+        ("py312-none-win_amd64.whl", "cp312-none-any.whl"),
+        ("cp312-none-any.whl", "py312-none-any.whl"),
+        ("py2%2Epy3-none-any.whl?download=1", "py311-none-any.whl"),
+    ],
+)
+def test_five_pass_3_4_fixed_target_ranks_compatible_compound_and_fallback_tags(
+    inventory_tool: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    preferred: str,
+    alternate: str,
+) -> None:
+    best = _wheel_url(f"example-1-{preferred}")
+    component = _synthetic_core_component(
+        inventory_tool, tmp_path, monkeypatch, (_wheel_url(f"example-1-{alternate}"), best)
+    )
+    assert cast(dict[str, object], component["integrity"])["lockedArtifact"] == best
+
+
+def test_five_pass_3_4_rejects_distinct_best_ties_but_ignores_lower_ties_and_duplicates(
+    inventory_tool: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = _wheel_url("example-1-1-cp312-abi3-win_amd64.whl")
+    second = _wheel_url("example-1-2-cp312-abi3-win_amd64.whl")
+    best = _wheel_url("example-1-cp312-cp312-win_amd64.whl")
+    for order in ((first, second), (second, first)):
+        with pytest.raises(ValueError, match=":ambiguous-wheel:example$"):
+            _synthetic_core_component(inventory_tool, tmp_path, monkeypatch, order)
+        component = _synthetic_core_component(
+            inventory_tool, tmp_path, monkeypatch, (*order, best, best)
+        )
+        assert cast(dict[str, object], component["integrity"])["lockedArtifact"] == best
+
+
+@pytest.mark.parametrize(
+    "wheel",
+    [
+        None,
+        "cp312-cp312-manylinux_2_17_x86_64.whl",
+        "cp312-cp312-win_arm64.whl",
+        "cp311-cp311-win_amd64.whl",
+        "cp313-abi3-win_amd64.whl",
+        "cp312-cp312t-win_amd64.whl",
+        "py313-none-any.whl",
+        "py3-abi3-any.whl",
+        "py3-none-any.zip",
+    ],
+)
+def test_five_pass_3_4_rejects_unsupported_or_missing_registry_wheel(
+    inventory_tool: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    wheel: str | None,
+) -> None:
+    wheels = () if wheel is None else (_wheel_url(f"example-1-{wheel}"),)
+    with pytest.raises(ValueError, match=":no-compatible-wheel:example$"):
+        _synthetic_core_component(inventory_tool, tmp_path, monkeypatch, wheels)
+
+
+def test_five_pass_3_4_preserves_source_and_local_provenance(
+    inventory_tool: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheels = (_wheel_url("example-1-cp312-cp312-win_amd64.whl"),)
+    sdist = _wheel_url("example-1.tar.gz")
+    registry = _synthetic_core_component(inventory_tool, tmp_path, monkeypatch, wheels, sdist=sdist)
+    assert cast(dict[str, object], registry["integrity"])["lockedArtifact"] == sdist
+    local = _synthetic_core_component(inventory_tool, tmp_path, monkeypatch, (), registry=False)
+    assert local["source"] == "repository:services/tts"
+    assert local["integrity"] is None
+    local_with_sdist = _synthetic_core_component(
+        inventory_tool, tmp_path, monkeypatch, wheels, sdist=sdist, registry=False
+    )
+    assert local_with_sdist["source"] == "repository:services/tts"
+    assert cast(dict[str, object], local_with_sdist["integrity"])["lockedArtifact"] == sdist
+
 
 WEB_AND_DEVELOPMENT_PACKAGES = {
     "fastapi",
@@ -131,6 +294,10 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
     components = inventory["components"]
     assert len(components) == 418
     assert len({component["id"] for component in components}) == len(components)
+    onnx = next(
+        component for component in components if component["id"] == "pypi:onnxruntime@1.31.0"
+    )
+    assert onnx["integrity"] == ONNX_WINDOWS_INTEGRITY
     assert {
         component["id"]
         for component in components

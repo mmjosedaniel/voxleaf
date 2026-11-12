@@ -8,10 +8,10 @@ import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
-from typing import Final, Literal, Protocol, cast
+from typing import Final, Literal, Protocol, cast, runtime_checkable
 
+from benchmarks import v14_authority
 from benchmarks.batch_contracts import (
     BatchAudioUnit,
     BatchBenchmarkError,
@@ -24,7 +24,7 @@ from benchmarks.batch_contracts import (
     BatchUnitObservation,
     BatchWorkIdentity,
 )
-from benchmarks.batch_execution import BoundedOrderedBatchController
+from benchmarks.batch_execution import BatchCancellationPublication, BoundedOrderedBatchController
 from benchmarks.batch_matrix import SystemBatchClock, frozen_v4_requests
 from benchmarks.batch_playback import PlaybackArrival, simulate_bounded_playback
 from benchmarks.contracts import (
@@ -32,6 +32,11 @@ from benchmarks.contracts import (
     AdapterPlacementEvidence,
     CancellationResponse,
     PlacementProfileId,
+)
+from benchmarks.isolation import (
+    BatchWitnessPhase,
+    OfficialSafetyInterruption,
+    WitnessedBatchCancellation,
 )
 from benchmarks.memory import (
     FrameworkVramTracker,
@@ -115,13 +120,30 @@ class OfficialBatchCandidate(BatchCandidate, Protocol):
     @property
     def placement_evidence(self) -> AdapterPlacementEvidence | None: ...
 
-    def load(self) -> None: ...
+    def load_for_official(self, owner: object, should_stop: Callable[[], bool]) -> None: ...
+
+    def abort_official_load(self, owner: object) -> None: ...
+
+    def generate_batch_for_official(
+        self, request: BatchGenerationRequest, should_stop: Callable[[], bool]
+    ) -> Sequence[BatchAudioUnit]: ...
 
     def cancel(self, request_id: str) -> CancellationResponse: ...
 
 
 type OfficialCandidateFactory = Callable[[], OfficialBatchCandidate]
 type FreeVramProbe = Callable[[], int | None]
+
+
+@runtime_checkable
+class _WitnessedBatchCandidate(Protocol):
+    def cancel_witnessed_batch(
+        self,
+        request: BatchGenerationRequest,
+        phase: BatchWitnessPhase,
+        should_stop: Callable[[], bool],
+        invalidate: Callable[[], None],
+    ) -> WitnessedBatchCancellation: ...
 
 
 def _close_candidate(candidate: OfficialBatchCandidate) -> None:
@@ -132,6 +154,89 @@ def _close_candidate(candidate: OfficialBatchCandidate) -> None:
         raise OfficialBatchError("cleanup-failed", ("candidate-close",)) from None
     if still_owned:
         raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
+
+
+def _require_safety(monitor: OfficialMemoryMonitor) -> None:
+    code = monitor.stop_code
+    if code is not None:
+        raise OfficialBatchError(code)
+
+
+class _OfficialCandidateLoad:
+    def __init__(self, candidate: OfficialBatchCandidate, monitor: OfficialMemoryMonitor) -> None:
+        self._candidate = candidate
+        self._monitor = monitor
+        self._owner = object()
+        self._thread: threading.Thread | None = None
+
+    def _abort_and_reap(self) -> None:
+        thread = self._thread
+        if thread is None or thread.ident is None:
+            return
+        try:
+            try:
+                self._candidate.abort_official_load(self._owner)
+            finally:
+                thread.join(timeout=WORKER_TERMINATION_LIMIT_NS / 1_000_000_000)
+        except Exception:
+            raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",)) from None
+        if thread.is_alive():
+            raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
+
+    def run(self, placement_profile_id: str) -> int:
+        _require_safety(self._monitor)
+        failures: list[BaseException] = []
+        load_times: list[int] = []
+
+        def load() -> None:
+            try:
+                started = time.perf_counter_ns()
+                self._candidate.load_for_official(
+                    self._owner, lambda: self._monitor.stop_code is not None
+                )
+                _require_placement(self._candidate, placement_profile_id)
+                load_times.append(max(1, time.perf_counter_ns() - started))
+            except BaseException as error:
+                failures.append(error)
+
+        thread = threading.Thread(target=load, name="voxleaf-v13-official-load", daemon=True)
+        self._thread = thread
+        try:
+            thread.start()
+            while thread.is_alive():
+                _require_safety(self._monitor)
+                thread.join(timeout=MEMORY_SAMPLE_SECONDS)
+            if failures:
+                failure = failures[0]
+                if not isinstance(failure, OfficialSafetyInterruption):
+                    raise failure
+            _require_safety(self._monitor)
+            if failures:
+                raise failures[0]
+            return load_times[0]
+        except BaseException:
+            with _cleanup_scope(self._abort_and_reap, "worker-not-reaped"):
+                raise
+
+    def close(self) -> None:
+        if self._thread is not None and self._thread.is_alive():
+            self._abort_and_reap()
+        _close_candidate(self._candidate)
+
+
+@dataclass(frozen=True)
+class _SafetyCheckedCandidate:
+    candidate: OfficialBatchCandidate
+    monitor: OfficialMemoryMonitor
+
+    def generate_batch(self, request: BatchGenerationRequest) -> Sequence[BatchAudioUnit]:
+        _require_safety(self.monitor)
+        return self.candidate.generate_batch_for_official(
+            request, lambda: self.monitor.stop_code is not None
+        )
+
+    def close(self) -> None:
+        self.candidate.close()
 
 
 @dataclass(frozen=True)
@@ -171,6 +276,8 @@ class OfficialMemoryMonitor(Protocol):
 
     def start(self) -> None: ...
 
+    def begin_measurement(self) -> None: ...
+
     def shutdown(self) -> None: ...
 
     def measure(self) -> OfficialMemoryResult: ...
@@ -196,10 +303,12 @@ class ThreadedOfficialMemoryMonitor:
         self._framework_tracker = framework_tracker
         self._free_vram_probe = free_vram_probe
         self._lock = threading.Lock()
+        self._sample_lock = threading.Lock()
         self._stop_event = threading.Event()
         self._finished = threading.Event()
         self._thread: threading.Thread | None = None
         self._started = False
+        self._measuring = False
         self._sampling_failed = False
         self._peak_ram = 0
         self._peak_dedicated = 0
@@ -211,7 +320,7 @@ class ThreadedOfficialMemoryMonitor:
     @property
     def stop_code(self) -> str | None:
         with self._lock:
-            return self._stop_code
+            return self._stop_code or ("measurement" if self._sampling_failed else None)
 
     @property
     def shutdown_pending(self) -> bool:
@@ -222,6 +331,10 @@ class ThreadedOfficialMemoryMonitor:
             self._stop_code = value
 
     def _sample_once(self, *, force_free: bool = False) -> None:
+        with self._sample_lock:
+            self._sample_snapshot(force_free=force_free)
+
+    def _sample_snapshot(self, *, force_free: bool) -> None:
         try:
             dedicated = self._dedicated_sampler.sample(self._root_pid)
             shared = self._shared_sampler.sample(self._root_pid)
@@ -235,37 +348,31 @@ class ThreadedOfficialMemoryMonitor:
             )
             free_vram = self._free_vram_probe() if should_sample_free else None
             with self._lock:
-                self._peak_ram = max(
-                    self._peak_ram,
-                    dedicated.process_tree_ram_bytes,
-                )
-                self._peak_dedicated = max(
-                    self._peak_dedicated,
-                    dedicated.process_tree_vram_bytes,
-                )
-                self._peak_shared = max(
-                    self._peak_shared,
-                    shared.process_tree_vram_bytes,
-                )
+                if self._measuring:
+                    self._peak_ram = max(self._peak_ram, dedicated.process_tree_ram_bytes)
+                    self._peak_dedicated = max(
+                        self._peak_dedicated, dedicated.process_tree_vram_bytes
+                    )
+                    self._peak_shared = max(self._peak_shared, shared.process_tree_vram_bytes)
                 if should_sample_free:
                     self._last_free_sample_ns = now
                     if free_vram is None:
                         self._sampling_failed = True
-                    else:
+                    elif self._measuring:
                         self._minimum_free = (
                             free_vram
                             if self._minimum_free is None
                             else min(self._minimum_free, free_vram)
                         )
                 framework = self._framework_tracker.peak_bytes() or 0
-                authoritative = max(self._peak_dedicated, framework)
-                if self._peak_shared > 0:
+                if shared.process_tree_vram_bytes > 0:
                     self._set_stop_code("shared-gpu-memory")
-                elif authoritative > MAXIMUM_ENGINEERING_VRAM_BYTES:
-                    self._set_stop_code("vram-safety-ceiling")
                 elif (
-                    self._minimum_free is not None and self._minimum_free < MINIMUM_FREE_VRAM_BYTES
+                    max(dedicated.process_tree_vram_bytes, framework)
+                    > MAXIMUM_ENGINEERING_VRAM_BYTES
                 ):
+                    self._set_stop_code("vram-safety-ceiling")
+                elif free_vram is not None and free_vram < MINIMUM_FREE_VRAM_BYTES:
                     self._set_stop_code("vram-reserve-exhausted")
         except Exception:
             with self._lock:
@@ -296,6 +403,20 @@ class ThreadedOfficialMemoryMonitor:
         )
         self._thread.start()
         self._started = True
+
+    def begin_measurement(self) -> None:
+        if not self._started or self._thread is None or self._measuring:
+            raise OfficialBatchError("monitor-inactive")
+        if not self._sample_lock.acquire(timeout=MONITOR_JOIN_SECONDS):
+            raise OfficialBatchError("cleanup-failed", ("monitor-shutdown",))
+        try:
+            _require_safety(self)
+            self._framework_tracker.reset()
+            self._measuring = True
+            self._sample_snapshot(force_free=True)
+            _require_safety(self)
+        finally:
+            self._sample_lock.release()
 
     def shutdown(self) -> None:
         self._stop_event.set()
@@ -447,36 +568,59 @@ def _execute_with_memory_stop(
     candidate: OfficialBatchCandidate,
     request: BatchGenerationRequest,
     monitor: OfficialMemoryMonitor,
+    *,
+    before_publication: Callable[[BatchGenerationRequest], None] | None = None,
+    cancellation: BatchCancellationPublication | None = None,
 ) -> BatchExecutionObservation:
-    result: list[BatchExecutionObservation] = []
-    unexpected: list[BaseException] = []
+    def execute() -> BatchExecutionObservation:
+        try:
+            return controller.execute(
+                _SafetyCheckedCandidate(candidate, monitor),
+                request,
+                before_publication=before_publication,
+                cancellation=cancellation,
+            )
+        except BaseException:
+            if cancellation is not None:
+                raise
+            return _failed_observation(request, clock=SystemBatchClock(), code="generation-failed")
+
+    return _generate_with_safety(candidate, request, monitor, execute)
+
+
+def _generate_with_safety[T](
+    candidate: OfficialBatchCandidate,
+    request: BatchGenerationRequest,
+    monitor: OfficialMemoryMonitor,
+    operation: Callable[[], T],
+) -> T:
+    _require_safety(monitor)
+    result: list[T] = []
+    failures: list[BaseException] = []
 
     def run() -> None:
         try:
-            result.append(controller.execute(candidate, request))
+            _require_safety(monitor)
+            result.append(operation())
         except BaseException as error:
-            unexpected.append(error)
+            failures.append(error)
 
-    thread = threading.Thread(target=run, name="voxleaf-v13-batch-call")
-    cancelled_for_memory = False
+    thread = threading.Thread(target=run, name="voxleaf-v13-batch-call", daemon=True)
     try:
         thread.start()
         while thread.is_alive():
             thread.join(timeout=MEMORY_SAMPLE_SECONDS)
-            if monitor.stop_code is not None and not cancelled_for_memory:
-                cancelled_for_memory = True
-                candidate.cancel(f"batch-{request.call_index}")
+            _require_safety(monitor)
     except BaseException:
         with _cleanup_scope(
             lambda: _cancel_and_reap_call(candidate, request, thread), "worker-not-reaped"
         ):
             raise
-    if unexpected or not result:
-        return _failed_observation(
-            request,
-            clock=SystemBatchClock(),
-            code="resource-limit" if cancelled_for_memory else "generation-failed",
-        )
+    if failures:
+        raise failures[0]
+    _require_safety(monitor)
+    if not result:
+        raise OfficialBatchError("generation-failed")
     return result[0]
 
 
@@ -485,7 +629,7 @@ def _cancel_and_reap_call(
     request: BatchGenerationRequest,
     thread: threading.Thread,
 ) -> None:
-    if thread.ident is None or thread.is_alive():
+    if thread.ident is not None and thread.is_alive():
         try:
             candidate.cancel(f"batch-{request.call_index}")
         finally:
@@ -633,8 +777,10 @@ def _run_cancellation_trial(
     trial_index: int,
     trial_id: str,
     candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
     placement_profile_id: str,
 ) -> dict[str, object]:
+    _require_safety(monitor)
     invalidation_started = time.perf_counter_ns()
     if trial_id == "before-dispatch":
         invalidation_ns = time.perf_counter_ns() - invalidation_started
@@ -650,29 +796,36 @@ def _run_cancellation_trial(
 
     request = _cancellation_request(repository_root, trial_index=trial_index)
     controller = BoundedOrderedBatchController(clock=SystemBatchClock())
+    _require_safety(monitor)
     candidate = candidate_factory()
+    load = _OfficialCandidateLoad(candidate, monitor)
+    admitted = _SafetyCheckedCandidate(candidate, monitor)
     invalidation_ns = 0
     termination_ns: int | None = None
     completed_outputs: list[tuple[BatchAudioUnit, ...]] = []
     unexpected: list[BaseException] = []
     stale_publications = 0
     outcome_ok = False
-    with _cleanup_scope(lambda: _close_candidate(candidate), "candidate-close"):
-        candidate.load()
-        _require_placement(candidate, placement_profile_id)
+    with _cleanup_scope(load.close, "candidate-close"):
+        load.run(placement_profile_id)
         if trial_id in ("accepted-before-audio", "during-batch-generation"):
 
             def generate() -> None:
                 try:
-                    completed_outputs.append(tuple(candidate.generate_batch(request)))
+                    completed_outputs.append(tuple(admitted.generate_batch(request)))
                 except BaseException as error:
                     unexpected.append(error)
 
             thread = threading.Thread(target=generate, name=f"voxleaf-v13-{trial_id}")
             try:
+                _require_safety(monitor)
                 thread.start()
                 if trial_id == "during-batch-generation":
-                    thread.join(timeout=0.5)
+                    deadline = time.monotonic() + 0.5
+                    while thread.is_alive() and (remaining := deadline - time.monotonic()) > 0:
+                        thread.join(timeout=min(MEMORY_SAMPLE_SECONDS, remaining))
+                        _require_safety(monitor)
+                _require_safety(monitor)
                 invalidation_started = time.perf_counter_ns()
                 invalidation_ns = time.perf_counter_ns() - invalidation_started
                 termination_started = time.perf_counter_ns()
@@ -681,6 +834,7 @@ def _run_cancellation_trial(
                 thread.join(timeout=2)
                 if thread.is_alive():
                     raise OfficialBatchError("cleanup-failed", ("worker-not-reaped",))
+                _require_safety(monitor)
             except BaseException:
                 with _cleanup_scope(
                     lambda: _cancel_and_reap_call(candidate, request, thread), "worker-not-reaped"
@@ -692,9 +846,11 @@ def _run_cancellation_trial(
                 and termination_ns <= WORKER_TERMINATION_LIMIT_NS
             )
         elif trial_id == "after-complete-before-publication":
-            observation = controller.execute(
+            observation = _execute_with_memory_stop(
+                controller,
                 candidate,
                 request,
+                monitor,
                 before_publication=lambda _request: controller.identity_gate.invalidate(),
             )
             invalidation_ns = 0
@@ -708,7 +864,9 @@ def _run_cancellation_trial(
                 and termination_ns <= WORKER_TERMINATION_LIMIT_NS
             )
         elif trial_id == "after-first-unit-publication":
-            outputs = tuple(candidate.generate_batch(request))
+            outputs = _generate_with_safety(
+                candidate, request, monitor, lambda: tuple(admitted.generate_batch(request))
+            )
             first_valid = (
                 len(outputs) == 2
                 and outputs[0].identity == request.identity
@@ -752,6 +910,127 @@ def _run_cancellation_trial(
     )
 
 
+def _run_v14_cancellation_trial(
+    repository_root: Path,
+    *,
+    trial_index: int,
+    trial_id: str,
+    candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
+    placement_profile_id: str,
+) -> dict[str, object]:
+    _require_safety(monitor)
+    request = _cancellation_request(repository_root, trial_index=trial_index)
+    controller = BoundedOrderedBatchController(clock=SystemBatchClock())
+    gate = controller.identity_gate
+    invalidation_ns: int | None = None
+    termination_ns: int | None = None
+    cleanup_ns: int | None = None
+    worker_exited: bool | None = None
+    suppressed: int | None = None
+    published_before = stale = candidate_calls = 0
+    phase: str | None = None
+    outcome = "unexpected-failure"
+
+    def invalidate() -> None:
+        nonlocal invalidation_ns
+        _require_safety(monitor)
+        if invalidation_ns is not None or not gate.accepts(request.identity):
+            raise OfficialBatchError("cancellation-failed")
+        started = time.perf_counter_ns()
+        gate.invalidate()
+        if not gate.accepts(request.identity):
+            invalidation_ns = time.perf_counter_ns() - started
+
+    if trial_id == "before-dispatch":
+        dispatch = BatchCancellationPublication("before-dispatch", invalidate)
+        result = controller.execute(None, request, cancellation=dispatch)
+        candidate_calls = dispatch.candidate_calls
+        if result.call.failure_code == "stale-identity":
+            phase = "before-dispatch"
+            outcome = "dispatch-rejected"
+    else:
+        _require_safety(monitor)
+        candidate = candidate_factory()
+        load = _OfficialCandidateLoad(candidate, monitor)
+        with _cleanup_scope(load.close, "candidate-close"):
+            load.run(placement_profile_id)
+            if trial_id in ("accepted-before-audio", "during-batch-generation"):
+                if not isinstance(candidate, _WitnessedBatchCandidate):
+                    raise OfficialBatchError("cancellation-failed")
+                target: BatchWitnessPhase = (
+                    "worker-accepted" if trial_id == "accepted-before-audio" else "adapter-entry"
+                )
+                gate.activate(request.identity)
+                try:
+                    _require_safety(monitor)
+                    witness = candidate.cancel_witnessed_batch(
+                        request, target, lambda: monitor.stop_code is not None, invalidate
+                    )
+                except OfficialSafetyInterruption:
+                    _require_safety(monitor)
+                    raise
+                if (
+                    witness.identity != request.identity
+                    or witness.call_index != request.call_index
+                    or witness.phase != target
+                    or invalidation_ns is None
+                    or candidate.worker_pid is not None
+                ):
+                    raise OfficialBatchError("cancellation-failed")
+                phase = witness.phase
+                termination_ns = witness.termination_nanoseconds
+                candidate_calls = int(witness.phase == "adapter-entry")
+                outcome = "worker-cancelled"
+            elif trial_id in ("after-complete-before-publication", "after-first-unit-publication"):
+                release = BatchCancellationPublication(
+                    "before-publication"
+                    if trial_id == "after-complete-before-publication"
+                    else "after-first-publication",
+                    invalidate,
+                )
+                result = _execute_with_memory_stop(
+                    controller, candidate, request, monitor, cancellation=release
+                )
+                candidate_calls = release.candidate_calls
+                suppressed = release.suppressed
+                published_before = release.published_before_invalidation
+                if invalidation_ns is not None:
+                    stale = len(result.published) - published_before
+                    phase = release.stage
+                if (
+                    result.call.failure_code == "stale-identity"
+                    and release.suppressed > 0
+                    and invalidation_ns is not None
+                ):
+                    outcome = "publication-rejected"
+                elif result.call.failure_code is not None:
+                    raise BatchBenchmarkError(result.call.failure_code)
+                else:
+                    outcome = "completed"
+            else:
+                raise OfficialBatchError("cancellation-trial")
+            cleanup_started = time.perf_counter_ns()
+        cleanup_ns = time.perf_counter_ns() - cleanup_started
+        worker_exited = candidate.worker_pid is None
+    _require_safety(monitor)
+    return {
+        "trialId": trial_id,
+        "trialIndex": trial_index,
+        "callIndex": request.call_index,
+        "witnessedPhase": phase,
+        "outcome": outcome,
+        "candidateCalls": candidate_calls,
+        "publishedBeforeInvalidation": published_before,
+        "stalePublishedUnits": stale,
+        "suppressedByGate": suppressed,
+        "identityInvalidationNanoseconds": invalidation_ns,
+        "workerTerminationNanoseconds": termination_ns,
+        "workerExited": worker_exited,
+        "cleanupNanoseconds": cleanup_ns,
+    }
+
+
 def execute_official_v13(
     repository_root: Path,
     *,
@@ -765,6 +1044,55 @@ def execute_official_v13(
 ) -> OfficialExecution:
     """Run one exact official v13 placement and return private raw evidence."""
 
+    return _execute_official(
+        repository_root,
+        execution_commit_sha=execution_commit_sha,
+        host=host,
+        preflight=preflight,
+        candidate_factory=candidate_factory,
+        monitor=monitor,
+        placement_profile_id=placement_profile_id,
+        cpu_admission=cpu_admission,
+        v14=False,
+    )
+
+
+def execute_official_v14(
+    repository_root: Path,
+    *,
+    execution_commit_sha: str,
+    host: Mapping[str, object],
+    preflight: Mapping[str, object],
+    candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
+    placement_profile_id: str = FULL_GPU_PROFILE_ID,
+    cpu_admission: v14_authority.V14CpuAdmission | None = None,
+) -> OfficialExecution:
+    return _execute_official(
+        repository_root,
+        execution_commit_sha=execution_commit_sha,
+        host=host,
+        preflight=preflight,
+        candidate_factory=candidate_factory,
+        monitor=monitor,
+        placement_profile_id=placement_profile_id,
+        cpu_admission=cpu_admission,
+        v14=True,
+    )
+
+
+def _execute_official(
+    repository_root: Path,
+    *,
+    execution_commit_sha: str,
+    host: Mapping[str, object],
+    preflight: Mapping[str, object],
+    candidate_factory: OfficialCandidateFactory,
+    monitor: OfficialMemoryMonitor,
+    placement_profile_id: str,
+    cpu_admission: V13CpuAdmission | v14_authority.V14CpuAdmission | None,
+    v14: bool,
+) -> OfficialExecution:
     if placement_profile_id == FULL_GPU_PROFILE_ID:
         admission: Mapping[str, object] = {
             "status": "not-applicable",
@@ -774,7 +1102,8 @@ def execute_official_v13(
         if cpu_admission is not None:
             raise OfficialBatchError("placement")
     elif placement_profile_id == CPU_PROFILE_ID:
-        if not isinstance(cpu_admission, V13CpuAdmission):
+        admission_class = v14_authority.V14CpuAdmission if v14 else V13CpuAdmission
+        if not isinstance(cpu_admission, admission_class):
             raise OfficialBatchError("placement")
         admission = cpu_admission.as_raw()
     else:
@@ -782,33 +1111,35 @@ def execute_official_v13(
 
     clock = SystemBatchClock()
     load_observations: list[dict[str, int]] = []
-    for index in range(1, COLD_LOAD_COUNT + 1):
-        candidate = candidate_factory()
-        with _cleanup_scope(partial(_close_candidate, candidate), "candidate-close"):
-            try:
-                started = clock.now_ns()
-                candidate.load()
-                _require_placement(candidate, placement_profile_id)
-                load_ns = max(1, clock.now_ns() - started)
-                cleanup_started = clock.now_ns()
-            except Exception:
-                raise OfficialBatchError("cold-load") from None
-        cleanup_ns = clock.now_ns() - cleanup_started
-        load_observations.append(
-            {
-                "observationIndex": index,
-                "loadNanoseconds": load_ns,
-                "cleanupNanoseconds": cleanup_ns,
-            }
-        )
-
     with _cleanup_scope(monitor.shutdown, "monitor-shutdown"):
         monitor.start()
+        for index in range(1, COLD_LOAD_COUNT + 1):
+            _require_safety(monitor)
+            candidate = candidate_factory()
+            load = _OfficialCandidateLoad(candidate, monitor)
+            with _cleanup_scope(load.close, "candidate-close"):
+                try:
+                    load_ns = load.run(placement_profile_id)
+                    cleanup_started = clock.now_ns()
+                except OfficialBatchError:
+                    raise
+                except Exception:
+                    raise OfficialBatchError("cold-load") from None
+            cleanup_ns = clock.now_ns() - cleanup_started
+            load_observations.append(
+                {
+                    "observationIndex": index,
+                    "loadNanoseconds": load_ns,
+                    "cleanupNanoseconds": cleanup_ns,
+                }
+            )
+        _require_safety(monitor)
+        monitor.begin_measurement()
         observations = _run_measured_batch(
             repository_root, clock, candidate_factory, monitor, placement_profile_id
         )
         cancellation_trials = _run_cancellation_trials(
-            repository_root, candidate_factory, monitor, placement_profile_id
+            repository_root, candidate_factory, monitor, placement_profile_id, v14=v14
         )
 
     memory = monitor.measure()
@@ -823,17 +1154,23 @@ def execute_official_v13(
         failure_codes.add(memory.memory_stop_code)
     if playback_failure is not None:
         failure_codes.add(playback_failure)
-    if any(trial["passed"] is not True for trial in cancellation_trials):
+    if v14:
+        cancellation_passed = all(
+            v14_authority.trial_passes(trial) for trial in cancellation_trials
+        )
+    else:
+        cancellation_passed = all(trial["passed"] is True for trial in cancellation_trials)
+    if not cancellation_passed:
         failure_codes.add("cancellation-failed")
     cleanup_failures: list[CleanupFailure] = []
     if post_cleanup_ram != 0 or post_cleanup_vram != 0:
         failure_codes.add("cleanup-failed")
         cleanup_failures.append("resource-residue")
 
-    raw = {
-        "schemaVersion": RAW_VERSION,
-        "profileVersion": PROFILE_VERSION,
-        "profileSha256": PROFILE_SHA256,
+    raw: dict[str, object] = {
+        "schemaVersion": v14_authority.RAW_VERSION if v14 else RAW_VERSION,
+        "profileVersion": v14_authority.PROFILE_VERSION if v14 else PROFILE_VERSION,
+        "profileSha256": v14_authority.PROFILE_SHA256 if v14 else PROFILE_SHA256,
         "corpusSha256": CORPUS_SHA256,
         "executionCommitSha": execution_commit_sha,
         "treeClean": True,
@@ -872,11 +1209,13 @@ def _run_measured_batch(
     controller = BoundedOrderedBatchController(clock=clock)
     observations: list[BatchExecutionObservation] = []
     terminal_code: str | None = None
+    _require_safety(monitor)
     candidate = candidate_factory()
+    load = _OfficialCandidateLoad(candidate, monitor)
 
     def close_candidate() -> None:
         try:
-            _close_candidate(candidate)
+            load.close()
         except OfficialBatchError as cleanup:
             primary = next(
                 (
@@ -891,13 +1230,13 @@ def _run_measured_batch(
             raise
 
     with _cleanup_scope(close_candidate, "candidate-close"):
-        candidate.load()
-        _require_placement(candidate, placement_profile_id)
+        load.run(placement_profile_id)
         requests = frozen_v4_requests(
             repository_root,
             identity=BatchWorkIdentity("v13-private-session", "v13-generation"),
         )
         for request in requests:
+            _require_safety(monitor)
             if terminal_code is not None:
                 observations.append(_failed_observation(request, clock=clock, code=terminal_code))
                 continue
@@ -908,9 +1247,7 @@ def _run_measured_batch(
                 monitor,
             )
             observations.append(observation)
-            if monitor.stop_code is not None:
-                terminal_code = "resource-limit"
-            elif (
+            if (
                 observation.call.failure_code in ("out-of-memory", "timeout")
                 or candidate.worker_pid is None
             ):
@@ -923,45 +1260,29 @@ def _run_cancellation_trials(
     candidate_factory: OfficialCandidateFactory,
     monitor: OfficialMemoryMonitor,
     placement_profile_id: str,
+    *,
+    v14: bool,
 ) -> list[dict[str, object]]:
-    cancellation_order = (
-        "before-dispatch",
-        "accepted-before-audio",
-        "during-batch-generation",
-        "after-complete-before-publication",
-        "after-first-unit-publication",
-    )
-    if monitor.stop_code is None:
-        return [
-            _run_cancellation_trial(
+    cancellation_order = v14_authority.TRIAL_ORDER
+    execute = _run_v14_cancellation_trial if v14 else _run_cancellation_trial
+    trials: list[dict[str, object]] = []
+    for index, trial_id in enumerate(cancellation_order, start=1):
+        _require_safety(monitor)
+        trials.append(
+            execute(
                 repository_root,
                 trial_index=index,
                 trial_id=trial_id,
                 candidate_factory=candidate_factory,
+                monitor=monitor,
                 placement_profile_id=placement_profile_id,
             )
-            for index, trial_id in enumerate(cancellation_order, start=1)
-        ]
-    return [
-        _trial_result(
-            trial_id=trial_id,
-            passed=False,
-            stop_mode=(
-                "identity-invalidation"
-                if trial_id == "before-dispatch"
-                else "worker-process-termination"
-            ),
-            invalidation_ns=0,
-            termination_ns=None,
-            worker_exited=True,
-            cleanup_ns=0,
         )
-        for trial_id in cancellation_order
-    ]
+    return trials
 
 
 def official_raw_root(
-    repository_root: Path, session_id: str, *, version: Literal["v4", "v13"] = "v4"
+    repository_root: Path, session_id: str, *, version: Literal["v4", "v13", "v14"] = "v4"
 ) -> Path:
     root = (repository_root / "benchmarks/results/raw" / f"short-segment-batch-{version}").resolve()
     session = (root / session_id).resolve()

@@ -112,6 +112,70 @@ test("SAF-13 aborts an active operation request while session cleanup stays inde
   }
 });
 
+for (const mode of ["deadline", "user-cancel", "malformed"]) {
+  test(`five-pass 5.4 classifies a WebDriver response body: ${mode}`, async (t) => {
+    const { promise: bodyStarted, resolve: startBody } =
+      Promise.withResolvers();
+    const fetch = globalThis.fetch;
+    t.mock.method(globalThis, "fetch", async (url, options) => {
+      const response = await fetch(url, options);
+      if (url.endsWith("/execute/sync")) {
+        assert.equal(response.status, 200);
+        const readJson = response.json.bind(response);
+        t.mock.method(response, "json", () => {
+          const pending = readJson();
+          startBody();
+          return pending;
+        });
+      }
+      return response;
+    });
+    const fake = await startServer(({ method, path }) => {
+      if (path === "/session")
+        return { body: { value: { sessionId: "owned" } } };
+      if (method === "DELETE") return { body: { value: null } };
+      assert.equal(path, "/session/owned/execute/sync");
+      return { rawBody: '{"value":', holdBody: mode !== "malformed" };
+    });
+    const controller = new globalThis.AbortController();
+    const client = new WebDriverClient(fake.endpoint, {
+      requestTimeoutMs: 500,
+      signal: controller.signal,
+    });
+    try {
+      await client.createSession("synthetic.exe", "synthetic-profile");
+      const observed = client.execute("return true;").catch((error) => error);
+      assert.equal(
+        await Promise.race([
+          bodyStarted.then(() => true),
+          observed.then(() => false),
+        ]),
+        true,
+        "the client began consuming the body after receiving headers",
+      );
+      if (mode === "user-cancel") controller.abort();
+      const error = await observed;
+      assert(error instanceof WebDriverClientError);
+      assert.equal(
+        error.code,
+        {
+          deadline: "webdriver-request-timeout",
+          "user-cancel": "webdriver-operation-cancelled",
+          malformed: "webdriver-response-invalid",
+        }[mode],
+      );
+      await client.deleteSession();
+      assert.equal(client.hasSession, false);
+      assert.equal(
+        fake.requests.filter(({ method }) => method === "DELETE").length,
+        1,
+      );
+    } finally {
+      await fake.stop();
+    }
+  });
+}
+
 test("resolves one absolute installed executable without accepting ambiguous paths", () => {
   assert.equal(
     resolveNativeSmokeExecutable(
@@ -214,7 +278,12 @@ async function startServer(handler) {
     response.writeHead(result.status ?? 200, {
       "content-type": "application/json",
     });
-    response.end(JSON.stringify(result.body));
+    if (result.holdBody) {
+      response.flushHeaders();
+      response.write(result.rawBody);
+    } else {
+      response.end(result.rawBody ?? JSON.stringify(result.body));
+    }
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
