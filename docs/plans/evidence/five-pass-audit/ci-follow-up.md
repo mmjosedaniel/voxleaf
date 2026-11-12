@@ -35,7 +35,7 @@ placed the target at approximately y=3765–3861 while the reader viewport was
 y=298–671. The reader was not busy at failure, but that does not prove its state
 when scrolling began or whether a later restoration moved it. The observed
 failure therefore establishes a missing visible-placement precondition, not a
-production image-loader defect. Both Ubuntu jobs and all 71 Chromium browser
+production image-loader defect. Both Ubuntu jobs and all 80 Chromium browser
 tests passed in the initial run.
 
 The native harness correction waits for a ready reader and explicitly places
