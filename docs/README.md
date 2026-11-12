@@ -17,6 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [passage-navigation correction plan](plans/active/passage-navigation-minimal-corrections.md)
+addresses unproven Next adjacency and explicit placement outcomes, with a bounded
+scope and selective evidence reuse. It is planning only; implementation and
+behavioral validation have not started.
+
 The [completed five-pass audit](plans/completed/five-pass-audit-revalidation-and-corrections.md)
 records24 corrections and the already-correct case4.4, with four original
 excluded or conditional dispositions preserved. Independent integrated review
