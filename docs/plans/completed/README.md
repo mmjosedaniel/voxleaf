@@ -16,6 +16,12 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Passage navigation: minimal corrections and selective validation](passage-navigation-minimal-corrections.md)
+  corrects PN-01–04 and the preference-reflow recovery gap found independently.
+  Current desktop, EPUB, Chromium, packaged WebView2 and Piper EN evidence passes
+  with resource restoration. The plan links its final PN-20261112-R3 review and
+  records accepted evidence reuse, limitations and uncommitted delivery.
+
 - [Five-pass audit: revalidation and minimal corrections](five-pass-audit-revalidation-and-corrections.md)
   records24 corrections, the already-correct case4.4 and four preserved excluded
   or conditional dispositions. FPA-INTEGRATED-CR-R1-20261111 approved the full

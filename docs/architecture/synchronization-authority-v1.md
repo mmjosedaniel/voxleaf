@@ -42,24 +42,24 @@ The executable table is
 `apps/desktop/src/reader/synchronization-authority.ts`. Every event has one
 closed row:
 
-| Event | Resulting phase | Position/persistence authority | Highlight/follow | Work |
-| --- | --- | --- | --- | --- |
-| `start` | `preparing` | visual / none | clear / none | start new |
-| `segment-started` | `playing` | segment start / save start | active segment / follow if outside comfort region | preserve |
-| `segment-completed` | `playing` | segment end / save end | retain last heard / none | preserve |
-| `pause` | `paused` | latest heard / save latest heard | retain / none | preserve |
-| `resume` | by play intent | latest heard / none | retain / follow if required | preserve |
-| `buffer-exhausted` | `buffering` | latest heard / save latest heard | retain / none | preserve |
-| `buffer-refilled` | `playing` | latest heard / none | retain / preserve | preserve |
-| explicit visible-passage or paragraph-leaf navigation | by play intent | explicit target / save latest heard | clear / none | invalidate first |
-| passive viewport movement | preserve | latest heard / preserve | retain / none | preserve |
-| previous or next segment | by play intent | target visual / save latest heard | clear / none | invalidate first |
-| chapter navigation | by play intent | target visual / save latest heard | clear / reader navigation policy | invalidate first |
-| reflow | preserve | preserve / preserve | preserve / follow if required | preserve |
-| `stop` | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
-| publication or settings replacement | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
-| service failure | `failed` | latest heard / save latest heard | clear / none | invalidate first |
-| application cleanup | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
+| Event                                                 | Resulting phase | Position/persistence authority      | Highlight/follow                                  | Work             |
+| ----------------------------------------------------- | --------------- | ----------------------------------- | ------------------------------------------------- | ---------------- |
+| `start`                                               | `preparing`     | visual / none                       | clear / none                                      | start new        |
+| `segment-started`                                     | `playing`       | segment start / save start          | active segment / follow if outside comfort region | preserve         |
+| `segment-completed`                                   | `playing`       | segment end / save end              | retain last heard / none                          | preserve         |
+| `pause`                                               | `paused`        | latest heard / save latest heard    | retain / none                                     | preserve         |
+| `resume`                                              | by play intent  | latest heard / none                 | retain / follow if required                       | preserve         |
+| `buffer-exhausted`                                    | `buffering`     | latest heard / save latest heard    | retain / none                                     | preserve         |
+| `buffer-refilled`                                     | `playing`       | latest heard / none                 | retain / preserve                                 | preserve         |
+| explicit visible-passage or paragraph-leaf navigation | by play intent  | explicit target / save latest heard | clear / none                                      | invalidate first |
+| passive viewport movement                             | preserve        | latest heard / preserve             | retain / none                                     | preserve         |
+| previous or next segment                              | by play intent  | target visual / save latest heard   | clear / none                                      | invalidate first |
+| chapter navigation                                    | by play intent  | target visual / save latest heard   | clear / reader navigation policy                  | invalidate first |
+| reflow                                                | preserve        | preserve / preserve                 | preserve / follow if required                     | preserve         |
+| `stop`                                                | `inactive`      | latest heard / save latest heard    | clear / none                                      | invalidate first |
+| publication or settings replacement                   | `inactive`      | latest heard / save latest heard    | clear / none                                      | invalidate first |
+| service failure                                       | `failed`        | latest heard / save latest heard    | clear / none                                      | invalidate first |
+| application cleanup                                   | `inactive`      | latest heard / save latest heard    | clear / none                                      | invalidate first |
 
 For every invalidating event, eligibility changes before cleanup:
 
@@ -72,6 +72,13 @@ For every invalidating event, eligibility changes before cleanup:
 7. restart only when prior play intent authorizes it.
 
 ## Highlighting and following
+
+[ADR-0073](decisions/ADR-0073-passage-continuity-and-placement-outcomes.md) applies
+the same witnessed continuity to Previous and Next. Explicit passage placement
+keeps the requested canonical target separate from an approximate visible fallback.
+Matching request identity governs settlement and save admission; failed or stale
+placement cannot restart another passage. Failed following preserves the last
+measured visual locator without removing the intentional completion projection.
 
 The selected decoration is the CSS Custom Highlight API using the fixed name
 `voxleaf-narration-active`. It accepts a real noncollapsed DOM `Range` without

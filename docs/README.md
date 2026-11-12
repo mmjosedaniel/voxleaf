@@ -17,6 +17,12 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed passage-navigation correction](plans/completed/passage-navigation-minimal-corrections.md)
+applies symmetric proven continuity, attributable placement outcomes and measured
+visual following. Selected desktop, EPUB, Chromium, WebView2 and Piper EN gates
+pass with verified host restoration. Its final review and evidence ledger record
+the exact patch, the two resolved review findings and accepted evidence reuse.
+
 The [completed five-pass audit](plans/completed/five-pass-audit-revalidation-and-corrections.md)
 records24 corrections and the already-correct case4.4, with four original
 excluded or conditional dispositions preserved. Independent integrated review

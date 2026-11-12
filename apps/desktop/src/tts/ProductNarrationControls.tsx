@@ -334,6 +334,11 @@ export function ProductNarrationControls({
             <button
               type="button"
               data-narration-action="previous-passage"
+              title={
+                !snapshot.navigation.canGoPrevious
+                  ? "The preceding passage is not available in the prepared sequence."
+                  : undefined
+              }
               disabled={
                 !snapshot.navigation.canGoPrevious ||
                 snapshot.navigation.settling
@@ -345,6 +350,11 @@ export function ProductNarrationControls({
             <button
               type="button"
               data-narration-action="next-passage"
+              title={
+                !snapshot.navigation.canGoNext
+                  ? "The following passage is not available in the prepared sequence."
+                  : undefined
+              }
               disabled={
                 !snapshot.navigation.canGoNext || snapshot.navigation.settling
               }
@@ -366,6 +376,9 @@ export function ProductNarrationControls({
               Start narration at visible passage
             </button>
           </div>
+          {snapshot.navigation.feedback === undefined ? null : (
+            <p role="status">{snapshot.navigation.feedback}</p>
+          )}
         </div>
       ) : null}
     </section>

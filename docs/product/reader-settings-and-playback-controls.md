@@ -266,6 +266,17 @@ with zero underruns. These values do not replace the live hardware gate.
 
 ## Explicit playback actions during cleanup
 
+Previous and Next are available only for neighbors connected by the prepared
+sequence. A disabled direction explains that its passage is unavailable; missing
+history does not mean the book has ended. Paused navigation does not prepare
+ahead. Resume prepares from the selected passage under the existing policy.
+
+An approximate or failed passage placement stops the pending move and explains
+that it could not place the requested passage. It does not autoplay another
+passage or replace the admitted checkpoint. A measured visible fallback permits
+a later explicit Play; an unavailable placement requires a valid reading location.
+An exact target already visible despite scroll clamping remains successful.
+
 Resume during paused navigation waits for cleanup and target placement: the
 control is disabled while navigation settles, and the coordinator independently
 rejects an early command. A rejected ownerless Resume during availability checks
@@ -714,7 +725,6 @@ After paused navigation, selecting or successfully resetting speed updates both
 the selector and the zero-loaded-audio label, including during cleanup. A failed
 preference write does not roll back the already applied in-memory selection.
 Resume remains explicit and active-unit rates remain boundary-deferred.
-
 
 ## R8 interaction corrections
 

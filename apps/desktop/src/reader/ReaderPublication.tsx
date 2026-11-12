@@ -52,6 +52,8 @@ import {
 import {
   ReaderNavigationCoordinator,
   type ReaderTargetAvailability,
+  type ReaderNavigationSettlement,
+  type ReaderPlacementRequest,
 } from "./reader-navigation";
 import { ParagraphLeafController } from "./paragraph-leaf-controller";
 import { ParagraphLeaf } from "./ParagraphLeaf";
@@ -148,7 +150,7 @@ export interface ReaderPublicationContentProps {
   readonly onNavigationSettlement?: (
     settlement: import("./reader-navigation").ReaderNavigationSettlement,
     reason: ReaderLocatorSettlementReason,
-  ) => void;
+  ) => boolean | void;
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly preferences?: ReaderPreferencesV1;
@@ -226,35 +228,48 @@ export function ReaderPublicationContent({
       }),
   );
   const placementPending = useRef(false);
+  const placementRequest = useRef<ReaderPlacementRequest | undefined>(
+    undefined,
+  );
+  const settlePlacement = useCallback(
+    (
+      settlement: ReaderNavigationSettlement,
+      reason: ReaderLocatorSettlementReason,
+    ): boolean | void => {
+      const callbacks = externalCallbacks.current;
+      return callbacks.onNavigationSettlement !== undefined
+        ? callbacks.onNavigationSettlement(settlement, reason)
+        : callbacks.narrationSource?.settleReaderPlacement?.(settlement);
+    },
+    [],
+  );
   const notifySettlement = useCallback(
     (
       reason: ReaderLocatorSettlementReason,
       locator = coordinator.state.activeLocator,
+      outcome?: ReaderNavigationSettlement,
     ): void => {
       if (reason === "reflow" && placementPending.current) return;
       placementPending.current = false;
-      if (coordinator.state.contentStatus === "chapter-too-large") {
-        externalCallbacks.current.narrationSource?.settleReaderPlacement?.({
-          status: "unavailable",
-          reason: "chapter-too-large",
-        });
-        externalCallbacks.current.onNavigationSettlement?.(
-          { status: "unavailable", reason: "chapter-too-large" },
+      const request =
+        reason === "reflow" ? undefined : placementRequest.current;
+      const settlement: ReaderNavigationSettlement = {
+        ...(outcome ??
+          (coordinator.state.contentStatus === "chapter-too-large"
+            ? { status: "unavailable", reason: "chapter-too-large" }
+            : { status: "settled", locator })),
+        ...(request === undefined ? {} : { request }),
+      };
+      if (reason !== "reflow") placementRequest.current = undefined;
+      const accepted = settlePlacement(settlement, reason);
+      if (accepted === false) return;
+      if (settlement.status === "settled")
+        externalCallbacks.current.onSettledLocatorChange?.(
+          settlement.locator,
           reason,
         );
-        return;
-      }
-      externalCallbacks.current.narrationSource?.settleReaderPlacement?.({
-        status: "settled",
-        locator,
-      });
-      externalCallbacks.current.onNavigationSettlement?.(
-        { status: "settled", locator },
-        reason,
-      );
-      externalCallbacks.current.onSettledLocatorChange?.(locator, reason);
     },
-    [coordinator],
+    [coordinator, settlePlacement],
   );
   useEffect(() => {
     if (
@@ -347,9 +362,43 @@ export function ReaderPublicationContent({
         },
       ),
   );
+  const readerViewportRef = useRef<HTMLDivElement | null>(null);
+  const destinationRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     reflowRestorer.setOnRestored((result) => {
       if (result.reason === "preference") {
+        if (result.placement === "unavailable") return;
+        if (!result.aligned) {
+          const environment =
+            reflowEnvironment ?? BROWSER_READER_REFLOW_ENVIRONMENT;
+          const root = readerViewportRef.current;
+          const viewport =
+            root === null ? undefined : environment.viewportRect(root);
+          const resolved = publication.resolveLocator(result.locator);
+          const range =
+            resolved === undefined
+              ? undefined
+              : activeDomRangeMapper.rangeFor(
+                  resolved.locatedBlock,
+                  result.locator.textOffsetCodePoints,
+                );
+          const block = destinationRef.current;
+          const rect =
+            result.placement === "block-start"
+              ? block === null
+                ? undefined
+                : environment.elementRect(block)
+              : range === undefined
+                ? undefined
+                : environment.rangeRect(range);
+          if (
+            rect === undefined ||
+            viewport === undefined ||
+            rect.bottom <= viewport.top ||
+            rect.top >= viewport.bottom
+          )
+            return;
+        }
         notifySettlement("reflow", result.locator);
       } else if (result.reason === "restoration") {
         setPendingRestoration({
@@ -358,7 +407,14 @@ export function ReaderPublicationContent({
         });
       }
     });
-  }, [coordinator, notifySettlement, reflowRestorer]);
+  }, [
+    activeDomRangeMapper,
+    coordinator,
+    notifySettlement,
+    publication,
+    reflowEnvironment,
+    reflowRestorer,
+  ]);
   useStrictModeSafeResourceCleanup(reflowRestorer);
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
@@ -373,20 +429,20 @@ export function ReaderPublicationContent({
       placementPending.current ||
       pendingPositionSaveRevision.current !== undefined
     ) {
-      narrationSource.beginReaderPlacement?.();
+      narrationSource.beginReaderPlacement?.(placementRequest.current);
       return;
     }
     // Attachment replays the visible start before making Play available.
     if (coordinator.state.contentStatus === "render") {
       narrationSource.updateVisibleLocator?.(coordinator.state.activeLocator);
     }
-    externalCallbacks.current.onNavigationSettlement?.(
+    settlePlacement(
       coordinator.state.contentStatus === "chapter-too-large"
         ? { status: "unavailable", reason: "chapter-too-large" }
         : { status: "settled", locator: coordinator.state.activeLocator },
       "reflow",
     );
-  }, [coordinator, narrationSource]);
+  }, [coordinator, narrationSource, settlePlacement]);
   const leafSnapshot = useSyncExternalStore(
     paragraphLeafController.subscribe,
     paragraphLeafController.getSnapshot,
@@ -403,7 +459,6 @@ export function ReaderPublicationContent({
     [publication.locators, state.activeDocument.id],
   );
   const readerDocumentRef = useRef<HTMLElement | null>(null);
-  const readerViewportRef = useRef<HTMLDivElement | null>(null);
   const [readerContentRoot, setReaderContentRoot] =
     useState<HTMLDivElement | null>(null);
   const paragraphLeafPlacement = useRef<{
@@ -421,7 +476,6 @@ export function ReaderPublicationContent({
     contentsTriggerRef.current?.focus({ preventScroll: true });
   }, []);
   const focusContentsAfterOpen = useRef(false);
-  const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
   const programmaticNavigationRequest = useRef(0);
   const resumeProgrammaticNavigationRef = useRef<
@@ -554,23 +608,26 @@ export function ReaderPublicationContent({
     },
     [attemptInitialRestoration],
   );
-  const finishProgrammaticNavigation = useCallback((): void => {
-    visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
-    if (
-      pendingPositionSaveRevision.current ===
-      coordinator.state.navigationRevision
-    ) {
-      pendingPositionSaveRevision.current = undefined;
-      const reason = pendingNavigationReason.current;
-      pendingNavigationReason.current = undefined;
-      if (reason !== undefined) {
-        notifySettlement(reason);
+  const finishProgrammaticNavigation = useCallback(
+    (outcome?: ReaderNavigationSettlement): void => {
+      visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
+      if (
+        pendingPositionSaveRevision.current ===
+        coordinator.state.navigationRevision
+      ) {
+        pendingPositionSaveRevision.current = undefined;
+        const reason = pendingNavigationReason.current;
+        pendingNavigationReason.current = undefined;
+        if (reason !== undefined) {
+          notifySettlement(reason, coordinator.state.activeLocator, outcome);
+        }
       }
-    }
-    const resume = resumeProgrammaticNavigationRef.current;
-    resumeProgrammaticNavigationRef.current = undefined;
-    resume?.({ requestSample: false });
-  }, [coordinator, notifySettlement, visualLocatorTracker]);
+      const resume = resumeProgrammaticNavigationRef.current;
+      resumeProgrammaticNavigationRef.current = undefined;
+      resume?.({ requestSample: false });
+    },
+    [coordinator, notifySettlement, visualLocatorTracker],
+  );
   useLayoutEffect(() => {
     if (pendingRestoration === undefined) return;
     const { result, navigationRevision } = pendingRestoration;
@@ -617,7 +674,33 @@ export function ReaderPublicationContent({
       });
       return;
     }
-    finishProgrammaticNavigation();
+    const relative = placementRequest.current?.narration;
+    const exact =
+      result.placement === "exact-range" && (result.aligned || visible);
+    const block = destinationRef.current;
+    const blockRect =
+      block === null ? undefined : environment.elementRect(block);
+    const blockVisible =
+      blockRect !== undefined &&
+      viewport !== undefined &&
+      blockRect.bottom >= viewport.top &&
+      blockRect.top <= viewport.bottom;
+    const atBlockStart = result.locator.textOffsetCodePoints === 0;
+    finishProgrammaticNavigation(
+      relative === undefined || relative.event === "paragraph-leaf"
+        ? undefined
+        : exact ||
+            (atBlockStart &&
+              result.placement === "block-start" &&
+              (result.aligned || blockVisible))
+          ? { status: "settled", locator: coordinator.state.activeLocator }
+          : result.placement !== "unavailable" && blockVisible
+            ? {
+                status: "approximate",
+                locator: coordinator.state.activeLocator,
+              }
+            : { status: "unavailable", reason: "placement" },
+    );
   }, [
     activeDomRangeMapper,
     completeInitialRestoration,
@@ -649,14 +732,32 @@ export function ReaderPublicationContent({
         handledNavigationRevision.current !== state.navigationRevision
       ) {
         handledNavigationRevision.current = state.navigationRevision;
+        const relative = placementRequest.current?.narration;
+        const strictPassage =
+          relative !== undefined && relative.event !== "paragraph-leaf";
         if (
-          coordinator.state.activeLocator.textOffsetCodePoints > 0 &&
-          reflowRestorer.preserve(
-            coordinator.state.activeLocator,
-            "restoration",
-          )
+          strictPassage &&
+          coordinator.state.activeLocator.textOffsetCodePoints === 0
+        )
+          focusDestination(element);
+        if (
+          coordinator.state.activeLocator.textOffsetCodePoints > 0 ||
+          strictPassage
         ) {
-          return;
+          if (
+            reflowRestorer.preserve(
+              coordinator.state.activeLocator,
+              "restoration",
+            )
+          )
+            return;
+          if (strictPassage) {
+            finishProgrammaticNavigation({
+              status: "unavailable",
+              reason: "placement",
+            });
+            return;
+          }
         }
         focusDestination(element);
         finishProgrammaticNavigation();
@@ -677,28 +778,50 @@ export function ReaderPublicationContent({
     [coordinator],
   );
   const runProgrammaticNavigation = useCallback(
-    (navigate: () => void, reason: ReaderUserNavigationEvent): void => {
+    (
+      navigate: () => void,
+      reason: ReaderUserNavigationEvent,
+      narration?: import("../tts/product-narration-coordinator").ProductNarrationNavigationRequest,
+    ): void => {
       if (reason === "chapter-navigation") {
         segmentHighlightController.clear();
       }
       const request = programmaticNavigationRequest.current + 1;
       programmaticNavigationRequest.current = request;
       placementPending.current = true;
-      narrationSource?.beginReaderPlacement?.();
+      placementRequest.current = {
+        publication: publication.book.identity,
+        revision: request,
+        ...(narration === undefined ? {} : { narration }),
+      };
+      narrationSource?.beginReaderPlacement?.(placementRequest.current);
+      // Retire the older reader operation at admission, even if containing the
+      // new intent subsequently fails. Its delayed restoration cannot succeed.
+      const resume = visualLocatorTracker.suspend();
+      reflowRestorer.cancel();
+      completeInitialRestoration({
+        status: "superseded",
+        locator: coordinator.state.activeLocator,
+      });
+      resumeProgrammaticNavigationRef.current?.({ requestSample: false });
+      resumeProgrammaticNavigationRef.current = resume;
+      pendingPositionSaveRevision.current = undefined;
+      pendingNavigationReason.current = undefined;
+      const rejectNavigation = (): void => {
+        notifySettlement(reason, coordinator.state.activeLocator, {
+          status: "rejected",
+        });
+        const release = resumeProgrammaticNavigationRef.current;
+        resumeProgrammaticNavigationRef.current = undefined;
+        release?.({ requestSample: false });
+      };
       const continueNavigation = (): void => {
         if (programmaticNavigationRequest.current !== request) {
           return;
         }
+        // Layout can start another reflow while audio containment is awaited.
+        // It belongs to the old document and must release sampling before commit.
         reflowRestorer.cancel();
-        completeInitialRestoration(
-          Object.freeze({
-            status: "superseded",
-            locator: coordinator.state.activeLocator,
-          }),
-        );
-        resumeProgrammaticNavigationRef.current?.();
-        const resume = visualLocatorTracker.suspend();
-        resumeProgrammaticNavigationRef.current = resume;
         const revision = coordinator.state.navigationRevision;
         pendingPositionSaveRevision.current = revision + 1;
         pendingNavigationReason.current = reason;
@@ -708,7 +831,9 @@ export function ReaderPublicationContent({
           pendingPositionSaveRevision.current = undefined;
           pendingNavigationReason.current = undefined;
           finishProgrammaticNavigation();
-          notifySettlement(reason);
+          notifySettlement(reason, coordinator.state.activeLocator, {
+            status: "rejected",
+          });
         } else if (handledNavigationRevision.current !== nextRevision) {
           pendingPositionSaveRevision.current = nextRevision;
         }
@@ -717,7 +842,7 @@ export function ReaderPublicationContent({
       try {
         invalidation = onNavigationIntent?.(reason);
       } catch {
-        notifySettlement(reason);
+        rejectNavigation();
         return;
       }
       if (invalidation === undefined) {
@@ -725,7 +850,7 @@ export function ReaderPublicationContent({
       } else {
         void invalidation.then(continueNavigation).catch(() => {
           if (programmaticNavigationRequest.current === request)
-            notifySettlement(reason);
+            rejectNavigation();
         });
       }
     },
@@ -739,6 +864,7 @@ export function ReaderPublicationContent({
       reflowRestorer,
       segmentHighlightController,
       visualLocatorTracker,
+      publication,
     ],
   );
   const activateTarget = useCallback(
@@ -956,6 +1082,7 @@ export function ReaderPublicationContent({
       runProgrammaticNavigation(
         () => coordinator.navigateToLocator(request.locator),
         "narration-boundary",
+        request,
       );
     });
   }, [coordinator, narrationSource, runProgrammaticNavigation]);

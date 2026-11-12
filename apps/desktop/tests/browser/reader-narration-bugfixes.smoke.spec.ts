@@ -4696,6 +4696,118 @@ async function expectAuditLeafAt(page: Page, index: number) {
     .toBeLessThan(1);
 }
 
+for (const geometry of ["exact", "controlled-missing-range"] as const) {
+  test(`PN-02 real preparation and reader placement preserve the requested passage (${geometry})`, async ({
+    page,
+  }) => {
+    await installSyntheticService(page, false, false, false, true);
+    await page.setViewportSize({ width: 640, height: 480 });
+    await page.goto("/");
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-passage.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(
+        await (
+          await fixtures()
+        ).buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body><p>${"Synthetic passage with quiet paths and ordinary details. ".repeat(140)}</p></body></html>`,
+        }),
+      ),
+    });
+    const narration = page.locator(".product-narration");
+    await page.locator('[data-narration-action="play"]').click();
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await page.locator('[data-narration-action="pause"]').click();
+    await page.locator('[data-narration-action="details-toggle"]').click();
+    const next = page.locator('[data-narration-action="next-passage"]');
+    await expect(next).toBeEnabled();
+    const before = await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      return {
+        target: state.prepared[1].sourceRange.start,
+        service: state.service,
+        checkpoint: localStorage.getItem("voxleaf.reader.positions"),
+      };
+    });
+    expect(before.target.textOffsetCodePoints).toBeGreaterThan(0);
+    if (geometry === "controlled-missing-range")
+      await page.evaluate(() => {
+        const rect = Range.prototype.getBoundingClientRect;
+        const rects = Range.prototype.getClientRects;
+        Reflect.set(globalThis, "__pnRestoreGeometry", () => {
+          Range.prototype.getBoundingClientRect = rect;
+          Range.prototype.getClientRects = rects;
+        });
+        Range.prototype.getBoundingClientRect = function () {
+          throw new Error("synthetic-range-unavailable");
+        };
+        Range.prototype.getClientRects = function () {
+          return Object.assign([], {
+            item: () => null,
+          }) as unknown as DOMRectList;
+        };
+      });
+    await next.click();
+    await expect(narration).toHaveAttribute(
+      "data-narration-navigation-settling",
+      "false",
+    );
+    if (geometry === "exact") {
+      await expect(narration).toHaveAttribute(
+        "data-narration-play-intent",
+        "paused",
+      );
+      await page.evaluate(() => {
+        Reflect.get(globalThis, "__rnb").prepared.length = 0;
+      });
+      await page.locator('[data-narration-action="resume"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              Reflect.get(globalThis, "__rnb").prepared[0]?.sourceRange.start,
+          ),
+        )
+        .toEqual(before.target);
+      await expect(narration).toHaveAttribute(
+        "data-narration-phase",
+        "playing",
+      );
+    } else {
+      await expect(narration).toHaveAttribute(
+        "data-narration-play-intent",
+        "inactive",
+      );
+      await expect(
+        narration.getByText(
+          "The requested passage could not be placed. Choose a visible passage to continue.",
+        ),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(() => Reflect.get(globalThis, "__rnb").service),
+      ).toBe(before.service);
+      expect(
+        await page.evaluate(() =>
+          localStorage.getItem("voxleaf.reader.positions"),
+        ),
+      ).toBe(before.checkpoint);
+      await page.evaluate(() => {
+        Reflect.get(globalThis, "__pnRestoreGeometry")();
+        Reflect.get(globalThis, "__rnb").prepared.length = 0;
+      });
+      await page.locator('[data-narration-action="play"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => Reflect.get(globalThis, "__rnb").prepared[0]?.offset,
+          ),
+        )
+        .toBe(0);
+    }
+    await page.locator('[data-narration-action="stop"]').click();
+  });
+}
+
 for (const intent of ["playing boundary", "paused leaf"] as const) {
   test(`five-pass 1.1 latest chapter owns playback over a delayed ${intent}`, async ({
     page,

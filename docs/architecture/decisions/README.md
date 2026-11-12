@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0073: Passage continuity and placement outcomes](ADR-0073-passage-continuity-and-placement-outcomes.md): symmetric witnessed neighbors, attributable placement and measured visual following; acceptance tracked in the passage navigation plan.
+
 - [ADR-0072: Versioned batch cancellation proof and safety](ADR-0072-versioned-batch-cancellation-proof-and-safety.md): approved v14 successor and separate safety observation; implementation and acceptance remain pending in the five-pass plan.
 
 - [ADR-0071: Checkpoint and image lifetime](ADR-0071-reader-checkpoint-and-image-lifetime.md): accepted checkpoint preservation through reflow and bounded image recycling by viewport visibility, with current-task host validation and independent review.

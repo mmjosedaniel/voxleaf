@@ -24,10 +24,12 @@ export interface ReaderNarrationSource {
   ): () => void;
   startAtLocator?(locator: ReadingLocatorV1): boolean;
   updateVisibleLocator?(locator: ReadingLocatorV1): void;
-  beginReaderPlacement?(): void;
+  beginReaderPlacement?(
+    request?: import("./reader-navigation").ReaderPlacementRequest,
+  ): void;
   settleReaderPlacement?(
     settlement: import("./reader-navigation").ReaderNavigationSettlement,
-  ): void;
+  ): boolean | void;
 }
 
 export interface SegmentHighlightRect {
@@ -421,14 +423,14 @@ export class SegmentHighlightController {
         range,
       )
     ) {
-      this.#settleActive(start);
+      this.#cancelPendingFollow();
       return;
     }
 
     const viewport = this.#environment.viewportRect(root);
     const rect = this.#environment.rangeRect(range);
     if (viewport === undefined || rect === undefined) {
-      this.#settleActive(start);
+      this.#cancelPendingFollow();
       return;
     }
     const comfortTop =
@@ -530,7 +532,16 @@ export class SegmentHighlightController {
           return;
         }
       }
-      this.#settleActive(locator);
+      if (
+        viewport !== undefined &&
+        rect !== undefined &&
+        rect.bottom > viewport.top &&
+        rect.top < viewport.bottom
+      ) {
+        this.#settleActive(locator);
+      } else {
+        this.#cancelPendingFollow();
+      }
     });
   }
 

@@ -146,6 +146,7 @@ export interface ProductNarrationNavigationSnapshot {
   readonly settling: boolean;
   readonly canGoPrevious: boolean;
   readonly canGoNext: boolean;
+  readonly feedback?: string;
 }
 
 export type ProductNarrationNavigationEvent =
@@ -157,6 +158,8 @@ export type ProductNarrationNavigationEvent =
 export interface ProductNarrationNavigationRequest {
   readonly event: "next-segment" | "paragraph-leaf" | "previous-segment";
   readonly locator: ReadingLocatorV1;
+  /** Present on coordinator-owned requests; scoped to this publication owner. */
+  readonly revision?: number;
 }
 
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
@@ -418,6 +421,10 @@ export class ProductNarrationCoordinator {
   #playIntent: ProductNarrationPlayIntent = "inactive";
   #readerPlacementAvailable = true;
   #readerPlacementPending = false;
+  #readerPlacementRequest:
+    import("../reader/reader-navigation").ReaderPlacementRequest | undefined;
+  #readerPlacementSuperseded = false;
+  #navigationFeedback: string | undefined;
   #pendingNavigation: PendingNavigation | undefined;
   #navigationRevision = 0;
   #pausedNavigationState: AdaptivePreparationUiState | undefined;
@@ -925,19 +932,53 @@ export class ProductNarrationCoordinator {
 
   public settleReaderPlacement(
     settlement: import("../reader/reader-navigation").ReaderNavigationSettlement,
-  ): void {
-    if (this.#closed) return;
+  ): boolean {
+    if (this.#closed) return false;
+    const request = settlement.request;
+    if (request !== this.#readerPlacementRequest) return false;
+    const pending = this.#pendingNavigation;
+    const relative = request?.narration;
+    const obsolete =
+      this.#readerPlacementSuperseded ||
+      (relative !== undefined &&
+        (pending === undefined ||
+          relative.revision !== pending.revision ||
+          request?.publication !== this.#publication.book.identity));
+    // A result belongs to one reader request and may be consumed only once.
+    this.#readerPlacementRequest = undefined;
     this.#readerPlacementPending = false;
-    this.#readerPlacementAvailable = settlement.status === "settled";
-    if (!this.#readerPlacementAvailable) {
+    this.#readerPlacementSuperseded = false;
+    if (obsolete) {
+      this.#publish();
+      return false;
+    }
+    const exactRelative =
+      relative === undefined ||
+      relative.event === "paragraph-leaf" ||
+      (settlement.status === "settled" &&
+        sameLocator(relative.locator, settlement.locator));
+    const succeeded = settlement.status === "settled" && exactRelative;
+    this.#readerPlacementAvailable =
+      succeeded || settlement.status === "approximate";
+    if (!succeeded) {
       this.#navigationRevision += 1;
       this.#pendingNavigation = undefined;
       this.#pausedNavigationState = undefined;
       this.#audibleRange = undefined;
       this.#playIntent = "inactive";
+      this.#navigationFeedback =
+        "The requested passage could not be placed. Choose a visible passage to continue.";
+      if (settlement.status === "approximate") {
+        this.#visibleLocator = settlement.locator;
+        this.#activeLocator = settlement.locator;
+      }
       if (this.#scheduler !== undefined) void this.stop();
+    } else if (request !== undefined) {
+      this.#navigationFeedback = undefined;
+      this.settleExternalNavigation(settlement.locator);
     }
     this.#publish();
+    return settlement.status !== "settled" || succeeded;
   }
 
   public settleExternalNavigation(locator: ReadingLocatorV1): void {
@@ -952,6 +993,13 @@ export class ProductNarrationCoordinator {
       this.#publish();
       return;
     }
+    if (
+      (pending.event === "next-segment" ||
+        pending.event === "previous-segment") &&
+      pending.target !== undefined &&
+      !sameLocator(pending.target, locator)
+    )
+      return;
     pending.target = locator;
     void this.#finishNavigation(pending.revision);
   }
@@ -1033,6 +1081,7 @@ export class ProductNarrationCoordinator {
       }
       const request = Object.freeze({
         event: "paragraph-leaf" as const,
+        revision: pending.revision,
         locator: target,
       });
       for (const listener of this.#navigationListeners) {
@@ -1225,7 +1274,6 @@ export class ProductNarrationCoordinator {
             });
             for (const entry of this.#prepared.values())
               this.#rememberBoundary(entry.contract.sourceRange);
-            this.#visibleLocator = observation.sourceRange.start;
             this.#latestHeardLocator = observation.sourceRange.start;
             this.#publish();
           } else if (observation.kind === "segment-completed") {
@@ -1358,6 +1406,8 @@ export class ProductNarrationCoordinator {
   }
 
   public async stop(): Promise<void> {
+    this.#readerPlacementSuperseded =
+      this.#readerPlacementRequest !== undefined;
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
     this.#pausedNavigationState = undefined;
@@ -1369,8 +1419,14 @@ export class ProductNarrationCoordinator {
     await this.#stopActiveRun();
   }
 
-  public beginReaderPlacement(): void {
+  public beginReaderPlacement(
+    request?: import("../reader/reader-navigation").ReaderPlacementRequest,
+  ): void {
     if (this.#closed) return;
+    if (request !== undefined) {
+      this.#readerPlacementRequest = request;
+      this.#readerPlacementSuperseded = false;
+    }
     this.#readerPlacementPending = true;
     this.#publish();
   }
@@ -1706,30 +1762,21 @@ export class ProductNarrationCoordinator {
     ) {
       return;
     }
-    const currentIndex = this.#currentBoundaryIndex();
-    const targetIndex =
-      currentIndex === undefined
-        ? undefined
-        : currentIndex + (event === "previous-segment" ? -1 : 1);
-    const target =
-      targetIndex === undefined
-        ? undefined
-        : this.#knownBoundaries[targetIndex];
+    const target = this.#knownNeighbor(event === "previous-segment" ? -1 : 1);
     if (target === undefined) {
       return;
     }
-    if (
-      event === "previous-segment" &&
-      !this.#hasKnownPredecessor(currentIndex!)
-    )
-      return;
     const pending = this.#beginNavigation(event);
     pending.target = target.start;
     void pending.stop.then(() => {
       if (this.#closed || this.#pendingNavigation !== pending) {
         return;
       }
-      const request = Object.freeze({ event, locator: target.start });
+      const request = Object.freeze({
+        event,
+        locator: target.start,
+        revision: pending.revision,
+      });
       for (const listener of this.#navigationListeners) {
         try {
           listener(request);
@@ -1773,17 +1820,19 @@ export class ProductNarrationCoordinator {
     return containing >= 0 ? containing : undefined;
   }
 
-  #hasKnownPredecessor(index: number): boolean {
-    const current = this.#knownBoundaries[index];
-    const previous = this.#knownBoundaries[index - 1];
-    return (
-      current !== undefined &&
-      previous !== undefined &&
-      this.#knownPredecessors.some(
-        (edge) =>
-          sameRange(edge.previous, previous) && sameRange(edge.next, current),
-      )
-    );
+  #knownNeighbor(direction: -1 | 1): LocatorRangeV1 | undefined {
+    const index = this.#currentBoundaryIndex();
+    if (index === undefined) return undefined;
+    const current = this.#knownBoundaries[index]!;
+    const neighbor = this.#knownBoundaries[index + direction];
+    if (neighbor === undefined) return undefined;
+    return this.#knownPredecessors.some(
+      (edge) =>
+        sameRange(edge.previous, direction === -1 ? neighbor : current) &&
+        sameRange(edge.next, direction === -1 ? current : neighbor),
+    )
+      ? neighbor
+      : undefined;
   }
 
   #rememberPredecessor(previous: LocatorRangeV1, next: LocatorRangeV1): void {
@@ -2612,10 +2661,11 @@ export class ProductNarrationCoordinator {
         settling:
           this.#pendingNavigation !== undefined || this.#readerPlacementPending,
         canGoPrevious:
-          navigationActive && this.#hasKnownPredecessor(currentBoundaryIndex),
-        canGoNext:
-          navigationActive &&
-          currentBoundaryIndex < this.#knownBoundaries.length - 1,
+          navigationActive && this.#knownNeighbor(-1) !== undefined,
+        canGoNext: navigationActive && this.#knownNeighbor(1) !== undefined,
+        ...(this.#navigationFeedback === undefined
+          ? {}
+          : { feedback: this.#navigationFeedback }),
       }),
       recovery: this.#recovery.observe(),
     });

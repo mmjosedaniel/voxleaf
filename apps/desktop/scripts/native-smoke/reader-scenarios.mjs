@@ -1503,7 +1503,34 @@ export function createNativeReaderScenarios({
       driver,
       `const reader = document.querySelector('.semantic-reader');
        const root = reader?.querySelector('[data-reader-scroll-owner="true"]');
-       return reader?.getAttribute('aria-busy') !== 'true' && root?.querySelectorAll('.semantic-raster-host').length === 12;`,
+       if (reader?.getAttribute('aria-busy') === 'true' ||
+           document.querySelector('.shell-card')?.getAttribute('aria-busy') === 'true' ||
+           root?.querySelectorAll('.semantic-raster-host').length !== 12 ||
+           root.clientWidth <= 0 || root.clientHeight <= 0) return false;
+       // A ready DOM can precede the viewport restorer's animation frames.
+       // Observe three unchanged frames before the first test-owned scroll;
+       // never retry a placement that the reader subsequently rolls back.
+       const geometry = () => {
+         const rect = root.getBoundingClientRect();
+         return [root.scrollTop, root.scrollHeight, root.clientWidth,
+           root.clientHeight, rect.top, rect.bottom, rect.left, rect.right];
+       };
+       const before = geometry();
+       return new Promise(resolve => {
+         let frames = 0;
+         const observe = () => {
+           if (!root.isConnected || reader.getAttribute('aria-busy') === 'true' ||
+               document.querySelector('.shell-card')?.getAttribute('aria-busy') === 'true' ||
+               geometry().some((value, index) => value !== before[index])) {
+             resolve(false);
+             return;
+           }
+           frames += 1;
+           if (frames === 3) resolve(true);
+           else requestAnimationFrame(observe);
+         };
+         requestAnimationFrame(observe);
+       });`,
     );
     for (let index = 0; index < 12; index += 1) {
       const deadline = now() + STARTUP_TIMEOUT_MS;

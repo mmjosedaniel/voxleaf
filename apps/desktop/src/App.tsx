@@ -89,7 +89,7 @@ export interface ReadyPublicationContentProps {
   readonly onNavigationSettlement?: (
     settlement: import("./reader/reader-navigation").ReaderNavigationSettlement,
     reason: ReaderLocatorSettlementReason,
-  ) => void;
+  ) => boolean | void;
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly preferences?: ReaderPreferencesV1;
@@ -728,7 +728,6 @@ export function App({
         narrationCoordinator?.preserveActiveLocator(locator);
         positionSaveCoordinator?.scheduleReflow();
       } else {
-        narrationCoordinator?.settleExternalNavigation(locator);
         positionSaveCoordinator?.scheduleImmediate(locator);
       }
     },
@@ -737,9 +736,8 @@ export function App({
   const handleNavigationSettlement = useCallback(
     (
       settlement: import("./reader/reader-navigation").ReaderNavigationSettlement,
-    ): void => {
-      narrationCoordinator?.settleReaderPlacement(settlement);
-    },
+    ): boolean | void =>
+      narrationCoordinator?.settleReaderPlacement(settlement),
     [narrationCoordinator],
   );
   const handleInitialRestorationSettled = useCallback(

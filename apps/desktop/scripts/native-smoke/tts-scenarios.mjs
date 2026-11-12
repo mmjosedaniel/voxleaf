@@ -300,6 +300,16 @@ export function createNativeTtsScenarios({
            } else {
              state.currentDocumentId = details.documentId;
              state.currentKey = details.key;
+             if (state.passagePredecessorEnd !== undefined && details.key !== state.passagePredecessorKey) {
+               const end = state.passagePredecessorEnd;
+               const gap = end.cloneRange();
+               const ordered = end.compareBoundaryPoints(Range.START_TO_START, details.range) <= 0;
+               gap.setEnd(details.range.startContainer, details.range.startOffset);
+               // This synthetic fixture has no omitted non-narrable prose.
+               // Keep only the boolean; never report or retain its text.
+               state.passageContinuous = ordered && gap.toString().trim().length === 0;
+               state.passagePredecessorEnd = undefined;
+             }
              for (const [key, armed] of state.forbiddenKeys) {
                if (details.key === key) {
                  if (armed) {
@@ -347,6 +357,12 @@ export function createNativeTtsScenarios({
        return undefined;
      }
      state.armSeekDiagnostic();
+     const range = Array.from(CSS.highlights.get("voxleaf-narration-active") ?? [])[0];
+     if (range === undefined) return undefined;
+     state.passagePredecessorEnd = range.cloneRange();
+     state.passagePredecessorEnd.collapse(false);
+     state.passagePredecessorKey = state.currentKey;
+     state.passageContinuous = undefined;
      return {
        clearCount: state.clearCount,
        currentDocumentId: state.currentDocumentId,
@@ -456,6 +472,7 @@ export function createNativeTtsScenarios({
            contrastRatio,
            currentDocumentId: state.currentDocumentId,
            currentKey: state.currentKey,
+           passageContinuous: state.passageContinuous,
            focusPreserved: state.focusPreserved,
            followLatenciesMs: [...state.followLatenciesMs],
            forcedColors: matchMedia("(forced-colors: active)").matches,
@@ -1673,6 +1690,7 @@ export function createNativeTtsScenarios({
       const nextAudibleLeaf = await adaptiveReaderExperienceObservation(driver);
       assert(
         afterSeek?.currentDocumentId === seekMarker.currentDocumentId &&
+          afterSeek.passageContinuous === true &&
           afterSeek.stalePlaybackObserved === false &&
           afterSeek.rangeValid === true &&
           nextAudibleLeaf?.leafState === "audible" &&

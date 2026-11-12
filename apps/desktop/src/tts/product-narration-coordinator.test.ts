@@ -34,6 +34,14 @@ import {
   type NarrationPlaybackPreferenceRepository,
 } from "../persistence/narration-playback-preference";
 import { App } from "../App";
+import {
+  ReaderPublicationContent,
+  type ReaderPublicationContentProps,
+} from "../reader/ReaderPublication";
+import type { ReaderReflowEnvironment } from "../reader/reader-reflow-restoration";
+import type { ActiveVisualLocatorEnvironment } from "../reader/active-visual-locator";
+import { SemanticDomRangeMapper } from "../reader/semantic-dom-range-mapper";
+import { buildMinimalEpubFixture } from "../../../../packages/epub/test-support/epub-fixture";
 import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
 import { bindNarrationPositionPersistence } from "../persistence/narration-position-save-bridge";
 import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
@@ -4497,6 +4505,437 @@ describe("product narration coordinator", () => {
     }
   });
 
+  it.each([false, true])(
+    "PN-01 rejects an unwitnessed successor after revisiting separated windows (paused: %s)",
+    async (paused) => {
+      const { coordinator, prepareNarration, client } = createHarness({
+        blockSynthesis: true,
+        prepareNarration: async ({ startLocator }) => {
+          const offset =
+            decodeReadingLocatorV1(startLocator).textOffsetCodePoints;
+          // Every window has a continuation; no fabricated end hides the gap.
+          return batchSegments(
+            [preparedSegment("Synthetic.", sourceRange(offset, offset + 8))],
+            sourceRange(offset + 8, offset + 16).start,
+          );
+        },
+      });
+      const requests = vi.fn();
+      coordinator.subscribeNavigationRequests(requests);
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(() => client.synthesized.length === 1);
+        await coordinator.beginExternalNavigation("chapter-navigation");
+        coordinator.settleExternalNavigation(sourceRange(100, 108).start);
+        await settleUntil(() => client.synthesized.length === 2);
+        if (paused) coordinator.pause();
+        await coordinator.beginExternalNavigation("chapter-navigation");
+        coordinator.settleExternalNavigation(sourceRange(0, 8).start);
+        await settleUntil(() => !coordinator.observe().navigation.settling);
+        if (!paused) await settleUntil(() => client.synthesized.length === 3);
+        expect.soft(coordinator.observe().navigation.canGoNext).toBe(false);
+        coordinator.goToNextBoundary();
+        for (let turn = 0; turn < 30; turn++) await Promise.resolve();
+        expect(requests).not.toHaveBeenCalled();
+        if (paused) expect(prepareNarration).toHaveBeenCalledTimes(2);
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each(
+    [
+      "exact",
+      "clamped",
+      "fallback",
+      "unavailable",
+      "rejected",
+      "stopped",
+    ].flatMap((geometry) =>
+      [false, true].map((paused) => ({ geometry, paused })),
+    ),
+  )(
+    "PN-02 real App/reader preserves requested segment and checkpoint ($geometry, paused: $paused)",
+    async ({ geometry, paused }) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${"A synthetic sentence for passage navigation. ".repeat(60)}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-open-failed");
+      let rejectPlacement = false;
+      const preparation = vi.fn(
+        opened.publication.prepareNarration.bind(opened.publication),
+      );
+      const publication = {
+        ...opened.publication,
+        prepareNarration: preparation,
+        resolveLocator: (input: unknown) => {
+          if (rejectPlacement) throw new Error("injected-placement-rejection");
+          return opened.publication.resolveLocator(input);
+        },
+        resolveTarget: opened.publication.resolveTarget.bind(
+          opened.publication,
+        ),
+        readResource: opened.publication.readResource.bind(opened.publication),
+        close: opened.publication.close.bind(opened.publication),
+      };
+      const { coordinator, backend, intervals } = createHarness({
+        publication,
+      });
+      const callbacks: Array<() => void> = [];
+      const rect = { top: 24, bottom: 40, left: 0, right: 100 };
+      let placementGeometry = geometry;
+      const environment: ReaderReflowEnvironment = {
+        viewportRect: () => ({ ...rect, top: 0, bottom: 100 }),
+        rangeRect: () =>
+          placementGeometry === "fallback" ||
+          placementGeometry === "unavailable"
+            ? undefined
+            : {
+                ...rect,
+                top:
+                  placementGeometry === "offscreen"
+                    ? 200
+                    : placementGeometry === "clamped"
+                      ? 60
+                      : 24,
+                bottom:
+                  placementGeometry === "offscreen"
+                    ? 216
+                    : placementGeometry === "clamped"
+                      ? 76
+                      : 40,
+              },
+        elementRect: () =>
+          placementGeometry === "unavailable"
+            ? undefined
+            : placementGeometry === "offscreen"
+              ? { ...rect, top: 200, bottom: 216 }
+              : rect,
+        scrollBy: () => undefined,
+        observeViewport: () => () => undefined,
+        schedule: (_root, callback) => {
+          callbacks.push(callback);
+          return () => {
+            const index = callbacks.indexOf(callback);
+            if (index >= 0) callbacks.splice(index, 1);
+          };
+        },
+      };
+      const values = new Map<string, string>();
+      const repository = createWebStorageReaderPositionRepository({
+        storage: () => ({
+          getItem: (key) => values.get(key) ?? null,
+          setItem: (key, value) => {
+            values.set(key, value);
+          },
+        }),
+      });
+      const writes = vi.spyOn(repository, "writePosition");
+      const requests: ProductNarrationNavigationRequest[] = [];
+      coordinator.subscribeNavigationRequests((request) =>
+        requests.push(request),
+      );
+      const view = render(
+        createElement(App, {
+          openFlow: {
+            publication: undefined,
+            open: async () => ({ status: "ready" as const, publication }),
+            close: async () => ({ status: "closed" as const }),
+          },
+          readerPositionRepository: repository,
+          createNarrationCoordinator: () => coordinator,
+          ReadyPublicationContent: (props: ReaderPublicationContentProps) =>
+            createElement(ReaderPublicationContent, {
+              ...props,
+              reflowEnvironment: environment,
+            }),
+        }),
+      );
+      try {
+        await act(async () => {
+          fireEvent.change(screen.getByLabelText("Open a book"), {
+            target: {
+              files: [
+                new File(["synthetic"], "synthetic.epub", {
+                  type: "application/epub+zip",
+                }),
+              ],
+            },
+          });
+        });
+        await act(async () => {
+          await coordinator.checkAvailability();
+        });
+        await act(async () => {
+          coordinator.start();
+          await vi.waitFor(() => expect(backend.active).toBeDefined());
+        });
+        await act(async () => {
+          backend.finish();
+          intervals[0]?.();
+          await vi.waitFor(() =>
+            expect(backend.active?.request.sequence).toBe(1),
+          );
+        });
+        expect(coordinator.observe().navigation.canGoNext).toBe(true);
+        const checkpointBefore = await repository.readPosition(
+          publication.book.identity,
+        );
+        expect(checkpointBefore.status).toBe("ready");
+        if (checkpointBefore.status === "ready")
+          expect(
+            checkpointBefore.state.locator.textOffsetCodePoints,
+          ).toBeGreaterThan(0);
+        const preparationsBefore = preparation.mock.calls.length;
+        const writesBefore = writes.mock.calls.length;
+        rejectPlacement = geometry === "rejected";
+        await act(async () => {
+          if (paused) coordinator.pause();
+          coordinator.goToNextBoundary();
+          await settleUntil(() => requests.length === 1);
+        });
+        expect(requests[0]!.locator.textOffsetCodePoints).toBeGreaterThan(0);
+        if (geometry === "stopped")
+          await act(async () => {
+            await coordinator.stop();
+          });
+        await act(async () => {
+          while (callbacks.length) callbacks.shift()!();
+          await Promise.resolve();
+        });
+        const success = geometry === "exact" || geometry === "clamped";
+        expect(coordinator.observe().navigation.settling).toBe(false);
+        if (!success) {
+          expect(coordinator.observe().navigation.playIntent).toBe("inactive");
+          expect(preparation).toHaveBeenCalledTimes(preparationsBefore);
+          expect(
+            writes.mock.calls
+              .slice(writesBefore)
+              .some(
+                ([state]) =>
+                  state.locator.textOffsetCodePoints ===
+                  requests[0]!.locator.textOffsetCodePoints,
+              ),
+          ).toBe(false);
+          expect(coordinator.observe().navigation.canStart).toBe(
+            geometry === "fallback" || geometry === "stopped",
+          );
+          expect(
+            await repository.readPosition(publication.book.identity),
+          ).toEqual(checkpointBefore);
+          if (geometry === "unavailable") {
+            fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+            for (const [failedGeometry, textScale] of [
+              ["unavailable", "large"],
+              ["offscreen", "small"],
+            ] as const) {
+              placementGeometry = failedGeometry;
+              await act(async () => {
+                fireEvent.change(screen.getByLabelText("Text size"), {
+                  target: { value: textScale },
+                });
+              });
+              await act(async () => {
+                while (callbacks.length) callbacks.shift()!();
+              });
+              expect(coordinator.observe().navigation.canStart).toBe(false);
+              expect(preparation).toHaveBeenCalledTimes(preparationsBefore);
+              expect(
+                await repository.readPosition(publication.book.identity),
+              ).toEqual(checkpointBefore);
+            }
+            placementGeometry = "exact";
+            await act(async () => {
+              fireEvent.change(screen.getByLabelText("Text size"), {
+                target: { value: "standard" },
+              });
+            });
+            await act(async () => {
+              while (callbacks.length) callbacks.shift()!();
+            });
+            expect(coordinator.observe().navigation.canStart).toBe(true);
+            expect(preparation).toHaveBeenCalledTimes(preparationsBefore);
+            expect(
+              await repository.readPosition(publication.book.identity),
+            ).toEqual(checkpointBefore);
+            await act(async () => {
+              fireEvent.click(
+                screen.getByRole("button", { name: "Close Settings" }),
+              );
+              fireEvent.click(screen.getByRole("button", { name: "Play" }));
+              await vi.waitFor(() =>
+                expect(preparation.mock.calls.length).toBeGreaterThan(
+                  preparationsBefore,
+                ),
+              );
+            });
+            expect(
+              preparation.mock.calls[preparationsBefore]![0].startLocator,
+            ).toEqual(expect.objectContaining({ textOffsetCodePoints: 0 }));
+          }
+        } else {
+          if (paused) {
+            expect(preparation).toHaveBeenCalledTimes(preparationsBefore);
+            await act(async () => {
+              coordinator.resume();
+              await settleUntil(
+                () => preparation.mock.calls.length > preparationsBefore,
+              );
+            });
+          } else
+            await act(async () => {
+              await settleUntil(
+                () => preparation.mock.calls.length > preparationsBefore,
+              );
+            });
+          expect(
+            preparation.mock.calls[preparationsBefore]![0].startLocator,
+          ).toEqual(requests[0]!.locator);
+          const first =
+            await preparation.mock.results[preparationsBefore]!.value;
+          if (first.status !== "batch" && first.status !== "complete")
+            throw new Error("synthetic-preparation-failed");
+          expect(first.segments[0]!.sourceRange.start).toEqual(
+            requests[0]!.locator,
+          );
+        }
+      } finally {
+        view.unmount();
+        await coordinator.close();
+        await publication.close();
+        cleanup();
+      }
+    },
+  );
+
+  it.each(["resume", "next-audible"])(
+    "PN-04 failed follow preserves measured inspection for Stop/Play (%s)",
+    async (trigger) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${"A synthetic sentence for passage navigation. ".repeat(60)}</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-open-failed");
+      const preparation = vi.fn(
+        opened.publication.prepareNarration.bind(opened.publication),
+      );
+      const publication = {
+        ...opened.publication,
+        prepareNarration: preparation,
+        resolveLocator: opened.publication.resolveLocator.bind(
+          opened.publication,
+        ),
+        resolveTarget: opened.publication.resolveTarget.bind(
+          opened.publication,
+        ),
+        readResource: opened.publication.readResource.bind(opened.publication),
+        close: opened.publication.close.bind(opened.publication),
+      };
+      const { coordinator, backend, intervals } = createHarness({
+        publication,
+      });
+      const mapper = new SemanticDomRangeMapper();
+      const callbacks: Array<() => void> = [];
+      let notify: (() => void) | undefined;
+      let caret: Range | undefined;
+      let top = 24;
+      const visual: ActiveVisualLocatorEnvironment = {
+        viewportRect: () => ({ top: 0, bottom: 100, left: 0, right: 240 }),
+        blockRect: () => ({ top, bottom: top + 60, left: 0, right: 200 }),
+        rangeAtPoint: () => caret,
+        textDirection: () => "ltr",
+        observe: (_root, callback) => {
+          notify = callback;
+          return () => {
+            notify = undefined;
+          };
+        },
+        schedule: (_root, callback) => {
+          callbacks.push(callback);
+          return () => {
+            const i = callbacks.indexOf(callback);
+            if (i >= 0) callbacks.splice(i, 1);
+          };
+        },
+      };
+      const inspected = vi.fn((locator: ReadingLocatorV1) =>
+        coordinator.updateVisibleLocator(locator),
+      );
+      const view = render(
+        createElement(ReaderPublicationContent, {
+          publication,
+          narrationSource: coordinator,
+          domRangeMapper: mapper,
+          visualLocatorEnvironment: visual,
+          onActiveLocatorChange: inspected,
+          segmentHighlightEnvironment: {
+            replaceHighlight: () => true,
+            clearHighlight: () => undefined,
+            viewportRect: () => ({ top: 0, bottom: 100 }),
+            rangeRect: () => undefined,
+            scrollBy: () => undefined,
+            schedule: () => () => undefined,
+          },
+        }),
+      );
+      try {
+        await act(async () => {
+          await coordinator.checkAvailability();
+          coordinator.start();
+          await vi.waitFor(() => expect(backend.active).toBeDefined());
+        });
+        const block = publication.locators[0]!;
+        const manual = decodeReadingLocatorV1({
+          ...block.startLocator,
+          textOffsetCodePoints: 1200,
+        });
+        act(() => {
+          if (trigger === "resume") coordinator.pause();
+          fireEvent.keyDown(view.container.querySelector(".reader-content")!, {
+            key: "PageDown",
+          });
+          top = 20;
+          caret = mapper.rangeFor(block, manual.textOffsetCodePoints);
+          notify?.();
+          while (callbacks.length) callbacks.shift()!();
+        });
+        expect(inspected).toHaveBeenLastCalledWith(manual);
+        await act(async () => {
+          if (trigger === "resume") coordinator.resume();
+          else {
+            backend.finish();
+            intervals[0]?.();
+            await vi.waitFor(() =>
+              expect(backend.active?.request.sequence).toBe(1),
+            );
+          }
+        });
+        await act(async () => {
+          await coordinator.stop();
+        });
+        // Observe the actual input to public preparation without replacing it.
+        const before = preparation.mock.calls.length;
+        await act(async () => {
+          coordinator.startAtVisibleLocator();
+          await vi.waitFor(() =>
+            expect(preparation.mock.calls.length).toBeGreaterThan(before),
+          );
+        });
+        expect(preparation.mock.calls[before]![0].startLocator).toEqual(manual);
+      } finally {
+        view.unmount();
+        await coordinator.close();
+        await publication.close();
+        cleanup();
+      }
+    },
+  );
+
   it("RCF-06 disables Previous across disjoint prepared windows", async () => {
     const { coordinator, backend } = createHarness({
       prepareNarration: async ({ startLocator }) => {
@@ -4561,6 +5000,7 @@ describe("product narration coordinator", () => {
 
     expect(navigationRequests[0]).toEqual({
       event: "next-segment",
+      revision: expect.any(Number),
       locator: ranges[1].start,
     });
     expect(coordinator.observe().navigation.settling).toBe(true);
@@ -4670,6 +5110,7 @@ describe("product narration coordinator", () => {
     await settleUntil(() => requests.length === 1);
     expect(requests[0]).toEqual({
       event: "paragraph-leaf",
+      revision: expect.any(Number),
       locator: START_LOCATOR,
     });
 

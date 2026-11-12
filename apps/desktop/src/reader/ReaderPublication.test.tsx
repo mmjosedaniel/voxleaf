@@ -1472,10 +1472,12 @@ describe("navigable publication reader", () => {
         }),
       );
       act(() => environment.flushAll());
-      expect(settled).toHaveBeenCalledExactlyOnceWith(
-        target(geometry === "visible" ? 3 : 0),
-        "narration-boundary",
-      );
+      if (geometry === "visible")
+        expect(settled).toHaveBeenCalledExactlyOnceWith(
+          target(3),
+          "narration-boundary",
+        );
+      else expect(settled).not.toHaveBeenCalled();
       expect(focus).toHaveFocus();
     },
   );
@@ -1551,12 +1553,14 @@ describe("navigable publication reader", () => {
   });
 
   it("routes narration-boundary requests through the same focus-safe reader placement", () => {
+    const environment = new ManualReaderReflowEnvironment();
     const narrationSource = new ManualReaderNarrationSource();
     const onNavigationIntent = vi.fn();
     const onSettledLocatorChange = vi.fn();
     render(
       <ReaderPublicationContent
         publication={createPublication()}
+        reflowEnvironment={environment}
         narrationSource={narrationSource}
         onNavigationIntent={onNavigationIntent}
         onSettledLocatorChange={onSettledLocatorChange}
@@ -1572,6 +1576,7 @@ describe("navigable publication reader", () => {
       );
     });
 
+    act(() => environment.flushAll());
     expect(onNavigationIntent).toHaveBeenCalledWith("narration-boundary");
     expect(
       screen.getByRole("heading", { level: 1, name: "Continuation" }),
@@ -1582,10 +1587,96 @@ describe("navigable publication reader", () => {
     );
   });
 
-  it("settles an invalidated narration request even when its target is unavailable", () => {
+  it("PN-03 rejected superseding intent retires an older pending placement", async () => {
+    const publication = createPublication();
+    vi.mocked(publication.resolveLocator).mockImplementation((input) => ({
+      status: "exact",
+      reason: "exact",
+      locator: decodeReadingLocatorV1(input),
+      locatedBlock: OPENING_LOCATED_BLOCK,
+    }));
+    const source = new ManualReaderNarrationSource();
+    const environment = new ManualReaderReflowEnvironment();
+    const settled = vi.fn();
+    const outcome = vi.fn();
+    const intent = vi
+      .fn<() => void | Promise<void>>()
+      .mockReturnValueOnce(undefined)
+      .mockImplementationOnce(() =>
+        Promise.reject(new Error("injected-containment-rejection")),
+      );
+    render(
+      <ReaderPublicationContent
+        publication={publication}
+        narrationSource={source}
+        reflowEnvironment={environment}
+        onNavigationIntent={intent}
+        onSettledLocatorChange={settled}
+        onNavigationSettlement={outcome}
+      />,
+    );
+    act(() =>
+      source.requestNavigation({
+        event: "next-segment",
+        locator: decodeReadingLocatorV1({
+          ...OPENING_LOCATED_BLOCK.startLocator,
+          textOffsetCodePoints: 5,
+        }),
+      }),
+    );
+    await act(async () => {
+      source.requestNavigation({
+        event: "previous-segment",
+        locator: decodeReadingLocatorV1({
+          ...OPENING_LOCATED_BLOCK.startLocator,
+          textOffsetCodePoints: 3,
+        }),
+      });
+      await Promise.resolve();
+    });
+    act(() => environment.flushAll());
+    expect(settled).not.toHaveBeenCalled();
+    expect(outcome).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "rejected" }),
+      "narration-boundary",
+    );
+  });
+
+  it("PN-02 late narrator attachment joins the current explicit request", async () => {
+    const publication = createPublication();
+    const narrator = new ProductNarrationCoordinator(
+      publication,
+      OPENING_LOCATED_BLOCK.startLocator,
+    );
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const props = { publication, onNavigationIntent: () => pending };
+    const view = render(<ReaderPublicationContent {...props} />);
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+      view.rerender(
+        <ReaderPublicationContent {...props} narrationSource={narrator} />,
+      );
+      expect(narrator.observe().navigation.settling).toBe(true);
+      await act(async () => {
+        release();
+        await pending;
+      });
+      expect(narrator.observe().navigation.settling).toBe(false);
+      expect(narrator.observe().navigation.canStart).toBe(true);
+    } finally {
+      view.unmount();
+      await narrator.close();
+    }
+  });
+
+  it("PN-03 reports injected resolver rejection without admitting the old location", () => {
     const narrationSource = new ManualReaderNarrationSource();
     const onNavigationIntent = vi.fn();
     const onSettledLocatorChange = vi.fn();
+    const onNavigationSettlement = vi.fn();
     const unavailableLocator = decodeReadingLocatorV1({
       ...OPENING_LOCATED_BLOCK.startLocator,
       spineItemId: "spine:missing",
@@ -1597,6 +1688,7 @@ describe("navigable publication reader", () => {
         narrationSource={narrationSource}
         onNavigationIntent={onNavigationIntent}
         onSettledLocatorChange={onSettledLocatorChange}
+        onNavigationSettlement={onNavigationSettlement}
       />,
     );
 
@@ -1610,8 +1702,9 @@ describe("navigable publication reader", () => {
     });
 
     expect(onNavigationIntent).toHaveBeenCalledWith("narration-boundary");
-    expect(onSettledLocatorChange).toHaveBeenCalledWith(
-      OPENING_LOCATED_BLOCK.startLocator,
+    expect(onSettledLocatorChange).not.toHaveBeenCalled();
+    expect(onNavigationSettlement).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "rejected" }),
       "narration-boundary",
     );
     expect(
@@ -2624,10 +2717,10 @@ describe("navigable publication reader", () => {
       fireEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
     });
     expect(outcome).toHaveBeenLastCalledWith(
-      {
+      expect.objectContaining({
         status: "settled",
         locator: expect.objectContaining({ schemaVersion: 1 }),
-      },
+      }),
       "chapter-navigation",
     );
     expect(narrationSource.observe().state?.phase).toBe("stopped");
@@ -2685,7 +2778,10 @@ describe("navigable publication reader", () => {
         );
       });
       expect(outcome).toHaveBeenLastCalledWith(
-        { status: "settled", locator: expect.any(Object) },
+        expect.objectContaining({
+          status: "settled",
+          locator: expect.any(Object),
+        }),
         "chapter-navigation",
       );
       settled.mockClear();
@@ -2741,17 +2837,20 @@ describe("navigable publication reader", () => {
       "chapter-navigation",
     );
     expect(outcome).toHaveBeenCalledWith(
-      { status: "unavailable", reason: "chapter-too-large" },
+      expect.objectContaining({
+        status: "unavailable",
+        reason: "chapter-too-large",
+      }),
       "chapter-navigation",
     );
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
     });
     expect(outcome).toHaveBeenLastCalledWith(
-      {
+      expect.objectContaining({
         status: "settled",
         locator: expect.objectContaining({ schemaVersion: 1 }),
-      },
+      }),
       "chapter-navigation",
     );
     expect(settled).toHaveBeenCalledTimes(1);

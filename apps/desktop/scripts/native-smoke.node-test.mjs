@@ -1425,6 +1425,15 @@ function nativeImagePlacementFixture(t, movement, geometryAvailable = true) {
   let diagnostic = false;
   let stage;
   let clock = 0;
+  let frames = 0;
+  const requestAnimationFrame = (callback) => {
+    frames += 1;
+    clock += 1;
+    if (movement === "unstable-layout") root.scrollTop += 1;
+    if (movement === "initial-reflow" && frames === 1)
+      root.scrollTop = initialScroll;
+    callback();
+  };
   const rect = (value) => {
     if (diagnostic && !geometryAvailable) {
       throw new Error("private-geometry-error");
@@ -1450,7 +1459,10 @@ function nativeImagePlacementFixture(t, movement, geometryAvailable = true) {
   }
   const driver = {
     execute: async (body) =>
-      runInNewContext(`(function() { ${body} })()`, { document }),
+      runInNewContext(`(function() { ${body} })()`, {
+        document,
+        requestAnimationFrame,
+      }),
   };
   const failure = new WebDriverClientError("webdriver-condition-timeout");
   const subject = createNativeReaderScenarios({
@@ -1474,7 +1486,8 @@ function nativeImagePlacementFixture(t, movement, geometryAvailable = true) {
         root.append(last);
       }
       if (
-        movement === "rollback" &&
+        (movement === "rollback" ||
+          (movement === "initial-reflow" && frames < 3)) &&
         root.scrollTop === initialScroll + imageGap
       ) {
         root.scrollTop = initialScroll;
@@ -1502,8 +1515,23 @@ function nativeImagePlacementFixture(t, movement, geometryAvailable = true) {
     messages,
     scrolls,
     bounds,
+    frames: () => frames,
   };
 }
+
+test("RPI-CI image visits wait for initial reflow frames", async (t) => {
+  const fixture = nativeImagePlacementFixture(t, "initial-reflow");
+  await assert.rejects(fixture.run(), (error) => error === fixture.failure);
+  assert.ok(fixture.frames() >= 3);
+  assert.equal(fixture.conditions.at(-1), "RPI-02 native image 2 decode");
+});
+
+test("RPI-CI unstable initial layout fails before any image scroll", async (t) => {
+  const fixture = nativeImagePlacementFixture(t, "unstable-layout");
+  await assert.rejects(fixture.run(), (error) => error === fixture.failure);
+  assert.deepEqual(fixture.scrolls, []);
+  assert.equal(fixture.conditions.at(-1), "RPI-02 native image recycling");
+});
 
 for (const movement of ["none", "rollback"]) {
   test(`RPI-CI image placement precedes decode when scroll movement is ${movement}`, async (t) => {
