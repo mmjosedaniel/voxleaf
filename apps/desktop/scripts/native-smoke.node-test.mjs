@@ -1391,78 +1391,162 @@ test("restoration polling returns exact settlement or the last pending observati
   }
 });
 
-test("RPI-CI image failure reports content-free geometry and preserves the original error", async (t) => {
+function nativeImagePlacementFixture(t, movement, geometryAvailable = true) {
+  const dom = new JSDOM(
+    `<div class="semantic-reader"><div data-reader-scroll-owner="true">${Array.from(
+      { length: 12 },
+      (_, index) =>
+        `<span class="semantic-raster-host">private-publication-text${index === 0 ? '<img src="blob:private-source">' : '<span class="semantic-raster-placeholder">private-alt</span>'}</span>`,
+    ).join("")}</div></div>`,
+  );
+  t.after(() => dom.window.close());
+  const { document } = dom.window;
+  const reader = document.querySelector(".semantic-reader");
+  const root = reader.querySelector('[data-reader-scroll-owner="true"]');
+  const hosts = [...root.querySelectorAll(".semantic-raster-host")];
+  const bounds = { top: 10, bottom: 110, left: 20, right: 220 };
+  const initialScroll = 42;
+  const imageGap = 3500;
+  root.scrollTop = initialScroll;
+  Object.defineProperties(root, {
+    clientWidth: { value: 200 },
+    clientHeight: { value: 100 },
+  });
+  const first = hosts[0].querySelector("img");
+  Object.defineProperties(first, {
+    complete: { value: true },
+    naturalWidth: { value: 1 },
+  });
+  const scrolls = [];
+  const conditions = [];
+  const budgets = [];
   const messages = [];
   t.mock.method(console, "error", (message) => messages.push(message));
-  for (const geometryAvailable of [true, false]) {
-    messages.length = 0;
-    const dom = new JSDOM(
-      `<div class="semantic-reader"><div data-reader-scroll-owner="true">${Array.from(
-        { length: 12 },
-        (_, index) =>
-          `<span class="semantic-raster-host">private-publication-text${index === 0 ? '<img src="blob:private-source">' : '<span class="semantic-raster-placeholder">private-alt</span>'}</span>`,
-      ).join("")}</div></div>`,
-    );
-    const root = dom.window.document.querySelector(
-      '[data-reader-scroll-owner="true"]',
-    );
-    root.scrollTop = 42;
-    const bounds = { top: 10, bottom: 110, left: 20, right: 220 };
-    for (const element of [
-      root,
-      ...dom.window.document.querySelectorAll(".semantic-raster-host"),
-    ]) {
-      element.scrollIntoView = () => undefined;
-      element.getBoundingClientRect = () => {
-        if (!geometryAvailable) throw new Error("private-geometry-error");
-        return bounds;
-      };
+  let diagnostic = false;
+  let stage;
+  let clock = 0;
+  const rect = (value) => {
+    if (diagnostic && !geometryAvailable) {
+      throw new Error("private-geometry-error");
     }
-    const context = { document: dom.window.document };
-    const driver = {
-      execute: async (body) =>
-        runInNewContext(`(function() { ${body} })()`, context),
+    return value;
+  };
+  root.getBoundingClientRect = () => rect(bounds);
+  root.scrollTo = ({ top }) => {
+    scrolls.push(top);
+    if (movement !== "none") root.scrollTop = top;
+  };
+  for (const [index, host] of hosts.entries()) {
+    const top = initialScroll + index * imageGap;
+    host.scrollIntoView = () => {
+      if (movement !== "none") root.scrollTop = top;
     };
-    const failure = new WebDriverClientError("webdriver-condition-timeout");
-    let conditions = 0;
-    const subject = createNativeReaderScenarios({
-      assert,
-      injectNativeFile: async () => undefined,
-      installNativeResourceInstrumentation: async () => undefined,
-      nativeResourceInstrumentation: async () => ({ activeObjectUrls: 1 }),
-      waitForCondition: async () => {
-        if (++conditions === 3) throw failure;
-      },
-    });
-    try {
-      await assert.rejects(
-        subject.exerciseNativeImageLifecycle(
-          driver,
-          "synthetic",
-          "dismissal",
-          {},
-          () => undefined,
-        ),
-        (error) => error === failure,
-      );
-      assert.equal(conditions, 3);
-      assert.equal(messages.length, 1);
-      assert.doesNotMatch(messages[0], /private-/u);
-      const observation = JSON.parse(messages[0].split(": ")[1]);
-      if (geometryAvailable) {
-        assert.equal(observation.geometry.scrollTop, 42);
-        assert.equal(observation.geometry.presentation, "loading");
-        assert.deepEqual(observation.geometry.target, bounds);
-        assert.deepEqual(observation.geometry.viewport, bounds);
-        assert.equal(observation.resources.activeObjectUrls, 1);
-      } else {
-        assert.deepEqual(observation, { observation: "unavailable" });
-      }
-    } finally {
-      dom.window.close();
-    }
+    host.getBoundingClientRect = () =>
+      rect({
+        ...bounds,
+        top: bounds.top + top - root.scrollTop,
+        bottom: bounds.bottom + top - root.scrollTop,
+      });
   }
-});
+  const driver = {
+    execute: async (body) =>
+      runInNewContext(`(function() { ${body} })()`, { document }),
+  };
+  const failure = new WebDriverClientError("webdriver-condition-timeout");
+  const subject = createNativeReaderScenarios({
+    assert,
+    injectNativeFile: async () => undefined,
+    installNativeResourceInstrumentation: async () => undefined,
+    nativeResourceInstrumentation: async () => ({ activeObjectUrls: 1 }),
+    STARTUP_TIMEOUT_MS: 90_000,
+    now: () => clock,
+    waitForCondition: async (_driver, body, timeoutMs) => {
+      conditions.push(stage);
+      budgets.push(timeoutMs);
+      clock += 1;
+      if (conditions.length === 1) {
+        reader.setAttribute("aria-busy", "true");
+        assert.equal(await driver.execute(body), false);
+        reader.removeAttribute("aria-busy");
+        const last = hosts.at(-1);
+        document.body.append(last);
+        assert.equal(await driver.execute(body), false);
+        root.append(last);
+      }
+      if (
+        movement === "rollback" &&
+        root.scrollTop === initialScroll + imageGap
+      ) {
+        root.scrollTop = initialScroll;
+      }
+      if ((await driver.execute(body)) !== true) {
+        diagnostic = true;
+        throw failure;
+      }
+    },
+  });
+  return {
+    run: () =>
+      subject.exerciseNativeImageLifecycle(
+        driver,
+        "synthetic",
+        "dismissal",
+        {},
+        (value) => {
+          stage = value;
+        },
+      ),
+    failure,
+    conditions,
+    budgets,
+    messages,
+    scrolls,
+    bounds,
+  };
+}
+
+for (const movement of ["none", "rollback"]) {
+  test(`RPI-CI image placement precedes decode when scroll movement is ${movement}`, async (t) => {
+    const fixture = nativeImagePlacementFixture(t, movement);
+    await assert.rejects(fixture.run(), (error) => error === fixture.failure);
+    assert.deepEqual(fixture.scrolls, [42, 3542]);
+    assert.equal(fixture.conditions.at(-1), "RPI-02 native image 2 placement");
+    assert.ok(!fixture.conditions.includes("RPI-02 native image 2 decode"));
+    assert.equal(fixture.messages.length, 1);
+    assert.doesNotMatch(fixture.messages[0], /private-/u);
+    const { geometry } = JSON.parse(fixture.messages[0].split(": ")[1]);
+    assert.equal(geometry.scrollTop, 42);
+    assert.ok(geometry.target.top >= geometry.viewport.bottom);
+  });
+}
+
+for (const geometryAvailable of [true, false]) {
+  test(`RPI-CI visible image decode failure preserves the original error with geometry ${geometryAvailable ? "available" : "unavailable"}`, async (t) => {
+    const fixture = nativeImagePlacementFixture(
+      t,
+      "visible",
+      geometryAvailable,
+    );
+    await assert.rejects(fixture.run(), (error) => error === fixture.failure);
+    assert.deepEqual(fixture.conditions.slice(-2), [
+      "RPI-02 native image 2 placement",
+      "RPI-02 native image 2 decode",
+    ]);
+    assert.deepEqual(fixture.budgets.slice(-2), [90_000, 89_999]);
+    assert.equal(fixture.messages.length, 1);
+    assert.doesNotMatch(fixture.messages[0], /private-/u);
+    const observation = JSON.parse(fixture.messages[0].split(": ")[1]);
+    if (geometryAvailable) {
+      assert.equal(observation.geometry.scrollTop, 3542);
+      assert.equal(observation.geometry.presentation, "loading");
+      assert.deepEqual(observation.geometry.target, fixture.bounds);
+      assert.deepEqual(observation.geometry.viewport, fixture.bounds);
+      assert.equal(observation.resources.activeObjectUrls, 1);
+    } else {
+      assert.deepEqual(observation, { observation: "unavailable" });
+    }
+  });
+}
 
 test("fresh helper imports perform no process, filesystem, hardware, timer, or console work", async () => {
   const urls = [

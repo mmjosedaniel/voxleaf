@@ -191,6 +191,19 @@ previously hidden by the earlier Rust policy mismatch. That historical checkpoin
 did not advance the passing audit date. The subsequent bounded v3 update below
 resolves those findings without advisory suppression.
 
+On 2026-11-12, the VoxLeaf release dependency/audit-policy maintainer reviewed
+[RUSTSEC-2026-0486](https://rustsec.org/advisories/RUSTSEC-2026-0486.html), an
+informational unsoundness notice for locked `rustix 1.1.4`. The package is absent
+from the locked `x86_64-pc-windows-msvc` normal/build dependency graph. The policy
+records that exact tuple as non-Windows-reachable; this is not a safety claim
+for Unix or development/test graphs. The complete production audit passes with
+eight informational notices, five Windows-reachable, and the same four Python
+advisory blind spots. New notices or changed reachability still fail the gate.
+Dependencies and locks are unchanged. The policy's `auditDate: 2026-10-27`
+remains the existing packaged component-inventory checkpoint, not the date of
+this scan. See the dated [CI follow-up](../plans/evidence/five-pass-audit/ci-follow-up.md)
+for current evidence and the separate native-harness correction.
+
 The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
 `0.23.1` and urllib3 `2.8.0`; the other 76 packages retain their exact pins.
