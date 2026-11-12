@@ -19,6 +19,35 @@ before taking ownership of generation cleanup. Completed audio, evaluator pages
 and submitted scorecards remain intact on that rejected invocation; a genuinely
 failed partial generation still removes its disposable session.
 
+The measurement parent's subprocess contract bounds stdin and stdout at 16 KiB,
+detects stdout overflow during reading, and discards stderr. Stdin delivery,
+stdout reading and process exit share one absolute measurement deadline; the
+existing owned Windows Job supplies separate bounded teardown. A validated PASS
+requires child exit 0, and a typed FAIL requires exit 2. Mismatched or malformed
+output fails without exposing private child text. This does not change pilot
+preflight eligibility or historical benchmark authority. The completed
+[five-pass plan](../../docs/plans/completed/five-pass-audit-revalidation-and-corrections.md)
+tracks the correction's implementation and acceptance evidence.
+
+The v5 memory monitor hands periodic sampling, the final sample and both GPU
+probe closures to its monitoring thread after successful startup. Finalization
+signals that owner and waits at most one second; a live owner is reported as
+incomplete cleanup and retains its probes. Startup failures before handoff close
+the probes in the caller. Sampling and closure failures remain observable, and
+both closes are attempted. Final sampling still precedes runtime closure so the
+worker PIDs and frozen measurement window remain unchanged.
+
+The official batch runner observes safety before the first cold load. A latched
+stop prevents new factories, loads and dispatches; an active load is aborted
+through its exact owned attempt and its receiver is reaped before candidate
+closure. The comparable memory window still begins after all five cold cleanups,
+with sampling serialized across that transition. Missing required observations
+fail before creating a raw session; stopped trials are not invented as successes.
+Candidate cleanup precedes monitor shutdown in this runner, and outer GPU probes
+remain owned until shutdown completes. Frozen v4/v13 authority stays unchanged;
+[ADR-0072](../../docs/architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md)
+separately specifies prospective cancellation-proof evidence.
+
 The v5 playback replay's `peakRetainedPcmBytes` counts queued PCM plus completed
 payloads awaiting ordered release. Playable duration still counts only released
 audio, and reservation accounting includes pending payloads exactly once.
@@ -485,14 +514,19 @@ $batchPilot | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 The receipt is not a frozen v4 raw result, summary, quality admission, or
 selection. Never redirect the private input to a tracked file.
 
-After the pilot succeeds, use a new opaque session ID for the official run
-from the same clean committed checkpoint:
+Prospective official execution uses the v14 cancellation-proof authority in
+[ADR-0072](../../docs/architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md).
+Its implementation acceptance is tracked in the completed five-pass plan; no v14
+hardware result is established. Retired official versions are rejected before
+model acquisition. After the pilot succeeds and a measurement milestone is
+explicitly admitted, use a new opaque session ID from a clean committed checkpoint:
 
 ```powershell
 $sessionId = [guid]::NewGuid().ToString("N")
 $batchOfficial = @{
   batchOptIn = $true
   resultPurpose = "official"
+  profileVersion = "tts-short-segment-batch-profile-v14"
   placementProfileId = "qwen3-serena-v4-full-gpu"
   sessionId = $sessionId
   artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
@@ -505,17 +539,19 @@ $batchOfficial = @{
 $batchOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 ```
 
-The separately frozen targeted-CPU identity is official-only; it has no
-disposable pilot and is allowed only when the repository's exact committed
-full-GPU result supplies the admitted memory stop and hash. On an ExecPlan
-milestone that explicitly admits the arm, use a new session ID and replace only
-the placement identity:
+The targeted-CPU placement identity is official-only; it has no disposable pilot.
+v14 requires its own complete qualifying full-GPU summary, schema/authority
+validation, and identical committed/worktree bytes. A legacy v4/v13 or partial
+result cannot admit this arm. No qualifying v14 hardware result exists from this
+implementation work. On a later explicitly admitted measurement milestone with
+that prerequisite satisfied, use a new session ID and the CPU placement:
 
 ```powershell
 $sessionId = [guid]::NewGuid().ToString("N")
 $batchCpuOfficial = @{
   batchOptIn = $true
   resultPurpose = "official"
+  profileVersion = "tts-short-segment-batch-profile-v14"
   placementProfileId = "qwen3-serena-v4-speech-tokenizer-cpu"
   sessionId = $sessionId
   artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
@@ -530,7 +566,7 @@ $batchCpuOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 
 Official execution records bounded content-free nanosecond/sample/resource
 observations below the ignored
-`benchmarks/results/raw/short-segment-batch-v4/<session-id>/` directory. It
+`benchmarks/results/raw/short-segment-batch-v14/<session-id>/` directory. It
 does not retain waveform samples. A raw session is not reviewable evidence.
 Derive and validate the allowlisted summary in the base development
 environment; successful derivation deletes the exact ignored session before
@@ -540,9 +576,25 @@ emitting the summary:
 $derive = @{
   batchOptIn = $true
   sessionId = $sessionId
+  profileVersion = "tts-short-segment-batch-profile-v14"
 }
 $derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch:derive
 ```
+
+Legacy derivation remains available: omitted profileVersion defaults to v4;
+explicit `tts-short-segment-batch-profile-v13` selects the unchanged v13 meaning.
+These read paths do not authorize new legacy official runs. The v4 disposable
+pilot remains unchanged.
+
+v14 derives cancellation success from closed observed proof, not a standalone
+passed flag. Before-dispatch proof uses the actual identity gate. In-flight
+trials bind child acceptance and adapter entry to the exact owned request,
+invalidation and typed cancellation/reap. Adapter entry does not establish
+model inference. Publication trials inspect the real gate: either two units
+are rejected before release, or the first is actually released and the second
+is rejected after invalidation. No output from a reaped worker is containment
+evidence, not a witnessed publication rejection. Unexpected failures, timeouts
+and completion winning cannot count as successful cancellation.
 
 The official run fails closed unless the 50-millisecond process-tree RAM
 sampler, one-second PID-tagged WDDM dedicated/shared counters, live free-VRAM

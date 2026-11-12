@@ -558,6 +558,21 @@ evidence command supplies this receipt through `--lifecycle-receipt`. Local
 release evidence requires both the matching lifecycle receipt and the separate
 ordinary journey receipt. The signature gate remains separate.
 
+The build wrapper accepts only `not-run` for its legacy `-LifecycleStatus`
+parameter, including its default. An asserted passed status is rejected during
+PowerShell argument binding, before build, signature, checksum or evidence work.
+Only a validated matching lifecycle receipt can establish that result.
+
+Each lifecycle installer invocation has a two-minute deadline covering the
+installer and its descendants. The harness creates the installer suspended,
+assigns it to an owned Windows Job and journals its identity before resuming it.
+Timeout terminates and verifies that owned tree before any uninstall or data
+restoration. If containment cannot be verified, the harness retains its recovery
+journal and original-data backup and writes no passing receipt. The separate
+uninstaller deadline remains unchanged. Synthetic descendant tests cover this
+failure path; acceptance of a real installer still requires its canonical
+lifecycle run and separate verification of outer profile restoration.
+
 `package:windows` rebuilds and verifies the exact Piper core, then creates the
 ignored current-user NSIS artifact at
 `apps/desktop/src-tauri/target/release/bundle/nsis/VoxLeaf_0.1.0_x64-setup.exe`.
@@ -622,6 +637,14 @@ lock. It rejects `--no-sync` and does not copy model weights or update the
 ordinary acquisition manifest. Follow the explicit
 [v7 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
 for authorized package work; do not build merely to enable the optional profile.
+
+When maintainers deliberately regenerate v7 acquisition authority, the writer
+stages and validates the publication, manifest and evidence before replacement.
+A catchable partial-write failure restores prior bytes and absence across the
+attempted destinations. Failed restoration preserves recovery material and reports
+the primary and cleanup errors; it must not be treated as a successful write.
+Cleanup failure after all replacements reports separately without rolling back
+the committed set. This does not promise power-loss atomicity or concurrent writes.
 
 Unversioned `package:chatterbox-optional` aliases intentionally retain the v2
 default. Explicit `:v3` checks reproduce historical authority; neither is v7

@@ -319,7 +319,7 @@ export class AdaptiveBufferScheduler {
   #lastAcceptedSequence: number | undefined;
   #resources = emptyResources();
   #rangeComplete = false;
-  #initialPlaybackStarted = false;
+  #initialPlaybackCommitted = false;
   #playbackRateState = initialNarrationPlaybackRateStateV3();
   #activePlaybackSequence: number | undefined;
 
@@ -666,6 +666,7 @@ export class AdaptiveBufferScheduler {
         : "after-complete-unit-ended-before-successor-start",
     );
     this.#activePlaybackSequence = current.sequence;
+    this.#initialPlaybackCommitted ||= this.#playbackState === "playing";
     return this.#playbackRateState.activeRatePercent!;
   }
 
@@ -724,14 +725,16 @@ export class AdaptiveBufferScheduler {
         };
       }
     }
+    this.#initialPlaybackCommitted ||= consumed > 0;
     this.#refreshPlaybackState();
     return consumed;
   }
 
   public pausePlayback(): void {
     if (
-      !this.#initialPlaybackStarted ||
-      !["playing", "buffering", "complete"].includes(this.#playbackState)
+      this.#playbackState !== "playing" &&
+      (!this.#initialPlaybackCommitted ||
+        !["buffering", "complete"].includes(this.#playbackState))
     ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
@@ -743,7 +746,7 @@ export class AdaptiveBufferScheduler {
       return false;
     }
     this.#playbackState = "playing";
-    this.#initialPlaybackStarted = true;
+    this.#initialPlaybackCommitted = true;
     return true;
   }
 
@@ -752,7 +755,9 @@ export class AdaptiveBufferScheduler {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
     this.#playbackState =
-      this.#playableSampleFrames() > 0 ? "playing" : "buffering";
+      this.#initialPlaybackCommitted && this.#playableSampleFrames() > 0
+        ? "playing"
+        : "preparing";
     this.#refreshPlaybackState();
   }
 
@@ -910,10 +915,12 @@ export class AdaptiveBufferScheduler {
   }
 
   #targetBufferMs(): number {
-    if (!this.#initialPlaybackStarted) {
-      return initialTargetMs(this.#mode);
-    }
-    return continuingTargetMs(this.#mode);
+    // Quick can already refill while the player prepares its first allocation.
+    return this.#initialPlaybackCommitted ||
+      this.#playbackState === "playing" ||
+      this.#playbackState === "paused"
+      ? continuingTargetMs(this.#mode)
+      : initialTargetMs(this.#mode);
   }
 
   #shouldProduce(): boolean {
@@ -1038,12 +1045,12 @@ export class AdaptiveBufferScheduler {
         this.#playbackState = "complete";
       } else if (this.#serviceState === "failed") {
         this.#playbackState = "failed";
-      } else if (this.#initialPlaybackStarted) {
+      } else if (this.#initialPlaybackCommitted) {
         this.#playbackState = "buffering";
       }
       return;
     }
-    if (this.#playbackState === "playing") {
+    if (this.#playbackState === "playing" && this.#initialPlaybackCommitted) {
       return;
     }
     // A complete nonempty tail is playable even when its truthful displayed
@@ -1055,11 +1062,10 @@ export class AdaptiveBufferScheduler {
       effectiveListeningDurationMs === 0
     ) {
       this.#playbackState = "playing";
-      this.#initialPlaybackStarted = true;
       return;
     }
     const target = createAdaptiveBufferThresholds(
-      this.#initialPlaybackStarted
+      this.#initialPlaybackCommitted
         ? ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs
         : initialTargetMs(this.#mode),
       this.#rangeComplete &&
@@ -1070,7 +1076,8 @@ export class AdaptiveBufferScheduler {
     );
     if (effectiveListeningDurationMs >= target.targetBufferMs) {
       this.#playbackState = "playing";
-      this.#initialPlaybackStarted = true;
+    } else if (!this.#initialPlaybackCommitted) {
+      this.#playbackState = "preparing";
     }
   }
 

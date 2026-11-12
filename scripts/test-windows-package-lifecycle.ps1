@@ -18,6 +18,7 @@ if (-not $Installer) {
 $Installer = (Resolve-Path -LiteralPath $Installer).Path
 
 . (Join-Path $PSScriptRoot "windows-package-lifecycle-data.ps1")
+. (Join-Path $PSScriptRoot "windows-package-lifecycle-installer.ps1")
 
 function Get-LifecycleInstallerIdentity {
   $file = Get-Item -LiteralPath $Installer
@@ -116,6 +117,8 @@ foreach ($path in @($optionalRoots + $preferenceRoot + $unrelatedRoots)) {
 
 $applicationProcess = $null
 $packageProcess = $null
+$installerRootProcess = $null
+$installerCleanupUnverified = $false
 $installationAttempted = $false
 $uninstallAttempted = $false
 $recoveryJournal = Join-Path $sentinelDirectory "recovery.json"
@@ -144,6 +147,8 @@ function Write-RecoveryJournal {
     uninstallAttempted = $uninstallAttempted
     installer = $Installer
     installerSha256 = (Get-FileHash -LiteralPath $Installer -Algorithm SHA256).Hash
+    installerRootProcess = $installerRootProcess
+    installerCleanupUnverified = $installerCleanupUnverified
     data = $dataState
     processes = $processes
     restorationRequires = "Owned processes stopped and owned installation verified absent; never overwrite dataRoot."
@@ -167,14 +172,17 @@ function Invoke-Installer {
   $script:installationAttempted = $true
   $script:uninstallAttempted = $false
   Write-RecoveryJournal
-  # -Wait also waits for installer descendants. Capture PassThru immediately
-  # so a catchable interruption still leaves the original handle for cleanup.
-  Start-Process -FilePath $Installer -ArgumentList "/S" -WindowStyle Hidden -Wait -PassThru | ForEach-Object {
-    $script:packageProcess = $_
+  $exitCode = Invoke-LifecycleInstallerJob -InstallerPath $Installer -RecordRoot {
+    param($Id, $StartedUtc)
+    $script:installerRootProcess = [ordered]@{ id = $Id; startedUtc = $StartedUtc }
+  } -Journal {
     Write-RecoveryJournal
+  } -CleanupFailed {
+    param($Failure)
+    $script:installerCleanupUnverified = $true
+    $cleanupFailures.Add("windows-release-lifecycle-installer-cleanup-unverified:$($Failure.Exception.Message)")
   }
-  $exitCode = $script:packageProcess.ExitCode
-  $script:packageProcess = $null
+  $script:installerRootProcess = $null
   if ($exitCode -ne 0) {
     throw "windows-release-lifecycle-installer-failed"
   }

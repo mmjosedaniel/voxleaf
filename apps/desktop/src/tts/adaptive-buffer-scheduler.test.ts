@@ -388,6 +388,13 @@ describe("adaptive buffer scheduler", () => {
       canPlayAvailableAudio: false,
     });
     expect(scheduler.playAvailableAudio()).toBe(false);
+    scheduler.selectPlaybackRatePercent(95);
+    scheduler.selectPlaybackRatePercent(100);
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "playing",
+      effectiveListeningDurationMs: 512_000,
+      playbackRateState: { activeRatePercent: null },
+    });
     scheduler.consumeSampleFrames(48_000);
     expect(scheduler.observe()).toMatchObject({
       retainedAudioUnitCount: 255,
@@ -649,6 +656,43 @@ describe("adaptive buffer scheduler", () => {
       playbackState: "complete",
       playableDurationMs: 0,
     });
+  });
+
+  it("five-pass 3.2 rechecks Prepared lead before allocating the first unit", () => {
+    const scheduler = makeReadyScheduler(
+      createManualClock(0),
+      { kind: "prepared", targetMs: 60_000 },
+      75,
+    );
+    const segments = [segment(1), segment(2), segment(3), segment(4)];
+    prepare(scheduler, segments);
+    const units = segments.map(({ segmentId }) => ownedUnit(segmentId, 15_000));
+    try {
+      for (const unit of units.slice(0, 3)) synthesize(scheduler, unit);
+      expect(scheduler.observe()).toMatchObject({
+        playbackState: "playing",
+        playableDurationMs: 45_000,
+        effectiveListeningDurationMs: 60_000,
+        playbackRateState: { activeRatePercent: null },
+      });
+
+      scheduler.selectPlaybackRatePercent(100);
+      expect(scheduler.observe()).toMatchObject({
+        playbackState: "preparing",
+        playableDurationMs: 45_000,
+        effectiveListeningDurationMs: 45_000,
+        retainedAudioUnitCount: 3,
+        nextAction: { kind: "synthesize", segmentId: segments[3]!.segmentId },
+      });
+      synthesize(scheduler, units[3]!);
+      expect(scheduler.observe().playbackState).toBe("playing");
+      expect(scheduler.activateCurrentPlaybackRate()).toBe(100);
+      scheduler.consumeSampleFrames(1);
+      expect(scheduler.observe().playbackState).toBe("playing");
+    } finally {
+      scheduler.invalidate();
+      scheduler.releaseDiscardedAudioUnits(4);
+    }
   });
 
   it("applies exact 30-minute reservation backpressure across every audio dimension", () => {

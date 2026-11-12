@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 from threading import Event
-from typing import NoReturn
+from typing import Any, NoReturn
 
 import pytest
 
@@ -23,8 +24,141 @@ from benchmarks.harness import (
     MAX_SAMPLE_FRAMES_PER_REQUEST,
     BenchmarkHarness,
 )
-from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
+from benchmarks.isolation import (
+    BatchWitnessPhase,
+    IsolatedBenchmarkAdapter,
+    IsolationTimeouts,
+    OfficialSafetyInterruption,
+)
 from benchmarks.process_fake import ProcessFakeAdapter, ProcessFakeFactory
+
+
+class _BlockingLoadAdapter(ProcessFakeAdapter):
+    def __init__(self, marker: Path) -> None:
+        super().__init__()
+        self._marker = marker
+
+    def load(self) -> None:
+        if not self._marker.exists():
+            self._marker.touch()
+            Event().wait(15)
+        super().load()
+
+
+class _BlockingLoadFactory:
+    def __init__(self, marker: Path) -> None:
+        self._marker = marker
+
+    def __call__(self) -> _BlockingLoadAdapter:
+        return _BlockingLoadAdapter(self._marker)
+
+
+@pytest.mark.parametrize("retry", [False, True])
+def test_five_pass_add_02_reaps_only_the_owned_loading_worker(
+    retry: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    marker = tmp_path / "load-entered"
+    adapter = IsolatedBenchmarkAdapter(_BlockingLoadFactory(marker), forbidden_values=())
+    owner = object()
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            load = pool.submit(adapter.load_for_official, owner, lambda: False)
+            deadline = time.monotonic() + 5
+            try:
+                while not marker.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                assert marker.exists()
+                process = adapter._process
+                pid = adapter.worker_pid
+                assert process is not None and pid is not None
+                adapter.abort_official_load(object())
+                adapter.cancel("idle-generation", cancel_idle=True)
+                assert adapter.worker_pid == pid
+                if retry:
+
+                    def fail_close() -> None:
+                        raise OSError("synthetic process handle close failure")
+
+                    with monkeypatch.context() as patch:
+                        patch.setattr(process, "close", fail_close)
+                        with pytest.raises(AdapterOperationError, match="cleanup-failed"):
+                            adapter.abort_official_load(owner)
+                        adapter.abort_official_load(object())
+                        assert adapter._process is process
+                        with pytest.raises(AdapterOperationError, match="cleanup-failed"):
+                            adapter.load_for_official(object(), lambda: False)
+            finally:
+                adapter.abort_official_load(owner)
+            with pytest.raises(OfficialSafetyInterruption):
+                load.result(timeout=5)
+            assert adapter.worker_pid is None
+            adapter.load_for_official(object(), lambda: False)
+            replacement = adapter.worker_pid
+            assert replacement is not None
+            adapter.abort_official_load(owner)
+            assert adapter.worker_pid == replacement
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_five_pass_add_02_stale_load_response_cannot_replace_the_current_worker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(ProcessFakeFactory(), forbidden_values=())
+    received, release = Event(), Event()
+    receive = adapter.receive
+    retired_owner = object()
+    held = False
+
+    def hold_response(timeout: float, **ownership: Any) -> tuple[object, ...]:
+        nonlocal held
+        response = receive(timeout, **ownership)
+        if not held:
+            held = True
+            received.set()
+            assert release.wait(5)
+        return response
+
+    monkeypatch.setattr(adapter, "receive", hold_response)
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            retired = pool.submit(adapter.load_for_official, retired_owner, lambda: False)
+            try:
+                assert received.wait(5)
+                adapter.abort_official_load(retired_owner)
+                adapter.load_for_official(object(), lambda: False)
+                replacement = adapter.worker_pid
+                assert replacement is not None
+            finally:
+                release.set()
+            with pytest.raises(OfficialSafetyInterruption):
+                retired.result(timeout=5)
+            assert adapter.worker_pid == replacement
+    finally:
+        adapter.close()
+
+
+def test_five_pass_add_02_stop_after_launch_prevents_load_send(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    marker = tmp_path / "load-entered"
+    adapter = IsolatedBenchmarkAdapter(_BlockingLoadFactory(marker), forbidden_values=())
+    stopped = Event()
+    start = adapter._start
+
+    def start_then_stop() -> None:
+        start()
+        stopped.set()
+
+    monkeypatch.setattr(adapter, "_start", start_then_stop)
+    try:
+        with pytest.raises(OfficialSafetyInterruption):
+            adapter.load_for_official(object(), stopped.is_set)
+        assert adapter.worker_pid is None
+        assert not marker.exists()
+    finally:
+        adapter.close()
 
 
 def test_rcf_12_rejects_cancelled_id_before_starting_worker() -> None:
@@ -223,6 +357,264 @@ def _batch_request() -> BatchGenerationRequest:
             BatchUnitRequest("es-v4-dialogue", 1, "Dos."),
         ),
     )
+
+
+def _witness_request() -> BatchGenerationRequest:
+    return replace(_batch_request(), phase="cancellation", pass_index=None)
+
+
+class _WitnessAdapter(ProcessFakeAdapter):
+    def __init__(self, marker: Path, behavior: str) -> None:
+        super().__init__()
+        self._marker = marker
+        self._behavior = behavior
+
+    def generate_batch_with_entry_witness(
+        self, request: BatchGenerationRequest, entered: Callable[[], None]
+    ) -> tuple[object, ...]:
+        self._marker.write_text(str(request.call_index), encoding="utf-8")
+        if self._behavior == "timeout":
+            Event().wait(5)
+        elif self._behavior == "timeout-unwind":
+            try:
+                entered()
+            except AdapterOperationError as error:
+                assert error.code == "timeout"
+                self._marker.with_suffix(".expired").touch()
+                Event().wait(5)
+                raise
+        elif self._behavior == "witness":
+            entered()
+            self._marker.with_suffix(".resumed").touch()
+        return ()
+
+
+class _WitnessFactory:
+    def __init__(self, marker: Path, behavior: str = "witness") -> None:
+        self._marker = marker
+        self._behavior = behavior
+
+    def __call__(self) -> _WitnessAdapter:
+        return _WitnessAdapter(self._marker, self._behavior)
+
+
+@pytest.mark.parametrize("phase", ["worker-accepted", "adapter-entry"])
+def test_five_pass_2_3_exact_spawned_phase_is_cancelled_and_reaped(
+    tmp_path: Path, phase: BatchWitnessPhase
+) -> None:
+    marker = tmp_path / "adapter-entry"
+    adapter = IsolatedBenchmarkAdapter(_WitnessFactory(marker), forbidden_values=())
+    request = _witness_request()
+    invalidated: list[BatchWorkIdentity] = []
+    try:
+        adapter.load()
+        pid = adapter.worker_pid
+        assert pid is not None
+
+        def invalidate() -> None:
+            assert adapter.worker_pid == pid
+            assert marker.exists() == (phase == "adapter-entry")
+            invalidated.append(request.identity)
+
+        result = adapter.cancel_witnessed_batch(request, phase, lambda: False, invalidate)
+        assert (result.phase, result.identity, result.call_index) == (
+            phase,
+            request.identity,
+            request.call_index,
+        )
+        assert result.termination_nanoseconds > 0
+        assert invalidated == [request.identity]
+        assert adapter.worker_pid is None
+        assert not marker.with_suffix(".resumed").exists()
+    finally:
+        adapter.close()
+
+
+def test_five_pass_2_3_worker_exit_without_our_signal_cannot_prove_cancellation(
+    tmp_path: Path,
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        _WitnessFactory(tmp_path / "adapter-entry"), forbidden_values=()
+    )
+    try:
+        adapter.load()
+
+        def invalidate() -> None:
+            process = adapter._process
+            assert process is not None
+            process.kill()
+            process.join(2)
+            assert not process.is_alive()
+
+        with pytest.raises(AdapterOperationError, match=":invalid-output$"):
+            adapter.cancel_witnessed_batch(
+                _witness_request(), "worker-accepted", lambda: False, invalidate
+            )
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_five_pass_2_3_safety_stop_reaps_the_pending_entry_without_proof(tmp_path: Path) -> None:
+    marker = tmp_path / "adapter-entry"
+    adapter = IsolatedBenchmarkAdapter(_WitnessFactory(marker), forbidden_values=())
+    try:
+        adapter.load()
+        with pytest.raises(OfficialSafetyInterruption):
+            adapter.cancel_witnessed_batch(
+                _witness_request(),
+                "adapter-entry",
+                marker.exists,
+                lambda: pytest.fail("safety stop became cancellation proof"),
+            )
+        assert marker.exists()
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_five_pass_2_3_deadline_wins_during_invalidation_of_a_live_worker(tmp_path: Path) -> None:
+    marker = tmp_path / "adapter-entry"
+    expired = marker.with_suffix(".expired")
+    adapter = IsolatedBenchmarkAdapter(
+        _WitnessFactory(marker, "timeout-unwind"),
+        forbidden_values=(),
+        timeouts=IsolationTimeouts(request_seconds=0.5),
+    )
+    try:
+        adapter.load()
+
+        def invalidate() -> None:
+            deadline = time.monotonic() + 2
+            while not expired.exists() and time.monotonic() < deadline:
+                time.sleep(0.005)
+            assert expired.exists()
+            assert adapter.worker_pid is not None
+
+        with pytest.raises(AdapterOperationError, match=":timeout$"):
+            adapter.cancel_witnessed_batch(
+                _witness_request(), "adapter-entry", lambda: False, invalidate
+            )
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_five_pass_2_3_deadline_wins_during_termination_reaping(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        _WitnessFactory(tmp_path / "adapter-entry"),
+        forbidden_values=(),
+        timeouts=IsolationTimeouts(request_seconds=1),
+    )
+    try:
+        adapter.load()
+        process = adapter._process
+        assert process is not None
+        send, close = adapter._send, process.close
+        deadline: float | None = None
+
+        def record_send(message: tuple[object, ...]) -> None:
+            nonlocal deadline
+            if message[0] == "witness-batch":
+                assert isinstance(message[2], float)
+                deadline = message[2]
+            send(message)
+
+        def finish_reaping_after_deadline() -> None:
+            assert not process.is_alive()
+            assert deadline is not None
+            remaining = deadline - time.monotonic()
+            assert 0 < remaining <= 1
+            time.sleep(remaining)
+            close()
+
+        monkeypatch.setattr(adapter, "_send", record_send)
+        monkeypatch.setattr(process, "close", finish_reaping_after_deadline)
+        with pytest.raises(AdapterOperationError, match=":timeout$"):
+            adapter.cancel_witnessed_batch(
+                _witness_request(), "worker-accepted", lambda: False, lambda: None
+            )
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+@pytest.mark.parametrize(
+    ("behavior", "failure"),
+    [("completion", "invalid-output"), ("timeout", "timeout"), ("invalid", "invalid-request")],
+)
+def test_five_pass_2_3_unobserved_entry_cannot_be_cancelled_as_a_witness(
+    tmp_path: Path, behavior: str, failure: str
+) -> None:
+    marker = tmp_path / "adapter-entry"
+    adapter = IsolatedBenchmarkAdapter(
+        _WitnessFactory(marker, behavior),
+        forbidden_values=(),
+        timeouts=IsolationTimeouts(request_seconds=0.5),
+    )
+    try:
+        adapter.load()
+        with pytest.raises(AdapterOperationError, match=f":{failure}$"):
+            adapter.cancel_witnessed_batch(
+                _batch_request() if behavior == "invalid" else _witness_request(),
+                "adapter-entry",
+                lambda: False,
+                lambda: pytest.fail("invalidated an unobserved adapter phase"),
+            )
+        assert marker.exists() is (behavior != "invalid")
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
+
+
+@pytest.mark.parametrize("malformed", ["identity", "index", "premature-entry", "duplicate"])
+def test_five_pass_2_3_phase_exchange_rejects_malformed_witnesses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, malformed: str
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        _WitnessFactory(tmp_path / "adapter-entry"), forbidden_values=()
+    )
+    try:
+        adapter.load()
+        connection = adapter._connection
+        assert connection is not None
+        receive = connection.recv
+        request = _witness_request()
+        call = 0
+
+        def malformed_receive() -> object:
+            nonlocal call
+            value = receive()
+            call += 1
+            if call == 2 and malformed == "duplicate":
+                return ("worker-accepted", request.identity, request.call_index)
+            if call != 1:
+                return value
+            if malformed == "identity":
+                return (
+                    "worker-accepted",
+                    BatchWorkIdentity("other", "generation"),
+                    request.call_index,
+                )
+            if malformed == "index":
+                return ("worker-accepted", request.identity, request.call_index + 1)
+            if malformed == "premature-entry":
+                return ("adapter-entry", request.identity, request.call_index, bytes(16))
+            return value
+
+        monkeypatch.setattr(connection, "recv", malformed_receive)
+        with pytest.raises(AdapterOperationError, match=":invalid-output$"):
+            adapter.cancel_witnessed_batch(
+                request,
+                "adapter-entry",
+                lambda: False,
+                lambda: pytest.fail("invalidated a malformed witness"),
+            )
+    finally:
+        adapter.close()
+    assert adapter.worker_pid is None
 
 
 @pytest.mark.parametrize("retired_receive", ["timeout", "response"])

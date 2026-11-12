@@ -1,6 +1,11 @@
 # Five-pass audit: revalidation and minimal corrections
 
-Status: planned; implementation and runtime validation have not started.
+> Authorized privacy redaction (2026-11-11): local-state details and private
+> evidence shortcuts are omitted from this public copy. The original is
+> preserved privately. Historical technical outcomes are unchanged; this
+> redaction does not renew prior approval. See [privacy follow-up](../evidence/five-pass-audit/privacy-follow-up.md).
+
+Status: implementation and integrated acceptance complete; archived for final documentary closeout review.
 Prepared: 2026-11-11.
 Planning base: `4baeddb66e2831a00c97625fcdbeffe538072cdb`.
 Branch: `codex/five-pass-audit-plan`.
@@ -30,20 +35,36 @@ range and language policies, and settings/package actions preserve their actual
 operation ownership. Maintainer tools report bounded, truthful benchmark,
 dependency, release and installer outcomes.
 
-These are intended outcomes, not claims about work already completed. The
+These outcomes are accepted within the evidence and limitations recorded below. The
 campaign closes every register entry with evidence, including withdrawals when
 the current behavior does not reproduce the proposed defect. It does not promise
 that the rest of the repository is free of bugs.
 
 ## Current state
 
+The 2026-11-11 execution request authorizes M1-M3 implementation and host
+validation, superseding the planning-only restriction above. It prohibits
+staging, commits, push, PR, merge and publication. Execution starts from the
+unchanged planning commit `a3241571944530d468e2f4f2d37a0a2394a8df84` on
+`codex/five-pass-audit-plan`; the original worktree and index were clean.
+The coordinator maintains the [execution ledger](../evidence/five-pass-audit/execution-ledger.md)
+and its case/gate register. No historical test result has been accepted as a
+current PASS. M0-M3 are complete. All25 retained cases have reviewed dispositions:
+24 corrections and the already-correct4.4. Selected host/integration gates and
+independent batch acceptance passed under
+[FPA-INTEGRATED-CR-R1-20261111](../evidence/five-pass-audit/review-INTEGRATED-R1.md).
+The four original exclusions/conditions remain unchanged. This archival update
+is followed by fresh G12 checks and a separate exact documentary closeout report
+in the [evidence directory](../evidence/five-pass-audit/).
+
 The preceding chat review covered the five audit passes, the investigation
 reports for the original 27 cases, deeper reviews of related paths, and relevant
 earlier chats/ExecPlans. Two related cases, ADD-01 and ADD-02, survived further
 independent review. The resulting register has **29 dispositions: 25 retained
 candidates and four excluded or conditional cases**. Static evidence is not a
-runtime reproduction. No retained case has a new RED/GREEN receipt from this
-campaign.
+runtime reproduction. At the planning checkpoint no retained case had a new
+RED/GREEN receipt. Current per-case outcomes are maintained in the execution
+ledger and the progress log below.
 
 The starting worktree and index were clean. The current baseline already
 contains PRs #304, #305, #306, #307, #310 and #311. Several findings are adjacent
@@ -72,7 +93,7 @@ are separately tracked related cases; their variants are not additional findings
 
 ### Retained register
 
-Every row begins as `REPRODUCTION PENDING`. The implementation units below define
+Every row began as `REPRODUCTION PENDING`. The implementation units below define
 its smallest proposed fix, controls and acceptance boundary.
 
 | Case | Retained behavior to reproduce | Unit |
@@ -185,7 +206,7 @@ reuse candidates and invalidation rules, create the planning branch, review and
 commit only this plan and its indexes. No runtime edits or product tests.
 
 Status: planning and documentary checks complete. The local planning commit is
-recorded in Git history; implementation remains not started.
+recorded in Git history; subsequent execution is tracked under M1-M3.
 
 ### M1: Revalidate each case and freeze its smallest work order
 
@@ -617,6 +638,571 @@ lifecycle evidence even when most upstream model assets remain unchanged.
 
 ## Progress log
 
+- 2026-11-12 03:03 UTC: independent integrated review
+  FPA-INTEGRATED-CR-R1-20261111 APPROVE, with no findings. All retained case
+  dispositions, current host gates, explicit evidence reuse and verified recovery
+  are accepted. Archived the plan and updated maintained links/indexes; the final
+  documentary checks and closeout assessment follow this frozen update.
+
+- 2026-11-11 [G9 final package gates](../evidence/five-pass-audit/package-gates.md)
+  pass: unsigned verified-core installer, installation/first start/repair and
+  all six uninstall scenarios, exact declared host restoration, installer-bound
+  evidence without historical overwrite and final package check. Fresh final
+  comparison confirms seven frontend/browser/type result input sets unchanged.
+  G12 and independent integrated acceptance remain before closure/archival.
+- 2026-11-11 [runtime evidence renewal](../evidence/five-pass-audit/runtime-evidence-renewal.md)
+  closes original Python base-runtime and Rust registry/cache capture gaps.
+  Same333 Python and78+78 Rust tests pass; Python/Rust static leaves pass.
+  Expanded before/after runtime and cached dependency identities match.
+  Released final G9 build preparation/execution; lifecycle awaits actual final
+  generated NSIS inspection before its run.
+- 2026-11-11 final A05 native startup, real Piper ES/EN and native resource
+  commands all pass with exact input/artifact records and host restoration.
+  Both Piper arms cover all six speeds. These refresh the imported-harness
+  dependency after its approved correction; G8 remains separately passed.
+  G9, evidence completeness renewal and final integrated acceptance remain open.
+- 2026-11-11 G7 portfolio harness [review R1](../evidence/five-pass-audit/review-G7-HARNESS-R1.md)
+  APPROVE after intended two-language RED,17/17 portfolio tests,54/54 native
+  harness and refreshed global JS checks. The exact-input policy requires fresh
+  native startup/Piper/resource runs after this imported module changes; G8
+  admission remains separate. Preparing A05 without repeating G8.
+- 2026-11-11 G8 exact local admission passes1/1 with all nine assets verified,
+  rediscovery, integrity and owned removal; inference=false. The outer wrapper
+  retained Node cache residue and exited1. Guarded recovery preserved all
+  residual contents in ignored evidence and verified the original scratch absent
+  and exact host baseline restored. No admission rerun is needed for that residue.
+- 2026-11-11 G10 native resource gate passes on the rebuilt default executable:
+  10,000-block fixture and six resource cycles, final observers/object URLs0,
+  bounded storage and exact host/adjacent-runtime restoration. G8 local admission
+  is running separately; G7 Piper and G9/final acceptance remain pending.
+- 2026-11-11 bounded G7 harness work order: the portfolio requests activation
+  of absent optional Chatterbox as Piper's only same-language alternate. After
+  independent G10/G8 gates, correct only per-arm argument applicability in the
+  portfolio runner and its tests; preserve language transitions, speed matrix,
+  deadline, firewall and cleanup. Require RED/GREEN and independent approval
+  before native retry. The [work order](../evidence/five-pass-audit/native-gates.md)
+  preserves all retained product acceptance responsibilities.
+- 2026-11-11 G7 Spanish Piper failed before inference during the runner's
+  alternate-profile selection. Its original failure/cleanup-uncertainty receipts
+  remain preserved; fresh guarded recovery verified exact host and adjacent-core
+  restoration. Investigating fixture applicability while G10 native/G8 proceed
+  separately. All25 unit dispositions remain reviewed; final acceptance is pending.
+- 2026-11-11 G7 native startup passes on the final rebuilt executable, with
+  unchanged complete captures and watched host restoration verified. Real
+  Spanish Piper arm is running; the remaining native/resource/admission and
+  installer gates still prevent final acceptance.
+- 2026-11-11 native [preparation/recovery](../evidence/five-pass-audit/native-gates.md):
+  A02 stopped before any canonical gate because its temporary runtime-hold name
+  exceeded a Windows capture path limit. The complete tree and original root/host
+  identities were verified and restored. A03's shorter hold and fresh complete
+  preflight pass; released the sequential real G7/G10/G8 batch.
+- 2026-11-11 G7 renderer evidence gap closed: reran only controls32/32 and
+  Reader68/68 with direct resolved Node/PowerShell hashes plus the complete
+  input closure. The prior logs' version-only tool binding is not reused.
+- 2026-11-11 U16 [R1](../evidence/five-pass-audit/review-U16-5.4-R1.md)
+  APPROVE. All25 retained cases now have independently reviewed unit dispositions
+  (24 fixes,4.4 already correct). Began final native/admission/resource preparation;
+  real host gates, installer restoration, G12 and integrated acceptance remain pending.
+- 2026-11-11 U16/5.4 [receipt](../evidence/five-pass-audit/u16-case-5.4.md):
+  one intended response-body classification RED, then final G4 71/71,
+  native-smoke harness54/54 and portfolio Node14/14 pass. Global JavaScript
+  formatting/linting pass; all251 package exports remain identical. Independent
+  U16 review and real host/native/package integration remain pending.
+- 2026-11-11 U15 [R1](../evidence/five-pass-audit/review-U15-5.3-R1.md)
+  APPROVE, renewing included U12 controls.24/25 retained cases have reviewed unit
+  dispositions. Continued to U16 WebDriver body-timeout classification and final
+  G4/harness leaves; actual native/installer gates remain pending.
+- 2026-11-11 U15/5.3 [receipt](../evidence/five-pass-audit/u15-case-5.3.md):
+  real benign descendant RED followed by26/26 focused GREEN and static PASS.
+  The new helper bounds exact Job ownership and preserves recovery data when
+  reaping cannot be verified. Independent review and canonical G9 remain pending.
+- 2026-11-11 fresh G5 default/locked each78 pass,3 ignored; G11 Rust format
+  and Clippy both modes pass against the generated core. Both selected Piper
+  configuration/firewall preflights pass. Root inventory Python static checks
+  were rerun successfully because historical installed-module proof was incomplete.
+- 2026-11-11 final G3:333/333 pass across18 suites, with2,642 unchanged inputs.
+  G11 Python format/lint/types also pass on that closure. The existing cache
+  warning is retained. U15 synthetic process tests may now run sequentially.
+- 2026-11-11 U13 generated-core [R1](../evidence/five-pass-audit/review-U13-CORE-R1.md)
+  APPROVE. Continued to U15 owned installer-tree deadline; started final G3
+  Python union on the frozen Python sources and regenerated core authority.
+- 2026-11-11 U13 [core generation](../evidence/five-pass-audit/u13-core-generation.md):
+  one configured build, both offline language smokes and consistency check pass.
+  Only embedded inventory/runtime manifest changed in the2,024-file package;
+  generated-output independent review and downstream native gates remain pending.
+- 2026-11-11 U14 [R1](../evidence/five-pass-audit/review-U14-4.3-R1.md)
+  APPROVE: all29 tests and the unchanged26-authority comparison accepted.
+  The retained-case count is23/25 with unit dispositions; final integration
+  remains pending. Started the deferred single U13 core generation/check.
+- 2026-11-11 U14/4.3: 29/29 transaction tests, read-only acquisition and scoped
+  static checks pass; all26 accepted/historical authority paths remain exact.
+  [Receipt](../evidence/five-pass-audit/u14-case-4.3.md). Exact patch frozen for
+  review; core generation starts only after this acceptance.
+
+- 2026-11-11 U14/4.3: two intended temporary-fixture REDs interrupt after the
+  second/third direct write and expose mixed bytes/presence. Staged replacement
+  and independent rollback are in progress; accepted v7 authority is read-only.
+
+- 2026-11-11 U13 [R1](../evidence/five-pass-audit/review-U13-3.4-R1.md)
+  APPROVE for source/inventory only, no findings. Deferred core outputs and
+  downstream native/G9 remain explicit. Continued to U14 temporary-fixture
+  authority transaction reproduction; accepted v7 artifacts remain untouched.
+
+- 2026-11-11 U13/3.4: final26/26 tests, current inventory check and scoped static
+  pass. The generator ran once; only three ONNX integrity fields changed. Explicit
+  non-registry sdist provenance is preserved. [Receipt](../evidence/five-pass-audit/u13-case-3.4.md).
+  Exact source/inventory patch frozen for scoped review; final core/G9 pending.
+
+- 2026-11-11 U13/3.4: two intended REDs reproduce a macOS ONNX artifact in the
+  real core inventory and foreign-first selection after wheel reordering. The
+  expected Windows artifact is14,888,841 bytes. Bounded standard-library target
+  selection is in progress; explicit source provenance and local records remain
+  protected. Generator-owned outputs and final core checks follow separately.
+
+- 2026-11-11 U12/4.4 [R1](../evidence/five-pass-audit/review-U12-4.4-R1.md)
+  APPROVE ALREADY CORRECT and renewed1.8. Continued to U13 real-lock Windows
+  wheel selection; code/inventory review precedes the one final core generation
+  after U14. No acceptance of unbuilt core/installer output is implied.
+
+- 2026-11-11 U12/4.4 revalidation: unchanged production accepts reordered keys
+  with identical evidence and rejects 17 malformed/value/step-order variants.
+  Disposition ALREADY CORRECT; only owning tests change. Cumulative 14 controls
+  and static checks pass. [Receipt](../evidence/five-pass-audit/u12-case-4.4.md);
+  exact patch frozen for independent disposition/1.8 reassessment.
+
+- 2026-11-11 U12/1.8 [R1](../evidence/five-pass-audit/review-U12-1.8-R1.md)
+  APPROVE without findings. Continued separately to4.4 key-order characterization
+  on unchanged production; a justified already-correct disposition remains valid.
+
+- 2026-11-11 U12/1.8: synthetic RED shows legacy status reaching builder,
+  signature and evidence work. One ValidateSet correction passes14 focused
+  controls plus static checks; no real build/install. [Receipt](../evidence/five-pass-audit/u12-case-1.8.md).
+  Exact patch frozen for independent review;4.4 remains separate.
+
+- 2026-11-11 U11 [R2](../evidence/five-pass-audit/review-U11-2.3-R2.md)
+  APPROVE for2.3 and renewed ADD-02; F1 resolved. Unchanged JSON Prettier evidence
+  explicitly reused after17-input equivalence review. Continued to U12/1.8
+  synthetic early wrapper rejection, with4.4 characterization kept separate.
+
+- 2026-11-11 U11/2.3 F1: both spawned-child boundary regressions fail before
+  correction, including a still-live timed-out child and cleanup crossing the
+  absolute deadline. Only isolation.py/its test changed; R2 passes128/128 and
+  scoped static checks, with107 frozen originals plus3 authorized additions exact.
+  [Updated receipt](../evidence/five-pass-audit/u11-case-2.3.md); patch frozen for R2.
+
+- 2026-11-11 U11/2.3 [R1](../evidence/five-pass-audit/review-U11-2.3-R1.md)
+  requests one P2 correction: expiry after the final admission check can let a
+  timed-out but still-live child produce cancellation success after reap. Add a
+  deterministic spawned-child RED and reject deadline/terminal winners at proof
+  acceptance. ADD-02 is renewed APPROVE; 2.3 remains unaccepted. Original report,
+  patch and passing evidence are immutable and do not cover this edge.
+
+- 2026-11-11 U11/2.3: GREEN03 passes126/126 across eight suites, including
+  unchanged v4/v13 authority and refreshed ADD-02 through v14. Scoped Python
+  static checks pass. [Receipt](../evidence/five-pass-audit/u11-case-2.3.md)
+  distinguishes real publication-gate rejection from malformed output and
+  worker containment. Exact cumulative U11 patch awaits independent review.
+
+- 2026-11-11 U11/2.3 first broad GREEN attempt passes111/117. Five failures
+  trace to a misplaced fake monitor method after test insertion, and one to
+  the CLI receipt's old version expectation. Preserve this diagnostic; restore
+  the fake and update only the active version marker with primary/cleanup
+  assertions intact. New JSON authority formatting precedes final digest pinning
+  and the rerun. No acceptance is claimed from this intermediate result.
+
+- 2026-11-11 stable frontend gates: G7's renderer preflight controls pass32/32
+  and Reader leaf68/68. Configured G11 TypeScript types pass for all workspaces;
+  captures remain exact. [Combined receipts](../evidence/five-pass-audit/combined-gates.md).
+  These do not replace native inference, other static leaves or final review.
+
+- 2026-11-11 U11/2.3 scope clarification: benchmark adapter callback tests belong
+  in test_benchmark_candidate_adapters.py, replacing the initially named product
+  test_qwen_adapter.py in the work order. Product-service Qwen code/tests remain
+  unchanged. README now documents prospective v14 official/derive routing and
+  the distinct containment versus publication proof; acceptance is pending.
+
+- 2026-11-11 G10 Chromium: canonical benchmark passes6/6 on final reader inputs;
+  640 captured identities/membership remain unchanged and six lifecycle cycles
+  satisfy existing memory/observer/URL bounds. [Receipt](../evidence/five-pass-audit/g10-browser.md).
+  Native G10, remaining tooling and final integrated acceptance stay pending.
+
+- 2026-11-11 U11/2.3: three intended host REDs show missing real dispatch-gate
+  invalidation, invalid-request counted as cancellation success, and no actual
+  publication-gate observation after the alleged first output. v14 implementation
+  is in progress; original107 authority inputs remain frozen. In parallel the
+  coordinator runs G10 Chromium against the final product inputs, with competing
+  test runners paused; U16 changes only the separate native harness.
+
+- 2026-11-11 U11/ADD-02: [FPA-U11-ADD-02-CR-R1-20261111](../evidence/five-pass-audit/review-U11-ADD-02-R1.md)
+  APPROVE without findings. Continued to separately attributed case2.3 with
+  prospective v14 proof and unchanged legacy read/derive behavior. All107 frozen
+  inputs remain protected; no hardware measurement is authorized by this work.
+
+- 2026-11-11 U11/ADD-02: final GREEN03 passes69/69 across four suites;
+  scoped static checks pass and all107 frozen benchmark inputs remain exact.
+  [Receipt](../evidence/five-pass-audit/u11-case-ADD-02.md) preserves two fixture
+  diagnostics and the separate runner/CLI proof boundaries. Exact source patch
+  is frozen for independent review; successor proof case2.3 remains pending.
+
+- 2026-11-11 U11/ADD-02: four intended host RED failures establish missing
+  abort/reap during first cold, measured and cancellation-trial loads, plus
+  factory admission despite a known stop. Event-gated synthetic loads remain
+  safely released by fixture cleanup. Expanded before/after input identities
+  match; the approved five-file correction is in progress.
+
+- 2026-11-11 U11/ADD-02 test allowlist expands to test_benchmark_batch_cli.py
+  to cover the actual session-creation boundary on early-stop failure while
+  preserving the existing successful-write assertions. batch_cli.py production
+  remains read-only. Runner stop proof and CLI output proof remain distinguished.
+
+- 2026-11-11 U11/ADD-02 scope clarification: existing early-stop execution can
+  fabricate never-run cancellation rows. v13's closed schema cannot truthfully
+  represent skipped required trials, so early/mid-run safety stops must fail
+  before raw/session output. Preserve the existing complete-result derivability
+  test by observing its stop in the actual final sample after real required
+  work; add explicit no-fabrication/no-session controls. Frozen derivation and
+  historical receipts remain unchanged.
+
+- 2026-11-11 U11 work order: implement ADD-02 first in batch_official.py and
+  isolation.py plus their existing official/isolation tests. Early safety and
+  exact active-load ownership preserve v13's measured window and derivation;
+  do not add v14 proof fields yet. batch_cli.py remains read-only unless a
+  reproduced outer sampler ownership failure requires explicit expansion.
+  After separate review, case 2.3 will add v14 proof/routing. A real private
+  adapter-entry seam may require bounded qwen3.py ownership at that later step.
+
+- 2026-11-11 U11 decision: [ADR-0072](../../architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md)
+  records the v14 successor before implementation. Frozen v4/v13 inputs and
+  candidate/corpus files are bound by a 107-path normal-host snapshot. Safety
+  observation remains separate from the comparable measurement window; private
+  accepted-work proof does not claim engine entry. Implementation is pending.
+
+- 2026-11-11 U10/1.7: [FPA-U10-1.7-CR-R1-20261111](../evidence/five-pass-audit/review-U10-1.7-R1.md)
+  approves the monitor correction and renews U9 against expanded authority
+  evidence, with no findings. U11 authority/sequence preparation is read-only;
+  the durable successor decision will precede its implementation work order.
+
+- 2026-11-11 U10/1.7: [receipt](../evidence/five-pass-audit/u10-case-1.7.md)
+  records 92/92 combined U9/U10 host tests and all scoped static/diff checks
+  passing against expanded 449-row before/after inputs. Current U10 and U9
+  sources, tests, authority inputs and README are frozen for independent review.
+
+- 2026-11-11 U10 validation: 69 selected tests pass, but inspection found that
+  the Python capture omitted top-level benchmark authorities used by the suite.
+  The same omission affects U9's manifest-loading context. Preserve those runs
+  and the issued U9 report; expand the capture and run the U9/U10 selections
+  together before seeking renewed acceptance. No production defect is inferred
+  from this evidence gap.
+
+- 2026-11-11 U10/1.7: four intended host RED cases prove live periodic ownership
+  was reported successful, final sampling could block the finish caller, and
+  initial/start failures omitted probe closure. Event-gated real threads with
+  synthetic samplers establish these failures; the two-file correction is in
+  progress and keeps the v5 measurement/runtime ordering unchanged.
+
+- 2026-11-11 U10 work-order clarification: preserve v5's existing final monitor
+  sampling before runtime.close, keeping worker PIDs available. The coordinator's
+  initial candidate-before-monitor phrase belonged to U11/v13 and is not a v5
+  requirement. U10's closed edit scope is dual_worker_official.py and
+  test_benchmark_dual_worker_runtime.py; related suites are validation only.
+
+- 2026-11-11 U9/1.5: [FPA-U9-1.5-CR-R1-20261111](../evidence/five-pass-audit/review-U9-1.5-R1.md)
+  approves the exact correction with no findings. Continued to U10/1.7 v5
+  monitor finalization, limited to its owner and necessary existing dual-worker
+  tests. Historical v5 measurement/authority and v13 fixes remain distinct.
+
+- 2026-11-11 U9/1.5: [receipt](../evidence/five-pass-audit/u9-case-1.5.md)
+  records 23/23 host tests and scoped Ruff/mypy passing. Earlier fixture-ID and
+  typing failures are preserved separately. The exact two-code-file correction
+  plus README contract is frozen for independent review; no inference ran.
+
+- 2026-11-11 U9/1.5: four intended host RED failures establish PASS/nonzero exit,
+  FAIL/zero mismatch, stdout overflow only detected after timeout and retained
+  stderr. Valid PASS/0 and typed FAIL/2 controls pass. The bounded binary-pipe
+  correction is in progress; no inference or pilot-preflight behavior changed.
+
+- 2026-11-11 G6: [FPA-G6-CR-R1-20261111](../evidence/five-pass-audit/review-G6-R1.md)
+  approves the manifested product/browser scope and verifies current G1/G2/G6
+  closures. Corrected the handoff count: 78 path identities plus six header
+  lines, not 84 paths; the immutable manifest is unchanged. Started U9/1.5,
+  limited to benchmark cli.py and its existing test suite. Native/resource,
+  tooling and full integrated acceptance remain pending.
+
+- 2026-11-11 G6: the second exact three-spec batch passes 71/71; scoped static
+  checks pass. [Browser receipt](../evidence/five-pass-audit/g6-browser.md)
+  preserves the earlier 70/71 run, all setup diagnostics and their bounded
+  corrections. Production code was unchanged. The exact 78-path cumulative
+  product/browser review is frozen; U9 is prepared read-only pending approval.
+
+- 2026-11-11 G1: the selected current desktop union passes 746/746 across 19
+  suites with identical 614-row before/after inputs. See
+  [combined gates](../evidence/five-pass-audit/combined-gates.md). G6 scenario
+  authoring continues; later relevant source drift invalidates affected checks.
+
+- 2026-11-11 G2: the final selected EPUB union passes 482/482 across nine suites
+  on an identical 457-row before/after input closure. The normal-host command
+  and exact evidence are in [combined gates](../evidence/five-pass-audit/combined-gates.md).
+  Browser scenario authoring is independent; final native and integrated review
+  remain pending.
+
+- 2026-11-11 U8/ADD-01: [FPA-U8-ADD-01-CR-R1-20261111](../evidence/five-pass-audit/review-U8-ADD-01-R1.md)
+  approves the scoped patch and renews cumulative U8 and relevant U7/U1.
+  It explicitly accepts unchanged-input reuse of U8/2.2 Rust static checks.
+  Started directed G6 work in the two browser specs identified by the
+  [preparation](../evidence/five-pass-audit/browser-preparation.md). Product
+  unit approvals do not satisfy the pending combined browser/native gates.
+
+- 2026-11-11 U8/ADD-01: [host receipt](../evidence/five-pass-audit/u8-case-add-01.md)
+  records 415 desktop tests, 78 native tests in each feature mode and scoped
+  static checks passing. Paired completion, fresh read, newer-action and remount
+  controls cover the four-file correction. Exact cumulative U8 patch frozen for
+  independent review; final G8 and integrated gates remain pending.
+
+- 2026-11-11 U8/ADD-01: four intended host RED cases reproduce missing fresh
+  observation in both Cancel/Download completion orders and lost pending action
+  ownership across Settings remount. The paired acquisition must also continue
+  to protect case 2.2's Remove-before-Stop boundary. Correction in progress in
+  the client and controls with their existing tests; no native production change.
+
+- 2026-11-11 U8/2.2: [FPA-U8-2.2-CR-R1-20261111](../evidence/five-pass-audit/review-U8-2.2-R1.md)
+  approves the exact patch and renews relevant 2.1, U7 and U1 consumer scope.
+  Continued to ADD-01 with client/controls source and tests as the closed initial
+  allowlist. Final browser, native admission and integrated gates remain pending.
+
+- 2026-11-11 U8/2.2: completed only the required MAF-04 fake/fixture typing;
+  unchanged G1 passes 409/409, both native modes pass 78 with three explicit
+  ignored cases each. Static/format/Clippy pass. App rejection leaves the next
+  book's owner usable; native rollback preserves the complete prior operation.
+  [Receipt](../evidence/five-pass-audit/u8-case-2.2.md); cumulative patch frozen
+  for 2.2 review and dependent reassessment. G8/integrated acceptance pending.
+
+- 2026-11-11 U8/2.2: busy-removal REDs reproduce on renderer and held native
+  post-commit cleanup. First G1 after correction passes 406/409; three existing
+  MAF-04 coordinator tests omit the newly required idle observation/pending fields.
+  Expanded only that test fake, retaining assertions, and corrected the new App
+  fixture's type. Original failures are preserved; acceptance rerun is pending.
+
+- 2026-11-11 U8/2.2 work order expanded narrowly to App.tsx and App.test.tsx:
+  its no-coordinator removal callback starts a replacement handoff before the
+  action can reject known busy state. Defer that existing handoff until removal
+  admission and add an App-level regression proving rejection does not block a
+  subsequent book owner. Preserve all R8-05 paths. Native reservation/Stop rollback
+  remains confined to the optional-package module and tests.
+
+- 2026-11-11 U8/2.1: [FPA-U8-2.1-CR-R1-20261111](../evidence/five-pass-audit/review-U8-2.1-R1.md)
+  APPROVE without findings; current native binaries and captured inputs verified.
+  Continued separately to 2.2, rejecting busy removal before Stop and reserving
+  native removal ownership. ADD-01 and combined gates remain pending.
+
+- 2026-11-11 U8/2.1: attributed TS3/native1 REDs expose detached acquisition and
+  replaced confirmation identity. Two minimal guards pass209 TS tests and77
+  native tests in each feature mode, with three special ignored cases explicit;
+  static/fmt/Clippy pass. [Receipt](../evidence/five-pass-audit/u8-case-2.1.md).
+  Exact patch frozen for review; G8 and combined acceptance remain pending.
+
+- 2026-11-11 U7: [FPA-U7-3.3-CR-R1-20261111](../evidence/five-pass-audit/review-U7-3.3-R1.md)
+  APPROVE for3.3 and relevant U1 coordinator/App scope; no findings. Continued
+  to U8/2.1 optional acquisition reselection. Native gates remain mandatory.
+
+- 2026-11-11 U7/3.3: completed the required consumer fakes, preserved first
+  failures, and repeated unchanged G1:396/396; scoped static checks pass. Real
+  compatibility/state tests include held probe, saved preference and newer choice.
+  [Receipt](../evidence/five-pass-audit/u7-case-3.3.md); exact patch frozen for
+  review and relevant U1 reassessment. Browser Play identity remains pending.
+
+- 2026-11-11 U7/3.3: two real-coordinator REDs expose stale English/Piper refresh
+  and premature Reset completion before the held compatibility check. Minimal
+  wait fixes those cases. First related G1 run retained393 PASS/three failures:
+  existing App/coordinator Reset mocks omit the newly required check method.
+  Expanded the work order only to those two test files to restore complete
+  consumer fakes while preserving their assertions; acceptance rerun pending.
+
+- 2026-11-11 U6: [FPA-U6-4.2-CR-R1-20261111](../evidence/five-pass-audit/review-U6-4.2-R1.md)
+  APPROVE without findings, including actual public caller identity. Continued to
+  U7/3.3 Reset compatibility settlement. Browser/native/integrated gates remain pending.
+
+- 2026-11-11 U6/4.2: valid direct/EPUB2/EPUB3 REDs distinguish exact document-start
+  from false fragment recovery. Earlier unsupported-PNG fixture failure retained
+  separately; its rejection policy is an explicit passing control. Minimal resolver
+  change, G0,99 G2 tests and scoped static pass. [Receipt](../evidence/five-pass-audit/u6-case-4.2.md);
+  exact patch frozen for review. Diagram topology remains unchanged.
+
+- 2026-11-11 U5: [FPA-U5-2.5-CR-R1-20261111](../evidence/five-pass-audit/review-U5-2.5-R1.md)
+  APPROVE for2.5 and renewed1.4, no findings. Controller/cancellation support
+  identity included independently; final integration remains pending. Continued
+  to U6/4.2 empty-fragment exact navigation.
+
+- 2026-11-11 U5/2.5:16 attributed malformed-tag REDs, including public preparation
+  and long-variant retry. Incremental grammar passes383 EPUB tests after G0,
+  with existing cancellation/work/source limits; static checks pass. Actual root
+  runner identities are now captured. [Receipt](../evidence/five-pass-audit/u5-case-2.5.md);
+  cumulative U5 patch frozen for independent review.
+
+- 2026-11-11 U5/1.4: [FPA-U5-1.4-CR-R1-20261111](../evidence/five-pass-audit/review-U5-1.4-R1.md)
+  APPROVE without findings, including public compiled-input binding. Continued to
+  2.5; future captures will include actual root Vitest identities. Original
+  handoff's reversed emitted hash was corrected against retained manifests.
+
+- 2026-11-11 U5/1.4:15 attributed unit/public REDs reproduce partial shared-unit
+  Celsius expansion. Bounded endpoint guards pass358 selected EPUB tests after
+  G0 rebuild, plus scoped static checks. ADR-0063 clarifies whole-range policy;
+  [receipt](../evidence/five-pass-audit/u5-case-1.4.md). Exact patch frozen for review.
+
+- 2026-11-11 U4: [FPA-U4-2.4-CR-R1-20261111](../evidence/five-pass-audit/review-U4-2.4-R1.md)
+  APPROVE for 2.4 and renewed1.3; no findings. Continued to U5/1.4 with frozen
+  v1 normalization excluded. Browser preparation is recorded
+  [separately](../evidence/five-pass-audit/browser-preparation.md), not executed evidence.
+
+- 2026-11-11 U4/2.4: latest-entry RED for each observer reproduced. Single-pass
+  time selection preserves independent tiers and disposal; all135 related host
+  tests and scoped static checks pass. Combined U4 patch frozen for review;
+  [receipt](../evidence/five-pass-audit/u4-case-2.4.md).
+
+- 2026-11-11 U4/1.3: independent
+  [review R1](../evidence/five-pass-audit/review-U4-1.3-R1.md) APPROVE, no findings;
+  [R1-A1](../evidence/five-pass-audit/review-U4-1.3-R1-A1.md) clarifies its header
+  typo without altering the report. Continued separately to observer case 2.4.
+
+- 2026-11-11 U4/1.3: three attributed dispatch REDs cover queued visible work,
+  visible demand outside a full queue and current-priority FIFO. Bounded dispatch
+  correction passes 132 related host tests and scoped static checks. Exact patch
+  frozen for independent review; [receipt](../evidence/five-pass-audit/u4-case-1.3.md).
+
+- 2026-11-11 U3: [FPA-U3-5.2-CR-R1-20261111](../evidence/five-pass-audit/review-U3-5.2-R1.md)
+  APPROVE for 5.2, renewed 5.1 and U1; no findings. Both U3 corrections have
+  scoped independent approval. Continued to U4/1.3 image dispatch priority;
+  declared combined browser/native/resource/static acceptance remains pending.
+
+- 2026-11-11 U3/5.2: pointer/focus REDs show an unrelated audible boundary
+  replacing preview B while actual visible A advances without scrolling. Bounded
+  explicit placement ownership fixes both; current G1 passes 411/411 and scoped
+  static checks pass. Existing 5.1 Chromium regression passes on changed Reader
+  bytes. [Receipt](../evidence/five-pass-audit/u3-case-5.2.md); exact patch frozen
+  for review, with new 5.2 real-browser and combined gates still pending.
+
+- 2026-11-11 U3/5.1: [FPA-U3-5.1-CR-R1-20261111](../evidence/five-pass-audit/review-U3-5.1-R1.md)
+  APPROVE for 5.1 and U1. Reviewer independently accepts browser evidence after
+  proving later unit-only additions are outside its inputs; no historical PASS
+  substituted. U2 remains subject to fresh final integrated assessment. Continued
+  to separately scoped pointer/focus case 5.2.
+
+- 2026-11-11 U3/5.1: exact controlled Chromium fixture now passes with transient
+  automatic-placement protection; modeled/control G1 passes408/408 and scoped
+  static checks pass. [Case receipt](../evidence/five-pass-audit/u3-case-5.1.md)
+  binds code, ADR-0071, all attempts and evidence equivalence. Patch frozen for
+  independent review; final native/resource and integrated gates remain pending.
+
+- 2026-11-11 U3/5.1 attributed RED: supported wide-layout attempt05 keeps the
+  real reader at 1472x542 and compact bar at54.375px through Stop/replay. After
+  verified B inspection, actual automatic follow, canceled settlement and inactive
+  Stop, the delayed event causes one native caret sample and saves offset1894
+  instead of audible1958. `u3-5.1-browser-red-05.log` preserves the exact checkpoint
+  assertion failure and input identities. This controlled real-DOM RED authorizes
+  the bounded three-file provenance correction; earlier contrary/fixture results
+  remain intact and are explained by the separate responsive reflow path.
+
+- 2026-11-11 U3/5.1 supported-layout redesign: read-only CSS inspection shows
+  compact narration actions wrap at 800px, changing reader height and invoking
+  ResizeObserver preservation, which suspends sampling and reseeds the RPI guard.
+  A supported 1600x900 viewport with Details closed is predicted to retain the
+  existing fixed compact row height. Authorize one measured wide-layout attempt
+  on unchanged production; assert actual dimensions before follow, at Stop-event
+  release and subsequent frames. This is a changed input based on a concrete
+  layout cause, not a repeat of the earlier scenario or mocked geometry.
+
+- 2026-11-11 U3/5.1 attempt04: controlled concurrent-reflow scenario PASSes on
+  unchanged reader production despite delivered late scroll and differing native
+  caret. No app sample/save occurred; exact heard and later manual checkpoints
+  survive reopen. [Investigation receipt](../evidence/five-pass-audit/u3-case-5.1-investigation.md)
+  preserves all four attempts. Stable-height supported layout is under read-only
+  investigation; case remains unresolved, not withdrawn or accepted.
+
+- 2026-11-11 U3/5.1 diagnostic redesign: attempt03 proves B was sampled and
+  automatic follow moved to A, but Stop is followed by a return to B before
+  the driver releases the held event (trace scrollTop approximately 748 initial,
+  4454 inspected, 718 followed, 4459 stopped). The proposed stale A sample is
+  therefore not exercised. Production is unchanged. Next bounded fixture
+  redesign moves event release to the actual Stop-settled DOM notification,
+  before an extra driver round trip; record native geometry/caret at release.
+  Do not suppress real reflow or fabricate rectangles/results. If that ordering
+  still cannot be demonstrated, retain an unresolved disposition and proceed
+  with independent work while preserving this evidence.
+
+- 2026-11-11 U3/5.1: corrected fixture seeds canonical interior offset using
+  the existing RPI publication/storage seam. `u3-5.1-browser-red-02.log` PASSed
+  on unchanged production, including real movement, canceled settle callback,
+  checkpoint/reopen and manual wheel control. This is contrary evidence, not
+  a product RED or withdrawal. Revised diagnostic work order requires observable
+  tracker acceptance of inspected B before arming follow and call-through caret/
+  storage observations on delayed replay. No forced geometry or output mutation;
+  no U3 production changes. Further run follows the changed precondition proof,
+  not an unchanged retry until failure.
+
+- 2026-11-11 U3/5.1 preparation: first focused Chromium attempt
+  `u3-5.1-browser-red-01.log` failed the initial saved-interior-offset prerequisite
+  before the retained trigger. It is fixture evidence, not product RED. No U3
+  production edit was made; diagnosis must establish the initial placement/save
+  state before a bounded corrected attempt. Failure artifacts remain ignored.
+
+- 2026-11-11 U2: [FPA-U2-3.2-CR-R1-20261111](../evidence/five-pass-audit/review-U2-3.2-R1.md)
+  APPROVE for 3.2 and dependent U1 cases; no findings. Proceeded to U3/5.1
+  controlled reader-event reproduction. Batch gates remain pending.
+
+- 2026-11-11 U2/3.2: startup commitment now follows allocation, positive sample
+  consumption or explicit Play available; initial eligibility remains reversible.
+  Fresh scheduler/PCM/coordinator/Reader/App host checks pass 453/453, with
+  scoped static checks passing. [Receipt](../evidence/five-pass-audit/u2-case-3.2.md)
+  binds the exact U1/U2 patch for review. Real worklet/native integration pending.
+
+- 2026-11-11 U2/3.2: three focused host REDs at 20:23 UTC show Prepared remains
+  playing at 45 seconds after selecting 100%, and PCM allocates early in direct
+  and Pause/Resume variants. Required new threshold is 60 seconds. Source fix,
+  controls and review are in progress; raw `u2-3.2-red-01.log` is retained.
+
+- 2026-11-11 U1: [FPA-U1-4.1-CR-R1-20261111](../evidence/five-pass-audit/review-U1-4.1-R1.md)
+  APPROVE for all three cases on the combined U1 patch. Proceeded to U2/3.2;
+  U1 browser/native and final integrated acceptance remain pending.
+
+- 2026-11-11 U1/4.1: reproduced canceled recovery replacing visible B with heard
+  A for ordinary Play; newer manual C control already passed. Removed the
+  speculative visible assignment, preserving settlement/audio authority. Fresh
+  coordinator/Reader/App checks pass 347/347 and scoped static checks pass;
+  [receipt](../evidence/five-pass-audit/u1-case-4.1.md). All three U1 cases await
+  review on the exact current combined patch.
+
+- 2026-11-11 U1/3.1: [FPA-U1-3.1-CR-R1-20261111](../evidence/five-pass-audit/review-U1-3.1-R1.md)
+  APPROVE for 3.1 and renewed 1.1, with no findings. Continued to 4.1;
+  current unit approval does not cover later drift or pending combined gates.
+
+- 2026-11-11 U1/3.1: reproduced recovery returning opening A instead of the
+  first failed attempt B before any confirmed rendering. Made actual heard
+  progress optional and retained the attempted start as fallback. Current
+  coordinator/Reader/App checks pass 345/345 plus scoped static checks; see
+  [receipt](../evidence/five-pass-audit/u1-case-3.1.md). Current combined U1
+  patch is frozen for case review and renewed 1.1 assessment.
+
+- 2026-11-11 U1/1.1: independent review
+  [FPA-U1-1.1-CR-R1-20261111](../evidence/five-pass-audit/review-U1-1.1-R1.md)
+  APPROVE for the exact unit patch; no findings. Scoped static checks pass.
+  Continued to case 3.1; shared-file drift requires renewed assessment and
+  final integration remains pending.
+
+- 2026-11-11 U1/1.1: reproduced four stale delayed-emission variants on unchanged
+  production, then replaced pending navigation identity while sharing containment.
+  Fresh coordinator/Reader/App host tests pass 344/344. See the
+  [case receipt](../evidence/five-pass-audit/u1-case-1.1.md) for retained capture,
+  fixture and formatting failures, exact identities and commands. Independent
+  case review and all combined acceptance gates remain pending.
+
+- 2026-11-11 execution: read the attached execution authorization and full plan;
+  verified the clean initial `main` at the planning base and switched to the
+  requested existing branch. Its only additional commit is the planning commit;
+  no implementation drift or unrelated changes were present. Started U1 with
+  one implementation writer and a reusable independent Astra High reviewer.
+  Normal-host readiness observed Node 24.20.0, pinned pnpm 11.15.1 through the
+  existing local shim, uv 0.11.29 and Rust/Cargo 1.97.1. These are readiness
+  observations, not behavioral acceptance.
+
 - 2026-11-11: Reconciled the chat's original 27 cases and two related cases into
   25 retained candidates and four excluded/conditional dispositions. No product
   tests executed; all runtime findings remain subject to reproduction.
@@ -652,7 +1238,32 @@ lifecycle evidence even when most upstream model assets remain unchanged.
 
 ## Final validation results
 
-Planning only. No runtime source, test, dependency, generated artifact,
+M1/M2 are complete:24 retained corrections and the already-correct4.4 have
+independent unit dispositions; the four excluded/conditional cases remain as
+planned. Selected M3 runtime and static gates pass. Combined independent review
+FPA-INTEGRATED-CR-R1-20261111 is APPROVE with no findings. Current commands, dispositions and review
+IDs are recorded in the [execution ledger](../evidence/five-pass-audit/execution-ledger.md).
+
+| Final responsibility | Attributed result |
+| --- | --- |
+| Desktop/EPUB and browser | G1 746/746; G2 482/482; G6 71/71; G7 renderer32/32+68/68; Chromium resources6/6. Current complete input/environment equivalence matches. |
+| Python/Rust | Renewed G3 333/333; G5 78 passed in each feature mode,3 special tests ignored each; corresponding static checks pass. Expanded runtime/cache captures match. |
+| Node/harness | Final G4 71/71; corrected portfolio17/17 and native-smoke harness54/54. Global JS format/lint and TS types pass. |
+| Native reader/Piper | Final A05 startup, both real Piper language/six-speed arms and native resource gate pass; exact declared host and adjacent runtime restoration verified. |
+| Optional admission | G8 exact local admission1/1 passes without inference. Original outer cache-residue failure is retained with verified recovery; final actual Rust input projection matches. |
+| Packaging/lifecycle | Corrected inventory/core generators/checks pass; final unsigned verified-core installer, installation/repair/six uninstall scenarios and package check pass; historical evidence and declared user state restored. |
+| Documentation/review | G12 evidence and tracked whitespace checks pass; final integrated checkpoint inspected87 documents and459 relative-link targets with none missing. Combined Astra review APPROVE FPA-INTEGRATED-CR-R1-20261111. Archival checks and documentary review are recorded separately after this update. |
+
+The canonical system diagram still represents the existing component, process,
+privacy, persistence and narration boundaries. The successor benchmark proof
+authority stays in its existing benchmark path; no diagram topology change is
+required. M005's safe-document-to-narration implementation claim is preserved;
+real inference evidence above is attributed separately.
+
+The following paragraphs preserve the historical M0 planning results and do not
+describe the current implementation worktree.
+
+At planning completion, no runtime source, test, dependency, generated artifact,
 architecture contract or historical receipt has been changed. No product tests
 or implementation milestones have been executed.
 
@@ -672,7 +1283,7 @@ The commit scope is exactly this plan, `docs/plans/active/README.md` and
 `docs/README.md`. Git history supplies the planning commit identity. No push or
 PR is requested. None of these documentary results accepts runtime behavior.
 
-Future execution must replace this pending implementation status with actual
-case dispositions, attributed executed/reused gate results, artifact identities,
-host restoration status and immutable independent review IDs. Do not mark the
-plan complete while any required case, evidence or integration gate is pending.
+The integrated implementation is accepted and this plan is archived. The final
+documentary closeout report is kept separately from its own reviewed manifest
+in the evidence directory. No staging, commit, push, PR, merge or publication
+is authorized or performed.

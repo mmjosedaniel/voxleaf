@@ -16,6 +16,15 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Five-pass audit: revalidation and minimal corrections](five-pass-audit-revalidation-and-corrections.md)
+  records24 corrections, the already-correct case4.4 and four preserved excluded
+  or conditional dispositions. FPA-INTEGRATED-CR-R1-20261111 approved the full
+  implementation and host evidence, including native Piper, exact optional
+  admission and unsigned Windows installer lifecycle/restoration. The
+  [execution ledger](../evidence/five-pass-audit/execution-ledger.md) records
+  commands, evidence reuse, preserved failures and acceptance limits. No Git
+  delivery or publication was performed.
+
 - [Reader position and image lifecycle minimal corrections](reader-position-and-image-lifecycle.md)
   protects canonical checkpoints through presentation changes and recycles image
   capacity by viewport visibility. RPI-CR-R1-20261110 approved the implementation;

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import type { ReadingLocatorV1 } from "@voxleaf/shared";
 import {
   buildReaderImageLifecycleFixture,
@@ -26,6 +26,214 @@ test.beforeEach(async ({ page }) => {
       value: () => ({ live: live.size, peak }),
     });
   });
+});
+
+async function openControlledRasterBook(page: Page, holdDecode: boolean) {
+  await page.addInitScript((hold) => {
+    const NativeObserver = IntersectionObserver;
+    const registrations: Array<{
+      target: Element;
+      near: boolean;
+      deliver(entries: IntersectionObserverEntry[]): void;
+    }> = [];
+    globalThis.IntersectionObserver = class extends NativeObserver {
+      constructor(
+        callback: IntersectionObserverCallback,
+        options?: IntersectionObserverInit,
+      ) {
+        super(callback, options);
+        const observe = this.observe.bind(this);
+        this.observe = (target) => {
+          if (!target.matches(".semantic-raster-host")) {
+            observe(target);
+            return;
+          }
+          registrations.push({
+            target,
+            near: options?.rootMargin === "256px 0px",
+            deliver: (entries) => callback(entries, this),
+          });
+        };
+      }
+    };
+    const pending: Array<() => void> = [];
+    let decoded = 0;
+    const nativeDecode = HTMLImageElement.prototype.decode;
+    HTMLImageElement.prototype.decode = async function () {
+      await nativeDecode.call(this);
+      if (!this.src.startsWith("blob:")) return;
+      decoded += 1;
+      if (hold) await new Promise<void>((resolve) => pending.push(resolve));
+    };
+    Reflect.set(globalThis, "__auditRaster", {
+      decoded: () => decoded,
+      registrations,
+      release: () => pending.shift()?.(),
+      deliver: (
+        index: number,
+        near: boolean,
+        entries: Array<{
+          time: number;
+          shown: boolean;
+          ratio?: number;
+          foreign?: boolean;
+        }>,
+      ) => {
+        const owners = registrations.filter((record) => record.near === near);
+        const owner = owners[index]!;
+        const rect = owner.target.getBoundingClientRect();
+        owner.deliver(
+          entries.map(({ time, shown, ratio, foreign }) => ({
+            time,
+            target: foreign
+              ? owners[(index + 1) % owners.length]!.target
+              : owner.target,
+            isIntersecting: shown,
+            intersectionRatio: ratio ?? (shown ? 1 : 0),
+            boundingClientRect: rect,
+            intersectionRect: rect,
+            rootBounds: rect,
+          })),
+        );
+      },
+    });
+  }, holdDecode);
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-controlled-images.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(await buildReaderImageLifecycleFixture()),
+  });
+  const hosts = page.locator(".semantic-raster-host");
+  await expect(hosts).toHaveCount(12);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Reflect.get(globalThis, "__auditRaster").registrations.length,
+      ),
+    )
+    .toBe(24);
+  return hosts;
+}
+
+test("five-pass 1.3 full near queue promotes the ninth visible raster first", async ({
+  page,
+}) => {
+  const hosts = await openControlledRasterBook(page, true);
+  const decoded = () =>
+    page.evaluate(() => Reflect.get(globalThis, "__auditRaster").decoded());
+  const release = () =>
+    page.evaluate(() => Reflect.get(globalThis, "__auditRaster").release());
+  try {
+    await page.evaluate(() => {
+      const { deliver } = Reflect.get(globalThis, "__auditRaster");
+      deliver(0, true, [{ time: 1, shown: true }]);
+    });
+    await expect.poll(decoded).toBe(1);
+    await page.evaluate(() => {
+      const { deliver } = Reflect.get(globalThis, "__auditRaster");
+      for (let index = 1; index < 8; index += 1)
+        deliver(index, true, [{ time: 1, shown: true }]);
+      deliver(8, false, [{ time: 1, shown: true }]);
+    });
+    expect(await decoded()).toBe(1);
+    await release();
+    await expect(hosts.nth(0).locator("img")).toHaveAttribute(
+      "alt",
+      "RPI image 1",
+    );
+    await expect.poll(decoded).toBe(2);
+    await expect(hosts.nth(8).locator("img")).toHaveCount(0);
+    await release();
+    await expect(hosts.nth(8).locator("img")).toHaveAttribute(
+      "alt",
+      "RPI image 9",
+    );
+    await expect(hosts.nth(1).locator("img")).toHaveCount(0);
+  } finally {
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-invalid.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from("invalid"),
+    });
+    await expect(hosts).toHaveCount(0);
+    await release();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rpiImageCounts")().live),
+      )
+      .toBe(0);
+  }
+});
+
+test("five-pass 2.4 latest matching raster entries govern acquisition and release", async ({
+  page,
+}) => {
+  const hosts = await openControlledRasterBook(page, false);
+  await page.evaluate(() => {
+    const { deliver } = Reflect.get(globalThis, "__auditRaster");
+    deliver(0, false, [
+      { time: 20, shown: false },
+      { time: 10, shown: true },
+      { time: 30, shown: true, foreign: true },
+    ]);
+    deliver(0, true, [
+      { time: 10, shown: true },
+      { time: 20, shown: false },
+    ]);
+    deliver(1, false, [
+      { time: 20, shown: true },
+      { time: 10, shown: false },
+    ]);
+    deliver(1, true, [
+      { time: 20, shown: false },
+      { time: 10, shown: true },
+    ]);
+  });
+  await expect(hosts.nth(1).locator("img")).toHaveAttribute(
+    "alt",
+    "RPI image 2",
+  );
+  const decoded = () =>
+    page.evaluate(() => Reflect.get(globalThis, "__auditRaster").decoded());
+  expect(await decoded()).toBe(1);
+  await expect(hosts.nth(0).locator("img")).toHaveCount(0);
+  await page.evaluate(() => {
+    const { deliver } = Reflect.get(globalThis, "__auditRaster");
+    deliver(1, false, [
+      { time: 30, shown: true },
+      { time: 30, shown: false },
+    ]);
+    deliver(0, true, [
+      { time: 30, shown: false },
+      { time: 30, shown: false, ratio: 0.25 },
+    ]);
+  });
+  await expect(hosts.nth(1).locator("img")).toHaveCount(0);
+  await expect(hosts.nth(0).locator("img")).toHaveAttribute(
+    "alt",
+    "RPI image 1",
+  );
+  expect(await decoded()).toBe(2);
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-invalid.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from("invalid"),
+  });
+  await expect(hosts).toHaveCount(0);
+  await page.evaluate(async () => {
+    const { deliver } = Reflect.get(globalThis, "__auditRaster");
+    deliver(1, false, [{ time: 50, shown: true }]);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+  });
+  expect(await decoded()).toBe(2);
+  expect(
+    await page.evaluate(
+      () => Reflect.get(globalThis, "__rpiImageCounts")().live,
+    ),
+  ).toBe(0);
 });
 
 test("RPI-02 loads later images and reloads released earlier occurrences", async ({

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import json
 import os
 import subprocess
 import sys
@@ -27,37 +28,63 @@ from benchmarks.memory import _load_windows_dll
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
 
 
-@pytest.mark.parametrize("outcome", ["success", "error", "interruption"])
+@pytest.mark.parametrize("outcome", ["success", "error", "interruption", "cleanup-failure"])
 def test_vca08_measurement_always_closes_ownership(
     outcome: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     owner = Mock()
     process = Mock()
-    process.returncode = 0
-    process.communicate.return_value = ('{"status":"pass"}', "")
+    process.wait.return_value = 0
     process.poll.return_value = 0
+    transfer = Mock(return_value='{"status":"pass"}')
+    original_error = OSError("synthetic")
     if outcome != "success":
-        process.communicate.side_effect = (
-            OSError("synthetic") if outcome == "error" else KeyboardInterrupt()
-        )
+        transfer.side_effect = KeyboardInterrupt() if outcome == "interruption" else original_error
         process.poll.return_value = None
+    if outcome == "cleanup-failure":
+        owner.close.side_effect = CommandError("cleanup-failed")
     monkeypatch.setattr(cli, "_MeasurementJob", lambda: owner)
-    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr(cli, "_transfer_measurement_pipes", transfer)
+    spawn = Mock(return_value=process)
+    monkeypatch.setattr(subprocess, "Popen", spawn)
     if outcome == "success":
         result = cli._measure_process(("synthetic",), "{}")
         assert result.stdout == '{"status":"pass"}'
         assert result.returncode == 0
         process.kill.assert_not_called()
     else:
-        with pytest.raises(OSError if outcome == "error" else KeyboardInterrupt):
+        expected = {
+            "error": OSError,
+            "interruption": KeyboardInterrupt,
+            "cleanup-failure": CommandError,
+        }
+        with pytest.raises(expected[outcome]) as failure:
             cli._measure_process(("synthetic",), "{}")
+        if outcome == "cleanup-failure":
+            assert str(failure.value) == "tts-benchmark-command:cleanup-failed"
+            assert failure.value.__context__ is original_error
         process.kill.assert_called_once()
+    assert spawn.call_args.kwargs["stderr"] == subprocess.DEVNULL
+    assert spawn.call_args.kwargs["creationflags"] == 0x08000000 | 0x00000004
     owner.assign.assert_called_once_with(process)
     owner.close.assert_called_once()
-    process.wait.assert_called_once()
-    for stream in (process.stdin, process.stdout, process.stderr):
+    assert process.wait.call_count == (2 if outcome == "success" else 1)
+    for stream in (process.stdin, process.stdout):
         stream.close.assert_called_once()
+    process.stderr.close.assert_not_called()
+
+
+def test_five_pass_1_5_teardown_does_not_close_a_live_pipe_owner() -> None:
+    process = Mock()
+    process.poll.return_value = 0
+    owner = Mock(ident=1)
+    owner.is_alive.return_value = True
+    with pytest.raises(CommandError, match=r"^tts-benchmark-command:cleanup-failed$"):
+        cli._reap_measurement_process(process, {process.stdin: owner}, time.monotonic())
+    owner.join.assert_called_once_with(timeout=0.0)
+    process.stdin.close.assert_not_called()
+    process.stdout.close.assert_called_once()
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows measurement ownership")
@@ -174,6 +201,132 @@ def valid_payload(tmp_path: Path) -> dict[str, object]:
         "backgroundLoadAcceptable": True,
         "thermalStateAcceptable": True,
     }
+
+
+@pytest.mark.parametrize(
+    ("status", "returncode", "accepted"),
+    [("pass", 0, True), ("pass", 1, False), ("fail", 2, True), ("fail", 0, False)],
+)
+def test_five_pass_1_5_worker_receipt_requires_matching_exit(
+    status: str, returncode: int, accepted: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = valid_payload(tmp_path)
+    payload["candidatePython"] = sys.executable
+    request = parse_preflight_request(payload)
+    receipt = {
+        "status": status,
+        "purpose": "official",
+        "candidateId": request.profile.candidate_id,
+        "sessionId": "b" * 32,
+        "failureCode": None if status == "pass" else "cancellation-failed",
+        "counts": {
+            "coldLoads": 5,
+            "warmGenerations": 24,
+            "sustainedGenerations": 12,
+            "cancellationTrials": 5,
+        },
+        "eligibleForPromotion": False,
+    }
+    assert _validated_worker_receipt(receipt, request) == receipt
+    monkeypatch.setattr(cli, "run_local_preflight", lambda _request: None)
+    monkeypatch.setattr(cli, "_preflight_passed", lambda _receipt: True)
+    monkeypatch.setattr(
+        cli,
+        "_measure_process",
+        lambda command, _payload: subprocess.CompletedProcess(
+            command, returncode, json.dumps(receipt), ""
+        ),
+    )
+    if accepted:
+        assert cli._run_measurement_parent(payload) == (receipt, returncode)
+    else:
+        assert cli._run_measurement_parent(payload) == (
+            {"status": "fail", "stage": "measurement", "failureCode": "invalid-request"},
+            2,
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows measurement ownership")
+@pytest.mark.parametrize(
+    "case", ["overflow", "discard-stderr", "exact-limit", "blocked-stdin", "utf8", "json"]
+)
+def test_five_pass_1_5_bounded_pipes_reap_the_synthetic_worker(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if case == "overflow":
+        script = (
+            "import sys, time; "
+            f"sys.stdout.buffer.write(b'x' * {cli.MAXIMUM_WORKER_STDOUT_BYTES + 1}); "
+            "sys.stdout.buffer.flush(); time.sleep(60)"
+        )
+    elif case == "discard-stderr":
+        script = (
+            "import sys; sys.stderr.buffer.write(b'x' * 262144); sys.stderr.buffer.flush(); "
+            "assert sys.stdin.read() == '{}'; sys.stdout.write('{}')"
+        )
+    elif case == "exact-limit":
+        script = f"print('x' * {cli.MAXIMUM_WORKER_STDOUT_BYTES}, end='')"
+    elif case == "blocked-stdin":
+        script = "import time; time.sleep(60)"
+    elif case == "utf8":
+        script = "import sys; sys.stdout.buffer.write(b'\\xff')"
+    else:
+        script = "print('{', end='')"
+    processes: list[subprocess.Popen[Any]] = []
+    original_popen = subprocess.Popen
+
+    def launch(args: object, **kwargs: Any) -> subprocess.Popen[Any]:
+        del args
+        process = original_popen([sys.executable, "-c", script], **kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    monkeypatch.setattr(cli, "MEASUREMENT_TIMEOUT_SECONDS", 2.0)
+    try:
+        if case == "overflow":
+            with pytest.raises(
+                CommandError, match=r"^tts-benchmark-command:invalid-worker-output$"
+            ):
+                cli._measure_process(("synthetic",), "{}")
+        elif case == "discard-stderr":
+            result = cli._measure_process(("synthetic",), "{}")
+            assert (result.returncode, result.stdout, len(result.stderr)) == (0, "{}", 0)
+        elif case == "exact-limit":
+            result = cli._measure_process(("synthetic",), "{}")
+            assert result.returncode == 0
+            assert len(result.stdout) == cli.MAXIMUM_WORKER_STDOUT_BYTES
+        elif case == "blocked-stdin":
+            with pytest.raises(subprocess.TimeoutExpired):
+                cli._measure_process(("synthetic",), "x" * cli.MAXIMUM_STDIN_BYTES)
+        else:
+            payload = valid_payload(tmp_path)
+            payload["candidatePython"] = sys.executable
+            monkeypatch.setattr(cli, "run_local_preflight", lambda _request: None)
+            monkeypatch.setattr(cli, "_preflight_passed", lambda _receipt: True)
+            assert cli._run_measurement_parent(payload) == (
+                {"status": "fail", "stage": "measurement", "failureCode": "invalid-request"},
+                2,
+            )
+    finally:
+        assert len(processes) == 1
+        assert processes[0].poll() is not None
+
+
+@pytest.mark.parametrize("encoding", ["ascii", "utf8"])
+def test_five_pass_1_5_rejects_oversized_encoded_stdin_before_spawn(
+    encoding: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = (
+        "a" * (cli.MAXIMUM_STDIN_BYTES + 1)
+        if encoding == "ascii"
+        else "é" * cli.MAXIMUM_STDIN_BYTES
+    )
+    spawn = Mock()
+    monkeypatch.setattr(subprocess, "Popen", spawn)
+    with pytest.raises(CommandError, match=r"^tts-benchmark-command:invalid-input$"):
+        cli._measure_process(("synthetic",), payload)
+    spawn.assert_not_called()
 
 
 def test_preflight_command_accepts_only_closed_stdin_configuration(tmp_path: Path) -> None:

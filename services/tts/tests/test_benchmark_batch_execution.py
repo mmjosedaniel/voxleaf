@@ -15,7 +15,7 @@ from benchmarks.batch_contracts import (
     BatchUnitRequest,
     BatchWorkIdentity,
 )
-from benchmarks.batch_execution import BoundedOrderedBatchController
+from benchmarks.batch_execution import BatchCancellationPublication, BoundedOrderedBatchController
 from benchmarks.batch_fake import (
     DeterministicBatchCandidate,
     FakeBatchClock,
@@ -111,6 +111,43 @@ def test_generation_replacement_rejects_every_completed_output_as_stale() -> Non
         "stale-rejected",
         "stale-rejected",
     ]
+
+
+@pytest.mark.parametrize("after_first", [False, True])
+def test_five_pass_2_3_actual_publication_sequence_advances_only_for_released_units(
+    after_first: bool,
+) -> None:
+    clock = FakeBatchClock()
+    controller = BoundedOrderedBatchController(clock=clock)
+    candidate = DeterministicBatchCandidate(clock)
+    request = _request()
+    diagnostic = BatchCancellationPublication(
+        "after-first-publication" if after_first else "before-publication",
+        controller.identity_gate.invalidate,
+    )
+    result = controller.execute(candidate, request, cancellation=diagnostic)
+    assert result.call.failure_code == "stale-identity"
+    released = int(after_first)
+    assert diagnostic.published_before_invalidation == released
+    assert diagnostic.suppressed == 2 - released
+    assert [unit.unit_id for unit in result.published] == [
+        unit.unit_id for unit in request.units[:released]
+    ]
+    assert [unit.published_sequence for unit in result.units] == list(range(released))
+    normal = controller.execute(candidate, request)
+    assert [unit.published_sequence for unit in normal.units] == [released, released + 1]
+
+
+def test_five_pass_2_3_malformed_pair_cannot_supply_publication_proof() -> None:
+    clock = FakeBatchClock()
+    controller = BoundedOrderedBatchController(clock=clock)
+    candidate = DeterministicBatchCandidate(clock, scenario="swapped-output")
+    diagnostic = BatchCancellationPublication(
+        "after-first-publication", lambda: pytest.fail("malformed pair reached publication")
+    )
+    result = controller.execute(candidate, _request(), cancellation=diagnostic)
+    assert result.call.failure_code == "invalid-output"
+    assert result.published == () and diagnostic.suppressed == 0
 
 
 @pytest.mark.parametrize("failing_read", ["now_ns", "snapshot"])

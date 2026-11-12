@@ -33,7 +33,7 @@ The [R8 corrections](../plans/completed/eight-revalidated-findings-minimal-corre
 keep existing owners and public contracts. Local navigation and inline links
 resolve accepted fallback chains through the package's bounded resolver, retaining
 source spine occurrences for aliases and first-occurrence semantics for direct
-navigation. Missing fragments keep the existing fragment-unresolved recovery.
+navigation. Unresolved nonempty fragments keep the existing fragment-unresolved recovery.
 App owns pending optional removal across book replacement; reading may continue,
 but narration handoff waits for removal and verified old-owner containment.
 Settings contains programmatic focus while open and yields before close restores
@@ -41,6 +41,13 @@ trigger focus. Restart eligibility follows current availability and reader
 placement. [ADR-0069](decisions/ADR-0069-bounded-png-orientation.md) records the
 bounded PNG extension. Current validation status remains in the R8 plan.
 The system diagram's process, persistence and data-flow topology is unchanged.
+
+The completed [five-pass correction](../plans/completed/five-pass-audit-revalidation-and-corrections.md)
+treats an absent or empty fragment as an exact document-start target. A trailing
+`#` therefore does not imply a missing-fragment recovery warning. This stays in
+the existing package-private target resolver: alias/spine occurrence selection,
+unsupported-target policy and public locator schemas remain unchanged. Acceptance
+is tracked in the [current ledger](../plans/evidence/five-pass-audit/execution-ledger.md).
 
 Current bilingual, Piper and Chatterbox narration profiles protect Unicode
 numbers alongside letters and marks at lexical boundaries, and preserve dates

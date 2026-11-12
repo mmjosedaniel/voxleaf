@@ -1,4 +1,4 @@
-"""Closed base-environment derivation and cleanup for v4 and v13 evidence."""
+"""Closed base-environment derivation and cleanup for versioned evidence."""
 
 from __future__ import annotations
 
@@ -7,16 +7,18 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from typing import Final, cast
+from typing import Final, Literal, cast
 
 from jsonschema import Draft202012Validator
 
+from benchmarks import v14_authority
 from benchmarks.batch_official import official_raw_root
 from benchmarks.batch_result import (
     BatchResultError,
     canonical_summary_json,
     derive_v4_summary,
     derive_v13_summary,
+    derive_v14_summary,
 )
 from benchmarks.v4_authority import (
     V4AuthorityError,
@@ -49,6 +51,7 @@ def _payload() -> dict[str, object]:
     if "profileVersion" in value and value["profileVersion"] not in (
         "tts-short-segment-batch-profile-v4",
         PROFILE_VERSION,
+        v14_authority.PROFILE_VERSION,
     ):
         raise BatchResultError("official-version")
     return cast(dict[str, object], value)
@@ -57,7 +60,9 @@ def _payload() -> dict[str, object]:
 def _run(payload: dict[str, object]) -> dict[str, object]:
     profile = payload.get("profileVersion", "tts-short-segment-batch-profile-v4")
     if profile == PROFILE_VERSION:
-        return _run_v13(cast(str, payload["sessionId"]))
+        return _run_successor(cast(str, payload["sessionId"]), "v13")
+    if profile == v14_authority.PROFILE_VERSION:
+        return _run_successor(cast(str, payload["sessionId"]), "v14")
     if profile != "tts-short-segment-batch-profile-v4":
         raise BatchResultError("official-version")
     session = official_raw_root(
@@ -92,8 +97,8 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     return summary
 
 
-def _run_v13(session_id: str) -> dict[str, object]:
-    session = official_raw_root(REPOSITORY_ROOT, session_id, version="v13")
+def _run_successor(session_id: str, version: Literal["v13", "v14"]) -> dict[str, object]:
+    session = official_raw_root(REPOSITORY_ROOT, session_id, version=version)
     try:
         raw = cast(object, json.loads((session / "raw.json").read_text(encoding="utf-8")))
         loads = cast(object, json.loads((session / "loads.json").read_text(encoding="utf-8")))
@@ -102,20 +107,28 @@ def _run_v13(session_id: str) -> dict[str, object]:
     finally:
         if session.exists():
             shutil.rmtree(session)
-    return derive_v13_summary(REPOSITORY_ROOT, raw, loads, raw_session_removed=True)
+    derive = derive_v14_summary if version == "v14" else derive_v13_summary
+    return derive(REPOSITORY_ROOT, raw, loads, raw_session_removed=True)
 
 
 def main() -> int:
-    admission = sys.argv == [sys.argv[0], "admit-v13-cpu"]
-    if not admission and sys.argv != [sys.argv[0], "derive"]:
+    args = sys.argv[1:]
+    if len(args) != 1 or args[0] not in ("derive", "admit-v13-cpu", "admit-v14-cpu"):
         print('{"status":"fail","failureCode":"invalid-request"}')
         return 2
     try:
-        result = load_v13_cpu_admission(REPOSITORY_ROOT).as_raw() if admission else _run(_payload())
+        if args[0] == "admit-v14-cpu":
+            result = v14_authority.load_v14_cpu_admission(REPOSITORY_ROOT).as_raw()
+        elif args[0] == "admit-v13-cpu":
+            result = load_v13_cpu_admission(REPOSITORY_ROOT).as_raw()
+        else:
+            result = _run(_payload())
         print(canonical_summary_json(result), end="")
         return 0
     except Exception as error:
-        if isinstance(error, (BatchResultError, V13AuthorityError)):
+        if isinstance(
+            error, (BatchResultError, V13AuthorityError, v14_authority.V14AuthorityError)
+        ):
             code = error.code
         elif isinstance(error, V4AuthorityError):
             code = str(error).rsplit(":", maxsplit=1)[-1]

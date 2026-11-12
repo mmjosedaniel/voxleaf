@@ -40,6 +40,38 @@ import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
 
+it.each([
+  [
+    "same prose",
+    [text("8 "), { kind: "emphasis", children: [text("–")] }, text(" 20 °C")],
+    "8 – 20 °C",
+  ],
+  [
+    "foreign span",
+    [text("8 –", "fr"), text(" 20 °C", "en")],
+    "8 – twenty degrees Celsius",
+  ],
+  [
+    "code span",
+    [code("8 –"), text(" 20 °C", "en")],
+    "8 – twenty degrees Celsius",
+  ],
+] as const)(
+  "five-pass 1.4 respects the Celsius context across %s",
+  (_name, children, expected) => {
+    const leaf = leafFor(paragraph(children));
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "en",
+    );
+    expect(normalized.text).toBe(expected);
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+  },
+);
+
 it.each(["1", "+", "-"])(
   "RCF-08 enforces prose numeric admission after code %s in both authorities",
   (prefix) => {
@@ -345,6 +377,18 @@ describe("narration normalization", () => {
     ["DCR-09", "en", "20 °C--5 °C", "20 °C--5 °C"],
     ["DCR-09", "es", "25,5 °C–20 °C", "25,5 °C–20 °C"],
     ["DCR-09", "en", "−5 °C – 20 °C", "−5 °C – 20 °C"],
+    ["five-pass 1.4", "es", "18–20 °C", "18–20 °C"],
+    ["five-pass 1.4", "en", "18–20 °C", "18–20 °C"],
+    ["five-pass 1.4", "es", "18 - 20 °C", "18 - 20 °C"],
+    ["five-pass 1.4", "en", "18 - 20 °C", "18 - 20 °C"],
+    ["five-pass 1.4", "en", "8 – 20 °C", "8 – 20 °C"],
+    ["five-pass 1.4", "es", "21 - 20 °C", "21 - 20 °C"],
+    ["five-pass 1.4", "en", "𝟙–20 °C", "𝟙–20 °C"],
+    ["five-pass 1.4", "en", "Wind – 20 °C", "Wind – twenty degrees Celsius"],
+    ["five-pass 1.4", "en", "R8 – 20 °C", "R8 – twenty degrees Celsius"],
+    ["five-pass 1.4", "en", "8 – windy", "eight – windy"],
+    ["five-pass 1.4", "en", "It was -20 °C.", "It was -20 °C."],
+    ["five-pass 1.4", "es", "Bajó a −20 °C.", "Bajó a −20 °C."],
     ["BNC-04", "en", "20 °C/8", "20 °C/8"],
     ["BNC-04", "en", "20 °C+１", "20 °C+１"],
     ["BNC-04", "es", "(20 °C),", "(veinte grados Celsius),"],
@@ -734,6 +778,45 @@ describe("narration normalization", () => {
           language,
         );
         expect(result.text).toBe(expected);
+        assertSourceMapping(
+          leaf,
+          result as unknown as NarrationNormalizedStream,
+        );
+      },
+    );
+
+    it.each([
+      ["en-12", "en", "8", "8"],
+      ["en-US-US", "en", "8", "8"],
+      ["en-ab12", "en", "8", "8"],
+      ["en-US-Latn", "en", "8", "8"],
+      ["en-Latn-Latn", "en", "8", "8"],
+      ["en-abcde-ABCDE", "en", "8", "8"],
+      ["en-abc-def-ghi-jkl", "en", "8", "8"],
+      ["en-GB-oed-x-a", "en", "8", "8"],
+      ["es-419-MX", "es", "21", "21"],
+      ["en-Latn-US-1901-1901", "en", "8", "8"],
+      ["en-A-ca-a-nu", "en", "8", "8"],
+      ["es-419", "es", "21", "veintiuno"],
+      ["EN-gb-OED", "en", "8", "eight"],
+      ["en-1234", "en", "8", "eight"],
+      ["en-Latn-US-1901-u-ca-x-a", "en", "8", "eight"],
+      [
+        "en-abc-def-ghi-Latn-US-abcde-1901-A-AbC-7-12-x-A-A-9",
+        "en",
+        "8",
+        "eight",
+      ],
+    ] as const)(
+      "five-pass 2.5 checks structural language tag %s",
+      (tag, language, source, expected) => {
+        const leaf = leafFor(paragraph([text(source, tag)]));
+        const result = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          language,
+        );
+        expect(result.text).toBe(expected);
+        expect(result.units[0]?.textContext.language).toBe(tag);
         assertSourceMapping(
           leaf,
           result as unknown as NarrationNormalizedStream,

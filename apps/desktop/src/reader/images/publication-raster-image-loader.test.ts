@@ -70,6 +70,7 @@ class FakeSourcePreparer implements RasterImageSourcePreparer {
 
 function createPublication(
   readResource: OpenedPublication["readResource"],
+  additionalResources: readonly RasterImageResourceId[] = [],
 ): OpenedPublication {
   return {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
@@ -88,6 +89,13 @@ function createPublication(
         kind: "raster-image",
         mediaType: "image/webp",
       }),
+      ...additionalResources.map((id) =>
+        Object.freeze({
+          id,
+          kind: "raster-image" as const,
+          mediaType: "image/png" as const,
+        }),
+      ),
     ]),
     closed: false,
     readResource,
@@ -120,7 +128,9 @@ describe("publication raster image loader", () => {
         },
       },
     );
-    const read = vi.fn(async () => syntheticStaticPngBytes());
+    const read = vi.fn<OpenedPublication["readResource"]>(async () =>
+      syntheticStaticPngBytes(),
+    );
     const loader = new PublicationRasterImageLoader(
       createPublication(read),
       manager,
@@ -132,6 +142,129 @@ describe("publication raster image loader", () => {
     };
     return { loader, manager, created, revoked, read, watch };
   }
+
+  function heldDecodeHarness(nearCount: number) {
+    const nearIds = Array.from(
+      { length: nearCount },
+      (_, index) =>
+        `resource:prefetch-${String(index)}` as RasterImageResourceId,
+    );
+    const outstanding: number[] = [];
+    const read = vi.fn<OpenedPublication["readResource"]>(async () => {
+      outstanding.push(loader.outstandingLoadCount);
+      return Uint8Array.of(1);
+    });
+    const preparer = new FakeSourcePreparer();
+    const firstDecode = deferred<RasterImageSourceResult>();
+    const firstSource = createSource(0);
+    preparer.prepare
+      .mockReturnValueOnce(firstDecode.promise)
+      .mockImplementation(async () => ({
+        status: "ready",
+        source: createSource(preparer.prepare.mock.calls.length),
+      }));
+    const loader = new PublicationRasterImageLoader(
+      createPublication(read, nearIds),
+      preparer,
+    );
+    const watch = (
+      id: RasterImageResourceId,
+      visibility: "near" | "visible",
+    ) => {
+      const occurrence = loader.watch(id, vi.fn());
+      occurrence.setVisibility(visibility);
+      return occurrence;
+    };
+    const release = () =>
+      firstDecode.resolve({ status: "ready", source: firstSource });
+    const readOrder = () => read.mock.calls.map(([id]) => id);
+    return {
+      loader,
+      preparer,
+      read,
+      watch,
+      release,
+      readOrder,
+      outstanding,
+      nearIds,
+    };
+  }
+
+  it.each([1, 7])(
+    "five-pass 1.3 dispatches visible demand before %i queued prefetches",
+    async (nearCount) => {
+      const {
+        loader,
+        preparer,
+        read,
+        watch,
+        release,
+        readOrder,
+        outstanding,
+        nearIds,
+      } = heldDecodeHarness(nearCount);
+      try {
+        watch(FIRST_RESOURCE_ID, "near");
+        await vi.waitFor(() =>
+          expect(preparer.prepare).toHaveBeenCalledTimes(1),
+        );
+        for (const id of nearIds) watch(id, "near");
+        await vi.waitFor(() =>
+          expect(loader.outstandingLoadCount).toBe(nearCount + 1),
+        );
+        watch(SECOND_RESOURCE_ID, "visible");
+        await Promise.resolve();
+        expect(loader.outstandingLoadCount).toBe(Math.min(8, nearCount + 2));
+        expect(readOrder()).toEqual([FIRST_RESOURCE_ID]);
+        expect(read.mock.calls[0]![1]?.signal?.aborted).toBe(false);
+
+        release();
+        await vi.waitFor(() =>
+          expect(read.mock.calls.length).toBeGreaterThan(1),
+        );
+        expect(read.mock.calls[1]![0]).toBe(SECOND_RESOURCE_ID);
+        await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(0));
+        expect(readOrder()).toEqual([
+          FIRST_RESOURCE_ID,
+          SECOND_RESOURCE_ID,
+          ...nearIds,
+        ]);
+        expect(Math.max(...outstanding)).toBeLessThanOrEqual(8);
+      } finally {
+        release();
+        await loader.close();
+      }
+    },
+  );
+
+  it("five-pass 1.3 observes current visibility and keeps FIFO within each priority", async () => {
+    const { loader, preparer, watch, release, readOrder, nearIds } =
+      heldDecodeHarness(4);
+    try {
+      watch(FIRST_RESOURCE_ID, "near");
+      await vi.waitFor(() => expect(preparer.prepare).toHaveBeenCalledTimes(1));
+      const near = nearIds.map((id) => watch(id, "near"));
+      await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(5));
+      const oldVisible = watch(SECOND_RESOURCE_ID, "visible");
+      await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(6));
+      oldVisible.setVisibility("near");
+      near[1]!.setVisibility("visible");
+      near[3]!.setVisibility("visible");
+      release();
+      await vi.waitFor(() => expect(loader.outstandingLoadCount).toBe(0));
+      expect(readOrder()).toEqual([
+        FIRST_RESOURCE_ID,
+        nearIds[1],
+        nearIds[3],
+        nearIds[0],
+        nearIds[2],
+        SECOND_RESOURCE_ID,
+      ]);
+    } finally {
+      release();
+      await loader.close();
+    }
+  });
 
   it.each([
     { maximumLiveSources: 1 },
@@ -220,24 +353,30 @@ describe("publication raster image loader", () => {
   });
 
   it("RPI-02 resumes after queue drain without a live-source release", async () => {
-    const { loader, watch, read } = boundedHarness();
+    const { loader, watch, read, revoked } = boundedHarness();
     const firstRead = deferred<Uint8Array>();
     read.mockReturnValueOnce(firstRead.promise);
-    for (let index = 1; index < 8; index += 1)
-      read.mockResolvedValueOnce(Uint8Array.of(0));
+    read.mockImplementation(async (resourceId) =>
+      resourceId === SECOND_RESOURCE_ID
+        ? Uint8Array.of(0)
+        : syntheticStaticPngBytes(),
+    );
     const admitted = Array.from({ length: 8 }, () =>
-      loader.load(FIRST_RESOURCE_ID),
+      loader.load(SECOND_RESOURCE_ID),
     );
     const image = watch();
     image.occurrence.setVisibility("visible");
     await Promise.resolve();
     expect(loader.outstandingLoadCount).toBe(8);
     firstRead.resolve(Uint8Array.of(0));
-    await Promise.all(admitted);
+    expect(await Promise.all(admitted)).toEqual(
+      Array.from({ length: 8 }, () => ({ status: "unavailable" })),
+    );
     await vi.waitFor(() =>
       expect(image.changed.mock.lastCall?.[0].status).toBe("ready"),
     );
     expect(read).toHaveBeenCalledTimes(9);
+    expect(revoked).toEqual([]);
     await loader.close();
   });
 

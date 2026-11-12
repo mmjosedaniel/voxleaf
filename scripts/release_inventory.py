@@ -9,7 +9,7 @@ import sys
 import tomllib
 from pathlib import Path
 from typing import Any, cast
-
+from urllib.parse import unquote, urlsplit
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 RELEASE_ROOT = REPOSITORY_ROOT / "services" / "tts" / "release"
@@ -20,6 +20,17 @@ CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox-v7" / "requirements.lo
 CARGO_LOCK = REPOSITORY_ROOT / "apps" / "desktop" / "src-tauri" / "Cargo.lock"
 PNPM_LOCK = REPOSITORY_ROOT / "pnpm-lock.yaml"
 AUDIT_POLICY = RELEASE_ROOT / "audit-policy.json"
+
+_PYTHON_312_TAGS = ("py312", "py3", *(f"py3{minor}" for minor in range(11, -1, -1)))
+_CORE_WHEEL_TAGS = (
+    ("cp312", "cp312", "win_amd64"),
+    ("cp312", "abi3", "win_amd64"),
+    ("cp312", "none", "win_amd64"),
+    *((f"cp3{minor}", "abi3", "win_amd64") for minor in range(11, 1, -1)),
+    *((tag, "none", "win_amd64") for tag in _PYTHON_312_TAGS),
+    ("cp312", "none", "any"),
+    *((tag, "none", "any") for tag in _PYTHON_312_TAGS),
+)
 
 CHATTERBOX_URL_VERSIONS = {
     "chatterbox-tts": "0.1.7",
@@ -258,6 +269,45 @@ def _component(
     }
 
 
+def _core_wheel_rank(url: str) -> int | None:
+    filename = unquote(urlsplit(url).path.rsplit("/", 1)[-1])
+    if not filename.endswith(".whl"):
+        return None
+    parts = filename.removesuffix(".whl").rsplit("-", 3)
+    if len(parts) != 4:
+        return None
+    python_tags, abi_tags, platform_tags = (
+        set(part.lower().split(".")) for part in parts[1:]
+    )
+    return next(
+        (
+            rank
+            for rank, (python, abi, platform) in enumerate(_CORE_WHEEL_TAGS)
+            if python in python_tags and abi in abi_tags and platform in platform_tags
+        ),
+        None,
+    )
+
+
+def _select_core_wheel(name: str, wheels: list[dict[str, Any]]) -> dict[str, Any]:
+    compatible = [
+        (rank, wheel)
+        for wheel in wheels
+        if (rank := _core_wheel_rank(cast(str, wheel["url"]))) is not None
+    ]
+    if not compatible:
+        raise ValueError(f"release-component-inventory:no-compatible-wheel:{name}")
+    best_rank = min(rank for rank, _ in compatible)
+    best = {
+        (wheel["url"], wheel["hash"], wheel.get("size")): wheel
+        for rank, wheel in compatible
+        if rank == best_rank
+    }
+    if len(best) != 1:
+        raise ValueError(f"release-component-inventory:ambiguous-wheel:{name}")
+    return next(iter(best.values()))
+
+
 def _uv_components(licenses: dict[str, dict[str, str]]) -> list[dict[str, Any]]:
     parsed = tomllib.loads(CORE_LOCK.read_text(encoding="utf-8"))
     components: list[dict[str, Any]] = []
@@ -268,14 +318,17 @@ def _uv_components(licenses: dict[str, dict[str, str]]) -> list[dict[str, Any]]:
         version = cast(str, package["version"])
         license_record = licenses[f"{name}=={version}"]
         source_data = cast(dict[str, Any], package.get("source", {}))
-        if "registry" in source_data:
-            source = f"https://pypi.org/project/{name}/{version}/"
-        else:
-            source = "repository:services/tts"
+        registry = "registry" in source_data
+        source = (
+            f"https://pypi.org/project/{name}/{version}/"
+            if registry
+            else "repository:services/tts"
+        )
         artifact = cast(dict[str, Any] | None, package.get("sdist"))
         if artifact is None:
             wheels = cast(list[dict[str, Any]], package.get("wheels", []))
-            artifact = wheels[0] if wheels else None
+            if registry or wheels:
+                artifact = _select_core_wheel(name, wheels)
         integrity = None
         if artifact is not None:
             integrity = {

@@ -162,6 +162,15 @@ Torch/Torchaudio rather than calling them clean. No known high or critical
 reachable core or optional package vulnerability may be silently accepted. See
 [`release-security-and-distribution.md`](release-security-and-distribution.md).
 
+Core Python inventory retains an explicit source-distribution artifact as source
+provenance. When only wheels are available, selection targets Windows x64 and
+CPython 3.12, including compatible stable-ABI and universal tags, independently
+of lockfile order or the generator's host. Distinct equally preferred artifacts
+or no compatible registry artifact fail explicitly; local project provenance
+remains separate. This bounded fixed-target selector uses the standard library
+and adds no dependency. Installed runtime validation and generated package
+checks remain separate from inventory artifact selection.
+
 On 2026-10-06, the release audit policy was reconciled with RustSec's withdrawal
 of `RUSTSEC-2024-0411` through `RUSTSEC-2024-0420` on 2026-08-14. The GTK3
 bindings resumed maintenance; see the upstream

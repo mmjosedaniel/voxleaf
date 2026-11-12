@@ -311,6 +311,55 @@ it("CCF-C21 yields within long-tag classification and cancels before publication
   }
 });
 
+it("five-pass 2.5 yields during distinct variants and discards cancelled classification", async () => {
+  const variants = Array.from(
+    { length: 1_500 },
+    (_, index) => `a${index.toString(36).padStart(4, "0")}`,
+  );
+  const tag = `en-${variants.join("-")}`;
+  const deferred = createDeferredYieldScheduler();
+  const fixture = createNarrationPublication(
+    [
+      { value: "8", language: tag },
+      { value: "8", language: `${tag}-${variants[0]!.toUpperCase()}` },
+    ],
+    { scheduler: deferred.scheduler },
+  );
+  const controller = new AbortController();
+  const request = {
+    startLocator: fixture.start,
+    maximumSegments: 16,
+    profile: "narration-piper-v2",
+    defaultLanguage: "en",
+  } as const;
+  try {
+    const active = fixture.publication.prepareNarration({
+      ...request,
+      signal: controller.signal,
+    });
+    expect(
+      await Promise.race([
+        deferred.started.then(() => "yielded"),
+        active.then((result) => result.status),
+      ]),
+    ).toBe("yielded");
+    controller.abort();
+    deferred.release();
+    expect(await active).toMatchObject({ status: "cancelled" });
+
+    const retry = await fixture.publication.prepareNarration(request);
+    if (retry.status !== "complete")
+      throw new Error(`synthetic-variant-retry:${retry.status}`);
+    expect(retry.segments.map((segment) => segment.text)).toEqual([
+      "eight",
+      "8",
+    ]);
+  } finally {
+    deferred.release();
+    await fixture.publication.close();
+  }
+});
+
 const RESOURCE_SNAPSHOT_KEYS = Object.freeze([
   "activeRequestCount",
   "retainedNarrationCodePoints",

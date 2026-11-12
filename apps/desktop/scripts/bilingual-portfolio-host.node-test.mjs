@@ -166,15 +166,27 @@ test("filters one exact profile and language without broadening the matrix", () 
   );
 });
 
-test("builds explicit packaged runner arguments", () => {
+test("builds Spanish Piper runner arguments without a profile switch", () => {
+  assert.deepEqual(nativeRunnerArguments(BILINGUAL_PORTFOLIO_ARMS[0]), [
+    "--operation-timeout-ms=1800000",
+    "--adaptive-tts-exact-host",
+    "--tts-profile=piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+    "--tts-language=es",
+    "--exercise-playback-speeds",
+  ]);
+});
+
+test("builds English Piper runner arguments without a profile switch", () => {
   assert.deepEqual(nativeRunnerArguments(BILINGUAL_PORTFOLIO_ARMS[1]), [
     "--operation-timeout-ms=1800000",
     "--adaptive-tts-exact-host",
-    "--exercise-profile-switch",
     "--tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
     "--tts-language=en",
     "--exercise-playback-speeds",
   ]);
+});
+
+test("builds explicit packaged runner arguments", () => {
   assert.deepEqual(nativeRunnerArguments(BILINGUAL_PORTFOLIO_ARMS[2]), [
     "--operation-timeout-ms=1800000",
     "--adaptive-tts-exact-host",
@@ -182,6 +194,19 @@ test("builds explicit packaged runner arguments", () => {
     "--tts-profile=chatterbox-multilingual-v3-cuda-bf16-default-v4",
     "--tts-language=es",
   ]);
+});
+
+test("keeps profile switching for the other portfolio arms and default callers", () => {
+  for (const arm of BILINGUAL_PORTFOLIO_ARMS.slice(2)) {
+    assert.ok(nativeRunnerArguments(arm).includes("--exercise-profile-switch"));
+  }
+  const [piper] = BILINGUAL_PORTFOLIO_ARMS;
+  assert.ok(
+    nativeRunnerArguments({
+      profileId: piper.profileId,
+      language: piper.language,
+    }).includes("--exercise-profile-switch"),
+  );
 });
 
 test("SAF-13 portfolio arms carry a finite cooperative runner deadline", () => {

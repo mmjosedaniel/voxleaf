@@ -924,6 +924,73 @@ describe("App preference connection characterization", () => {
     },
   );
 
+  it("five-pass 2.2 a busy removal without a narrator does not block the next book", async () => {
+    const settings = observeSettings();
+    const installed = {
+      ...new OptionalChatterboxClient().observe(),
+      state: "installed" as const,
+    };
+    vi.spyOn(OptionalChatterboxClient.prototype, "observe").mockReturnValue(
+      installed,
+    );
+    vi.spyOn(
+      OptionalChatterboxClient.prototype,
+      "downloadPending",
+      "get",
+    ).mockReturnValue(true);
+    const removal = deferred<typeof installed>();
+    const entered = deferred<"native-remove">();
+    const remove = vi
+      .spyOn(OptionalChatterboxClient.prototype, "remove")
+      .mockImplementation(() => {
+        entered.resolve("native-remove");
+        return removal.promise;
+      });
+    const replacement = new ControlledNarrationCoordinator();
+    const factory = vi.fn(
+      () => replacement as unknown as ProductNarrationCoordinator,
+    );
+    const shutdown = vi.spyOn(TtsProcessClient.prototype, "shutdown");
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(),
+        }))}
+        readerPositionRepository={createTestReaderPositionRepository()}
+        createNarrationCoordinator={factory}
+      />,
+    );
+    let outcome: Promise<unknown>;
+    await act(async () => {
+      outcome = settings
+        .current()
+        .onRemoveChatterbox()
+        .catch((error: unknown) => error);
+      const first = await Promise.race([outcome, entered.promise]);
+      expect.soft(first).toEqual(new Error("Chatterbox is busy."));
+    });
+    try {
+      expect.soft(remove).not.toHaveBeenCalled();
+      expect(shutdown).not.toHaveBeenCalled();
+      selectEpub("B.epub");
+      await screen.findByRole("heading", { name: "Synthetic Reader Book" });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect.soft(factory).toHaveBeenCalledOnce();
+      expect
+        .soft(screen.queryByRole("button", { name: /^Play$/ }))
+        .toBeEnabled();
+      expect(replacement.configurationEvents).toEqual([]);
+    } finally {
+      await act(async () => {
+        removal.resolve(installed);
+        await outcome;
+      });
+    }
+  });
+
   it("CAF-R3.1 refreshes selected Chatterbox once after same-book reinstall without starting playback", async () => {
     const base = new OptionalChatterboxClient().observe();
     let snapshot = { ...base, state: "absent" as typeof base.state };
@@ -1741,6 +1808,7 @@ describe("App preference connection characterization", () => {
       const settings = observeSettings();
       const hardware = {
         ensureChecked: vi.fn(async () => undefined),
+        check: vi.fn(async () => undefined),
         close: vi.fn(),
         resetLanguage: vi.fn(async () => true),
       } as unknown as HardwareProfileCompatibilityCoordinator;
@@ -1768,6 +1836,9 @@ describe("App preference connection characterization", () => {
         canPersist: true,
       });
       expect(hardware.resetLanguage).toHaveBeenCalledOnce();
+      expect(hardware.check).toHaveBeenCalledExactlyOnceWith(
+        "explicit-recheck",
+      );
       expect(f.narration.reset).toHaveBeenCalledOnce();
       if (order === "reset-first") await hydrate();
       expect(settings.current().fallbackNarrationStart.selection).toEqual(

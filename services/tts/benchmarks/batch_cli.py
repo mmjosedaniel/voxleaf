@@ -1,4 +1,4 @@
-"""Explicit command for a v4 mechanics pilot or official v13 execution."""
+"""Explicit command for a v4 mechanics pilot or official v14 execution."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from benchmarks.batch_official import (
     OfficialBatchError,
     ThreadedOfficialMemoryMonitor,
     ensure_raw_root_is_ignored,
-    execute_official_v13,
+    execute_official_v14,
     official_raw_root,
 )
 from benchmarks.contracts import AdapterOperationError
@@ -50,11 +50,11 @@ from benchmarks.v4_authority import (
     FULL_GPU_PROFILE_ID,
     load_frozen_v4_mechanics_authority,
 )
-from benchmarks.v13_authority import (
+from benchmarks.v14_authority import (
     PROFILE_VERSION,
-    V13AuthorityError,
-    load_v13_cpu_admission_from_base,
-    load_v13_mechanics_authority,
+    V14AuthorityError,
+    load_v14_cpu_admission_from_base,
+    load_v14_mechanics_authority,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -211,11 +211,11 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     if purpose == "official":
         if payload.get("profileVersion") != PROFILE_VERSION:
             raise BatchCommandError("official-version")
-        authority = load_v13_mechanics_authority(REPOSITORY_ROOT)
+        authority = load_v14_mechanics_authority(REPOSITORY_ROOT)
     else:
         authority = load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     cpu_admission = (
-        load_v13_cpu_admission_from_base(REPOSITORY_ROOT)
+        load_v14_cpu_admission_from_base(REPOSITORY_ROOT)
         if placement_profile_id == CPU_PROFILE_ID
         else None
     )
@@ -300,7 +300,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
             session = official_raw_root(
                 REPOSITORY_ROOT,
                 cast(str, payload["sessionId"]),
-                version="v13",
+                version="v14",
             )
             if session.exists():
                 raise BatchCommandError("session")
@@ -313,7 +313,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
             )
             session_created = False
             try:
-                execution = execute_official_v13(
+                execution = execute_official_v14(
                     REPOSITORY_ROOT,
                     execution_commit_sha=receipt.commit_sha,
                     host=_host_raw(host),
@@ -349,7 +349,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                     shutil.rmtree(session)
                 raise
             return {
-                "schemaVersion": "tts-v13-batch-official-receipt-v1",
+                "schemaVersion": "tts-v14-batch-official-receipt-v1",
                 "resultPurpose": "official",
                 "sessionId": payload["sessionId"],
                 "status": "complete",
@@ -391,7 +391,7 @@ def main() -> int:
         KeyboardInterrupt,
     ) as error:
         result = {
-            "schemaVersion": "tts-v13-batch-official-receipt-v1",
+            "schemaVersion": "tts-v14-batch-official-receipt-v1",
             "resultPurpose": "official",
             "status": "fail",
             "eligibleForDerivation": False,
@@ -404,7 +404,7 @@ def main() -> int:
         return 2
     except Exception as error:
         code = (
-            error.code if isinstance(error, (BatchCommandError, V13AuthorityError)) else "internal"
+            error.code if isinstance(error, (BatchCommandError, V14AuthorityError)) else "internal"
         )
         print(json.dumps({"status": "fail", "failureCode": code}, separators=(",", ":")))
         return 2

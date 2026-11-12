@@ -1,3 +1,4 @@
+import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,6 +8,70 @@ import {
 } from "../tts/optional-chatterbox-client";
 import { createNarrationSettingsActions } from "./narration-settings-actions";
 import { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
+import {
+  EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
+} from "../tts/hardware-profile-registry";
+
+function supportedDevelopmentHost() {
+  const known = (value: number) => ({ status: "known", value });
+  const unknown = { status: "unknown" };
+  const cpu = {
+    availability: "available",
+    deviceClass: "cpu",
+    dedicatedMemoryMiB: known(0),
+    availableDedicatedMemoryMiB: known(0),
+    precisions: {
+      float32: "available",
+      float16: "unknown",
+      bfloat16: "unknown",
+      int8: "unknown",
+    },
+  };
+  const unavailable = {
+    availability: "unavailable",
+    deviceClass: "unknown",
+    dedicatedMemoryMiB: unknown,
+    availableDedicatedMemoryMiB: unknown,
+    precisions: {
+      float32: "unavailable",
+      float16: "unavailable",
+      bfloat16: "unavailable",
+      int8: "unavailable",
+    },
+  };
+  return decodeHostProfileCompatibilityReportV1({
+    schemaVersion: 1,
+    probeStatus: "complete",
+    platform: { operatingSystem: "windows", architecture: "x86_64" },
+    processor: { logicalProcessorCount: known(12) },
+    memory: {
+      totalPhysicalMiB: known(24_576),
+      availablePhysicalMiB: known(16_384),
+    },
+    storage: { applicationVolumeAvailableMiB: known(40_960) },
+    cudaComputeCapability: { status: "known", major: 12, minor: 0 },
+    providers: {
+      cpu,
+      cuda: {
+        availability: "available",
+        deviceClass: "discrete-gpu",
+        dedicatedMemoryMiB: known(12_288),
+        availableDedicatedMemoryMiB: known(9_216),
+        precisions: {
+          float32: "available",
+          float16: "available",
+          bfloat16: "available",
+          int8: "unknown",
+        },
+      },
+      directml: unavailable,
+      rocm: unavailable,
+      metal: unavailable,
+    },
+  });
+}
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -66,7 +131,12 @@ function fixture(development = false) {
     check: steps.hardwareCheck,
     resetLanguage: steps.languageReset,
   };
-  const optional = { select: steps.optional, remove: steps.remove };
+  const optional = {
+    select: steps.optional,
+    remove: steps.remove,
+    observe: vi.fn(() => snapshot),
+    downloadPending: false,
+  };
   const reset = {
     hardware,
     coordinator,
@@ -99,6 +169,116 @@ function fixture(development = false) {
 }
 
 describe("narration settings actions", () => {
+  it.each(["ordinary", "held", "newer-selection"] as const)(
+    "five-pass 3.3 Reset settles the saved English profile (%s)",
+    async (scenario) => {
+      const holdProbe = scenario !== "ordinary";
+      const newerSelection = scenario === "newer-selection";
+      const f = fixture(true);
+      const report = supportedDevelopmentHost();
+      const detect = vi.fn(async () => report);
+      let profileId: string = EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID;
+      let language: "en" | "es" = "es";
+      const writeProfile = vi.fn(async (next: string) => {
+        profileId = next;
+        return { status: "saved" as const };
+      });
+      const hardware = new HardwareProfileCompatibilityCoordinator({
+        detector: { detect },
+        developmentGate: { exactDemoAvailability: async () => "available" },
+        preferenceRepository: {
+          read: async () => ({ status: "ready", profileId }),
+          write: writeProfile,
+        },
+        languagePreferenceRepository: {
+          read: async () => ({ status: "ready", language }),
+          write: async (next) => {
+            language = next;
+            return { status: "saved" };
+          },
+          reset: async () => {
+            language = "en";
+            return { status: "saved" };
+          },
+        },
+      });
+      const release = vi.fn();
+      const refresh = vi.fn(async () => hardware.observe());
+      const coordinator = {
+        ...f.coordinator,
+        beginConfigurationChange: () => release,
+        refreshSelectedProfile: async () => {
+          await refresh();
+        },
+      };
+      const blocked = deferred<typeof report>();
+      const entered = deferred<"probe">();
+      try {
+        await hardware.ensureChecked();
+        expect(hardware.observe()).toMatchObject({
+          language: "es",
+          activeProfileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+        });
+        if (holdProbe) {
+          detect.mockImplementationOnce(() => {
+            entered.resolve("probe");
+            return blocked.promise;
+          });
+        }
+        const reset = f.actions.reset({ ...f.reset, hardware, coordinator });
+        if (holdProbe) {
+          try {
+            expect
+              .soft(
+                await Promise.race([
+                  entered.promise,
+                  reset.then(() => "settled"),
+                ]),
+              )
+              .toBe("probe");
+            expect.soft(refresh).not.toHaveBeenCalled();
+            expect.soft(release).not.toHaveBeenCalled();
+            if (newerSelection) {
+              await expect(
+                hardware.selectProfile(PIPER_ENGLISH_CPU_PROFILE_ID),
+              ).resolves.toBe(true);
+            }
+          } finally {
+            blocked.resolve(report);
+          }
+        }
+        await expect(reset).resolves.toBe(true);
+        const selected = newerSelection
+          ? PIPER_ENGLISH_CPU_PROFILE_ID
+          : EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID;
+        expect.soft(await refresh.mock.results[0]?.value).toMatchObject({
+          language: "en",
+          activeProfileId: selected,
+          selectionSource: "preference",
+        });
+        expect(refresh).toHaveBeenCalledOnce();
+        expect(release).toHaveBeenCalledOnce();
+        expect(writeProfile).toHaveBeenCalledTimes(newerSelection ? 1 : 0);
+        expect(profileId).toBe(selected);
+        await expect(
+          hardware.isProfileStartAllowed(
+            EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
+            "before-profile-start",
+            "en",
+          ),
+        ).resolves.toBe(!newerSelection);
+        await expect(
+          hardware.isProfileStartAllowed(
+            PIPER_ENGLISH_CPU_PROFILE_ID,
+            "before-profile-start",
+            "en",
+          ),
+        ).resolves.toBe(newerSelection);
+      } finally {
+        hardware.close();
+      }
+    },
+  );
   it.each(["future", "unavailable", "admission", "changed-admission"] as const)(
     "NSL-01 rejects known %s restriction before teardown",
     async (restriction) => {
@@ -405,6 +585,37 @@ describe("narration settings actions", () => {
     },
   );
 
+  it.each([
+    ["installed", true],
+    ["confirming", false],
+    ["downloading", false],
+    ["verifying", false],
+    ["removing", false],
+  ] as const)(
+    "five-pass 2.2 rejects busy removal before configuration or Stop (%s, pending=%s)",
+    async (state, downloadPending) => {
+      const f = fixture();
+      const beginConfigurationChange = vi.fn(() => vi.fn());
+      f.optional.downloadPending = downloadPending;
+      f.optional.observe.mockReturnValue({
+        ...new OptionalChatterboxClient().observe(),
+        state,
+      });
+      await expect
+        .soft(
+          f.actions.removeChatterbox(
+            { ...f.coordinator, beginConfigurationChange },
+            f.optional,
+          ),
+        )
+        .rejects.toThrow("Chatterbox is busy.");
+      expect.soft(beginConfigurationChange).not.toHaveBeenCalled();
+      expect.soft(f.steps.stop).not.toHaveBeenCalled();
+      expect.soft(f.steps.remove).not.toHaveBeenCalled();
+      expect(f.steps.refresh).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([true, false])(
     "reset awaits playback before presentation, language=%s",
     async (language) => {
@@ -421,25 +632,53 @@ describe("narration settings actions", () => {
         "stop",
         "start",
         "presentation",
-        ...(language ? ["refresh"] : []),
+        ...(language ? ["hardware-check", "refresh"] : []),
       ]);
+      expect(f.steps.hardwareCheck).toHaveBeenCalledTimes(language ? 1 : 0);
       expect(f.steps.start.mock.contexts).toEqual([f.coordinator]);
       expect(f.steps.playback.mock.contexts).toEqual([f.coordinator]);
     },
   );
 
-  it.each(["languageReset", "start", "playback", "refresh"] as const)(
+  it.each([
+    "languageReset",
+    "start",
+    "playback",
+    "hardwareCheck",
+    "refresh",
+  ] as const)(
     "reset propagates %s rejection at its original boundary",
     async (stage) => {
       const f = fixture();
       const error = new Error(stage);
       f.steps[stage].mockRejectedValue(error);
-      await expect(f.run.reset()).rejects.toBe(error);
+      const release = vi.fn();
+      await expect(
+        f.actions.reset({
+          ...f.reset,
+          coordinator: {
+            ...f.coordinator,
+            beginConfigurationChange: () => release,
+          },
+        }),
+      ).rejects.toBe(error);
       const expected = ["stop"];
       if (stage !== "languageReset") expected.push("language-reset");
-      if (stage === "playback" || stage === "refresh") expected.push("start");
-      if (stage === "refresh") expected.push("playback", "presentation");
+      if (
+        stage === "playback" ||
+        stage === "hardwareCheck" ||
+        stage === "refresh"
+      )
+        expected.push("start");
+      if (stage === "hardwareCheck" || stage === "refresh")
+        expected.push("playback", "presentation");
+      if (stage === "refresh") expected.push("hardware-check");
       expect(f.events).toEqual(expected);
+      expect(release).toHaveBeenCalledOnce();
+      if (stage === "hardwareCheck")
+        expect(f.steps.hardwareCheck).toHaveBeenCalledExactlyOnceWith(
+          "explicit-recheck",
+        );
     },
   );
 
@@ -452,6 +691,7 @@ describe("narration settings actions", () => {
       "language-reset",
       "playback",
       ...(start ? ["presentation"] : []),
+      "hardware-check",
       "refresh",
     ]);
     expect(f.steps.repositoryStart).not.toHaveBeenCalled();
@@ -485,6 +725,7 @@ describe("narration settings actions", () => {
       expect(f.events).toEqual([
         "language-reset",
         ...(status === "saved" ? ["presentation"] : []),
+        "hardware-check",
       ]);
     },
   );

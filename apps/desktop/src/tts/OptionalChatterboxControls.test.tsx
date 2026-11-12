@@ -156,7 +156,76 @@ describe("optional Chatterbox controls", () => {
     ).toBeDisabled();
   });
 
-  it("RAF-02 remount during native preflight resumes bounded progress observation", async () => {
+  it("five-pass ADD-01 pending Cancel survives Settings remount and blocks duplicate actions", async () => {
+    const transfer = deferred();
+    const cancellation = deferred();
+    let cleanupFailed = false;
+    const invoke = vi.fn((command: string) =>
+      command === "download_optional_chatterbox"
+        ? transfer.promise
+        : command === "cancel_optional_chatterbox"
+          ? cancellation.promise
+          : Promise.resolve(
+              cleanupFailed
+                ? {
+                    ...snapshot("failed"),
+                    failure: "tts-optional-profile-cleanup-failed",
+                  }
+                : snapshot("confirming"),
+            ),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    const props = {
+      client,
+      onActivate: vi.fn(async () => true),
+      onRecheck: async () => true,
+      onRemove: vi.fn(async () => undefined),
+    };
+    const first = render(<OptionalChatterboxControls {...props} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    first.unmount();
+    render(<OptionalChatterboxControls {...props} />);
+    const cancel = await screen.findByRole("button", { name: "Cancel" });
+    expect.soft(cancel).toBeDisabled();
+    expect
+      .soft(screen.getByRole("button", { name: "Download Chatterbox" }))
+      .toBeDisabled();
+    fireEvent.click(cancel);
+    expect
+      .soft(
+        invoke.mock.calls.filter(
+          ([command]) => command === "cancel_optional_chatterbox",
+        ),
+      )
+      .toHaveLength(1);
+    await act(async () => {
+      cancellation.resolve(snapshot("installed"));
+    });
+    try {
+      expect
+        .soft(screen.getByRole("button", { name: "Activate Chatterbox" }))
+        .toBeDisabled();
+      expect
+        .soft(screen.getByRole("button", { name: "Remove Chatterbox" }))
+        .toBeDisabled();
+    } finally {
+      await act(async () => {
+        cleanupFailed = true;
+        transfer.reject("tts-optional-profile-cleanup-failed");
+      });
+    }
+    expect(client.observe()).toMatchObject({
+      state: "failed",
+      failure: "tts-optional-profile-cleanup-failed",
+    });
+    expect(props.onActivate).not.toHaveBeenCalled();
+    expect(props.onRemove).not.toHaveBeenCalled();
+  });
+
+  it("five-pass 2.1 / RAF-02 preserves download through reselection and remount during preflight", async () => {
     vi.useFakeTimers();
     const pending = deferred();
     let state: "confirming" | "downloading" = "confirming";
@@ -182,25 +251,33 @@ describe("optional Chatterbox controls", () => {
       screen.getByRole("button", { name: "Download Chatterbox" }),
     );
     expect(screen.getByRole("button", { name: /^Cancel$/ })).toBeEnabled();
+    await act(async () => {
+      await client.select();
+    });
+    expect.soft(client.downloadPending).toBe(true);
     first.unmount();
     const second = render(element);
     await act(async () => {
       await client.refresh();
     });
-    expect(
-      screen.getByRole("button", { name: "Download Chatterbox" }),
-    ).toBeDisabled();
+    expect
+      .soft(screen.getByRole("button", { name: "Download Chatterbox" }))
+      .toBeDisabled();
     state = "downloading";
     await act(async () => {
       await vi.advanceTimersByTimeAsync(250);
     });
     try {
-      expect(client.observe().state).toBe("downloading");
-      expect(screen.getByText(/Downloading Chatterbox:/)).toBeInTheDocument();
+      expect.soft(client.observe().state).toBe("downloading");
+      expect
+        .soft(screen.queryByText(/Downloading Chatterbox:/))
+        .toBeInTheDocument();
     } finally {
       await act(async () => {
         pending.resolve(snapshot("installed"));
       });
+      expect.soft(client.observe().state).toBe("installed");
+      expect(client.downloadPending).toBe(false);
       second.unmount();
       expect(vi.getTimerCount()).toBe(0);
     }

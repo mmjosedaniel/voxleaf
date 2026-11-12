@@ -26,6 +26,7 @@ from benchmarks.adapters.manifest import (
 from benchmarks.adapters.qwen3 import Qwen3TtsAdapter
 from benchmarks.adapters.supertonic3 import Supertonic3Adapter
 from benchmarks.batch_contracts import (
+    BatchBenchmarkError,
     BatchGenerationRequest,
     BatchUnitRequest,
     BatchWorkIdentity,
@@ -220,17 +221,21 @@ def test_qwen_adapter_uses_exact_local_profile_and_discards_waveform(
     assert calls["empty_cache"] is True
 
 
+@pytest.mark.parametrize("diagnostic", [False, True])
 def test_qwen_v4_batch_adapter_uses_one_list_call_and_preserves_unit_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    diagnostic: bool,
 ) -> None:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
     profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
     calls: dict[str, object] = {}
+    order: list[str] = []
 
     class Model:
         def generate_custom_voice(self, **kwargs: object) -> tuple[list[list[float]], int]:
+            order.append("engine")
             calls["generate"] = kwargs
             return [[0.0] * 192_000, [0.0] * 240_000], 24_000
 
@@ -270,7 +275,6 @@ def test_qwen_v4_batch_adapter_uses_one_list_call_and_preserves_unit_identity(
             "torchaudio": "2.9.1+cu128",
         }.__getitem__,
     )
-    adapter.load()
     request = BatchGenerationRequest(
         call_index=7,
         phase="measured",
@@ -283,7 +287,17 @@ def test_qwen_v4_batch_adapter_uses_one_list_call_and_preserves_unit_identity(
             BatchUnitRequest("es-v4-dialogue", 1, "Segundo texto."),
         ),
     )
-    outputs = adapter.generate_batch(request)
+    if diagnostic:
+        with pytest.raises(BatchBenchmarkError, match=":generation-failed$"):
+            adapter.generate_batch_with_entry_witness(request, lambda: order.append("entry"))
+        assert order == []
+    adapter.load()
+    if diagnostic:
+        outputs = adapter.generate_batch_with_entry_witness(request, lambda: order.append("entry"))
+        assert order == ["entry", "engine"]
+    else:
+        outputs = adapter.generate_batch(request)
+        assert order == ["engine"]
     assert [output.unit_id for output in outputs] == [
         "es-v4-arrival",
         "es-v4-dialogue",

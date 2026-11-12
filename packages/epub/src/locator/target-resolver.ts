@@ -273,7 +273,7 @@ export function resolvePublicationTarget(
   if (firstBlock === undefined) {
     return unavailable("empty-document");
   }
-  if (target.fragment === undefined) {
+  if (target.fragment === undefined || target.fragment === "") {
     return exact(firstBlock, "document-start");
   }
 

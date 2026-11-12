@@ -597,7 +597,7 @@ describe("public privacy-safe EPUB opening", () => {
   });
 
   it.each(["epub3", "epub2"] as const)(
-    "R8-07 resolves original fallback references and their spine occurrences in %s",
+    "five-pass 4.2 / R8-07 resolves original fallback references and their spine occurrences in %s",
     async (format) => {
       const packageXml = (
         format === "epub3"
@@ -613,7 +613,7 @@ describe("public privacy-safe EPUB opening", () => {
           '<itemref idref="one"/><itemref idref="two"/><itemref idref="chapter"/>',
         );
       const chapterDocument =
-        '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Safe</title></head><body><p id="chapter-one">Safe passage.</p><p><a href="one.xhtml">First</a><a href="two.xhtml#chapter-one">Second</a><a href="two.xhtml#absent">Missing</a><a href="chapter.xhtml#chapter-one">Direct</a><a href="https://example.invalid/one.xhtml">External</a></p></body></html>';
+        '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Safe</title></head><body><p id="chapter-one">Safe passage.</p><p><a href="one.xhtml">First</a><a href="two.xhtml#chapter-one">Second</a><a href="two.xhtml#absent">Missing</a><a href="chapter.xhtml#chapter-one">Direct</a><a href="two.xhtml#">Alias start</a><a href="chapter.xhtml#">Direct start</a><a href="https://example.invalid/one.xhtml">External</a></p></body></html>';
       const options = {
         packageDocument: packageXml,
         chapterDocument,
@@ -631,7 +631,7 @@ describe("public privacy-safe EPUB opening", () => {
                 .replace("chapter.xhtml#chapter-one", "two.xhtml")
                 .replace(
                   "</ol>",
-                  '<li><a href="text/chapter.xhtml#chapter-one">Direct</a></li></ol>',
+                  '<li><a href="text/chapter.xhtml#chapter-one">Direct</a></li><li><a href="text/two.xhtml#">Alias start</a></li><li><a href="text/chapter.xhtml#">Direct start</a></li></ol>',
                 ),
             })
           : buildMinimalEpub2Fixture({
@@ -640,12 +640,11 @@ describe("public privacy-safe EPUB opening", () => {
                 .replace("chapter.xhtml#chapter-one", "two.xhtml")
                 .replace(
                   "</navMap>",
-                  '<navPoint id="direct" playOrder="2"><navLabel><text>Direct</text></navLabel><content src="text/chapter.xhtml#chapter-one"/></navPoint></navMap>',
+                  '<navPoint id="direct" playOrder="2"><navLabel><text>Direct</text></navLabel><content src="text/chapter.xhtml#chapter-one"/></navPoint><navPoint id="alias-start" playOrder="3"><navLabel><text>Alias start</text></navLabel><content src="text/two.xhtml#"/></navPoint><navPoint id="direct-start" playOrder="4"><navLabel><text>Direct start</text></navLabel><content src="text/chapter.xhtml#"/></navPoint></navMap>',
                 ),
             })),
       );
-      expect(result).toMatchObject({ ok: true });
-      if (!result.ok) return;
+      if (!result.ok) throw new Error(JSON.stringify(result));
       const publication = result.publication;
       try {
         const navigation = publication.navigation[0]!;
@@ -662,6 +661,20 @@ describe("public privacy-safe EPUB opening", () => {
             status: "exact",
             locator: { spineItemIndex: 0 },
           });
+        for (const [index, spineItemIndex] of [
+          [2, 1],
+          [3, 0],
+        ] as const) {
+          const empty = publication.navigation[index]!;
+          if (empty.kind !== "link")
+            throw new Error("missing synthetic navigation start");
+          expect(empty.target.fragment).toBe("");
+          expect.soft(publication.resolveTarget(empty.target)).toMatchObject({
+            status: "exact",
+            reason: "document-start",
+            locator: { spineItemIndex, textOffsetCodePoints: 0 },
+          });
+        }
         for (const document of publication.documents.filter(
           (document) => document.location.kind === "spine",
         )) {
@@ -671,7 +684,7 @@ describe("public privacy-safe EPUB opening", () => {
           const links = paragraph.children.filter(
             (inline) => inline.kind === "internal-link",
           );
-          expect(links).toHaveLength(4);
+          expect(links).toHaveLength(6);
           expect(publication.resolveTarget(links[0]!.target)).toMatchObject({
             status: "exact",
             locator: { spineItemIndex: 0 },
@@ -694,6 +707,22 @@ describe("public privacy-safe EPUB opening", () => {
                   : -1,
             },
           });
+          const currentSpine =
+            document.location.kind === "spine"
+              ? document.location.spineItemIndex
+              : -1;
+          for (const [index, spineItemIndex] of [
+            [4, 1],
+            [5, currentSpine],
+          ] as const) {
+            const target = links[index]!.target;
+            expect(target.fragment).toBe("");
+            expect.soft(publication.resolveTarget(target)).toMatchObject({
+              status: "exact",
+              reason: "document-start",
+              locator: { spineItemIndex, textOffsetCodePoints: 0 },
+            });
+          }
           expect(JSON.stringify(links)).not.toContain("xhtml");
         }
       } finally {
@@ -701,6 +730,28 @@ describe("public privacy-safe EPUB opening", () => {
       }
     },
   );
+
+  it("five-pass 4.2 preserves rejection of a PNG link without an XHTML fallback", async () => {
+    const fixture = await buildMinimalEpubFixture({
+      packageDocument: minimalPackageDocument().replace(
+        "</manifest>",
+        '<item id="image" href="cover.png" media-type="image/png"/></manifest>',
+      ),
+      chapterDocument: minimalChapterDocument().replace(
+        "</body>",
+        '<p><a href="../cover.png#">Image start</a></p></body>',
+      ),
+      additionalEntries: [
+        { name: "EPUB/cover.png", content: syntheticStaticPngBytes() },
+      ],
+    });
+
+    expect(await openEpubPublication(fixture)).toMatchObject({
+      ok: false,
+      detail: "broken-reference",
+      error: { code: "invalid-input" },
+    });
+  });
 
   it("RAC-06 / CLB-04 exposes no primary start when only auxiliary content is addressable", async () => {
     const result = await openEpubPublication(

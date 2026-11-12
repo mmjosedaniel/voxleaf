@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, wait
 from pathlib import Path
-from threading import Event, local
+from threading import Event, Thread, get_ident, local
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
+from benchmarks import dual_worker_official as official
 from benchmarks.batch_contracts import BatchAudioUnit, BatchGenerationRequest
 from benchmarks.batch_fake import DeterministicBatchCandidateFactory
 from benchmarks.contracts import AdapterOperationError
@@ -25,6 +27,189 @@ from benchmarks.dual_worker_matrix import build_v5_requests
 from benchmarks.dual_worker_official import serialize_dispatches
 from benchmarks.dual_worker_runtime import ThreadedDualWorkerRuntime
 from benchmarks.isolation import IsolatedBenchmarkAdapter
+from benchmarks.memory import WindowsGpuProcessMemorySampler
+
+
+def _monitor_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[official.DualWorkerMemoryMonitor, list[tuple[str, int]]]:
+    closes: list[tuple[str, int]] = []
+    process = Mock()
+    process.process_working_set_bytes.return_value = 1
+
+    def probe(label: str) -> Mock:
+        sampler = Mock()
+        sampler.sample.return_value = (0, 0)
+        sampler.close.side_effect = lambda: closes.append((label, get_ident()))
+        return sampler
+
+    dedicated = probe("dedicated")
+    shared = probe("shared")
+    monkeypatch.setattr(official, "WindowsProcessResourceSampler", lambda: process)
+    monkeypatch.setattr(
+        official, "WindowsGpuProcessMemorySampler", lambda *args: shared if args else dedicated
+    )
+    monkeypatch.setattr(
+        official, "windows_system_memory", lambda: (8 * official.GIB, 0, 16 * official.GIB)
+    )
+    runtime = Mock(spec=ThreadedDualWorkerRuntime)
+    runtime.worker_pid.return_value = 123
+    runtime.framework_memory_high_water_bytes.return_value = 0
+    return official.DualWorkerMemoryMonitor(runtime, (GPU_WORKER_ROLE,)), closes
+
+
+@pytest.mark.parametrize("blocked", ["periodic", "final"])
+def test_five_pass_1_7_finish_does_not_sample_or_close_under_the_live_owner(
+    blocked: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monitor, closes = _monitor_fixture(monkeypatch)
+    monkeypatch.setattr(official, "RAM_SAMPLE_SECONDS", 0.001 if blocked == "periodic" else 60)
+    monkeypatch.setattr(official, "MONITOR_JOIN_SECONDS", 0.05, raising=False)
+    caller = get_ident()
+    samples: list[int] = []
+    finish_callers: list[int] = []
+    entered, release = Event(), Event()
+    sample = monitor.sample_once
+
+    def sample_once() -> None:
+        samples.append(get_ident())
+        if len(samples) == 2:
+            entered.set()
+            assert release.wait(timeout=5)
+        sample()
+
+    def finish_from_other_thread() -> official.MonitorResult:
+        finish_callers.append(get_ident())
+        return monitor.finish()
+
+    monkeypatch.setattr(monitor, "sample_once", sample_once)
+    monitor.start()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        try:
+            if blocked == "periodic":
+                assert entered.wait(timeout=2)
+            finish = pool.submit(finish_from_other_thread)
+            assert entered.wait(timeout=2)
+            with pytest.raises(DualWorkerBenchmarkError, match="cleanup-failed"):
+                finish.result(timeout=2)
+            assert closes == []
+            assert len(samples) == 2
+            assert samples[0] == caller
+            assert monitor._thread is not None and monitor._thread.is_alive()
+        finally:
+            release.set()
+    monkeypatch.setattr(official, "MONITOR_JOIN_SECONDS", 1.0)
+    result = monitor.finish()
+    assert monitor.finish() == result
+    assert len(result.samples) == (3 if blocked == "periodic" else 2)
+    assert samples[1] not in [caller, *finish_callers]
+    assert samples == [caller, *([samples[1]] * (len(result.samples) - 1))]
+    assert closes == [("dedicated", samples[1]), ("shared", samples[1])]
+
+
+@pytest.mark.parametrize(
+    "failure_at", ["initial-sample", "initial-and-close", "thread-start", "late-thread-start"]
+)
+def test_five_pass_1_7_start_failure_closes_both_caller_owned_probes(
+    failure_at: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monitor, closes = _monitor_fixture(monkeypatch)
+    failure = RuntimeError("synthetic monitor startup failure")
+    close_failure = RuntimeError("synthetic startup cleanup failure")
+    launched: list[Thread] = []
+    if failure_at.startswith("initial"):
+        monkeypatch.setattr(monitor, "sample_once", Mock(side_effect=failure))
+        if failure_at == "initial-and-close":
+            original_close = monitor._dedicated.close
+
+            def close() -> None:
+                original_close()
+                raise close_failure
+
+            monkeypatch.setattr(monitor._dedicated, "close", close)
+    else:
+        original_start = Thread.start
+
+        def start(thread: Thread) -> None:
+            if failure_at == "late-thread-start":
+                original_start(thread)
+                launched.append(thread)
+            raise failure
+
+        monkeypatch.setattr(Thread, "start", start)
+    with pytest.raises(RuntimeError) as caught:
+        monitor.start()
+    assert caught.value is failure
+    for thread in launched:
+        thread.join(timeout=2)
+        assert not thread.is_alive()
+    if failure_at == "initial-and-close":
+        cause = caught.value.__cause__
+        assert isinstance(cause, BaseExceptionGroup)
+        assert cause.exceptions == (close_failure,)
+    assert closes == [("dedicated", get_ident()), ("shared", get_ident())]
+
+
+@pytest.mark.parametrize("failures", ["final-sample", "periodic-final-and-close", "close-only"])
+def test_five_pass_1_7_owner_reports_all_sampling_and_close_failures(
+    failures: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monitor, closes = _monitor_fixture(monkeypatch)
+    periodic = failures == "periodic-final-and-close"
+    closing = failures != "final-sample"
+    monkeypatch.setattr(official, "RAM_SAMPLE_SECONDS", 0.001 if periodic else 60)
+    caller = get_ident()
+    samples: list[int] = []
+    sampling = monitor.sample_once
+    periodic_failed = Event()
+    periodic_error = RuntimeError("synthetic periodic sample failure")
+    final_error = RuntimeError("synthetic final sample failure")
+    dedicated_error = RuntimeError("synthetic dedicated close failure")
+    shared_error = RuntimeError("synthetic shared close failure")
+
+    def sample_once() -> None:
+        samples.append(get_ident())
+        if periodic and len(samples) == 2:
+            periodic_failed.set()
+            raise periodic_error
+        if failures != "close-only" and len(samples) > 1:
+            raise final_error
+        sampling()
+
+    def failing_close(probe: WindowsGpuProcessMemorySampler, error: RuntimeError) -> None:
+        original = probe.close
+
+        def close() -> None:
+            original()
+            raise error
+
+        monkeypatch.setattr(probe, "close", close)
+
+    monkeypatch.setattr(monitor, "sample_once", sample_once)
+    if closing:
+        failing_close(monitor._dedicated, dedicated_error)
+        failing_close(monitor._shared, shared_error)
+    monitor.start()
+    try:
+        if periodic:
+            assert periodic_failed.wait(timeout=2)
+    finally:
+        code = "cleanup-failed" if closing else "resource-limit"
+        with pytest.raises(DualWorkerBenchmarkError, match=code) as caught:
+            monitor.finish()
+    expected: list[BaseException] = []
+    if periodic:
+        expected.append(periodic_error)
+    if failures != "close-only":
+        expected.append(final_error)
+    if closing:
+        expected.extend((dedicated_error, shared_error))
+    cause = caught.value.__cause__
+    assert isinstance(cause, BaseExceptionGroup)
+    assert cause.exceptions == tuple(expected)
+    assert samples == ([caller, samples[1], samples[1]] if periodic else [caller, samples[1]])
+    assert samples[1] != caller
+    assert closes == [("dedicated", samples[1]), ("shared", samples[1])]
 
 
 def test_efc_03_ordered_frontier_survives_collection_order_without_overcount(
