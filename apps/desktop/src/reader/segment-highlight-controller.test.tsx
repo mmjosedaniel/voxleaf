@@ -7,7 +7,6 @@ import type {
 import {
   createIndex,
   decodeLocatorRangeV1,
-  decodeReadingLocatorV1,
   type LocatorRangeV1,
   type ReadingLocatorV1,
 } from "@voxleaf/shared";
@@ -677,7 +676,7 @@ describe("segment highlight controller", () => {
 
     expect(environment.highlighted?.toString()).toBe("Geometry");
     expect(environment.scrolls).toEqual([]);
-    expect(settled).toEqual([decodeReadingLocatorV1(located.startLocator)]);
+    expect(settled).toEqual([]);
     controller.close();
     mapper.close();
     element.remove();

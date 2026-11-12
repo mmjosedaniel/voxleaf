@@ -6,11 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Passage navigation: minimal corrections and selective validation](passage-navigation-minimal-corrections.md)
-  plans symmetric proven-neighbor navigation, attributable reader placement and
-  narrowly conditioned visual-position corrections. Planning only; execution has
-  not started. It records inspected historical evidence and the smallest selected
-  regression, browser and packaged acceptance gates.
+No implementation plans are currently active.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

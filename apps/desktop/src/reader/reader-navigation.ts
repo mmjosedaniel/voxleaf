@@ -31,9 +31,22 @@ export interface UnavailableReaderTarget {
 export type ReaderTargetAvailability =
   AvailableReaderTarget | UnavailableReaderTarget;
 
-export type ReaderNavigationSettlement =
+export interface ReaderPlacementRequest {
+  readonly publication: OpenedPublication["book"]["identity"];
+  readonly revision: number;
+  readonly narration?: import("../tts/product-narration-coordinator").ProductNarrationNavigationRequest;
+}
+
+export type ReaderNavigationSettlement = (
   | Readonly<{ status: "settled"; locator: ReadingLocatorV1 }>
-  | Readonly<{ status: "unavailable"; reason: "chapter-too-large" }>;
+  | Readonly<{ status: "approximate"; locator: ReadingLocatorV1 }>
+  | Readonly<{ status: "rejected" | "superseded" }>
+  | Readonly<{
+      status: "unavailable";
+      reason: "chapter-too-large" | "placement";
+    }>
+) &
+  Readonly<{ request?: ReaderPlacementRequest }>;
 
 export interface ReaderNavigationCoordinatorOptions {
   readonly initialLocator?: ReadingLocatorV1;

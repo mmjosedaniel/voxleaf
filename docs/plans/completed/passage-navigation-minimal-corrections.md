@@ -7,11 +7,12 @@ and prevent reader placement from silently replacing an explicit passage target.
 Resolve the related failure/visible-position findings only within the evidence
 and boundaries defined below.
 
-Status: **planning only; implementation and test execution are not authorized by
-this plan's creation**. The user requested this ExecPlan, a local branch and a
-commit, with the fewest justified changes and tests. A later execution instruction
-is required before starting M0. No implementation, regression tests, builds,
-browser sessions or model runs have been performed for this plan.
+Status: **M0–M3 implemented and host-validated**. Final exact-patch acceptance is
+recorded in [PN-20261112-R3](../evidence/passage-navigation/review-r3.md).
+On 2026-11-12 the user explicitly
+authorized M0–M3, corrections, host validation and independent review. Keep all
+implementation changes uncommitted; no push or PR is authorized. The planning
+commit is `6dd694b815bf52b34e4644487067ec2ba3a8956d`.
 
 Planning baseline: `main`,
 `a8a61df1417e476daada7795809b5153965a4a54`, clean worktree/index before planning.
@@ -40,8 +41,9 @@ position persistence responsibilities; it does not introduce a new milestone.
 
 ## Current state
 
-This is a static investigation, not an executed reproduction. The earlier broad
-report was re-evaluated against current code and accepted product policies.
+The following table records the pre-implementation static investigation. Execution
+reproductions and current results are recorded below and in the execution ledger.
+The earlier broad report was re-evaluated against code and accepted product policies.
 
 | ID    | Evidence and consequence                                                                                                                                                                                                                                                                                                                                                                 | Disposition for execution                                                                                                                                                                                                                                                                                             |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -211,7 +213,7 @@ diagram at closeout and update it only if an actual architectural boundary chang
 
 ### M0: Freeze scope, baseline reuse and discriminating reproductions
 
-Status: not started.
+Status: complete; current evidence and independent review are linked below.
 
 Before any test/source edit, capture current HEAD, clean/dirty paths, source and
 tool identities. Reassess the original evidence below and record accepted reuse
@@ -246,7 +248,7 @@ Do not execute a whole-repository baseline.
 
 ### M1: Correct neighbor selection and unknown-direction feedback
 
-Status: not started.
+Status: complete; combined host evidence and final review are linked below.
 
 Implement PN-01 in the existing coordinator and compact controls. One resolver
 must govern both eligibility and execution, with bounded retained links. Keep
@@ -255,12 +257,12 @@ do not promise background progress after paused navigation. Preserve the
 documented Resume path and separate actual completion from missing history.
 
 Run focused new cases after the edit; if M2 immediately follows, the final union
-can supply the full existing regression green for both units. M1 remains pending
-integration acceptance until M3, because M2 touches the same source.
+can supply the full existing regression green for both units. M1 requires combined
+integration acceptance in M3, because M2 touches the same source.
 
 ### M2: Correct placement outcomes and conditional visual handoff
 
-Status: not started.
+Status: complete; PN-04 was confirmed and narrowly corrected.
 
 Implement the local matching outcome contract for PN-02/03 through the existing
 reader/App/coordinator boundary. Avoid replacing a relative target with an
@@ -279,7 +281,8 @@ the system diagram only if its ownership/data-flow description actually changes.
 
 ### M3: Combined acceptance and independent review
 
-Status: not started.
+Status: host gates and restoration complete; the separate R3 report records
+final exact-patch acceptance after R2's documentation-only correction.
 
 Run the final selected gates once after the last relevant edit. Extend existing
 browser/native journeys only for uncovered observations; keep synthetic controlled
@@ -373,7 +376,7 @@ This plan accepts no historical PASS as proof of its unimplemented corrections.
 
 ### Gate selection and exact existing commands
 
-All execution is future work, from repository root in normal local PowerShell
+The selected commands run from repository root in normal local PowerShell
 outside the managed sandbox. Select the repository's Node version (`.nvmrc`) and
 pnpm 11.15.1 using installed tools; verify nested resolution before running gates.
 Do not copy a stale ignored PATH helper without checking its contents. Capture
@@ -413,7 +416,7 @@ Prettier tool on its explicit list. No whole-tree format mutation is authorized.
 Final Chromium selection uses existing test names plus planned `PN-` additions:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop test:browser reader-narration-bugfixes.smoke.spec.ts reader-reflow-restoration.smoke.spec.ts reader-image-lifecycle.smoke.spec.ts --grep 'PN-|five-pass 1\.1|five-pass 5\.1|VCA-06/09|BNC-01|RCF-17|final RCF-16|DCR-03/23|RPI-01/C1'
+pnpm.cmd --filter @voxleaf/desktop test:browser reader-narration-bugfixes.smoke.spec.ts reader-reflow-restoration.smoke.spec.ts reader-image-lifecycle.smoke.spec.ts --grep 'PN-|five-pass 1[.]1|five-pass 5[.]1|VCA-06/09|BNC-01|RCF-17|final RCF-16|DCR-03/23|RPI-01/C1'
 ```
 
 Confirm the matched case list and retain its output; no-test selection is failure.
@@ -500,9 +503,8 @@ execution, without user paths, book text, audio or private resource inventories.
 
 Rollback a rejected implementation by reverting only its identified task-owned
 changes under the then-current authorization; preserve unrelated work and the
-original evidence. Keep both units reviewable in one integration batch. This
-planning instruction authorizes only the plan branch/commit, not implementation,
-push, a PR, merge or later behavioral commits.
+original evidence. Keep both units reviewable in one integration batch. The later execution instruction authorizes implementation and validation, but
+no commit, push, PR or merge.
 
 ## Progress log
 
@@ -513,11 +515,28 @@ push, a PR, merge or later behavioral commits.
   in normal local PowerShell: all matched. This was read-only evidence inspection,
   not a test run or acceptance of new behavior.
 - 2026-11-12: created `codex/passage-navigation-execplan` for the requested
-  documentation-only commit. Implementation milestones remain unstarted.
-- [ ] M0: independently assessed baseline reuse and discriminating reproductions.
-- [ ] M1: symmetric neighbor selection and unknown-direction feedback.
-- [ ] M2: attributable placement outcomes and disposition of PN-04.
-- [ ] M3: current combined gates, restoration, documentation and independent APPROVE.
+  documentation-only commit. Implementation milestones were unstarted at that time.
+- [x] M0: independently assessed baseline reuse and discriminating reproductions.
+- [x] M1: symmetric neighbor selection and unknown-direction feedback.
+- [x] M2: attributable placement outcomes and disposition of PN-04.
+- [x] M3: current combined gates, restoration and documentation; the linked R3
+      report is the final independent acceptance authority.
+
+- 2026-11-12 execution: RED confirms PN-01 (ownerless paused gap), PN-02
+  (four approximate/unavailable intent combinations), PN-03 (injected resolver
+  rejection and superseding cleanup rejection) and PN-04 (failed follow after
+  measured manual inspection, Resume and next audible segment). The prepared
+  state arm and exact/clamped controls pass without manufacturing failures.
+- Final desktop selection currently covers 458 tests: 381 renewed in four
+  affected suites, 68 unchanged in five suites from the ten-suite union, and nine
+  highlight controls renewed after removing an unused import. See the ledger
+  for exact identities, diagnostics and independent acceptance.
+- PN-20261112-R1 found one remaining recovery defect: failed preference reflow
+  could enable Play without placement. The integrated reproduction failed in
+  both intents; the correction now requires aligned or measured visible reflow.
+  Renewed desktop/static/Chromium/native gates pass. R2 accepted the runtime and
+  complete evidence; its sole UTC-label correction is fixed in the final
+  documentation revision. Earlier unbracketed reuse was declined.
 
 ## Discoveries and decisions
 
@@ -541,12 +560,25 @@ push, a PR, merge or later behavioral commits.
 
 ## Final validation results
 
-Implementation status: **not started**. No production/test files changed, no
-behavioral checks executed and no independent behavioral acceptance claimed.
+Implementation status: **M0–M3 implemented and host-validated**. Current commands,
+failures, corrections and immutable receipts are recorded in the
+[execution ledger](../evidence/passage-navigation/execution-ledger.md).
+PN-04 was confirmed in controlled integrated geometry and corrected narrowly.
+The request identity uses the reader revision plus publication identity and the
+originating narration revision, never equality between the two counters.
+PN-20261112-R1's recovery defect and dependency-evidence gaps are resolved.
+PN-20261112-R2 found no remaining runtime gap and requested only the corrected
+UTC label. Final current-patch acceptance is recorded in the separate
+[PN-20261112-R3 report](../evidence/passage-navigation/review-r3.md).
+The selected gates cover458 desktop checks,482 EPUB checks,57 native-harness
+checks,13 Chromium cases, current static/document checks, and current packaged
+WebView2 plus Piper EN. A03 and the post-harness comparison verify host restoration.
+No commit, push or PR was made; the implementation remains in the worktree.
 
 Planning evidence inspection: four historical manifest pairs and their recorded
 inputs/source/output membership match the stated baseline. Environment/dependency
-qualification and acceptance of any future reuse remain M0/reviewer work.
+qualification and acceptance of reuse were resolved during execution as recorded
+in the ledger; incomplete historical dependency evidence was declined.
 
 Planning-document checks ran in normal local PowerShell with installed Node
 24.18.0/pnpm 11.15.1:
@@ -562,6 +594,6 @@ Planning-document checks ran in normal local PowerShell with installed Node
 These are documentation checks, not execution of M0-M3 or behavioral gate
 acceptance. The plan and its two index entries are the complete planning change;
 the commit identity belongs in Git history and the handoff, not a self-referential
-document hash. Results for the implementation gates G0-G6 remain pending. Move
-this plan to completed only after the correction, required current gates,
-cleanup and independent review finish.
+document hash. They remain historical planning checks; current G0-G6 results,
+restoration and independent review are recorded in the execution ledger and final
+review, rather than being inferred from the planning checks.
