@@ -6,7 +6,10 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation plans are currently active.
+- [Chat findings: minimal recovery and contract corrections](chat-findings-recovery-and-minimal-corrections.md)
+  plans 24 dispositions from the five-search investigation, including the accepted
+  pilot-preflight exit decision, bounded corrections and selective evidence reuse.
+  Implementation and validation have not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
