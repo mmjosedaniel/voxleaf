@@ -45,6 +45,9 @@ The coordinator supplies:
 
 - Task ID, requested behavior or reproduction, acceptance criteria, and relevant
   requirements/ADRs. Separate intended changes from behavior to preserve.
+- For findings-based work, include stable IDs and original trigger/owner links
+  from the [findings registry](findings/README.md), plus the bounded neighboring
+  cases and evidence-backed reason earlier coverage missed the case, or unknown.
 - Exact base commit and current HEAD, task-owned changed paths, complete diff,
   and full contents of new/untracked files. Include relevant callers and tests.
   Identify pre-existing user changes explicitly; do not include them as task work.
@@ -87,6 +90,14 @@ requires a concrete defect, regression, or demonstrated acceptance/coverage gap.
 BLOCKED covers missing requirements, unavailable evidence, or identity drift;
 it is not a claim that the implementation is defective. Do not invent findings
 to justify the review or treat subjective style preferences as blockers.
+
+For findings-based work, first verify that the original trigger, current owner,
+regression test and proposed resolution describe the same path. Inspect the
+test's distinguishing assertion and relevant continuation/negative controls.
+Separate direct mocked calls, controlled fault injection and actual interaction
+coverage. A renamed test or a passing neighboring validator does not close the
+reported case. Confirm historical disposition and latest-check status remain
+separate, and link any recurrence or variant without rewriting old evidence.
 
 ## Corrections and completion
 

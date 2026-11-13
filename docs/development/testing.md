@@ -1,5 +1,15 @@
 # Testing strategy
 
+## Findings-based regression coverage
+
+Use the [cumulative findings workflow](findings/README.md) to bind a reported
+trigger and invariant to the actual owner, discriminating test and review.
+Select bounded neighboring controls and check the next relevant action, retry
+or reopen. Distinguish direct mocks, controlled faults and real interaction;
+preserve a meaningful pre-fix failure where applicable. Historical registry
+imports do not renew test results. Existing host-execution, evidence-reuse and
+independent-review requirements still govern acceptance.
+
 ## Narration settings lifecycle coverage
 
 `NSL-01` through `NSL-04` cover fixed activation rejection/retry feedback,

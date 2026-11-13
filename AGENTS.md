@@ -54,6 +54,27 @@ Before changing code or architecture:
 - Do not silently change public contracts.
 - Do not rewrite unrelated code.
 
+## Cumulative logic audits and findings
+
+- For logic/bug audits and related fixes, follow the
+  [findings workflow](docs/development/findings/README.md) and consult its registry
+  before classifying candidates. Check the import coverage and relevant original
+  sources; an absent entry does not establish novelty.
+- Record the inspected commit and relevant worktree changes. Match findings by
+  trigger, invariant and owner, retaining stable IDs for recurrences and linking
+  distinct variants. Historical fixes and intentional decisions must be checked
+  against the current source and policy, not used to suppress counterexamples.
+- Broad/repeated audits report concrete coverage and gaps using the workflow's
+  template. Maintain affected registry entries and a concise indexed audit record
+  as part of the audit, including audits requested without tests. This maintenance
+  is limited to `docs/development/findings/`; it does not authorize product edits,
+  tests, ExecPlans or Git mutations. Explicit read-only/no-change requests override
+  this default: provide proposed updates only in the answer.
+- During authorized corrections, keep the affected entries current and require
+  evidence for the exact trigger, relevant adjacent protections and next user
+  action. Separate historical acceptance from current inspection/reproduction;
+  record why a case escaped earlier work when known.
+
 ## Feature and bug review
 
 - For runtime behavior, public-contract, or cross-component feature/bug changes,

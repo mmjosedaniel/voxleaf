@@ -18,11 +18,17 @@ description: Implement a complete VoxLeaf feature across the affected desktop, E
 ## Procedure
 
 1. State the user-visible behavior and acceptance criteria.
-2. Identify affected boundaries and privacy implications.
+2. Identify affected boundaries and privacy implications. Consult the relevant
+   [findings registry](../../../docs/development/findings/README.md) for existing
+   invariants, policies and regressions to preserve. This is a scoped lookup, not
+   an obligation to audit or import the whole history for every feature.
 3. Define or update typed contracts before process-specific implementations.
 4. Implement the smallest vertical path.
 5. Add cancellation and stale-session handling where long-running work is involved.
-6. Add relevant unit, integration, end-to-end, and performance coverage.
+6. Add relevant unit, integration, end-to-end, and performance coverage. For a
+   discovered regression, follow the findings workflow's identity reconciliation
+   and discriminating outcome/adjacent-control rules; keep its registry entry
+   current during authorized implementation.
 7. Update product, architecture, setup, or testing documentation.
 8. Run the relevant repository checks.
 9. Review the final diff for unrelated changes.
