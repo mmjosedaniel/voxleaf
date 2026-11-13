@@ -339,6 +339,8 @@ export async function prepareNarrationSourceLeaf(
           options.precedingEnglishTitleContext,
           options.precedingQuotationContext,
           options.languageClassifier,
+          source.sourceEndOffsetCodePoints ===
+            source.locatedBlock.textLengthCodePoints,
         )
       : normalizeNarrationSourceTokens(
           source.sourceTokens,

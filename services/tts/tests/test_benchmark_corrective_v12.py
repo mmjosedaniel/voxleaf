@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -18,7 +20,7 @@ from benchmarks.chatterbox_v11_screen import (
     CorrectivePreflightReceipt,
     ScreenConditions,
 )
-from benchmarks.contracts import BenchmarkRun, CancellationResponse
+from benchmarks.contracts import BenchmarkRun, CancellationResponse, GenerationRequest
 from benchmarks.corrective_v12 import (
     V12PreflightReceipt,
     build_raw_result,
@@ -29,7 +31,7 @@ from benchmarks.fake_adapter import (
     FakeNanosecondClock,
 )
 from benchmarks.harness import BenchmarkHarness, load_bilingual_corpus
-from benchmarks.preflight import HostSnapshot, RepositoryState
+from benchmarks.preflight import HostSnapshot, RepositoryState, WindowsFirewallNetworkProbe
 from benchmarks.v11_authority import CANDIDATE_ID
 from benchmarks.v12_authority import (
     CHATTERBOX_CANDIDATE_ID,
@@ -367,7 +369,7 @@ def test_saf_v12_rejects_destructive_destination_before_aggregation(
         contained_session.parent.mkdir(parents=True)
         session.rename(contained_session)
         session = contained_session
-        monkeypatch.setattr(v12_quality, "_session", lambda *_args: session)
+        monkeypatch.setattr(v12_quality, "_session", lambda *_args, **_kwargs: session)
         output = session / "summary.json"
     elif destination == "hardlink":
         output = output_root / "hardlink.json"
@@ -393,8 +395,20 @@ def test_saf_v12_rejects_destructive_destination_before_aggregation(
     assert not (session / "quality/quality.aggregate.json").exists()
 
 
-def test_saf_v12_summary_write_failure_retains_retry_inputs_then_success_cleans(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "prepare",
+        "session",
+        "scorecard",
+        "publish",
+        "substituted-session",
+        "substituted-scorecard",
+        "publication-conflict",
+    ],
+)
+def test_v12_derivation_resumes_after_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     session, result_path = _private_quality_fixture(tmp_path, monkeypatch)
     validator = validate_v12_qwen_quality_result
@@ -412,23 +426,83 @@ def test_saf_v12_summary_write_failure_retains_retry_inputs_then_success_cleans(
     output = tmp_path / "benchmarks/tts/summary.json"
     output.parent.mkdir(parents=True)
     writer = v12_quality._write_json
+    rmtree = cast(Callable[..., None], shutil.rmtree)
+    unlink = Path.unlink
+    hardlink = Path.hardlink_to
 
-    def fail_summary(path: Path, value: object) -> None:
-        if path == output:
-            raise PermissionError("synthetic summary write failure")
+    def fail_prepare(path: Path, value: object) -> None:
+        if path == output or path.name == "pending.json":
+            raise PermissionError("synthetic write failure")
         writer(path, value)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(v12_quality, "_write_json", fail_summary)
-    with pytest.raises(PermissionError, match="synthetic summary write failure"):
-        v12_quality.derive_and_cleanup(
-            candidate_id=QWEN_SERENA_CANDIDATE_ID,
-            session_id=session.name,
-            result_path=result_path,
-            output_path=output,
-        )
-    assert result_path.exists()
-    assert (session / "quality/quality.aggregate.json").exists()
-    monkeypatch.setattr(v12_quality, "_write_json", writer)
+    def fail_session(path: Path, *args: object, **kwargs: object) -> None:
+        if path == session:
+            (session / "quality/private-map.json").unlink()
+            raise PermissionError("synthetic partial removal")
+        rmtree(path, *args, **kwargs)
+
+    def fail_scorecard(path: Path, missing_ok: bool = False) -> None:
+        if path == result_path:
+            raise PermissionError("synthetic scorecard lock")
+        unlink(path, missing_ok=missing_ok)
+
+    def fail_publish(path: Path, target: Path) -> None:
+        if path == output:
+            raise PermissionError("synthetic publish failure")
+        hardlink(path, target)
+
+    with monkeypatch.context() as patch:
+        if failure == "prepare":
+            patch.setattr(v12_quality, "_write_json", fail_prepare)
+        elif failure in {"session", "substituted-session", "substituted-scorecard"}:
+            patch.setattr(shutil, "rmtree", fail_session)
+        elif failure == "scorecard":
+            patch.setattr(Path, "unlink", fail_scorecard)
+        elif failure in {"publish", "publication-conflict"}:
+            patch.setattr(Path, "hardlink_to", fail_publish)
+        with pytest.raises((OSError, v12_quality.CorrectiveV12QualityError)):
+            v12_quality.derive_and_cleanup(
+                candidate_id=QWEN_SERENA_CANDIDATE_ID,
+                session_id=session.name,
+                result_path=result_path,
+                output_path=output,
+            )
+    assert not output.exists()
+    if failure == "prepare":
+        assert result_path.exists()
+        assert (session / "quality/quality.aggregate.json").exists()
+    if failure.startswith("substituted-") or failure == "publication-conflict":
+        if failure == "publication-conflict":
+            # A subsequent writer acquired the destination after cleanup.
+            output.write_bytes(b'{"owner":"other publication"}')
+            replaced = output
+        else:
+            replaced = session if failure == "substituted-session" else result_path
+            original = replaced.with_name(f"{replaced.name}.original")
+            replaced.rename(original)
+            if failure == "substituted-session":
+                replaced.mkdir()
+                (replaced / "sentinel").write_bytes(b"replacement")
+            else:
+                replaced.write_bytes(original.read_bytes())
+        with pytest.raises(v12_quality.CorrectiveV12QualityError):
+            v12_quality.derive_and_cleanup(
+                candidate_id=QWEN_SERENA_CANDIDATE_ID,
+                session_id=session.name,
+                result_path=result_path,
+                output_path=output,
+            )
+        if failure == "publication-conflict":
+            assert output.read_bytes() == b'{"owner":"other publication"}'
+            output.unlink()
+        elif failure == "substituted-session":
+            assert (replaced / "sentinel").read_bytes() == b"replacement"
+            shutil.rmtree(replaced)
+            original.rename(replaced)
+        else:
+            assert replaced.read_bytes() == original.read_bytes()
+            replaced.unlink()
+            original.rename(replaced)
     result = v12_quality.derive_and_cleanup(
         candidate_id=QWEN_SERENA_CANDIDATE_ID,
         session_id=session.name,
@@ -439,6 +513,74 @@ def test_saf_v12_summary_write_failure_retains_retry_inputs_then_success_cleans(
     assert output.exists()
     assert not result_path.exists()
     assert not session.exists()
+
+
+@pytest.mark.parametrize("failure", ["setup", "close", "metadata", "html", "existing", "conflict"])
+def test_v12_quality_failure_preserves_machine_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    session_id = "b" * 32
+    session = tmp_path / CHATTERBOX_CANDIDATE_ID / session_id
+    session.mkdir(parents=True)
+    machine = session / "machine.raw.json"
+    machine.write_bytes(b"synthetic machine")
+    monkeypatch.setattr(v12_quality, "RAW_ROOT", tmp_path)
+    monkeypatch.setattr(v12_quality, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(v12_quality, "_candidate_python", lambda _id: Path(sys.executable))
+    monkeypatch.setattr(v12_quality, "_repository_ready", lambda *_args: True)
+    monkeypatch.setattr(v12_quality, "_validate_machine_under_service", lambda *_args: None)
+    monkeypatch.setattr(WindowsFirewallNetworkProbe, "active", lambda *_args: True)
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    published = session / "quality"
+
+    def occupy_quality() -> None:
+        published.mkdir()
+        (published / "sentinel").write_bytes(b"other quality")
+
+    if failure == "existing":
+        occupy_quality()
+
+    class Adapter:
+        def load(self) -> None:
+            pass
+
+        def synthesize_for_quality(self, _request: GenerationRequest) -> tuple[list[float], int]:
+            return [0.0], 24_000
+
+        def close(self) -> None:
+            if failure == "close":
+                raise RuntimeError("synthetic adapter close")
+            if failure == "conflict":
+                occupy_quality()
+
+    def adapter(_candidate: str) -> tuple[Adapter, Path, tuple[str, ...]]:
+        if failure == "setup":
+            raise RuntimeError("synthetic adapter setup")
+        return Adapter(), tmp_path, ("es", "en")
+
+    def fail_write(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError("synthetic write failure")
+
+    monkeypatch.setattr(v12_quality, "_adapter", adapter)
+    with monkeypatch.context() as patch:
+        if failure == "metadata":
+            patch.setattr(v12_quality, "_write_json", fail_write)
+        elif failure == "html":
+            patch.setattr(Path, "write_text", fail_write)
+        with pytest.raises((OSError, RuntimeError, v12_quality.CorrectiveV12QualityError)):
+            v12_quality.generate_quality_session(
+                candidate_id=CHATTERBOX_CANDIDATE_ID,
+                authority_commit_sha="a" * 40,
+                execution_commit_sha="b" * 40,
+                machine_session_id=session_id,
+            )
+    assert set(session.iterdir()) == (
+        {machine, published} if failure in {"existing", "conflict"} else {machine}
+    )
+    if failure in {"existing", "conflict"}:
+        assert (published / "sentinel").read_bytes() == b"other quality"
+    assert machine.read_bytes() == b"synthetic machine"
 
 
 def test_v12_candidate_quality_delegates_machine_schema_validation(

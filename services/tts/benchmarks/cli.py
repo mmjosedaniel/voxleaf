@@ -645,7 +645,7 @@ def main() -> int:
         if sys.argv[1] == "preflight":
             receipt = run_local_preflight(parse_preflight_request(value))
             print(json.dumps(_receipt_payload(receipt), ensure_ascii=True, separators=(",", ":")))
-            return 0 if receipt.eligible_for_official_run else 2
+            return 0 if _preflight_passed(receipt) else 2
         if sys.argv[1] == "measure":
             payload, exit_code = _run_measurement_parent(value)
         else:

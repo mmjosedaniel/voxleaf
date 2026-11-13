@@ -1,5 +1,8 @@
 # Architecture decision records
 
+- [ADR-0075: Optional Chatterbox staging reconciliation](ADR-0075-optional-staging-reconciliation.md) records startup and explicit Check ownership.
+- [ADR-0074: Exact comparisons for the CustomVoice v3 screen](ADR-0074-customvoice-exact-screen-comparisons.md) defines successor ranking and session separation.
+
 - [ADR-0073: Passage continuity and placement outcomes](ADR-0073-passage-continuity-and-placement-outcomes.md): symmetric witnessed neighbors, attributable placement and measured visual following; acceptance tracked in the passage navigation plan.
 
 - [ADR-0072: Versioned batch cancellation proof and safety](ADR-0072-versioned-batch-cancellation-proof-and-safety.md): approved v14 successor and separate safety observation; implementation and acceptance remain pending in the five-pass plan.

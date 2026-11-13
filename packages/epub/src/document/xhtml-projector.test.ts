@@ -544,6 +544,27 @@ describe("safe XHTML semantic projection", () => {
     );
   });
 
+  it.each(['href="https://private.invalid/anchor"', ""])(
+    "projects inert block anchor descendants (%s)",
+    async (href) => {
+      await withArchive(
+        xhtml(
+          `<h:a ${href} xml:lang="es"><h:p id="first">Uno</h:p><h:button><h:p>Hidden</h:p></h:button><h:p id="second">Dos</h:p></h:a><h:p>After</h:p>`,
+        ),
+        {},
+        async (archive) => {
+          const document = await projectXhtmlDocument(
+            archive,
+            createPackageDocument(),
+            CHAPTER_PATH,
+          );
+          expect(renderBlocks(document.blocks)).toBe("Uno|Dos|After");
+          expect(JSON.stringify(document)).not.toContain("https://");
+        },
+      );
+    },
+  );
+
   it.each([
     [
       "wrong root",

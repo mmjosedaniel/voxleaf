@@ -20,6 +20,7 @@ import type {
 } from "../reader/reader-preferences";
 import type { AdaptiveBufferStartMode } from "../tts/adaptive-buffer-scheduler";
 import { HardwareCompatibilityControls } from "../tts/HardwareCompatibilityControls";
+import { isSavedHealthyPiperSelection } from "./narration-settings-actions";
 import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
 import {
   chatterboxAcquisitionPresentation,
@@ -453,6 +454,13 @@ export function ReaderSettingsDialog({
               coordinator={hardwareCompatibility}
               presentation="narration"
               onSelectProfile={onSelectProfile}
+              isProfileSelectionNoop={(profileId) =>
+                isSavedHealthyPiperSelection(
+                  profileId,
+                  hardwareCompatibility.observe(),
+                  narrationCoordinator,
+                )
+              }
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}

@@ -17,6 +17,22 @@ thread_local! {
     static CAF_SPACE_PROBE: std::cell::RefCell<Option<CafSpaceProbe>> = const { std::cell::RefCell::new(None) };
 }
 
+#[test]
+fn cfr22_failed_transfer_does_not_claim_installed_bytes() {
+    let root = TestRoot::new();
+    let authority = write_runtime(&root.0.join("synthetic-authority"));
+    let manager = OptionalChatterboxManager::default();
+    manager.set_operation(
+        OptionalProfileState::Failed,
+        0,
+        Some(OptionalProfileError::DownloadFailed.code()),
+        None,
+    );
+    let snapshot = manager.snapshot_with_manifest(&root.0, &authority).unwrap();
+    assert_eq!(snapshot.state, OptionalProfileState::Failed);
+    assert_eq!(snapshot.installed_bytes, None);
+}
+
 pub(super) fn caf_space_probe(root: &Path) -> Option<Result<u64, OptionalProfileError>> {
     CAF_SPACE_PROBE.with(|probe| probe.borrow_mut().take().map(|probe| probe(root)))
 }
@@ -46,6 +62,86 @@ fn caf_r1_3_staging_only_restart_remains_discoverable_without_poll_cleanup() {
         OptionalProfileState::Installed
     );
     assert_eq!(fs::read(staging.join("owned.partial")).unwrap(), b"partial");
+    let backup = promotion_backup_root(&root.0);
+    fs::create_dir_all(&backup).unwrap();
+    let retained = backup.join("retained.bin");
+    fs::write(&retained, b"owned backup").unwrap();
+    manager.reconcile_staging_at(&root.0).unwrap();
+    assert!(!staging.exists());
+    assert_eq!(fs::read(&retained).unwrap(), b"owned backup");
+    assert_eq!(
+        manager
+            .snapshot_with_manifest(&root.0, &authority)
+            .unwrap()
+            .state,
+        OptionalProfileState::Installed,
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn cfr05_startup_and_check_retry_preserve_installed_and_backup_during_staging_recovery() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = TestRoot::new();
+    let authority = write_runtime(&package_root(&root.0));
+    let backup = promotion_backup_root(&root.0);
+    fs::create_dir_all(&backup).unwrap();
+    let retained = backup.join("retained.bin");
+    fs::write(&retained, b"previous").unwrap();
+    let staging = staging_root(&root.0);
+    fs::create_dir_all(&staging).unwrap();
+    let partial = staging.join("locked.partial");
+    fs::write(&partial, b"partial").unwrap();
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&partial)
+        .unwrap();
+    let manager = OptionalChatterboxManager::default();
+    manager.reconcile_staging_at(&root.0).unwrap();
+    let blocked = manager.snapshot_with_manifest(&root.0, &authority).unwrap();
+    assert_eq!(blocked.state, OptionalProfileState::Failed);
+    assert_eq!(
+        blocked.failure,
+        Some(OptionalProfileError::CleanupFailed.code())
+    );
+    assert_eq!(blocked.installed_bytes, None);
+    assert!(partial.exists());
+    assert_eq!(fs::read(&retained).unwrap(), b"previous");
+    drop(lock);
+    manager.set_operation(
+        OptionalProfileState::Downloading,
+        0,
+        None,
+        Some(Arc::new(AtomicBool::new(false))),
+    );
+    assert_eq!(
+        manager.retry_cleanup(&root.0, &authority).unwrap().state,
+        OptionalProfileState::Downloading
+    );
+    assert_eq!(fs::read(&partial).unwrap(), b"partial");
+    manager.clear_operation();
+    assert_eq!(
+        manager.retry_cleanup(&root.0, &authority).unwrap().state,
+        OptionalProfileState::Installed
+    );
+    assert!(!staging.exists());
+    assert_eq!(fs::read(&retained).unwrap(), b"previous");
+    fs::write(&staging, b"ambiguous path").unwrap();
+    let refused = manager.retry_cleanup(&root.0, &authority).unwrap();
+    assert_eq!(refused.state, OptionalProfileState::Failed);
+    assert_eq!(
+        refused.failure,
+        Some(OptionalProfileError::CleanupFailed.code())
+    );
+    assert_eq!(fs::read(&staging).unwrap(), b"ambiguous path");
+    assert_eq!(fs::read(&retained).unwrap(), b"previous");
+    fs::remove_file(&staging).unwrap();
+    assert_eq!(
+        manager.retry_cleanup(&root.0, &authority).unwrap().state,
+        OptionalProfileState::Installed
+    );
+    assert_eq!(fs::read(&retained).unwrap(), b"previous");
 }
 
 #[cfg(windows)]

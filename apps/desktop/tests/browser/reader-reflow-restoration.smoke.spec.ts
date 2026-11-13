@@ -563,6 +563,106 @@ async function restoredRangeSample(page: Page): Promise<ReflowRangeSample> {
   return sample!;
 }
 
+for (const order of [
+  [
+    ["Text size", "large"],
+    ["Line spacing", "spacious"],
+  ],
+  [
+    ["Line spacing", "spacious"],
+    ["Text size", "large"],
+  ],
+] as const) {
+  test(`CFR-12 held initial placement applies both persisted preferences starting with ${order[0][0]}`, async ({
+    page,
+  }) => {
+    const bytes = await buildReflowFixture();
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error("synthetic-preferences-fixture");
+    const initial = opened.publication.locators[5]!.startLocator;
+    await opened.publication.close();
+    await page.goto("/");
+    await page.evaluate(
+      ({ key, locator }) => {
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            schemaVersion: 1,
+            states: [
+              {
+                schemaVersion: 1,
+                bookIdentity: locator.bookIdentity,
+                locator,
+                preferences: {},
+              },
+            ],
+          }),
+        );
+        const raf = window.requestAnimationFrame;
+        const cancel = window.cancelAnimationFrame;
+        const held = new Map<number, FrameRequestCallback>();
+        let id = -1;
+        window.requestAnimationFrame = (callback) => {
+          const frame = id--;
+          held.set(frame, callback);
+          return frame;
+        };
+        window.cancelAnimationFrame = (frame) => {
+          if (frame < 0) held.delete(frame);
+          else cancel.call(window, frame);
+        };
+        Reflect.set(globalThis, "__cfrInitialFrames", held);
+        Reflect.set(globalThis, "__cfrReleaseInitialFrames", () => {
+          window.requestAnimationFrame = raf;
+          window.cancelAnimationFrame = cancel;
+          for (const callback of held.values()) raf.call(window, callback);
+          held.clear();
+        });
+      },
+      { key: POSITION_STORAGE_KEY, locator: initial },
+    );
+    const file = {
+      name: "synthetic-held-preferences.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(bytes),
+    };
+    await page.getByLabel("Open a book").setInputFiles(file);
+    const reader = page.locator(".semantic-reader");
+    await expect(reader).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__cfrInitialFrames").size),
+      )
+      .toBeGreaterThan(0);
+    const settings = await openSettings(page);
+    for (const [label, value] of order) {
+      await settings.getByLabel(label).selectOption(value);
+      await expect(settings.getByLabel(label)).toHaveValue(value);
+    }
+    await expect(reader).toHaveAttribute("data-reader-text-scale", "standard");
+    await expect(reader).toHaveAttribute(
+      "data-reader-line-spacing",
+      "comfortable",
+    );
+    await closeSettings(page, settings);
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__cfrReleaseInitialFrames")(),
+    );
+    await expect(reader).toHaveAttribute("data-reader-text-scale", "large");
+    await expect(reader).toHaveAttribute(
+      "data-reader-line-spacing",
+      "spacious",
+    );
+    await page.reload();
+    await page.getByLabel("Open a book").setInputFiles(file);
+    await expect(reader).toHaveAttribute("data-reader-text-scale", "large");
+    await expect(reader).toHaveAttribute(
+      "data-reader-line-spacing",
+      "spacious",
+    );
+  });
+}
+
 test("preserves one canonical passage across preferences, rapid changes, viewport resize, and zoom", async ({
   context,
   page,

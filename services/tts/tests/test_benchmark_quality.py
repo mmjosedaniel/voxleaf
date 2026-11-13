@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 import pytest
 
-from benchmarks import quality, quality_presentation, quality_scoring
+from benchmarks import cpu_fallback_result, quality, quality_presentation, quality_scoring
 from benchmarks.adapters.manifest import (
     PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
@@ -19,7 +21,7 @@ from benchmarks.adapters.manifest import (
 )
 from benchmarks.cli import parse_preflight_request
 from benchmarks.contracts import BenchmarkCorpus, GenerationRequest
-from benchmarks.preflight import PreflightRequest
+from benchmarks.preflight import PreflightReceipt, PreflightRequest
 from benchmarks.quality import (
     CORRECTION_REASON,
     DIMENSIONS,
@@ -105,6 +107,38 @@ def _fake_wave(path: Path, waveform: object, sample_rate_hz: int) -> None:
     assert waveform == [0.0, 0.25, -0.25]
     assert sample_rate_hz == 24_000
     path.write_bytes(b"RIFF-fake")
+
+
+@pytest.mark.parametrize("rejection", ["duplicate", "candidate", "fingerprint"])
+def test_rejected_generation_preserves_staging_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rejection: str
+) -> None:
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    session_id = "a" * 32
+    request = _request(tmp_path, QWEN_CANDIDATE_ID)
+    generate_candidate_audio(
+        request, session_id, raw_root=tmp_path, adapter_builder=FakeQualityAdapter
+    )
+    session = tmp_path / "quality-v2" / session_id
+    if rejection == "candidate":
+        request = replace(request, profile=replace(request.profile, candidate_id="unknown"))
+    elif rejection == "fingerprint":
+        request = _request(tmp_path, SUPERTONIC_CANDIDATE_ID)
+        metadata_path = session / "session.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["configurationIdentities"][SUPERTONIC_CANDIDATE_ID] = "different-identity"
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    before = {path: path.read_bytes() for path in session.rglob("*") if path.is_file()}
+    assert before
+    adapter_builder = Mock()
+
+    with pytest.raises(QualitySessionError, match=r"candidate-state$"):
+        generate_candidate_audio(
+            request, session_id, raw_root=tmp_path, adapter_builder=adapter_builder
+        )
+
+    adapter_builder.assert_not_called()
+    assert {path: path.read_bytes() for path in session.rglob("*") if path.is_file()} == before
 
 
 def test_single_evaluator_session_is_blinded_bounded_and_not_promotable(
@@ -413,6 +447,29 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
     )
     assert first_candidate["meaningChangingDefects"] == 1
 
+    aggregate_path = session / "quality.aggregate.json"
+    correction_path = session / "scorecards" / "evaluator-01.correction.json"
+    old_aggregate = aggregate_path.read_bytes()
+    unlink = Path.unlink
+
+    def fail_aggregate_unlink(path: Path, missing_ok: bool = False) -> None:
+        if path == aggregate_path:
+            raise PermissionError("synthetic lock")
+        unlink(path, missing_ok=missing_ok)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "unlink", fail_aggregate_unlink)
+        with pytest.raises(OSError):
+            correct_meaning_changing_defect(
+                session_id,
+                "evaluator-01",
+                corrected_case_id,
+                reason_code=CORRECTION_REASON,
+                raw_root=raw_root,
+            )
+    assert not correction_path.exists()
+    assert aggregate_path.read_bytes() == old_aggregate
+
     correction = correct_meaning_changing_defect(
         session_id,
         "evaluator-01",
@@ -425,12 +482,38 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
     original = json.loads(completed_path.read_text(encoding="utf-8"))
     assert original["samples"][0]["meaningChangingDefect"] is True
 
+    # Model an already-stale aggregate left by the previous correction order.
+    aggregate_path.write_bytes(old_aggregate)
+    monkeypatch.setattr(cpu_fallback_result, "RAW_ROOT", raw_root)
+    performance = tmp_path / "performance"
+    performance.mkdir()
+    sentinel = performance / "machine.raw.json"
+    sentinel.write_bytes(b"owned input")
+    monkeypatch.setattr(cpu_fallback_result, "_load_raw", lambda _id: ({}, performance))
+    monkeypatch.setattr(cpu_fallback_result, "_result_execution_commit", lambda *_args: "a" * 40)
+    monkeypatch.setattr(cpu_fallback_result, "_verify_authority", lambda *_args, **_kw: None)
+    monkeypatch.setattr(cpu_fallback_result, "_benchmark_run", lambda _raw: None)
+    monkeypatch.setattr(cpu_fallback_result, "_machine_gates", lambda *_args: ())
+    receipt = Mock(spec=PreflightReceipt, failures=(), eligible_for_official_run=True)
+    with pytest.raises(cpu_fallback_result.CpuFallbackResultError, match=r"quality-stale$"):
+        cpu_fallback_result.derive_result(
+            _request(tmp_path, PIPER_CPU_CANDIDATE_ID),
+            receipt,
+            performance_session_id="a" * 32,
+            quality_session_id=session_id,
+            authority_commit_sha="a" * 40,
+        )
+    assert sentinel.read_bytes() == b"owned input"
+    assert aggregate_path.read_bytes() == old_aggregate
+    assert correction_path.exists()
+
     corrected = aggregate_scores(session_id, raw_root=raw_root)
     corrected_candidate = cast(
         dict[str, object],
         cast(dict[str, object], corrected["candidates"])[PIPER_CPU_CANDIDATE_ID],
     )
     assert corrected_candidate["meaningChangingDefects"] == 0
+    assert cpu_fallback_result._load_quality(session_id) == (corrected_candidate, session)
     with pytest.raises(
         QualitySessionError,
         match=r"^tts-benchmark-quality:correction-state$",

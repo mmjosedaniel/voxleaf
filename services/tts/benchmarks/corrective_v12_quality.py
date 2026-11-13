@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import os
@@ -13,6 +14,7 @@ import sys
 import wave
 from collections.abc import Mapping, Sequence, Sized
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Final, NoReturn, cast
 
 from benchmarks.adapters.corrective_v9 import (
@@ -99,7 +101,8 @@ def _sequence(value: object, code: str = "result") -> Sequence[object]:
 
 def _read(path: Path, maximum_bytes: int = MAXIMUM_RESULT_BYTES) -> dict[str, object]:
     try:
-        payload = path.read_bytes()
+        with path.open("rb") as source:
+            payload = source.read(maximum_bytes + 1)
         if len(payload) > maximum_bytes:
             _fail("result-size")
         value = cast(object, json.loads(payload))
@@ -161,7 +164,7 @@ def _languages(candidate_id: str) -> tuple[str, ...]:
     _fail("candidate")
 
 
-def _session(candidate_id: str, session_id: str) -> Path:
+def _session(candidate_id: str, session_id: str, *, must_exist: bool = True) -> Path:
     if len(session_id) != 32 or any(value not in "0123456789abcdef" for value in session_id):
         _fail("session")
     root = RAW_ROOT.resolve()
@@ -170,7 +173,7 @@ def _session(candidate_id: str, session_id: str) -> Path:
         relative = session.relative_to(root)
     except ValueError:
         _fail("session")
-    if len(relative.parts) != 2 or not session.is_dir():
+    if relative.parts != (candidate_id, session_id) or (must_exist and not session.is_dir()):
         _fail("session")
     return session
 
@@ -413,9 +416,49 @@ def generate_quality_session(
         session_id = secrets.token_hex(16)
         session = (RAW_ROOT / candidate_id / session_id).resolve()
         session.mkdir(parents=True)
-    quality = session / "quality"
-    if quality.exists():
-        _fail("quality-exists")
+    published_quality = session / "quality"
+    try:
+        if published_quality.exists():
+            _fail("quality-exists")
+        with TemporaryDirectory(
+            prefix=".quality-", dir=session, ignore_cleanup_errors=True
+        ) as staging:
+            quality = Path(staging)
+            sample_count = _generate_quality_files(
+                candidate_id,
+                candidate_python,
+                authority_commit_sha,
+                execution_commit_sha,
+                session_id,
+                quality,
+            )
+            if published_quality.exists():
+                _fail("quality-exists")
+            quality.rename(published_quality)
+    except BaseException:
+        if candidate_id != CHATTERBOX_CANDIDATE_ID:
+            shutil.rmtree(session, ignore_errors=True)
+        raise
+    return {
+        "status": "quality-ready-awaiting-maintainer-review",
+        "candidateId": candidate_id,
+        "sessionId": session_id,
+        "sampleCount": sample_count,
+        "evaluatorPath": (published_quality / "evaluator.html")
+        .relative_to(REPOSITORY_ROOT)
+        .as_posix(),
+        "decisionState": "pending-maintainer-decision",
+    }
+
+
+def _generate_quality_files(
+    candidate_id: str,
+    candidate_python: Path,
+    authority_commit_sha: str,
+    execution_commit_sha: str,
+    session_id: str,
+    quality: Path,
+) -> int:
     audio_root = quality / "audio"
     audio_root.mkdir(parents=True)
     adapter, artifact_root, languages = _adapter(candidate_id)
@@ -461,29 +504,19 @@ def generate_quality_session(
                 )
                 del waveform
         generation_completed = True
-    except Exception:
-        shutil.rmtree(quality, ignore_errors=True)
-        if candidate_id != CHATTERBOX_CANDIDATE_ID:
-            shutil.rmtree(session, ignore_errors=True)
-        raise
     finally:
         try:
             cast(Any, adapter).close()
         except Exception:
             if generation_completed:
-                shutil.rmtree(quality, ignore_errors=True)
-                if candidate_id != CHATTERBOX_CANDIDATE_ID:
-                    shutil.rmtree(session, ignore_errors=True)
                 _fail("cleanup")
     observation = capture.observation()
     capture.discard()
     if observation.sensitive_value_observed:
-        shutil.rmtree(quality, ignore_errors=True)
         _fail("privacy")
     if sum(path.stat().st_size for path in audio_root.glob("*.wav")) > (
         MAXIMUM_SESSION_AUDIO_BYTES
     ):
-        shutil.rmtree(quality, ignore_errors=True)
         _fail("audio-limit")
     secrets.SystemRandom().shuffle(samples)
     _write_json(
@@ -514,14 +547,7 @@ def generate_quality_session(
         ),
         encoding="utf-8",
     )
-    return {
-        "status": "quality-ready-awaiting-maintainer-review",
-        "candidateId": candidate_id,
-        "sessionId": session_id,
-        "sampleCount": len(samples),
-        "evaluatorPath": evaluator.relative_to(REPOSITORY_ROOT).as_posix(),
-        "decisionState": "pending-maintainer-decision",
-    }
+    return len(samples)
 
 
 def _aggregate(
@@ -678,30 +704,13 @@ def _performance(attempts: Sequence[Mapping[str, object]]) -> list[dict[str, obj
     return output
 
 
-def derive_and_cleanup(
+def _derive_summary(
     *,
     candidate_id: str,
     session_id: str,
     result_path: Path,
-    output_path: Path,
+    session: Path,
 ) -> dict[str, object]:
-    """Validate review, write one content-safe result, and delete private evidence."""
-
-    session = _session(candidate_id, session_id)
-    output = output_path.resolve()
-    try:
-        output.relative_to((REPOSITORY_ROOT / "benchmarks" / "tts").resolve())
-    except ValueError:
-        _fail("output")
-    if output.is_relative_to(session) or output == result_path.resolve():
-        _fail("output")
-    try:
-        if not output.parent.is_dir() or output.is_dir():
-            _fail("output")
-        if output.exists() and output.samefile(result_path):
-            _fail("output")
-    except OSError:
-        _fail("output")
     aggregate = _aggregate(
         candidate_id=candidate_id,
         session_id=session_id,
@@ -800,12 +809,114 @@ def derive_and_cleanup(
             ],
         }
         validate_v12_qwen_quality_result(REPOSITORY_ROOT, summary)
-    _write_json(output, summary)
+    return summary
+
+
+def _file_identity(path: Path) -> list[int]:
+    stat = path.stat(follow_symlinks=False)
+    return [stat.st_dev, stat.st_ino]
+
+
+def _scorecard_digest(path: Path) -> str:
+    with path.open("rb") as source:
+        data = source.read(MAXIMUM_RESULT_BYTES + 1)
+    if len(data) > MAXIMUM_RESULT_BYTES:
+        _fail("result-size")
+    return hashlib.sha256(data).hexdigest()
+
+
+def derive_and_cleanup(
+    *,
+    candidate_id: str,
+    session_id: str,
+    result_path: Path,
+    output_path: Path,
+) -> dict[str, object]:
+    """Validate review, finish private cleanup, and publish the result."""
+
+    _languages(candidate_id)
+    session = _session(candidate_id, session_id, must_exist=False)
+    output = output_path.resolve()
+    if result_path.is_symlink():
+        _fail("result")
+    result_path = result_path.resolve()
+    pending = session.with_name(f".{session_id}.pending.json")
+    if pending.is_symlink():
+        _fail("pending-cleanup")
     try:
-        result_path.unlink()
-    except OSError:
-        _fail("result-cleanup")
-    shutil.rmtree(session)
+        output.relative_to((REPOSITORY_ROOT / "benchmarks" / "tts").resolve())
+        if (
+            output.is_relative_to(session)
+            or output in (result_path, pending)
+            or result_path == pending
+            or not output.parent.is_dir()
+            or output.is_dir()
+            or (output.exists() and result_path.exists() and output.samefile(result_path))
+        ):
+            _fail("output")
+    except (OSError, ValueError):
+        _fail("output")
+
+    binding = {
+        "candidateId": candidate_id,
+        "sessionId": session_id,
+        "resultPath": str(result_path),
+        "outputPath": str(output),
+    }
+    if pending.exists():
+        receipt = _read(pending)
+        if receipt.get("binding") != binding:
+            _fail("pending-cleanup")
+        summary = _mapping(receipt.get("summary"))
+        if candidate_id == CHATTERBOX_CANDIDATE_ID:
+            validate_v12_summary_result(REPOSITORY_ROOT, summary)
+        else:
+            validate_v12_qwen_quality_result(REPOSITORY_ROOT, summary)
+        if summary.get("candidateId") != candidate_id:
+            _fail("pending-cleanup")
+    else:
+        if output.exists() or not session.is_dir():
+            _fail("output")
+        summary = _derive_summary(
+            candidate_id=candidate_id,
+            session_id=session_id,
+            result_path=result_path,
+            session=session,
+        )
+        receipt = {
+            "binding": binding,
+            "sessionIdentity": _file_identity(session),
+            "resultIdentity": _file_identity(result_path),
+            "resultSha256": _scorecard_digest(result_path),
+            "summary": summary,
+        }
+        with TemporaryDirectory(prefix=".cleanup-", dir=session.parent) as staging:
+            draft = Path(staging) / "pending.json"
+            _write_json(draft, receipt)
+            pending.hardlink_to(draft)
+
+    if session.exists() and _file_identity(session) != receipt.get("sessionIdentity"):
+        _fail("pending-cleanup")
+    if result_path.exists() and (
+        _file_identity(result_path) != receipt.get("resultIdentity")
+        or _scorecard_digest(result_path) != receipt.get("resultSha256")
+    ):
+        _fail("pending-cleanup")
+    with TemporaryDirectory(prefix=".quality-result-", dir=output.parent) as staging:
+        draft = Path(staging) / "result.json"
+        _write_json(draft, summary)
+        if output.exists() and (
+            session.exists() or result_path.exists() or _read(output) != summary
+        ):
+            _fail("output")
+        if session.exists():
+            shutil.rmtree(session)
+        result_path.unlink(missing_ok=True)
+        if session.exists() or result_path.exists():
+            _fail("result-cleanup")
+        if not output.exists():
+            output.hardlink_to(draft)
+    pending.unlink(missing_ok=True)
     return {
         "status": "derived-and-private-evidence-removed",
         "candidateId": candidate_id,

@@ -845,6 +845,63 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     }
   });
 
+  it.each([
+    [319, 0],
+    [320, 320],
+    [4095, 4095],
+    [4096, 4096],
+  ])(
+    "CFR-20 drains %i leading spaces with first source offset %i",
+    async (count, offset) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${"\u00a0".repeat(count)}A${"\u00a0".repeat(321)}B.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error("synthetic-whitespace-open-failed");
+      const publication = opened.publication;
+      try {
+        const start = publication.defaultStartLocator!;
+        const one = await collectPreparedSegments(
+          publication,
+          start,
+          1,
+          "narration-piper-v2",
+          "en",
+        );
+        const many = await collectPreparedSegments(
+          publication,
+          start,
+          16,
+          "narration-piper-v2",
+          "en",
+        );
+        expect(one.segments).toEqual(many.segments);
+        expect(one.segments.map((segment) => segment.text.trim())).toEqual([
+          "A",
+          "B.",
+        ]);
+        expect(one.segments[0]?.sourceRange.start.textOffsetCodePoints).toBe(
+          offset,
+        );
+        expect(
+          one.segments[1]?.sourceRange.start.textOffsetCodePoints,
+        ).toBeGreaterThan(count);
+        expect(
+          one.segments[1]?.sourceRange.start.textOffsetCodePoints,
+        ).toBeLessThanOrEqual(count + 322);
+        for (const [sequence, segment] of one.segments.entries()) {
+          assertPublicSegment(publication, segment, sequence);
+          expect(segment.measurements.sourceCodePoints).toBeLessThanOrEqual(
+            320,
+          );
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
   it("SAC-08 drains silent tails at segment limits without skipping the following paragraph", async () => {
     const opened = await openEpubPublication(
       await buildMinimalEpubFixture({

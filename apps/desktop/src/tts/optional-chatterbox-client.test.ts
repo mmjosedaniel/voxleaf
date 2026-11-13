@@ -299,7 +299,7 @@ describe("optional Chatterbox native client", () => {
       if (outcome === "success") download.resolve(snapshot("installed"));
       else download.reject("tts-optional-profile-incompatible-host");
       expect.soft(await action).toMatchObject({
-        state: outcome === "success" ? "installed" : "failed",
+        state: outcome === "success" ? "installed" : "confirming",
         failure:
           outcome === "success"
             ? undefined
@@ -307,7 +307,7 @@ describe("optional Chatterbox native client", () => {
       });
       const terminal = client.observe();
       expect(terminal.state).toBe(
-        outcome === "success" ? "installed" : "failed",
+        outcome === "success" ? "installed" : "confirming",
       );
       if (outcome === "failure")
         expect(terminal.failure).toBe("tts-optional-profile-incompatible-host");

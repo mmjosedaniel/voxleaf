@@ -97,10 +97,10 @@ def main() -> int:
                 authority_commit_sha=authority_commit,
             )
         code = 0 if output.get("status") == "pass" else 2
-    except (
-        CpuFallbackResultCommandError,
-        CpuFallbackResultError,
-    ):
+    except CpuFallbackResultError as error:
+        failure_code = "quality-stale" if error.code == "quality-stale" else "invalid-request"
+        output, code = {"status": "fail", "failureCode": failure_code}, 2
+    except CpuFallbackResultCommandError:
         output, code = {"status": "fail", "failureCode": "invalid-request"}, 2
     print(json.dumps(output, ensure_ascii=True, separators=(",", ":")))
     return code

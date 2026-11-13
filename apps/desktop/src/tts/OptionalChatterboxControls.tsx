@@ -165,7 +165,11 @@ function StatusCopy({
     case "absent":
       return <p>The compatible Chatterbox quality profile is not installed.</p>;
     case "confirming":
-      return <p>Review the local download before starting it.</p>;
+      return snapshot.failure === undefined ? (
+        <p>Review the local download before starting it.</p>
+      ) : (
+        renderOptionalChatterboxFailure(snapshot.failure)
+      );
     case "downloading":
       return (
         <p aria-live="polite">
@@ -369,10 +373,12 @@ export function OptionalChatterboxControls({
       {snapshot.state === "absent" ? (
         <ChatterboxDisclosure snapshot={snapshot} />
       ) : null}
-      {!acquisitionAllowed &&
+      {(!acquisitionAllowed || recheckCompatibility) &&
       (snapshot.state === "absent" || snapshot.state === "confirming") ? (
         <div>
-          <p role="status">{acquisitionBlockMessage}</p>
+          {!acquisitionAllowed && acquisitionBlockMessage ? (
+            <p role="status">{acquisitionBlockMessage}</p>
+          ) : null}
           <button
             type="button"
             disabled={disabled || actionPending}
@@ -435,7 +441,8 @@ export function OptionalChatterboxControls({
               disabled ||
               actionPending ||
               downloadRequested ||
-              !acquisitionAllowed
+              !acquisitionAllowed ||
+              recheckCompatibility
             }
             onClick={download}
           >

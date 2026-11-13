@@ -224,6 +224,46 @@ afterEach(() => {
 });
 
 describe("segment highlight controller", () => {
+  it("CFR-17 cancels a pending follow correction after measured manual motion", () => {
+    const located = locatedBlock(0, paragraph("Lifecycle"), 9);
+    const mapper = new SemanticDomRangeMapper();
+    const element = document.createElement("p");
+    element.textContent = "Lifecycle";
+    document.body.append(element);
+    const unregister = mapper.registerBlock(element, located);
+    const environment = new ManualHighlightEnvironment();
+    environment.range = { top: 140, bottom: 160 };
+    const resume = vi.fn();
+    const settleLocator = vi.fn();
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      {
+        navigateToLocator: vi.fn(),
+        settleLocator,
+        suspendVisualSampling: () => resume,
+        admitManualScrollMovement: () => true,
+      },
+      environment,
+    );
+    try {
+      controller.setRoot(element);
+      controller.accept(
+        observation("segment-started", sourceRange(located, 2, 9)),
+      );
+      const initial = environment.scrolls.length;
+      expect(initial).toBeGreaterThan(0);
+      environment.flush();
+      expect(environment.scrolls).toHaveLength(initial);
+      expect(settleLocator).not.toHaveBeenCalled();
+      expect(resume).toHaveBeenCalledOnce();
+    } finally {
+      controller.close();
+      unregister();
+      element.remove();
+    }
+  });
+
   it.each(["complete", "resume"] as const)(
     "RCF-16/17 manual inspection survives paused reflow until %s",
     (next) => {

@@ -69,6 +69,11 @@ establish ordinary playback persistence or a product memory-limit violation.
   freezes all nine built-in speakers, three synthetic Spanish cases, one
   instruction, identical generation settings, applicable-case scoring,
   blind presentation, deterministic selection, and disposable-audio bounds.
+- For a future independent screen, pass
+  `"screenVersion": "customvoice-spanish-screen-v3"` to generate, submit, and
+  cleanup. The successor uses exact rational means for eligibility and ranking.
+  It has its own private session root and result schema. Omit the field to use
+  v2. The successor has no evaluation result.
 - `customvoice-spanish-screen-v1.json` and its result schema remain immutable
   abandoned authority. Its generated raw session was deleted before any
   scorecard or result after the evaluator exposed missing numeric-expression
@@ -235,6 +240,11 @@ $run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:preflight
 $measure = $run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:measure | ConvertFrom-Json
 ```
 
+Standalone preflight exits 0 for a passing requested purpose and 2 for failure
+or invalid input. Passing pilots still report `eligibleForOfficialRun: false`
+and `eligibleForPromotion: false`. Check these fields for official-run and
+promotion eligibility.
+
 Assess the content-free machine result before generating disposable review
 audio:
 
@@ -257,6 +267,10 @@ $derive = $assessment.Clone()
 $derive.qualitySessionId = "<quality-session-id>"
 $derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:derive
 ```
+
+If derivation returns `quality-stale`, rerun the quality aggregation for the
+same session, then retry derivation. Keep the reviewed scorecard and corrections
+in place for both steps.
 
 Before derivation, an evaluator may correct one mistaken v6 meaning-change
 classification without altering the original completed scorecard or any

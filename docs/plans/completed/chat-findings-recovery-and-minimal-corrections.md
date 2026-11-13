@@ -1,14 +1,14 @@
 # Chat findings: minimal recovery and contract corrections
 
-Status: **planned; implementation and validation have not started**.
+Status: **complete**. See the [execution ledger](../evidence/chat-findings-recovery/execution-ledger.md).
 Prepared on 2026-11-12 from clean `main` at
 `693b0fc3650de45244c035b13e05de38a0067c9a` (passage-navigation PR #313).
 Planning branch: `codex/chat-findings-20261112-plan`.
 
-The user authorized investigation, the case 7 decision, this ExecPlan, a local
-branch and a documentation commit. The user explicitly prohibited executing the
-plan now. No source edits, tests, builds, benchmarks, model generation, package
-installation, push, PR, merge or publication are part of this planning delivery.
+The planning delivery established the branch and documented the case 7
+decision. The user subsequently authorized M0–M6 implementation and validation
+from `95eb4887121f2696beabade407d04afa6441e881`. Git delivery remains outside
+the current execution scope.
 
 ## Goal
 
@@ -23,7 +23,7 @@ preflight contract decision (7), and one intentional recovery policy (1).
 Twenty-one defects can be corrected within their existing execution contracts;
 case 11 requires a separately versioned screening correction. Static support
 is not a claim that a reproduction test ran or that every fault occurred on the
-user's machine. All implementation milestones below remain pending.
+user's machine. The implementation and selected host validation are complete.
 
 ## User-visible outcome
 
@@ -113,7 +113,7 @@ Read the current [documentation index](../../README.md),
 [system diagram](../../architecture/system-diagram.md),
 [roadmap](../roadmap.md) and [.agents/PLANS.md](../../../.agents/PLANS.md).
 M005 remains complete at its safe-document-to-narration boundary; read its
-[completed plan](../completed/M005-narration-text-preparation.md) before U5/U6.
+[completed plan](M005-narration-text-preparation.md) before U5/U6.
 That evidence does not establish current playback or new normalization acceptance.
 
 Durable constraints include ADR-0007/0012 (EPUB/preparation), ADR-0046 (native
@@ -127,31 +127,31 @@ authorities unchanged and state precisely which policy the new decision extends.
 
 Historical plan map:
 
-- PN: [passage navigation](../completed/passage-navigation-minimal-corrections.md),
+- PN: [passage navigation](passage-navigation-minimal-corrections.md),
   #313, `693b0fc`; [acceptance bindings](../evidence/passage-navigation/acceptance-bindings.md).
-- FPA: [five-pass audit](../completed/five-pass-audit-revalidation-and-corrections.md),
+- FPA: [five-pass audit](five-pass-audit-revalidation-and-corrections.md),
   #312, `a8a61df`; [ledger](../evidence/five-pass-audit/execution-ledger.md).
-- RPI: [reader position/image lifecycle](../completed/reader-position-and-image-lifecycle.md), #311.
-- DCR: [deep chat audit](../completed/deep-chat-audit-minimal-corrections.md),
+- RPI: [reader position/image lifecycle](reader-position-and-image-lifecycle.md), #311.
+- DCR: [deep chat audit](deep-chat-audit-minimal-corrections.md),
   #310, `2e464da`.
-- CCF/C14: [confirmed chat findings](../completed/confirmed-chat-findings-minimal-corrections.md),
+- CCF/C14: [confirmed chat findings](confirmed-chat-findings-minimal-corrections.md),
   #306, `426ec7d`.
-- CAF: [chat audit follow-up](../completed/chat-audit-minimal-follow-up.md),
+- CAF: [chat audit follow-up](chat-audit-minimal-follow-up.md),
   #305, `78db4f8`.
-- RCF: [revalidated chat findings](../completed/revalidated-chat-findings-minimal-corrections.md),
+- RCF: [revalidated chat findings](revalidated-chat-findings-minimal-corrections.md),
   #304, `7820db6`.
-- BNC: [narration boundaries/navigation](../completed/narration-boundary-navigation-corrections.md),
-  #296, `85dd916`; VUC: [visible locator/Unicode compounds](../completed/visible-locator-unicode-compound-corrections.md),
+- BNC: [narration boundaries/navigation](narration-boundary-navigation-corrections.md),
+  #296, `85dd916`; VUC: [visible locator/Unicode compounds](visible-locator-unicode-compound-corrections.md),
   #294, `f2870ff`.
-- R8: [eight revalidated findings](../completed/eight-revalidated-findings-minimal-corrections.md),
-  #293, `f533090`; EFC: [eight findings](../completed/eight-finding-minimal-corrections.md), #288.
-- SFA: [seven findings](../completed/seven-finding-minimal-corrections.md), #287;
-  MAF: [minimal audit](../completed/minimal-audit-findings-corrections.md), #286;
-  SAF: [static audit follow-up](../completed/static-audit-follow-up.md), #285.
-- RAC: [revalidated audit corrections](../completed/revalidated-audit-corrections.md), #284;
-  SAC: [static audit](../completed/static-audit-corrections.md), #281;
-  LCF: [lifecycle correctness](../completed/lifecycle-correctness-follow-up.md), #277;
-  NLC: [narration logic](../completed/narration-logic-corrections.md), #276.
+- R8: [eight revalidated findings](eight-revalidated-findings-minimal-corrections.md),
+  #293, `f533090`; EFC: [eight findings](eight-finding-minimal-corrections.md), #288.
+- SFA: [seven findings](seven-finding-minimal-corrections.md), #287;
+  MAF: [minimal audit](minimal-audit-findings-corrections.md), #286;
+  SAF: [static audit follow-up](static-audit-follow-up.md), #285.
+- RAC: [revalidated audit corrections](revalidated-audit-corrections.md), #284;
+  SAC: [static audit](static-audit-corrections.md), #281;
+  LCF: [lifecycle correctness](lifecycle-correctness-follow-up.md), #277;
+  NLC: [narration logic](narration-logic-corrections.md), #276.
 
 These are ancestry/control references. In particular, a prior plan saying
 "complete" does not close a different trigger in the same file.
@@ -220,7 +220,9 @@ changing measurement execution, frozen gates or promotion schemas.
 
 ### M0: Admit execution and capture only necessary baseline evidence
 
-Status: **not started**. A later execution instruction is required.
+Status: **complete**. The starting tree and index were clean. Selected
+Python regressions used fresh focused host captures because the existing
+receipts do not cover the new inputs.
 
 - Recheck HEAD, dirty/index state, changed consumers and original finding
   validity. Preserve unrelated work. Record an execution ledger under
@@ -238,7 +240,7 @@ Status: **not started**. A later execution instruction is required.
 
 ### M1: Maintainer benchmark corrections (U7-U10)
 
-Status: **not started**. These units do not change inference or model payloads.
+Status: **complete**. G3, Python static checks and independent review passed.
 
 **U8 — case 7.** Change only the standalone exit predicate, add a parameterized
 CLI purpose/pass/fail matrix including malformed input and inconsistent failure
@@ -326,7 +328,8 @@ review. Historical v2/v12 authority controls remain part of G3. No GPU gate.
 
 ### M2: EPUB projection and narration (U4-U6)
 
-Status: **not started**.
+Status: **complete**. G2 passed on the rebuilt package exports. Final
+input reconciliation is recorded in the ledger.
 
 **U4 — cases 4 and 13.** Owners are
 `packages/epub/src/document/xhtml-projector.ts` and
@@ -383,7 +386,8 @@ resource assertions are mandatory; they cannot be replaced by historical PASS.
 
 ### M3: Reader placement, preferences and healthy profile selection (U1-U2)
 
-Status: **not started**.
+Status: **complete**. Focused desktop/browser and native validation are
+tracked in the ledger.
 
 **U1 — cases 2, 3, 12 and 17.** Owners are
 `apps/desktop/src/tts/product-narration-coordinator.ts`,
@@ -430,7 +434,8 @@ Piper arms after U3. Keep case 1 and PN-R1-F1 as explicit negative controls.
 
 ### M4: Optional acquisition and truthful storage (U3)
 
-Status: **not started**.
+Status: **complete**. G5 passed in both feature modes,
+and the G8 admission and scratch recovery receipts are recorded.
 
 **U3 — cases 5, 16 and 22.** These cases share the native/client lifecycle.
 
@@ -470,7 +475,8 @@ paths, with old active/backup/version sentinels, rather than repeated downloads.
 
 ### M5: Exact-artifact release evidence (U11)
 
-Status: **not started**.
+Status: **complete**. G4 passed, and G9 verified
+the current unsigned package and exact lifecycle evidence.
 
 **U11 — cases 15, 19 and 23.** These cases belong to one evidence owner.
 
@@ -507,7 +513,7 @@ merely because a later metadata-only edit leaves its full input closure identica
 
 ### M6: Combined acceptance and closeout
 
-Status: **not started**.
+Status: **complete**. Final independent review approved the integrated patch.
 
 - Freeze final runtime/test/documentation edits. Rebuild only invalidated artifacts.
   Renew the affected combined integration checks; reuse unchanged fresh unit gates
@@ -607,10 +613,11 @@ G2 selectable affected union:
 pnpm.cmd --filter @voxleaf/epub exec vitest run src/document/xhtml-projector.test.ts src/navigation/navigation-document.test.ts src/public/open-epub-publication.test.ts src/integration/ingestion-matrix.test.ts src/narration/narration-normalizer.test.ts src/narration/narration-source.test.ts src/narration/narration-segment-packer.test.ts src/narration/narration-prepared-segment.test.ts src/narration/narration-resource-bounds.test.ts src/integration/narration-preparation-matrix.test.ts
 ```
 
-G3 selectable affected union; the CPU-fallback file is the planned coverage gap:
+G3 selectable affected union. The existing quality suite exercises the
+CPU-fallback derivation boundary:
 
 ```powershell
-uv run --project services/tts --locked pytest services/tts/tests/test_benchmark_cli.py services/tts/tests/test_benchmark_preflight.py services/tts/tests/test_benchmark_quality.py services/tts/tests/test_benchmark_cpu_fallback_result.py services/tts/tests/test_benchmark_corrective_v12.py services/tts/tests/test_benchmark_v12_authority.py services/tts/tests/test_customvoice_screen.py services/tts/tests/test_customvoice_screen_authority.py
+uv run --project services/tts --locked pytest services/tts/tests/test_benchmark_cli.py services/tts/tests/test_benchmark_preflight.py services/tts/tests/test_benchmark_quality.py services/tts/tests/test_benchmark_corrective_v12.py services/tts/tests/test_benchmark_v12_authority.py services/tts/tests/test_customvoice_screen.py services/tts/tests/test_customvoice_screen_authority.py
 ```
 
 G5:
@@ -713,13 +720,17 @@ host resources after every outcome. Unverified restoration blocks acceptance.
   recorded conditional reuse, required renewal and artifact-only reuse.
 - 2026-11-12: Created the planning branch from clean `693b0fc` and prepared this
   plan and maintained index entries. Documentation commit is the only delivery.
-- M0-M6: **not started**. No implementation, tests, build, benchmark, application
-  launch, model generation or host mutation has been performed for this plan.
+- Execution started from the clean planning commit. U7–U10 have implementation
+  and host regression evidence. See the execution ledger for exact outcomes and
+  open checks.
+- U1–U6 and U11 are implemented. The reader and benchmark authority boundaries
+  remain local. The canonical system diagram and M005 boundary still describe
+  the implemented architecture.
 
 ## Discoveries and decisions
 
-1. Case 7 is resolved under the user's delegated decision; it is no longer a
-   pending permission request. The proposed production contract remains unimplemented.
+1. Case 7 implements the user's delegated decision. Exit status follows the
+   requested purpose, and official eligibility remains a separate receipt field.
 2. Case 1 is intentional and excluded. Case 15's earlier apparent closure belongs
    to a different receipt validator. Case 2 is a residual regression in the recent
    PN settlement change; fixing it must preserve PN's other protections.
@@ -738,14 +749,11 @@ host resources after every outcome. Unverified restoration blocks acceptance.
 
 ## Final validation results
 
-Planning only: production/test/configuration/generated/frozen files are unchanged.
-Repository source, documentation, historical evidence and Git state were inspected
-read-only, apart from the requested new plan/index edits and local branch/commit.
-No tests, lint, type checks, builds, browser/native checks or benchmarks were run.
-No historical runtime result has been accepted as a new result for this plan.
-
-Implementation acceptance is **pending**. Populate exact commands, original/reused
-receipt IDs, outcomes, current input identities, host restoration and independent
-review ID here during execution. A documentation-only planning commit does not
-implement the chosen contracts and does not require a runtime change review;
-M6 explicitly requires that review for the later behavioral patch.
+Independent review **APPROVE**, `CFR-CR-FINAL-R03-20261113`, covers the
+integrated implementation and selected host validation. The
+[review report](../evidence/chat-findings-recovery/review-final-r03.md)
+records the exact reviewed identities. The execution ledger records commands,
+run receipts, affected inputs and restoration. The
+[native and package summary](../evidence/chat-findings-recovery/native-package-summary.md)
+records the current G7–G9 evidence and the separate G8 scratch recovery.
+Case 1 retains its intentional behavior. The other 23 cases are implemented.

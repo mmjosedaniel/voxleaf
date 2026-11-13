@@ -23,7 +23,10 @@ export interface ReaderNarrationSource {
     listener: (request: ProductNarrationNavigationRequest) => void,
   ): () => void;
   startAtLocator?(locator: ReadingLocatorV1): boolean;
-  updateVisibleLocator?(locator: ReadingLocatorV1): void;
+  updateVisibleLocator?(
+    locator: ReadingLocatorV1,
+    measuredManual?: boolean,
+  ): void;
   beginReaderPlacement?(
     request?: import("./reader-navigation").ReaderPlacementRequest,
   ): void;
@@ -50,6 +53,7 @@ export interface SegmentHighlightControllerCallbacks {
   readonly navigateToLocator: (locator: ReadingLocatorV1) => void;
   readonly settleLocator: (locator: ReadingLocatorV1) => void;
   readonly recordAutomaticFollowPlacement?: (locator: ReadingLocatorV1) => void;
+  readonly admitManualScrollMovement?: () => boolean;
   readonly suspendVisualSampling: () => (
     options?: ActiveVisualLocatorResumeOptions,
   ) => void;
@@ -506,6 +510,10 @@ export class SegmentHighlightController {
     this.#cancelScheduledSettle = this.#environment.schedule(root, () => {
       this.#cancelScheduledSettle = undefined;
       if (this.#activeKey !== expectedKey || !this.#active?.followEligible) {
+        return;
+      }
+      if (this.#callbacks?.admitManualScrollMovement?.()) {
+        this.manualInspection();
         return;
       }
       const viewport = this.#environment.viewportRect(root);

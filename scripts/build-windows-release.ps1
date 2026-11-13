@@ -2,6 +2,9 @@
 param(
   [switch]$Sign,
   [switch]$ScanWithDefender,
+  [switch]$AttachOrdinaryEvidence,
+  [string]$LifecycleReceipt,
+  [string]$OrdinaryChatterboxReceipt,
   [ValidateSet("not-run")]
   [string]$LifecycleStatus = "not-run"
 )
@@ -146,6 +149,33 @@ function Invoke-DefenderArtifactScan {
 
 Push-Location $repositoryRoot
 try {
+  if ($AttachOrdinaryEvidence) {
+    if ($Sign -or !$LifecycleReceipt -or !$OrdinaryChatterboxReceipt) {
+      throw 'windows-release-attach-arguments'
+    }
+    $binary = Join-Path $srcTauri "target\release\voxleaf-desktop.exe"
+    $installer = Join-Path $srcTauri "target\release\bundle\nsis\VoxLeaf_0.1.0_x64-setup.exe"
+    $binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
+    $installerHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+    $binarySignature = Get-AuthenticodeSignature -LiteralPath $binary
+    $installerSignature = Get-AuthenticodeSignature -LiteralPath $installer
+    $signatureStatus = Get-ReleaseSignatureStatus $binarySignature.Status $installerSignature.Status ($binarySignature.Status -eq 'Valid')
+    $scanArguments = @()
+    if ($ScanWithDefender) {
+      $antivirusStatus = Invoke-DefenderArtifactScan $installer
+      if ($antivirusStatus -eq 'windows-defender-no-threats') {
+        $scanArguments = @('--scanned-installer-sha256', $installerHash)
+      }
+    }
+    Invoke-CheckedCommand node `
+      "apps/desktop/scripts/windows-release.mjs" "evidence" `
+      "--installer" $installer "--binary" $binary `
+      "--verified-installer-sha256" $installerHash "--verified-binary-sha256" $binaryHash `
+      "--signature-status" $signatureStatus "--antivirus-status" $antivirusStatus `
+      "--lifecycle-receipt" $LifecycleReceipt "--ordinary-chatterbox-receipt" $OrdinaryChatterboxReceipt `
+      "--write" @scanArguments
+    return
+  }
   Assert-CanonicalCargoLayout
   Invoke-CheckedCommand node "apps/desktop/scripts/windows-release.mjs" "check" "--require-core"
 
