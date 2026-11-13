@@ -330,7 +330,16 @@ export class ReaderNavigationCoordinator {
     if (next === undefined || next === this.#preferences) {
       return undefined;
     }
+    return this.setPreferences(next);
+  }
 
+  public setPreferences(
+    next: ReaderPreferencesV1,
+  ): ReaderPreferenceReflowIntent | undefined {
+    const preference = (
+      ["textScale", "lineSpacing", "contentWidth", "theme"] as const
+    ).find((name) => this.#preferences[name] !== next[name]);
+    if (preference === undefined) return undefined;
     const previous = this.#preferences;
     this.#preferences = next;
     this.#preferenceReflowRevision += 1;

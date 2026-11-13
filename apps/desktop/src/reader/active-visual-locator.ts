@@ -365,7 +365,7 @@ export class ActiveVisualLocatorTracker {
   readonly #publication: OpenedPublication;
   readonly #mapper: SemanticDomRangeMapper;
   readonly #environment: ActiveVisualLocatorEnvironment;
-  #onLocator: (locator: ReadingLocatorV1) => void;
+  #onLocator: (locator: ReadingLocatorV1, measuredManual?: boolean) => void;
   readonly #locatedBlocksByElement = new Map<
     HTMLElement,
     PublicationLocatedBlock
@@ -381,6 +381,8 @@ export class ActiveVisualLocatorTracker {
   #suspensionDepth = 0;
   #dirty = false;
   #closed = false;
+  #manualScroll: { readonly top: number; readonly expires: number } | undefined;
+  #manualSamplePending = false;
 
   public constructor(
     publication: OpenedPublication,
@@ -395,7 +397,9 @@ export class ActiveVisualLocatorTracker {
     this.#lastLocator = options.initialLocator;
   }
 
-  public setOnLocator(callback: (locator: ReadingLocatorV1) => void): void {
+  public setOnLocator(
+    callback: (locator: ReadingLocatorV1, measuredManual?: boolean) => void,
+  ): void {
     if (!this.#closed) this.#onLocator = callback;
   }
 
@@ -405,6 +409,32 @@ export class ActiveVisualLocatorTracker {
 
   public get suspended(): boolean {
     return this.#suspensionDepth > 0;
+  }
+
+  public noteManualScrollIntent(): void {
+    if (this.#root === undefined || this.#closed) return;
+    this.#manualScroll = {
+      top: this.#root.scrollTop,
+      expires: performance.now() + 500,
+    };
+  }
+
+  public clearManualScrollIntent(): void {
+    this.#manualScroll = undefined;
+    this.#manualSamplePending = false;
+  }
+
+  public admitManualScrollMovement(): boolean {
+    const intent = this.#manualScroll;
+    if (intent === undefined || this.#root === undefined) return false;
+    if (performance.now() > intent.expires) {
+      this.#manualScroll = undefined;
+      return false;
+    }
+    if (this.#root.scrollTop === intent.top) return false;
+    this.#manualScroll = undefined;
+    this.#manualSamplePending = true;
+    return true;
   }
 
   public setRoot(root: HTMLElement | null): void {
@@ -509,7 +539,10 @@ export class ActiveVisualLocatorTracker {
         return;
       }
       this.#suspensionDepth -= 1;
-      if (this.#suspensionDepth === 0 && options.requestSample !== false) {
+      if (
+        this.#suspensionDepth === 0 &&
+        (options.requestSample !== false || this.#manualSamplePending)
+      ) {
         this.requestSample();
       }
     };
@@ -523,6 +556,7 @@ export class ActiveVisualLocatorTracker {
   }
 
   public recordAutomaticFollowPlacement(locator: ReadingLocatorV1): void {
+    this.clearManualScrollIntent();
     const root = this.#root;
     if (this.#closed || root === undefined) return;
     const placement = this.#measurePlacement(locator);
@@ -567,6 +601,8 @@ export class ActiveVisualLocatorTracker {
   }
 
   #sample(root: HTMLElement): void {
+    const measuredManual = this.#manualSamplePending;
+    this.#manualSamplePending = false;
     const viewport = this.#environment.viewportRect(root);
     if (viewport === undefined) {
       return;
@@ -614,6 +650,7 @@ export class ActiveVisualLocatorTracker {
     // then replace a settled interior offset even though reading did not move.
     // Retain that checkpoint only while its measured placement is unchanged.
     if (
+      !measuredManual &&
       this.#protectedPlacement !== undefined &&
       samePlacement(this.#protectedPlacement, element, rect, viewport)
     )
@@ -653,14 +690,16 @@ export class ActiveVisualLocatorTracker {
     } catch {
       return;
     }
-    if (locatorEqual(this.#lastLocator, locator)) {
+    if (!measuredManual && locatorEqual(this.#lastLocator, locator)) {
       return;
     }
     this.#lastLocator = locator;
-    this.#onLocator(locator);
+    if (measuredManual) this.#onLocator(locator, true);
+    else this.#onLocator(locator);
   }
 
   #teardownRoot(): void {
+    this.clearManualScrollIntent();
     this.#protectedPlacement = undefined;
     this.#cancelScheduledSample?.();
     this.#cancelScheduledSample = undefined;

@@ -35,6 +35,7 @@ from benchmarks.contracts import (
 from benchmarks.harness import load_corpus
 from benchmarks.metrics import distribution, media_duration_seconds, real_time_factor
 from benchmarks.preflight import PreflightReceipt, PreflightRequest
+from benchmarks.quality import QualitySessionError, _current_aggregate
 from benchmarks.summary import (
     build_summary,
     canonical_summary_bytes,
@@ -396,6 +397,12 @@ def _load_quality(session_id: str) -> tuple[Mapping[str, object], Path]:
         or quality.get("evaluatorCount") != 1
     ):
         _fail("quality")
+    try:
+        current, _ = _current_aggregate(session, session_id)
+    except QualitySessionError:
+        _fail("quality")
+    if aggregate != current:
+        _fail("quality-stale")
     return quality, session
 
 

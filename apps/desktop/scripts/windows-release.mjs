@@ -1,5 +1,12 @@
-import { createHash } from "node:crypto";
-import { access, readFile, stat, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import {
+  access,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -256,10 +263,10 @@ export function validateClosedReleaseValues(documents) {
     ]?.includes("ordinary-chatterbox-release-host.mjs --mode preflight") ||
     !rootPackage.scripts?.[
       "package:windows:ordinary-chatterbox:evidence"
-    ]?.includes("--ordinary-chatterbox-receipt") ||
+    ]?.includes("-OrdinaryChatterboxReceipt") ||
     !rootPackage.scripts?.[
       "package:windows:ordinary-chatterbox:evidence"
-    ]?.includes(`--lifecycle-receipt ${LIFECYCLE_RECEIPT_PATH}`) ||
+    ]?.includes(`-LifecycleReceipt ${LIFECYCLE_RECEIPT_PATH}`) ||
     rootPackage.scripts?.[
       "package:windows:ordinary-chatterbox:evidence"
     ]?.includes("--lifecycle-status") ||
@@ -423,26 +430,34 @@ export function validateOrdinaryChatterboxReceipt(receipt, installerIdentity) {
     JSON.stringify(Object.keys(receipt?.artifact ?? {}).sort()) !==
       JSON.stringify(["applicationBinary", "installer"].sort()) ||
     receipt?.schemaVersion !== 1 ||
-    JSON.stringify(receipt.application) !==
-      JSON.stringify({
-        identifier: "com.voxleaf.desktop",
-        platform: "windows-x86_64",
-        version: APP_VERSION,
-      }) ||
+    !matchesRecord(receipt.application, {
+      identifier: "com.voxleaf.desktop",
+      platform: "windows-x86_64",
+      version: APP_VERSION,
+    }) ||
     receipt.result !== "passed" ||
     JSON.stringify(receipt.steps) !==
       JSON.stringify(ORDINARY_CHATTERBOX_JOURNEY_STEPS) ||
-    JSON.stringify(receipt.outcomes) !==
-      JSON.stringify(ORDINARY_CHATTERBOX_JOURNEY_OUTCOMES) ||
-    JSON.stringify(receipt.artifact?.installer) !==
-      JSON.stringify(installerIdentity) ||
+    !matchesRecord(receipt.outcomes, ORDINARY_CHATTERBOX_JOURNEY_OUTCOMES) ||
+    !matchesRecord(receipt.artifact?.installer, installerIdentity) ||
+    !hasFields(installedBinary, ["fileName", "sizeBytes", "sha256"]) ||
     installedBinary?.fileName !== "voxleaf-desktop.exe" ||
     !Number.isSafeInteger(installedBinary?.sizeBytes) ||
     installedBinary.sizeBytes <= 0 ||
-    !/^[a-f0-9]{64}$/.test(installedBinary?.sha256 ?? "")
+    typeof installedBinary.sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(installedBinary.sha256)
   ) {
     fail("ordinary-chatterbox-receipt");
   }
+}
+
+function installedBinaryEvidence(receipt) {
+  const {
+    fileName,
+    sizeBytes,
+    sha256: digest,
+  } = receipt.artifact.applicationBinary;
+  return { fileName, sizeBytes, sha256: digest };
 }
 
 function hasFields(value, fields) {
@@ -605,8 +620,9 @@ export async function createPackageEvidence({
       ...(ordinaryChatterboxReceipt === undefined
         ? {}
         : {
-            installedApplicationBinary:
-              ordinaryChatterboxReceipt.artifact.applicationBinary,
+            installedApplicationBinary: installedBinaryEvidence(
+              ordinaryChatterboxReceipt,
+            ),
           }),
     },
     payload: {
@@ -672,6 +688,12 @@ async function main(arguments_) {
     await validateReleaseConfiguration(root, true);
     const receiptPath = option(rest, "--ordinary-chatterbox-receipt");
     const lifecyclePath = option(rest, "--lifecycle-receipt");
+    const installer = option(rest, "--installer");
+    const binary = option(rest, "--binary");
+    const evidencePath = path.join(
+      root,
+      "apps/desktop/src-tauri/release/windows-package-evidence-v3.json",
+    );
     let lifecycleReceipt;
     if (lifecyclePath !== undefined) {
       try {
@@ -682,8 +704,8 @@ async function main(arguments_) {
     }
     const evidence = await createPackageEvidence({
       root,
-      installer: option(rest, "--installer"),
-      binary: option(rest, "--binary"),
+      installer,
+      binary,
       signatureStatus: option(rest, "--signature-status", "unsigned-local"),
       antivirusStatus: option(rest, "--antivirus-status", "not-run"),
       lifecycleStatus: option(rest, "--lifecycle-status", "not-run"),
@@ -695,19 +717,80 @@ async function main(arguments_) {
     });
     const rendered = `${JSON.stringify(evidence, null, 2)}\n`;
     if (rest.includes("--write")) {
-      await writeFile(
-        path.join(
-          root,
-          "apps/desktop/src-tauri/release/windows-package-evidence-v3.json",
-        ),
+      await writePackageEvidence({
+        evidencePath,
         rendered,
-        "utf8",
-      );
+        evidence,
+        installer,
+        binary,
+        attach: receiptPath !== undefined,
+        verifiedInstaller: option(rest, "--verified-installer-sha256"),
+        verifiedBinary: option(rest, "--verified-binary-sha256"),
+        scannedInstaller: option(rest, "--scanned-installer-sha256"),
+      });
     }
     process.stdout.write(rendered);
     return;
   }
   fail("command");
+}
+
+export async function writePackageEvidence({
+  evidencePath,
+  rendered,
+  evidence,
+  installer,
+  binary,
+  attach,
+  verifiedInstaller,
+  verifiedBinary,
+  scannedInstaller,
+}) {
+  const expectedInstaller = evidence.package.installer.sha256;
+  const expectedBinary = evidence.package.applicationBinary.sha256;
+  if (
+    attach &&
+    (verifiedInstaller !== expectedInstaller ||
+      verifiedBinary !== expectedBinary)
+  ) {
+    fail("artifact-verification");
+  }
+  if (
+    attach &&
+    evidence.observations.antivirus === "windows-defender-no-threats" &&
+    scannedInstaller !== expectedInstaller
+  )
+    fail("antivirus-observation-unverified");
+  if (attach) {
+    let previous;
+    try {
+      previous = await readJson(evidencePath);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (
+      previous?.package?.installer?.sha256 === expectedInstaller &&
+      previous.observations?.antivirus === "windows-defender-no-threats" &&
+      evidence.observations.antivirus !== "windows-defender-no-threats"
+    ) {
+      fail("antivirus-observation-unverified");
+    }
+  }
+  const temporary = `${evidencePath}.${randomUUID()}.tmp`;
+  let owned = false;
+  try {
+    await writeFile(temporary, rendered, { encoding: "utf8", flag: "wx" });
+    owned = true;
+    if (
+      (await sha256(installer)) !== expectedInstaller ||
+      (await sha256(binary)) !== expectedBinary
+    ) {
+      fail("artifact-drift");
+    }
+    await rename(temporary, evidencePath);
+  } finally {
+    if (owned) await rm(temporary, { force: true });
+  }
 }
 
 if (

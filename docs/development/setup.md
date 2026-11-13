@@ -599,6 +599,16 @@ controlled local use and the portfolio MVP under ADR-0049/release authority v2.
 It is not a trusted public artifact; that channel requires an authorized
 signature and its verification evidence.
 
+Use the PowerShell release wrapper to attach both exact candidate receipts:
+
+```powershell
+./scripts/build-windows-release.ps1 -AttachOrdinaryEvidence -LifecycleReceipt '<current lifecycle receipt>' -OrdinaryChatterboxReceipt '<current ordinary Chatterbox receipt>'
+```
+
+The wrapper verifies the live application and installer signatures and binds
+the receipts to their current SHA-256 identities before writing evidence. Add
+`-ScanWithDefender` when refreshing a Defender-clean claim for the same artifact.
+
 The signed maintainer path is:
 
 ```powershell
@@ -752,6 +762,11 @@ $preflight = @{
 } | ConvertTo-Json -Compress
 $preflight | pnpm.cmd benchmark:tts:preflight
 ```
+
+Standalone preflight exits 0 when the requested purpose passes, or 2 on
+failure or invalid input. A passing pilot keeps both
+`eligibleForOfficialRun` and `eligibleForPromotion` false. Use the eligibility
+fields to decide whether to proceed with an official run or promotion.
 
 After a passing preflight, use the same closed payload with `purpose = "pilot"`
 for one disposable load/generation/cleanup smoke:

@@ -131,7 +131,6 @@ def _minimum_evaluators(protocol: object) -> int:
 
 
 def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
-    session.mkdir(parents=True)
     expected = _expected_candidates(profile)
     protocol = (
         profile.authority.profile_version if profile.authority is not None else PROTOCOL_VERSION
@@ -231,26 +230,34 @@ def generate_candidate_audio(
     """Generate one exact candidate's corpus into a known disposable session."""
 
     session = _session_path(session_id, raw_root=raw_root)
+    candidate_id = request.profile.candidate_id
+    expected = _expected_candidates(request.profile)
+    expected_identity = (
+        request.profile.authority.configuration_identity_sha256
+        if request.profile.authority is not None
+        else "legacy-profile-v2"
+    )
     metadata = _load_staging_session(session) if session.exists() else None
-    try:
-        if metadata is None:
-            metadata = _new_session(session, request.profile)
+    if metadata is None:
+        try:
+            session.mkdir(parents=True)
+        except OSError:
+            raise QualitySessionError("generation") from None
+    else:
         commits = cast(dict[str, object], metadata["candidateCommits"])
-        candidate_id = request.profile.candidate_id
-        expected = tuple(cast(list[str], metadata["expectedCandidates"]))
-        expected_identity = (
-            request.profile.authority.configuration_identity_sha256
-            if request.profile.authority is not None
-            else "legacy-profile-v2"
-        )
         identities = cast(dict[str, object], metadata["configurationIdentities"])
         if (
-            expected != _expected_candidates(request.profile)
+            tuple(cast(list[str], metadata["expectedCandidates"])) != expected
             or candidate_id not in expected
             or candidate_id in commits
             or identities.get(candidate_id, expected_identity) != expected_identity
         ):
             raise QualitySessionError("candidate-state")
+    try:
+        if metadata is None:
+            metadata = _new_session(session, request.profile)
+        commits = cast(dict[str, object], metadata["candidateCommits"])
+        identities = cast(dict[str, object], metadata["configurationIdentities"])
         identities[candidate_id] = expected_identity
         corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
         if len(corpus.performance_order) != len(corpus.cases) or set(
@@ -557,6 +564,8 @@ def correct_meaning_changing_defect(
     correction_path = session / "scorecards" / f"{evaluator_id}.correction.json"
     if correction_path.exists():
         raise QualitySessionError("correction-state")
+    aggregate_path = session / "quality.aggregate.json"
+    aggregate_path.unlink(missing_ok=True)
     _write_json(
         correction_path,
         {
@@ -568,8 +577,6 @@ def correct_meaning_changing_defect(
             "reasonCode": reason_code,
         },
     )
-    aggregate_path = session / "quality.aggregate.json"
-    aggregate_path.unlink(missing_ok=True)
     return {
         "status": "pass",
         "sessionId": session_id,
@@ -613,12 +620,7 @@ def _corrected_defect_cases(
     return corrected
 
 
-def aggregate_scores(
-    session_id: str,
-    *,
-    raw_root: Path = RAW_ROOT,
-) -> dict[str, object]:
-    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+def _current_aggregate(session: Path, session_id: str) -> tuple[dict[str, object], int]:
     metadata = _read_mapping(session / "session.json")
     evaluator_ids = metadata.get("evaluatorIds")
     if metadata.get("state") != "ready" or not isinstance(evaluator_ids, list):
@@ -666,13 +668,23 @@ def aggregate_scores(
         "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
         "candidates": results,
     }
+    return aggregate, len(cards)
+
+
+def aggregate_scores(
+    session_id: str,
+    *,
+    raw_root: Path = RAW_ROOT,
+) -> dict[str, object]:
+    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    aggregate, evaluator_count = _current_aggregate(session, session_id)
     _write_json(session / "quality.aggregate.json", aggregate)
     return {
         "status": "pass",
         "sessionId": session_id,
-        "evaluatorCount": len(cards),
-        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
-        "candidates": results,
+        "evaluatorCount": evaluator_count,
+        "eligibleForPromotion": aggregate["eligibleForPromotion"],
+        "candidates": aggregate["candidates"],
     }
 
 

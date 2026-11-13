@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import io
 import json
 import os
 import subprocess
@@ -11,7 +12,7 @@ import threading
 import time
 from ctypes import wintypes
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 from unittest.mock import Mock
 
 import pytest
@@ -360,8 +361,9 @@ def test_preflight_command_rejects_profile_misspellings_without_coercion(
             parse_preflight_request(payload)
 
 
-def test_receipt_output_is_allowlisted_and_contains_no_private_paths(tmp_path: Path) -> None:
-    host = HostSnapshot(
+@pytest.fixture
+def synthetic_host() -> HostSnapshot:
+    return HostSnapshot(
         operating_system="Windows",
         os_version="10.0.26200",
         architecture="x86_64",
@@ -379,12 +381,78 @@ def test_receipt_output_is_allowlisted_and_contains_no_private_paths(tmp_path: P
         free_vram_bytes=None,
         process_vram_available=False,
     )
+
+
+@pytest.mark.parametrize(
+    ("purpose", "failed", "official", "exit_code"),
+    [
+        ("pilot", False, False, 0),
+        ("pilot", True, False, 2),
+        ("official", False, True, 0),
+        ("official", True, False, 2),
+        ("official", True, True, 2),
+        ("official", False, False, 2),
+    ],
+)
+def test_preflight_exit_matches_requested_purpose(
+    tmp_path: Path,
+    synthetic_host: HostSnapshot,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    purpose: Literal["pilot", "official"],
+    failed: bool,
+    official: bool,
+    exit_code: int,
+) -> None:
+    payload = valid_payload(tmp_path)
+    payload["purpose"] = purpose
+    receipt = PreflightReceipt(
+        purpose=purpose,
+        candidate_id=str(payload["candidateId"]),
+        role="compatibility",
+        commit_sha="a" * 40,
+        host=synthetic_host,
+        artifacts=(),
+        failures=("artifact",) if failed else (),
+        eligible_for_official_run=official,
+        eligible_for_promotion=official and not failed,
+    )
+    monkeypatch.setattr(sys, "argv", ["cli", "preflight"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    monkeypatch.setattr(cli, "run_local_preflight", Mock(return_value=receipt))
+
+    assert cli.main() == exit_code
+    output = json.loads(capsys.readouterr().out)
+    assert output["purpose"] == purpose
+    assert output["eligibleForOfficialRun"] is official
+    assert output["eligibleForPromotion"] is (official and not failed)
+
+
+def test_preflight_invalid_input_exits_two(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    preflight = Mock()
+    monkeypatch.setattr(sys, "argv", ["cli", "preflight"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO("{"))
+    monkeypatch.setattr(cli, "run_local_preflight", preflight)
+
+    assert cli.main() == 2
+    assert json.loads(capsys.readouterr().out) == {
+        "status": "fail",
+        "failures": ["invalid-request"],
+    }
+    preflight.assert_not_called()
+
+
+def test_receipt_output_is_allowlisted_and_contains_no_private_paths(
+    tmp_path: Path, synthetic_host: HostSnapshot
+) -> None:
     receipt = PreflightReceipt(
         purpose="official",
         candidate_id="candidate-v1",
         role="compatibility",
         commit_sha="a" * 40,
-        host=host,
+        host=synthetic_host,
         artifacts=(),
         failures=("artifact",),
         eligible_for_official_run=False,

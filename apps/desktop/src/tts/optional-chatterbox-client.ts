@@ -358,11 +358,37 @@ export class OptionalChatterboxClient {
     try {
       result = decodeSnapshot(await this.#invoke(command, args));
     } catch (error) {
+      const failure =
+        decodeFailure(error) ?? "optional-profile-operation-failed";
+      const knownHostDenial =
+        command === "download_optional_chatterbox" &&
+        failure === "tts-optional-profile-incompatible-host";
+      const confirming =
+        knownHostDenial && this.#snapshot.state === "confirming";
       result = Object.freeze({
         ...this.#snapshot,
-        state: "failed",
-        failure: decodeFailure(error) ?? "optional-profile-operation-failed",
+        state: confirming ? "confirming" : "failed",
+        installedBytes: confirming ? this.#snapshot.installedBytes : undefined,
+        failure,
       });
+      if (
+        command === "download_optional_chatterbox" &&
+        (failure === "optional-profile-operation-failed" ||
+          failure === "tts-optional-profile-cleanup-failed") &&
+        actionGeneration === this.#actionGeneration
+      ) {
+        try {
+          const current = decodeSnapshot(
+            await this.#invoke("optional_chatterbox_snapshot"),
+          );
+          result =
+            current.state === "confirming"
+              ? Object.freeze({ ...current, failure })
+              : current;
+        } catch {
+          // The operation state could not be recovered.
+        }
+      }
     }
     if (
       actionGeneration !== this.#actionGeneration ||
@@ -371,6 +397,7 @@ export class OptionalChatterboxClient {
       return Object.freeze({
         ...this.#snapshot,
         state: "failed",
+        installedBytes: undefined,
         failure: "tts-optional-profile-busy",
       });
     }

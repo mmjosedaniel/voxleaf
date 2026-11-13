@@ -330,6 +330,38 @@ describe("narration settings actions", () => {
     },
   );
 
+  it("CFR-08 preserves an already loaded saved Piper profile", async () => {
+    const f = fixture();
+    const profileId = PIPER_ENGLISH_CPU_PROFILE_ID;
+    const hardware = {
+      ...f.hardware,
+      observe: () => ({
+        ...new HardwareProfileCompatibilityCoordinator().observe(),
+        activeProfileId: profileId,
+        selectionSource: "preference" as const,
+        preferenceStatus: "used" as const,
+        profiles: [
+          {
+            profileId,
+            state: "compatible" as const,
+            supportState: "supported" as const,
+            role: "standard" as const,
+            reason: undefined,
+          },
+        ],
+      }),
+    };
+    expect(
+      await f.actions.selectProfile(
+        profileId,
+        hardware,
+        { ...f.coordinator, isHealthyLoadedProfile: () => true },
+        f.optional,
+      ),
+    ).toBe(true);
+    expect(f.events).toEqual([]);
+  });
+
   it("NSL-01 allows a compatible different profile without requiring it to be active", async () => {
     const f = fixture();
     const hardware = {

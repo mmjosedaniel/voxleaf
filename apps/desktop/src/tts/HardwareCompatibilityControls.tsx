@@ -20,6 +20,7 @@ export interface HardwareCompatibilityControlsProps {
   readonly presentation: "device" | "narration";
   readonly onRecoveryEpisodeReset?: () => void;
   readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
+  readonly isProfileSelectionNoop?: (profileId: string) => boolean;
   readonly onSelectLanguage?: (
     language: NarrationLanguageV1,
   ) => Promise<boolean>;
@@ -107,6 +108,7 @@ export function HardwareCompatibilityControls({
   presentation,
   onRecoveryEpisodeReset,
   onSelectProfile,
+  isProfileSelectionNoop,
   onSelectLanguage,
   onResetNarrationSettings,
   onSelectionPendingChange,
@@ -153,6 +155,7 @@ export function HardwareCompatibilityControls({
   };
 
   const handleSelection = async (profileId: string): Promise<void> => {
+    if (isProfileSelectionNoop?.(profileId)) return;
     await runNarrationSettingsChange(() =>
       onSelectProfile === undefined
         ? coordinator.selectProfile(profileId)

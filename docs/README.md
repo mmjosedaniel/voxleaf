@@ -17,6 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed chat-findings correction plan](plans/completed/chat-findings-recovery-and-minimal-corrections.md)
+records 24 reviewed dispositions, the purpose-based pilot-preflight exit decision,
+minimal implementation units and a selective validation/reuse strategy.
+The plan records host validation, restoration and independent approval.
+
 The [completed passage-navigation correction](plans/completed/passage-navigation-minimal-corrections.md)
 applies symmetric proven continuity, attributable placement outcomes and measured
 visual following. Selected desktop, EPUB, Chromium, WebView2 and Piper EN gates

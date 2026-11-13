@@ -25,6 +25,8 @@ import {
   loadReleaseDocuments,
   releaseResourceSources,
   repositoryRoot,
+  validateOrdinaryChatterboxReceipt,
+  writePackageEvidence,
   validateClosedReleaseValues,
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
@@ -1249,7 +1251,7 @@ test("the ordinary release requires one downloadable manifest and locked runtime
         ] = value.rootPackage.scripts[
           "package:windows:ordinary-chatterbox:evidence"
         ].replace(
-          "--lifecycle-receipt tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json ",
+          "-LifecycleReceipt tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json ",
           "",
         )),
       "release-runtime-boundary",
@@ -1333,11 +1335,94 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
     "not-run",
   );
   assert.equal(JSON.stringify(unsigned).includes(temporary), false);
+  const evidencePath = path.join(temporary, "attached.json");
+  const attachment = {
+    evidencePath,
+    installer,
+    binary,
+    attach: true,
+    verifiedInstaller: unsigned.package.installer.sha256,
+    verifiedBinary: unsigned.package.applicationBinary.sha256,
+  };
+  const scanned = {
+    ...unsigned,
+    observations: {
+      ...unsigned.observations,
+      antivirus: "windows-defender-no-threats",
+    },
+  };
+  const prior = JSON.stringify(scanned);
+  await writeFile(evidencePath, prior);
+  await assert.rejects(
+    writePackageEvidence({
+      ...attachment,
+      evidence: unsigned,
+      rendered: JSON.stringify(unsigned),
+    }),
+    /windows-release:antivirus-observation-unverified/u,
+  );
+  assert.equal(await readFile(evidencePath, "utf8"), prior);
+  await writePackageEvidence({
+    ...attachment,
+    evidence: scanned,
+    rendered: prior,
+    scannedInstaller: attachment.verifiedInstaller,
+  });
+  await writeFile(binary, "different bytes");
+  await assert.rejects(
+    writePackageEvidence({
+      ...attachment,
+      evidence: scanned,
+      rendered: prior,
+      scannedInstaller: attachment.verifiedInstaller,
+    }),
+    /windows-release:artifact-drift/u,
+  );
+  assert.equal(await readFile(evidencePath, "utf8"), prior);
+  await writeFile(binary, "binary");
 
   const receipt = await createJourneyReceipt({
     installer,
     executable: installedBinary,
   });
+  const reversed = (record) =>
+    Object.fromEntries(Object.entries(record).reverse());
+  validateOrdinaryChatterboxReceipt(
+    {
+      ...receipt,
+      application: reversed(receipt.application),
+      outcomes: reversed(receipt.outcomes),
+      artifact: {
+        ...receipt.artifact,
+        installer: reversed(receipt.artifact.installer),
+      },
+    },
+    receipt.artifact.installer,
+  );
+  for (const binary of [
+    {
+      ...receipt.artifact.applicationBinary,
+      sha256: [receipt.artifact.applicationBinary.sha256],
+    },
+    { ...receipt.artifact.applicationBinary, extra: "forbidden" },
+    { ...receipt.artifact.applicationBinary, sizeBytes: "1" },
+    {
+      fileName: "voxleaf-desktop.exe",
+      sha256: receipt.artifact.applicationBinary.sha256,
+    },
+  ]) {
+    assert.throws(
+      () =>
+        validateOrdinaryChatterboxReceipt(
+          {
+            ...receipt,
+            artifact: { ...receipt.artifact, applicationBinary: binary },
+          },
+          receipt.artifact.installer,
+        ),
+      /windows-release:ordinary-chatterbox-receipt/u,
+    );
+  }
   await assert.rejects(
     () =>
       createPackageEvidence({

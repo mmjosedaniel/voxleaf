@@ -277,6 +277,14 @@ function isSubstantive(unit: NarrationNormalizedUnit): boolean {
   );
 }
 
+function isCollapsedWhitespace(
+  unit: NarrationNormalizedUnit | undefined,
+): boolean {
+  return unit?.kind === "omission"
+    ? unit.reason === "collapsed-whitespace"
+    : unit?.kind === "text" && unit.role === "whitespace" && unit.text === " ";
+}
+
 async function prefixMeasurements(
   scan: NarrationBoundaryScan,
   validated: ValidatedScanMeasurements,
@@ -560,7 +568,7 @@ async function selectCandidate(
   startUnitIndex: number,
   work: NarrationWorkController,
   policy: NarrationSegmentPolicy,
-): Promise<CandidateBoundary> {
+): Promise<CandidateBoundary | undefined> {
   const { prefix, recordedBoundaryKinds, safeBoundaries } = context;
   const blockEnd = scan.normalized.units.length;
   let targetSentence: CandidateBoundary | undefined;
@@ -685,7 +693,7 @@ async function selectCandidate(
     firstHardToken ??
     latestHard;
   if (candidate === undefined) {
-    return resourceLimitExceeded();
+    return undefined;
   }
   let extendedUnitIndexExclusive = candidate.unitIndexExclusive;
   while (extendedUnitIndexExclusive < blockEnd) {
@@ -969,6 +977,28 @@ async function packNarrationBoundaryScanInternal(
       work,
       limits.segmentPolicy,
     );
+    if (candidate === undefined) {
+      const unit = scan.normalized.units[startUnitIndex];
+      if (
+        limits.segmentPolicy === NARRATION_PIPER_V2_SEGMENT_POLICY &&
+        isCollapsedWhitespace(unit) &&
+        context.safeBoundaries[startUnitIndex + 1] === true
+      ) {
+        // Drain the proven silent prefix once, then retry the same policy.
+        do {
+          startUnitIndex += 1;
+          await work.observe();
+          const next = scan.normalized.units[startUnitIndex];
+          if (
+            !isCollapsedWhitespace(next) ||
+            context.safeBoundaries[startUnitIndex + 1] !== true
+          )
+            break;
+        } while (startUnitIndex < scan.normalized.units.length);
+        continue;
+      }
+      return resourceLimitExceeded();
+    }
     if (candidate.unitIndexExclusive <= startUnitIndex) {
       return fail();
     }

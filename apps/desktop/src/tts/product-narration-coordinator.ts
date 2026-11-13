@@ -905,14 +905,27 @@ export class ProductNarrationCoordinator {
     await hydration;
   }
 
-  public updateVisibleLocator(locator: ReadingLocatorV1): void {
+  public updateVisibleLocator(
+    locator: ReadingLocatorV1,
+    measuredManual = false,
+  ): void {
     if (
       this.#closed ||
       this.#pendingNavigation !== undefined ||
-      sameLocator(locator, this.#visibleLocator)
+      (measuredManual && this.#readerPlacementPending) ||
+      !sameBookIdentity(locator.bookIdentity, this.#publication.book.identity)
     ) {
       return;
     }
+    if (measuredManual && !this.#readerPlacementAvailable) {
+      this.#readerPlacementAvailable = true;
+      this.#navigationFeedback = undefined;
+      this.#visibleLocator = locator;
+      if (this.#playIntent === "inactive") this.#activeLocator = locator;
+      this.#publish();
+      return;
+    }
+    if (sameLocator(locator, this.#visibleLocator)) return;
     this.#visibleLocator = locator;
     if (this.#playIntent === "inactive") {
       this.#activeLocator = locator;
@@ -938,12 +951,16 @@ export class ProductNarrationCoordinator {
     if (request !== this.#readerPlacementRequest) return false;
     const pending = this.#pendingNavigation;
     const relative = request?.narration;
+    const stopped = this.#readerPlacementSuperseded;
     const obsolete =
-      this.#readerPlacementSuperseded ||
+      (request !== undefined &&
+        !sameBookIdentity(
+          request.publication,
+          this.#publication.book.identity,
+        )) ||
       (relative !== undefined &&
-        (pending === undefined ||
-          relative.revision !== pending.revision ||
-          request?.publication !== this.#publication.book.identity));
+        !stopped &&
+        (pending === undefined || relative.revision !== pending.revision));
     // A result belongs to one reader request and may be consumed only once.
     this.#readerPlacementRequest = undefined;
     this.#readerPlacementPending = false;
@@ -960,6 +977,21 @@ export class ProductNarrationCoordinator {
     const succeeded = settlement.status === "settled" && exactRelative;
     this.#readerPlacementAvailable =
       succeeded || settlement.status === "approximate";
+    if (stopped) {
+      if (
+        (settlement.status === "settled" && succeeded) ||
+        settlement.status === "approximate"
+      ) {
+        this.#visibleLocator = settlement.locator;
+        this.#activeLocator = settlement.locator;
+        this.#navigationFeedback = undefined;
+      } else {
+        this.#navigationFeedback =
+          "The requested passage could not be placed. Choose a visible passage to continue.";
+      }
+      this.#publish();
+      return false;
+    }
     if (!succeeded) {
       this.#navigationRevision += 1;
       this.#pendingNavigation = undefined;

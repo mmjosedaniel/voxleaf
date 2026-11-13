@@ -73,6 +73,8 @@ def _generate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     session_id: str,
+    *,
+    screen_version: str = "customvoice-spanish-screen-v2",
 ) -> Path:
     from benchmarks import customvoice_screen
 
@@ -92,10 +94,84 @@ def _generate(
         adapter_builder=lambda profile, root: adapter,
         id_factory=lambda: next(sample_ids),
         shuffle=lambda values: values.reverse(),
+        screen_version=screen_version,
     )
     assert result == {"status": "pass", "sessionId": session_id, "sampleCount": 27}
     assert adapter.closed is True
-    return raw_root / "customvoice-spanish-screen-v2" / session_id
+    return raw_root / screen_version / session_id
+
+
+@pytest.mark.parametrize("tie_breaker", ["pronunciation", "suitability", "speaker-order"])
+def test_exact_overall_tie_uses_authority_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tie_breaker: str
+) -> None:
+    from benchmarks.customvoice_screen import DIMENSIONS
+
+    session_id = "a" * 32
+    version = "customvoice-spanish-screen-v3"
+    session = _generate(tmp_path, monkeypatch, session_id, screen_version=version)
+    key = json.loads((session / "randomization-key.json").read_text(encoding="utf-8"))
+    card = json.loads((session / "scorecard.template.json").read_text(encoding="utf-8"))
+    speakers = {sample["sampleId"]: sample["speakerId"] for sample in key["samples"]}
+    ratings = {
+        "Vivian": ((5, 5, 5), (5, 5, 5), (3, 3), (4,), (4, 4, 5), (4, 4, 5), (4, 5, 5)),
+        "Serena": ((4, 5, 5), (4, 5, 5), (3, 3), (4,), (4, 5, 5), (4, 5, 5), (4, 5, 5)),
+    }
+    if tie_breaker == "suitability":
+        ratings["Vivian"] = ((5, 5, 5), (4, 5, 5), (3, 3), (4,), (4, 4, 5), (4, 5, 5), (4, 5, 5))
+        ratings["Serena"] = ((4, 5, 5), (4, 5, 5), (3, 3), (4,), (4, 5, 5), (5, 5, 5), (4, 4, 5))
+    elif tie_breaker == "speaker-order":
+        ratings["Serena"] = ratings["Vivian"]
+    cursors = {
+        speaker: {
+            dimension: iter(scores) for dimension, scores in zip(DIMENSIONS, values, strict=True)
+        }
+        for speaker, values in ratings.items()
+    }
+    for sample in card["samples"]:
+        speaker = speakers[sample["sampleId"]]
+        sample["meaningChangingDefect"] = speaker not in ratings
+        sample["scores"] = {
+            dimension: next(cursors[speaker][dimension]) if speaker in cursors else 5
+            for dimension in sample["scores"]
+        }
+
+    with pytest.raises(ScreenError, match=r"session$"):
+        submit_and_select(session_id, card, raw_root=tmp_path / "raw")
+    result = submit_and_select(session_id, card, raw_root=tmp_path / "raw", screen_version=version)
+    assert result["selectedSpeaker"] == ("Serena" if tie_breaker == "suitability" else "Vivian")
+    assert result["screenVersion"] == version
+    ranked = cast(list[dict[str, object]], result["speakers"])
+    assert ranked[0]["overallMean"] == ranked[1]["overallMean"] == 13 / 3
+
+
+def test_exact_screen_threshold_and_just_below(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    version = "customvoice-spanish-screen-v3"
+    session_id = "e" * 32
+    session = _generate(tmp_path, monkeypatch, session_id, screen_version=version)
+    key = json.loads((session / "randomization-key.json").read_text(encoding="utf-8"))
+    card = json.loads((session / "scorecard.template.json").read_text(encoding="utf-8"))
+    speakers = {sample["sampleId"]: sample["speakerId"] for sample in key["samples"]}
+    for sample in card["samples"]:
+        speaker = speakers[sample["sampleId"]]
+        sample["meaningChangingDefect"] = speaker not in {"Vivian", "Serena"}
+        sample["scores"] = {
+            name: (
+                2
+                if name == "numericExpressions" and speaker == "Serena"
+                else 3
+                if name == "numericExpressions"
+                else 4
+            )
+            for name in sample["scores"]
+        }
+    result = submit_and_select(session_id, card, raw_root=tmp_path / "raw", screen_version=version)
+    assert result["selectedSpeaker"] == "Vivian"
+    ranked = cast(list[dict[str, object]], result["speakers"])
+    assert ranked[0]["eligible"] is True
+    assert ranked[1]["eligible"] is False
 
 
 def test_generation_is_complete_blinded_bounded_and_disposable(

@@ -506,6 +506,11 @@ function hasNumericContinuation(
   language: NarrationNormalizationLanguage,
 ): boolean {
   if (direction === -1 && context.value === ".") return true;
+  if (
+    hasEnDashNumericNeighbor(tokens, languages, origin, direction, language)
+  ) {
+    return true;
+  }
   const groupingSpace = isOrdinaryWhitespace(context.value ?? "");
   if (!groupingSpace && !/[.,/:+−-]/u.test(context.value ?? "")) return false;
   const beyond = lexicalContext(
@@ -520,6 +525,58 @@ function hasNumericContinuation(
       1,
   );
   return beyond === undefined || isNumericContextCodePoint(beyond.value);
+}
+
+function hasEnDashNumericNeighbor(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  origin: number,
+  direction: -1 | 1,
+  language: NarrationNormalizationLanguage,
+): boolean {
+  let cursor = origin;
+  const next = (): string | undefined => {
+    const found = lexicalContext(
+      tokens,
+      languages,
+      cursor,
+      direction,
+      language,
+      true,
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
+        Math.abs(cursor - origin),
+      true,
+    );
+    if (found === undefined) return undefined;
+    cursor = found.index + direction;
+    return found.value;
+  };
+  if (next() !== "–") return false;
+  let endpoint = next();
+  if (direction === -1 && endpoint === "%") endpoint = next();
+  if (!isNumericContextCodePoint(endpoint)) return false;
+  if (direction === -1) {
+    // Reject a trailing numeric run from an editorial label such as R18.
+    const maximum =
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+    while (true) {
+      const previous = lexicalContext(
+        tokens,
+        languages,
+        cursor,
+        direction,
+        language,
+        false,
+        maximum - Math.abs(cursor - origin),
+        true,
+      );
+      if (previous === undefined) return true;
+      if (!isNumericContextCodePoint(previous.value))
+        return !/^\p{L}$/u.test(previous.value ?? "");
+      cursor = previous.index + direction;
+    }
+  }
+  return true;
 }
 
 function hasSameLanguage(
@@ -926,16 +983,37 @@ function matchesLexicalForm(
   ) {
     return fail();
   }
-  const endIndexExclusive = startIndex + source.length;
-  if (endIndexExclusive > tokens.length) return undefined;
+  let endIndexExclusive = startIndex;
+  const allowTimeArticleSpacing =
+    requiredLanguage === "es" && form.kind === "time" && source[3] === " ";
   // Only matching raw forms need bounded contextual lookaround.
   for (let offset = 0; offset < source.length; offset += 1) {
-    const index = startIndex + offset;
+    const index = endIndexExclusive;
+    if (allowTimeArticleSpacing && offset === 3) {
+      while (
+        endIndexExclusive - startIndex <
+          NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum &&
+        replacements[endIndexExclusive] === undefined &&
+        isProseTextToken(tokens[endIndexExclusive]) &&
+        languages[endIndexExclusive] === requiredLanguage &&
+        /^[ \u00a0\u202f]$/u.test(sourceText(tokens[endIndexExclusive]) ?? "")
+      ) {
+        endIndexExclusive += 1;
+      }
+      if (endIndexExclusive === index) return undefined;
+      continue;
+    }
     if (
       replacements[index] !== undefined ||
       !isProseTextToken(tokens[index]) ||
       sourceText(tokens[index]) !== source[offset] ||
       languages[index] !== requiredLanguage
+    )
+      return undefined;
+    endIndexExclusive += 1;
+    if (
+      endIndexExclusive - startIndex >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum
     )
       return undefined;
   }
@@ -1264,12 +1342,30 @@ function hasEnglishTitleContext(
   );
 }
 
+function isTerminalOrdinal(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  end: number,
+  completeLeaf: boolean,
+): boolean {
+  const next = lexicalContext(tokens, languages, end, 1, "es", true);
+  if (next === undefined) return false;
+  const token = tokens[next.index];
+  if (token === undefined) return completeLeaf;
+  return (
+    isProseTextToken(token) &&
+    languages[next.index] === "es" &&
+    /^[.!?…;,)]$/u.test(next.value ?? "")
+  );
+}
+
 function findLexicalReplacements(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
   existingReplacements: readonly (PlannedReplacement | undefined)[],
   classifier: NarrationLanguageClassifier,
   preceding?: NarrationEnglishTitleContext,
+  completeLeaf = true,
 ): readonly (PlannedReplacement | undefined)[] {
   enforceNumericLookahead(tokens);
   const replacements = [...existingReplacements];
@@ -1330,7 +1426,10 @@ function findLexicalReplacements(
         endIndexExclusive,
         form.kind,
         form.boundaryProtections,
-        form.narration,
+        form.source === "1.º" &&
+          isTerminalOrdinal(tokens, languages, endIndexExclusive, completeLeaf)
+          ? "primero"
+          : form.narration,
       );
       index = endIndexExclusive - 1;
       break;
@@ -2053,6 +2152,7 @@ function normalizeNarrationSourceTokensInternal(
   preceding?: NarrationEnglishTitleContext,
   precedingQuotationContext?: NarrationQuotationContext,
   classifier = new NarrationLanguageClassifier(defaultLanguage),
+  completeLeaf = true,
 ): NarrationNormalizedStream {
   if (
     defaultLanguage !== "es" &&
@@ -2084,6 +2184,7 @@ function normalizeNarrationSourceTokensInternal(
     symbolReplacements,
     classifier,
     preceding,
+    completeLeaf,
   );
   const punctuationPlan = findPunctuationPlan(
     tokens,
@@ -2137,6 +2238,7 @@ export function normalizeNarrationSourceTokens(
   preceding?: NarrationEnglishTitleContext,
   precedingQuotationContext?: NarrationQuotationContext,
   classifier?: NarrationLanguageClassifier,
+  completeLeaf = true,
 ): NarrationNormalizedStream {
   try {
     return normalizeNarrationSourceTokensInternal(
@@ -2145,6 +2247,7 @@ export function normalizeNarrationSourceTokens(
       preceding,
       precedingQuotationContext,
       classifier,
+      completeLeaf,
     );
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {

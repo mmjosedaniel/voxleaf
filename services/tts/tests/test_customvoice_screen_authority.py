@@ -81,6 +81,21 @@ def test_pre_audio_authorities_are_byte_frozen() -> None:
         assert hashlib.sha256(path.read_bytes()).hexdigest() == expected
 
 
+def test_successor_is_explicit_and_preserves_the_historical_screen_inputs() -> None:
+    successor = _load(ACTIVE_SCREEN_PATH.with_name("customvoice-spanish-screen-v3.json"))
+    previous = _load(ACTIVE_SCREEN_PATH)
+    relationship = cast(Mapping[str, object], successor["supersedes"])
+    assert relationship["screenVersion"] == previous["screenVersion"]
+    assert relationship["authoritySha256"] == EXPECTED_HASHES[ACTIVE_SCREEN_PATH]
+    for field in ("candidateId", "corpusSha256", "caseIds", "generation", "speakerOrder"):
+        assert successor[field] == previous[field]
+    evaluation = cast(Mapping[str, object], successor["evaluation"])
+    assert evaluation["comparisonArithmetic"] == "exact-rational-mean"
+    schema = _load(ACTIVE_SCHEMA_PATH.with_name("customvoice-spanish-screen-result-v3.schema.json"))
+    Draft202012Validator.check_schema(schema)
+    assert not Draft202012Validator(schema).is_valid(_load(RESULT_PATH))
+
+
 def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
     manifest = _load(MANIFEST_PATH)
     amendment = _load(ACTIVE_MANIFEST_PATH)

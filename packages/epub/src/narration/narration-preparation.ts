@@ -567,6 +567,13 @@ function nextLeafStart(
         leaf.sourceEndOffsetCodePoints,
       );
     }
+    const provisionalStart = prepared.segments[0]?.sourceRange.start;
+    if (
+      provisionalStart !== undefined &&
+      provisionalStart.textOffsetCodePoints > leaf.sourceStartOffsetCodePoints
+    ) {
+      return provisionalStart;
+    }
     return fail("resource-limit-exceeded");
   }
   return prepared.continuation;

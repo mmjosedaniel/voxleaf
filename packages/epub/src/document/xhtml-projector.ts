@@ -934,7 +934,7 @@ class XhtmlProjector {
         this.beginInline(event, context, "code");
         return;
       case "a":
-        this.beginLink(event, context);
+        this.beginLink(event, context, elementId);
         return;
       case "br":
         this.appendRawInline(Object.freeze({ kind: "line-break" }));
@@ -1185,7 +1185,11 @@ class XhtmlProjector {
     });
   }
 
-  private beginLink(event: XmlStartElementEvent, context: TextContext): void {
+  private beginLink(
+    event: XmlStartElementEvent,
+    context: TextContext,
+    elementId: string | undefined,
+  ): void {
     this.assertInlineDestination();
     if (
       this.#elements.some(
@@ -1196,7 +1200,28 @@ class XhtmlProjector {
     ) {
       return fail("malformed-package");
     }
-    const target = this.resolveLink(attribute(event, "", "href"));
+    const href = attribute(event, "", "href");
+    const destination = this.currentDestination();
+    if (
+      destination.kind === "blocks" &&
+      (href === undefined || this.isNonLocalReference(href))
+    ) {
+      if (elementId !== undefined) this.flushPendingParagraph(destination);
+      this.#elements.push({
+        name: event.name,
+        context,
+        omitted: false,
+        ...(elementId === undefined
+          ? {}
+          : {
+              closeAction: { kind: "block-boundary" },
+              paragraphSourceBoundary: true,
+              paragraphSourceElementId: elementId,
+            }),
+      });
+      return;
+    }
+    const target = this.resolveLink(href);
     const collector: InlineCollector = {
       kind: "inlines",
       context,

@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Final, cast
 
 from benchmarks.customvoice_screen import (
+    EXACT_SCREEN_VERSION,
+    SCREEN_ROOT_NAME,
     ScreenError,
     ScreenRequest,
     candidate_interpreter_matches,
@@ -46,6 +48,9 @@ def main() -> int:
         payload = _payload()
         if payload.get("screenOptIn") is not True:
             raise ScreenError("opt-in")
+        screen_version = _string(payload.pop("screenVersion", SCREEN_ROOT_NAME))
+        if screen_version not in (SCREEN_ROOT_NAME, EXACT_SCREEN_VERSION):
+            raise ScreenError("screen-version")
         session_id = _string(payload.get("sessionId"))
         if sys.argv[1] == "generate":
             if set(payload) != {
@@ -72,15 +77,18 @@ def main() -> int:
                     thermal_state_acceptable=payload.get("thermalStateAcceptable") is True,
                 ),
                 session_id,
+                screen_version=screen_version,
             )
         elif sys.argv[1] == "submit":
             if set(payload) != {"screenOptIn", "sessionId", "scorecard"}:
                 raise ScreenError("input")
-            result = submit_and_select(session_id, payload.get("scorecard"))
+            result = submit_and_select(
+                session_id, payload.get("scorecard"), screen_version=screen_version
+            )
         else:
             if set(payload) != {"screenOptIn", "sessionId"}:
                 raise ScreenError("input")
-            cleanup_screen(session_id)
+            cleanup_screen(session_id, screen_version=screen_version)
             result = {"status": "pass", "sessionId": session_id}
         print(json.dumps(result, ensure_ascii=True, separators=(",", ":")))
         return 0

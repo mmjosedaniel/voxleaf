@@ -2256,11 +2256,13 @@ describe("navigable publication reader", () => {
 
   it("keeps appearance controls outside the viewport and applies controlled layout tokens without persistence", () => {
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
+    const preferenceEcho = vi.fn();
     const publication = createPublication();
     const rendered = render(
       <ReaderPublicationContent
         publication={publication}
         preferences={DEFAULT_READER_PREFERENCES}
+        onPreferencesChange={preferenceEcho}
       />,
     );
     const { container } = rendered;
@@ -2278,6 +2280,7 @@ describe("navigable publication reader", () => {
     rendered.rerender(
       <ReaderPublicationContent
         publication={publication}
+        onPreferencesChange={preferenceEcho}
         preferences={{
           schemaVersion: 1,
           textScale: "extra-large",
@@ -2294,6 +2297,7 @@ describe("navigable publication reader", () => {
     expect(reader).toHaveAttribute("data-reader-theme", "dark");
     expect(reader).not.toHaveAttribute("style");
     expect(storageWrite).not.toHaveBeenCalled();
+    expect(preferenceEcho).not.toHaveBeenCalled();
   });
 
   it("uses one explicit canonical leaf action while ordinary publication clicks remain inert", () => {

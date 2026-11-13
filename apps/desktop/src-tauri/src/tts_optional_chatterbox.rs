@@ -420,6 +420,7 @@ struct Operation {
     failure: Option<&'static str>,
     cancellation: Option<Arc<AtomicBool>>,
     post_commit_cleanup: Option<(PathBuf, String)>,
+    staging_reconciliation_failed: bool,
 }
 
 #[derive(Default)]
@@ -632,12 +633,15 @@ fn snapshot_from(
 ) -> OptionalProfileSnapshot {
     let measurements = manifest.measurements.as_ref();
     let requirements = &manifest.requirements;
+    let installed_bytes = (state != OptionalProfileState::Failed)
+        .then(|| measurements.map(|value| value.installed_bytes))
+        .flatten();
     OptionalProfileSnapshot {
         profile_id: PROFILE_ID,
         state,
         download_bytes: measurements.map(|value| value.download_bytes),
         downloaded_bytes,
-        installed_bytes: measurements.map(|value| value.installed_bytes),
+        installed_bytes,
         temporary_bytes: measurements.map(|value| value.temporary_bytes),
         minimum_free_bytes: measurements.map(|value| value.minimum_free_bytes),
         cold_start_seconds: measurements.map(|value| value.cold_start_seconds),
@@ -1896,14 +1900,33 @@ impl OptionalChatterboxManager {
         manifest: &OptionalPackageManifest,
     ) -> Option<OptionalProfileSnapshot> {
         let operation = self.operation.lock().ok()?;
-        operation.state.clone().map(|state| {
-            snapshot_from(
-                manifest,
-                state,
-                operation.downloaded_bytes,
-                operation.failure,
-            )
-        })
+        operation
+            .state
+            .as_ref()
+            .map(|_| Self::snapshot_operation(manifest, &operation))
+    }
+
+    fn snapshot_operation(
+        manifest: &OptionalPackageManifest,
+        operation: &Operation,
+    ) -> OptionalProfileSnapshot {
+        let mut snapshot = snapshot_from(
+            manifest,
+            operation
+                .state
+                .clone()
+                .unwrap_or(OptionalProfileState::Absent),
+            operation.downloaded_bytes,
+            operation.failure,
+        );
+        if snapshot.state == OptionalProfileState::Failed && operation.post_commit_cleanup.is_some()
+        {
+            snapshot.installed_bytes = manifest
+                .measurements
+                .as_ref()
+                .map(|value| value.installed_bytes);
+        }
+        snapshot
     }
 
     fn set_operation(
@@ -1928,6 +1951,7 @@ impl OptionalChatterboxManager {
                 failure,
                 cancellation,
                 post_commit_cleanup,
+                staging_reconciliation_failed: false,
             };
         }
     }
@@ -1953,10 +1977,13 @@ impl OptionalChatterboxManager {
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
-            if operation.worker_active
-                || operation.state != Some(OptionalProfileState::Failed)
-                || operation.post_commit_cleanup.is_none()
-            {
+            if operation.worker_active {
+                return Ok(());
+            }
+            if operation.post_commit_cleanup.is_none() {
+                return Self::reconcile_staging_locked(root, &mut operation);
+            }
+            if operation.state != Some(OptionalProfileState::Failed) {
                 return Ok(());
             }
             let expected = (
@@ -1987,6 +2014,52 @@ impl OptionalChatterboxManager {
         self.snapshot_with_manifest(root, manifest)
     }
 
+    fn reconcile_staging_locked(
+        root: &Path,
+        operation: &mut Operation,
+    ) -> Result<(), OptionalProfileError> {
+        if operation.worker_active
+            || operation.post_commit_cleanup.is_some()
+            || !matches!(operation.state, None | Some(OptionalProfileState::Failed))
+        {
+            return Ok(());
+        }
+        let staging = staging_root(root);
+        let result: Result<bool, OptionalProfileError> = (|| {
+            if !verify_owned_removal_chain(root, &staging)? {
+                return Ok(false);
+            }
+            fs::remove_dir_all(&staging).map_err(|_| OptionalProfileError::CleanupFailed)?;
+            Ok(true)
+        })();
+        match result {
+            Ok(true) => *operation = Operation::default(),
+            Ok(false) if operation.staging_reconciliation_failed => {
+                *operation = Operation::default();
+            }
+            Ok(false) => {}
+            Err(_) => {
+                *operation = Operation {
+                    state: Some(OptionalProfileState::Failed),
+                    failure: Some(OptionalProfileError::CleanupFailed.code()),
+                    staging_reconciliation_failed: true,
+                    ..Operation::default()
+                };
+            }
+        }
+        Ok(())
+    }
+
+    fn reconcile_staging_at(&self, root: &Path) -> Result<(), OptionalProfileError> {
+        with_installed_runtime_lock(|| {
+            let mut operation = self
+                .operation
+                .lock()
+                .map_err(|_| OptionalProfileError::Busy)?;
+            Self::reconcile_staging_locked(root, &mut operation)
+        })
+    }
+
     fn snapshot_with_manifest(
         &self,
         root: &Path,
@@ -2005,13 +2078,8 @@ impl OptionalChatterboxManager {
                 .operation
                 .lock()
                 .map_err(|_| OptionalProfileError::Busy)?;
-            if let Some(state) = &operation.state {
-                return Ok(Some(snapshot_from(
-                    manifest,
-                    state.clone(),
-                    operation.downloaded_bytes,
-                    operation.failure,
-                )));
+            if operation.state.is_some() {
+                return Ok(Some(Self::snapshot_operation(manifest, &operation)));
             }
             let active_exists = owned_path_present(&package_root(root));
             let retained_exists =
@@ -2019,13 +2087,12 @@ impl OptionalChatterboxManager {
             if (!active_exists && retained_exists)
                 || (manifest.availability == "withheld" && (active_exists || retained_exists))
             {
-                let mut snapshot = snapshot_from(
+                let snapshot = snapshot_from(
                     manifest,
                     OptionalProfileState::Failed,
                     0,
                     Some("tts-optional-profile-unavailable"),
                 );
-                snapshot.installed_bytes = None;
                 return Ok(Some(snapshot));
             }
             if manifest.availability == "withheld" {
@@ -2520,6 +2587,8 @@ pub(crate) fn configure_application_data_root(app: &AppHandle) -> Result<(), Opt
         .app_local_data_dir()
         .map(|path| path.join("tts"))
         .map_err(|_| OptionalProfileError::Unavailable)?;
+    let manager = app.state::<Arc<OptionalChatterboxManager>>();
+    manager.reconcile_staging_at(&root)?;
     APPLICATION_DATA_ROOT
         .set(root)
         .map_err(|_| OptionalProfileError::Unavailable)

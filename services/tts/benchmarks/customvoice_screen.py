@@ -14,6 +14,7 @@ import sys
 from collections.abc import Callable, Mapping, MutableSequence, Sequence, Sized
 from contextlib import suppress
 from dataclasses import dataclass
+from fractions import Fraction
 from importlib import metadata
 from pathlib import Path
 from typing import Any, Final, Protocol, cast
@@ -44,8 +45,10 @@ RESULT_SCHEMA_PATH: Final = (
 )
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 SCREEN_ROOT_NAME: Final = "customvoice-spanish-screen-v2"
+EXACT_SCREEN_VERSION: Final = "customvoice-spanish-screen-v3"
 CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
 SESSION_VERSION: Final = "customvoice-spanish-screen-session-v2"
+EXACT_SESSION_VERSION: Final = "customvoice-spanish-screen-session-v3"
 DIMENSIONS: Final = (
     "intelligibility",
     "spanishPronunciation",
@@ -108,24 +111,32 @@ def _load_json(path: Path, code: str = "authority") -> Mapping[str, object]:
         raise ScreenError(code) from None
 
 
-def _session_path(session_id: str, *, raw_root: Path = RAW_ROOT, must_exist: bool = False) -> Path:
+def _session_path(
+    session_id: str,
+    *,
+    raw_root: Path = RAW_ROOT,
+    must_exist: bool = False,
+    screen_version: str = SCREEN_ROOT_NAME,
+) -> Path:
+    if screen_version not in (SCREEN_ROOT_NAME, EXACT_SCREEN_VERSION):
+        raise ScreenError("screen-version")
     if _SESSION_ID.fullmatch(session_id) is None:
         raise ScreenError("session")
-    root = (raw_root.resolve() / SCREEN_ROOT_NAME).resolve()
+    root = raw_root.resolve() / screen_version
     session = (root / session_id).resolve()
     try:
         relative = session.relative_to(root)
     except ValueError:
         raise ScreenError("session") from None
-    if len(relative.parts) != 1 or (must_exist and not session.is_dir()):
+    if relative.parts != (session_id,) or (must_exist and not session.is_dir()):
         raise ScreenError("session")
     return session
 
 
-def _authority() -> Mapping[str, object]:
-    authority = _load_json(AUTHORITY_PATH)
+def _authority(screen_version: str = SCREEN_ROOT_NAME) -> Mapping[str, object]:
+    authority = _load_json(AUTHORITY_PATH.with_name(f"{screen_version}.json"))
     if (
-        authority.get("screenVersion") != "customvoice-spanish-screen-v2"
+        authority.get("screenVersion") != screen_version
         or authority.get("status") != "frozen-before-audio"
         or authority.get("candidateId") != CANDIDATE_ID
         or _strings(authority.get("speakerOrder"))
@@ -443,6 +454,7 @@ def generate_screen(
     session_id: str,
     *,
     raw_root: Path = RAW_ROOT,
+    screen_version: str = SCREEN_ROOT_NAME,
     adapter_builder: Callable[
         [CandidateProfile, Path], ScreenAdapter
     ] = QwenCustomVoiceScreenAdapter,
@@ -451,11 +463,11 @@ def generate_screen(
 ) -> dict[str, object]:
     """Generate, blind, and bound all frozen speaker/case combinations."""
 
-    session = _session_path(session_id, raw_root=raw_root)
+    session = _session_path(session_id, raw_root=raw_root, screen_version=screen_version)
     if session.exists():
         raise ScreenError("session-state")
     profile = _screen_preflight(request)
-    authority = _authority()
+    authority = _authority(screen_version)
     corpus = load_corpus(CORPUS_PATH)
     speakers = _strings(authority.get("speakerOrder"))
     case_ids = _strings(authority.get("caseIds"))
@@ -515,7 +527,9 @@ def generate_screen(
         _write_json(
             session / "randomization-key.json",
             {
-                "sessionVersion": SESSION_VERSION,
+                "sessionVersion": SESSION_VERSION
+                if screen_version == SCREEN_ROOT_NAME
+                else EXACT_SESSION_VERSION,
                 "sessionId": session_id,
                 "samples": cast(list[object], mappings),
             },
@@ -569,13 +583,19 @@ def _score(value: object) -> int:
 
 
 def submit_and_select(
-    session_id: str, scorecard: object, *, raw_root: Path = RAW_ROOT
+    session_id: str,
+    scorecard: object,
+    *,
+    raw_root: Path = RAW_ROOT,
+    screen_version: str = SCREEN_ROOT_NAME,
 ) -> dict[str, object]:
     """Validate one complete blinded scorecard and apply the frozen ranking."""
 
     from jsonschema import Draft202012Validator
 
-    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    session = _session_path(
+        session_id, raw_root=raw_root, must_exist=True, screen_version=screen_version
+    )
     if not isinstance(scorecard, dict):
         raise ScreenError("scorecard")
     card = cast(Mapping[str, object], scorecard)
@@ -613,10 +633,24 @@ def submit_and_select(
     mappings = key.get("samples")
     if not isinstance(mappings, list):
         raise ScreenError("metadata")
-    authority = _authority()
+    if key.get("sessionId") != session_id or key.get("sessionVersion") != (
+        SESSION_VERSION if screen_version == SCREEN_ROOT_NAME else EXACT_SESSION_VERSION
+    ):
+        raise ScreenError("metadata")
+    authority = _authority(screen_version)
     applicability = _dimension_applicability(authority)
     speaker_order = _strings(authority.get("speakerOrder"))
     eligibility = _mapping(_mapping(authority.get("evaluation")).get("speakerEligibility"))
+    exact = screen_version == EXACT_SCREEN_VERSION
+    minimums = {
+        name: Fraction(str(eligibility[name])) if exact else cast(float, eligibility[name])
+        for name in (
+            "minimumOverallMean",
+            "minimumIntelligibilityMean",
+            "minimumSpanishPronunciationMean",
+            "minimumEveryDimensionMean",
+        )
+    }
     results: list[dict[str, object]] = []
     for speaker in speaker_order:
         speaker_samples = [
@@ -626,7 +660,7 @@ def submit_and_select(
         ]
         if len(speaker_samples) != 3:
             raise ScreenError("metadata")
-        dimensions: dict[str, float] = {}
+        dimensions: dict[str, float | Fraction] = {}
         for dimension in DIMENSIONS:
             applicable_samples = [
                 item
@@ -635,18 +669,18 @@ def submit_and_select(
             ]
             if not applicable_samples:
                 raise ScreenError("metadata")
-            dimensions[dimension] = sum(
+            total = sum(
                 sanitized[cast(str, item["sampleId"])][0][dimension] for item in applicable_samples
-            ) / len(applicable_samples)
+            )
+            count = len(applicable_samples)
+            dimensions[dimension] = Fraction(total, count) if exact else total / count
         overall = sum(dimensions.values()) / len(dimensions)
         defects = sum(int(sanitized[cast(str, item["sampleId"])][1]) for item in speaker_samples)
         eligible = (
-            overall >= cast(float, eligibility["minimumOverallMean"])
-            and dimensions["intelligibility"]
-            >= cast(float, eligibility["minimumIntelligibilityMean"])
-            and dimensions["spanishPronunciation"]
-            >= cast(float, eligibility["minimumSpanishPronunciationMean"])
-            and min(dimensions.values()) >= cast(float, eligibility["minimumEveryDimensionMean"])
+            overall >= minimums["minimumOverallMean"]
+            and dimensions["intelligibility"] >= minimums["minimumIntelligibilityMean"]
+            and dimensions["spanishPronunciation"] >= minimums["minimumSpanishPronunciationMean"]
+            and min(dimensions.values()) >= minimums["minimumEveryDimensionMean"]
             and defects <= cast(int, eligibility["maximumMeaningChangingDefects"])
         )
         results.append(
@@ -679,12 +713,20 @@ def submit_and_select(
             order_index[cast(str, item["speakerId"])],
         ),
     )
+    selected_speaker = ranked[0]["speakerId"] if ranked else None
+    if exact:
+        for item in results:
+            item["overallMean"] = float(cast(Fraction, item["overallMean"]))
+            item["dimensions"] = {
+                name: float(value)
+                for name, value in cast(dict[str, Fraction], item["dimensions"]).items()
+            }
     result = {
-        "schemaVersion": "customvoice-spanish-screen-result-v2",
-        "screenVersion": "customvoice-spanish-screen-v2",
+        "schemaVersion": f"customvoice-spanish-screen-result-{screen_version[-2:]}",
+        "screenVersion": screen_version,
         "candidateId": CANDIDATE_ID,
         "evaluatorCount": 1,
-        "selectedSpeaker": ranked[0]["speakerId"] if ranked else None,
+        "selectedSpeaker": selected_speaker,
         "speakers": results,
         "limitations": [
             "one-evaluator-intake-screen",
@@ -694,7 +736,9 @@ def submit_and_select(
             "not-production-quality-approval",
         ],
     }
-    schema = _load_json(RESULT_SCHEMA_PATH, "schema")
+    schema = _load_json(
+        RESULT_SCHEMA_PATH.with_name(f"{result['schemaVersion']}.schema.json"), "schema"
+    )
     errors = tuple(Draft202012Validator(schema).iter_errors(result))
     if errors or not math.isfinite(sum(cast(float, item["overallMean"]) for item in results)):
         raise ScreenError("result")
@@ -702,8 +746,12 @@ def submit_and_select(
     return result
 
 
-def cleanup_screen(session_id: str, *, raw_root: Path = RAW_ROOT) -> None:
-    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+def cleanup_screen(
+    session_id: str, *, raw_root: Path = RAW_ROOT, screen_version: str = SCREEN_ROOT_NAME
+) -> None:
+    session = _session_path(
+        session_id, raw_root=raw_root, must_exist=True, screen_version=screen_version
+    )
     shutil.rmtree(session)
     if session.exists():
         raise ScreenError("cleanup")

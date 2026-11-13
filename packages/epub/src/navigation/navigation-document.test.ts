@@ -40,6 +40,13 @@ afterEach(() => {
 
 describe("EPUB 3 navigation document parsing", () => {
   const retainedLabelCases = [
+    [
+      "visible XHTML break",
+      'A<h:br hidden=""/><br xmlns="urn:foreign"/>B<h:br/><h:br/><h:img alt=" C "/>',
+      "",
+      "AB C",
+      3,
+    ],
     ["multibyte alt", '<h:img alt=" é "/><h:img alt=" 🙂 "/>', "", "é 🙂", 7],
     ["used title", "<h:img/>", ' title=" β   é "', "β é", 5],
     [

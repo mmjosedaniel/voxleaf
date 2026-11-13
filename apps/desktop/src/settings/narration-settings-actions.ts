@@ -8,6 +8,11 @@ import {
   type OptionalChatterboxClient,
 } from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
+import {
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
+} from "../tts/hardware-profile-registry";
+import type { HardwareCompatibilitySnapshotV1 } from "../tts/hardware-profile-compatibility";
 
 type HardwareSettings = Pick<
   HardwareProfileCompatibilityCoordinator,
@@ -24,6 +29,22 @@ type NarrationSettings = Pick<
   beginConfigurationChange?(): () => void;
   isHealthyLoadedProfile?(profileId: string): boolean;
 };
+
+export function isSavedHealthyPiperSelection(
+  profileId: string,
+  snapshot: HardwareCompatibilitySnapshotV1 | undefined,
+  coordinator: Pick<NarrationSettings, "isHealthyLoadedProfile"> | undefined,
+): boolean {
+  return (
+    (profileId === PIPER_CPU_FALLBACK_PROFILE_ID ||
+      profileId === PIPER_ENGLISH_CPU_PROFILE_ID) &&
+    snapshot?.selectionSource === "preference" &&
+    snapshot.preferenceStatus === "used" &&
+    snapshot.activeProfileId === profileId &&
+    profileSupportsNarrationLanguageV1(profileId, snapshot.language) &&
+    coordinator?.isHealthyLoadedProfile?.(profileId) === true
+  );
+}
 
 async function stopForConfigurationChange(
   coordinator: NarrationSettings | undefined,
@@ -45,6 +66,14 @@ export function createNarrationSettingsActions(development: boolean) {
       isCurrent?: () => boolean,
     ): Promise<boolean> {
       if (isCurrent?.() === false) return false;
+      if (
+        isSavedHealthyPiperSelection(
+          profileId,
+          hardware.observe?.(),
+          coordinator,
+        )
+      )
+        return true;
       if (
         profileId === CHATTERBOX_OPTIONAL_PROFILE_ID &&
         coordinator?.isHealthyLoadedProfile?.(profileId)

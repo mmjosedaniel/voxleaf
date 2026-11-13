@@ -4553,6 +4553,9 @@ describe("product narration coordinator", () => {
       "unavailable",
       "rejected",
       "stopped",
+      "stopped-fallback",
+      "stopped-unavailable",
+      "manual-unavailable",
     ].flatMap((geometry) =>
       [false, true].map((paused) => ({ geometry, paused })),
     ),
@@ -4587,7 +4590,13 @@ describe("product narration coordinator", () => {
       });
       const callbacks: Array<() => void> = [];
       const rect = { top: 24, bottom: 40, left: 0, right: 100 };
-      let placementGeometry = geometry;
+      let placementGeometry =
+        geometry === "stopped-fallback"
+          ? "fallback"
+          : geometry === "stopped-unavailable" ||
+              geometry === "manual-unavailable"
+            ? "unavailable"
+            : geometry;
       const environment: ReaderReflowEnvironment = {
         viewportRect: () => ({ ...rect, top: 0, bottom: 100 }),
         rangeRect: () =>
@@ -4699,7 +4708,7 @@ describe("product narration coordinator", () => {
           await settleUntil(() => requests.length === 1);
         });
         expect(requests[0]!.locator.textOffsetCodePoints).toBeGreaterThan(0);
-        if (geometry === "stopped")
+        if (geometry.startsWith("stopped"))
           await act(async () => {
             await coordinator.stop();
           });
@@ -4722,11 +4731,31 @@ describe("product narration coordinator", () => {
               ),
           ).toBe(false);
           expect(coordinator.observe().navigation.canStart).toBe(
-            geometry === "fallback" || geometry === "stopped",
+            geometry === "fallback" ||
+              geometry === "stopped" ||
+              geometry === "stopped-fallback",
           );
           expect(
             await repository.readPosition(publication.book.identity),
           ).toEqual(checkpointBefore);
+          if (geometry === "stopped" || geometry === "stopped-fallback") {
+            await act(async () => {
+              coordinator.start();
+              await settleUntil(
+                () => preparation.mock.calls.length > preparationsBefore,
+              );
+            });
+            expect(
+              preparation.mock.calls[preparationsBefore]![0].startLocator,
+            ).toEqual(
+              expect.objectContaining({
+                textOffsetCodePoints:
+                  geometry === "stopped"
+                    ? requests[0]!.locator.textOffsetCodePoints
+                    : 0,
+              }),
+            );
+          }
           if (geometry === "unavailable") {
             fireEvent.click(screen.getByRole("button", { name: "Settings" }));
             for (const [failedGeometry, textScale] of [
@@ -4776,6 +4805,19 @@ describe("product narration coordinator", () => {
             expect(
               preparation.mock.calls[preparationsBefore]![0].startLocator,
             ).toEqual(expect.objectContaining({ textOffsetCodePoints: 0 }));
+          }
+          if (geometry === "manual-unavailable") {
+            const locator = publication.defaultStartLocator!;
+            await act(async () => coordinator.updateVisibleLocator(locator));
+            expect(coordinator.observe().navigation.canStart).toBe(false);
+            await act(async () =>
+              coordinator.updateVisibleLocator(locator, true),
+            );
+            expect(coordinator.observe().navigation.canStart).toBe(true);
+            expect(preparation).toHaveBeenCalledTimes(preparationsBefore);
+            expect(
+              await repository.readPosition(publication.book.identity),
+            ).toEqual(checkpointBefore);
           }
         } else {
           if (paused) {

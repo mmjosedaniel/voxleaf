@@ -16,6 +16,11 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Chat findings: minimal recovery and contract corrections](chat-findings-recovery-and-minimal-corrections.md)
+  implements 23 corrections and preserves the intentional recovery behavior in
+  case 1. The plan records selective validation, host restoration and independent
+  approval.
+
 - [Passage navigation: minimal corrections and selective validation](passage-navigation-minimal-corrections.md)
   corrects PN-01–04 and the preference-reflow recovery gap found independently.
   Current desktop, EPUB, Chromium, packaged WebView2 and Piper EN evidence passes
