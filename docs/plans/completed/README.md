@@ -16,6 +16,13 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Findings registry and cumulative logic-audit workflow](findings-registry-and-audit-workflow.md)
+  adds 33 historical case records, explicit current-assessment limits, bounded
+  audit coverage and regression-proof guidance. Project instructions and skills
+  share the workflow. Six independent scenarios and host document/skill checks
+  passed; FREG-CR-R1-20261113 approved the implementation. Final archival evidence
+  is recorded separately in the plan's evidence directory.
+
 - [Chat findings: minimal recovery and contract corrections](chat-findings-recovery-and-minimal-corrections.md)
   implements 23 corrections and preserves the intentional recovery behavior in
   case 1. The plan records selective validation, host restoration and independent

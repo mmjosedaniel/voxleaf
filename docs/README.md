@@ -391,6 +391,10 @@ signing limitations. The static security scan and its limits remain in the
 
 ## Development
 
+- [`development/findings/README.md`](development/findings/README.md): cumulative logic-audit workflow, stable finding identities, historical/current evidence separation and bounded regression coverage.
+- [`development/findings/registry.md`](development/findings/registry.md): seeded findings index with exact triggers, prior decisions, correction/test links and explicit current assessment status; [import coverage](development/findings/history-import.md) remains partial.
+- [`plans/completed/findings-registry-and-audit-workflow.md`](plans/completed/findings-registry-and-audit-workflow.md): implementation and validation of the contributor workflow; historical case imports do not establish fresh runtime acceptance.
+
 - [`development/setup.md`](development/setup.md): pinned prerequisites, reproducible setup, environment boundaries, and verified commands.
 - [`development/testing.md`](development/testing.md): test strategy.
 - [`development/evidence-retention.md`](development/evidence-retention.md): curated acceptance summaries and identities, local/CI raw-artifact retention, and the tested Git-index guard.

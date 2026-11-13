@@ -43,6 +43,17 @@ Every ExecPlan must include:
 - Include privacy, cancellation, bounded-memory, and malformed-EPUB considerations when relevant.
 - Move a completed plan from `docs/plans/active/` to `docs/plans/completed/`.
 
+For findings-based corrections, use the existing sections to preserve the
+[findings workflow](../docs/development/findings/README.md): Current state names
+the VF IDs, exact original triggers, source/checkout and prior dispositions;
+Scope distinguishes recurrences, variants and deferred policies; Testing names
+the invariant, discriminating assertion, bounded adjacent controls and evidence
+level. Record the evidence-backed reason a case escaped earlier work, or unknown.
+Final results link each ID to its actual owner, test, review and resolution and
+update the registry only within authorized writes. Importing old acceptance does
+not validate the new checkout. No extra plan section or full-suite rerun is
+required merely to populate the registry.
+
 ## Suggested milestone format
 
 ```markdown
