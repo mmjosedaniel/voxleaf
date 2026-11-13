@@ -405,6 +405,41 @@ describe("reader reflow restoration", () => {
     expect(harness.results[0]?.reason).toBe("viewport");
   });
 
+  it("yields pending resize alignment to manual scrolling without settling a locator", () => {
+    const harness = createHarness();
+
+    harness.environment.notifyViewport();
+    expect(harness.restorer.restoring).toBe(true);
+    harness.restorer.cancelViewportRestoration();
+    harness.environment.flushAll();
+
+    expect(harness.restorer.restoring).toBe(false);
+    expect(harness.environment.scrollAdjustments).toEqual([]);
+    expect(harness.visualLocator.resumeCount).toBe(1);
+    expect(harness.visualLocator.currentLocator).toBeUndefined();
+    expect(harness.results).toEqual([]);
+
+    harness.environment.notifyViewport();
+    harness.environment.flushAll();
+    expect(harness.results[0]?.reason).toBe("viewport");
+  });
+
+  it.each(["preference", "restoration"] as const)(
+    "does not cancel an explicit %s transaction on manual scroll intent",
+    (reason) => {
+      const harness = createHarness();
+      harness.restorer.preserve(locatorAt(5), reason);
+      harness.restorer.cancelViewportRestoration();
+      expect(harness.restorer.restoring).toBe(true);
+      harness.environment.flushAll();
+      expect(harness.results[0]).toMatchObject({
+        reason,
+        locator: locatorAt(5),
+        aligned: true,
+      });
+    },
+  );
+
   it("does not let a resize notification supersede an active restoration transaction", () => {
     const currentLocator = vi.fn(() => locatorAt(1));
     const harness = createHarness({ currentLocator });

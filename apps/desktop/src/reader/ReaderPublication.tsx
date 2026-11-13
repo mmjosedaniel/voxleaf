@@ -361,6 +361,10 @@ export function ReaderPublicationContent({
       ),
   );
   const readerViewportRef = useRef<HTMLDivElement | null>(null);
+  const recordManualScrollIntent = useCallback((): void => {
+    visualLocatorTracker.noteManualScrollIntent();
+    reflowRestorer.cancelViewportRestoration();
+  }, [reflowRestorer, visualLocatorTracker]);
   const recordWheelIntent = useCallback(
     (event: WheelEvent): void => {
       if (
@@ -369,9 +373,9 @@ export function ReaderPublicationContent({
         !event.metaKey &&
         event.deltaY !== 0
       )
-        visualLocatorTracker.noteManualScrollIntent();
+        recordManualScrollIntent();
     },
-    [visualLocatorTracker],
+    [recordManualScrollIntent],
   );
   const destinationRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
@@ -1270,7 +1274,7 @@ export function ReaderPublicationContent({
           aria-label="Publication reading viewport"
           onTouchMove={(event) => {
             if (event.isTrusted && event.touches.length === 1)
-              visualLocatorTracker.noteManualScrollIntent();
+              recordManualScrollIntent();
           }}
           onKeyDown={(event) => {
             if (
@@ -1296,7 +1300,7 @@ export function ReaderPublicationContent({
                 " ",
               ].includes(event.key)
             )
-              visualLocatorTracker.noteManualScrollIntent();
+              recordManualScrollIntent();
           }}
           onScroll={(event) => {
             if (event.target !== event.currentTarget) return;

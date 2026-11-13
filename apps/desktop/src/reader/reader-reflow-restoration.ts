@@ -372,6 +372,12 @@ export class ReaderReflowRestorer {
     return true;
   }
 
+  public cancelViewportRestoration(): void {
+    // Native scrolling must win over passive resize alignment. Explicit
+    // restoration and preference transactions still own their settlement.
+    if (this.#pending?.reason === "viewport") this.cancel();
+  }
+
   public cancel(): void {
     this.#cancelScheduledFrame?.();
     this.#cancelScheduledFrame = undefined;

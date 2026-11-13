@@ -689,6 +689,11 @@ starts at the currently visible passage. Rejected unreadable books release the
 accepted publication; an unexpectedly interrupted current import offers a retry
 without guessing whether cancellation came from a deadline.
 
+Trusted reader scroll gestures take precedence over pending passive viewport
+resize alignment. Explicit restoration and preference transactions retain their
+settlement rules. A gesture alone does not recover unavailable placement: actual
+viewport movement and a measured visible passage are still required.
+
 After natural completion, changing Prepared/Quick preferences releases the
 completed mode-dependent player/scheduler before publishing the new selection.
 The final heard checkpoint is preserved and playback requires an explicit Play.
