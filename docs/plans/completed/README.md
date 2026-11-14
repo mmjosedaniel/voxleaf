@@ -16,6 +16,8 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Development guidance and Chatterbox command clarity](development-guidance-and-command-clarity.md): accepted contributor guidance, explicit v2 aliases and separate version diagnostics; host checks and independent implementation approval recorded. C05 remains deferred to the next runtime; archival assessment is linked separately.
+
 - [Minimal corrections for the deeply revalidated findings](deep-findings-minimal-corrections.md)
   closes VF-0034 through VF-0055: 21 corrected/validated cases and the documented
   Stop precision disposition, with selective host validation, restoration and

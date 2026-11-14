@@ -10,6 +10,18 @@ Features and behavioral bug fixes use the separate
 `change_reviewer` does not replace this campaign's `refactor_validator` and is
 not an additional mandatory role for behavior-preserving units.
 
+## Selecting the workflow
+
+An isolated obvious fix follows the feature/bug workflow and the planning
+exceptions in [PLANS.md](../../.agents/PLANS.md); behavioral review still applies.
+An isolated refactor may use the existing unit guidance under
+[Durable traceability](#durable-traceability). A multi-file maintainability
+campaign follows this document's complete audit, baseline, worker and validation
+sequence. Do not relabel a campaign as isolated work to bypass those gates.
+Maintainer CLI behavior changes use independent change review, not the
+behavior-preserving refactor worker. Select checks by affected responsibilities
+using existing policy; measure actual friction before changing the process.
+
 ## Evidence storage
 
 Apply the [evidence retention policy](evidence-retention.md) to Audit Packets,

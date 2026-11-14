@@ -30,9 +30,9 @@ Treat this as intended direction, not proof that every directory already exists.
 
 Before changing code or architecture:
 
-1. Read `docs/README.md`.
+1. Consult `docs/README.md` for current status and the task reading routes.
 2. Read the relevant product requirements under `docs/product/`.
-3. Read `docs/architecture/system-diagram.md`, `docs/architecture/overview.md`, and applicable ADRs.
+3. Read the relevant component, trust-boundary, flow and invariant sections of `docs/architecture/system-diagram.md` and `docs/architecture/overview.md`, plus applicable ADRs. Changes to components, contracts or data flows require reviewing the complete affected boundaries and their callers. The compact diagram is orientation only, not acceptance authority.
 4. Inspect existing code, tests, and scripts before proposing commands or implementation patterns.
 5. Create an ExecPlan following `.agents/PLANS.md` for multi-component features, model integration, significant refactors, or public contract changes.
 6. For narration-preparation work, read `docs/plans/completed/M005-narration-text-preparation.md` and verify its roadmap status before changing the implemented boundary.

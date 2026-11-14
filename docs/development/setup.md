@@ -75,7 +75,7 @@ The selected versions establish a reproducible foundation with the reviewed low-
 - [Vite requires Node.js 20.19+ or 22.12+](https://vite.dev/guide/), but the locked `jsdom@30.1.3` test environment requires at least Node `22.22.2` or `24.15.0` on the supported LTS lines. VoxLeaf therefore declares `^22.22.2 || ^24.15.0` and keeps `.nvmrc` and CI pinned to `24.18.0`. Node 20 is end-of-life. The [Node.js release policy](https://nodejs.org/en/about/previous-releases) recommends production applications use maintained LTS releases.
 - [pnpm 11 requires Node.js 22 or newer](https://pnpm.io/installation#compatibility). VoxLeaf pins one exact pnpm release so different package-manager versions cannot produce different lock data.
 - [Tauri 2's official plugins](https://github.com/tauri-apps/plugins-workspace#readme) establish Rust `1.77.2` as the baseline. VoxLeaf pins [the current stable Rust release](https://blog.rust-lang.org/releases/) instead of relying on a moving `stable` channel. Cargo is installed and selected with that Rust toolchain.
-- Python `3.12.10` is the last Python 3.12 maintenance release with an official Windows installer. Python 3.12 remains within [PyTorch's supported Windows range](https://pytorch.org/get-started/locally/), while the exact TTS-model compatibility decision remains deferred.
+- Python `3.12.10` is the last Python 3.12 maintenance release with an official Windows installer. Python 3.12 remains within [PyTorch's supported Windows range](https://pytorch.org/get-started/locally/), while model compatibility was deferred at the initial foundation checkpoint. Current Piper/Chatterbox support is described in Current status and the support matrix.
 - Microsoft recommends the Evergreen runtime for released WebView2 applications. The [minimum runtime capable of loading WebView2 is `86.0.616.0`](https://learn.microsoft.com/en-us/microsoft-edge/webview2/release-notes/about), but VoxLeaf must test against automatic Evergreen updates rather than assume one observed patch is permanent.
 - The [Visual Studio Desktop development with C++ workload](https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-build-tools?view=vs-2022) supplies MSVC and a Windows SDK required by the native Rust target.
 
@@ -655,6 +655,8 @@ attempted destinations. Failed restoration preserves recovery material and repor
 the primary and cleanup errors; it must not be treated as a successful write.
 Cleanup failure after all replacements reports separately without rolling back
 the committed set. This does not promise power-loss atomicity or concurrent writes.
+
+Explicit `package:chatterbox-optional:v2`, `:v2:check-source` and `:v2:check-acquisition` aliases identify historical operations. Build/source/acquisition commands report the selected version on stderr while preserving stdout and exit behavior. Selection is not admission or validation success.
 
 Unversioned `package:chatterbox-optional` aliases intentionally retain the v2
 default. Explicit `:v3` checks reproduce historical authority; neither is v7
