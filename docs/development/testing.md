@@ -1,5 +1,16 @@
 # Testing strategy
 
+## Maintainer CLI version selection
+
+`services/tts/tests/test_release_chatterbox_cli.py` exercises the real CLI entry
+point with controlled expensive boundaries: default/explicit v2 and explicit v7
+dispatch, unchanged success stdout/build JSON, separate selection stderr,
+invalid arguments and propagated checker failures. Root aliases are checked
+against that same entry point. These tests perform no runtime build or download
+and run in the configured `pnpm.cmd test:python` suite outside the sandbox.
+Source/acquisition checks establish authority consistency, not installed runtime
+health. CCF-C05 remains a separate packaged-decoder criterion.
+
 ## Findings-based regression coverage
 
 Use the [cumulative findings workflow](findings/README.md) to bind a reported

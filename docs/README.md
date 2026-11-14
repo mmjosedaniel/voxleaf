@@ -15,6 +15,27 @@ closeout. Statements such as "not committed" or "CI pending" in those records
 are historical; maintained indexes point to later results without rewriting
 the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
+## Task reading routes
+
+Start with the current status, relevant product requirements and AGENTS constraints.
+Then select the canonical architecture sections and ADRs for the affected owners:
+
+- Isolated fix: inspect its owner, callers and regression tests; use the
+  [bug workflow](../.agents/skills/investigate-bug/SKILL.md) and
+  [change review](development/agentic-change-review.md). A small fix's planning
+  exemption does not exempt behavioral review or relevant host checks.
+- Maintainer CLI: read [service organization](development/tts-service-organization.md),
+  command consumers, stdout/stderr contracts and the corresponding tests. Use
+  change review for observable behavior; package/runtime boundary changes require
+  their additional acceptance.
+- Multi-component work or refactor campaign: read the complete affected canonical
+  boundaries, [plan rules](../.agents/PLANS.md) and the applicable feature or
+  [refactor workflow](development/agentic-refactoring.md). Preserve independent
+  baseline/post-change validation for campaigns and all risk-triggered gates.
+
+All acceptance runs in local PowerShell outside the sandbox. Reading routes do
+not change model selection, review independence, evidence reuse or CI obligations.
+
 ## Current project status
 
 The [completed deep-findings correction plan](plans/completed/deep-findings-minimal-corrections.md)
@@ -64,7 +85,10 @@ coverage gap. Selected deterministic, static, Chromium, Piper and exact optional
 local admission checks pass with original host resources restored. C05 remains
 limited to current consumers/current Piper; frozen Chatterbox Unicode parity is
 not claimed. The plan records selective evidence reuse, retained failed attempts
-and its separate final archival assessment. Changes remain uncommitted.
+and its separate final archival assessment. The corrections landed in
+`426ec7df2aa5d67d0aacfd2654035547985cdccd`; this ancestry is not a fresh test or CI result.
+The residual C05 criterion remains in the
+[runtime maintenance handoff](development/tts-service-organization.md#pending-runtime-maintenance).
 
 The [completed chat audit follow-up](plans/completed/chat-audit-minimal-follow-up.md)
 resolves 27 bounded cases, including R7.3 reproduced before its production edit.
@@ -420,6 +444,8 @@ signing limitations. The static security scan and its limits remain in the
 - [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded TypeScript/Python/Rust refactors, independent host validation, risk-based unit/batch gates, immutable evidence reuse, preparation and retry policy, and authorized Git stewardship.
 
 ## Plans
+
+- [Development guidance and Chatterbox command clarity](plans/completed/development-guidance-and-command-clarity.md): accepted status/routing corrections, explicit historical v2 aliases and version-selection stderr; C05 remains a pending successor-runtime criterion. The plan links implementation and archival reviews.
 
 - [Eight revalidated findings: minimal corrections](plans/completed/eight-finding-minimal-corrections.md): eight accepted corrections with selected host checks and independent EFC-R2 approval. ADR-0068 aligns effective RAM policy at 7,042 MiB without changing frozen acquisition bytes.
 

@@ -885,6 +885,8 @@ def main(arguments: list[str] | None = None) -> int:
         "reconcile-evidence",
     }:
         parser.error(f"version {version} is local-only and has no acquisition authority")
+    if args.command in {"build", "check-source", "check-acquisition"}:
+        print(f"Chatterbox package selection: v{version}", file=sys.stderr)
     if version == "5" and args.command == "check-acquisition":
         check_security_authority()
         print("chatterbox-v5-acquisition:current")

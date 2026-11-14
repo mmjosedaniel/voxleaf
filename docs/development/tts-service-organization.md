@@ -143,6 +143,13 @@ V5, v6 and v7 always synchronize their respective hashed locks and reject `--no-
 
 ### Historical v2/v3 checks and local v4 campaign tooling
 
+The explicit `package:chatterbox-optional:v2`, `:v2:check-source` and
+`:v2:check-acquisition` aliases select the same v2 routes as their unversioned
+counterparts. For `build`, `check-source` and `check-acquisition`, the CLI reports
+`Chatterbox package selection: vN` on stderr before dispatch. This identifies the
+parsed target, not successful validation or current product admission. Existing
+stdout messages, build JSON and exit behavior are preserved.
+
 The unversioned aliases intentionally select v2; explicit v3 aliases retain
 that historical authority. Neither selects the v7 integration. The v4
 builder and adapter-layout runner belong to the completed
@@ -219,3 +226,18 @@ events retain the unexpected-network counter and reject admission, even when
 caught. Both probe budgets apply to forced and orderly exits. These are CPython
 audit-event observations; they do not assert interception of APIs without such
 events. Exact interpreter firewall blocks remain an independent prerequisite.
+
+## Pending runtime maintenance
+
+CCF-C05 remains deferred: current mutable consumers and Piper use the corrected
+identifier whitespace validation, while Chatterbox v7 packages historical v3
+protocol/schema modules. Ordinary application-produced ASCII identities remain
+within the preserved boundary; universal Unicode parity is not claimed.
+See [ADR-0006](../architecture/decisions/ADR-0006-json-schema-contract-authority.md)
+and the [original C05 handoff](../plans/completed/epub-budget-cancellation-and-reflow-follow-up.md#scope-and-non-goals).
+
+The next separately versioned Chatterbox runtime must carry the required
+identifier correction and exercise the existing valid/invalid Unicode and ASCII
+vectors against its actual packaged decoder, alongside that successor's normal
+acceptance. Passing current-checkout Python tests does not close C05. No release
+date, new admission or implementation is implied by this maintenance entry.
