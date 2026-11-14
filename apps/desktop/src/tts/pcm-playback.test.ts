@@ -2383,8 +2383,8 @@ describe("adaptive PCM playback", () => {
     expect(player.synchronize()).toMatchObject({
       state: "complete",
       selectedPlaybackRatePercent: 100,
-      activePlaybackRatePercent: 75,
-      pendingPlaybackRatePercent: 100,
+      activePlaybackRatePercent: null,
+      pendingPlaybackRatePercent: null,
       retainedAudioUnitCount: 0,
     });
     expect(second.releaseCount).toBe(1);

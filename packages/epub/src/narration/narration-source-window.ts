@@ -311,6 +311,7 @@ function assertDepth(depth: number): void {
 }
 
 interface MutableWindowState {
+  readonly retainedProjection: "all" | "leaves";
   readonly events: NarrationSourceWindowEvent[];
   readonly targetBlock: PublicationLocatedBlock;
   readonly targetOffset: number;
@@ -429,6 +430,8 @@ async function retainEvent(
   work: NarrationWorkController,
 ): Promise<void> {
   await work.observe();
+  if (state.retainedProjection === "leaves" && event.kind === "boundary")
+    return;
   if (
     state.events.length >=
     NARRATION_V1_SOURCE_WINDOW_POLICY.retainedEventEntriesHardMaximum
@@ -752,6 +755,7 @@ async function runSourceWindow(
   scheduler: NarrationYieldScheduler,
   checkpoint?: NarrationSourceTraversalCheckpoint,
   operation?: NarrationOperationWorkBudget,
+  retainedProjection: "all" | "leaves" = "all",
 ): Promise<NarrationSourceWindowBatch | NarrationSourceWindowComplete> {
   const signal = request.signal ?? new AbortController().signal;
   const work = new NarrationWorkController(signal, scheduler, operation);
@@ -761,6 +765,7 @@ async function runSourceWindow(
     createEpubProcessingBudget({ signal }),
   );
   const state: MutableWindowState = {
+    retainedProjection,
     events: [],
     targetBlock: resolution.locatedBlock,
     targetOffset: resolution.locator.textOffsetCodePoints,
@@ -969,6 +974,7 @@ export async function prepareNarrationSourceWindow(
   scheduler: NarrationYieldScheduler = DEFAULT_NARRATION_YIELD_SCHEDULER,
   checkpoint?: NarrationSourceTraversalCheckpoint,
   operation?: NarrationOperationWorkBudget,
+  retainedProjection: "all" | "leaves" = "all",
 ): Promise<NarrationSourceWindowResult> {
   try {
     return await runSourceWindow(
@@ -977,6 +983,7 @@ export async function prepareNarrationSourceWindow(
       scheduler,
       checkpoint,
       operation,
+      retainedProjection,
     );
   } catch (error: unknown) {
     return mapFailure(error);

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
+import { clearTimeout, setTimeout } from "node:timers";
 import {
   access,
   lstat,
@@ -861,54 +862,146 @@ async function runBilingualSmoke(executable, profileId, language, environment) {
 }
 
 const installerSpawnFailures = new WeakSet();
+const installerContainmentFailures = new WeakSet();
 
-async function runInstaller(installer, environment) {
+async function runOwnedInstaller(
+  installer,
+  environment,
+  { timeoutMilliseconds = 120_000 } = {},
+) {
+  if (
+    !Number.isSafeInteger(timeoutMilliseconds) ||
+    timeoutMilliseconds < 1 ||
+    timeoutMilliseconds > 120_000
+  ) {
+    fail("installer-timeout-budget");
+  }
   await new Promise((resolve, reject) => {
-    let child;
-    try {
-      child = spawn(installer, ["/S"], {
+    let settled = false;
+    let output = "";
+    const child = spawn(
+      path.join(
+        environment.SystemRoot ?? "C:\\Windows",
+        "System32",
+        "WindowsPowerShell",
+        "v1.0",
+        "powershell.exe",
+      ),
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        path.join(repositoryRoot, "scripts/run-owned-windows-installer.ps1"),
+        "-InstallerPath",
+        installer,
+        "-TimeoutMilliseconds",
+        String(timeoutMilliseconds),
+      ],
+      {
         cwd: repositoryRoot,
         env: environment,
-        stdio: "ignore",
+        stdio: ["ignore", "pipe", "ignore"],
         windowsHide: true,
-      });
-    } catch (error) {
-      // Windows can reject an invalid executable directly from spawn().
-      installerSpawnFailures.add(error);
-      reject(error);
-      return;
-    }
-    let spawned = false;
-    child.once("spawn", () => {
-      spawned = true;
+      },
+    );
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      if (error === undefined) resolve();
+      else reject(error);
+    };
+    const unverified = () => {
+      const error = new Error(
+        "ordinary-chatterbox-release-host:installer-containment-unverified",
+      );
+      installerContainmentFailures.add(error);
+      finish(error);
+    };
+    // The helper owns a kill-on-close Job before the target is resumed. Failure
+    // to receive its containment receipt must never authorize data restoration.
+    const watchdog = setTimeout(() => {
+      child.kill();
+      child.stdout.destroy();
+      child.unref();
+      unverified();
+    }, timeoutMilliseconds + 20_000);
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      output += chunk;
+      if (output.length > 4096) {
+        child.kill();
+        child.stdout.destroy();
+        unverified();
+      }
     });
     child.once("error", (error) => {
-      if (!spawned) installerSpawnFailures.add(error);
-      reject(error);
+      // A failed helper spawn cannot have started an installer. Errors after
+      // process creation still require a verified containment receipt.
+      if (
+        child.pid === undefined &&
+        /^spawn(?: |$)/u.test(error.syscall ?? "")
+      ) {
+        installerSpawnFailures.add(error);
+        finish(error);
+      } else {
+        unverified();
+      }
     });
-    child.once("exit", (exitCode) => {
-      if (exitCode === 0) resolve();
-      else reject(new Error("ordinary-chatterbox-release-host:installer"));
+    child.once("close", (exitCode) => {
+      if (settled) return;
+      let receipt;
+      try {
+        receipt = JSON.parse(output);
+      } catch {
+        unverified();
+        return;
+      }
+      if (
+        exitCode !== 0 ||
+        receipt?.contained !== true ||
+        typeof receipt.created !== "boolean" ||
+        ![
+          null,
+          "installer-spawn",
+          "installer-timeout",
+          "installer-failed",
+        ].includes(receipt.failure)
+      ) {
+        unverified();
+        return;
+      }
+      if (
+        receipt.created &&
+        receipt.exitCode === 0 &&
+        receipt.failure === null
+      ) {
+        finish();
+        return;
+      }
+      const error = new Error(
+        `ordinary-chatterbox-release-host:${receipt.failure ?? "installer-failed"}`,
+      );
+      if (!receipt.created && receipt.failure === "installer-spawn") {
+        error.code = [2, 3].includes(receipt.nativeError) ? "ENOENT" : "EINVAL";
+        error.syscall = "spawn owned-installer";
+        installerSpawnFailures.add(error);
+      }
+      finish(error);
     });
   });
 }
 
-async function runUninstaller(installedRoot, environment) {
+export async function runInstaller(installer, environment, options) {
+  await runOwnedInstaller(installer, environment, options);
+}
+
+export async function runUninstaller(installedRoot, environment, options) {
   const uninstaller = path.join(installedRoot, "uninstall.exe");
   await existingFile(uninstaller, "uninstaller-missing");
-  await new Promise((resolve, reject) => {
-    const child = spawn(uninstaller, ["/S"], {
-      cwd: repositoryRoot,
-      env: environment,
-      stdio: "ignore",
-      windowsHide: true,
-    });
-    child.once("error", reject);
-    child.once("exit", (exitCode) => {
-      if (exitCode === 0) resolve();
-      else reject(new Error("ordinary-chatterbox-release-host:uninstaller"));
-    });
-  });
+  await runOwnedInstaller(uninstaller, environment, options);
   // NSIS can hand cleanup to a temporary child after its visible parent exits.
   // Do not let the wrapper restore application state until the installation root
   // has remained absent across a short, bounded observation window.
@@ -1344,6 +1437,7 @@ export async function runJourney(
         await session?.close();
       },
       uninstall: async () => {
+        if (installerContainmentFailures.has(journeyError)) throw journeyError;
         if (applicationInstalled && !safePrelaunchCleanup) {
           await uninstall(options.installedRoot, releaseEnv);
         }

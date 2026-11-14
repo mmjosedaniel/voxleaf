@@ -272,7 +272,7 @@ fn rcf14_bounds_both_manifest_verification_and_cleanup() {
 
 #[cfg(windows)]
 #[test]
-fn rcf13_explicit_cleanup_retry_preserves_failure_until_verified_and_never_claims_replacement() {
+fn vf0038_vf0043_rcf13_explicit_cleanup_retry_preserves_validity_and_ownership() {
     use std::os::windows::fs::OpenOptionsExt;
     for staging_failure in [false, true] {
         let root = TestRoot::new();
@@ -325,6 +325,32 @@ fn rcf13_explicit_cleanup_retry_preserves_failure_until_verified_and_never_claim
             Err(OptionalProfileError::CleanupFailed)
         );
         CLEANUP_LOCK.with(|slot| slot.borrow_mut().take());
+        let installed = package_root(&root.0).join("runtime/python.exe");
+        let original = fs::read(&installed).unwrap();
+        fs::remove_file(&installed).unwrap();
+        let checked = manager.retry_cleanup(&root.0, &authority);
+        let polled = manager.snapshot_with_manifest(&root.0, &authority).unwrap();
+        assert_eq!(
+            (
+                checked.as_ref().ok().and_then(|value| value.failure),
+                polled.failure,
+                polled.installed_bytes
+            ),
+            (
+                Some("installed-package-invalid"),
+                Some("installed-package-invalid"),
+                None
+            ),
+        );
+        assert!(
+            manager
+                .operation
+                .lock()
+                .unwrap()
+                .post_commit_cleanup
+                .is_some()
+        );
+        fs::write(&installed, original).unwrap();
         assert_eq!(
             manager
                 .snapshot_with_manifest(&root.0, &authority)

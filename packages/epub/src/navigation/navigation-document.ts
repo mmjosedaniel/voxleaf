@@ -24,6 +24,7 @@ const XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const EPUB_NAMESPACE = "http://www.idpf.org/2007/ops";
 const MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS = 1_024;
 const ASCII_WHITESPACE = /^[\t\n\f\r ]$/u;
+const LABEL_EDGE_WHITESPACE = /^\s$/u;
 const NON_XML_WHITESPACE = /[^\t\n\r ]/u;
 const FORBIDDEN_LABEL_ELEMENTS = new Set([
   "body",
@@ -60,6 +61,7 @@ interface LabelBuilder {
   codePointCount: number;
   pendingWhitespace: "attribute" | "xml" | undefined;
   retainedAttributeBytes: number;
+  trailingAttributeBytes: number;
 }
 
 interface ListItemBuilder {
@@ -320,6 +322,7 @@ class NavigationDocumentParser {
         codePointCount: 0,
         pendingWhitespace: undefined,
         retainedAttributeBytes: 0,
+        trailingAttributeBytes: 0,
       };
       return;
     }
@@ -435,6 +438,8 @@ class NavigationDocumentParser {
     if (label.text.length === 0 && label.fallbackTitle !== undefined) {
       this.appendLabelText(label, label.fallbackTitle, "attribute");
     }
+    label.text = label.text.trimEnd();
+    label.retainedAttributeBytes -= label.trailingAttributeBytes;
     if (label.text.length === 0) {
       return fail("malformed-package");
     }
@@ -537,9 +542,13 @@ class NavigationDocumentParser {
         return fail("malformed-package");
       }
 
+      const edgeWhitespace = LABEL_EDGE_WHITESPACE.test(character);
+      if (edgeWhitespace && label.text.length === 0) continue;
+
+      let attributeBytes = 0;
       if (label.pendingWhitespace) {
         if (label.pendingWhitespace === "attribute") {
-          label.retainedAttributeBytes += 1;
+          attributeBytes += 1;
         }
         label.text += " ";
         label.codePointCount += 1;
@@ -551,11 +560,15 @@ class NavigationDocumentParser {
         return fail("malformed-package");
       }
       if (source === "attribute") {
-        label.retainedAttributeBytes += decodedUtf8ByteLength(
+        attributeBytes += decodedUtf8ByteLength(
           character,
           this.#archive.budget,
         );
       }
+      label.retainedAttributeBytes += attributeBytes;
+      label.trailingAttributeBytes = edgeWhitespace
+        ? label.trailingAttributeBytes + attributeBytes
+        : 0;
     }
   }
 }

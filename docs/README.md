@@ -17,6 +17,15 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
+The [completed deep-findings correction plan](plans/completed/deep-findings-minimal-corrections.md)
+records 21 corrected/validated findings and VF-0050's documented diagnostic
+precision. Its [results](plans/evidence/deep-findings-minimal-corrections/results.md)
+include selective host validation, verified restoration and independent approval.
+Implementation was committed in `1058d99` and is proposed in
+[PR #316](https://github.com/mmjosedaniel/voxleaf/pull/316). The
+[installer helper CI follow-up](plans/evidence/deep-findings-ci-follow-up/acceptance.md)
+records its subsequent portable failure and scoped correction; no release is implied.
+
 The [completed chat-findings correction plan](plans/completed/chat-findings-recovery-and-minimal-corrections.md)
 records 24 reviewed dispositions, the purpose-based pilot-preflight exit decision,
 minimal implementation units and a selective validation/reuse strategy.

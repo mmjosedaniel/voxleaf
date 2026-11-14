@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -12,7 +13,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from benchmarks import cpu_fallback_result, quality, quality_presentation, quality_scoring
+from benchmarks import (
+    cpu_fallback_result,
+    quality,
+    quality_cli,
+    quality_presentation,
+    quality_scoring,
+)
 from benchmarks.adapters.manifest import (
     PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
@@ -107,6 +114,112 @@ def _fake_wave(path: Path, waveform: object, sample_rate_hz: int) -> None:
     assert waveform == [0.0, 0.25, -0.25]
     assert sample_rate_hz == 24_000
     path.write_bytes(b"RIFF-fake")
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["second-mkdir", "audio-exists", "scorecards-exist", "concurrent-data", "rollback-failure"],
+)
+def test_vf0042_finalization_setup_preserves_staging_and_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    session_id = "b" * 32
+    for candidate in (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID):
+        generate_candidate_audio(
+            _request(tmp_path, candidate),
+            session_id,
+            raw_root=tmp_path,
+            adapter_builder=FakeQualityAdapter,
+        )
+    session = tmp_path / "quality-v2" / session_id
+    original = {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    }
+    audio = session / "audio"
+    scorecards = session / "scorecards"
+    sentinel: Path | None = None
+    if failure in ("audio-exists", "scorecards-exist"):
+        occupied = audio if failure == "audio-exists" else scorecards
+        occupied.mkdir()
+        sentinel = occupied / "sentinel"
+        sentinel.write_bytes(b"existing data")
+    original_mkdir = Path.mkdir
+    original_rmdir = Path.rmdir
+
+    def failing_mkdir(path: Path, *args: object, **kwargs: object) -> None:
+        if path == scorecards and failure in (
+            "second-mkdir",
+            "concurrent-data",
+            "rollback-failure",
+        ):
+            if failure == "concurrent-data":
+                (audio / "sentinel").write_bytes(b"concurrent data")
+            raise OSError("private filesystem detail")
+        original_mkdir(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    def failing_rmdir(path: Path) -> None:
+        if path == audio and failure == "rollback-failure":
+            raise OSError("private rollback detail")
+        original_rmdir(path)
+
+    with monkeypatch.context() as fault:
+        fault.setattr(Path, "mkdir", failing_mkdir)
+        fault.setattr(Path, "rmdir", failing_rmdir)
+        with pytest.raises(QualitySessionError, match="finalization-setup$"):
+            finalize_session(session_id, 1, raw_root=tmp_path)
+
+    assert all((session / path).read_bytes() == content for path, content in original.items())
+    if sentinel is not None:
+        assert sentinel.read_bytes() == b"existing data"
+        sentinel.unlink()
+        sentinel.parent.rmdir()
+    elif failure == "concurrent-data":
+        assert (audio / "sentinel").read_bytes() == b"concurrent data"
+        (audio / "sentinel").unlink()
+        audio.rmdir()
+    elif failure == "rollback-failure":
+        assert audio.is_dir()
+        audio.rmdir()
+    else:
+        assert not audio.exists()
+    result = finalize_session(session_id, 1, raw_root=tmp_path)
+    assert result["status"] == "pass"
+    assert not (session / "staging").exists()
+    assert (scorecards / "evaluator-01.template.json").is_file()
+
+
+def test_vf0042_cli_hides_finalization_setup_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    session_id = "c" * 32
+    for candidate in (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID):
+        generate_candidate_audio(
+            _request(tmp_path, candidate),
+            session_id,
+            raw_root=tmp_path,
+            adapter_builder=FakeQualityAdapter,
+        )
+    scorecards = tmp_path / "quality-v2" / session_id / "scorecards"
+    scorecards.mkdir()
+    monkeypatch.setattr(sys, "argv", ["quality_cli", "finalize"])
+    monkeypatch.setattr(
+        quality_cli,
+        "_read_stdin",
+        lambda: {"qualityOptIn": True, "sessionId": session_id, "evaluatorCount": 1},
+    )
+    monkeypatch.setattr(
+        quality_cli,
+        "finalize_session",
+        lambda sid, count: finalize_session(sid, count, raw_root=tmp_path),
+    )
+    assert quality_cli.main() == 2
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert json.loads(captured.out) == {"status": "fail", "failureCode": "invalid-request"}
 
 
 @pytest.mark.parametrize("rejection", ["duplicate", "candidate", "fingerprint"])

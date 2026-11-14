@@ -121,6 +121,7 @@ interface ProvisionalTextUnit extends NarrationNormalizedTextUnit {
 type ProvisionalUnit = NarrationNormalizationOmission | ProvisionalTextUnit;
 
 interface PlannedTextReplacement {
+  readonly lexicalExpansion?: object;
   readonly kind: "text";
   readonly text: string;
   readonly role: NarrationNormalizedTextRole;
@@ -129,6 +130,7 @@ interface PlannedTextReplacement {
 }
 
 interface PlannedOmissionReplacement {
+  readonly lexicalExpansion?: object;
   readonly kind: "omission";
   readonly reason: NarrationNormalizationOmissionReason;
   readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
@@ -137,6 +139,7 @@ interface PlannedOmissionReplacement {
 type PlannedReplacement = PlannedOmissionReplacement | PlannedTextReplacement;
 
 interface PunctuationPlanEntry {
+  readonly closingQuotation?: boolean;
   readonly role: NarrationNormalizedTextRole;
   readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
 }
@@ -144,6 +147,21 @@ interface PunctuationPlanEntry {
 const SOFT_HYPHEN = "\u00ad";
 const ZERO_WIDTH_SPACE = "\u200b";
 const WORD_JOINER = "\u2060";
+// Match-local identities stay private and do not retain source text or streams.
+const LEXICAL_EXPANSIONS = new WeakMap<object, object>();
+
+export function isLexicalExpansionInterior(
+  previous: object | undefined,
+  next: object | undefined,
+): boolean {
+  const expansion =
+    previous === undefined ? undefined : LEXICAL_EXPANSIONS.get(previous);
+  return (
+    expansion !== undefined &&
+    next !== undefined &&
+    LEXICAL_EXPANSIONS.get(next) === expansion
+  );
+}
 const NO_BOUNDARY_PROTECTIONS = Object.freeze(
   [] as NarrationNormalizationBoundaryProtection[],
 );
@@ -996,7 +1014,9 @@ function matchesLexicalForm(
         replacements[endIndexExclusive] === undefined &&
         isProseTextToken(tokens[endIndexExclusive]) &&
         languages[endIndexExclusive] === requiredLanguage &&
-        /^[ \u00a0\u202f]$/u.test(sourceText(tokens[endIndexExclusive]) ?? "")
+        /^[ \u00a0\u202f\u2007\u2009]$/u.test(
+          sourceText(tokens[endIndexExclusive]) ?? "",
+        )
       ) {
         endIndexExclusive += 1;
       }
@@ -1140,6 +1160,7 @@ function planLexicalSpan(
   }
 
   let narrationIndex = 0;
+  const lexicalExpansion = Object.freeze({});
   for (let index = startIndex; index < endIndexExclusive; index += 1) {
     const remainingSourcePositions = endIndexExclusive - index;
     const remainingNarration = narrationCodePoints.length - narrationIndex;
@@ -1151,6 +1172,7 @@ function planLexicalSpan(
       replacements[index] = Object.freeze({
         kind: "omission",
         reason: "lexical-expansion",
+        lexicalExpansion,
         boundaryProtections: protections,
       });
       continue;
@@ -1165,6 +1187,7 @@ function planLexicalSpan(
       role,
       collapsible: false,
       boundaryProtections: protections,
+      lexicalExpansion,
     });
   }
   if (narrationIndex !== narrationCodePoints.length) {
@@ -1347,16 +1370,32 @@ function isTerminalOrdinal(
   languages: readonly NarrationNormalizationLanguage[],
   end: number,
   completeLeaf: boolean,
+  punctuationPlan: readonly (PunctuationPlanEntry | undefined)[],
 ): boolean {
-  const next = lexicalContext(tokens, languages, end, 1, "es", true);
-  if (next === undefined) return false;
-  const token = tokens[next.index];
-  if (token === undefined) return completeLeaf;
-  return (
-    isProseTextToken(token) &&
-    languages[next.index] === "es" &&
-    /^[.!?…;,)]$/u.test(next.value ?? "")
-  );
+  const limit =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+  for (let cursor = end; cursor - end < limit;) {
+    const next = lexicalContext(
+      tokens,
+      languages,
+      cursor,
+      1,
+      "es",
+      true,
+      limit - (cursor - end),
+    );
+    if (next === undefined) return false;
+    const token = tokens[next.index];
+    if (token === undefined) return completeLeaf;
+    if (!isProseTextToken(token) || languages[next.index] !== "es")
+      return false;
+    if (punctuationPlan[next.index]?.closingQuotation === true) {
+      cursor = next.index + 1;
+      continue;
+    }
+    return /^[.!?…;,)]$/u.test(next.value ?? "");
+  }
+  return false;
 }
 
 function findLexicalReplacements(
@@ -1364,6 +1403,7 @@ function findLexicalReplacements(
   languages: readonly NarrationNormalizationLanguage[],
   existingReplacements: readonly (PlannedReplacement | undefined)[],
   classifier: NarrationLanguageClassifier,
+  punctuationPlan: readonly (PunctuationPlanEntry | undefined)[],
   preceding?: NarrationEnglishTitleContext,
   completeLeaf = true,
 ): readonly (PlannedReplacement | undefined)[] {
@@ -1427,7 +1467,13 @@ function findLexicalReplacements(
         form.kind,
         form.boundaryProtections,
         form.source === "1.º" &&
-          isTerminalOrdinal(tokens, languages, endIndexExclusive, completeLeaf)
+          isTerminalOrdinal(
+            tokens,
+            languages,
+            endIndexExclusive,
+            completeLeaf,
+            punctuationPlan,
+          )
           ? "primero"
           : form.narration,
       );
@@ -1480,8 +1526,9 @@ function findLexicalReplacements(
 function punctuationEntry(
   role: NarrationNormalizedTextRole,
   boundaryProtections: readonly NarrationNormalizationBoundaryProtection[] = NO_BOUNDARY_PROTECTIONS,
+  closingQuotation = false,
 ): PunctuationPlanEntry {
-  return Object.freeze({ role, boundaryProtections });
+  return Object.freeze({ role, boundaryProtections, closingQuotation });
 }
 
 export function isApostropheContext(
@@ -1639,7 +1686,11 @@ function findPunctuationPlan(
       continue;
     }
     if (value === '"') {
-      plan[index] = punctuationEntry("quotation");
+      plan[index] = punctuationEntry(
+        "quotation",
+        NO_BOUNDARY_PROTECTIONS,
+        straightDoubleQuoteOpening !== undefined,
+      );
       if (straightDoubleQuoteOpening === undefined) {
         straightDoubleQuoteOpening = index;
       } else {
@@ -1669,11 +1720,11 @@ function findPunctuationPlan(
       value === "›" ||
       (value === "’" && !isApostropheContext(tokens, index))
     ) {
+      const paired = closeOpening(value);
       plan[index] = punctuationEntry(
         "quotation",
-        closeOpening(value)
-          ? NO_BOUNDARY_PROTECTIONS
-          : MALFORMED_PUNCTUATION_PROTECTION,
+        paired ? NO_BOUNDARY_PROTECTIONS : MALFORMED_PUNCTUATION_PROTECTION,
+        paired,
       );
       continue;
     }
@@ -2178,18 +2229,19 @@ function normalizeNarrationSourceTokensInternal(
   );
   const lineEndHyphenation = findLineEndHyphenation(tokens, languages);
   const symbolReplacements = findSymbolReplacements(tokens, languages);
+  const punctuationPlan = findPunctuationPlan(
+    tokens,
+    languages,
+    precedingQuotationContext,
+  );
   const replacements = findLexicalReplacements(
     tokens,
     languages,
     symbolReplacements,
     classifier,
+    punctuationPlan,
     preceding,
     completeLeaf,
-  );
-  const punctuationPlan = findPunctuationPlan(
-    tokens,
-    languages,
-    precedingQuotationContext,
   );
   const provisional = tokens.map((token, index) => {
     let textContext = contextCopies.get(token.textContext);
@@ -2213,7 +2265,9 @@ function normalizeNarrationSourceTokensInternal(
   });
   const units = collapseWhitespace(provisional);
   const textParts: string[] = [];
-  for (const unit of units) {
+  for (const [index, unit] of units.entries()) {
+    const expansion = replacements[index]?.lexicalExpansion;
+    if (expansion !== undefined) LEXICAL_EXPANSIONS.set(unit, expansion);
     if (unit.kind === "text") {
       textParts.push(String(unit.text));
     }

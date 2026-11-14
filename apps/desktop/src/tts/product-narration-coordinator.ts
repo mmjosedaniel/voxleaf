@@ -387,6 +387,7 @@ export class ProductNarrationCoordinator {
   readonly #estimator = new AdaptivePreparationEstimator();
   readonly #recovery = new OperationalRecoveryController();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
+  #pendingSceneBoundary = false;
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   readonly #knownPredecessors: {
     previous: LocatorRangeV1;
@@ -1246,6 +1247,7 @@ export class ProductNarrationCoordinator {
     this.#preparationFailure = undefined;
     this.#estimator.reset();
     this.#prepared.clear();
+    this.#pendingSceneBoundary = false;
     this.#attemptedStartLocator = this.#activeLocator;
     this.#continuation = this.#attemptedStartLocator;
     this.#lastPreparedBoundary = undefined;
@@ -1343,20 +1345,18 @@ export class ProductNarrationCoordinator {
   }
 
   public pause(): void {
+    const runToken = this.#runToken;
+    const player = this.#player;
     try {
-      if (this.#scheduler === undefined || this.#player === undefined) {
+      if (this.#scheduler === undefined || player === undefined) {
         return;
       }
-      this.#player?.pause();
+      player.pause();
+      if (runToken !== this.#runToken || player !== this.#player) return;
       this.#playIntent = "paused";
-      this.#tick(this.#runToken);
+      this.#tick(runToken);
     } catch {
-      this.#fail(
-        "audio-playback-failed",
-        this.#runToken,
-        "playback",
-        undefined,
-      );
+      this.#fail("audio-playback-failed", runToken, "playback", undefined);
     }
   }
 
@@ -1548,6 +1548,7 @@ export class ProductNarrationCoordinator {
     this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
     this.#prepared.clear();
+    this.#pendingSceneBoundary = false;
     this.#continuation = undefined;
     this.#activeScope = undefined;
     this.#audibleRange = undefined;
@@ -2101,6 +2102,7 @@ export class ProductNarrationCoordinator {
     }
     scheduler.beginNarrationPreparation();
     this.#publish();
+    if (runToken !== this.#runToken) return;
     const controller = new AbortController();
     this.#preparationAbort = controller;
     let result: NarrationPreparationResult;
@@ -2129,9 +2131,19 @@ export class ProductNarrationCoordinator {
       throw new Error("content-free-preparation-failure");
     }
     this.#preparationFailure = undefined;
-    const preparedSegments = isPiperProfile(this.#profileId)
-      ? result.segments.filter(isPiperSpeakableSegment)
-      : result.segments;
+    const preparedSegments = result.segments.flatMap((prepared) => {
+      if (
+        isPiperProfile(this.#profileId) &&
+        !isPiperSpeakableSegment(prepared)
+      ) {
+        if (prepared.boundaryReason === "scene-break")
+          this.#pendingSceneBoundary = true;
+        return [];
+      }
+      const incomingSceneBreak = this.#pendingSceneBoundary;
+      this.#pendingSceneBoundary = false;
+      return [{ prepared, incomingSceneBreak }];
+    });
     if (preparedSegments.length === 0) {
       scheduler.acceptEmptyPreparedRange(result.status === "complete");
       this.#continuation =
@@ -2141,7 +2153,7 @@ export class ProductNarrationCoordinator {
     if (this.#identity === undefined || this.#prepared.size !== 0) {
       throw new Error("content-free-preparation-state");
     }
-    const entries = preparedSegments.map((prepared) => {
+    const entries = preparedSegments.map(({ prepared, incomingSceneBreak }) => {
       const sequence = this.#nextSequence;
       this.#nextSequence += 1;
       const segmentId = this.#createIdentifier!("segment", sequence);
@@ -2155,7 +2167,7 @@ export class ProductNarrationCoordinator {
         sourceRange: prepared.sourceRange,
         text: prepared.text,
       });
-      return Object.freeze({ contract, prepared });
+      return Object.freeze({ contract, prepared, incomingSceneBreak });
     });
     for (const entry of entries) {
       this.#prepared.set(entry.contract.segmentId, entry);
@@ -2167,7 +2179,7 @@ export class ProductNarrationCoordinator {
     }
     scheduler.acceptPreparedBatch({
       complete: result.status === "complete",
-      segments: entries.map(({ contract, prepared }) =>
+      segments: entries.map(({ contract, prepared, incomingSceneBreak }) =>
         Object.freeze({
           segmentId: contract.segmentId,
           sequence: contract.sequence,
@@ -2177,6 +2189,7 @@ export class ProductNarrationCoordinator {
           sentenceCount: prepared.measurements.sentenceCount,
           transitionPauseMs:
             playbackTransitionPauseMsForPreparedSegment(prepared),
+          ...(incomingSceneBreak ? { incomingSceneBreak: true } : {}),
         }),
       ),
     });
@@ -2202,6 +2215,7 @@ export class ProductNarrationCoordinator {
     this.#activeScope = scope;
     const startedAtMs = this.#clock.nowMs;
     this.#publish();
+    if (runToken !== this.#runToken || scheduler !== this.#scheduler) return;
     const metadata = await this.#client.synthesize(entry.contract);
     this.#prepared.delete(begunSegmentId);
     if (runToken !== this.#runToken) {
@@ -2588,10 +2602,13 @@ export class ProductNarrationCoordinator {
   }
 
   #createSnapshot(): ProductNarrationSnapshot {
+    const runToken = this.#runToken;
     const scheduler = this.#scheduler?.observe();
     const player = this.#player;
     const playerObservation =
       this.#failure === undefined ? player?.synchronize() : player?.observe();
+    if (runToken !== this.#runToken || player !== this.#player)
+      return this.#snapshot;
     let state = this.#pausedNavigationState ?? this.#terminalState;
     if (
       state === undefined &&

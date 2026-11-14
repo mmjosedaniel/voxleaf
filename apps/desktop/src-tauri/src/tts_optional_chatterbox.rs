@@ -420,6 +420,7 @@ struct Operation {
     failure: Option<&'static str>,
     cancellation: Option<Arc<AtomicBool>>,
     post_commit_cleanup: Option<(PathBuf, String)>,
+    installed_verified: bool,
     staging_reconciliation_failed: bool,
 }
 
@@ -1592,6 +1593,7 @@ fn promote(
         operation.cancellation = None;
         operation.worker_active = true;
         operation.post_commit_cleanup = Some(cleanup_identity);
+        operation.installed_verified = true;
     }
     drop(operation);
     #[cfg(test)]
@@ -1919,7 +1921,9 @@ impl OptionalChatterboxManager {
             operation.downloaded_bytes,
             operation.failure,
         );
-        if snapshot.state == OptionalProfileState::Failed && operation.post_commit_cleanup.is_some()
+        if snapshot.state == OptionalProfileState::Failed
+            && operation.post_commit_cleanup.is_some()
+            && operation.installed_verified
         {
             snapshot.installed_bytes = manifest
                 .measurements
@@ -1944,6 +1948,7 @@ impl OptionalChatterboxManager {
             } else {
                 None
             };
+            let installed_verified = post_commit_cleanup.is_some() && operation.installed_verified;
             *operation = Operation {
                 worker_active: cancellation.is_some(),
                 state: Some(state),
@@ -1951,6 +1956,7 @@ impl OptionalChatterboxManager {
                 failure,
                 cancellation,
                 post_commit_cleanup,
+                installed_verified,
                 staging_reconciliation_failed: false,
             };
         }
@@ -1996,15 +2002,23 @@ impl OptionalChatterboxManager {
             // Hold the operation admission lock throughout this explicit retry.
             // No replacement can take ownership of the recorded paths.
             let result: Result<(), OptionalProfileError> = (|| {
+                operation.installed_verified = false;
                 verify_runtime_cached(&package_root(root), manifest)?;
+                operation.installed_verified = true;
                 remove_promotion_backup(root)?;
                 clean_staging(root)?;
+                operation.installed_verified = false;
                 verify_runtime_cached(&package_root(root), manifest)?;
+                operation.installed_verified = true;
                 Ok(())
             })();
             match result {
                 Ok(()) => *operation = Operation::default(),
                 Err(error) => {
+                    if !operation.installed_verified {
+                        operation.failure = Some("installed-package-invalid");
+                        return Ok(());
+                    }
                     operation.failure = Some(error.code());
                     return Err(error);
                 }

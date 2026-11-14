@@ -41,6 +41,13 @@ afterEach(() => {
 describe("EPUB 3 navigation document parsing", () => {
   const retainedLabelCases = [
     [
+      "VF-0047 trimmed attribute NBSP",
+      '<h:img alt="&#160;é&#160;"/>',
+      "",
+      "é",
+      2,
+    ],
+    [
       "visible XHTML break",
       'A<h:br hidden=""/><br xmlns="urn:foreign"/>B<h:br/><h:br/><h:img alt=" C "/>',
       "",

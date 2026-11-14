@@ -31,6 +31,7 @@ export interface ReaderPositionSaveCoordinatorOptions {
   readonly environment?: ReaderPositionSaveEnvironment;
   readonly initialLocator?: ReadingLocatorV1;
   readonly persistInitialLocatorOnFlush?: boolean;
+  readonly requireIntentBeforePassiveSave?: boolean;
   readonly onPreferencesWritten?: (
     preferences: ReaderPreferencesV1,
     result: ReaderRepositoryWriteResult,
@@ -161,6 +162,7 @@ export class ReaderPositionSaveCoordinator {
   #cancelPositionSchedule: (() => void) | undefined;
   #scheduledPositionKind: ScheduledPositionKind | undefined;
   #positionSaveRequested: boolean;
+  #requireIntentBeforePassiveSave: boolean;
   #latestPreferences: ReaderPreferencesV1 | undefined;
   #lastRequestedPreferences: ReaderPreferencesV1 | undefined;
   #lastSavedPreferences: ReaderPreferencesV1 | undefined;
@@ -197,7 +199,11 @@ export class ReaderPositionSaveCoordinator {
     this.#environment =
       options.environment ?? BROWSER_READER_POSITION_SAVE_ENVIRONMENT;
     this.#latestLocator = initialLocator;
-    this.#positionSaveRequested = options.persistInitialLocatorOnFlush ?? true;
+    this.#requireIntentBeforePassiveSave =
+      options.requireIntentBeforePassiveSave ?? false;
+    this.#positionSaveRequested =
+      !this.#requireIntentBeforePassiveSave &&
+      (options.persistInitialLocatorOnFlush ?? true);
   }
 
   public start(): void {
@@ -216,13 +222,20 @@ export class ReaderPositionSaveCoordinator {
     this.#onPreferencesWritten = callback;
   }
 
-  public schedulePassive(locator: ReadingLocatorV1): boolean {
-    if (this.#narrationActive) {
+  public schedulePassive(
+    locator: ReadingLocatorV1,
+    measuredManual = false,
+  ): boolean {
+    if (
+      this.#narrationActive ||
+      (this.#requireIntentBeforePassiveSave && !measuredManual)
+    ) {
       return false;
     }
     const scheduled = this.#schedulePosition(locator, "passive");
     if (scheduled) {
       this.#protectHeardCheckpoint = false;
+      this.#requireIntentBeforePassiveSave = false;
     }
     return scheduled;
   }
@@ -378,6 +391,7 @@ export class ReaderPositionSaveCoordinator {
     }
 
     this.#latestLocator = canonical;
+    if (kind === "immediate") this.#requireIntentBeforePassiveSave = false;
     this.#lastRequestedLocator = canonical;
     this.#positionSaveRequested = true;
     if (

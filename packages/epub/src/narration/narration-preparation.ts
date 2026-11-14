@@ -725,6 +725,7 @@ export async function prepareNarrationBatch(
         scheduler,
         checkpoint.source,
         operation.work,
+        "leaves",
       );
       if (window.status !== "window" && window.status !== "complete") {
         return mapSourceWindowFailure(window);

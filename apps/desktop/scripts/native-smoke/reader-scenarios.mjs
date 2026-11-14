@@ -325,6 +325,78 @@ export function createNativeReaderScenarios({
       )) === true,
       "Native reader did not preserve native scrolling-key behavior.",
     );
+    setStage("VF-0034 native scrollbar provenance");
+    await driver.setWindowRect(320, 800);
+    await waitForCondition(
+      driver,
+      `const root = document.querySelector('[data-reader-scroll-owner="true"]'); return root?.clientHeight > 150 && root.scrollHeight > root.clientHeight;`,
+    );
+    const scrollbar = await driver.execute(`
+      const root = document.querySelector('[data-reader-scroll-owner="true"]');
+      const events = [];
+      const record = (event) => {
+        if (events.length < 24) events.push({type: event.type, trusted: event.isTrusted, target: event.target === root});
+      };
+      const types = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'scroll'];
+      for (const type of types) root.addEventListener(type, record, true);
+      globalThis.__vfScrollbar = {events, start: root.scrollTop, cleanup: () => {
+        for (const type of types) root.removeEventListener(type, record, true);
+      }};
+      const rect = root.getBoundingClientRect();
+      const track = root.clientHeight - 34;
+      const thumb = Math.max(20, track * root.clientHeight / root.scrollHeight);
+      return {x: rect.right - 7, y: rect.top + 17 + root.scrollTop / (root.scrollHeight - root.clientHeight) * (track - thumb) + thumb / 2, clientHeight: root.clientHeight, scrollHeight: root.scrollHeight, scrollTop: root.scrollTop, gutter: root.offsetWidth - root.clientWidth, width: window.innerWidth, height: window.innerHeight};
+    `);
+    console.info(
+      "VF-0034 WebView2 scrollbar geometry",
+      JSON.stringify(scrollbar),
+    );
+    await driver.executeCdp("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: scrollbar.x,
+      y: scrollbar.y,
+    });
+    await driver.executeCdp("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      x: scrollbar.x,
+      y: scrollbar.y,
+      button: "left",
+      buttons: 1,
+      clickCount: 1,
+    });
+    for (let step = 1; step <= 12; step++) {
+      await driver.executeCdp("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: scrollbar.x,
+        y: scrollbar.y + step * 5,
+        button: "left",
+        buttons: 1,
+      });
+    }
+    await driver.executeCdp("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x: scrollbar.x,
+      y: scrollbar.y + 60,
+      button: "left",
+      buttons: 0,
+      clickCount: 1,
+    });
+    const scrollbarObservation = await driver.execute(`
+      const root = document.querySelector('[data-reader-scroll-owner="true"]');
+      const state = globalThis.__vfScrollbar;
+      state.cleanup();
+      delete globalThis.__vfScrollbar;
+      return {moved: root.scrollTop > state.start, events: state.events};
+    `);
+    console.info(
+      "VF-0034 WebView2 scrollbar observation",
+      JSON.stringify(scrollbarObservation),
+    );
+    assert(
+      scrollbarObservation.moved,
+      "Native scrollbar drag did not move the reader.",
+    );
+    await driver.setWindowRect(320, 640);
     await driver.execute(
       `delete globalThis.__voxleafNativePageDownInteraction;
      return true;`,

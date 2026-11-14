@@ -18,6 +18,7 @@ const NCX_NAMESPACE = "http://www.daisy.org/z3986/2005/ncx/";
 const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
 const MAX_NAVIGATION_LABEL_CODE_POINTS = 1_024;
 const ASCII_WHITESPACE = /^[\t\n\f\r ]$/u;
+const LABEL_EDGE_WHITESPACE = /^\s$/u;
 const NON_XML_WHITESPACE = /[^\t\n\r ]/u;
 const POSITIVE_INTEGER = /^[1-9][0-9]*$/u;
 const PAGE_TARGET_TYPES = new Set(["front", "normal", "special"]);
@@ -493,6 +494,8 @@ export class NcxNavigationParser {
         parent.label = frame.label;
         return;
       case "text":
+        if (frame.text !== undefined)
+          frame.text.text = frame.text.text.trimEnd();
         if (
           frame.text === undefined ||
           frame.text.text.length === 0 ||
@@ -660,6 +663,9 @@ export class NcxNavigationParser {
       const codePoint = character.codePointAt(0);
       if (codePoint === undefined || codePoint <= 0x1f || codePoint === 0x7f) {
         return fail("malformed-package");
+      }
+      if (label.text.length === 0 && LABEL_EDGE_WHITESPACE.test(character)) {
+        continue;
       }
       if (label.pendingWhitespace) {
         label.text += " ";

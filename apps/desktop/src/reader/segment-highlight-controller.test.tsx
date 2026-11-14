@@ -224,6 +224,53 @@ afterEach(() => {
 });
 
 describe("segment highlight controller", () => {
+  it.each(["missing", "lost", "recovered"] as const)(
+    "VF-0035 completion requires measured follow in the current epoch: %s",
+    (geometry) => {
+      const block = paragraph("Geometry");
+      const located = locatedBlock(0, block, 8);
+      const mapper = new SemanticDomRangeMapper();
+      const element = document.createElement("p");
+      element.textContent = "Geometry";
+      document.body.append(element);
+      mapper.registerBlock(element, located);
+      const environment = new ManualHighlightEnvironment();
+      environment.range =
+        geometry === "lost" ? { top: 20, bottom: 40 } : undefined;
+      const settle = vi.fn();
+      const controller = new SegmentHighlightController(
+        [located],
+        mapper,
+        {
+          navigateToLocator: vi.fn(),
+          settleLocator: settle,
+          suspendVisualSampling: vi.fn(),
+        },
+        environment,
+      );
+      try {
+        controller.setRoot(element);
+        const range = sourceRange(located, 0, 8);
+        controller.accept(observation("segment-started", range));
+        settle.mockClear();
+        environment.range =
+          geometry === "recovered" ? { top: 20, bottom: 40 } : undefined;
+        controller.refresh();
+        settle.mockClear();
+        const late = [...environment.scheduled];
+        controller.accept(observation("segment-completed", range));
+        if (geometry === "recovered")
+          expect(settle).toHaveBeenCalledExactlyOnceWith(range.end);
+        else expect(settle).not.toHaveBeenCalled();
+        for (const callback of late) callback();
+        expect(settle).toHaveBeenCalledTimes(geometry === "recovered" ? 1 : 0);
+      } finally {
+        controller.close();
+        mapper.close();
+        element.remove();
+      }
+    },
+  );
   it("CFR-17 cancels a pending follow correction after measured manual motion", () => {
     const located = locatedBlock(0, paragraph("Lifecycle"), 9);
     const mapper = new SemanticDomRangeMapper();
@@ -338,6 +385,7 @@ describe("segment highlight controller", () => {
     controller.setRoot(element);
     const range = sourceRange(located, 0, 9);
     controller.accept(observation("segment-started", range));
+    environment.flush();
     controller.reconcile(narrationSnapshot("paused"));
     controller.accept(observation("segment-completed", range));
     expect(callbacks.settleLocator).toHaveBeenLastCalledWith(range.end);

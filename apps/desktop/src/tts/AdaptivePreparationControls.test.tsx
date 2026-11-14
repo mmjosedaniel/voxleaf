@@ -70,6 +70,37 @@ function handlers() {
 }
 
 describe("adaptive preparation controls", () => {
+  it.each([60_000, 120_000, 300_000, 600_000] as const)(
+    "VF-0041 distinguishes the refill threshold from production target %s",
+    (targetMs) => {
+      const state = createAdaptivePreparationUiState({
+        mode: { kind: "prepared", targetMs },
+        scheduler: observation({
+          playbackState: "buffering",
+          targetBufferMs: targetMs,
+        }),
+      });
+      render(
+        <AdaptivePreparationControls
+          selection={{ kind: "prepared", targetMs }}
+          state={state}
+          {...handlers()}
+        />,
+      );
+      expect(
+        screen.getByText(
+          new RegExp(
+            `Resumes at 1 minute\\. Production target: ${targetMs / 60_000} minute`,
+          ),
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "5 seconds of 1 minute ready",
+      );
+      expect(state.targetMs).toBe(targetMs);
+      expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+    },
+  );
   it.each([
     [59_999, "59 seconds"],
     [60_000, "1 minute"],

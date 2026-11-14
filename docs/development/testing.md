@@ -2179,9 +2179,28 @@ callback delivery can make it an upper bound on actual processing start. Neither
 metric establishes physical speaker latency. Native CCF assertions compare
 completed-unit metric deltas with the backend's rendered output-frame count.
 
+On interruption, including Stop, the slowed-playback counter freezes the last
+accepted cumulative worklet receipt. It is a lower bound on rendered duration,
+not exact accounting of the interrupted unit. Output after that receipt can be
+omitted, including all output from a short interrupted unit. The 6,000-frame
+reporting cadence does not bound the discrepancy: queued delivery can lag further.
+Immediate cancellation and rejection of obsolete receipts remain authoritative;
+the counter does not require a final Stop acknowledgement or a delayed Stop.
+VF-0050 records this precision limitation separately from natural-end coverage.
+
 Release-harness regressions use disposable filesystem/PowerShell seams. They
 distinguish proven no-launch recovery from uncertain partial installation,
 preserve primary failures when diagnostics fail, and reject noncanonical Cargo
 output/compiler configurations before build/signature/evidence steps. A
 canonical rebuild with identical output bytes remains valid. No real installer
 journey, signing, model inference or user-data deletion is implied by those tests.
+
+The VF-0036 inert-inline-anchor correction restores one semantic block around
+transparent anchors and keeps real block descendants. Stored locator tuples from
+older projection implementations have no projection-version provenance. The same
+book bytes do not identify which projection generated an old tuple; an apparently
+exact legacy locator can therefore resolve to another passage. Existing
+exact/nearest-valid recovery remains in force. A newly measured manual position
+can be saved and reopened, but this correction promises neither lossless historical
+migration nor a blanket reset of saved books. Current correction evidence is
+indexed in the [deep-findings execution ledger](../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md).

@@ -36,6 +36,7 @@ import {
 } from "./native-smoke/narration-fixture.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const SCROLLBAR_PROBE_ONLY = process.argv.includes("--scrollbar-probe-only");
 const desktopRoot = path.resolve(scriptDirectory, "..");
 const executablePath = resolveNativeSmokeExecutable(
   process.argv.slice(2),
@@ -1202,6 +1203,10 @@ async function run() {
           "webview-profile",
         );
         const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+        const terminalFixturePath = path.join(
+          temporaryDirectory,
+          "terminal-scene.epub",
+        );
         const imageLifecyclePath = path.join(
           temporaryDirectory,
           "synthetic-image-lifecycle.epub",
@@ -1244,6 +1249,7 @@ async function run() {
           buildReaderLongChapterEpubFixture,
           buildReaderNavigationEpubFixture,
           buildReaderReflowEpubFixture,
+          minimalPackageDocument,
         } = await import(fixtureModuleUrl.href);
         await mkdir(profileDirectory);
         if (READER_PERFORMANCE_MODE) {
@@ -1322,6 +1328,18 @@ async function run() {
             ],
           });
           await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
+          if (ADAPTIVE_TTS_PROFILE_ID.startsWith("piper-")) {
+            const terminalFixture = await buildMinimalEpubFixture({
+              packageDocument: minimalPackageDocument().replace(
+                "<dc:language>en</dc:language>",
+                `<dc:language>${fixtureLanguage}</dc:language>`,
+              ),
+              chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>Terminal scene</title></head><body><p>${isEnglishFixture ? "The final scene begins." : "La escena final empieza."}</p><p>—</p><p>***</p><p>${isEnglishFixture ? "The story ends here." : "La historia termina aquí."}</p></body></html>`,
+            });
+            await writeFile(terminalFixturePath, terminalFixture, {
+              flag: "wx",
+            });
+          }
         } else {
           const [primaryFixture, replacementFixture] = await Promise.all([
             buildEpubVersionEquivalenceFixture("2.0"),
@@ -1396,7 +1414,7 @@ async function run() {
 
         if (child.pid !== undefined)
           identities = await captureCurrentChildProcesses(child);
-        if (!ADAPTIVE_TTS_EXACT_HOST_MODE) {
+        if (!ADAPTIVE_TTS_EXACT_HOST_MODE && !SCROLLBAR_PROBE_ONLY) {
           stage = "native TTS supervisor host matrix";
           await exerciseNativeTtsSupervisorHost();
         }
@@ -1512,10 +1530,22 @@ async function run() {
             (nextStage) => {
               stage = nextStage;
             },
+            terminalFixturePath,
           );
           return;
         }
 
+        if (SCROLLBAR_PROBE_ONLY) {
+          await injectNativeFile(driver, fixturePath);
+          await waitForCondition(
+            driver,
+            `return document.querySelector('article.semantic-document') !== null;`,
+          );
+          await exerciseNativeReaderInteractionMatrix(driver, (nextStage) => {
+            stage = nextStage;
+          });
+          return;
+        }
         await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
           stage = nextStage;
         });

@@ -1,5 +1,5 @@
 import { ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";
-import { decodeOperationalErrorV1 } from "@voxleaf/shared";
+import { createIndex, decodeOperationalErrorV1 } from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -45,6 +45,124 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it.each([
+    ['<a id="empty"></a>', "Alpha Beta"],
+    ['<a id="empty"> </a>', "Alpha Beta"],
+    ['<a id="empty"><span hidden="hidden">Hidden</span></a>', "Alpha Beta"],
+    ['<a id="empty">inline </a>', "Alpha inline Beta"],
+    [
+      '<a id="empty" href="https://example.invalid/">inline </a>',
+      "Alpha inline Beta",
+    ],
+  ])(
+    "VF-0036 keeps inert phrasing inside the identified paragraph (%s)",
+    async (anchor, text) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Intro</p><div id="target">Alpha ${anchor}Beta</div><p>Gamma</p></body></html>`,
+        navigationDocument: minimalNavigationDocument().replace(
+          "#chapter-one",
+          "#target",
+        ),
+      });
+      const result = await openEpubPublication(bytes);
+      if (!result.ok) throw new Error(result.detail);
+      let checkpoint;
+      try {
+        expect(result.publication.locators).toHaveLength(3);
+        const middle = result.publication.locators[1];
+        const last = result.publication.locators[2];
+        if (middle?.block.kind !== "paragraph" || last === undefined)
+          throw new Error("expected paragraph locators");
+        expect(
+          middle.block.children
+            .map((child) => (child.kind === "text" ? child.text : ""))
+            .join(""),
+        ).toBe(text);
+        const link = result.publication.navigation[0];
+        if (link?.kind !== "link") throw new Error("expected navigation link");
+        expect(result.publication.resolveTarget(link.target)).toMatchObject({
+          status: "exact",
+          locator: middle.startLocator,
+        });
+        checkpoint = {
+          ...last.startLocator,
+          textOffsetCodePoints: createIndex(3),
+        };
+      } finally {
+        await result.publication.close();
+      }
+      const reopened = await openEpubPublication(bytes);
+      if (!reopened.ok) throw new Error(reopened.detail);
+      try {
+        expect(reopened.publication.resolveLocator(checkpoint)).toMatchObject({
+          status: "exact",
+          locator: checkpoint,
+        });
+        expect(reopened.publication.locators[2]?.block).toMatchObject({
+          kind: "paragraph",
+          children: [{ kind: "text", text: "Gamma" }],
+        });
+      } finally {
+        await reopened.publication.close();
+      }
+    },
+  );
+
+  it.each(["xhtml", "ncx"] as const)(
+    "VF-0047 opens %s labels with trimmed Unicode edges and preserved interior NBSP",
+    async (format) => {
+      for (const label of [
+        "\u00a0Chapter\u00a0One\u00a0",
+        "&#160;Chapter&#160;One&#160;",
+      ]) {
+        const bytes =
+          format === "xhtml"
+            ? await buildMinimalEpubFixture({
+                navigationDocument: minimalNavigationDocument().replace(
+                  "Chapter One</a>",
+                  `${label}</a>`,
+                ),
+              })
+            : await buildMinimalEpub2Fixture({
+                ncxDocument: minimalNcxDocument().replace(
+                  "Chapter One</text>",
+                  `${label}</text>`,
+                ),
+              });
+        const result = await openEpubPublication(bytes);
+        expect(result.ok).toBe(true);
+        if (!result.ok) throw new Error(result.detail);
+        try {
+          expect(result.publication.navigation[0]?.label).toBe(
+            "Chapter\u00a0One",
+          );
+          expect(result.publication.book.navigation[0]?.label).toBe(
+            "Chapter\u00a0One",
+          );
+        } finally {
+          await result.publication.close();
+        }
+      }
+    },
+  );
+
+  it("VF-0047 uses title fallback when the visible label is only Unicode whitespace", async () => {
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        navigationDocument: minimalNavigationDocument()
+          .replace("<a href=", '<a title="&#160;Fallback&#160;" href=')
+          .replace("Chapter One</a>", "&#160;</a>"),
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.detail);
+    try {
+      expect(result.publication.navigation[0]?.label).toBe("Fallback");
+    } finally {
+      await result.publication.close();
+    }
+  });
+
   it("DCR-07 shares retained TOC and semantic image bytes across rootfiles", async () => {
     const selected = minimalPackageDocument()
       .replace(

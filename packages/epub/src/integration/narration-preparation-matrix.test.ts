@@ -16,6 +16,7 @@ import {
   buildEpubVersionEquivalenceFixture,
   buildMinimalEpubFixture,
   buildNarrationIntegrationEpubFixture,
+  minimalPackageDocument,
   NARRATION_INTEGRATION_FIXTURE_EXPECTATIONS,
   NARRATION_INTEGRATION_FIXTURE_PROVENANCE,
 } from "../../test-support/epub-fixture.js";
@@ -29,6 +30,310 @@ afterEach(() => {
 });
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
+  it.each([
+    ["VF-0037", "Dijo «Llegó 1.º».", "Dijo «Llegó primero»."],
+    ["VF-0037", 'Dijo "Llegó 1.º".', 'Dijo "Llegó primero".'],
+    ["VF-0037", "Dijo “Llegó 1.º”.", "Dijo “Llegó primero”."],
+    ["VF-0037", "Dijo ‹Llegó 1.º›", "Dijo ‹Llegó primero›"],
+    ["VF-0037", "Dijo ‘Llegó 1.º’.", "Dijo ‘Llegó primero’."],
+    ["VF-0037", "El «1.º» puesto.", "El «primer» puesto."],
+    ["VF-0037", "Llegó 1.º».", "Llegó primer»."],
+    ["VF-0037", 'Llegó 1.º".', 'Llegó primer".'],
+    ["VF-0037", "<code>«Llegó 1.º».</code>", "«Llegó 1.º»."],
+    ["VF-0037", '<span lang="fr">«Llegó 1.º».</span>', "«Llegó 1.º»."],
+    ...[" ", "\u00a0", "\u202f", "\u2009", "\u2007"].flatMap((space) => [
+      ["VF-0039", `a las${space}14:30.`, "a las catorce treinta."],
+      ["VF-0039", `LAS${space}14:30.`, "LAS catorce treinta."],
+      ["VF-0039", `Las${space}14:30:12.`, "Las 14:30:12."],
+    ]),
+  ])(
+    "%s preserves public Spanish context: %s",
+    async (_id, source, expected) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>${source}</p><p>Fin.</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        const single = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          1,
+          "narration-piper-v2",
+          "es",
+        );
+        const many = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          8,
+          "narration-piper-v2",
+          "es",
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(single.segments.map((segment) => String(segment.text))).toEqual([
+          expected,
+          "Fin.",
+        ]);
+        for (const [index, segment] of single.segments.entries())
+          assertPublicSegment(opened.publication, segment, index);
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+
+  it.each([
+    ["1.º.", "primero."],
+    ["1.ª.", "primera."],
+    ["21.º.", "veintiuno.º."],
+    ["1.º/1.ª.", "1.º/1.ª."],
+    ["1.º#1.ª.", "primer#primera."],
+  ])(
+    "VF-0054 keeps expansions whole through warm and cold cuts: %s",
+    async (suffix, spoken) => {
+      const source = "a".repeat(156) + "#" + suffix;
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>${"<p>Intro.</p>".repeat(7)}<p id="atomic">${source}</p><p>Fin.</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      const publication = opened.publication;
+      const before = JSON.stringify(publication.documents);
+      try {
+        const results = [];
+        for (const count of [1, 2, 8])
+          results.push(
+            (
+              await collectPreparedSegments(
+                publication,
+                publication.defaultStartLocator!,
+                count,
+                "narration-piper-v2",
+                "es",
+              )
+            ).segments,
+          );
+        expect(results[0]).toEqual(results[1]);
+        expect(results[1]).toEqual(results[2]);
+        const atomic = results[0]!.filter(
+          (segment) => segment.sourceRange.start.anchor.value === "atomic",
+        );
+        expect(atomic.map((segment) => segment.text).join("")).toBe(
+          "a".repeat(156) + "#" + spoken,
+        );
+        expect(atomic.at(-1)!.sourceRange.end.textOffsetCodePoints).toBe(
+          source.length,
+        );
+        for (const [index, segment] of results[0]!.entries())
+          assertPublicSegment(publication, segment, index);
+        for (let cut = 1; cut < atomic.length; cut += 1) {
+          const cold = await openEpubPublication(bytes);
+          if (!cold.ok) throw new Error(cold.detail);
+          try {
+            const tail = await collectPreparedSegments(
+              cold.publication,
+              atomic[cut - 1]!.sourceRange.end,
+              1,
+              "narration-piper-v2",
+              "es",
+            );
+            expect(
+              tail.segments.filter(
+                (segment) =>
+                  segment.sourceRange.start.anchor.value === "atomic",
+              ),
+            ).toEqual(atomic.slice(cut));
+          } finally {
+            await cold.publication.close();
+          }
+        }
+        expect(JSON.stringify(publication.documents)).toBe(before);
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+  it.each([
+    [1364, false],
+    [1365, false],
+    [1365, true],
+  ] as const)(
+    "VF-0051 drains dense list leaves without retaining structural events: %s quoted-later-window=%s",
+    async (count, laterWindow) => {
+      const list = `<ul>${Array.from({ length: count }, (_, index) => `<li><p id="leaf-${index}">A</p></li>`).join("")}</ul>`;
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>${laterWindow ? `<p>${"\u200b".repeat(4096)}</p><blockquote lang="en">${list}</blockquote>` : list}<p id="after-list">End.</p></body></html>`,
+        packageDocument: minimalPackageDocument()
+          .replace(
+            "</manifest>",
+            '<item id="next" href="text/next.xhtml" media-type="application/xhtml+xml"/></manifest>',
+          )
+          .replace("</spine>", '<itemref idref="next"/></spine>'),
+        additionalEntries: [
+          {
+            name: "EPUB/text/next.xhtml",
+            content:
+              '<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="next-spine">Next.</p></body></html>',
+          },
+        ],
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        const cancelled = new AbortController();
+        cancelled.abort();
+        expect(
+          await opened.publication.prepareNarration({
+            startLocator: opened.publication.defaultStartLocator!,
+            maximumSegments: 1,
+            profile: "narration-piper-v2",
+            defaultLanguage: "es",
+            signal: cancelled.signal,
+          }),
+        ).toMatchObject({ status: "cancelled" });
+        const runs = [];
+        for (const maximumSegments of [1, 8]) {
+          let cursor = opened.publication.defaultStartLocator!;
+          const segments: PreparedNarrationSegment[] = [];
+          for (let request = 0; request <= count + 2; request += 1) {
+            const batch = await opened.publication.prepareNarration({
+              startLocator: cursor,
+              maximumSegments,
+              profile: "narration-piper-v2",
+              defaultLanguage: "es",
+            });
+            expect(["batch", "complete"]).toContain(batch.status);
+            if (batch.status !== "batch" && batch.status !== "complete")
+              throw new Error(batch.status);
+            segments.push(...batch.segments);
+            if (batch.status === "complete") break;
+            cursor = batch.continuation;
+          }
+          expect(
+            segments.map((segment) => segment.sourceRange.start.anchor.value),
+          ).toEqual([
+            ...Array.from({ length: count }, (_, index) => `leaf-${index}`),
+            "after-list",
+            "next-spine",
+          ]);
+          runs.push(segments);
+        }
+        expect(runs[0]).toEqual(runs[1]);
+        const cold = await openEpubPublication(bytes);
+        if (!cold.ok) throw new Error(cold.detail);
+        try {
+          const deep = await collectPreparedSegments(
+            cold.publication,
+            runs[0]![count - 1]!.sourceRange.start,
+            1,
+            "narration-piper-v2",
+            "es",
+          );
+          expect(deep.segments).toEqual(runs[0]!.slice(count - 1));
+        } finally {
+          await cold.publication.close();
+        }
+      } finally {
+        await opened.publication.close();
+      }
+    },
+    60_000,
+  );
+
+  it.each([
+    ["«", "»"],
+    ['"', '"'],
+  ])(
+    "VF-0037 keeps paired terminal ordinals after a source window and cold rewind: %s",
+    async (opening, closing) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p>Dijo ${opening}${"a ".repeat(2050)}Llegó 1.º${closing}.</p><p>Fin.</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        const single = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          1,
+          "narration-piper-v2",
+          "es",
+        );
+        const many = await collectPreparedSegments(
+          opened.publication,
+          opened.publication.defaultStartLocator!,
+          8,
+          "narration-piper-v2",
+          "es",
+        );
+        expect(single.segments).toEqual(many.segments);
+        const ending = single.segments.findIndex((segment) =>
+          String(segment.text).includes(`primero${closing}`),
+        );
+        expect(ending).toBeGreaterThan(0);
+        const cold = await openEpubPublication(bytes);
+        if (!cold.ok) throw new Error(cold.detail);
+        try {
+          const tail = await collectPreparedSegments(
+            cold.publication,
+            single.segments[ending]!.sourceRange.start,
+            1,
+            "narration-piper-v2",
+            "es",
+          );
+          expect(tail.segments).toEqual(single.segments.slice(ending));
+        } finally {
+          await cold.publication.close();
+        }
+      } finally {
+        await opened.publication.close();
+      }
+    },
+  );
+
+  it.each(["\u200b", "\u2060"])(
+    "VF-0052 advances unprotected silent formatting prefixes and interiors: %s",
+    async (mark) => {
+      for (const [prefix, count, suffix] of [
+        ["", 319, "A"],
+        ["", 320, "A"],
+        ["A", 638, "B"],
+        ["A", 639, "B"],
+        ["", 4096, "A"],
+        ["A", 4096, ""],
+      ] as const) {
+        const source = prefix + mark.repeat(count) + suffix;
+        const opened = await openEpubPublication(
+          await buildMinimalEpubFixture({
+            chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body><p id="silent">${source}</p><p>Fin.</p></body></html>`,
+          }),
+        );
+        if (!opened.ok) throw new Error(opened.detail);
+        try {
+          const all = await collectPreparedSegments(
+            opened.publication,
+            opened.publication.defaultStartLocator!,
+            1,
+            "narration-piper-v2",
+            "es",
+          );
+          const first = all.segments.filter(
+            (segment) => segment.sourceRange.start.anchor.value === "silent",
+          );
+          expect(first.map((segment) => segment.text).join("")).toBe(
+            prefix + suffix,
+          );
+          if (prefix === "" && count === 320)
+            expect(first[0]!.sourceRange.start.textOffsetCodePoints).toBe(320);
+          expect(all.segments.at(-1)!.text).toBe("Fin.");
+          for (const [index, segment] of all.segments.entries())
+            assertPublicSegment(opened.publication, segment, index);
+        } finally {
+          await opened.publication.close();
+        }
+      }
+    },
+  );
   it.each([
     "narration-piper-v2",
     "narration-bilingual-v2",

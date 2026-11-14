@@ -96,7 +96,10 @@ export interface ReadyPublicationContentProps {
   readonly initialLocator?: ReadingLocatorV1;
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
-  readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onActiveLocatorChange?: (
+    locator: ReadingLocatorV1,
+    measuredManual?: boolean,
+  ) => void;
   readonly onNavigationIntent?: (
     event: ReaderUserNavigationEvent,
   ) => void | Promise<void>;
@@ -445,32 +448,34 @@ export function App({
   );
   useEffect(() => {
     if (narrationCoordinator === undefined) return;
-    let previous = optionalChatterbox.observe().state;
-    let acquisitionObserved = false;
-    return optionalChatterbox.subscribe(() => {
-      const next = optionalChatterbox.observe().state;
+    let pending:
+      { generation: number; language: NarrationLanguageV1 } | undefined;
+    return optionalChatterbox.subscribe((installation) => {
+      const current = narrationCoordinator.observe();
+      if (installation?.phase === "started") {
+        pending =
+          current.availability === "unavailable" &&
+          current.profileId === CHATTERBOX_OPTIONAL_PROFILE_ID
+            ? {
+                generation: installation.generation,
+                language: current.language,
+              }
+            : undefined;
+        return;
+      }
       if (
-        next !== previous &&
-        (next === "confirming" ||
-          next === "downloading" ||
-          next === "verifying")
+        installation?.phase !== "completed" ||
+        pending?.generation !== installation.generation
       )
-        acquisitionObserved = true;
-      const completed =
-        acquisitionObserved &&
-        next === "installed" &&
-        (previous === "confirming" ||
-          previous === "downloading" ||
-          previous === "verifying");
-      previous = next;
-      if (next === "installed" || next === "absent" || next === "failed")
-        acquisitionObserved = false;
+        return;
+      const language = pending.language;
+      pending = undefined;
       if (
-        completed &&
+        current.availability === "unavailable" &&
+        current.language === language &&
         readerLifecycle.state.status === "ready" &&
         readerLifecycle.state.publication === readyPublication &&
-        narrationCoordinator.observe().profileId ===
-          CHATTERBOX_OPTIONAL_PROFILE_ID
+        current.profileId === CHATTERBOX_OPTIONAL_PROFILE_ID
       ) {
         void narrationCoordinator
           .refreshSelectedProfile()
@@ -496,7 +501,11 @@ export function App({
           : { environment: readerPositionSaveEnvironment }),
         initialLocator: readyRestorationResult.position.locator,
         persistInitialLocatorOnFlush:
-          readyRestorationResult.position.mode === "book-start",
+          readyRestorationResult.position.mode === "book-start" &&
+          readyRestorationResult.position.reason === "missing",
+        requireIntentBeforePassiveSave:
+          readyRestorationResult.position.mode === "book-start" &&
+          readyRestorationResult.position.reason !== "missing",
       },
     );
     return coordinator;
@@ -706,9 +715,9 @@ export function App({
     settingsButtonRef.current?.focus({ preventScroll: true });
   }, []);
   const handleActiveLocatorChange = useCallback(
-    (locator: ReadingLocatorV1): void => {
+    (locator: ReadingLocatorV1, measuredManual = false): void => {
       narrationCoordinator?.updateVisibleLocator(locator);
-      positionSaveCoordinator?.schedulePassive(locator);
+      positionSaveCoordinator?.schedulePassive(locator, measuredManual);
     },
     [narrationCoordinator, positionSaveCoordinator],
   );

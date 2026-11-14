@@ -1,4 +1,5 @@
 import type { AdaptivePreparationUiState } from "./adaptive-preparation";
+import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 
 export const PREPARED_TARGET_OPTIONS = Object.freeze([
   Object.freeze({ targetMs: 60_000 as const, label: "1 minute" }),
@@ -46,6 +47,12 @@ export function loadedAudioStatusText(
     state.activePlaybackRatePercent !== state.selectedPlaybackRatePercent
       ? `${loaded} of available listening time`
       : `${loaded} ready at ${rate}×`;
+  if (state.phase === "buffering") {
+    const resume = preparationTargetLabel(
+      ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs,
+    );
+    return `Playable audio loaded: ${loadedAtRate}. Resumes at ${resume}. Production target: ${target}.`;
+  }
   return state.phase === "preparing"
     ? `Playable audio loaded: ${loadedAtRate}. Starts at ${target}.`
     : `Playable audio loaded: ${loadedAtRate}. Active target: ${target}.`;
