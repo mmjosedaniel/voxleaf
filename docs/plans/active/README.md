@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active ExecPlans.
+- [Minimal corrections for the deeply revalidated findings](deep-findings-minimal-corrections.md)
+  covers VF-0034 through VF-0055 with bounded changes and selective validation.
+  Planning is complete; implementation and acceptance have not started.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 
