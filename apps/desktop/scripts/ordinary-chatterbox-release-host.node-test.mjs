@@ -166,6 +166,58 @@ Add-Type -TypeDefinition $source -OutputAssembly $args[0] -OutputType ConsoleApp
   }
 }
 
+test("CCF-C04 missing installer helper restores original and permits retry", async () => {
+  const owned = await mkdtemp(path.join(root, "ccf-missing-helper-"));
+  const originalLocalData = process.env.LOCALAPPDATA;
+  const data = path.join(owned, "com.voxleaf.desktop");
+  const backup = `${data}.ordinary-chatterbox-harness-backup-${process.pid}`;
+  const fixture = path.join(owned, "fixture.exe");
+  await mkdir(data);
+  await writeFile(path.join(data, "sentinel"), "original");
+  await writeFile(fixture, "synthetic non-executable");
+  const options = {
+    installedRoot: path.join(owned, "VoxLeaf"),
+    installer: fixture,
+    receipt: path.join(owned, "receipt.json"),
+    tauriDriver: fixture,
+    edgeDriver: fixture,
+    mode: "journey",
+  };
+  let uninstalls = 0;
+  process.env.LOCALAPPDATA = owned;
+  try {
+    const environment = {
+      ...process.env,
+      SystemRoot: path.join(owned, "missing-windows"),
+    };
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await assert.rejects(
+        runJourney(options, environment, {
+          runUninstaller: async () => {
+            uninstalls += 1;
+          },
+        }),
+        (error) => {
+          assert.equal(error.code, "ENOENT");
+          assert.match(error.syscall, /^spawn(?: |$)/u);
+          return true;
+        },
+      );
+      assert.equal(uninstalls, 0);
+      assert.equal(
+        await readFile(path.join(data, "sentinel"), "utf8"),
+        "original",
+      );
+      await assert.rejects(readFile(path.join(backup, "sentinel")), {
+        code: "ENOENT",
+      });
+    }
+  } finally {
+    if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+    else process.env.LOCALAPPDATA = originalLocalData;
+  }
+});
+
 test(
   "VF-0040 uncertain installer containment retains backup before a later safe retry",
   { skip: process.platform !== "win32" },
@@ -189,9 +241,23 @@ test(
     let uninstalls = 0;
     process.env.LOCALAPPDATA = owned;
     try {
+      const helperRoot = path.join(owned, "fake-windows");
+      const helperDirectory = path.join(
+        helperRoot,
+        "System32",
+        "WindowsPowerShell",
+        "v1.0",
+      );
+      await mkdir(helperDirectory, { recursive: true });
+      // A real process starts, but Node rejects the PowerShell-only arguments
+      // without producing a containment receipt.
+      await copyFile(
+        process.execPath,
+        path.join(helperDirectory, "powershell.exe"),
+      );
       const environment = {
         ...process.env,
-        SystemRoot: path.join(owned, "missing-windows"),
+        SystemRoot: helperRoot,
       };
       await assert.rejects(
         runJourney(options, environment, {
@@ -213,8 +279,8 @@ test(
       await assert.rejects(readFile(path.join(data, "sentinel")), {
         code: "ENOENT",
       });
-      // This fixture's missing helper proves no process was launched. Explicitly
-      // restore only this owned backup before retrying the real no-spawn route.
+      // The finite Node fixture has exited without launching an installer.
+      // Restore only this owned backup before retrying the real no-spawn route.
       await rename(backup, data);
       await assert.rejects(
         runJourney(options),

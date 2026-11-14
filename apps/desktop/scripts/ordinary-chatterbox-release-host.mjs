@@ -937,9 +937,18 @@ async function runOwnedInstaller(
         unverified();
       }
     });
-    child.once("error", () => {
-      // Even helper launch failure is conservative: no target receipt exists.
-      unverified();
+    child.once("error", (error) => {
+      // A failed helper spawn cannot have started an installer. Errors after
+      // process creation still require a verified containment receipt.
+      if (
+        child.pid === undefined &&
+        /^spawn(?: |$)/u.test(error.syscall ?? "")
+      ) {
+        installerSpawnFailures.add(error);
+        finish(error);
+      } else {
+        unverified();
+      }
     });
     child.once("close", (exitCode) => {
       if (settled) return;

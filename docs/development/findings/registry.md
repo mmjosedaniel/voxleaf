@@ -78,6 +78,7 @@ separate reproductions, failed attempts, current acceptance and qualified reuse.
 | [VF-0053](#vf-0053) | Narration | Piper drops the scene pause when it skips punctuation | `fixed` |
 | [VF-0054](#vf-0054) | Narration | A split lexical expansion loses text on warm continuation | `fixed` |
 | [VF-0055](#vf-0055) | Narration | Inline Stop can precede a stale synthesis dispatch | `fixed` |
+| [VF-0056](#vf-0056) | Release | Missing installer helper unnecessarily retains the application-data backup | `fixed` |
 
 ## VF-0001
 
@@ -830,6 +831,22 @@ separate reproductions, failed attempts, current acceptance and qualified reuse.
 - Next check — Use the mounted reader, a controlled direct-render clock and an unavailable next chapter. Assert zero synthesis IPC after inline invalidation, bounded cleanup and subsequent explicit Play. Cover current-run dispatch and late local-preparation ownership. [Deep validation][audit-2026-11-13-deep]
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. R01 additionally exposed post-publication local preparation after Stop; the mounted public-preparation witness now admits zero obsolete work. Natural incidence remains unmeasured. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
+
+## VF-0056
+
+**Missing installer helper unnecessarily retains the application-data backup.**
+After `runJourney` moves controlled data aside, Node cannot spawn the PowerShell
+helper. No child PID exists, but the wrapper reports uncertain containment and
+leaves recovery blocked instead of preserving the original launch error and
+restoring the absent destination.
+
+- Owner — `runOwnedInstaller` and `runJourney` in `ordinary-chatterbox-release-host.mjs`.
+- Disposition — `fixed`, P2, maintainer tooling. Acceptance is bounded by the linked host evidence and independent report for the CI correction.
+- Lineage — Recurrence of unimported CCF-C04's proven no-spawn recovery contract, introduced by `1058d991cfc78cb3fdbadc6526059b04f783735f`. Linked to VF-0040's process-wrapper correction; this trigger is failure to create the helper, not a non-exiting installer. The [CCF plan](../../plans/completed/confirmed-chat-findings-minimal-corrections.md#u6-maintainer-recovery-and-output-identity) requires immediate safe restoration only when no installer began.
+- Coverage gap — The existing Windows C04 test exercised a helper receipt for a rejected target. The VF-0040 uncertain fixture used a missing helper and incorrectly expected uncertainty. Ubuntu exposed the distinction through the retained portable test.
+- 2026-11-14 assessment — `reproduced` by Ubuntu PR #316 CI and a controlled missing-helper path in normal Windows PowerShell on the starting HEAD. The new regression fails before the owner edit. Its two attempts pass afterward, together with all 39 ordinary-host tests, including real Windows containment, ambiguous ENOENT, failed cleanup and backup retention after a launched helper yields no receipt.
+- Correction — Preserve the actual spawn error and privately mark no-spawn only when the actual child has no PID and a spawn syscall. Keep session/install/destination absence checks; uncertainty after process creation still retains the backup. No public contract or architectural change.
+- Evidence and final acceptance — [CI follow-up](../../plans/evidence/deep-findings-ci-follow-up/acceptance.md), [independent report](../../plans/evidence/deep-findings-ci-follow-up/review-r01.md). Historical completed plans and reviews remain unchanged.
 
 [cfr-plan]: ../../plans/completed/chat-findings-recovery-and-minimal-corrections.md#finding-and-history-register
 [cfr-review]: ../../plans/evidence/chat-findings-recovery/review-final-r03.md
