@@ -58,6 +58,45 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("VF-0038 VF-0043 invalid committed package hides storage and retries Check without acquisition", async () => {
+    let repaired = false;
+    const invoke = vi.fn(
+      async (command: string, args?: Record<string, unknown>) => {
+        expect(command).toBe("optional_chatterbox_snapshot");
+        return repaired && args?.retryCleanup === true
+          ? snapshot("installed")
+          : {
+              ...snapshot("failed"),
+              installedBytes: null,
+              failure: "installed-package-invalid",
+            };
+      },
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={async () => undefined}
+      />,
+    );
+    const retry = await screen.findByRole("button", {
+      name: "Check Chatterbox again",
+    });
+    expect(client.observe().installedBytes).toBeUndefined();
+    expect(
+      screen.queryByText(/Local package storage:/),
+    ).not.toBeInTheDocument();
+    repaired = true;
+    fireEvent.click(retry);
+    await waitFor(() => expect(client.observe().state).toBe("installed"));
+    expect(invoke).toHaveBeenLastCalledWith("optional_chatterbox_snapshot", {
+      retryCleanup: true,
+    });
+    expect(client.observe().installedBytes).toBe(2_147_483_648);
+  });
+
   it("CAF-R1.4 late removal rejection cannot publish to a replacement action owner", async () => {
     const client = new OptionalChatterboxClient(async () =>
       snapshot("installed"),

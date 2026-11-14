@@ -56,6 +56,11 @@ export interface OptionalChatterboxSnapshot {
   readonly failure: OptionalChatterboxFailure | undefined;
 }
 
+interface OptionalInstallationAction {
+  readonly phase: "started" | "completed";
+  readonly generation: number;
+}
+
 type InvokePort = (
   command: string,
   args?: Record<string, unknown>,
@@ -207,7 +212,9 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
 
 export class OptionalChatterboxClient {
   readonly #invoke: InvokePort;
-  readonly #listeners = new Set<() => void>();
+  readonly #listeners = new Set<
+    (installation?: OptionalInstallationAction) => void
+  >();
   #snapshot = INITIAL_SNAPSHOT;
   #nextRequestId = 0;
   #actionGeneration = 0;
@@ -239,7 +246,9 @@ export class OptionalChatterboxClient {
     );
   }
 
-  public subscribe(listener: () => void): () => void {
+  public subscribe(
+    listener: (installation?: OptionalInstallationAction) => void,
+  ): () => void {
     this.#listeners.add(listener);
     return () => this.#listeners.delete(listener);
   }
@@ -346,6 +355,12 @@ export class OptionalChatterboxClient {
       ? this.#actionGeneration
       : ++this.#actionGeneration;
     const requestId = ++this.#nextRequestId;
+    const installationAction =
+      command === "select_optional_chatterbox" ||
+      command === "download_optional_chatterbox" ||
+      args?.retryCleanup === true;
+    if (installationAction)
+      this.#publish({ phase: "started", generation: actionGeneration });
     if (
       !isRefresh &&
       command !== "download_optional_chatterbox" &&
@@ -405,13 +420,17 @@ export class OptionalChatterboxClient {
     // Its terminal publication invalidates every poll started before it.
     if (!isRefresh) ++this.#nextRequestId;
     this.#snapshot = result;
-    this.#publish();
+    this.#publish(
+      installationAction && result.state === "installed"
+        ? { phase: "completed", generation: actionGeneration }
+        : undefined,
+    );
     return result;
   }
 
-  #publish(): void {
+  #publish(installation?: OptionalInstallationAction): void {
     for (const listener of this.#listeners) {
-      listener();
+      listener(installation);
     }
   }
 }

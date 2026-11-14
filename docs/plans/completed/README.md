@@ -16,6 +16,11 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Minimal corrections for the deeply revalidated findings](deep-findings-minimal-corrections.md)
+  closes VF-0034 through VF-0055: 21 corrected/validated cases and the documented
+  Stop precision disposition, with selective host validation, restoration and
+  independent approval. The implementation is an uncommitted local task patch.
+
 - [Findings registry and cumulative logic-audit workflow](findings-registry-and-audit-workflow.md)
   adds 33 historical case records, explicit current-assessment limits, bounded
   audit coverage and regression-proof guidance. Project instructions and skills

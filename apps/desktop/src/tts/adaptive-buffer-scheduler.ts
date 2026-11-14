@@ -55,6 +55,7 @@ export type AdaptiveBufferStartMode =
     }>;
 
 export interface AdaptiveBufferPreparedSegment {
+  readonly incomingSceneBreak?: boolean;
   readonly segmentId: string;
   readonly sequence: number;
   readonly sourceRange: LocatorRangeV1;
@@ -88,6 +89,7 @@ export interface AdaptiveBufferAudioUnit {
 }
 
 export interface AdaptiveBufferPlaybackUnit {
+  readonly incomingSceneBreak?: boolean;
   readonly sequence: number;
   readonly sourceRange: LocatorRangeV1;
   readonly metadata: AdaptiveBufferAudioUnitMetadata;
@@ -157,6 +159,7 @@ export interface AdaptiveBufferSchedulerObservation {
 }
 
 interface RetainedAudioUnit {
+  readonly incomingSceneBreak?: boolean;
   readonly sequence: number;
   readonly sourceRange: LocatorRangeV1;
   readonly unit: AdaptiveBufferAudioUnit;
@@ -226,7 +229,9 @@ function freezePreparedSegment(
     !isCount(segment.narrationUtf8Bytes) ||
     segment.narrationUtf8Bytes === 0 ||
     !isCount(segment.sentenceCount) ||
-    !isPlaybackTransitionPauseMs(segment.transitionPauseMs)
+    !isPlaybackTransitionPauseMs(segment.transitionPauseMs) ||
+    (segment.incomingSceneBreak !== undefined &&
+      typeof segment.incomingSceneBreak !== "boolean")
   ) {
     throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
   }
@@ -593,6 +598,9 @@ export class AdaptiveBufferScheduler {
       sampleFrames: unit.metadata.sampleCountSamples,
       payloadBytes: unit.metadata.payloadBytes,
       transitionPauseMs: completedSegment.transitionPauseMs,
+      ...(completedSegment.incomingSceneBreak
+        ? { incomingSceneBreak: true }
+        : {}),
       consumedSampleFrames: 0,
     });
     this.#serviceState = "ready";
@@ -620,6 +628,7 @@ export class AdaptiveBufferScheduler {
       payload: retained.unit.payload,
       consumedSampleFrames: retained.consumedSampleFrames,
       transitionPauseMs: retained.transitionPauseMs,
+      ...(retained.incomingSceneBreak ? { incomingSceneBreak: true } : {}),
     });
   }
 
@@ -1043,6 +1052,11 @@ export class AdaptiveBufferScheduler {
         this.#activeSynthesis === undefined
       ) {
         this.#playbackState = "complete";
+        this.#playbackRateState = Object.freeze({
+          ...this.#playbackRateState,
+          activeRatePercent: null,
+          pendingRatePercent: null,
+        });
       } else if (this.#serviceState === "failed") {
         this.#playbackState = "failed";
       } else if (this.#initialPlaybackCommitted) {

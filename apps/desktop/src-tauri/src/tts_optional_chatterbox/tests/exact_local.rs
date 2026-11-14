@@ -95,10 +95,62 @@ fn exact_local_acquisition_replay(inference: bool) {
     let seen = Rc::new(RefCell::new(HashSet::new()));
     let _clear = ClearDownloadHook;
     arm_local_download(Rc::new(sources), Rc::clone(&seen));
-    assert_eq!(
-        manager.download_at(&root.0).unwrap().state,
-        OptionalProfileState::Installed
-    );
+    if !inference {
+        let locked_path = staging_root(&root.0).join("operation/retained.bin");
+        AFTER_COMMIT_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                use std::os::windows::fs::OpenOptionsExt;
+                fs::write(&locked_path, b"owned cleanup control").unwrap();
+                CLEANUP_LOCK.with(|lock| {
+                    *lock.borrow_mut() = Some(
+                        fs::OpenOptions::new()
+                            .read(true)
+                            .share_mode(0)
+                            .open(&locked_path)
+                            .unwrap(),
+                    );
+                });
+            }));
+        });
+        let acquired = manager.download_at(&root.0);
+        CLEANUP_LOCK.with(|slot| slot.borrow_mut().take());
+        assert_eq!(acquired, Err(OptionalProfileError::CleanupFailed));
+        assert!(
+            manager
+                .snapshot_at(&root.0)
+                .unwrap()
+                .installed_bytes
+                .is_some()
+        );
+        let installed = package_root(&root.0).join("runtime/python.exe");
+        let held = root.0.join("held-python.exe");
+        fs::rename(&installed, &held).unwrap();
+        let checked = manager.retry_cleanup(&root.0, &authority).unwrap();
+        assert_eq!(checked.failure, Some("installed-package-invalid"));
+        assert_eq!(checked.installed_bytes, None);
+        assert_eq!(manager.snapshot_at(&root.0).unwrap().installed_bytes, None);
+        assert!(
+            manager
+                .operation
+                .lock()
+                .unwrap()
+                .post_commit_cleanup
+                .is_some()
+        );
+        fs::rename(&held, &installed).unwrap();
+        assert_eq!(
+            manager.retry_cleanup(&root.0, &authority).unwrap().state,
+            OptionalProfileState::Installed
+        );
+        eprintln!(
+            "exact-local: VF-0038/VF-0043 invalid Check and repaired retry passed without reacquisition"
+        );
+    } else {
+        assert_eq!(
+            manager.download_at(&root.0).unwrap().state,
+            OptionalProfileState::Installed
+        );
+    }
     assert_eq!(seen.borrow().len(), 9);
     assert!(!staging_root(&root.0).exists());
     assert_eq!(

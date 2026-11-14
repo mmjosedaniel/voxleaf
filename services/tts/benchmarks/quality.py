@@ -9,6 +9,7 @@ import secrets
 import shutil
 import wave
 from collections.abc import Callable, Mapping, MutableSequence, Sequence, Sized
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Final, Protocol, cast
 
@@ -383,8 +384,17 @@ def finalize_session(
     staging = session / "staging"
     audio = session / "audio"
     scorecards = session / "scorecards"
-    audio.mkdir()
-    scorecards.mkdir()
+    audio_created = False
+    try:
+        audio.mkdir()
+        audio_created = True
+        scorecards.mkdir()
+    except OSError:
+        if audio_created:
+            # Retain concurrent contents or an unremovable owned directory.
+            with suppress(OSError):
+                audio.rmdir()
+        raise QualitySessionError("finalization-setup") from None
     key_samples: list[dict[str, str]] = []
     try:
         for candidate_id in expected_candidates:

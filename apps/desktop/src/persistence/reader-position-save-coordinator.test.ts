@@ -210,6 +210,55 @@ function deferredWrite() {
 }
 
 describe("reader position save coordinator", () => {
+  it.each(["manual", "navigation", "heard"] as const)(
+    "VF-0044 admits passive saving only after a valid %s checkpoint",
+    async (proof) => {
+      const repository = createRepository();
+      const coordinator = new ReaderPositionSaveCoordinator(
+        createPublication(),
+        repository,
+        { requireIntentBeforePassiveSave: true },
+      );
+      try {
+        expect(coordinator.schedulePassive(locatorAt(1))).toBe(false);
+        expect(coordinator.schedulePassive(locatorAt(101), true)).toBe(false);
+        expect(coordinator.scheduleImmediate(locatorAt(101))).toBe(false);
+        expect(coordinator.schedulePassive(locatorAt(2))).toBe(false);
+        await coordinator.flush();
+        expect(repository.writePosition).not.toHaveBeenCalled();
+        repository.writePosition.mockResolvedValueOnce({
+          status: "unavailable",
+        });
+        if (proof === "manual")
+          expect(coordinator.schedulePassive(locatorAt(3), true)).toBe(true);
+        else if (proof === "navigation")
+          expect(coordinator.scheduleImmediate(locatorAt(3))).toBe(true);
+        else {
+          coordinator.beginNarration();
+          expect(
+            coordinator.recordHeardCheckpoint({
+              kind: "segment-started",
+              segmentId: "synthetic",
+              locator: locatorAt(3),
+            }),
+          ).toBe(true);
+          await coordinator.finishNarration();
+        }
+        await coordinator.flush();
+        await coordinator.flush();
+        expect(repository.writePosition).toHaveBeenLastCalledWith(
+          expect.objectContaining({ locator: locatorAt(3) }),
+        );
+        expect(coordinator.schedulePassive(locatorAt(4))).toBe(true);
+        await coordinator.flush();
+        expect(repository.writePosition).toHaveBeenLastCalledWith(
+          expect.objectContaining({ locator: locatorAt(4) }),
+        );
+      } finally {
+        await coordinator.close();
+      }
+    },
+  );
   it("CAF-R6.2 reports only the current write and suppresses closed ownership", async () => {
     const first = deferredWrite();
     const repository = createRepository(undefined, async () => first.promise);

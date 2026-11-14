@@ -411,17 +411,19 @@ export class ActiveVisualLocatorTracker {
     return this.#suspensionDepth > 0;
   }
 
-  public noteManualScrollIntent(): void {
+  public noteManualScrollIntent(untilPointerRelease = false): void {
     if (this.#root === undefined || this.#closed) return;
     this.#manualScroll = {
       top: this.#root.scrollTop,
-      expires: performance.now() + 500,
+      expires: untilPointerRelease
+        ? Number.POSITIVE_INFINITY
+        : performance.now() + 500,
     };
   }
 
-  public clearManualScrollIntent(): void {
+  public clearManualScrollIntent(preserveMeasuredSample = false): void {
     this.#manualScroll = undefined;
-    this.#manualSamplePending = false;
+    if (!preserveMeasuredSample) this.#manualSamplePending = false;
   }
 
   public admitManualScrollMovement(): boolean {

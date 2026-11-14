@@ -156,7 +156,10 @@ export interface ReaderPublicationContentProps {
   readonly initialLocator?: ReadingLocatorV1;
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
-  readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onActiveLocatorChange?: (
+    locator: ReadingLocatorV1,
+    measuredManual?: boolean,
+  ) => void;
   readonly onNavigationIntent?: (
     event: ReaderUserNavigationEvent,
   ) => void | Promise<void>;
@@ -505,6 +508,57 @@ export function ReaderPublicationContent({
       ),
   );
   useStrictModeSafeResourceCleanup(segmentHighlightController);
+  const releaseScrollbarGesture = useRef<(() => void) | undefined>(undefined);
+  const recordScrollbarIntent = useCallback(
+    (event: PointerEvent): void => {
+      const root = readerViewportRef.current;
+      if (
+        !event.isTrusted ||
+        event.button !== 0 ||
+        event.pointerType !== "mouse" ||
+        root === null ||
+        event.target !== root ||
+        root.scrollHeight <= root.clientHeight
+      )
+        return;
+      const rect = root.getBoundingClientRect();
+      const contentLeft = rect.left + root.clientLeft;
+      const contentRight = contentLeft + root.clientWidth;
+      // Native vertical scrollbar only; content selection/padding is not intent.
+      if (
+        event.clientX < rect.left ||
+        event.clientX >= rect.right ||
+        (event.clientX >= contentLeft && event.clientX < contentRight) ||
+        event.clientY < rect.top + root.clientTop ||
+        event.clientY >= rect.top + root.clientTop + root.clientHeight
+      )
+        return;
+      releaseScrollbarGesture.current?.();
+      visualLocatorTracker.noteManualScrollIntent(true);
+      reflowRestorer.cancelViewportRestoration();
+      const view = root.ownerDocument.defaultView;
+      const release = (): void => {
+        root.ownerDocument.removeEventListener("pointerup", finish, true);
+        root.ownerDocument.removeEventListener("pointercancel", finish, true);
+        view?.removeEventListener("blur", release);
+        releaseScrollbarGesture.current = undefined;
+        if (visualLocatorTracker.admitManualScrollMovement()) {
+          segmentHighlightController.manualInspection();
+          visualLocatorTracker.requestSample();
+        }
+        visualLocatorTracker.clearManualScrollIntent(true);
+      };
+      const finish = (ended: PointerEvent): void => {
+        if (ended.pointerId === event.pointerId) release();
+      };
+      releaseScrollbarGesture.current = release;
+      root.ownerDocument.addEventListener("pointerup", finish, true);
+      root.ownerDocument.addEventListener("pointercancel", finish, true);
+      view?.addEventListener("blur", release);
+    },
+    [reflowRestorer, segmentHighlightController, visualLocatorTracker],
+  );
+  useLayoutEffect(() => () => releaseScrollbarGesture.current?.(), []);
   useLayoutEffect(() => {
     visualLocatorTracker.setOnLocator((locator, measuredManual) => {
       if (measuredManual && !placementPending.current) {
@@ -513,10 +567,14 @@ export function ReaderPublicationContent({
           true,
         );
       }
-      if (coordinator.updateActiveVisualLocator(locator)) {
+      const changed = coordinator.updateActiveVisualLocator(locator);
+      if (changed) {
         segmentHighlightController.manualInspection();
-        externalCallbacks.current.onActiveLocatorChange?.(locator);
       }
+      if (measuredManual)
+        externalCallbacks.current.onActiveLocatorChange?.(locator, true);
+      else if (changed)
+        externalCallbacks.current.onActiveLocatorChange?.(locator);
     });
   }, [coordinator, visualLocatorTracker, segmentHighlightController]);
   useStrictModeSafeResourceCleanup(
@@ -606,11 +664,14 @@ export function ReaderPublicationContent({
     (element: HTMLDivElement | null): void => {
       const previous = readerViewportRef.current;
       if (previous !== element) {
+        releaseScrollbarGesture.current?.();
         previous?.removeEventListener("wheel", recordWheelIntent);
+        previous?.removeEventListener("pointerdown", recordScrollbarIntent);
         // Read scrollTop before Chromium can scroll on the compositor.
         element?.addEventListener("wheel", recordWheelIntent, {
           passive: false,
         });
+        element?.addEventListener("pointerdown", recordScrollbarIntent);
       }
       if (
         element === null &&
@@ -630,6 +691,7 @@ export function ReaderPublicationContent({
     [
       attemptInitialRestoration,
       recordWheelIntent,
+      recordScrollbarIntent,
       reflowRestorer,
       segmentHighlightController,
       visualLocatorTracker,

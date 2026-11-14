@@ -17,10 +17,11 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Current project status
 
-The [deep-findings correction plan](plans/active/deep-findings-minimal-corrections.md)
-maps VF-0034 through VF-0055 to minimal owner changes, discriminating regressions
-and evidence-reuse decisions. It is awaiting execution; no correction or new
-runtime acceptance is claimed by this planning record.
+The [completed deep-findings correction plan](plans/completed/deep-findings-minimal-corrections.md)
+records 21 corrected/validated findings and VF-0050's documented diagnostic
+precision. Its [results](plans/evidence/deep-findings-minimal-corrections/results.md)
+include selective host validation, verified restoration and independent approval.
+Implementation remains an uncommitted task patch; no release is implied.
 
 The [completed chat-findings correction plan](plans/completed/chat-findings-recovery-and-minimal-corrections.md)
 records 24 reviewed dispositions, the purpose-based pilot-preflight exit decision,

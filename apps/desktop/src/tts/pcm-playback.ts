@@ -2,6 +2,7 @@ import type { LocatorRangeV1 } from "@voxleaf/shared";
 
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "../reader/synchronization-authority";
 import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
+import { PLAYBACK_TRANSITION_PAUSE_POLICY_V1 } from "./playback-transition-policy";
 import {
   AdaptiveBufferScheduler,
   type AdaptiveBufferPlaybackUnit,
@@ -204,12 +205,17 @@ export class AdaptivePcmPlayer {
     this.#refreshProgress();
     if (
       this.#futureRatePreparation &&
-      this.#backend.playbackRatePreparationFailed?.() === true
+      this.#backend.playbackRatePreparationFailed?.() === true &&
+      !this.#retireCompletedRatePreparation()
     ) {
       this.#fallbackFutureRate();
     }
     this.#settleElapsedTransitionPause();
     const observation = this.#scheduler.observe();
+    if (observation.playbackState === "complete") {
+      this.#retireCompletedRatePreparation();
+      return this.#observation();
+    }
     if (
       observation.playbackState === "playing" &&
       this.#handle === undefined &&
@@ -472,8 +478,9 @@ export class AdaptivePcmPlayer {
     }
     const observation = this.#scheduler.observe();
     if (
-      observation.playbackRateState.selectedRatePercent === 100 &&
-      observation.playbackRateState.activeRatePercent !== 100
+      observation.playbackState === "complete" ||
+      (observation.playbackRateState.selectedRatePercent === 100 &&
+        observation.playbackRateState.activeRatePercent !== 100)
     ) {
       this.#releasePlaybackRatePreparation();
     }
@@ -481,10 +488,16 @@ export class AdaptivePcmPlayer {
       this.#underrunCount += 1;
     } else if (
       (observation.playbackState === "playing" || paused) &&
-      completedUnit.transitionPauseMs > 0 &&
       this.#scheduler.currentPlaybackUnit() !== undefined
     ) {
-      this.#beginTransitionPause(completedUnit.transitionPauseMs);
+      const pause =
+        completedUnit.transitionPauseMs ===
+        PLAYBACK_TRANSITION_PAUSE_POLICY_V1.ellipsisMs
+          ? completedUnit.transitionPauseMs
+          : this.#scheduler.currentPlaybackUnit()?.incomingSceneBreak === true
+            ? PLAYBACK_TRANSITION_PAUSE_POLICY_V1.boundaryMs["scene-break"]
+            : completedUnit.transitionPauseMs;
+      if (pause > 0) this.#beginTransitionPause(pause);
     }
     this.#synchronizeAfterDeviceEvent();
   }
@@ -517,6 +530,7 @@ export class AdaptivePcmPlayer {
       return;
     }
     this.#confirmRendering(forceComplete);
+    if (this.#handle !== handle) return;
     const observed = forceComplete
       ? unit.metadata.sampleCountSamples
       : Math.min(
@@ -828,7 +842,10 @@ export class AdaptivePcmPlayer {
     this.#playbackRatePreparation = preparation;
     void preparation
       .then(() => {
-        if (token !== this.#playbackRatePreparationToken) {
+        if (
+          token !== this.#playbackRatePreparationToken ||
+          this.#retireCompletedRatePreparation()
+        ) {
           return;
         }
         this.#playbackRatePreparation = undefined;
@@ -841,7 +858,10 @@ export class AdaptivePcmPlayer {
         }
       })
       .catch(() => {
-        if (token === this.#playbackRatePreparationToken) {
+        if (
+          token === this.#playbackRatePreparationToken &&
+          !this.#retireCompletedRatePreparation()
+        ) {
           this.#playbackRatePreparation = undefined;
           // Slower selections share this attempt. Only releasing/replacing
           // the preparation token supersedes its failure, not a new rate.
@@ -852,6 +872,17 @@ export class AdaptivePcmPlayer {
           }
         }
       });
+  }
+
+  #retireCompletedRatePreparation(): boolean {
+    // A silent continuation or Resume can complete without another device end.
+    if (this.#scheduler.observe().playbackState !== "complete") return false;
+    if (
+      this.#futureRatePreparation ||
+      this.#playbackRatePreparation !== undefined
+    )
+      this.#releasePlaybackRatePreparation();
+    return true;
   }
 
   #releasePlaybackRatePreparation(): void {

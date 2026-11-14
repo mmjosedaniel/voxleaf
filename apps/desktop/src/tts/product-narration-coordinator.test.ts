@@ -42,6 +42,7 @@ import type { ReaderReflowEnvironment } from "../reader/reader-reflow-restoratio
 import type { ActiveVisualLocatorEnvironment } from "../reader/active-visual-locator";
 import { SemanticDomRangeMapper } from "../reader/semantic-dom-range-mapper";
 import { buildMinimalEpubFixture } from "../../../../packages/epub/test-support/epub-fixture";
+import { minimalPackageDocument } from "../../../../packages/epub/test-support/epub-fixture";
 import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
 import { bindNarrationPositionPersistence } from "../persistence/narration-position-save-bridge";
 import { ReaderPositionSaveCoordinator } from "../persistence/reader-position-save-coordinator";
@@ -489,6 +490,110 @@ it("RCF-02 blocks repeated Play while inactive reader placement is pending", asy
   await coordinator.close();
 });
 
+it.each([
+  ["ended", "resolve"],
+  ["ended", "reject"],
+  ["ended", "reset"],
+  ["empty-tail", "resolve"],
+  ["empty-tail", "reject"],
+  ["empty-tail", "reset"],
+  ["paused-end", "resolve"],
+  ["paused-end", "reject"],
+  ["paused-end", "reset"],
+] as const)(
+  "VF-0048 retires speed preparation at %s completion and preserves the next preference: %s",
+  async (completion, outcome) => {
+    let finishTail: ((result: NarrationPreparationResult) => void) | undefined;
+    const prepareNarration = vi
+      .fn<OpenedPublication["prepareNarration"]>()
+      .mockResolvedValueOnce(
+        batchSegments([preparedSegment("Private synthetic narration.")]),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishTail = resolve;
+          }),
+      )
+      .mockResolvedValue(completeResult());
+    const { coordinator, backend, intervals } = createHarness(
+      completion === "empty-tail" ? { prepareNarration } : {},
+    );
+    const releasePreparation = vi.spyOn(
+      backend,
+      "releasePlaybackRatePreparation",
+    );
+    let resolve!: () => void;
+    let reject!: () => void;
+    const preparation = vi
+      .spyOn(backend, "preparePlaybackRate")
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((yes, no) => {
+            resolve = yes;
+            reject = () => no(new Error("synthetic late preparation failure"));
+          }),
+      );
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(await coordinator.setPlaybackRatePercent(80)).toBe(true);
+      expect(preparation).toHaveBeenCalledTimes(1);
+      const releasesBeforeCompletion = releasePreparation.mock.calls.length;
+      if (completion === "paused-end") coordinator.pause();
+      backend.finish();
+      for (const tick of [...intervals]) tick();
+      if (completion === "empty-tail") {
+        await settleUntil(() => finishTail !== undefined);
+        expect(coordinator.observe().state?.phase).toBe("buffering");
+        finishTail!(completeSegments([]));
+        await settleUntil(
+          () => coordinator.observe().state?.phase === "complete",
+        );
+      } else if (completion === "paused-end") {
+        expect(coordinator.observe().state?.phase).toBe("paused");
+        coordinator.resume();
+      }
+      expect
+        .soft(releasePreparation.mock.calls.length)
+        .toBeGreaterThan(releasesBeforeCompletion);
+      expect(coordinator.observe().state).toMatchObject({
+        phase: "complete",
+        activePlaybackRatePercent: null,
+        pendingPlaybackRatePercent: null,
+      });
+      expect(await coordinator.setPlaybackRatePercent(75)).toBe(true);
+      if (outcome === "reset")
+        expect(await coordinator.resetPlaybackPreference()).toBe(true);
+      const selected = outcome === "reset" ? 100 : 75;
+      expect(preparation).toHaveBeenCalledTimes(1);
+      if (outcome === "reject") reject();
+      else resolve();
+      for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
+      coordinator.setVolumePercent(90);
+      expect(coordinator.observe()).toMatchObject({
+        playbackRatePercent: selected,
+        playbackRateFallback: false,
+        state: {
+          phase: "complete",
+          selectedPlaybackRatePercent: selected,
+          activePlaybackRatePercent: null,
+          pendingPlaybackRatePercent: null,
+        },
+      });
+      await coordinator.stop();
+      coordinator.start();
+      await settleUntil(() => coordinator.observe().state?.phase === "playing");
+      expect(backend.active?.request.playbackRate).toBe(selected / 100);
+    } finally {
+      finishTail?.(completeSegments([]));
+      resolve?.();
+      await coordinator.close();
+    }
+  },
+);
+
 it("RCF-05 real containment failure prevents settings persistence", async () => {
   const { coordinator, client, backend } = createHarness();
   await coordinator.checkAvailability();
@@ -666,6 +771,7 @@ function createHarness(
     readonly playbackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
     readonly serviceClient?: ProductNarrationServiceClient;
     readonly publication?: OpenedPublication;
+    readonly onScheduler?: (scheduler: AdaptiveBufferScheduler) => void;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -688,14 +794,16 @@ function createHarness(
     clock,
     createIdentifier: (kind, sequence) =>
       `${kind}:product-test-${String(sequence)}`,
-    createPlayer: (scheduler: AdaptiveBufferScheduler) =>
-      new AdaptivePcmPlayer(
+    createPlayer: (scheduler: AdaptiveBufferScheduler) => {
+      options.onScheduler?.(scheduler);
+      return new AdaptivePcmPlayer(
         scheduler,
         backend,
         (callback) => callback(),
         transitionTimers.schedule,
         transitionTimers.cancel,
-      ),
+      );
+    },
     setInterval: (callback) => {
       intervals.push(callback);
       return callback;
@@ -757,6 +865,283 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each([
+    [0, "First.", "—", 1, true, 1200],
+    [7, "First.", "—", 1, true, 1200],
+    [0, "First…", "—", 1, true, 900],
+    [0, "First.", "…", 16, true, 1200],
+    [0, "First.", "—", 1, false, 0],
+  ] as const)(
+    "VF-0053 retains scene handoff across omitted Piper passages (%s/%s/%s/%s/%s)",
+    async (prefix, first, omitted, count, successor, delay) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Synthetic</title></head><body>${"<p>Prelude.</p>".repeat(prefix)}<p>${first}</p>${`<p>${omitted}</p>`.repeat(count)}<p>***</p>${successor ? "<p>Second.</p>" : ""}</body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+      const {
+        coordinator,
+        client,
+        backend,
+        intervals,
+        clock,
+        transitionTimers,
+      } = createHarness({
+        publication: opened.publication,
+        profileCompatibility: {
+          activeProfileId: () => profileId,
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+        },
+      });
+      try {
+        await coordinator.checkAvailability();
+        if (prefix > 0)
+          await coordinator.setSelection({
+            kind: "prepared",
+            targetMs: 600_000,
+          });
+        coordinator.start();
+        for (let index = 0; index < prefix; index += 1) {
+          await vi.waitFor(() =>
+            expect(backend.active?.request.sequence).toBe(index),
+          );
+          backend.finish();
+          intervals[0]?.();
+          const timer = transitionTimers.timers.at(-1);
+          if (timer !== undefined && !timer.cancelled) {
+            clock.advance(timer.delayMs);
+            transitionTimers.run(timer);
+          }
+        }
+        await vi.waitFor(() =>
+          expect(client.synthesized).toHaveLength(prefix + (successor ? 2 : 1)),
+        );
+        await vi.waitFor(() =>
+          expect(backend.active?.request.sequence).toBe(prefix),
+        );
+        const prior = transitionTimers.timers.length;
+        backend.finish();
+        intervals[0]?.();
+        expect(
+          transitionTimers.timers.slice(prior).map((timer) => timer.delayMs),
+        ).toEqual(delay === 0 ? [] : [delay]);
+        if (delay > 0) {
+          clock.advance(delay);
+          transitionTimers.run(transitionTimers.timers.at(-1)!);
+          intervals[0]?.();
+          expect(backend.active?.request.sequence).toBe(prefix + 1);
+        } else expect(coordinator.observe().state?.phase).toBe("complete");
+        expect(
+          client.synthesized.every((segment) => /[A-Za-z]/u.test(segment.text)),
+        ).toBe(true);
+        await coordinator.stop();
+        coordinator.start();
+        await vi.waitFor(() => expect(backend.active).toBeDefined());
+        expect(coordinator.observe().state?.phase).toBe("playing");
+      } finally {
+        await coordinator.close();
+        await opened.publication.close();
+      }
+    },
+  );
+
+  it.each(["pause", "dispatch", "preparation"] as const)(
+    "VF-0045 / VF-0055 contain a mounted unavailable chapter during %s",
+    async (trigger) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body>${Array.from(
+            { length: trigger === "preparation" ? 7 : 1 },
+            (_, index) => `<p id="first-${String(index)}">First.</p>`,
+          ).join("")}</body></html>`,
+          packageDocument: minimalPackageDocument()
+            .replace(
+              "</manifest>",
+              '<item id="large" href="text/large.xhtml" media-type="application/xhtml+xml"/></manifest>',
+            )
+            .replace("</spine>", '<itemref idref="large"/></spine>'),
+          additionalEntries: [
+            {
+              name: "EPUB/text/large.xhtml",
+              content: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="large-first">Second.</p>${"<p>A.</p>".repeat(10000)}</body></html>`,
+            },
+          ],
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      let enableDispatch = false;
+      let reservedAfterSecondStart = false;
+      const preparationsAfterInvalidation: unknown[] = [];
+      const harness = createHarness({
+        publication: {
+          ...opened.publication,
+          prepareNarration: (input) => {
+            if (stop.mock.calls.length > 0)
+              preparationsAfterInvalidation.push(input);
+            return opened.publication.prepareNarration(input);
+          },
+        },
+        onScheduler: (scheduler) => {
+          const begin = scheduler.beginSynthesis.bind(scheduler);
+          vi.spyOn(scheduler, "beginSynthesis").mockImplementation(() => {
+            const result = begin();
+            if (
+              trigger === "dispatch" &&
+              enableDispatch &&
+              harness.backend.active?.request.sequence === 1
+            ) {
+              reservedAfterSecondStart = true;
+              harness.backend.rendering = true;
+            }
+            return result;
+          });
+          const beginPreparation =
+            scheduler.beginNarrationPreparation.bind(scheduler);
+          vi.spyOn(scheduler, "beginNarrationPreparation").mockImplementation(
+            () => {
+              const result = beginPreparation();
+              if (
+                trigger === "preparation" &&
+                enableDispatch &&
+                harness.backend.active?.request.sequence === 7
+              ) {
+                reservedAfterSecondStart = true;
+                harness.backend.rendering = true;
+              }
+              return result;
+            },
+          );
+        },
+      });
+      const {
+        coordinator,
+        client,
+        backend,
+        intervals,
+        clock,
+        transitionTimers,
+      } = harness;
+      client.synthesisElapsedMs = 0;
+      if (trigger === "preparation") client.synthesisSampleFrames = 48_000;
+      const stop = vi.spyOn(coordinator, "stop");
+      const callsAfterInvalidation: unknown[] = [];
+      const synthesize = client.synthesize.bind(client);
+      vi.spyOn(client, "synthesize").mockImplementation((input) => {
+        if (stop.mock.calls.length > 0) callsAfterInvalidation.push(input);
+        return synthesize(input);
+      });
+      const view = render(
+        createElement(ReaderPublicationContent, {
+          publication: opened.publication,
+          narrationSource: coordinator,
+          segmentHighlightEnvironment: {
+            replaceHighlight: () => true,
+            clearHighlight: () => undefined,
+            viewportRect: () => ({ top: 0, bottom: 100 }),
+            rangeRect: () => ({ top: 20, bottom: 40 }),
+            scrollBy: () => undefined,
+            schedule: () => () => undefined,
+          },
+        }),
+      );
+      const obsoletePublications: string[] = [];
+      const observeInvalidated = coordinator.subscribe(() => {
+        const phase = coordinator.observe().state?.phase;
+        if (stop.mock.calls.length > 0 && phase === "playing")
+          obsoletePublications.push(phase);
+      });
+      let advanced = false;
+      const advance = () => {
+        if (
+          advanced ||
+          client.synthesized.length < (trigger === "preparation" ? 8 : 2) ||
+          backend.active?.request.sequence !== 0
+        )
+          return;
+        advanced = true;
+        const steps = trigger === "preparation" ? 7 : 1;
+        for (let index = 0; index < steps; index += 1) {
+          backend.deferStart = index === steps - 1;
+          backend.finish();
+          const timer = transitionTimers.timers.at(-1);
+          if (timer !== undefined && !timer.cancelled) {
+            clock.advance(timer.delayMs);
+            transitionTimers.run(timer);
+          }
+        }
+        enableDispatch = true;
+      };
+      const disconnect =
+        trigger !== "pause" ? coordinator.subscribe(advance) : () => undefined;
+      try {
+        await act(async () => {
+          await coordinator.checkAvailability();
+          coordinator.start();
+          await vi.waitFor(() =>
+            expect(client.synthesized.length).toBeGreaterThanOrEqual(2),
+          );
+          if (trigger === "pause") {
+            advance();
+            await vi.waitFor(() =>
+              expect(backend.active?.request.sequence).toBe(1),
+            );
+          }
+        });
+        if (trigger === "pause")
+          act(() => {
+            backend.rendering = true;
+            backend.playedSampleFrames = 1;
+            backend.renderedSampleFrames = 1;
+            coordinator.pause();
+          });
+        await act(async () => {
+          await vi.waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
+        });
+        expect(
+          screen.getByRole("heading", { name: "Reading section unavailable" }),
+        ).toBeInTheDocument();
+        if (trigger !== "pause") expect(reservedAfterSecondStart).toBe(true);
+        expect.soft(obsoletePublications).toEqual([]);
+        expect(callsAfterInvalidation).toEqual([]);
+        expect(preparationsAfterInvalidation).toEqual([]);
+        expect(coordinator.observe()).toMatchObject({
+          failure: undefined,
+          recovery: { phase: "operational" },
+          navigation: { playIntent: "inactive" },
+        });
+        await act(async () => {
+          await coordinator.stop();
+          fireEvent.click(
+            screen.getByRole("button", { name: "Previous chapter" }),
+          );
+        });
+        disconnect();
+        observeInvalidated();
+        enableDispatch = false;
+        backend.deferStart = false;
+        const restart = client.synthesized.length;
+        await act(async () => {
+          coordinator.startAtVisibleLocator();
+          await vi.waitFor(() => expect(backend.active).toBeDefined());
+        });
+        expect(client.synthesized[restart]?.sourceRange.start.spineItemId).toBe(
+          opened.publication.defaultStartLocator!.spineItemId,
+        );
+        expect(intervals).toHaveLength(1);
+      } finally {
+        disconnect();
+        observeInvalidated();
+        view.unmount();
+        await coordinator.close();
+        await opened.publication.close();
+        cleanup();
+      }
+    },
+    20_000,
+  );
   it("CCF-C11 a delayed reset receipt cannot overwrite a newer persisted speed", async () => {
     let stored: string | null = null;
     const persistence = createWebStorageNarrationPlaybackPreferenceRepository(
@@ -4854,8 +5239,8 @@ describe("product narration coordinator", () => {
     },
   );
 
-  it.each(["resume", "next-audible"])(
-    "PN-04 failed follow preserves measured inspection for Stop/Play (%s)",
+  it.each(["resume", "next-audible", "resume-completed", "next-completed"])(
+    "VF-0035 / PN-04 failed follow preserves measured inspection for Stop/Play (%s)",
     async (trigger) => {
       const opened = await openEpubPublication(
         await buildMinimalEpubFixture({
@@ -4937,7 +5322,7 @@ describe("product narration coordinator", () => {
           textOffsetCodePoints: 1200,
         });
         act(() => {
-          if (trigger === "resume") coordinator.pause();
+          if (trigger.startsWith("resume")) coordinator.pause();
           fireEvent.keyDown(view.container.querySelector(".reader-content")!, {
             key: "PageDown",
           });
@@ -4948,7 +5333,7 @@ describe("product narration coordinator", () => {
         });
         expect(inspected).toHaveBeenLastCalledWith(manual);
         await act(async () => {
-          if (trigger === "resume") coordinator.resume();
+          if (trigger.startsWith("resume")) coordinator.resume();
           else {
             backend.finish();
             intervals[0]?.();
@@ -4957,6 +5342,12 @@ describe("product narration coordinator", () => {
             );
           }
         });
+        if (trigger.endsWith("completed")) {
+          await act(async () => {
+            backend.finish();
+            intervals[0]?.();
+          });
+        }
         await act(async () => {
           await coordinator.stop();
         });

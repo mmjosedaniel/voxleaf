@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { setTimeout } from "node:timers";
 import {
   mkdtemp,
+  copyFile,
   mkdir,
   readFile,
   rename,
@@ -31,6 +33,8 @@ import {
   removeWebDriverProfile,
   releaseEnvironment,
   runJourney,
+  runInstaller,
+  runUninstaller,
   validateOrdinaryArtifact,
   waitForStableInstallRootAbsence,
 } from "./ordinary-chatterbox-release-host.mjs";
@@ -39,6 +43,196 @@ import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+for (const operation of ["install", "uninstall"]) {
+  for (const mode of ["parent", "descendant", "completed"]) {
+    test(
+      `VF-0040 ${operation} contains owned ${mode} before returning`,
+      { skip: process.platform !== "win32" },
+      async () => {
+        const owned = await mkdtemp(path.join(root, "vf0040-"));
+        const executable = path.join(owned, "fixture.exe");
+        const installed = path.join(owned, "installed");
+        await mkdir(installed);
+        const compile = path.join(owned, "compile.ps1");
+        await writeFile(
+          compile,
+          String.raw`
+$ErrorActionPreference = 'Stop'
+$source = @'
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+public static class OwnedInstallerFixture {
+  public static int Main(string[] args) {
+    string root = Environment.GetEnvironmentVariable("VF0040_ROOT");
+    string mode = Environment.GetEnvironmentVariable("VF0040_MODE");
+    string operation = Environment.GetEnvironmentVariable("VF0040_OPERATION");
+    string slot = args[0] == "/S" ? "parent" : args[0].Substring(2);
+    File.WriteAllText(Path.Combine(root, slot + ".pid"), Process.GetCurrentProcess().Id.ToString());
+    if (slot == "cleanup") {
+      Thread.Sleep(mode == "completed" ? 300 : 3200);
+      Directory.Delete(Path.Combine(root, "installed"), true);
+      return 0;
+    }
+    if (slot == "child") {
+      Thread.Sleep(2600);
+      File.WriteAllText(Path.Combine(root, "natural-child"), "finished");
+      return 0;
+    }
+    if (operation == "uninstall") Start(root, "--cleanup");
+    if (mode == "descendant") Start(root, "--child");
+    if (mode == "parent") {
+      Thread.Sleep(2600);
+      File.WriteAllText(Path.Combine(root, "natural-parent"), "finished");
+    }
+    return 0;
+  }
+  static void Start(string root, string arg) {
+    var start = new ProcessStartInfo(Path.Combine(root, "fixture.exe"), arg);
+    start.UseShellExecute = false;
+    start.CreateNoWindow = true;
+    using (Process child = Process.Start(start)) { }
+  }
+}
+'@
+Add-Type -TypeDefinition $source -OutputAssembly $args[0] -OutputType ConsoleApplication
+`,
+        );
+        const compiled = spawnSync(
+          "powershell.exe",
+          ["-NoProfile", "-NonInteractive", "-File", compile, executable],
+          { encoding: "utf8", windowsHide: true, timeout: 15000 },
+        );
+        assert.equal(compiled.status, 0, compiled.stderr);
+        await copyFile(executable, path.join(installed, "uninstall.exe"));
+        const sentinel = spawn(
+          process.execPath,
+          ["-e", "setInterval(() => {}, 1000)"],
+          { windowsHide: true, stdio: "ignore" },
+        );
+        await once(sentinel, "spawn");
+        const environment = {
+          ...process.env,
+          VF0040_ROOT: owned,
+          VF0040_MODE: mode,
+          VF0040_OPERATION: operation,
+        };
+        let childrenSettled = false;
+        try {
+          const command =
+            operation === "install" ? runInstaller : runUninstaller;
+          const target = operation === "install" ? executable : installed;
+          const result = command(target, environment, {
+            timeoutMilliseconds: mode === "completed" ? 4000 : 800,
+          });
+          if (mode === "completed") await result;
+          else await assert.rejects(result, /installer-timeout/u);
+          assert.equal(sentinel.exitCode, null);
+          for (const name of [
+            "parent",
+            ...(mode === "descendant" ? ["child"] : []),
+            ...(operation === "uninstall" ? ["cleanup"] : []),
+          ]) {
+            const pid = Number(
+              await readFile(path.join(owned, `${name}.pid`), "utf8"),
+            );
+            assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
+          }
+          childrenSettled = true;
+          if (mode !== "completed") {
+            await assert.rejects(
+              readFile(
+                path.join(
+                  owned,
+                  `natural-${mode === "parent" ? "parent" : "child"}`,
+                ),
+              ),
+              { code: "ENOENT" },
+            );
+          }
+        } finally {
+          const sentinelClosed = once(sentinel, "close");
+          sentinel.kill();
+          await sentinelClosed;
+          // The original RED implementation leaves only these finite fixture children.
+          // Let their bounded natural lifetime finish before the fixture directory is removed.
+          if (!childrenSettled)
+            await new Promise((resolve) => setTimeout(resolve, 3600));
+        }
+      },
+    );
+  }
+}
+
+test(
+  "VF-0040 uncertain installer containment retains backup before a later safe retry",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const owned = await mkdtemp(path.join(root, "vf0040-uncertain-"));
+    const originalLocalData = process.env.LOCALAPPDATA;
+    const data = path.join(owned, "com.voxleaf.desktop");
+    const backup = `${data}.ordinary-chatterbox-harness-backup-${process.pid}`;
+    const fixture = path.join(owned, "fixture.exe");
+    await mkdir(data);
+    await writeFile(path.join(data, "sentinel"), "original");
+    await writeFile(fixture, "synthetic non-executable");
+    const options = {
+      installedRoot: path.join(owned, "VoxLeaf"),
+      installer: fixture,
+      receipt: path.join(owned, "receipt.json"),
+      tauriDriver: fixture,
+      edgeDriver: fixture,
+      mode: "journey",
+    };
+    let uninstalls = 0;
+    process.env.LOCALAPPDATA = owned;
+    try {
+      const environment = {
+        ...process.env,
+        SystemRoot: path.join(owned, "missing-windows"),
+      };
+      await assert.rejects(
+        runJourney(options, environment, {
+          runUninstaller: async () => {
+            uninstalls += 1;
+          },
+        }),
+        (error) =>
+          error instanceof AggregateError &&
+          error.errors.some((item) =>
+            item.message.includes("installer-containment-unverified"),
+          ),
+      );
+      assert.equal(uninstalls, 0);
+      assert.equal(
+        await readFile(path.join(backup, "sentinel"), "utf8"),
+        "original",
+      );
+      await assert.rejects(readFile(path.join(data, "sentinel")), {
+        code: "ENOENT",
+      });
+      // This fixture's missing helper proves no process was launched. Explicitly
+      // restore only this owned backup before retrying the real no-spawn route.
+      await rename(backup, data);
+      await assert.rejects(
+        runJourney(options),
+        (error) => error.syscall === "spawn owned-installer",
+      );
+      assert.equal(
+        await readFile(path.join(data, "sentinel"), "utf8"),
+        "original",
+      );
+      await assert.rejects(readFile(path.join(backup, "sentinel")), {
+        code: "ENOENT",
+      });
+    } finally {
+      if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+      else process.env.LOCALAPPDATA = originalLocalData;
+    }
+  },
+);
 
 for (const [failedSlot, uncertain] of [
   [1, false],

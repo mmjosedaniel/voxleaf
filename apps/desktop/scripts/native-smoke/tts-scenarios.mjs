@@ -1050,6 +1050,7 @@ export function createNativeTtsScenarios({
     fixturePath,
     rootProcessId,
     setStage,
+    terminalFixturePath,
   ) {
     const temporaryDirectory = path.dirname(fixturePath);
     if (EXERCISE_READER_CORRECTIONS) {
@@ -1286,6 +1287,7 @@ export function createNativeTtsScenarios({
     let cancellationMs;
     let pauseResumeObservation;
     let playbackSpeedMatrix = null;
+    let terminalSceneProof = null;
     let firstHighlightProof;
     let nextHighlightProof;
     let leafReplacementMs;
@@ -2112,10 +2114,88 @@ export function createNativeTtsScenarios({
           finalStopReaderExperience.progressBarCount === 0,
         "Native synchronized narration proof failed.",
       );
+      if (ADAPTIVE_TTS_PROFILE_ID.startsWith("piper-")) {
+        setStage("VF-0048 VF-0053 native terminal scene and saved speed");
+        await selectAdaptivePlaybackRate(driver, 100);
+        await driver.setWindowRect(960, 1000);
+        await injectNativeFile(driver, terminalFixturePath);
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-availability') === 'available' &&
+            document.querySelector('[data-narration-action="play"]')?.disabled === false;`,
+        );
+        setStage("VF-0053 native final-scene completion");
+        await driver.click(
+          await driver.findElement('[data-narration-action="play"]'),
+        );
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'complete';`,
+          2 * STARTUP_TIMEOUT_MS,
+        );
+        terminalSceneProof = await driver.execute(`
+          const owner = document.querySelector('.product-narration');
+          return { active: owner.getAttribute('data-narration-active-rate-percent'),
+            pending: owner.getAttribute('data-narration-pending-rate-percent'),
+            acceptedUnits: Number(owner.getAttribute('data-narration-accepted-units')),
+            intentionalWaitMs: Number(owner.getAttribute('data-narration-intentional-wait-ms')),
+            playedMs: Number(owner.getAttribute('data-narration-playback-ms')) };
+        `);
+        console.error(
+          `ADAPTIVE_TTS_TERMINAL_SCENE ${JSON.stringify(terminalSceneProof)}`,
+        );
+        assert(
+          terminalSceneProof.active === "none" &&
+            terminalSceneProof.pending === "none" &&
+            terminalSceneProof.acceptedUnits === 2 &&
+            terminalSceneProof.playedMs > 0 &&
+            terminalSceneProof.playedMs < 15000 &&
+            terminalSceneProof.intentionalWaitMs >= 1200 &&
+            terminalSceneProof.intentionalWaitMs < 2000,
+          "Native terminal scene or rate retirement failed.",
+        );
+        setStage("VF-0048 native completed speed selection");
+        await selectAdaptivePlaybackRate(driver, 75);
+        assert(
+          await driver.execute(
+            `return document.querySelector('.product-narration')?.getAttribute('data-narration-pending-rate-percent') === 'none';`,
+          ),
+          "Native completed rate selection retained a pending boundary.",
+        );
+        await driver.click(
+          await driver.findElement('[data-narration-action="stop"]'),
+        );
+        setStage("VF-0048 native replay of saved paragraph at saved speed");
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'idle';`,
+          STARTUP_TIMEOUT_MS,
+        );
+        await driver.click(await prepareParagraphLeafForInteraction(driver));
+        await waitForCondition(
+          driver,
+          `const owner = document.querySelector('.product-narration'); return owner?.getAttribute('data-narration-phase') === 'playing' && owner.getAttribute('data-narration-active-rate-percent') === '75';`,
+          2 * STARTUP_TIMEOUT_MS,
+        );
+        await driver.click(
+          await driver.findElement('[data-narration-action="stop"]'),
+        );
+        await waitForCondition(
+          driver,
+          `return document.querySelector('.product-narration')?.getAttribute('data-narration-phase') === 'idle';`,
+          STARTUP_TIMEOUT_MS,
+        );
+      }
       const finalDetailToggle = await driver.findElement(
         '[data-narration-action="details-toggle"]',
       );
-      await driver.sendKeys(finalDetailToggle, WEBDRIVER_SPACE);
+      if (
+        await driver.execute(
+          `return document.querySelector('[data-narration-action="details-toggle"]')?.getAttribute('aria-expanded') === 'true';`,
+        )
+      ) {
+        await driver.sendKeys(finalDetailToggle, WEBDRIVER_SPACE);
+      }
       await waitForCondition(
         driver,
         `return document.querySelector(
@@ -2389,6 +2469,7 @@ export function createNativeTtsScenarios({
           optionsAcceptedPercent: PORTFOLIO_PLAYBACK_RATE_PERCENTS,
           exactMatrix: playbackSpeedMatrix,
         },
+        terminalSceneProof,
         externalRequests: 0,
       })}`,
     );

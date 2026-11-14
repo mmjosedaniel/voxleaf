@@ -459,7 +459,12 @@ export function ReaderSettingsDialog({
                   profileId,
                   hardwareCompatibility.observe(),
                   narrationCoordinator,
-                )
+                ) ||
+                (profileId === CHATTERBOX_OPTIONAL_PROFILE_ID &&
+                  hardwareCompatibility.observe().activeProfileId ===
+                    profileId &&
+                  narrationCoordinator?.isHealthyLoadedProfile?.(profileId) ===
+                    true)
               }
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}

@@ -7,11 +7,13 @@ their existing owners, preserving earlier corrections and reusing valid evidence
 Keep each trigger distinguishable even when several cases share a patch or test
 invocation. Do not turn this work into a refactor or a new repository-wide audit.
 
-**Status on 2026-11-13: planned; execution is not authorized yet.** The current
-request authorizes this ExecPlan, its supporting audit records, a branch and a
-commit. It explicitly excludes executing the plan. No production, test, runtime,
-generated artifact or completed-plan changes belong to this planning commit.
-The intended branch is `codex/deep-findings-minimal-corrections`.
+**Status on 2026-11-14: completed and accepted.** The user authorized implementation
+and the necessary host validation, superseding the original planning-only limit.
+Execution began on `codex/deep-findings-minimal-corrections` at
+`fab1c9e186552515e828c33ce75e11628dda8300`, with a clean worktree and empty index.
+No new commit, push, PR, merge or release is authorized. The original planning
+commit remains the immutable intake. Current results are recorded in the
+[execution ledger](../evidence/deep-findings-minimal-corrections/execution-ledger.md).
 
 ## User-visible outcome
 
@@ -35,12 +37,15 @@ The intended branch is `codex/deep-findings-minimal-corrections`.
 - Stop-time played duration is described at its established receipt precision.
   VF-0050 does not introduce a new exact interrupted-frame guarantee.
 
-These are intended outcomes, not implemented or freshly tested claims.
+M0-M5 and U1-U11 are complete. Independent implementation acceptance is recorded in
+[DFM-CR-R03-20261114](../evidence/deep-findings-minimal-corrections/review-r03.md).
+The archived patch's final identity review is recorded separately in
+[DFM-CR-R04-20261114](../evidence/deep-findings-minimal-corrections/review-r04.md).
 
 ## Current state
 
-The inspected baseline is `main` at
-`5fdb2dc835e99e43034e8b40c99817f45236358f`. Product sources match that commit.
+The planning inspection used `main` at
+`5fdb2dc835e99e43034e8b40c99817f45236358f`. Product sources then matched that commit.
 Its preceding product integration is #314,
 `403eb27916afe26d4794a7e36aeb97e6d1529bf1`; #315 adds the findings workflow.
 At planning entry the index was empty. The only worktree changes were the
@@ -59,8 +64,8 @@ historical aliases are the detailed intake authority; this plan defines the work
 Nineteen of the original twenty cases have source-supported violating sequences.
 VF-0050 is an established measurement limitation with no inspected requirement for
 exact interruption accounting. VF-0054 and VF-0055 are two additional static
-candidates. All 22 retain their current registry dispositions until execution
-supplies the specified evidence. Static support does not establish natural
+candidates. At planning, all 22 retained their registry dispositions until execution
+supplied the specified evidence. The final dispositions are recorded below. Static support does not establish natural
 frequency, host reproduction, acoustic output or successful correction.
 
 | ID | Trigger and present consequence | Earlier work and uncovered condition | Unit |
@@ -187,8 +192,11 @@ Two scoped decisions prevent unnecessary changes:
 
 ## Milestones
 
-All execution milestones below are **not started**. The work and validation are
-future instructions. The planning inspection is recorded separately in Progress.
+M0-M5 are complete. U1-U11 have their selected runtime results, current native
+admission/playback/installer evidence, verified restoration and independent
+implementation acceptance. The milestone instructions
+below retain their acceptance requirements; current attempts and results are in
+the execution ledger. The planning inspection is recorded separately in Progress.
 
 ### M0 — Establish scoped execution evidence
 
@@ -692,8 +700,28 @@ gate incomplete until recovery is verified.
   above. No test or validation gate was executed.
 - 2026-11-13 — Created this pending plan, its index/registry links and the supporting
   audit record set. Branch/commit delivery belongs to the planning request only.
-- M0-M5 execution, production corrections, new regressions and independent
-  behavioral acceptance: **not started**.
+- 2026-11-14 — Execution authorized. Branch/HEAD match the plan delivery, worktree
+  and index are clean, and no source drift requires reconciliation. M0 started;
+  M1-M5 acceptance and independent behavioral review remain pending.
+
+- 2026-11-14 — U1-U11 corrections/documentation implemented after discriminating reproductions. EPUB union: 655 passed; native manager: 80 passed per feature mode (3 ignored each); Chromium scrollbar and checked-profile regressions pass. Final desktop/static reconciliation and current native/package acceptance remain in progress; see the execution ledger.
+
+- 2026-11-14 — R01 independently identified two residual completion/preparation
+  routes. Both were reproduced and corrected; the final desktop union passes
+  819 tests and Chromium passes 16 selected cases. EPUB passes 655, Python 58,
+  native manager 80 per feature mode, and Node consumers 86 + 23 + 76. Language
+  static gates pass. Native WebView2/Piper, exact-local V7 fault/repair/removal
+  and current-artifact actual install/uninstall pass with verified restoration.
+  See [per-case results](../evidence/deep-findings-minimal-corrections/results.md)
+  and [commands/reuse](../evidence/deep-findings-minimal-corrections/commands-and-reuse.md).
+  Original failed receipts remain intact. Final independent acceptance is pending.
+
+- 2026-11-14 — DFM-CR-R03-20261114 APPROVE closes implementation acceptance.
+  All required runtime/static gates and restoration evidence are accepted.
+  R02's generated diagnostic was preserved under ignored evidence. Registry:
+  21 cases fixed/validated, VF-0050 intentional with its precision limit.
+  Archive and index updates complete the plan; the exact documentation-final
+  patch receives its own immutable R04 review. No new Git mutation is authorized.
 
 ## Discoveries and decisions
 
@@ -711,8 +739,8 @@ gate incomplete until recovery is verified.
 - A native-smoke leaf consumes generated EPUB exports. Rebuild once from current
   source and renew that leaf; preserving an old executable or dist directory is
   not evidence for changed preparation code.
-- VF-0050 remains a proposed documented precision limitation; no new terminal
-  receipt or Stop delay is planned. VF-0036 retains the existing locator-recovery
+- VF-0050 is accepted as a documented precision limitation; no new terminal
+  receipt or Stop delay was introduced. VF-0036 retains the existing locator-recovery
   policy with an explicit unversioned-history limitation.
 - The deep review closed the ordinary B04 stored-position allegation and did not
   establish stale audible output for VF-0055. Do not add fixes or claims for those
@@ -720,7 +748,7 @@ gate incomplete until recovery is verified.
 
 ## Final validation results
 
-**Planning deliverable only.** All 22 IDs are mapped to triggers, owners,
+**Original planning result (retained as history).** All 22 IDs are mapped to triggers, owners,
 minimal correction/disposition, prior coverage gaps, next-action assertions and
 selected gates. Existing commands and relevant test files were inspected.
 Historical evidence integrity was compared by reading files; no runtime PASS is
@@ -728,10 +756,61 @@ granted to this plan. No tests, checks, builds or benchmarks were run, and no
 production code was changed. This nonbehavioral planning/documentation patch is
 exempt from independent implementation review; the future fixes are not exempt.
 
-Implementation remains pending. At execution closeout replace this pending result
-with a per-ID table containing actual owner/path, reproduction level, exact host
-command and outcome or immutable reused gate, adjacent controls, next action,
-registry disposition and exact independent review ID. Include artifact/host
-restoration and any unresolved scope. Do not mark this plan complete while required
-gates or supported cases remain open, and do not describe static timing witnesses
-as measured natural incidence or acoustic validation.
+**Execution acceptance on 2026-11-14.** M0-M5 and U1-U11 are complete on
+`fab1c9e186552515e828c33ce75e11628dda8300` plus the exact reviewed task patch.
+The index is empty. No implementation commit, push, PR, merge or release was made.
+
+The [per-case results](../evidence/deep-findings-minimal-corrections/results.md)
+record each ID's concrete owner paths, reproduction level, correction, adjacent
+controls and subsequent Play/retry/save/reopen. The
+[command and reuse record](../evidence/deep-findings-minimal-corrections/commands-and-reuse.md)
+provides exact commands, original receipt identities, environment and consumed-input
+proof. All runtime commands ran in normal local PowerShell outside the sandbox.
+Historical receipts and failed attempts remain distinct and unchanged.
+
+| Case | Unit | Final disposition | Accepted evidence scope |
+| --- | --- | --- | --- |
+| VF-0034 | U1 | fixed / validated | Desktop, actual Chromium/WebView2 scrollbar, next Play |
+| VF-0035 | U1 | fixed / validated | Mounted failed geometry, Chromium completion, save/next Play |
+| VF-0036 | U3 | fixed / validated | Public EPUB projection/navigation, same-byte save/reopen |
+| VF-0037 | U4 | fixed / validated | Public bilingual preparation, quotation and language controls |
+| VF-0038 | U2 | fixed / validated | Both Rust modes and actual V7 invalid Check/repair/removal |
+| VF-0039 | U4 | fixed / validated | Public supported-space/article preparation and ranges |
+| VF-0040 | U9 | fixed / validated | Real Windows descendant tests and current actual install/uninstall |
+| VF-0041 | U6 | fixed / validated | Compact/detailed 1/2/5/10-minute threshold presentation |
+| VF-0042 | U10 | fixed / validated | Filesystem faults, CLI, staged-byte protection and same-ID retry |
+| VF-0043 | U2 | fixed / validated | Retained-receipt Check/repair plus mounted retry routing |
+| VF-0044 | U1 | fixed / validated | Actual storage fault/malformed data, pagehide/reopen and next save |
+| VF-0045 | U7 | fixed / validated | Mounted controlled Pause/Stop ordering and subsequent Play |
+| VF-0046 | U2 | fixed / validated | Real mockIPC client/mounted App, explicit Check and poll order |
+| VF-0047 | U3 | fixed / validated | Public XHTML/NCX opening, fallback and original budget controls |
+| VF-0048 | U6 | fixed / validated | Three completion routes, late promises/reset, Chromium/native next speed |
+| VF-0049 | U2 | fixed / validated | Checked healthy profile with real Chromium played duration |
+| VF-0050 | U11 | intentional / inspected-present precision limit | Current worklet/PCM contract and reviewed documentation; no runtime change |
+| VF-0051 | U5 | fixed / validated | Public dense-window limits, cancellation/retry and next spine |
+| VF-0052 | U5 | fixed / validated | Public silent-prefix/interior/tail continuation and protected negatives |
+| VF-0053 | U8 | fixed / validated | Public omission batches, semantic handoffs and actual Piper terminal scene |
+| VF-0054 | U4 | fixed / validated | Public capacity cuts, cold/warm continuation and batch sizes 1/2/8 |
+| VF-0055 | U7 | fixed / validated | Mounted preparation/dispatch Stop, zero retired work and next navigation/Play |
+
+Passing selections: EPUB 655; desktop 819; Python 58; Rust 80 per feature mode
+(three deliberate ignores each, with the required exact-local test separately
+executed); Node 86 + 23 + 76; Chromium 16. TypeScript/Python/Rust static gates
+pass. G7 current default-feature startup/Piper ES, G8 exact-local V7 admission
+and G9 current unsigned build/check/actual ordinary install/uninstall pass within
+their explicit scopes. All original host/core/profile state is restored. Complete
+deterministic/native input proof permits the recorded selective reuse.
+
+Independent implementation review **DFM-CR-R03-20261114: APPROVE**, with matching
+identities, no outstanding finding and no implementation blocker. R01's two
+residuals were reproduced and corrected; R02's output-scope finding was resolved.
+[R04](../evidence/deep-findings-minimal-corrections/review-r04.md) records the exact
+archived patch's final identity review, without rewriting those earlier reports.
+
+Remaining limits are accepted scope qualifications: ambiguous unversioned historical
+locators, Stop's accepted-frame lower bound, unmeasured natural incidence of the
+controlled reentrant orderings, selected Piper ES host coverage, no Chatterbox
+inference/live acquisition, and unsigned local packaging without signing/Defender
+or release publication. No withdrawn deep-review implication was restored.
+The system diagram still matches the unchanged architecture; completed M005 and
+other historical authorities remain untouched.

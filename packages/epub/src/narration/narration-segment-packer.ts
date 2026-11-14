@@ -2,6 +2,7 @@ import { createIndex } from "@voxleaf/shared";
 import type { Index } from "@voxleaf/shared";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
+import { isLexicalExpansionInterior } from "./narration-bilingual-normalizer.js";
 import type {
   NarrationBoundaryBlockMetadata,
   NarrationBoundaryScan,
@@ -277,11 +278,13 @@ function isSubstantive(unit: NarrationNormalizedUnit): boolean {
   );
 }
 
-function isCollapsedWhitespace(
+function isUnprotectedSilentPrefix(
   unit: NarrationNormalizedUnit | undefined,
 ): boolean {
   return unit?.kind === "omission"
-    ? unit.reason === "collapsed-whitespace"
+    ? unit.reason === "collapsed-whitespace" ||
+        (unit.reason === "formatting-mark" &&
+          unit.boundaryProtections.length === 0)
     : unit?.kind === "text" && unit.role === "whitespace" && unit.text === " ";
 }
 
@@ -536,6 +539,10 @@ async function packingContext(
     safeBoundaries.push(
       position > 0 &&
         !protectedInteriors[position] &&
+        !isLexicalExpansionInterior(
+          scan.normalized.units[position - 1],
+          scan.normalized.units[position],
+        ) &&
         !startsWithCombiningMark(scan.normalized.units[position]),
     );
   }
@@ -981,7 +988,7 @@ async function packNarrationBoundaryScanInternal(
       const unit = scan.normalized.units[startUnitIndex];
       if (
         limits.segmentPolicy === NARRATION_PIPER_V2_SEGMENT_POLICY &&
-        isCollapsedWhitespace(unit) &&
+        isUnprotectedSilentPrefix(unit) &&
         context.safeBoundaries[startUnitIndex + 1] === true
       ) {
         // Drain the proven silent prefix once, then retry the same policy.
@@ -990,7 +997,7 @@ async function packNarrationBoundaryScanInternal(
           await work.observe();
           const next = scan.normalized.units[startUnitIndex];
           if (
-            !isCollapsedWhitespace(next) ||
+            !isUnprotectedSilentPrefix(next) ||
             context.safeBoundaries[startUnitIndex + 1] !== true
           )
             break;

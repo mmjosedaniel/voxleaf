@@ -6,7 +6,10 @@ import report from "../../../../packages/shared/fixtures/contracts/host-profile-
 
 import { closeSettings, openSettings } from "./settings-helpers";
 
-test("DCR-03/23 CCF-C02 restores placement and settles language before Play", async ({
+// Keep the native scrollbar visible for real pointer interaction coverage.
+test.use({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } });
+
+test("VF-0044 DCR-03/23 CCF-C02 restores placement and settles language before Play", async ({
   page,
 }) => {
   const aiden = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
@@ -60,6 +63,28 @@ test("DCR-03/23 CCF-C02 restores placement and settles language before Play", as
     envelope.states[0].locator.textOffsetCodePoints = 800;
     return JSON.stringify(envelope);
   });
+  await page.reload();
+  await page.evaluate((value) => {
+    localStorage.setItem("voxleaf.reader.positions", value);
+    const getItem = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key) {
+      if (key === "voxleaf.reader.positions")
+        throw new Error("synthetic-transient-read-failure");
+      return getItem.call(this, key);
+    };
+    Reflect.set(globalThis, "__vfRestoreStorageRead", () => {
+      Storage.prototype.getItem = getItem;
+    });
+  }, stored);
+  await page.getByLabel("Open a book").setInputFiles(file);
+  await expect(page.locator(".semantic-document p")).toBeVisible();
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("pagehide"));
+    Reflect.get(globalThis, "__vfRestoreStorageRead")();
+  });
+  expect(
+    await page.evaluate(() => localStorage.getItem("voxleaf.reader.positions")),
+  ).toBe(stored);
   await page.reload();
   await page.evaluate((value) => {
     localStorage.setItem("voxleaf.reader.positions", value);
@@ -1241,7 +1266,7 @@ for (const [language, voice] of [
   });
 }
 
-test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitted owner", async ({
+test("VF-0049 MAF-10 selecting the checked healthy Chatterbox radio preserves its admitted owner and metrics", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -1292,6 +1317,14 @@ test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitt
       };
     });
   const before = await owner();
+  await expect
+    .poll(async () =>
+      Number(await narration.getAttribute("data-narration-playback-ms")),
+    )
+    .toBeGreaterThan(500);
+  const playedBefore = Number(
+    await narration.getAttribute("data-narration-playback-ms"),
+  );
   await page.evaluate(() => {
     Reflect.get(
       globalThis,
@@ -1303,6 +1336,15 @@ test("MAF-10 selecting the checked healthy Chatterbox radio preserves its admitt
     const radio = settings.getByRole("radio", { name: /Chatterbox/ });
     await expect(radio).toBeChecked();
     await radio.click();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    expect
+      .soft(Number(await narration.getAttribute("data-narration-playback-ms")))
+      .toBeGreaterThanOrEqual(playedBefore);
     await expect(radio).toBeEnabled();
     expect(await owner()).toEqual(before);
     await closeSettings(page, settings);
@@ -3842,7 +3884,100 @@ test("NLC real worklet retains the tail and natural completion releases manual s
   expect(errors).toEqual([]);
 });
 
-test("LCF completed narration restarts from visible passage and paragraph leaf", async ({
+test("VF-0035 failed follow through natural completion preserves manual position for next Play", async ({
+  page,
+}) => {
+  test.setTimeout(45_000);
+  await installSyntheticService(page, true);
+  await page.setViewportSize({ width: 800, height: 500 });
+  await page.goto("/");
+  await page.getByLabel("Open a book").setInputFiles({
+    name: "synthetic-failed-follow.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (
+        await fixtures()
+      ).buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Synthetic</title></head><body>${Array.from({ length: 24 }, (_, i) => `<p>Synthetic passage number ${i}.</p>`).join("")}</body></html>`,
+      }),
+    ),
+  });
+  const narration = page.locator(".product-narration");
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+  await page.locator('[data-narration-action="pause"]').click();
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("voxleaf.reader.positions")!).states[0]
+          .locator,
+    );
+  await page.locator(".reader-viewport").hover();
+  await page.mouse.wheel(0, 300);
+  await expect
+    .poll(() =>
+      page.locator(".reader-viewport").evaluate((root) => root.scrollTop),
+    )
+    .toBeGreaterThan(200);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  const manualAnchor = await page.evaluate(() => {
+    const root = document.querySelector(".reader-viewport")!;
+    const line = root.getBoundingClientRect().top + root.clientTop + 24;
+    return [...document.querySelectorAll(".semantic-document p")].findIndex(
+      (element) => element.getBoundingClientRect().bottom > line,
+    );
+  });
+  expect(manualAnchor).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    const rect = Range.prototype.getBoundingClientRect;
+    const rects = Range.prototype.getClientRects;
+    const elementRect = Element.prototype.getBoundingClientRect;
+    Reflect.set(globalThis, "__vfRestoreFollowGeometry", () => {
+      Range.prototype.getBoundingClientRect = rect;
+      Range.prototype.getClientRects = rects;
+      Element.prototype.getBoundingClientRect = elementRect;
+    });
+    Range.prototype.getBoundingClientRect = () =>
+      new DOMRect(Number.NaN, Number.NaN, 0, 0);
+    Range.prototype.getClientRects = () =>
+      Object.assign([], { item: () => null }) as unknown as DOMRectList;
+    Element.prototype.getBoundingClientRect = function () {
+      return this.matches(".semantic-document p")
+        ? new DOMRect(Number.NaN, Number.NaN, 0, 0)
+        : elementRect.call(this);
+    };
+  });
+  await page.locator('[data-narration-action="resume"]').click();
+  await expect(narration).toHaveAttribute("data-narration-phase", "complete", {
+    timeout: 30_000,
+  });
+  // Durable progress remains the exact heard checkpoint, independent of view.
+  await expect.poll(async () => (await saved()).anchor.anchorIndex).toBe(23);
+  await page.locator('[data-narration-action="stop"]').click();
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__vfRestoreFollowGeometry")(),
+  );
+  const requestCount = await page.evaluate(
+    () => Reflect.get(globalThis, "__rnb").requests.length,
+  );
+  await page.locator('[data-narration-action="play"]').click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (index) => Reflect.get(globalThis, "__rnb").requests[index]?.anchor,
+        requestCount,
+      ),
+    )
+    .toBe(manualAnchor);
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+test("VF-0048 LCF completed narration restarts from visible passage and paragraph leaf", async ({
   page,
 }) => {
   test.setTimeout(60_000);
@@ -3895,6 +4030,26 @@ test("LCF completed narration restarts from visible passage and paragraph leaf",
       { timeout: 25_000 },
     );
     await expect.poll(savedAnchor).toBe(23);
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "none",
+    );
+    await page
+      .getByLabel("Playback speed", { exact: true })
+      .selectOption("100");
+    await expect(narration).toHaveAttribute(
+      "data-narration-pending-rate-percent",
+      "none",
+    );
+    await page.getByLabel("Playback speed", { exact: true }).selectOption("75");
+    await expect(narration).toHaveAttribute(
+      "data-narration-selected-rate-percent",
+      "75",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-pending-rate-percent",
+      "none",
+    );
     const before = await observation();
     expect(before.ended).toBe(before.synthesized);
     await viewport.hover();
@@ -3927,6 +4082,10 @@ test("LCF completed narration restarts from visible passage and paragraph leaf",
     );
     expect(after.created).toBe(index + 2);
     expect(after.closed).toBe(index + 1);
+    await expect(narration).toHaveAttribute(
+      "data-narration-active-rate-percent",
+      "75",
+    );
   }
   await expect(narration).toHaveAttribute("data-narration-phase", "complete", {
     timeout: 25_000,
@@ -4871,8 +5030,9 @@ for (const geometry of [
   "stopped-exact",
   "stopped-manual-recovery",
   "stopped-keyboard-recovery",
+  "stopped-scrollbar-recovery",
 ] as const) {
-  test(`CFR-02 CFR-03 PN-02 real preparation and reader placement preserve the requested passage (${geometry})`, async ({
+  test(`${geometry === "stopped-scrollbar-recovery" ? "VF-0034 " : ""}CFR-02 CFR-03 PN-02 real preparation and reader placement preserve the requested passage (${geometry})`, async ({
     page,
   }) => {
     await installSyntheticService(page, false, false, false, true);
@@ -4907,7 +5067,8 @@ for (const geometry of [
     expect(before.target.textOffsetCodePoints).toBeGreaterThan(0);
     const manualRecovery =
       geometry === "stopped-manual-recovery" ||
-      geometry === "stopped-keyboard-recovery";
+      geometry === "stopped-keyboard-recovery" ||
+      geometry === "stopped-scrollbar-recovery";
     if (geometry === "controlled-missing-range" || manualRecovery)
       await page.evaluate((hideBlock) => {
         const rect = Range.prototype.getBoundingClientRect;
@@ -5045,7 +5206,88 @@ for (const geometry of [
         const beforeScroll = await viewport.evaluate(
           (element) => element.scrollTop,
         );
-        if (geometry === "stopped-keyboard-recovery") {
+        if (geometry === "stopped-scrollbar-recovery") {
+          // Passive movement and a motionless scrollbar click cannot recover Play.
+          await viewport.evaluate((root) => {
+            root.scrollTop += 25;
+          });
+          await expect(
+            page.locator('[data-narration-action="play"]'),
+          ).toBeDisabled();
+          await viewport.evaluate((element) => {
+            const root = element as HTMLElement;
+            const events: unknown[] = [];
+            for (const type of [
+              "pointerdown",
+              "mousedown",
+              "pointerup",
+              "mouseup",
+              "scroll",
+            ]) {
+              root.addEventListener(
+                type,
+                (event) => {
+                  if (events.length < 24)
+                    events.push({
+                      type: event.type,
+                      trusted: event.isTrusted,
+                      target: event.target === root,
+                    });
+                },
+                true,
+              );
+            }
+            Reflect.set(globalThis, "__vfScrollbarEvents", events);
+          });
+          const thumbPosition = () =>
+            viewport.evaluate((root) => {
+              const rect = root.getBoundingClientRect();
+              const track = root.clientHeight - 34;
+              const thumb = Math.max(
+                20,
+                (track * root.clientHeight) / root.scrollHeight,
+              );
+              return {
+                x: rect.right - 7,
+                y:
+                  rect.top +
+                  17 +
+                  (root.scrollTop / (root.scrollHeight - root.clientHeight)) *
+                    (track - thumb) +
+                  thumb / 2,
+                scrollTop: root.scrollTop,
+              };
+            });
+          const gutter = await thumbPosition();
+          await page.mouse.move(gutter.x, gutter.y);
+          await page.mouse.down();
+          await page.mouse.up();
+          await viewport.evaluate((root) => {
+            root.scrollTop += 1;
+          });
+          await expect(
+            page.locator('[data-narration-action="play"]'),
+          ).toBeDisabled();
+          // Reflow cancellation from the negative click can move the gutter.
+          // Drain its layout/scroll before locating the real thumb again.
+          await page.waitForTimeout(200);
+          const drag = await thumbPosition();
+          await page.mouse.move(drag.x, drag.y);
+          await page.mouse.down();
+          // A held thumb remains owned beyond the wheel/key intent deadline.
+          await page.waitForTimeout(550);
+          await page.mouse.move(drag.x, drag.y + 90, { steps: 12 });
+          await page.mouse.up();
+          await expect
+            .poll(() => viewport.evaluate((root) => root.scrollTop))
+            .toBeGreaterThan(drag.scrollTop + 100);
+          console.log(
+            "VF-0034 Chromium scrollbar events",
+            await page.evaluate(() =>
+              Reflect.get(globalThis, "__vfScrollbarEvents"),
+            ),
+          );
+        } else if (geometry === "stopped-keyboard-recovery") {
           await page
             .getByRole("link", { name: "Skip to reader content" })
             .focus();
@@ -5062,7 +5304,30 @@ for (const geometry of [
         await expect(
           page.locator('[data-narration-action="play"]'),
         ).toBeEnabled();
+        await viewport.evaluate(async (root) => {
+          const started = performance.now();
+          let stableSince = started;
+          let previous = root.scrollTop;
+          while (performance.now() - stableSince < 150) {
+            if (performance.now() - started > 2000)
+              throw new Error("synthetic-scroll-did-not-settle");
+            await new Promise<void>((resolve) =>
+              requestAnimationFrame(() => resolve()),
+            );
+            if (root.scrollTop !== previous) {
+              previous = root.scrollTop;
+              stableSince = performance.now();
+            }
+          }
+        });
       }
+      const recoveredLocator = manualRecovery
+        ? await page.evaluate(() => {
+            window.dispatchEvent(new Event("pagehide"));
+            return JSON.parse(localStorage.getItem("voxleaf.reader.positions")!)
+              .states[0].locator;
+          })
+        : undefined;
       await page.locator('[data-narration-action="play"]').click();
       const preparedOffset = expect.poll(() =>
         page.evaluate(
@@ -5071,6 +5336,20 @@ for (const geometry of [
       );
       if (manualRecovery) await preparedOffset.toBeGreaterThan(0);
       else await preparedOffset.toBe(0);
+      if (manualRecovery) {
+        const range = await page.evaluate(
+          () => Reflect.get(globalThis, "__rnb").prepared[0].sourceRange,
+        );
+        expect(range.start.anchor).toEqual(recoveredLocator.anchor);
+        expect(range.start.spineItemId).toBe(recoveredLocator.spineItemId);
+        // Preparation resumes the containing semantic segment, not a cut word.
+        expect(range.start.textOffsetCodePoints).toBeLessThanOrEqual(
+          recoveredLocator.textOffsetCodePoints,
+        );
+        expect(range.end.textOffsetCodePoints).toBeGreaterThanOrEqual(
+          recoveredLocator.textOffsetCodePoints,
+        );
+      }
     }
     await page.locator('[data-narration-action="stop"]').click();
   });

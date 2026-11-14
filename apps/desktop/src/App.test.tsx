@@ -27,6 +27,7 @@ import { StrictMode, useEffect, useState, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App, type ReadyPublicationContentProps } from "./App";
+import { mockIPC, clearMocks } from "@tauri-apps/api/mocks";
 import type {
   ReaderPositionRepository,
   ReaderPositionReadResult,
@@ -39,6 +40,10 @@ import {
 } from "./persistence/narration-start-preference";
 import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-restore-coordinator";
 import { READER_PREFERENCES_STORAGE_KEY } from "./persistence/reader-position-repository";
+import {
+  createWebStorageReaderPositionRepository,
+  READER_POSITIONS_STORAGE_KEY,
+} from "./persistence/reader-position-repository";
 import { DEFAULT_READER_PREFERENCES } from "./reader/reader-preferences";
 import { ReaderPublicationContent } from "./reader/ReaderPublication";
 import * as settingsDialog from "./settings/ReaderSettingsDialog";
@@ -67,6 +72,7 @@ afterEach(() => {
   cleanup();
   window.localStorage.clear();
   vi.restoreAllMocks();
+  clearMocks();
 });
 
 // Inspect only committed App hook values, not GC timing or alternate React
@@ -994,7 +1000,9 @@ describe("App preference connection characterization", () => {
   it("CAF-R3.1 refreshes selected Chatterbox once after same-book reinstall without starting playback", async () => {
     const base = new OptionalChatterboxClient().observe();
     let snapshot = { ...base, state: "absent" as typeof base.state };
-    const listeners = new Set<() => void>();
+    const listeners = new Set<
+      Parameters<OptionalChatterboxClient["subscribe"]>[0]
+    >();
     vi.spyOn(OptionalChatterboxClient.prototype, "observe").mockImplementation(
       () => snapshot,
     );
@@ -1018,7 +1026,11 @@ describe("App preference connection characterization", () => {
         const source = observe();
         let selected = snapshots.get(source);
         if (selected === undefined) {
-          selected = { ...source, profileId: CHATTERBOX_OPTIONAL_PROFILE_ID };
+          selected = {
+            ...source,
+            profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+            availability: "unavailable",
+          };
           snapshots.set(source, selected);
         }
         return selected;
@@ -1049,20 +1061,29 @@ describe("App preference connection characterization", () => {
     for (const state of ["verifying", "installed", "installed"] as const) {
       await act(async () => {
         snapshot = { ...snapshot, state };
-        listeners.forEach((listener) => listener());
+        listeners.forEach((listener) =>
+          listener({
+            phase: state === "verifying" ? "started" : "completed",
+            generation: 1,
+          }),
+        );
       });
     }
     expect(refresh).toHaveBeenCalledOnce();
     expect(start).not.toHaveBeenCalled();
     await act(async () => {
       snapshot = { ...snapshot, state: "verifying" };
-      listeners.forEach((listener) => listener());
+      listeners.forEach((listener) =>
+        listener({ phase: "started", generation: 2 }),
+      );
     });
     selectEpub();
     await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
     await act(async () => {
       snapshot = { ...snapshot, state: "installed" };
-      listeners.forEach((listener) => listener());
+      listeners.forEach((listener) =>
+        listener({ phase: "completed", generation: 2 }),
+      );
     });
     expect(refresh).toHaveBeenCalledOnce();
     expect(replacementRefresh).not.toHaveBeenCalled();
@@ -1071,6 +1092,112 @@ describe("App preference connection characterization", () => {
     listeners.forEach((listener) => listener());
     expect(refresh).toHaveBeenCalledOnce();
   });
+
+  it.each([
+    "check",
+    "failed-poll",
+    "other-book",
+    "other-language",
+    "other-profile",
+    "healthy",
+  ] as const)(
+    "VF-0046 explicit installation success respects the unavailable narrator owner (%s)",
+    async (scenario) => {
+      const settings = observeSettings();
+      const base = new OptionalChatterboxClient().observe();
+      let native = {
+        ...base,
+        state: "failed" as typeof base.state,
+        failure: "installed-package-invalid" as typeof base.failure,
+      };
+      const pending = deferred<typeof native>();
+      mockIPC(async (command, args) => {
+        if (
+          command === "download_optional_chatterbox" ||
+          (command === "optional_chatterbox_snapshot" &&
+            (args as Record<string, unknown> | undefined)?.retryCleanup)
+        )
+          return (await pending.promise) as never;
+        if (command === "optional_chatterbox_snapshot") return native as never;
+        throw new Error("synthetic-unused-command");
+      });
+      const coordinator = new ControlledNarrationCoordinator();
+      let current = {
+        ...coordinator.observe(),
+        profileId: CHATTERBOX_OPTIONAL_PROFILE_ID as string,
+        availability: "unavailable" as ProductNarrationSnapshot["availability"],
+      };
+      if (scenario === "healthy")
+        current = { ...current, availability: "available" };
+      vi.spyOn(coordinator, "observe").mockImplementation(() => current);
+      const refresh = vi.spyOn(coordinator, "refreshSelectedProfile");
+      const start = vi.spyOn(coordinator, "start");
+      const replacement = new ControlledNarrationCoordinator();
+      const replacementRefresh = vi.spyOn(
+        replacement,
+        "refreshSelectedProfile",
+      );
+      const factory = vi
+        .fn()
+        .mockReturnValueOnce(coordinator)
+        .mockReturnValue(replacement);
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={createTestReaderPositionRepository()}
+          createNarrationCoordinator={factory}
+        />,
+      );
+      selectEpub();
+      await waitFor(() => expect(factory).toHaveBeenCalledOnce());
+      const client = settings.current().optionalChatterbox;
+      await act(async () => {
+        await client.refresh();
+      });
+      let operation!: Promise<unknown>;
+      act(() => {
+        operation =
+          scenario === "failed-poll"
+            ? client.download()
+            : client.retryCleanup();
+      });
+      if (scenario === "failed-poll")
+        await act(async () => {
+          await client.refresh();
+        });
+      if (scenario === "other-book") {
+        selectEpub();
+        await waitFor(() => expect(factory).toHaveBeenCalledTimes(2));
+      }
+      if (scenario === "other-language")
+        current = { ...current, language: "en" };
+      if (scenario === "other-profile")
+        current = {
+          ...current,
+          profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+        };
+      await act(async () => {
+        native = { ...native, state: "installed", failure: undefined };
+        pending.resolve(native);
+        await operation;
+      });
+      expect(refresh).toHaveBeenCalledTimes(
+        scenario === "check" || scenario === "failed-poll" ? 1 : 0,
+      );
+      expect(replacementRefresh).not.toHaveBeenCalled();
+      expect(start).not.toHaveBeenCalled();
+      await act(async () => {
+        await client.refresh();
+        await client.refresh();
+      });
+      expect(refresh).toHaveBeenCalledTimes(
+        scenario === "check" || scenario === "failed-poll" ? 1 : 0,
+      );
+    },
+  );
 
   const savedReaderPreferences = Object.freeze({
     ...DEFAULT_READER_PREFERENCES,
@@ -2128,6 +2255,90 @@ describe("App preference connection characterization", () => {
 });
 
 describe("desktop reader lifecycle surface", () => {
+  it.each(
+    ["unavailable", "malformed"].flatMap((failure) =>
+      ["navigation", "manual"].map((proof) => [failure, proof]),
+    ),
+  )(
+    "VF-0044 preserves saved bytes through passive fallback and reopens after %s (%s repair)",
+    async (failure, proof) => {
+      const values = new Map<string, string>();
+      let failRead = false;
+      const repository = createWebStorageReaderPositionRepository({
+        storage: () => ({
+          getItem: (key) => {
+            if (key === READER_POSITIONS_STORAGE_KEY && failRead) {
+              failRead = false;
+              throw new Error("synthetic single read failure");
+            }
+            return values.get(key) ?? null;
+          },
+          setItem: (key, value) => {
+            values.set(key, value);
+          },
+        }),
+      });
+      const saved = decodeReadingLocatorV1({
+        ...TEST_LOCATED_BLOCK.startLocator,
+        textOffsetCodePoints: 3,
+      });
+      await repository.writePosition(persistedState(saved));
+      if (failure === "malformed")
+        values.set(READER_POSITIONS_STORAGE_KEY, "{malformed-current-envelope");
+      else failRead = true;
+      const original = values.get(READER_POSITIONS_STORAGE_KEY);
+      let reader: ReadyPublicationContentProps | undefined;
+      function ControlledReader(props: ReadyPublicationContentProps) {
+        reader = props;
+        const { initialLocator, onInitialRestorationSettled } = props;
+        useEffect(() => {
+          if (initialLocator !== undefined)
+            onInitialRestorationSettled?.({
+              status: "settled",
+              locator: initialLocator,
+            });
+        }, [initialLocator, onInitialRestorationSettled]);
+        return <article aria-label="VF-0044 reader">Synthetic</article>;
+      }
+      render(
+        <App
+          openFlow={createTestFlow(async () => ({
+            status: "ready",
+            publication: createTestPublication(),
+          }))}
+          readerPositionRepository={repository}
+          ReadyPublicationContent={ControlledReader}
+        />,
+      );
+      selectEpub();
+      await screen.findByRole("article", { name: "VF-0044 reader" });
+      await act(async () => {
+        reader?.onActiveLocatorChange?.(TEST_LOCATED_BLOCK.startLocator);
+        window.dispatchEvent(new Event("pagehide"));
+        for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
+      });
+      expect(values.get(READER_POSITIONS_STORAGE_KEY)).toBe(original);
+      const firstPublication = reader!.publication;
+      selectEpub("same-synthetic.epub");
+      await waitFor(() =>
+        expect(reader?.publication).not.toBe(firstPublication),
+      );
+      expect(reader?.initialLocator).toEqual(
+        failure === "unavailable" ? saved : undefined,
+      );
+      expect(values.get(READER_POSITIONS_STORAGE_KEY)).toBe(original);
+      await act(async () => {
+        if (proof === "manual") reader?.onActiveLocatorChange?.(saved, true);
+        else reader?.onSettledLocatorChange?.(saved, "chapter-navigation");
+        window.dispatchEvent(new Event("pagehide"));
+        for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
+      });
+      expect(await repository.readPosition(saved.bookIdentity)).toMatchObject({
+        status: "ready",
+        state: { locator: saved },
+      });
+    },
+  );
   it("RAF-06 releases obsolete committed restoration after rejected replacement and preserves the next owner", async () => {
     const first = createTestPublication("First restoration");
     const next = createTestPublication("Next restoration");

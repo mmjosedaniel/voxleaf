@@ -67,6 +67,7 @@ interface ActiveSegmentProjection {
   readonly sourceRange: LocatorRangeV1;
   navigationRequested: boolean;
   followEligible: boolean;
+  followMeasured: boolean;
   completed: boolean;
 }
 
@@ -316,7 +317,7 @@ export class SegmentHighlightController {
       const active = this.#active;
       if (key !== this.#activeKey || active === undefined || active.completed)
         return;
-      const settleEnd = active.followEligible;
+      const settleEnd = active.followEligible && active.followMeasured;
       active.completed = true;
       active.followEligible = false;
       if (settleEnd) {
@@ -335,6 +336,7 @@ export class SegmentHighlightController {
       sourceRange: observation.sourceRange,
       navigationRequested: false,
       followEligible: true,
+      followMeasured: false,
       completed: false,
     };
     this.#activeKey = key;
@@ -377,6 +379,7 @@ export class SegmentHighlightController {
     if (this.#closed || active === undefined) {
       return;
     }
+    active.followMeasured = false;
     const callbacks = this.#callbacks;
     if (callbacks === undefined) {
       return;
@@ -554,6 +557,7 @@ export class SegmentHighlightController {
   }
 
   #settleActive(locator: ReadingLocatorV1): void {
+    if (this.#active !== undefined) this.#active.followMeasured = true;
     this.#callbacks?.settleLocator(locator);
     const resume = this.#resumeVisualSampling;
     this.#resumeVisualSampling = undefined;
@@ -561,6 +565,7 @@ export class SegmentHighlightController {
   }
 
   #cancelPendingFollow(): void {
+    if (this.#active !== undefined) this.#active.followMeasured = false;
     this.#cancelScheduledSettle?.();
     this.#cancelScheduledSettle = undefined;
     const resume = this.#resumeVisualSampling;
