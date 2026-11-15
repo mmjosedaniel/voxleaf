@@ -79,6 +79,41 @@ separate reproductions, failed attempts, current acceptance and qualified reuse.
 | [VF-0054](#vf-0054) | Narration | A split lexical expansion loses text on warm continuation | `fixed` |
 | [VF-0055](#vf-0055) | Narration | Inline Stop can precede a stale synthesis dispatch | `fixed` |
 | [VF-0056](#vf-0056) | Release | Missing installer helper unnecessarily retains the application-data backup | `fixed` |
+| [VF-0057](#vf-0057) | Tests | An unscheduled caller is mistaken for a blocked stdin writer | `fixed` |
+
+## VF-0057
+
+**An unscheduled caller is mistaken for a blocked stdin writer.** The SAC12
+cancellation test waits 30 ms for a new caller thread and treats a timeout as
+proof that its write was admitted. If that thread has not run, the subsequent
+request can legitimately be accepted instead of returning Busy.
+
+- Owner — `sac12_cancel_interrupts_real_blocked_stdin_without_queuing_more_work`
+  in `apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs`.
+- Disposition — `fixed`, P2 test harness; correction accepted under
+  PORTFOLIO-READINESS-CR-R2-20261114. No production cancellation defect is established.
+- Lineage — SAC-12's original production deadline fix is in
+  [static audit corrections](../../plans/completed/static-audit-corrections.md).
+  The [PR #307 follow-up](../../plans/evidence/epub-budget-cancellation-reflow/ci-follow-up.md)
+  repaired a distinct Windows capacity-file sharing violation. This new test
+  ordering case is not equivalent to either earlier trigger; the import manifest
+  does not include SAC-12 as a VF entry.
+- Reproduction — `reproduced`, 2026-11-14, base
+  `97d36c213e16ea015c24b1589454d61dab4379ea` plus a temporary test-only 100-ms
+  caller delay. It reproduces the hosted Busy assertion, not the unobserved
+  exact hosted scheduling sequence. The diagnostic was removed afterward.
+- Current assessment — `validated`, 2026-11-14, same base plus the task patch;
+  both Rust configurations pass the preserved adjacent protections and strengthened
+  completion assertion. [R2 review](../../plans/evidence/portfolio-readiness/review-r2.md)
+  approves the exact implementation; documentary archival is assessed separately.
+- Correction — admit the request synchronously before observing completion;
+  retain real pipe pressure, Busy rejection, cancellation, bounded watchdog and
+  process/writer ownership assertions. Require a delivered error acknowledgement,
+  rather than accepting absence of completion as a successful cancellation test.
+- Evidence — [CI diagnosis](../../plans/evidence/portfolio-readiness/ci-diagnosis.md)
+  and [portfolio plan](../../plans/completed/portfolio-readiness-and-presentation.md).
+  Prior coverage assumed caller scheduling during the observation interval;
+  ordinary passing runs did not discriminate that interleaving.
 
 ## VF-0001
 

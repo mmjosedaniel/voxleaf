@@ -9,6 +9,8 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "demo:sample": "node scripts/portfolio-sample.mjs",
+    "test:portfolio-sample": "pnpm run build:packages && node --test scripts/portfolio-sample.test.mjs",
     "package:chatterbox-optional:v7:lock": "uv pip compile services/tts/release/profiles/chatterbox-v7/requirements.in --python-version 3.12 --python-platform windows --no-deps --generate-hashes --exclude-newer 2026-10-27T00:00:00Z --output-file services/tts/release/profiles/chatterbox-v7/requirements.lock",
     "package:chatterbox-optional:v7:write-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox write-source --package-version 7",
     "package:chatterbox-optional:v7:check-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-source --package-version 7",
@@ -118,7 +120,7 @@
     "test:tts:handoff-host": "pnpm --filter @voxleaf/desktop tauri build && uv run --directory services/tts --locked python -m benchmarks.service_handoff_cli run",
     "test:python": "uv run --project services/tts --locked pytest services/tts",
     "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml && cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime",
-    "test:typescript": "pnpm --recursive --if-present test",
+    "test:typescript": "pnpm --recursive --if-present test && node --test scripts/portfolio-sample.test.mjs",
     "typecheck": "pnpm run typecheck:typescript && pnpm run typecheck:python",
     "typecheck:python": "uv run --directory services/tts --locked mypy .",
     "typecheck:typescript": "pnpm run build:packages && pnpm --recursive --if-present typecheck",
