@@ -661,14 +661,7 @@ validate the current installed runtime.
 
 ### Historical local Chatterbox acquisition validation installer
 
-ADR-0045 authorized one separate unsigned build for the maintainer's compatible
-Windows computer. That historical build had the distinct identity
-`com.voxleaf.desktop.chatterbox-validation`, contained Piper but not Chatterbox
-runtime/model bytes, and exercised the real gated download without changing the
-ordinary manifest. ADR-0050 and Milestone 6B retire its overlay, Cargo feature,
-package configuration, and commands after promoting the same closed path into
-ordinary VoxLeaf. The historical hashes and results remain in the M011 progress
-log; they are not current build instructions or public-release artifacts.
+The separate validation identity and overlay are retired under [ADR-0050](../architecture/decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md). Original hashes/results remain in [M011](../plans/completed/M011-package-validate-and-release-mvp.md); use the ordinary-release procedure below, not the retired package commands.
 
 ### M011 6B ordinary-release isolation validation
 

@@ -24,24 +24,11 @@ using existing policy; measure actual friction before changing the process.
 
 ## Evidence storage
 
-Apply the [evidence retention policy](evidence-retention.md) to Audit Packets,
-Work Orders and Validation Reports. Commit concise immutable receipts and
-curated source identities; put raw captures, logs and temporary execution scripts
-in ignored `tmp/evidence/<run>/` or expiring CI artifacts. Record archive/recovery
-links when retiring current-PR captures. The existing `check` and
-`check:portable` commands begin with the index guard and its isolated tests.
+Use [evidence retention](evidence-retention.md) for concise immutable packets/reports, source identities, raw captures and archive/recovery records. Reference these from the plan; do not duplicate logs or manifests. Existing `check` and `check:portable` include the evidence guard and its tests.
 
 ## Why the workflow is bounded
 
-VoxLeaf has many implementation and test files across several languages. A literal
-file-by-file rewrite would separate production files from their tests and
-collaborators, create style-only churn, and make regressions difficult to
-attribute. The workflow therefore audits every tracked target but implements
-changes in cohesive units. A normal unit contains one production file, its
-tests, and no more than two directly coupled support files.
-
-An audit may correctly end in `SKIP`. The goal is evidence-backed readability,
-not a changed line in every file.
+Audit tracked targets without presuming a defect; `SKIP` is a successful outcome. Implement cohesive units, normally one production file, its tests and at most two coupled support files. File-by-file rewriting and stylistic preferences do not justify a change.
 
 ## Roles
 
@@ -104,133 +91,38 @@ the [official subagent documentation](https://learn.chatgpt.com/docs/agent-confi
 
 ## Repository components
 
-- `.codex/config.toml` enables a maximum of four supporting threads and sets a
-  Sol medium default for unnamed subagents.
-- `.codex/agents/clean-code-auditor.toml` defines the read-only audit role.
-- `.codex/agents/clean-code-worker.toml` defines the sole writer role.
-- `.codex/agents/refactor-validator.toml` defines the independent test gate.
-- `.codex/agents/git-steward.toml` defines the Sol Git-only execution role.
-- `$orchestrate-safe-refactor` owns inventory, delegation, work orders,
-  correction loops, and completion policy.
-- `$validate-safe-refactor` owns command routing and acceptance evidence.
-  Its [validation policy](../../.agents/skills/validate-safe-refactor/references/validation-policy.md)
-  is canonical for risk, unit/batch acceptance, gate reuse, preparation and
-  bounded retries; the [matrix](../../.agents/skills/validate-safe-refactor/references/validation-matrix.md)
-  supplies language/runtime checks. Role prompts reference these rules.
-- [Agent contracts](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md)
-  own report identity and Git orders. Do not duplicate their rules here.
-- `.agents/PLANS.md` remains authoritative for deciding when a campaign needs an
-  ExecPlan.
+The role configurations above define agent settings. [$orchestrate-safe-refactor](../../.agents/skills/orchestrate-safe-refactor/SKILL.md) owns inventory, delegation, orders and correction loops. [$validate-safe-refactor](../../.agents/skills/validate-safe-refactor/SKILL.md) owns acceptance, with the [validation policy](../../.agents/skills/validate-safe-refactor/references/validation-policy.md) for risk/reuse/preparation/retries and [matrix](../../.agents/skills/validate-safe-refactor/references/validation-matrix.md) for gates. [Contracts](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md) own report identity and Git orders; [PLANS.md](../../.agents/PLANS.md) owns planning requirements.
 
-Codex detects repository skills and custom-agent files when a new task starts.
-If an already-open task does not display them, start a new task or restart
-Codex. Parsing TOML and reviewing the diff validate configuration only; they
-do not prove the app loaded the new definitions or that either model executed.
-Before a campaign, confirm the exposed roles match the table above.
+Confirm roles exposed by the current session before a campaign. If definitions are stale, start a fresh project task or restart the client. Parsing configuration proves neither that the app loaded it nor that a model executed.
 
 ## Safety model
 
-The director must preserve these boundaries in every work order:
-
-- no public behavior or serialized-contract change;
-- no new dependency or lockfile change;
-- no manual generated-source edit;
-- no weakening, skipping, or deletion of tests to make a patch pass;
-- no change to privacy, local-only inference, cancellation, bounded memory,
-  stable EPUB locators, narration synchronization, persistence, or error
-  semantics;
-- no frozen evaluation authority, historical evidence, or completed ExecPlan
-  rewrite;
-- no books, generated audio, models, secrets, private paths, or content-bearing
-  logs;
-- no commit or push by an auditor, worker, or validator; the Git steward may do
-  so only under an exact Git Action Order, with current user authorization for
-  remote mutations;
-- no second writer while the worker is active.
-
-Prettier and ESLint own formatting. A preference such as shorter functions,
-fewer files, more helpers, or a different naming style is not sufficient
-evidence by itself.
+Apply the [orchestrator decision rules](../../.agents/skills/orchestrate-safe-refactor/SKILL.md#director-decision-rules) and [work-order contract](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md#approved-work-order). Preserve behavior, public/serialized contracts, dependencies, tests, generated/frozen/history boundaries and all product/privacy invariants. Only the worker writes source; only currently authorized Git orders may mutate Git while writers/validation are idle. Formatting belongs to Prettier/ESLint, not subjective refactor findings.
 
 ## Operating sequence
 
-1. Inspect current scope and authorization. Create the requested branch from
-   the clean requested base through a SETUP order. Updating main, committing,
-   pushing and opening a PR each remain bounded by user authorization.
-2. Create an ExecPlan when .agents/PLANS.md requires one. Inventory only the
-   requested paths, including the relevant .ts/.tsx/.py/.rs files; exclude
-   generated and historical authority from manual changes.
-3. Audit cohesive units without a predetermined fix. Accept SKIP. For CHANGE,
-   draft a closed work order and the unit/batch gate ledger before editing.
-4. Have the validator establish focused baseline evidence outside the sandbox.
-   Any shared expensive baseline must cover the declared batch before edits.
-5. Freeze the order; let one worker implement it and run assigned fast checks
-   before costly packaging. Inspect scope and the Change Packet.
-6. Have the validator independently review the current patch and execute or
-   justify reuse of every required unit gate. A new patch always needs a new
-   report. Pending batch gates remain visible; high-risk unit gates cannot wait.
-7. Correct only actionable findings within the bounded retry policy. When a
-   commit is authorized, issue the exact Git order bound to the current report.
-   Otherwise retain accepted work unstaged and preserve it explicitly.
-8. Satisfy combined package/final gates, review the whole diff and verify any
-   host restoration before final acceptance. Archive the completed plan and
-   report commands actually run, reuse evidence and observed costs.
+Follow the orchestrator's [batch sequence](../../.agents/skills/orchestrate-safe-refactor/SKILL.md#run-one-batch): inventory and audit, draft terms, independent pre-edit baseline, frozen order, sole-worker implementation/fast checks, independent post-change validation, bounded corrections, and authorized Git handoff. Select unit versus batch gates before edits; high-risk unit gates cannot wait, and pending combined gates or host restoration prevent final acceptance.
 
-Use the [compact batch record](../../.agents/skills/validate-safe-refactor/references/validation-record.md)
-for gate dependencies, preparation, recovery and phase timings. It is a
-template, not an automatic runner. Existing versioned runners remain the
-execution mechanism. If one lacks required diagnostics or safe cleanup,
-approve and test that bounded runner change before relying on it.
+Use the [compact batch record](../../.agents/skills/validate-safe-refactor/references/validation-record.md) for task-specific dependencies and results. It is not a runner. Existing runners execute checks; missing diagnostics or unsafe cleanup require an approved, tested bounded runner change. No retrospective baseline, rejected-patch carryover or automatic Git permission.
 
 ## Approval applies to one validated state
 
-The [contracts](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md#validation-report)
-require immutable Report IDs and exact HEAD/path identities. Any drift needs
-current independent review and a new report. The
-[reuse policy](../../.agents/skills/validate-safe-refactor/references/validation-policy.md#revalidate-changed-evidence-not-everything-by-default)
-allows a gate result to survive only with complete input/environment proof.
-It never lets the director refresh hashes in an old PASS. The Git steward still
-compares report, order and live identities before staging and committing.
-
-For example, a documentation-only closeout may retain unaffected code evidence,
-but changing a test runner invalidates its test receipts even if the production
-payload is identical. Unknown transitive dependencies or host conditions require
-execution. Passing unit tests cannot conceal pending combined runtime gates.
+The [identity contract](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md#validation-identity-and-freshness) binds each immutable report to HEAD, paths and exact identities. Drift requires new independent assessment; nobody may refresh hashes to renew approval. [Gate reuse](../../.agents/skills/validate-safe-refactor/references/validation-policy.md#revalidate-changed-evidence-not-everything-by-default) needs complete input/environment proof. A changed runner invalidates its receipts even when production bytes match. The Git steward compares report, order and live/staged identities.
 
 ## Durable traceability
 
-Keep concise accepted-unit summaries and report references in the ExecPlan:
-target/risk, exact scope and invariants, baseline, approved transformations,
-post-change verdict, corrections, commit identity and pending batch gates.
-Link curated Markdown receipts rather than embedding large manifests or logs.
-Raw captures belong under the [evidence retention policy](evidence-retention.md).
+Keep task-specific scope, invariants, decisions, baseline/post-change report links, corrections, authorized commits and pending gates in the ExecPlan. Apply [retention](evidence-retention.md); freeze documentation before its review and keep identity evidence outside its own inputs. Refactor evidence-only changes retain their own review and Git order; do not append unvalidated documentation to accepted source.
 
-Keep identity evidence outside its own validated paths. Freeze documentation
-before its report. Evidence-only updates made after source acceptance need
-their own review and order; never append an unvalidated plan edit to an accepted
-source commit. No retrospective plan may fabricate baseline evidence.
-
-An isolated unit may rely on its focused commit, tests and review when no
-ExecPlan is required. A practical task audits at most 20 paths or completes
-at most three accepted change batches; record the next queue position.
+An isolated unit may rely on its focused commit, tests and review when no ExecPlan is required. A practical task audits at most 20 paths or completes at most three accepted change batches; record the next queue position.
 
 ## Recommended director prompt
 
 ```text
 Use $orchestrate-safe-refactor and $validate-safe-refactor.
-
-Scope: [exact paths]
-Batch limit: [target/unit limit]
-Authorized Git actions: [none, or the actions the user actually requested]
-
-Read AGENTS.md and the canonical contracts, validation policy and matrix.
-Audit cohesive units and accept SKIP. Before edits, select risk and record gate
-timing, dependencies, invalidation and any pending combined acceptance.
-Use one writer, assigned fast checks, independent host baseline/post-change
-validation and immutable reports. Reuse a gate only with the policy's full
-proof; never substitute unit PASS for final acceptance. Preserve all product
-constraints and tests. Apply bounded retries and verify host restoration.
-Finish with current evidence, remaining work and actual commands/timings.
+Scope: [exact paths]. Batch limit: [targets/units].
+Authorized Git actions: [none or explicitly authorized actions].
+Follow the canonical contracts, validation policy and matrix. Report actual
+commands, independently justified reuse, remaining gates and observed costs.
 ```
 
 ## Native Rust navigation
@@ -270,26 +162,8 @@ under `apps/desktop/src-tauri/src/`:
 | `tts_protocol_probe.rs` | `tts_protocol_probe/tests.rs` |
 | `host_profile_detection.rs` | `host_profile_detection/tests.rs` |
 
-`host_profile_detection/windows_probe.rs` contains the existing private
-Windows implementation; report types, normalization, admission and the Tauri
-command remain in the parent. The hardware source-privacy test covers all
-three resulting files. The frozen probe authority remains in its parent;
-`hardware_profile_authority.rs` remains the separate test-only authority.
-The synthetic child, handoff, independent probe and supervisor diagnostics
-remain available in non-test builds. No public API or runtime owner was added.
-
-The [test-layout ExecPlan](../plans/completed/native-rust-test-layout.md) records
-each unit's fresh baseline, immutable order, source identities and independent
-acceptance. See [testing guidance](testing.md#native-rust-unit-test-layout)
-for fixture, namespace, platform and frozen-authority constraints.
+See [testing guidance](testing.md#native-rust-unit-test-layout) for Windows source-privacy coverage, frozen authorities, runtime-callable diagnostics, fixture paths and platform/feature constraints. The [test-layout ExecPlan](../plans/completed/native-rust-test-layout.md) retains each unit's original baseline, orders and independent acceptance.
 
 ## First use
 
-Start with one bounded package and its actual risk. Inventory and plan before
-implementation; a separate task is needed only when context or role availability
-requires it. Shared contracts remain high impact and generated outputs are
-excluded from manual edits. Preserve the batch limit and independent validation.
-
-After one or two real batches, review where the agents produced unnecessary
-work or missed context. Update the skills from observed friction rather than
-adding speculative rules.
+Start with one bounded package and its actual risk. A separate task is needed only for context or role availability. After one or two batches, adjust workflow from observed failures or unnecessary work, not speculative rules.

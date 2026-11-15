@@ -133,94 +133,19 @@ real package acquisition, reader performance or a full browser-matrix result.
 
 ## Static audit follow-up regressions
 
-The [SAF execution ledger](../plans/evidence/static-audit-follow-up/execution-ledger.md)
-records current results and input identities for sixteen bounded corrections.
-Directed `SAF`/`saf` cases extend the existing Vitest, Node, pytest and Cargo
-suites; the selector also matches existing `safe` controls, whose counts remain
-separate from newly added regressions. The final batch uses one complete
-`test:typescript` route and one complete `test:python` suite. No earlier PASS is
-accepted merely because a historical source manifest matches.
+The [SAF execution ledger](../plans/evidence/static-audit-follow-up/execution-ledger.md) maps the directed `SAF`/`saf` cases and existing `safe` controls to their separate results. The batch used one complete `test:typescript` and `test:python` each. Prepare Piper once with `package:piper-core:write-manifest` (both offline voice smokes and the delimiter check), then `package:piper-core:check`. Run `node apps/desktop/scripts/native-startup-smoke.mjs` on the identified build to avoid a second build. Chatterbox v7 was not regenerated.
 
-Coverage includes completed-mode Settings, publication-owned profile persistence,
-fresh Stop-to-Play admission, warm/cold preparation and context bounds, closed
-capitalized Spanish time articles, decorative image accessibility, literal
-per-voice Piper phonemization, cache-only restart cleanup and cancelled rejected
-headers. Historical/tool tests cover exceptional worker teardown, retryable
-quality output, starvation/final-drain accounting and download preparation errors.
-Host tests use synthetic original data, real benign child processes and loopback
-requests to exercise post-preflight launch errors and cooperative deadline cleanup.
-They preserve unrelated sentinels and do not run a personal installation journey.
-
-The native runner accepts `--operation-timeout-ms=N`, a positive integer at most
-`1800000`, also its default. Expiry aborts active requests and polling, waits for
-their settlement, then performs independently bounded cleanup. The portfolio
-requires the runner's IPC cleanup confirmation and terminal exit and checks
-cleanup after failures too. Process checks bind creation time and executable
-identity, including parent-child creation ordering and enumeration-to-handle
-matching. A capture must also remain bound to the original live ChildProcess
-across its await. Uncertain ancestry/capture retains scratch and fails; a proven
-older unrelated child is excluded. This covers deliberate
-deadline handling and does not establish recovery after arbitrary runner death.
-
-Core preparation uses `package:piper-core:write-manifest` once after fast checks;
-that command already builds and runs both offline voice smokes, including the
-delimiter route assertion. Follow it with `package:piper-core:check`. Final native
-startup invokes `node apps/desktop/scripts/native-startup-smoke.mjs` directly on
-the identified native build, avoiding the wrapper's redundant rebuild. Optional
-Chatterbox v7 is not regenerated for the live Piper-only adapter correction.
+The native runner's `--operation-timeout-ms=N` accepts positive integers up to `1800000` (default). Require request settlement, IPC cleanup confirmation and terminal exit with separately bounded cleanup, including after failure. Uncertain process ownership fails and retains scratch. The ledger bounds this evidence to cooperative timeout, synthetic children and loopback.
 
 ## Revalidated audit regressions
 
-The [RAC execution ledger](../plans/evidence/revalidated-audit-corrections/execution-ledger.md)
-records directed failures, current receipts and the independent acceptance review.
-Desktop and EPUB tests labelled `RAC` cover delayed publication handoff/current
-callbacks, Resume following, language-specific CPU fallback, primary-start
-preparation and ordinal street abbreviations. Python `-k rac` selects the new
-quality-session, retained-PCM and real smoke-main subprocess cases (and existing
-matching tests); the final unfiltered suite supplies all controls.
+The [RAC execution ledger](../plans/evidence/revalidated-audit-corrections/execution-ledger.md) maps labeled desktop/EPUB cases and Python `-k rac` to their directed failures and final controls. The complete `reader-narration-bugfixes.smoke.spec.ts` precedes the final native build, both Rust variants and direct model-free native smoke. Keep shared `generate:check`, package preparation and the complete Node suite.
 
-`ordinary-chatterbox-release-host.node-test.mjs` exercises the production
-finalization helper with disposable backup/application roots. Failed session
-close, uninstall, stable-absence observation or restoration preserves recovery
-material and cannot report success. Cleanup still runs after an earlier journey
-failure; its error includes both failures and the local recovery location.
-Session-close rejection is surfaced even after driver teardown. These tests
-do not install or uninstall the user's application.
-
-The direct Chatterbox smoke now observes Python `open` write attempts for its
-existing audio extensions before adapter import, and prints PASS only after
-cleanup and zero observed attempts. Isolated synthetic subprocesses exercise
-load, synthesis and cleanup writes, including swallowed audit-hook exceptions,
-plus network attempts during cleanup. This is bounded Python event observation,
-not universal operating-system write auditing or a new real-inference result.
-
-The full `reader-narration-bugfixes.smoke.spec.ts` joins the real mounted reader,
-AudioContext and synthetic IPC for delayed handoff and mid-unit Pause/scroll/
-Resume before another audible segment. Its configured builds precede the final
-native build, both Rust variants and direct model-free native smoke. Shared
-`generate:check`, package preparation and all seven Node suites remain required;
-Windows-release imports ordinary and native-smoke consumes EPUB.
+Finalization exercises disposable roots and retains recovery material on uncertain cleanup. The Python smoke observes selected audio-write attempts during load, synthesis and cleanup; synthetic subprocess cases also exercise network attempts during cleanup. These checks cover the synthetic journeys and Python event scope.
 
 ## Verified chat audit regressions
 
-The [VCA plan](../plans/completed/verified-chat-audit-corrections.md) groups the nine
-corrections into desktop, owned-path removal and benchmark suites. `VCA`/`vca`
-tests use deferred teardown, a real process-client protocol boundary, code-point
-DOM geometry, disposable Windows junctions and controlled API failures. The
-existing reader browser spec covers paused next/previous placement, exact Resume
-offsets, retained heard checkpoints, focus/selection and empty preparation
-controls in one synthetic book. A deterministic reader regression overlaps
-preference reflow with pending interior navigation and verifies one navigation
-settlement, retained paused intent and resumed passive locator observations.
-
-The Windows benchmark watchdog regression starts a blocked synthetic descendant
-and observes its verified handle exit within the injected watchdog plus cleanup
-bound, with unconditional owned-handle cleanup. Job accounting reaching zero
-does not mean every process handle is already signalled in the same instant.
-Production containment assigns the suspended worker to its Job before resuming
-the interpreter launcher. These tests require neither models nor GPU inference;
-they do not revise historical benchmark results. Both configured Rust variants,
-the package hooks and desktop Node suites remain part of combined acceptance.
+The [VCA plan](../plans/completed/verified-chat-audit-corrections.md) maps `VCA`/`vca` to desktop, owned-path removal, benchmark and browser controls. Both configured Rust variants, package hooks and desktop Node suites remain in the combined gate. Observe verified Windows process handles through the bounded watchdog cleanup. A zero Job accounting count can precede handle signalling. The synthetic worker test needs no model or GPU.
 
 ## Validated chat finding corrections
 
@@ -238,59 +163,13 @@ failure/recovery and real bundled-worklet FIFO cases in one invocation.
 
 ## Narration and Chatterbox correctness regressions
 
-The mutable Chatterbox adapter accepts a nonempty bounded mono waveform shaped
-`(N,)` or `(1,N)`. Model-free tests reject other shapes before transfer to CPU
-or flattening, and compare valid mono output bytes. Installed Chatterbox v7
-resolves frozen source blobs. These tests cover the mutable adapter and do
-not establish a shape defect or a code change in that installed runtime.
+Model-free tests for the mutable Chatterbox adapter accept bounded nonempty mono `(N,)` or `(1,N)` and reject other shapes before CPU transfer or flattening. Installed v7 uses frozen blobs.
 
-The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) uses selected
-`NCC`/`ncc_` regressions followed by one foundation check. Coordinator tests join
-the real player, persistence bridge and save owner while the frame counter reaches
-the final frame before `ended`. The device callback releases the final frame only
-after publishing the exact heard end. The browser case holds only real completion
-delivery across coordinator ticks at `1.00x` and `0.75x`, then verifies exact end,
-manual saving and reopening through the mounted reader with synthetic service PCM.
-
-Visibility tests cover changed/unchanged and paused/unavailable selection,
-replacement/close, overlapping probes, and a spent recovery budget. The optional
-controls retry cached acquisition failures through existing confirmation without
-network admission. Native tests inject free-space values at the production path
-selector, checking destination/ancestor, unknown and denied results without a
-second physical disk. Packaging tests stub expensive preparation and use real
-tiny filesystem moves with promotion/restore failures; an orphaned `.previous`
-is recovery input and must survive a blocked retry. These tests do not establish
-live v6 delivery, inference quality or installer acceptance.
+The [NCC plan](../plans/completed/narration-chatterbox-correctness.md) routes the `NCC`/`ncc_` controls and foundation check. Its browser case delays real completion at `1.00x` and `0.75x` with synthetic IPC/PCM. Native storage uses injected destination-volume probes, and package promotion uses test-owned filesystem moves. Preserve an orphaned `.previous` as recovery input. These tests do not establish live v6 delivery, inference quality or installer acceptance.
 
 ## Lifecycle correctness follow-up
 
-The [lifecycle follow-up plan](../plans/completed/lifecycle-correctness-follow-up.md)
-limits new coverage to the existing owners. LCF coordinator cases finish synthetic
-playback, restart through both explicit actions and hold cleanup against Stop,
-close and superseding navigation; the persistence bridge remains in the same
-focused group. One LCF browser case drives both mounted controls, verifies new
-generation/target/audio, manual saves after completion and closed old contexts.
-
-Native LCF tests pause an idle snapshot, admit a download through the real manager
-and retain its synthetic bytes/cancellation owner across snapshot cleanup. That
-download regression runs only on Windows because its real free-space admission
-probe is unavailable on other platforms. The
-existing poisoned-process-lock seam proves failed explicit termination retains
-ownership and stops package removal; repaired termination permits removal. This
-is error-handling evidence, not a reproduced orphan process.
-
-The LCF Windows release test compiles the actual NSIS hook against test-owned
-roots. Each of the eight optional roots is tested with a sharing violation and a
-junction, followed by successful retry. A denied parent verifies failed inspection.
-Its disposable PowerShell process removes its traversal-bypass privilege before
-launching the uninstaller child and requires a real Win32 access-denied result;
-the fixture restores the test-owned ACL in `finally`. This does not alter the
-calling host's token or production installer privileges. The
-silent retention, update mode, preference independence and unrelated files remain
-controls. Missing NSIS is a prerequisite failure. These checks do not require an
-installation, model download or GPU. The plan retains one final `pnpm.cmd check`;
-unchanged model/DSP, installer choices and runtime topology do not require repeated
-voice, benchmark or installation campaigns.
+The [lifecycle follow-up plan](../plans/completed/lifecycle-correctness-follow-up.md) maps `LCF` to coordinator, mounted browser, native and compiled NSIS checks, with one final `pnpm.cmd check`. The real free-space download fixture and NSIS fixture require Windows. The NSIS case needs the compiler, tests owned roots and a real denied traversal, and restores the fixture ACL in `finally`. Its disposable process controls its own privileges. See the plan for retained roots, retry controls and results.
 
 ## Narration logic correction regressions
 
@@ -312,39 +191,9 @@ also requires `pnpm.cmd check` and the two sequential native arms in the plan.
 
 ## Confirmed logic correction regressions
 
-The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md)
-records the regression, installed/ordinary-host evidence and independent reviews.
-The desktop Node release suite compiles and executes the
-actual NSIS directory-detection functions on Windows using
-`%LOCALAPPDATA%/tauri/NSIS/makensis.exe` and isolated synthetic roots. Missing
-NSIS on Windows fails that gate; non-Windows skips the executable fixture.
-The Windows foundation workflow prepares the official Tauri NSIS 3.13 archive,
-verifies its pinned SHA-256 before extraction and populates that compiler path
-before running tests. Native startup builds do not prepare an installer toolchain;
-the compiled regression must not depend on a previous release build's cache.
-Local Windows contributors need the same compiler path, normally populated by
-the verified Windows packaging flow. A missing compiler is a prerequisite failure,
-not a reason to skip the regression.
-This is not interactive uninstaller acceptance.
+The [completed correction plan](../plans/completed/confirmed-logic-bugfixes.md) records the regression, installed/ordinary-host evidence and independent reviews. The Node release suite executes the actual NSIS functions on Windows with `%LOCALAPPDATA%/tauri/NSIS/makensis.exe` and isolated roots. Foundation CI prepares official NSIS 3.13 and verifies its pinned SHA-256 before extraction. Native startup does not prepare NSIS. Missing NSIS fails the Windows gate; non-Windows skips the executable fixture. Interactive acceptance is recorded separately.
 
-PCM regressions control Pause/ended ordering, direct and WSOLA callbacks,
-remaining tail accounting, successor/final/refill states and one-time release.
-The supported-profile reader host runner also holds one actual WebView2
-completion until after Pause at 1.00x and 0.75x, then verifies Resume and cleanup.
-The existing native startup diagnostic executes canonical load/warm/synthesis
-engine failures and timeout through a supervised synthetic child, verifies
-containment, the real client's identity-bound shutdown acknowledgement and
-rejection of foreign/stale shutdown identities before explicitly starting a
-replacement. The coordinator suite uses the real TtsProcessClient to validate
-those shutdown controls, zero automatic retries and the single explicit attempt.
-It does not inject failures
-into installed model data.
-
-EPUB package/reader/browser fixtures preserve auxiliary index zero while opening
-at primary content and restoring an explicit auxiliary visit. Rust backup tests
-use synthetic data, Windows sharing violations and junctions; lifecycle fixtures
-add the exact `.previous` root. Never remove a pre-existing ordinary installation
-to satisfy the isolated installer gate.
+The plan maps Pause/ended tests and the real WebView2 `1.00x`/`0.75x` host checks, synthetic native failures, primary/auxiliary restoration and `.previous` removal. Never remove a pre-existing ordinary installation to satisfy the isolated installer gate.
 
 ## Principles
 
@@ -2189,6 +2038,8 @@ the input proof required to retain an unaffected result. Historical PASS records
 remain historical. The current-contract vectors cover explicit identifier edge
 whitespace, internal controls and scalar/UTF-8 limits across TS, Python and Rust;
 they do not change or establish full Unicode parity for frozen Chatterbox bytes.
+
+<a id="L2171"></a>
 
 Playback duration now sums confirmed output sample frames at 24 kHz, separately
 from source progress and wall-clock time. Direct playback samples its bounded
