@@ -2,16 +2,13 @@
 
 ## Scope and ownership
 
-Chatterbox v6 is accepted under the revised evidence boundary in the
-[completed filelock/setuptools refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md).
-Exact local admission and current installed/runtime gates pass with reviewed
-reuse. Full live delivery remains unverified after two read-timeout failures.
-Its independent 79-package hashed lock changes only filelock to 4.2.1 and
-setuptools to 84.1.0, retaining frozen v3 service modules and all six model
-identities. Published v5 remains immutable; its
-fresh audit is still blocked. Candidate audit results must not be presented as
-remediation of the downloaded/installed v5 bytes. Replacing the affected
-dependencies is preferred to advisory suppression or mutating published v5.
+Native admission, release audit and inventory select Chatterbox v7 under
+[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).
+The package runs Chatterbox 0.1.7 with msgpack 1.2.3 and retains the frozen v3
+service modules, stable profile ID and six model identities. Use the
+[release dependency boundary](#m011-release-dependency-boundary) for the
+current maintainer workflow and
+[v7 validation](testing.md#current-chatterbox-v7-validation) for evidence scope.
 
 This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added Ajv for the first real decoder, Milestone 4 Task 2.5 moved Ajv to generation/test-only use after introducing standalone validators, Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance, and Milestone 3 Task 1.2 selected the low-level ZIP and XML primitives proven below. M007 Milestone 3 promotes the minimal Rust JSON surface and Windows Job Object bindings needed by the accepted native supervisor. M010 Milestone 2 promotes the already locked official `windows` projection to a direct target-specific dependency for reviewed host-detection APIs. M010 Milestone 6 integrates the separately locked admitted Piper environment without moving it into the base Python graph. M011 Milestone 4 adds native-only `reqwest` and `zip` for a separately gated optional-profile archive; its checked-in manifest authorizes download only after renderer and native live compatibility gates pass. This inventory does not approve future bundled TTS-model, persistence, installer, updater, telemetry, or renderer-framework dependencies.
 
@@ -222,7 +219,7 @@ Historical v3 maintainer commands remain explicit:
 `pnpm.cmd package:chatterbox-optional:v3:write-source`,
 `pnpm.cmd package:chatterbox-optional:v3:check-source` and
 `pnpm.cmd package:chatterbox-optional:v3`. Unversioned aliases retain the CLI's
-v2 default; these historical commands do not select the v6 candidate. Build from a
+v2 default. For historical v3 builds, use a
 short Windows checkout path: nested
 dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
@@ -239,24 +236,26 @@ acceptance, independent review and fresh PR CI pass for integration commit
 the production graph and inventory also pass in GitHub Actions.
 Its focused audit is `pnpm.cmd audit:chatterbox:v5`; no exception is added.
 
+The [completed v6 filelock/setuptools refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+changes only filelock to 4.2.1 and setuptools to 84.1.0 in its own 79-package
+hashed lock, retaining frozen service and model identities. Its exact local
+admission and installed-runtime evidence include reviewed reuse. Two live
+delivery attempts timed out. The published v5 bytes remain immutable and the
+v6 audit applies to the separate successor graph.
+
+### Current Chatterbox v7 maintainer workflow
+
 On 2026-10-27, CI and the local v6 audit reported
 [GHSA-j586-36cw-2gc2](https://github.com/advisories/GHSA-j586-36cw-2gc2)
 for msgpack 1.2.1. The [v7 preparation](../plans/completed/chatterbox-msgpack-security-refresh.md)
 adds a separate 79-package hashed graph with only msgpack changed to 1.2.3;
 the other 78 pins, frozen service, Python/Torch/CUDA and six models are retained.
-Use the explicit `:v7` lock/source/build/check-local commands and
-`pnpm.cmd audit:chatterbox:v7` for this published successor. Its audit retains
-the four URL/CUDA blind spots. Active production audit/inventory and desktop
-admission select V7 under ADR-0064; the local production audit passed on
-2026-10-27. Hosted CI remains a separately recorded result. V7 acquisition
-authority is generated with `package:chatterbox-optional:v7:write-acquisition
---publication <actual-public-readback>` and checked with `:v7:check-acquisition`.
-There is no advisory exception or historical authority rewrite.
-
-Generate the v6 runtime using `pnpm.cmd package:chatterbox-optional:v6:lock`,
-then `pnpm.cmd package:chatterbox-optional:v6:write-source`. Build and verify it
-with `pnpm.cmd package:chatterbox-optional:v6` and
-`pnpm.cmd package:chatterbox-optional:v6:check-local`. Both accept
+For authorized v7 preparation, generate the lock and recipe with
+`pnpm.cmd package:chatterbox-optional:v7:lock` and
+`pnpm.cmd package:chatterbox-optional:v7:write-source`. Verify the recipe with
+`pnpm.cmd package:chatterbox-optional:v7:check-source`. Build and verify with
+`pnpm.cmd package:chatterbox-optional:v7` and
+`pnpm.cmd package:chatterbox-optional:v7:check-local`. Both accept
 `--output-root <absolute-directory>` for short temporary Windows paths; each
 version has its own `vN` child below that root. Use the same root for build and
 verification. The default output paths are unchanged. A temporary drive alias
@@ -264,13 +263,33 @@ can refer to an isolated build workspace when long paths are disabled; remove
 the alias after the command finishes. With an alias such as V:, pass the
 uniform extended form `--output-root //?/V:/build` to avoid mixed canonical
 Windows prefixes and shell backslash escaping. Never target an installed user
-runtime.
-V5 and v6 reject `--no-sync` through both CLI and Python API: use a fresh isolated
+runtime. If a Windows command runner escapes the extended path prefix, invoke
+the same configured `uv run --directory services/tts --locked python -m
+voxleaf_tts.release_chatterbox` entry point with `build` or `check-local`,
+`--package-version 7` and the same `--output-root`. Keep all integrity and
+containment checks enabled.
+V5, v6 and v7 reject `--no-sync` through both CLI and Python API. Use a fresh isolated
 output root so its dependency environment is always installed from the hashed
-version-specific lock. An old environment must not acquire a new security package identity.
+version-specific lock. The v7 builder also rejects historical reconciliation.
+
+Run `pnpm.cmd audit:chatterbox:v7` for the focused audit, which retains the
+four URL/CUDA blind spots without advisory exceptions. The v7 integration
+record distinguishes the 2026-10-27 local production audit from hosted CI.
+For authorized acquisition authority generation, use
+`pnpm.cmd package:chatterbox-optional:v7:write-acquisition --publication <actual-public-readback>`
+and then `pnpm.cmd package:chatterbox-optional:v7:check-acquisition`. The writer
+requires exact non-draft prerelease and asset metadata. See the
+[setup procedure](setup.md#check-the-m011-optional-chatterbox-package-source-authority)
+for write and recovery semantics. These steps preserve historical authority.
+
+Capture current licences from the actual core and v7 interpreters with the existing
+`scripts/release_inventory.py --capture-python-licenses --python <core-python>
+--python <v7-python>` interface, then run `pnpm.cmd inventory:release` and its check.
+
+### Shared Chatterbox runtime probes
 
 Run `test:chatterbox:runtime-security` and `test:chatterbox:runtime-smoke
---models <isolated-model-copy> --language <es|en>` with the candidate's
+--package-version 7 --models <isolated-model-copy> --language <es|en>` with the candidate's
 `runtime/python.exe` selected on PATH, no PYTHONPATH, offline Hugging Face and
 Transformers flags, and bytecode disabled.
 Set `NUMBA_CACHE_DIR` to an isolated cache outside the runtime, matching the
@@ -279,9 +298,27 @@ The security probe checks the
 removed compromised root, cyclic PDF page trees and legitimate PNG/PDF inputs.
 The smoke probe exercises synthetic ES/EN narration, finite bounded PCM and
 cancellation without writing audio. These candidate probes do not replace
-publication readback or the installed desktop acceptance gates.
+publication readback or the installed desktop acceptance gates. The smoke
+CLI defaults to v5, so select the package version explicitly for each run.
 
-V6 authority is generated with
+Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
+package's `runtime/python.exe`, without `PYTHONPATH`, and with
+`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` and
+`PYTHONDONTWRITEBYTECODE=1`. The pnpm security-probe alias uses `python` on
+PATH, so it requires that same interpreter to be selected explicitly. It adds
+no pytest dependency to the runtime. The probe uses synthetic inputs, refuses
+socket connections and verifies the three exact successor versions. See
+[v7 validation](testing.md#current-chatterbox-v7-validation) for both the
+v7-specific security probe and the existing v6-named probe retained for v7.
+
+### Historical Chatterbox package maintenance
+
+The v6 preparation commands are `pnpm.cmd package:chatterbox-optional:v6:lock`,
+`pnpm.cmd package:chatterbox-optional:v6:write-source`,
+`pnpm.cmd package:chatterbox-optional:v6` and
+`pnpm.cmd package:chatterbox-optional:v6:check-local`. The historical builder and
+local checker accept the same `--output-root` isolation rules as v7.
+V6 acquisition authority generation uses
 `pnpm.cmd package:chatterbox-optional:v6:write-acquisition --publication <receipt>`
 from the actual GitHub REST publication readback. It validates the fixed release
 ID, preparation commit, tag, non-draft prerelease status and all three uploaded
@@ -296,21 +333,9 @@ v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
 `pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
 requires the actual GitHub publication readback with exact commit, tag, three
 names, sizes, digests and URLs. It cannot replace already published assets or
-establish v6 admission. The separate local v4 builder keeps the v3 lock
+establish admission for a successor. The separate local v4 builder keeps the v3 lock
 and remains unpublished/unadmitted; see the
 [historical tooling guide](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
-Capture current licences from the actual core and v7 interpreters with the existing
-`scripts/release_inventory.py --capture-python-licenses --python <core-python>
---python <v7-python>` interface, then run `pnpm.cmd inventory:release` and its check.
-
-Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
-package's `runtime/python.exe`, without `PYTHONPATH`, and with
-`HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` and
-`PYTHONDONTWRITEBYTECODE=1`. The pnpm security-probe alias uses `python` on
-PATH, so it requires that same interpreter to be selected explicitly. It adds
-no pytest dependency to the runtime. The probe uses synthetic inputs, refuses
-socket connections and verifies the three exact successor versions. Its pass
-does not replace bilingual inference or the ordinary acquisition journey.
 
 ## Shipped application dependencies
 
@@ -329,7 +354,7 @@ These are the only direct libraries that can participate in the current applicat
 | `serde`            | `1.0.229`         | Derives the closed native cancellation input shape at the Tauri trust boundary. All other protocol payloads remain canonical JSON values validated before use.                                                                                                                                                                                                                                                                                                                                                                            | Hand-parsing command arguments would weaken unknown-field rejection. A broader generated Rust protocol model is not justified while canonical shared schemas and explicit semantic checks already own the wire authority.                                                                                                                                                                                                                                                          |
 | `serde_json`       | `1.0.154`         | Parses and writes bounded protocol control values, rejects duplicate/non-finite control input through the repository strict visitor, and validates shared fixtures in native tests.                                                                                                                                                                                                                                                                                                                                                       | A second JSON implementation or handwritten string parser would add more trust-boundary risk. This crate was already resolved transitively and used in tests; direct runtime ownership makes the supervisor's actual use explicit.                                                                                                                                                                                                                                                 |
 | `sha2`             | `0.11.1`          | Computes SHA-256 for every file in the fixed Piper core manifest before the native supervisor accepts the packaged interpreter, service, or voice. It receives only installer-owned fixed paths and exposes no renderer command.                                                                                                                                                                                                                                                                                                          | Trusting filenames, sizes, HTTPS, or installer placement alone would not detect substituted runtime bytes. The direct verifier uses 0.11.1 alongside the 0.10.9 version retained by Tauri/WebView2. A shared native encoder preserves the existing 64-character lowercase SHA-256 representation for core and optional-package verification; known-value and same-size substitution tests protect that boundary.                                                                                                                                                                                                  |
-| `reqwest`          | `0.13.5`          | Provides M011's native-only optional-Chatterbox HTTPS client after explicit user confirmation and a second native host gate. It accepts only exact manifest URLs, HTTPS, no proxy/credentials, and at most two redirects into the frozen GitHub Release or official Hugging Face content-addressed host sets. Every response needs exact content length, streamed byte ceiling, and SHA-256 verification in application-owned staging. The renderer supplies no request data. The v2 manifest is downloadable only after both gates pass. | A renderer HTTP/plugin path would widen WebView authority; browser download would expose artifacts to uncontrolled handling; shelling out would add command/path injection and system-tool dependence. Disabling all redirects would make the official Hugging Face file service unusable; an open redirect client would permit source substitution. The bounded native policy is the narrow accepted middle.                                                                      |
+| `reqwest`          | `0.13.5`          | Provides M011's native-only optional-Chatterbox HTTPS client after explicit user confirmation and a second native host gate. It accepts only exact manifest URLs, HTTPS, no proxy/credentials, and at most two redirects into the frozen GitHub Release or official Hugging Face content-addressed host sets. Every response needs exact content length, streamed byte ceiling, and SHA-256 verification in application-owned staging. The renderer supplies no request data. The current v7 acquisition can proceed only after both gates pass. | A renderer HTTP/plugin path would widen WebView authority; browser download would expose artifacts to uncontrolled handling; shelling out would add command/path injection and system-tool dependence. Disabling all redirects would make the official Hugging Face file service unusable; an open redirect client would permit source substitution. The bounded native policy is the narrow accepted middle.                                                                      |
 | `zip`              | `8.6.0`           | Reads only the already size-and-digest-verified optional archive in native code. The wrapper requires the exact root, rejects absolute/traversal/link entries, bounds extraction, verifies the exact runtime file set, and promotes atomically only after verification.                                                                                                                                                                                                                                                                   | Invoking an installed archive tool would introduce a shell/tool dependency. A general archive abstraction or handwritten ZIP parser would create a broader or less-reviewed parser surface. The core Piper package does not use this optional-path dependency at runtime. Version 8.6.0 retains only the explicitly enabled deflate feature; its graph adds typed-path and zlib-rs. Extraction compatibility covers stored/deflated entries, exact total-byte limits, unsafe paths, symbolic links, corrupt/truncated archives, and cancellation.                                                                                                                                                                                                          |
 | `windows-sys`      | `0.61.2`          | Uses only Foundation, Security, JobObjects, and Threading bindings to place the supervised child and descendants in a kill-on-close Windows Job Object. It is target-specific and exposes no renderer API.                                                                                                                                                                                                                                                                                                                                | Killing only the immediate child can leave model descendants alive. A general process-management crate or Tauri shell plugin would add a broader surface than the four reviewed Win32 feature groups. Non-Windows builds use the standard child-kill fallback until platform-specific containment is implemented and validated.                                                                                                                                                    |
 | `windows`          | `0.62.2`          | Supplies target-specific typed bindings for M010's direct Windows OS, storage, DXGI, D3D12, DirectML, and loader APIs. The native probe loads only the system CUDA driver library from `System32`, requests fixed symbols, uses adapter LUIDs transiently for joins, and serializes only the bounded identity-free compatibility report. It adds no Tauri plugin, renderer permission, shell, network request, model load, or persistence. Licensed MIT OR Apache-2.0.                                                                    | Handwritten COM/vtable and FFI declarations would duplicate ABI-sensitive generated bindings. PowerShell, WMI, `wmic`, `nvidia-smi`, registry enumeration, a Tauri OS/shell plugin, and broad hardware-inventory crates expose larger identity/raw-output surfaces. M010 initially adopted the transitively present 0.61.3 bindings. The direct dependency now uses 0.62.2 alongside the 0.61.3 bindings retained by Tauri and WebView2; their Rust types stay within their respective consumers. Rollback removes the detector module and this direct edge. |

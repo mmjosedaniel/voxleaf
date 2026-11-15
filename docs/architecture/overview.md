@@ -1,5 +1,16 @@
 # Architecture overview
 
+- Use [component boundaries](#component-boundaries), the
+  [desktop process model](#approved-desktop-reader-and-candidate-process-model)
+  and the [core data flow](#core-data-flow) to locate the owner of a change.
+- Use [required invariants](#required-invariants) and the
+  [canonical system diagram](system-diagram.md#component-and-trust-boundary-map)
+  to review the affected trust boundaries.
+- Use [status](#status) for current runtime and product scope and the
+  [completed plan index](../plans/completed/README.md) for delivery records.
+
+## Boundary corrections
+
 Residual audit corrections retain these component and process boundaries. EPUB
 opening builds package lookup context once, keeps occurrence-specific self-links,
 and appends admitted locator blocks without an argument-list expansion. Each
@@ -155,12 +166,6 @@ the coordinated CUDA/free-memory fact, pending-start ownership, episode metrics,
 private child bootstrap and EPUB/narration corrections. They stay in existing
 owners; current acceptance is tracked in the linked execution ledger.
 
-V7 is the current msgpack-corrected runtime under
-[ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
-[refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records
-publication, local admission/runtime validation and CI. Historical V6 full live
-downloads failed twice; no transport fix or complete V7 live-delivery pass is claimed.
-
 The [completed confirmed-correction plan](../plans/completed/confirmed-logic-bugfixes.md)
 adds the package-owned primary `defaultStartLocator` under ADR-0060 and exact
 cleanup-only ownership of `tts/cb/.previous` under ADR-0061. The full locator
@@ -192,19 +197,23 @@ retention and privacy boundary are defined in [ADR-0059](decisions/ADR-0059-opti
 
 ## Status
 
-The completed historical [certifi/Pillow refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
-implemented v5 admission under [ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md).
-At that checkpoint its published runtime passed the production audit, installed B06/B07, four
-bilingual reader/speed arms, integrity and installer policies. Original user
-state and firewall are restored; independent acceptance and fresh PR CI pass
-for integration commit `194846a`. Retained v2/v3 are cleanup-only;
-no component, local inference flow or audio persistence boundary changes.
+Native admission selects optional Chatterbox v7 under
+[ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
+[refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records
+published parts, exact local admission/runtime validation and CI. Two full v6
+HTTP downloads timed out. Complete v7 live delivery remains unverified.
+Only `cb/7` can satisfy discovery and execution for an installed optional
+package. Retained v2/v3/v5/v6 roots are cleanup-only.
+The packaged and native development Piper core uses Piper 1.8.0 with ONNX
+Runtime 1.31.0. See the
+[support matrix](tts-support-matrix-v2.md#profile-identity-and-executable-versions)
+for stable profile identities and host gates.
 
-The accepted v6 integration follows
-[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md), with
-v5 retained for explicit removal only. Exact local admission, current native and
-installed runtime evidence, audit and implementation-head CI pass under the
-completed plan's revised boundary; complete live delivery is not established.
+The historical [v5 refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
+and [v6 refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+retain distinct acceptance scopes under
+[ADR-0058](decisions/ADR-0058-admit-certifi-pillow-chatterbox-v5.md) and
+[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md).
 
 The completed [reader/acquisition correction plan](../plans/completed/reader-narration-acquisition-bugfixes.md)
 implements the accepted behavior in [ADR-0057](decisions/ADR-0057-reader-acquisition-correctness.md).
@@ -408,11 +417,11 @@ assets with reproducible SHA-256 evidence. Together with the model files, the
 implementation measured 8,231,893,387 download bytes, 8,228,503,309 installed
 bytes, and a 13,254,834,850-byte peak staging calculation, with
 20,000,000,000 minimum free bytes. Runtime evidence v3 recorded that checkpoint;
-v2 retained its prior installed total corrected by 37,504 bytes. Current v6
-identities and sizes are in
-[ADR-0062](decisions/ADR-0062-admit-filelock-setuptools-chatterbox-v6.md) and
-[runtime evidence v6](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json).
-The historical measurements do not describe the current package.
+v2 retained its prior installed total corrected by 37,504 bytes. See the
+[current v7 runtime evidence](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v7.json)
+for current identities and sizes. The
+[v6 runtime evidence](../../services/tts/release/optional/chatterbox/runtime-package-evidence-v6.json)
+retains the preceding checkpoint.
 Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
@@ -424,7 +433,7 @@ manifest is `downloadable` only after renderer presentation and a native
 pre-network recheck of the live gate. The release-locked runtime compiles
 repository-development and environment fallback branches out of release and
 accepts only the packaged Piper core or a verified installed Chatterbox profile.
-The ordinary representative journey is hash-bound and passes install, cancel,
+The original M011 representative journey is hash-bound and passes install, cancel,
 Spanish/English download, offline restart, removal, Piper Spanish/English,
 reacquisition, and uninstall. Renewed Milestone 7 repeats that journey and the
 normal-user lifecycle against the exact post-audit installer. Milestone
