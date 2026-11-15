@@ -2,27 +2,24 @@
 
 Documentation is organized by purpose so contributors and Codex can load only the context needed for a task.
 
-## Evaluate the portfolio
+## Current project status
 
-Start with the [product presentation](../README.md), the
-[local evaluation walkthrough](portfolio/try-voxleaf.md) and the
-[engineering and agentic-development case study](portfolio/case-study.md).
-The [compact diagram](architecture/system-diagram-compact.md) explains the local
-stack. Current product requirements and canonical architecture remain the
-authorities below; implementation history is retained in completed plans.
+VoxLeaf is pre-alpha. The unsigned Windows x64 local/portfolio MVP includes
+local EPUB reading, stable-locator restoration, synchronized narration and
+bounded memory-only playback. Piper Spanish/English is the CPU core.
+Chatterbox Spanish/English is optional and requires its published live
+compatibility gate. Trusted public signing requires external authorization.
+Qwen remains development-only, with production work deferred.
+[ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md)
 
-## Reading implementation status
-
-Use the [roadmap](plans/roadmap.md) and [system diagram](architecture/system-diagram.md)
-for current product boundaries, and the [active-plan index](plans/active/README.md)
-for work awaiting implementation or acceptance. The
-[completed-plan index](plans/completed/README.md) separates
-completed work from superseded historical proposals.
-
-Completed plans and validation receipts preserve the state at their original
-closeout. Statements such as "not committed" or "CI pending" in those records
-are historical; maintained indexes point to later results without rewriting
-the original evidence. Recorded test counts are not fresh test runs on HEAD.
+The core package uses Piper **1.8.0 / ONNX Runtime 1.31.0**. Native optional
+admission targets the published **v7** package with Chatterbox **0.1.7**, frozen
+v3 service modules and msgpack 1.2.3. The support matrix distinguishes package
+and engine versions from stable profile names. V2/v3/v5/v6 are cleanup-only
+for the installed app, while local v4 remains unpublished and unadmitted.
+Two full v6 live transfers failed. Complete v7 live HTTP delivery remains
+unverified. [Support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions)
+· [V7 refresh evidence](plans/completed/chatterbox-msgpack-security-refresh.md)
 
 ## Task reading routes
 
@@ -45,249 +42,6 @@ Then select the canonical architecture sections and ADRs for the affected owners
 All acceptance runs in local PowerShell outside the sandbox. Reading routes do
 not change model selection, review independence, evidence reuse or CI obligations.
 
-## Current project status
-
-The [completed deep-findings correction plan](plans/completed/deep-findings-minimal-corrections.md)
-records 21 corrected/validated findings and VF-0050's documented diagnostic
-precision. Its [results](plans/evidence/deep-findings-minimal-corrections/results.md)
-include selective host validation, verified restoration and independent approval.
-Implementation was committed in `1058d99` and is proposed in
-[PR #316](https://github.com/mmjosedaniel/voxleaf/pull/316). The
-[installer helper CI follow-up](plans/evidence/deep-findings-ci-follow-up/acceptance.md)
-records its subsequent portable failure and scoped correction; no release is implied.
-
-The [completed chat-findings correction plan](plans/completed/chat-findings-recovery-and-minimal-corrections.md)
-records 24 reviewed dispositions, the purpose-based pilot-preflight exit decision,
-minimal implementation units and a selective validation/reuse strategy.
-The plan records host validation, restoration and independent approval.
-
-The [completed passage-navigation correction](plans/completed/passage-navigation-minimal-corrections.md)
-applies symmetric proven continuity, attributable placement outcomes and measured
-visual following. Selected desktop, EPUB, Chromium, WebView2 and Piper EN gates
-pass with verified host restoration. Its final review and evidence ledger record
-the exact patch, the two resolved review findings and accepted evidence reuse.
-
-The [completed five-pass audit](plans/completed/five-pass-audit-revalidation-and-corrections.md)
-records24 corrections and the already-correct case4.4, with four original
-excluded or conditional dispositions preserved. Independent integrated review
-FPA-INTEGRATED-CR-R1-20261111 approved the implementation and selected host gates.
-Its [ledger](plans/evidence/five-pass-audit/execution-ledger.md) records exact
-evidence reuse, native Piper/resource results and installer lifecycle/restoration.
-
-The [reader position and image lifecycle follow-up](plans/completed/reader-position-and-image-lifecycle.md)
-protects canonical checkpoints across presentation-only changes and recycles
-bounded image capacity by viewport visibility. Current host regression and
-resource gates passed, with independent implementation approval
-RPI-CR-R1-20261110; its closeout record contains the final documentary review.
-
-The [completed deep chat audit plan](plans/completed/deep-chat-audit-minimal-corrections.md)
-records 25 dispositions and independent integrated approval. The
-[execution ledger](plans/evidence/deep-chat-audit/execution-ledger.md) records
-the host checks, preserved failures and verified restoration.
-
-The [EPUB budget/cancellation follow-up](plans/completed/epub-budget-cancellation-and-reflow-follow-up.md) corrects C13/C17 with focused and combined host checks. C15 is reproduced only in modeled ordering, with no production fix; C05 remains deferred to the next Chatterbox runtime update. The [execution ledger](plans/evidence/epub-budget-cancellation-reflow/execution-ledger.md) records R1 corrections and the final independent assessment. No Git delivery is included.
-
-The [completed confirmed chat findings plan](plans/completed/confirmed-chat-findings-minimal-corrections.md)
-resolves 18 supported corrections, with five intentional, deferred or unconfirmed
-cases preserved. CCF-R2-20261104 approves after closing the C08 mounted-geometry
-coverage gap. Selected deterministic, static, Chromium, Piper and exact optional
-local admission checks pass with original host resources restored. C05 remains
-limited to current consumers/current Piper; frozen Chatterbox Unicode parity is
-not claimed. The plan records selective evidence reuse, retained failed attempts
-and its separate final archival assessment. The corrections landed in
-`426ec7df2aa5d67d0aacfd2654035547985cdccd`; this ancestry is not a fresh test or CI result.
-The residual C05 criterion remains in the
-[runtime maintenance handoff](development/tts-service-organization.md#pending-runtime-maintenance).
-
-The [completed chat audit follow-up](plans/completed/chat-audit-minimal-follow-up.md)
-resolves 27 bounded cases, including R7.3 reproduced before its production edit.
-CAF-R2-20261103 approves after completing mounted appearance-write coverage.
-Selected static, deterministic, Chromium, Piper EN/F08 and exact optional local
-admission checks pass with resources restored. Five deliberate policies and two
-original deferred risks plus N1 retain their classification. The plan links its
-separate final archival assessment and distinguishes verified artifact/result
-reuse from scope omissions. No historical behavioral PASS or publication is implied.
-The [CAF CI follow-up](plans/evidence/chat-audit-minimal-follow-up/ci-follow-up.md)
-records the subsequent empty-range block-alignment regression and its validation.
-
-The [revalidated chat corrections](plans/completed/revalidated-chat-findings-minimal-corrections.md)
-resolve all 22 cases and registered variants across EPUB admission/projection,
-reader placement and manual inspection, settings containment, playback-rate
-recovery, package cleanup and benchmark ownership. RCF-R3-20261103 approves the
-implementation after two preparation-ownership findings were corrected. Selected
-static, deterministic, Chromium, current six-rate Piper and exact local optional
-admission checks pass with verified resource restoration. The plan links its
-separate final archival assessment. Frozen model authorities and system topology
-remain unchanged; no broader performance or listening-quality claim is made.
-
-The [residual audit corrections](plans/completed/residual-audit-corrections.md)
-resolve all 18 retained findings across publication lifetime, reader/playback
-state, native operation ownership, bounded EPUB preparation and maintainer package
-recovery. Four capacity/traversal risks have bounded public reproductions. Selected
-deterministic, Chromium, static and renewed native Piper EN/F08 checks pass with
-resources restored. Independent RAF-R2-20261103 approves without remaining findings;
-the plan links the separate final archival assessment. No historical behavioral
-PASS, new model support or broader performance guarantee is inferred.
-
-The [narration settings lifecycle corrections](plans/completed/narration-settings-lifecycle-corrections.md)
-report rejected activation, guard profile selection against narrator-lifetime
-changes, wait for Stop containment before startup writes and retain pending Reset
-ownership across Settings closure, including compact speed. Selected desktop,
-Chromium, static and one current Piper EN native arm pass with verified restoration.
-Independent NSL-R1-20261102 approves without findings; the plan records the
-separate archival assessment. Runtime contracts and system topology are unchanged.
-
-The [settings and packaging corrections](plans/completed/settings-packaging-minimal-corrections.md)
-keep startup preferences coherent across cleanup/reset and report rejected or
-partial Settings changes, including the temporary fallback controls during book
-replacement. Maintainer builders prepare complete verified output sets before
-promotion and retain recovery backups on failed restoration; Piper rejects
-incompatible profile tuples early. Selected desktop, Python, Chromium, static
-and current Piper EN native checks pass with resources restored. Independent
-SPM-R2-20261102 approves the corrected patch; final archival assessment is linked
-from the plan. Runtime profiles, frozen authorities and system topology remain
-unchanged.
-
-The [reader, JPEG-density and audible-start corrections](plans/completed/reader-image-audibility-minimal-corrections.md)
-synchronize late narrator attachment, preserve density-aware JPEG decoding within
-physical limits, and gate heard state and metrics on confirmed audio rendering.
-The reproduced WSOLA activation-clock drift is corrected without DSP changes.
-Selected desktop, Chromium, static and native-harness checks pass, with one
-native build and both image/Piper EN routes, restoration and cleanup verified.
-Independent RIA-R1-20261101 approves without findings; the plan links its final
-archival assessment. Historical runtime PASS results do not supply acceptance.
-The [PR #295 CI follow-up](plans/evidence/reader-image-audibility-corrections/ci-follow-up.md)
-records the Chromium Stop-observation correction and its separate validation.
-
-The [visible-locator and Unicode-compound corrections](plans/completed/visible-locator-unicode-compound-corrections.md)
-keep fresh Play aligned with settled Resume follow and preserve unsupported
-Unicode numeric compounds across existing separators. Focused unit/public,
-Chromium, static and one Piper EN native check pass with verified restoration
-and cleanup. Independent VUC-R1-20261101 approves without findings; the plan links
-its final archival assessment. Heard persistence, accepted grammar and component
-ownership remain unchanged. Historical PASS results are not reused as acceptance.
-
-The [eight revalidated findings plan](plans/completed/eight-revalidated-findings-minimal-corrections.md)
-implements minimal EPUB, reader/admission and maintainer-tool corrections,
-including PNG orientation confirmed in Chromium and WebView2. Selected
-deterministic, browser and native checks pass. Independent R8-R1-20261101
-approves without findings; the plan links the separate final archival assessment.
-Historical PASS results are not accepted as new validation.
-
-The [completed four-finding corrections](plans/completed/four-finding-minimal-corrections.md)
-protect Unicode numeric adjacency and attached dates, contain failed startup in
-shutdown-first order, and return native cancellation when invalidation wins final
-PCM arbitration. Selected deterministic/static gates and one current Piper EN
-native arm pass with verified cleanup. Independent F4-R2-20261031 approves the
-implementation and retained evidence; archival assessment is recorded separately.
-
-The [completed playback state corrections](plans/completed/minimal-playback-state-corrections.md)
-protect Resume during navigation cleanup and rejected admission, start fresh Play
-at the visible passage after Stop and preserve speed writes during cleanup.
-Selected unit/Chromium checks, one current Piper EN WebView2 arm and host cleanup
-pass. Independent PSC-R2-20261031 approves implementation and evidence after the
-R1 evidence blocker was resolved; the plan links the final archival assessment.
-The [PR #291 CI follow-up](plans/evidence/minimal-playback-state-corrections/ci-follow-up.md)
-records the App test updates and content-free native startup diagnostics.
-Its [native restart follow-up](plans/evidence/minimal-playback-state-corrections/ci-restart-follow-up.md)
-adds verified application-process exit before reopening the same test profile.
-
-The [completed minimal playback corrections](plans/completed/minimal-playback-audit-corrections.md)
-terminate retired worklets, contain native processor errors through explicit
-recovery and keep speed labels synchronized after paused navigation. Selected
-host gates and restored resources pass; independent MPA-R1-20261030 approves the
-implementation and scoped current-task evidence retention without findings.
-The plan links its separate final archival assessment and preserved limitations.
-The [PR #290 CI follow-up](plans/evidence/minimal-playback-audit-corrections/ci-follow-up.md)
-records the subsequent paused-navigation highlight correction and its evidence.
-
-The [completed seven-finding corrections](plans/completed/seven-finding-minimal-corrections.md)
-restore cleanup ownership, interruptible optional downloads, benchmark teardown,
-audible reflow, quotation continuation, save completion and native profile binding.
-Selected host gates pass; independent R7-R2-20261030 approves the implementation
-with its quotation-policy finding resolved. The plan records separate archival
-assessment R7-R3-20261030 and the preserved Piper host-resource limitation.
-The [PR #289 CI follow-up](plans/evidence/seven-finding-minimal-corrections/ci-follow-up.md)
-records the historical v6 fixture correction separately from that acceptance.
-The subsequent [Windows cancellation-fixture follow-up](plans/evidence/seven-finding-minimal-corrections/ci-cancellation-fixture-follow-up.md)
-records a deterministic repair for a stale test observation after cleanup.
-
-The [completed eight-finding corrections](plans/completed/eight-finding-minimal-corrections.md)
-resolve reader registration churn, optional compatibility recovery, RAM policy,
-internal Unicode/control decoding and historical/development TTS boundaries.
-Selected host tests, one Piper regeneration, browser/native smoke and owned
-cleanup pass. Independent EFC-R2-20261030 approves implementation and scoped
-current-task evidence retention; the plan records the separate archive review.
-No model support promotion, frozen Chatterbox repackaging or publication occurs.
-
-The [completed minimal audit corrections](plans/completed/minimal-audit-findings-corrections.md)
-resolve eleven reader, settings, native-lifecycle, Python protocol and maintainer
-findings. Directed reproductions, combined host checks, one Piper core generation,
-Chromium/WebView2 and owned cleanup pass. Independent `MAF-R1-20261029` approves
-implementation and scoped current-task evidence retention without findings;
-the plan links the separate final archive review. No historical PASS, model
-matrix, new performance/support claim or personal installer journey is claimed.
-
-The [completed static audit follow-up](plans/completed/static-audit-follow-up.md)
-resolves sixteen bounded corrections across reader, EPUB, Piper, optional-package
-lifecycle and maintainer tools. Directed failures, combined host validation and
-owned cleanup pass. Independent R2 approves the corrected implementation and
-scoped current-task evidence reuse; the plan links the separate archive review.
-No historical PASS, new support claim or personal installer journey is claimed.
-
-The [completed revalidated audit corrections](plans/completed/revalidated-audit-corrections.md)
-resolve nine reader, EPUB and maintainer-tool findings. Directed failures,
-source/browser/native validation, resource cleanup and documentation checks pass.
-Independent R1 approves implementation and unchanged current-task evidence;
-the plan links the separate final archive review. No historical PASS, new
-real-model measurement or personal installer journey is claimed.
-
-The [completed validated-audit follow-up](plans/completed/validated-audit-follow-up.md)
-corrects twelve retained reader, narration, benchmark and lifecycle findings.
-Applicable combined checks, browser/native coverage, authorized Windows lifecycle
-and measured personal-state restoration pass with independent R4 approval. The
-plan records the final archive review and preserves the limits of its evidence.
-
-The [completed static-audit corrections](plans/completed/static-audit-corrections.md)
-resolve fifteen reader, narration, preference, native and validation-tool defects.
-Regression, browser, native, CPU/GPU and installer acceptance passed, including
-verified restoration of the original user data. Independent R3 approved the
-implementation and scoped evidence reuse; the plan links the final archive
-review. Public contracts, dependencies, runtime/model versions and frozen
-authorities remain unchanged.
-
-The [completed narration/Chatterbox corrections](plans/completed/narration-chatterbox-correctness.md)
-preserve the exact final heard position, reconcile automatic compatibility with
-active narration, enable explicit acquisition retry, measure the optional-data
-destination's free space and retain the previous package after failed replacement.
-Focused, browser, native and integrated host evidence passed with independently
-approved continuation and scoped reuse; the plan retains all initial failures.
-
-The [completed lifecycle follow-up](plans/completed/lifecycle-correctness-follow-up.md)
-restores explicit narration restart after completion, protects admitted download
-staging, reports residual optional uninstall data and checks termination before
-package removal. Its plan records focused/integrated host evidence and independent
-review; no model, dependency, public-contract or system-topology change is involved.
-
-VoxLeaf is pre-alpha. The unsigned Windows x64 local/portfolio MVP includes
-local EPUB reading, stable-locator restoration, synchronized narration and
-bounded memory-only playback. Piper Spanish/English is the CPU core;
-Chatterbox Spanish/English is an optional download available only after its
-published live compatibility gate passes. Trusted public signing remains
-pending external authorization. Qwen remains development-only and its
-production completion/investigation is deferred under
-[ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
-
-Current executable identity is separate from stable profile names and historical
-evaluation versions. Piper uses **1.8.0 / ONNX Runtime 1.31.0**; installed
-Chatterbox selects the published **v7** runtime with frozen v3 service modules and
-msgpack 1.2.3. Its [refresh plan](plans/completed/chatterbox-msgpack-security-refresh.md)
-records identity-bound preparation, publication and integration evidence.
-V2/v3/v5/v6 are cleanup-only; local v4 remains unpublished/unadmitted. Historical
-V6 full live downloads failed twice; complete V7 live delivery is not claimed.
-See the
-[current support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions).
-
 | Contributor task                                                       | Maintained entry point                                                                                                           | Retained evidence or decision                                                                                                                                            |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Set up the workspace and select current commands                       | [Development setup](development/setup.md)                                                                                        | [Dependency inventory](development/dependencies.md)                                                                                                                      |
@@ -296,49 +50,27 @@ See the
 | Understand product support and local distribution                      | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
 | Follow component ownership and milestone status                        | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md)                                          | [Completed-plan index](plans/completed/README.md)                                                                                                                        |
 
-Recent accepted work is recorded at its original checkpoint:
+## Evaluate the portfolio
 
-- [Narration logic corrections](plans/completed/narration-logic-corrections.md):
-  WSOLA progression across silence, manual persistence after narration completion,
-  contained compatibility changes, default CUDA admission and Celsius boundaries.
-  Focused/browser/integrated checks, Piper host/listening and Chatterbox H2 passed
-  with independent implementation approval and documented evidence reuse. Changes
-  remain uncommitted; physical multi-GPU and HTTP acquisition are not claimed.
+Start with the [product presentation](../README.md), the
+[local evaluation walkthrough](portfolio/try-voxleaf.md) and the
+[engineering and agentic-development case study](portfolio/case-study.md).
+The [compact diagram](architecture/system-diagram-compact.md) explains the local
+stack. Current product requirements and canonical architecture remain the
+authorities below; implementation history is retained in completed plans.
 
-- [Confirmed logic and lifecycle corrections](plans/completed/confirmed-logic-bugfixes.md):
-  five regression-tested fixes for NSIS detection, Pause/completion, operational
-  TTS recovery, primary EPUB start and owned `.previous` cleanup. Ordinary
-  interactive acceptance, restored-data integrity, Piper/Chatterbox ES/EN and
-  independent implementation approval passed at closeout. The work is now in
-  [PR #272](https://github.com/mmjosedaniel/voxleaf/pull/272); subsequent
-  [CI and privacy](plans/evidence/confirmed-logic-bugfixes/ci-nsis-follow-up.md)
-  and [dependency audit](plans/evidence/confirmed-logic-bugfixes/dependency-audit-follow-up.md)
-  records distinguish follow-up validation from that historical acceptance.
+## Reading implementation status
 
-- [Reader, narration and acquisition corrections](plans/completed/reader-narration-acquisition-bugfixes.md):
-  eight fixes, permanent regressions and repository/browser/native/installed
-  acceptance, including Piper/Chatterbox ES/EN and cancellation/cleanup faults.
-- [Certifi/Pillow refresh](plans/completed/chatterbox-certifi-pillow-security-refresh.md):
-  separately published v5, native admission, production audit, installed B06/B07,
-  bilingual reader/speed, integrity and installer policies; independent review
-  and PR #266 CI passed for integration commit `194846a` on 2026-10-21.
-- [Optional-download diagnostics](plans/completed/optional-download-diagnostics.md):
-  one content-free failure report in memory and explicit local JSON export.
+Use the [roadmap](plans/roadmap.md) and [system diagram](architecture/system-diagram.md)
+for current product boundaries, and the [active-plan index](plans/active/README.md)
+for work awaiting implementation or acceptance. The
+[completed-plan index](plans/completed/README.md) separates
+completed work from superseded historical proposals.
 
-These records include restoration and cleanup outcomes, limitations and exact
-artifact identities. Their passing results are not fresh validation of HEAD.
-The earlier [v3 security refresh](plans/completed/chatterbox-security-dependency-refresh.md)
-retains the v2 advisory failure, v3 repair and then-passing acceptance; v5
-supersedes that runtime admission without rewriting the evidence.
-
-For the implemented reader, preparation, buffering, synchronization, profile
-and playback milestones, use the roadmap and completed index rather than a
-second milestone narrative here. Those records preserve rejected Qwen
-standard/batch/dual-worker experiments, failed playback v1/v2 comparisons,
-the selected WSOLA v3 backend and subsequent release decisions. M011 retains
-its preliminary and renewed GO records, historical installer hashes and
-signing limitations. The static security scan and its limits remain in the
-[release security guide](development/release-security-and-distribution.md).
+Completed plans and validation receipts preserve the state at their original
+closeout. Statements such as "not committed" or "CI pending" in those records
+are historical; maintained indexes point to later results without rewriting
+the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
 ## Product
 
@@ -435,8 +167,6 @@ signing limitations. The static security scan and its limits remain in the
 
 - [`development/findings/README.md`](development/findings/README.md): cumulative logic-audit workflow, stable finding identities, historical/current evidence separation and bounded regression coverage.
 - [`development/findings/registry.md`](development/findings/registry.md): seeded findings index with exact triggers, prior decisions, correction/test links and explicit current assessment status; [import coverage](development/findings/history-import.md) remains partial.
-- [`plans/completed/findings-registry-and-audit-workflow.md`](plans/completed/findings-registry-and-audit-workflow.md): implementation and validation of the contributor workflow; historical case imports do not establish fresh runtime acceptance.
-
 - [`development/setup.md`](development/setup.md): pinned prerequisites, reproducible setup, environment boundaries, and verified commands.
 - [`development/testing.md`](development/testing.md): test strategy.
 - [`development/evidence-retention.md`](development/evidence-retention.md): curated acceptance summaries and identities, local/CI raw-artifact retention, and the tested Git-index guard.
@@ -446,6 +176,7 @@ signing limitations. The static security scan and its limits remain in the
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
+- [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
 - [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, renewed Milestone 7 decision and exact-artifact receipts, completed 6B ordinary acquisition/release isolation, basic audit result and limitations, pending external signing, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
@@ -454,75 +185,11 @@ signing limitations. The static security scan and its limits remain in the
 
 ## Plans
 
-- [Portfolio readiness and presentation](plans/completed/portfolio-readiness-and-presentation.md): original sample and product presentation, attributed agentic-development case study and accepted VF-0057 test correction.
-- [Portfolio maintainability review](plans/completed/portfolio-maintainability-review.md): bounded three-owner audit; no source refactor accepted, optional proposals retained.
+- [Documentation consolidation and review closeout](plans/completed/documentation-consolidation-and-review-closeout.md) covers current-version guidance, delivery summaries and review closeout.
+- The [roadmap](plans/roadmap.md) tracks milestones, dependencies, decision gates and major risks. The [active plans](plans/active/) record work awaiting implementation or acceptance.
+- The [completed-plan index](plans/completed/) maintains delivery summaries and links to original plans, host evidence, independent reviews and subsequent corrections. This includes the rejected Qwen experiments, the playback backend comparisons and the renewed unsigned release decision. Release assessment and the scope of the static security scan are in the [release security guide](development/release-security-and-distribution.md).
+- Follow the [plan rules](../.agents/PLANS.md) for complex work.
 
-- [Development guidance and Chatterbox command clarity](plans/completed/development-guidance-and-command-clarity.md): accepted status/routing corrections, explicit historical v2 aliases and version-selection stderr; C05 remains a pending successor-runtime criterion. The plan links implementation and archival reviews.
-
-- [Eight revalidated findings: minimal corrections](plans/completed/eight-finding-minimal-corrections.md): eight accepted corrections with selected host checks and independent EFC-R2 approval. ADR-0068 aligns effective RAM policy at 7,042 MiB without changing frozen acquisition bytes.
-
-- [Six verified audit corrections](plans/completed/six-finding-audit-corrections.md): completed bounded scene metadata, Unicode adjacency, inert table/definition projection, snapshot disclosure, loaded-duration and action/poll ordering corrections; selected host checks and independent implementation approval, with separate final archival review.
-
-- [Documentation consistency and historical tooling](plans/completed/documentation-consistency-and-historical-tooling.md): completed current-version/tooling reconciliation and maintained-index cleanup; documentary validation and protected-history preservation recorded separately from runtime acceptance.
-
-- [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
-- [`plans/active/`](plans/active/): index and approved plans awaiting implementation or acceptance.
-- [Five-pass audit: revalidation and minimal corrections](plans/completed/five-pass-audit-revalidation-and-corrections.md): completed25 retained dispositions and four preserved exclusions/conditions, with per-case and integrated independent approval, current host validation and explicit evidence reuse.
-- [`plans/completed/validated-chat-findings-corrections.md`](plans/completed/validated-chat-findings-corrections.md): fourteen corrected findings and R01/R02, confirmed native/worklet races, passing final-byte host validation/integrity/cleanup and independent R3 implementation approval with scoped evidence reuse; the plan identifies the exact archive/link review.
-- [Test integrity and lifecycle harness safety](plans/completed/test-integrity-and-harness-safety.md): eleven corrections completed; G1-G8, real installer lifecycle, verified user-data restoration/reinstallation and independent review pass.
-- [`plans/completed/narration-state-and-optional-package-corrections.md`](plans/completed/narration-state-and-optional-package-corrections.md): accepted package-operation, availability, preference, volume, preparation-error and compatibility-status corrections; 169 focused tests and full repository/Chromium/WebView2 checks pass with independent Astra approval.
-- [`plans/completed/reader-narration-bugfixes.md`](plans/completed/reader-narration-bugfixes.md): accepted fixes and permanent regressions for four startup-cancellation, playback-disposal, lazy-image and prepared-navigation defects; repository, browser/native and all six real-model arms pass with independent Astra approval.
-- [`plans/completed/python-quality-validation-readability.md`](plans/completed/python-quality-validation-readability.md): private scorecard-validation helper, 15 additive public-boundary cases and four service docstring corrections; independent unit and combined Python/source gates pass. Three source/test files, 162 changed lines; closing-document acceptance is recorded separately after the content freeze.
-- [`plans/completed/rust-function-readability.md`](plans/completed/rust-function-readability.md): CUDA precision derivation and nine diagnostic exit wrappers independently accepted, with error-tuple naming retained as an audited SKIP. Combined portable/full/native source gates and host preservation pass; three source/test files, 156 changed lines. Independent documentary/campaign outcomes are recorded separately after the content freeze.
-- [`plans/completed/typescript-function-readability.md`](plans/completed/typescript-function-readability.md): three bounded readability improvements and two independently accepted SKIPs; unit/combined gates and host restoration passed. Five source/test files, 260 changed lines; implementation committed as `ed5227d`. TFR-04's dated reevaluation distinguishes complete async phase extraction from a smaller unimplemented synchronous alternative.
-- [`plans/completed/refactor-validation-efficiency.md`](plans/completed/refactor-validation-efficiency.md): validated contributor-policy and skill alignment for focused checks, immutable evidence reuse, bounded execution and explicit integration acceptance.
-- [`plans/completed/services-function-readability-ci-repair.md`](plans/completed/services-function-readability-ci-repair.md): ZIP 9.0.4 and compatible archive verification, current generated inventory, passing focused host checks and independent implementation approval; hosted CI tracked in PR #253.
-- [`plans/completed/services-function-readability.md`](plans/completed/services-function-readability.md): four Python helper refactors and a separately reviewed process-identity repair in the test runner. Original artifact, combined, bilingual runtime and firewall-restoration acceptance is preserved; later CI repair is recorded separately above.
-- [`plans/completed/native-rust-function-readability.md`](plans/completed/native-rust-function-readability.md): four private native helpers and seven additive tests accepted across three units; combined Rust/default/release, native, Piper/Chatterbox ES/EN, isolated packaging and installed journey pass, with original host state restored.
-- [`plans/completed/desktop-ui-logic-readability.md`](plans/completed/desktop-ui-logic-readability.md): all four readability units are independently accepted, including reader benchmarks, Piper/Chatterbox Spanish/English profile switching and combined portable/full/native acceptance.
-- [`plans/completed/app-restoration-derivations.md`](plans/completed/app-restoration-derivations.md): completed App restoration identity, settlement and presentation extraction with 14 pure cases and two App characterization cases; independent baseline, post-change, browser/native, portable and full host acceptance pass. Effects and resource ownership are preserved.
-- [`plans/completed/apps-organization-follow-up.md`](plans/completed/apps-organization-follow-up.md): native helper extraction, publication lifecycle move and image grouping independently accepted, including the separately reviewed seek-observation repair. Combined portable/full, browser/native, reader benchmark and four Piper/Chatterbox host arms pass.
-- [`plans/completed/desktop-state-subscription-hooks.md`](plans/completed/desktop-state-subscription-hooks.md): completed narration and hardware observation hooks at all four controls/Settings sites, with twelve added lifecycle/characterization cases and independent baseline, browser/native, portable and full acceptance; coordinator ownership and behavior preserved.
-- [`plans/completed/app-conditional-presentation.md`](plans/completed/app-conditional-presentation.md): completed four-component App presentation extraction and typed reader-prop assembly; three characterization tests and independent browser/native/portable/full checks pass. The local EdgeDriver mismatch was corrected, original failure evidence retained, and public behavior/resource ownership preserved.
-- [`plans/completed/piper-runtime-pr-218.md`](plans/completed/piper-runtime-pr-218.md): completed Piper 1.8.0 compatibility refresh and bounded Spanish/English runtime validation, preserving ONNX Runtime 1.30.0 and existing voice artifacts.
-- [`plans/completed/piper-onnxruntime-pr-219.md`](plans/completed/piper-onnxruntime-pr-219.md): completed ONNX Runtime 1.30.0 compatibility refresh; its recorded Piper 1.4.2 state predates the subsequent PR #218 upgrade.
-- [`plans/completed/piper-onnxruntime-pr-249.md`](plans/completed/piper-onnxruntime-pr-249.md): completed local acceptance of ONNX Runtime 1.31, telemetry controls, regenerated core package and fresh Spanish/English runtime validation; published-head CI is tracked by the PR.
-- [`plans/completed/app-preference-effects-readability.md`](plans/completed/app-preference-effects-readability.md): completed startup hydration and narrator preference-presentation binding extraction; 28 App characterization and 16 module cases, independent baseline/checkpoint/post-change/portable/native acceptance, with unchanged App ownership and recorded failed attempts.
-- [`plans/completed/app-hardware-effects-readability.md`](plans/completed/app-hardware-effects-readability.md): completed hardware visibility binding, five added unit/App cases, private preference types and named UI conditions; independent baseline/post-change and both aggregate gates PASS. Ownership and behavior preserved.
-- [`plans/completed/app-readability.md`](plans/completed/app-readability.md): completed three-component presentation/message extraction from `App.tsx`, nine added integration cases and independent baseline/post-change/aggregate PASS. Picker identity and all lifecycle/preference ownership preserved.
-- [`plans/completed/tts-adapter-layout.md`](plans/completed/tts-adapter-layout.md): completed selective `adapters/` migration, refreshed Piper and local-only Chatterbox v4; independent three-baseline/22-gate PASS, bilingual candidate/desktop acceptance, verified firewall cleanup and approved documentary closeout. The campaign preserved then-admitted v3; current v5 admission is recorded in ADR-0058. Local v4 remains unpublished/unadmitted.
-- [`development/tts-service-organization.md`](development/tts-service-organization.md): implemented Python runtime/maintainer module map, helper ownership, package inclusion policies, test boundaries and validation commands.
-- [`plans/completed/tts-service-organization.md`](plans/completed/tts-service-organization.md): four independently accepted Python packaging-integrity, release-authority, benchmark-corpus and quality-tooling extractions, with passing portable/native aggregate validation.
-- [`plans/completed/desktop-source-organization.md`](plans/completed/desktop-source-organization.md): semantic render-plan, Web Audio and ordered CSS extractions independently accepted, including exact CSS reconstruction and combined portable/native validation. Publication and narration lifecycle ownership remain unchanged.
-- [`plans/completed/pr-evidence-retention.md`](plans/completed/pr-evidence-retention.md): completed PR #229 evidence archival/cleanup, retention policy and tested CI guard, integrated in main with the native test-layout work.
-- [`plans/completed/linux-rust-test-comparison.md`](plans/completed/linux-rust-test-comparison.md): completed minimal Linux compatibility repair and independent 85/86-test comparison, including both Unix symlink cases; Windows 87/88 tests and native startup pass, and the reviewed Ubuntu Rust CI job subsequently passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
-- [`plans/completed/native-rust-test-layout.md`](plans/completed/native-rust-test-layout.md): completed ten private Rust test-file moves and the existing Windows-probe extraction, preserving production ownership, test assertions, fixtures and frozen authority; independent unit and aggregate host gates passed.
-- [`plans/completed/native-rust-module-organization.md`](plans/completed/native-rust-module-organization.md): completed native Rust organization with two independently accepted diagnostic extractions, ten evidence-backed SKIPs and passing portable/native aggregate checks; runtime behavior and Chatterbox's shared mutation boundary remain intact.
-- [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
-- [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
-- [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
-- [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
-- [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
-- [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
-- [`plans/completed/M004-reflowable-visual-reader-and-position-restoration.md`](plans/completed/M004-reflowable-visual-reader-and-position-restoration.md): completed ExecPlan and validation evidence for roadmap Milestone 4's visual reader, logical position, persistence, and restoration.
-- [`plans/completed/M004-001-native-webdriver-startup-smoke.md`](plans/completed/M004-001-native-webdriver-startup-smoke.md): completed test-infrastructure ExecPlan for the packaged WebView2 startup smoke used by Milestone 4 validation.
-- [`plans/completed/M005-narration-text-preparation.md`](plans/completed/M005-narration-text-preparation.md): completed ExecPlan and validation evidence for roadmap Milestone 5's deterministic, bounded, locator-linked narration normalization, segmentation, and public `OpenedPublication.prepareNarration` boundary.
-- [`plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`](plans/completed/M006-local-tts-feasibility-and-engine-profiles.md): completed ExecPlan and validation evidence for roadmap Milestone 6's privacy-safe local TTS candidate evaluation, explicit no-viable-profile decision, and deterministic/hardware/privacy/repository closeout.
-- [`plans/completed/M006-001-local-tts-profile-blocker-resolution.md`](plans/completed/M006-001-local-tts-profile-blocker-resolution.md): completed Milestone 6.1 blocker-resolution ExecPlan; it freezes Serena, proves the bounded prototype, retains the failed standard `v3` result, records the constrained-demo decision, and closes repository/privacy and pull-request validation.
-- [`plans/completed/M006-002-qwen-short-segment-batch-feasibility.md`](plans/completed/M006-002-qwen-short-segment-batch-feasibility.md): completed Milestone 6.2 feasibility ExecPlan. `selection-v5` rejects CPU-only and dual-worker scheduling and retains one GPU worker only for the constrained demo; local and required pull-request validation pass.
-- [`plans/completed/M007-local-tts-service-and-process-protocol.md`](plans/completed/M007-local-tts-service-and-process-protocol.md): completed ExecPlan for the constrained one-GPU local service and process protocol. It records transport, contracts, Python service, native supervision, typed one-unit ownership, exact Qwen/Serena integration, measured content-safe exact-host handoff, and final repository/CI validation without authorizing production or general-hardware claims.
-- [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
-- [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
-- [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
-- [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/completed/M010-002-reader-settings-and-playback-controls.md`](plans/completed/M010-002-reader-settings-and-playback-controls.md): completed pre-M011 reader-first settings and playback-control follow-up, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, the sequential six-arm portfolio, renewed human all-rate confirmation, and passing Ubuntu/Windows closeout checks.
-- [`plans/completed/M011-package-validate-and-release-mvp.md`](plans/completed/M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, independent release decisions, and passing PR #207 checks. Public signing stays an external future action.
-- [`plans/completed/`](plans/completed/): historical implementation plans.
-
-Historical reference: [`synchronized-reader-and-startup-buffer.md`](plans/completed/synchronized-reader-and-startup-buffer.md)
-is archived unchanged and superseded by focused completed milestone plans.
-Incoming links point directly to its completed path.
-
-For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).
+The [superseded reader and startup-buffer plan](plans/completed/synchronized-reader-and-startup-buffer.md)
+remains archived. The completed index routes to the focused milestone plans
+that own its implementation and validation.

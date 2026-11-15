@@ -12,7 +12,21 @@ that alter acceptance criteria or remove behavioral coverage also require review
 A read-only investigation with no patch needs no change review.
 
 Trivial documentation, spelling, or formatting-only changes with no behavioral
-or contract effect are exempt; record the exemption briefly in the final report.
+or contract effect are exempt. Record the exemption briefly in the final report.
+Changes to documented commands, support claims, privacy rules, or acceptance
+criteria require substantive review and the affected checks. Identify consumers
+of Markdown and XML inputs used by builds, fixtures, or benchmarks, and follow
+their scope restrictions and acceptance gates. If the plan protects such an
+input, obtain an authorized scope change before editing it.
+
+The [ExecPlan rules](../../.agents/PLANS.md) exempt small isolated documentation
+changes and obvious one-file fixes from planning. A one-file behavioral fix
+still requires change review. A related bounded no-change audit may record its
+scope, findings, and limitations in an existing authorized task record when a
+separate plan is unnecessary. Broad or repeated logic audits follow the
+[findings workflow](findings/README.md), including coverage for zero findings
+and the limits of the requested write scope.
+
 Behavior-preserving refactor campaigns continue to use their independent
 `refactor_validator`; do not add this reviewer to every refactor unit.
 
@@ -58,6 +72,17 @@ The coordinator supplies:
 - Exact test commands, execution environment, exit statuses, results, and the
   code identities to which those results apply. Mark missing evidence honestly.
   Provide only content-safe results; never include private EPUB text or audio.
+
+For a compact request, pin a retrievable immutable record by path, record ID,
+and content identity. List the exact paths inherited from it and provide the
+current identities for additions and replacements, with `DELETED` entries for
+removals and both sides of any rename. Include the supporting inputs needed to
+assess the current patch. The prior records and explicit delta must reconstruct
+the complete current closed manifest. The reviewer checks the cited identities,
+the reconstructed manifest and the actual diff. Missing records or mismatches
+block reuse. The new review must issue its own verdict. The
+[development guidance closeout](../plans/evidence/development-guidance-and-command-clarity/review-final.md)
+shows a manifest built from pinned prior records and current archival identities.
 
 The reviewer checks that the request covers the actual task diff and snapshots
 base/HEAD and reviewed identities before and after inspection. Evidence from a
@@ -108,18 +133,38 @@ implementer cannot dismiss its own review gate. Escalate unresolved requirement
 or scope decisions to the coordinator or user as appropriate.
 
 Each report is immutable. Any later base/HEAD, reviewed-path, or content change
-requires a new review ID and assessment of the current patch. Reuse unaffected
-check evidence only when its recorded inputs still match and repository policy
-allows it; do not refresh old hashes to renew approval. Before completion or an
-authorized commit, the coordinator rechecks the reviewed identities against the
-current state. A staging-only porcelain status change does not require another
-review when HEAD, paths, file contents, and expected staged blobs still match;
-verify that staged content is the reviewed content. Keep the report outside its
-own manifest to avoid hashing itself.
+requires a new review ID and assessment of the current patch. Do not refresh old
+hashes to renew approval. Reuse unaffected check evidence only when repository
+policy permits it and the evidence proves that relevant inputs and execution
+conditions still match. Changes to a runner, configuration, or other supporting
+input invalidate the affected check evidence. Run affected checks on current
+inputs and record their results. Before completion or an authorized commit, the
+coordinator rechecks the reviewed identities against the current state. A
+staging-only porcelain status change does not require another review when HEAD,
+paths, file contents, and expected staged blobs still match. A staged blob
+mismatch blocks acceptance. Recheck the index after any authorized correction.
+If the staged candidate differs from the reviewed patch, it requires a new
+assessment.
+
+### Compact closeout
+
+Preserve any required implementation approval before archival. Prepare the actual
+final plan, indexes, and guide edits before the applicable review, including any
+plan move. Reserve a unique review ID and destination, then freeze all reviewed
+inputs. The plan may link to the reserved report as the verdict authority while
+the review is pending. Claim approval only after the reviewer issues it. When a
+plan requires separate implementation and archival approvals, use a new review
+ID for the archival candidate and supply its closed manifest.
+
+Keep the reserved report outside its own manifest. After review, save the issued
+report at that path, verify its content against the reviewer output, rerun the
+affected document checks, and recheck the reviewed identities. This permits
+final acceptance without editing the frozen plan or indexes to repeat the verdict.
 
 Record the review ID, verdict, addressed findings, and test evidence in the final
-response and in the existing ExecPlan when one is required. Exempt changes need
-only the exemption reason. Existing plan criteria remain unchanged.
+response and, directly or through the reserved report, in the existing ExecPlan
+when one is required. Exempt changes need only the exemption reason. Existing
+plan criteria remain unchanged.
 
 A Change Review Report does not grant Git permissions and cannot replace the
 POST-CHANGE Validation Report required by a refactor Git Action Order. Keep the

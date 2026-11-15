@@ -40,25 +40,26 @@ busy native interruption, awaited player disposal, per-read raster deadlines
 and audible-anchored navigation remain within their existing owners. Acceptance
 is recorded in the completed reader/narration bug-fix plan.
 
-The Piper runtime refreshes in ADR-0053/ADR-0054 bind packaged and native
-development Piper execution to the current core release lock. Historical candidate locks
-remain evaluation evidence; the one-process local inference topology is unchanged.
+The Piper runtime refreshes in ADR-0053/ADR-0054 and
+[ADR-0055](decisions/ADR-0055-onnx-131-offline-runtime.md) bind packaged and
+native development execution to the Piper 1.8.0 and ONNX Runtime 1.31.0 core
+lock. Historical candidate locks remain evaluation evidence.
 
 The historical certifi/Pillow refresh in ADR-0058 selected optional
 package v5. Its exact prerelease was published and its production audit
 passed. Installed acquisition, bilingual reader/speed, integrity and lifecycle
 gates pass, together with independent acceptance and fresh PR CI for integration
 commit `194846a`, as recorded in the completed security refresh plan.
-The accepted v6 successor in ADR-0062 updates only filelock/setuptools. Its exact
+The historical v6 successor in ADR-0062 updated only filelock/setuptools. Its exact
 prerelease, local artifact admission, installed runtime and scoped evidence reuse
 are recorded in the [completed refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md).
-Full live delivery remains unverified after two read-timeout failures.
-The process topology and local inference boundary are unchanged. V6 integration
-retains v2/v3/v5 roots as cleanup-only, with no migration or execution fallback.
-The current V7 successor in ADR-0064 changes only msgpack to 1.2.3 and adds
-retained V6 cleanup-only ownership. Publication, current native admission and
-validation are recorded in the [V7 plan](../plans/completed/chatterbox-msgpack-security-refresh.md).
-No component, process, inference flow or audio persistence boundary changes.
+Its full live delivery attempts timed out twice.
+The current v7 successor in
+[ADR-0064](decisions/ADR-0064-admit-msgpack-chatterbox-v7.md) changes only
+msgpack to 1.2.3. Retained v2/v3/v5/v6 roots are cleanup-only, with no migration
+or execution fallback. Publication, exact local native admission and runtime
+validation are recorded in the [v7 plan](../plans/completed/chatterbox-msgpack-security-refresh.md).
+Complete v7 live HTTP delivery remains unverified.
 Historical M011 and ADR-0052 checkpoints below retain their original identities.
 
 | Status               | Meaning                                                                                                           |
@@ -121,7 +122,7 @@ flowchart LR
     SIGN["Trusted Windows signing authority<br/>External; currently unavailable<br/>public publication pending"]:::external
     WEBVIEW2["Microsoft WebView2 Runtime<br/>External Windows prerequisite;<br/>network only when compatible runtime is absent"]:::external
     HF_MODEL_SOURCE["Official ResembleAI/chatterbox model data<br/>full Hugging Face revision + six files;<br/>external acquisition only"]:::external
-    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>v6 published; exact local admission verified"]:::implemented
+    CHATTERBOX_RUNTIME_SOURCE["Reviewed Chatterbox runtime origin<br/>exact 79-package graph + three measured parts;<br/>v7 parts published; exact local admission verified"]:::implemented
     PACKAGE["Windows x64 per-user NSIS candidate<br/>VoxLeaf 0.1.0 + Piper ES/EN;<br/>local/portfolio GO; unsigned"]:::implemented
     ORDINARY_ACQUISITION["Ordinary compatible-host acquisition<br/>renderer presentation + native pre-network recheck;<br/>ADR-0050; validation overlay retired"]:::implemented
     RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2-M4B deterministic boundary;<br/>418 components + explicit blind spots"]:::implemented
@@ -308,9 +309,9 @@ exactly six model-data files come from full revision
 `ResembleAI/chatterbox` Hugging Face repository, while the locked runtime comes
 from a separately frozen, reproducibly measured three-part GitHub Release
 origin. The controller is implemented with sequential bounded transfers,
-closed redirects, verification, cleanup, and atomic promotion; the runtime
-assets are published and the representative compatible-host Spanish/English
-and lifecycle journeys pass. The ordinary build offers Download only after
+closed redirects, verification, cleanup, and atomic promotion. The original
+M011 checkpoint passed the representative compatible-host Spanish/English
+and lifecycle journeys. The ordinary build offers Download only after
 both renderer presentation and a native pre-network compatibility recheck;
 it then uses the same closed verified acquisition path. Model repository
 code is never executed, and a model-only transfer is not an installed profile. Selecting an

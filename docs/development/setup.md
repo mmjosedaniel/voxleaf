@@ -1,10 +1,15 @@
 # Development setup
 
-V7 is the current msgpack-corrected runtime under
-[ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md). Its
-[refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records
-publication, local admission/runtime validation and CI. Historical V6 full live
-downloads failed twice; no transport fix or complete V7 live-delivery pass is claimed.
+- Start with the [version matrix](#prerequisite-version-matrix) and
+  [foundation setup](#reproduce-the-foundation) on Windows. Use the
+  [WSL instructions](#optional-wsl-environment) for isolated Linux checks.
+- Use the [development and validation commands](#commands) for local work,
+  and [testing strategy](testing.md#deterministic-foundation-checks) to choose a gate.
+- For release work, use the [Piper core](#build-the-m011-piper-core-payload),
+  [Windows package](#build-the-m011-windows-package) and
+  [Chatterbox authority](#check-the-m011-optional-chatterbox-package-source-authority)
+  sections. The [installed-host diagnostics](#installed-host-diagnostics-and-packaging)
+  cover existing installs and controlled release journeys.
 
 ## Current status
 
@@ -24,14 +29,8 @@ versions. The [dependency inventory](dependencies.md) separates current locks
 from frozen evaluation environments. Development configuration below remains
 distinct from the ordinary release, which excludes development fallbacks.
 
-Quick playback starts when approximately 15 seconds of playable audio is ready,
-not after a fixed wall-clock delay. Prepared playback is explicit and initially
-selects one minute; refill is one minute and low water is 10 seconds. The
-30-minute buffer ceiling is not a startup target or uninterrupted-playback
-promise. The throughput-oriented adaptive wait remains disabled. Separate
-semantic transition pauses apply between eligible already-buffered units.
-M010.2 provides six boundary-deferred playback rates from 1.00x to 0.75x.
-Passive scrolling does not seek; explicit navigation invalidates obsolete work.
+The [MVP requirements](../product/mvp.md) define playback lead, prepared
+mode, supported rates, buffering and reader navigation behavior.
 
 The unsigned Windows x64 local/portfolio installer contains the verified Piper
 core; optional Chatterbox Download requires both renderer and native live gates.
@@ -118,18 +117,12 @@ The pinned toolchains and installed native prerequisites are recorded above. The
 
 ### Optional WSL environment
 
-The maintainer uses WSL Ubuntu for Git and terminal work, documentation, and
-isolated platform-independent checks. During historical final Milestone 1
-validation, the Codex Windows context could not enumerate the distribution;
-that record contained no locally validated WSL project command. The 2026-10-10
+Use WSL Ubuntu for Git and terminal work, documentation, and isolated
+platform-independent checks. The
 [Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
-supersedes that limitation for its exact isolated WSL Ubuntu 24.04.3 snapshots:
-both comparison arms pass 85 default/86 release-locked tests, including both
-Unix symlink tests. Windows separately passes 87/88 tests and native startup.
-The `Ubuntu portable foundation` job still runs only `pnpm check:portable`;
-the separate `Ubuntu Rust foundation` job subsequently passed on source HEAD
-`5401f899e3ffabfc8f3e79873bc0b5fa45b11155`, as recorded in that comparison.
-This historical result is not a current CI run.
+retains the validated WSL snapshots, exact local test results and later hosted
+result. The [foundation checks](testing.md#deterministic-foundation-checks)
+describe the current portable and Linux Rust CI jobs.
 
 For bounded Linux Rust checks, use an isolated Linux working directory with
 Node 24.18.0 from `.nvmrc`, pnpm 11.15.1, and Rust 1.97.1. From the repository
@@ -629,8 +622,9 @@ package behavior.
 The current optional runtime is V7 under
 [ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).
 Its [refresh plan](../plans/completed/chatterbox-msgpack-security-refresh.md)
-records preparation, publication and integration. Existing V6 is cleanup-only;
-publication alone does not repair it or migrate user data.
+records preparation, publication, exact local admission/runtime validation and
+CI. Earlier v6 full HTTP downloads timed out twice. Complete v7 live delivery
+remains unverified. Existing v6 roots are cleanup-only.
 These explicit commands check tracked source and acquisition authority; they
 perform no model download, archive build, installation or narration:
 
@@ -645,7 +639,7 @@ not an end-user setup step. It assembles runtime-only output under ignored
 build capacity and licence/provenance review, and always synchronizes the hashed
 lock. It rejects `--no-sync` and does not copy model weights or update the
 ordinary acquisition manifest. Follow the explicit
-[v7 build/publication workflow](dependencies.md#m011-release-dependency-boundary)
+[v7 build/publication workflow](dependencies.md#current-chatterbox-v7-maintainer-workflow)
 for authorized package work; do not build merely to enable the optional profile.
 
 When maintainers deliberately regenerate v7 acquisition authority, the writer
@@ -955,7 +949,7 @@ aggregate, remove the exact session and every generated WAV:
 The detailed storage, blinding, bounds, and privacy rules are documented in
 the [benchmark README](../../benchmarks/tts/README.md#disposable-blinded-quality-session).
 
-## Continuous integration
+## Installed-host diagnostics and packaging
 
 For ordinary installed-host checks, launch PowerShell from Windows Explorer
 or the Start menu. An escalated child of an MSIX-packaged automation app can
@@ -988,6 +982,13 @@ installation. `pnpm run test:acquisition:file-barriers` verifies both host
 barriers on Windows. Preserve existing installer registrations and shortcuts
 around a journey when they belong to the user's previous installation.
 
-The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. All three jobs install package dependencies from committed lockfiles. The added `Ubuntu Rust foundation` job installs Linux prerequisites and pinned Rust, then runs `pnpm format:check:rust`, `pnpm lint:rust`, and `pnpm test:rust` with bounded build concurrency. Its local comparison and subsequent remote pass are recorded at the historical checkpoint above; neither establishes fresh CI acceptance. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
+## Continuous integration
+
+The `Foundation checks` workflow runs on pushes to `main` and `agent/**`,
+pull requests targeting `main`, and manual dispatches. The Windows job does
+not restore a browser cache, so browser network activity is confined to its
+named installation step. See the
+[foundation checks](testing.md#deterministic-foundation-checks) for the
+Windows, Ubuntu portable and Ubuntu Rust job commands and coverage.
 
 Dependency ownership, direct package purposes, production alternatives, and transitive-lock review rules are documented in [`dependencies.md`](dependencies.md).

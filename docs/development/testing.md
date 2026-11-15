@@ -1,5 +1,9 @@
 # Testing strategy
 
+- Use the [foundation checks](#deterministic-foundation-checks) for ordinary Windows and portable validation and the [focused commands](#focused-test-commands) for a narrower change.
+- Use [current Chatterbox v7 validation](#current-chatterbox-v7-validation) for optional-runtime checks and [M011 packaging validation](#m011-packaging-and-release-validation) for release artifact checks and historical evidence.
+- Use the [findings workflow](#findings-based-regression-coverage) and [retention guidance](#validation-artifact-retention) when recording evidence.
+
 ## Portfolio sample
 
 `pnpm.cmd test:portfolio-sample` builds the shared/EPUB packages and checks that
@@ -484,24 +488,54 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
-Current Chatterbox integration authority checks explicitly select v7; historical
-v3/v5/v6 checks remain available and must preserve their exact outputs.
+Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
+
+GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
+
+The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
+with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
+existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
+prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
+`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
+`pnpm test:rust` in distinct steps. Lint and tests cover both default and
+`release-locked-runtime`. Unix-only symlink branches require Linux Rust evidence.
+Remote execution was pending at the original comparison closeout. The
+[Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
+retains the exact source snapshots, local WSL and Windows results, original
+failure and later hosted pass. Linux desktop, packaged WebView and model support
+remain outside that evidence.
+
+All three foundation jobs check out complete Git history. Frozen TTS result validators
+use strict Git ancestry to prove that an execution commit follows its authority
+checkpoint, so a depth-one checkout cannot supply the required evidence.
+
+All three jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to explicit tool/dependency acquisition and the signed WebView2/EdgeDriver setup; test execution itself uses no external service.
+
+### Current Chatterbox v7 validation
+
+Use `pnpm.cmd package:chatterbox-optional:v7:check-source` and
+`pnpm.cmd package:chatterbox-optional:v7:check-acquisition` to check tracked
+authority. Use `pnpm.cmd audit:release` and `pnpm.cmd inventory:release:check`
+for active release policy and inventory. Actual runtime execution and complete
+HTTP delivery require separate evidence.
 
 The [v7 msgpack preparation](../plans/completed/chatterbox-msgpack-security-refresh.md)
-uses `pnpm.cmd test:chatterbox:v7:preparation` and `audit:chatterbox:v7`.
-The `package:chatterbox-optional:v7:{lock,write-source,check-source,check-local}`
-commands follow the same isolated build workflow as v6; use
-`package:chatterbox-optional:v7` to build. V7 rejects `--no-sync` and historical
-reconciliation. `:v7:write-acquisition --publication <actual-public-readback>`
-requires exact non-draft prerelease/asset metadata; `:v7:check-acquisition`
-validates the generated records. Current native admission/audit select V7.
+uses `pnpm.cmd test:chatterbox:v7:preparation`, which includes v6 preparation
+regressions, and `audit:chatterbox:v7`. For authorized isolated builds and
+publication readback, follow the
+[v7 maintainer workflow](dependencies.md#m011-release-dependency-boundary).
 `test:chatterbox:v7:security:baseline` exercises msgpack 1.2.1. Run
 `test:chatterbox:v7:security` with the candidate's embedded Python on PATH;
 it checks bounded malformed-map/error handling and four legitimate controls.
 This probe does not cover every upstream vulnerability variant or establish
-EPUB reachability. Also run the existing dependency/runtime/v6 security probes
-and offline `test:chatterbox:runtime-smoke --package-version 7` for ES and EN,
-using hash-verified existing models and an isolated Numba cache. Preserve
+EPUB reachability. The current v7 probe set also uses the existing
+`test:chatterbox:dependency-security`, `test:chatterbox:runtime-security` and
+`test:chatterbox:v6:security --temporary-root <existing-isolated-root>`
+against the assembled v7 interpreter. For offline ES and EN runtime smoke,
+explicitly pass `--package-version 7` to `test:chatterbox:runtime-smoke` because
+the CLI defaults to v5. Use the
+[runtime probe prerequisites](dependencies.md#shared-chatterbox-runtime-probes),
+including hash-verified existing models and an isolated Numba cache. Preserve
 baseline failures and candidate evidence separately.
 
 `pnpm.cmd test:chatterbox:v7:local-admission` is an explicitly ignored Windows
@@ -515,12 +549,23 @@ It performs no inference and neither mutates the user's installation nor
 establishes complete HTTP delivery. The separate ignored
 `optional_v7_exact_local_acquisition_replay` test retains the combined admission
 and ES/EN synthesis/cancellation journey when that broader gate is required.
+For isolated private-loader or supervised runtime execution, see the
+[opt-in native v7 gates](#validated-chat-finding-corrections).
 
 The Windows removal tests also exercise actual intermediate junctions. Removal
 validates every managed path from its root through its leaf before deleting
 any package, including a redirected ancestor whose expected leaf is absent.
 
-V6 preparation and installed integration are separate acceptance phases.
+The [v7 refresh evidence](../plans/completed/chatterbox-msgpack-security-refresh.md)
+records published parts, exact local native admission, bilingual runtime
+execution and CI. Earlier v6 full HTTP downloads timed out twice. Complete v7
+live delivery remains unverified. Use the
+[Windows packaging and lifecycle commands](#m011-packaging-and-release-validation)
+when the change calls for artifact validation or a representative installed journey.
+
+### Historical Chatterbox v6 validation
+
+V6 preparation and installed integration were separate acceptance phases.
 Use `pnpm.cmd test:chatterbox:v6:preparation` for recipe, two-pin, hash,
 historical-source, sync and version-specific authority guards. Generate its lock and
 recipe with `package:chatterbox-optional:v6:lock` and
@@ -551,69 +596,26 @@ requires exact published metadata before writing any authority;
 `package:chatterbox-optional:v6:check-acquisition` validates the generated files.
 Neither command substitutes for installed/native acceptance.
 
-Production integration checks select:
+The v6 integration checks used
 `pnpm.cmd package:chatterbox-optional:v6:check-source` and
 `pnpm.cmd package:chatterbox-optional:v6:check-acquisition`.
-They check source/acquisition authority, not installed runtime execution.
-Use the [v6 maintainer workflow](dependencies.md#m011-release-dependency-boundary)
-for authorized authority generation from actual publication readback.
+They validate retained source/acquisition authority. The
+[historical v6 maintainer workflow](dependencies.md#historical-chatterbox-package-maintenance)
+retains the readback procedure for that release.
 Unversioned aliases still select v2; explicit v3 checks remain historical
 regression gates. The local v4 builder and v3/v4 adapter-layout harness are
-[historical campaign tooling](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling),
-not current v6 acceptance.
+[historical campaign tooling](tts-service-organization.md#historical-v2v3-checks-and-local-v4-campaign-tooling).
 
-Current runtime/security integration acceptance runs the full foundation check,
-`pnpm.cmd audit:release`, inventory check and the existing Windows package,
-check, lifecycle, ordinary preflight/journey/evidence commands outside sandbox.
-The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
-Qwen inference. The completed
+The ordinary installed release journey covers two actual acquisitions and
+Chatterbox/Piper ES/EN without Qwen inference. The completed
 [v5 refresh](../plans/completed/chatterbox-certifi-pillow-security-refresh.md)
 records installed B06/B07, bilingual reader/speed, integrity, lifecycle and
-independent acceptance at its exact integration commit. V6 integration selects
-v6; retained v2/v3/v5 roots are cleanup-only under ADR-0062. The historical v5
-results do not establish v6 installed acceptance.
+independent acceptance at its exact integration commit. The
+[v6 refresh](../plans/completed/chatterbox-filelock-setuptools-security-refresh.md)
+records its revised exact-local admission and installed-runtime scope.
 The earlier [v3 security refresh](../plans/completed/chatterbox-security-dependency-refresh.md)
 retains its original audit failure, repair, completion/cancellation regression
-and installed evidence. Those results do not validate v5 bytes. Unix-only
-symlink branches need Linux Rust evidence; neither Windows tests nor the
-Ubuntu portable job execute them.
-
-Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
-
-GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
-
-The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
-with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
-existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
-prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
-`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
-`pnpm test:rust` in distinct steps. Lint and tests cover both default and
-`release-locked-runtime`. Remote execution was pending at the original
-comparison closeout; the retained comparison index records the later pass on
-source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`. This is historical
-evidence, not a fresh CI result for current HEAD.
-
-The independently accepted
-[Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
-ran locally through normal PowerShell and WSL Ubuntu 24.04.3 with Rust 1.97.1,
-Node 24.18.0, and pnpm 11.15.1. Both repaired HEAD and refactor snapshots pass
-formatting, Clippy, and 85 default/86 release-locked tests; both retained Unix
-symlink tests execute successfully in each configuration and comparison arm.
-Windows separately passes 87 default/88 release-locked tests and
-`pnpm.cmd test:native-startup`. This is Rust execution evidence; Linux desktop,
-packaged WebView, and model support remain outside its scope.
-
-The compatibility patch derives `icons/icon.png` byte-for-byte from existing
-ICO entry 5 (zero-based, offset 4554, length 4292): the same 256-pixel RGBA
-artwork. Its precise parameter/variant adjustments preserve tests, public APIs,
-runtime topology, and warning policy. The original failed comparison remains
-historical evidence.
-
-All three foundation jobs check out complete Git history. Frozen TTS result validators
-use strict Git ancestry to prove that an execution commit follows its authority
-checkpoint, so a depth-one checkout cannot supply the required evidence.
-
-All three jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to explicit tool/dependency acquisition and the signed WebView2/EdgeDriver setup; test execution itself uses no external service.
+and installed evidence at that checkpoint.
 
 ### Implemented deterministic tests
 
@@ -1648,10 +1650,10 @@ v2, Piper is local/portfolio GO, Chatterbox runtime and the optional package are
 GO on a compatible host within their separate scopes, and ordinary Download is
 GO only after both live gates pass. Signed public publication remains pending
 external authorization.
-The milestone results below retain their original artifact identities. Current
-Piper versions and v5 Chatterbox admission are described in the
+The milestone results below retain their original artifact identities. See the
 [support matrix](../architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions)
-and [current authority checks](#deterministic-foundation-checks).
+for current Piper versions and Chatterbox v7 admission and
+[v7 validation](#current-chatterbox-v7-validation) for the current commands.
 Representative compatible-host evidence supports
 the requirements-defined classes; signed public publication remains separate.
 Its completed
@@ -1696,8 +1698,8 @@ and acquisition manifests
 without networking, reading model bytes, creating a runtime, or enabling an
 end-user download. The build command is maintainer-only and writes ignored
 runtime/ZIP/part outputs; `--no-sync` is used only after the exact environment
-has already been synchronized. This historical option must not be carried
-over to v5, which rejects `--no-sync`. `test_release_chatterbox.py` and
+has already been synchronized. The current v7 builder requires lock
+synchronization and rejects `--no-sync`. `test_release_chatterbox.py` and
 `tts_optional_chatterbox` native tests cover historical and current authority, mutable source
 rejection, safe model-load sites, deterministic splitting, closed redirects,
 wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
@@ -1705,8 +1707,8 @@ extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
 absence of profile mutation before explicit activation. Two outside-sandbox
 builds produced identical v2 hashes/sizes. An authorized maintainer published
 the exact resulting parts under `chatterbox-runtime-v2` at that checkpoint.
-Current ordinary acquisition instead selects v5 behind the unchanged live gate;
-the v2 reproducibility result is not a v5 reproducibility claim.
+Current ordinary acquisition selects v7 behind both live gates. That
+reproducibility result applies to the original v2 artifacts.
 
 Milestone 5 adds these Windows-only commands:
 
