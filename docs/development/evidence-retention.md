@@ -6,6 +6,8 @@ invariants, and material limitations. Preserve failed baselines and later
 successful repairs as distinct outcomes. Do not rewrite accepted receipts or
 completed plans to describe later work.
 
+Keep one canonical home for each result: task decisions in the plan when required, otherwise in the authorized task record; verdict and reviewed identities in the authentic report; and only post-persistence outcomes in any reserved coordinator closeout. Follow [compact closeout](agentic-change-review.md#compact-closeout) without duplicating those facts in a second acceptance narrative. Historical evidence is consulted for specific decisions or claims, not loaded as routine context. This does not permit deleting or rewriting existing evidence.
+
 Public summaries must omit conversation excerpts, personal availability or
 network ownership, private account identifiers, and local-data inventory values or
 digests. Record restoration outcomes and receipt IDs publicly; retain the

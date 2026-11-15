@@ -129,11 +129,13 @@ voice preference varies. Before network access, the confirmation must disclose:
   12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
 - 64-bit Windows, default CUDA device capability **12.0** with BF16 hardware
   support (CUDA runtime 12.8), at least 8 logical processors, 24,576 MiB total
-  and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
+  and 7,042 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
   currently available dedicated VRAM; nominal 7,680-MiB/8-GB-class VRAM remains
   the evaluated recommendation; and
 - licence, offline, cancellation, activation, removal, and reacquisition
   consequences.
+
+The 7,042-MiB effective available-RAM requirement applies to acquisition and a fresh start under [ADR-0068](../architecture/decisions/ADR-0068-align-chatterbox-effective-ram-admission.md). The immutable package declares a 4,096-MiB floor, not the effective application gate. Healthy same-profile/same-language loaded-owner continuation retains ADR-0065's separate requirements; it does not authorize a download, replacement or fresh start.
 
 The legacy BF16 profile name is stable; hardware BF16 support is separate from
 effective model precision: the current native ES/EN checks observed FP32 model
@@ -159,8 +161,7 @@ English. Historical v2 process-tree working-set peaks were
 `4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
 `3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
 countdown or guarantee for every compatible computer, and are not new v7
-measurements. The historical hardware gate is retained after representative
-v3 memory checks; current artifact evidence records successor observations.
+measurements. Current admission follows ADR-0068 and the other published compatibility requirements; current artifact evidence records successor observations.
 
 The package occupies disk after installation; it does not permanently reserve
 RAM or VRAM. Loading and inference do use GPU, VRAM, RAM, and CPU and may

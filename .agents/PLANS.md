@@ -14,7 +14,7 @@ Small isolated documentation changes and obvious one-file fixes do not require a
 
 ## Required sections
 
-Every ExecPlan must include:
+Every ExecPlan must include the sections below. Keep them brief: reference canonical requirements and existing evidence instead of copying them. A section may be a sentence or a precise link; retain the information needed for another developer to continue.
 
 1. **Goal**
 2. **User-visible outcome**
@@ -56,43 +56,12 @@ required merely to populate the registry.
 
 ## Suggested milestone format
 
-```markdown
-## Milestone 1: Establish the failing or missing behavior
-
-### Work
-
-- ...
-
-### Validation
-
-- Command:
-- Expected result:
-- Actual result:
-
-### Status
-
-Not started | In progress | Complete
-```
+For each milestone state the bounded work, relevant existing commands, expected/actual results and status (Not started, In progress or Complete). Use concise checkboxes or prose rather than repeating the plan's scope and evidence.
 
 ## Validation planning for refactors
 
-Use the [canonical validation policy](skills/validate-safe-refactor/references/validation-policy.md)
-and [compact batch record](skills/validate-safe-refactor/references/validation-record.md).
-Keep the existing required sections; include the following within them:
+Use the [canonical validation policy](skills/validate-safe-refactor/references/validation-policy.md) and [compact batch record](skills/validate-safe-refactor/references/validation-record.md) inside the existing sections. The policy owns unit/batch risk, gate inputs/timing/invalidation, coverage decisions, preparation, retries, restoration and evidence reuse; record the task-specific choices and immutable report links, not another copy of its rules.
 
-- Scope: implementation units, integration batch, risk and acceptance boundaries.
-- Testing strategy: a gate table with invariant, existing command/cwd, timing,
-  dependency/environment identities, invalidation and evidence reference.
-- Milestones: cheap host readiness and fast checks before costly preparation,
-  separate execution/cleanup, and explicit pending combined acceptance.
-- Risks: bounded retries with a hypothesis, stage diagnostics and recovery
-  verification for any host mutation. Missing evidence remains blocked.
-- Progress: concise decisions, phase durations and immutable report links, not
-  repeated logs or huge inventories. Preserve failures and their classification.
-- Final validation: commands actually run, independently justified reuse,
-  current report identities, completed cleanup and remaining limitations.
+Shared baselines must precede all relevant edits; a retrospective plan cannot create missing evidence. Preserve failed attempts, classifications and retry budgets. Final results distinguish executed commands from independently justified reuse, identify pending gates and confirm required cleanup.
 
-A shared baseline must predate all relevant batch edits. A retrospective plan
-cannot create missing baseline evidence. Freeze final documentation before its
-report; keep identity manifests outside their own validated paths. Replanning
-does not erase earlier failed attempts or reset retry budgets.
+For feature/bug or substantive documentation work, follow [compact closeout](../docs/development/agentic-change-review.md#compact-closeout): prepare final documentation and indexes before the applicable review and link its reserved verdict authority. Do not require another review merely to restate a verdict. Existing staged approvals and all identity-drift rules remain binding. Refactor campaigns retain their own validator and Git orders.

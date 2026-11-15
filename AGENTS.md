@@ -2,184 +2,71 @@
 
 ## Project
 
-VoxLeaf is a privacy-first desktop EPUB reader that generates speech locally and streams bounded audio from memory during playback.
-
-The repository is pre-alpha. Use the roadmap and canonical system diagram for current implementation status. Never claim that planned components, commands, tests, or features already work unless they exist and have been validated.
+VoxLeaf is a pre-alpha privacy-first desktop EPUB reader with local speech generation and bounded in-memory audio playback. Use the roadmap and canonical system diagram for status; never present planned or unvalidated work as implemented.
 
 ## Product constraints
 
-- EPUB contents must remain on the user's device.
-- Text-to-speech inference must run locally.
-- Generated audio must not be persisted by default.
-- Generation must be cancellable when the user pauses, seeks, changes chapters, changes voice settings, closes a book, or replaces the active session.
-- Playback must not impose a fixed 15-second wait. Start as soon as approximately 15 seconds of playable audio is buffered; the 15 seconds describes audio lead, not wall-clock startup delay.
-- Occasional buffering of up to 5 seconds per minute is acceptable for the MVP, but underruns must be observable and measurable.
-- Do not commit copyrighted books, generated audio, model weights, secrets, logs containing book text, or private user data.
+- EPUB contents stay on the user's device; TTS inference runs locally. Generated audio is not persisted by default.
+- Generation must remain cancellable. Cancel start/Stop, invalidating seeks, chapter/voice changes, book closure and session replacement cancel obsolete work. Playback-only pause may continue bounded generation for the same active identity; passive viewport inspection is not narration navigation. Follow the [MVP playback rules](docs/product/mvp.md#playback).
+- Start when approximately 15 seconds of playable audio is buffered, never after a fixed 15-second timer. Up to 5 seconds of buffering per minute is acceptable for the MVP; underruns must be observable and measurable.
+- Never commit books under copyright, generated audio, model weights, secrets, private user data or logs containing book text.
 
 ## Intended repository areas
 
-- `apps/desktop`: desktop UI and application shell.
-- `services/tts`: local TTS inference service.
-- `packages/epub`: EPUB extraction, normalization, and chunking.
-- `packages/shared`: shared contracts and types.
-- `docs`: product, architecture, development, decisions, and plans.
-
-Treat this as intended direction, not proof that every directory already exists.
+`apps/desktop` owns UI/shell, `services/tts` local inference, `packages/epub` extraction/normalization/chunking, `packages/shared` contracts, and `docs` project guidance. Inspect the actual implementation before inferring capability from these areas.
 
 ## Required reading
 
 Before changing code or architecture:
 
-1. Consult `docs/README.md` for current status and the task reading routes.
-2. Read the relevant product requirements under `docs/product/`.
-3. Read the relevant component, trust-boundary, flow and invariant sections of `docs/architecture/system-diagram.md` and `docs/architecture/overview.md`, plus applicable ADRs. Changes to components, contracts or data flows require reviewing the complete affected boundaries and their callers. The compact diagram is orientation only, not acceptance authority.
-4. Inspect existing code, tests, and scripts before proposing commands or implementation patterns.
-5. Create an ExecPlan following `.agents/PLANS.md` for multi-component features, model integration, significant refactors, or public contract changes.
-6. For narration-preparation work, read `docs/plans/completed/M005-narration-text-preparation.md` and verify its roadmap status before changing the implemented boundary.
+1. Start at [docs/README.md](docs/README.md#task-reading-routes) and the relevant product requirements.
+2. Read relevant component, trust-boundary, flow and invariant sections of [system-diagram.md](docs/architecture/system-diagram.md) and [overview.md](docs/architecture/overview.md), plus applicable ADRs. Changes to components, contracts or data flows require the complete affected boundaries and callers. The compact diagram is orientation only, not acceptance authority.
+3. Inspect existing code, tests and scripts before choosing commands or patterns. Consult history for a specific decision or claim, not as default reading.
+4. Apply [ExecPlan rules](.agents/PLANS.md) for multi-component features, model integration, significant refactors or public contracts; small isolated documentation edits and obvious one-file fixes are exempt from planning, not from applicable checks or behavioral review.
+5. For narration preparation, read [M005](docs/plans/completed/M005-narration-text-preparation.md) and verify its roadmap status. Normalization, semantic segmentation, narration contracts, stable locator-range mapping and the safe-document boundary also require the narration terminology and canonical diagram. Never extend M005's claims to TTS, audio or synchronization without corresponding code and validation.
 
 ## Engineering rules
 
-- Prefer small, focused changes.
-- Keep domain and pipeline logic outside UI components.
-- Separate EPUB extraction, normalization, chunk scheduling, inference, buffering, and playback.
-- Represent reading progress with a stable EPUB location rather than a rendered page number, because pagination changes with viewport and typography.
-- Keep the visible reader location, narration start location, highlighting, and persisted reading position synchronized.
-- Use explicit typed contracts between processes.
-- Design long-running work to be cancellable.
-- Bound queues and buffers; prevent unbounded memory growth.
-- Log performance measurements without logging book contents.
-- Do not add a production dependency without documenting its purpose and alternatives.
-- Do not introduce an abstraction until real use cases justify it.
-- Do not modify generated files manually.
-- Do not silently change public contracts.
-- Do not rewrite unrelated code.
+- Make focused changes; do not rewrite unrelated code, manually edit generated files or silently change public contracts.
+- Keep domain/pipeline logic outside UI. Separate extraction, normalization, scheduling, inference, buffering and playback; use explicit typed contracts between processes.
+- Use stable EPUB locations, not rendered page numbers. Keep visible reading location, narration start, highlighting and persisted position synchronized.
+- Make long-running work cancellable and bound queues/buffers. Log performance without book contents.
+- Document purpose and alternatives before adding a production dependency. Add abstractions only for demonstrated use cases.
 
 ## Cumulative logic audits and findings
 
-- For logic/bug audits and related fixes, follow the
-  [findings workflow](docs/development/findings/README.md) and consult its registry
-  before classifying candidates. Check the import coverage and relevant original
-  sources; an absent entry does not establish novelty.
-- Record the inspected commit and relevant worktree changes. Match findings by
-  trigger, invariant and owner, retaining stable IDs for recurrences and linking
-  distinct variants. Historical fixes and intentional decisions must be checked
-  against the current source and policy, not used to suppress counterexamples.
-- Broad/repeated audits report concrete coverage and gaps using the workflow's
-  template. Maintain affected registry entries and a concise indexed audit record
-  as part of the audit, including audits requested without tests. This maintenance
-  is limited to `docs/development/findings/`; it does not authorize product edits,
-  tests, ExecPlans or Git mutations. Explicit read-only/no-change requests override
-  this default: provide proposed updates only in the answer.
-- During authorized corrections, keep the affected entries current and require
-  evidence for the exact trigger, relevant adjacent protections and next user
-  action. Separate historical acceptance from current inspection/reproduction;
-  record why a case escaped earlier work when known.
+Follow the [findings workflow](docs/development/findings/README.md): inspect the identified checkout, registry, import coverage and relevant original sources before classifying findings. Match trigger, invariant and owner; preserve stable recurrence IDs and distinct variants. Historical acceptance is not current proof and cannot suppress counterexamples.
+
+Ordinary logic audits maintain affected registry entries and a concise indexed audit record only under `docs/development/findings/`, including audits without tests. Broad/repeated audits also record concrete coverage and gaps, including zero findings. Explicit read-only/no-change requests permit proposed updates in the answer only. Audit bookkeeping does not authorize product edits, tests, plans or Git mutations. During authorized fixes, record evidence for the original trigger, adjacent protections and next user action, plus the evidence-backed escape cause or unknown.
 
 ## Feature and bug review
 
-- For runtime behavior, public-contract, or cross-component feature/bug changes,
-  delegate an independent review to `change_reviewer` (GPT-6 Astra high) before
-  acceptance. Follow `docs/development/agentic-change-review.md`.
-- The reviewer inspects code and host-test evidence without editing or running
-  tests. Resolve actionable findings and obtain approval for the exact current
-  patch; missing evidence or an unavailable reviewer must be reported as blocked.
-- Trivial nonbehavioral documentation/spelling/formatting changes are exempt.
-  Refactor campaigns retain their existing validator instead of adding this role.
-- Keep the existing concurrency limit and user authorization boundaries. A review
-  report does not replace required checks or authorize Git mutations.
+Use [independent change review](docs/development/agentic-change-review.md) for runtime behavior, public contracts, cross-component changes and acceptance/coverage changes, including one-file fixes. Commands, support or privacy claims and acceptance documentation require substantive review; trivial nonbehavioral editorial changes are exempt.
+
+`change_reviewer` remains GPT-6 Astra high, read-only, with no tests or delegation. Supply local-host evidence and the exact patch; resolve actionable findings and obtain approval of the current identities. Missing evidence or reviewer blocks acceptance. Review does not authorize Git actions or replace checks. Refactor campaigns retain their validator instead of adding this role.
 
 ## Systematic refactoring
 
-- Use `$orchestrate-safe-refactor` for a multi-file clean-code, readability, or
-  maintainability campaign and `$validate-safe-refactor` for its independent
-  acceptance gate.
-- Audit every target without forcing a modification. `SKIP` is a valid result
-  when no concrete maintainability problem exists.
-- Work in cohesive units consisting normally of one production file, its tests,
-  and at most two directly coupled support files; do not treat an arbitrary file
-  boundary as a behavior boundary.
-- Keep the primary task as director, permit exactly one implementation agent to
-  write at a time, and require an independent baseline plus post-change
-  validation outside the sandbox before accepting a unit.
-- Before editing, distinguish implementation units from the integration batch
-  and select gates by affected responsibilities. Follow the canonical
-  [validation policy](.agents/skills/validate-safe-refactor/references/validation-policy.md)
-  for risk, dependencies, evidence reuse, preparation, retries and cleanup.
-  Run fast checks before expensive preparation; keep high-risk unit gates and
-  final integration requirements explicit. Pending batch gates prevent final
-  acceptance, even when individual units pass.
-- Start the director with workspace-write permission. Treat custom-agent
-  sandbox settings as requested defaults, not hard isolation: child agents can
-  inherit or be constrained by the primary task's active permission mode.
-- Keep the Git index empty between units. Stage only the exact allowlisted
-  paths, require those paths to have no pre-existing worktree changes, inspect
-  the staged names and diff before committing, and never carry a rejected
-  worker patch into the next unit.
-- Reuse one auditor, one worker, and one validator task throughout a campaign
-  batch. Use GPT-6.1 Sol for audit, implementation, and Git stewardship, and
-  GPT-6 Astra for independent validation. The primary director may use either
-  model. If the Git-steward role is unavailable, record that fact and let the
-  director execute the same Git Action Order directly. Do not silently replace
-  an unavailable auditor, worker, or validator with another model.
-  Bind accepted-change orders to the immutable validation Report ID, HEAD, and
-  exact validated path identities. Recheck that evidence before staging and
-  commit; drift requires a new independent report, never refreshed approval
-  hashes. Only the validator may reuse an individual gate under the canonical
-  policy's complete input/environment proof. Git may mutate only while source
-  writing and validation are idle, and only within current user authorization.
-- Never manually refactor generated sources, frozen evaluation authority,
-  historical evidence, or completed ExecPlans.
-- Require an ExecPlan before a significant, multi-package, or multi-stage
-  refactor campaign.
+Use [$orchestrate-safe-refactor](.agents/skills/orchestrate-safe-refactor/SKILL.md) and [$validate-safe-refactor](.agents/skills/validate-safe-refactor/SKILL.md) for multi-file maintainability campaigns. Their [contracts](.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md) and [validation policy](.agents/skills/validate-safe-refactor/references/validation-policy.md) are mandatory; the [workflow guide](docs/development/agentic-refactoring.md) routes roles and native ownership.
+
+Audit every target and accept `SKIP`; use cohesive units, normally one production file, tests and at most two coupled support files. The primary task directs one implementation writer and independent host baseline/post-change validation. Select unit/batch gates before edits; pending integration prevents final acceptance. Preserve frozen authorities, historical evidence and completed plans.
+
+Keep the existing Sol auditor/worker/Git steward and Astra validator roles, four supporting slots, role reuse and no silent model substitution. Only an unavailable Git steward may fall back to the director under the same Git Action Order. Start with workspace-write; child sandbox defaults are not hard isolation. Keep the index empty between units and paths initially clean; bind exact-path staging to immutable accepted report identities. No rejected patch may carry into another unit, no hash refresh renews approval, and only the validator may justify gate reuse. Git mutations require current user authorization and idle writers/validation.
 
 ## Testing expectations
 
-Behavior changes require relevant tests. As implementation is introduced, use the smallest applicable level:
+Behavior changes require relevant tests. Use the smallest applicable level: unit for normalization/chunking/queues/buffers, integration for EPUB and desktop/TTS, end-to-end for reading/restoration/playback/navigation, and performance for latency, real-time factor, underruns, memory and cancellation. [Testing guidance](docs/development/testing.md) owns commands and boundaries.
 
-- Unit tests for text normalization, chunking, queue behavior, and buffer calculations.
-- Integration tests for EPUB extraction and desktop-to-TTS communication.
-- End-to-end tests for opening a book, restoring the visible reading location, starting synchronized playback, pausing, seeking, and resuming.
-- Performance tests for startup latency, real-time factor, underruns, memory use, and cancellation latency.
+Use only existing configured commands. Run every test and validation command in normal local PowerShell outside the managed sandbox, including format/lint/types, schema/build, Python/Rust, browser/WebView2, GPU/model, firewall and exact-host checks. Sandbox results are exploratory: repeat the unchanged command locally before reporting acceptance PASS, failure or candidate rejection. This preserves the known filesystem, cache, process, network, hardware and teardown environment requirements.
 
-Never invent commands. Use only commands defined by repository configuration.
-Before declaring work complete, satisfy every relevant available check and
-report exact commands and outcomes. Distinguish executed checks from explicitly
-reused immutable evidence; uncertainty requires rerunning the affected check.
-
-Run every test and validation command from a normal local PowerShell session
-outside the managed automation sandbox. This includes unit, integration,
-format, lint, type, schema, build, Python, Rust, Playwright/Chromium, packaged
-WebView2, GPU/model, firewall, performance, and exact-host commands. A sandbox
-run may be exploratory, but it is never final acceptance evidence. Repeat the
-unchanged command outside the sandbox before reporting pass, failure, or
-candidate rejection. This rule exists because the sandbox can deny required
-files, caches, processes, network/package access, drivers, hardware, output,
-or teardown even when the same command works locally.
+Satisfy all relevant available checks; report exact commands/outcomes and distinguish execution from explicitly reused immutable evidence. Unknown equivalence requires rerunning the affected check.
 
 ## Definition of done
 
-A task is complete only when:
-
-- The requested behavior is implemented.
-- Relevant tests exist and pass.
-- Available linting and type checks pass.
-- Privacy, bounded-memory, and cancellation constraints remain satisfied.
-- Public behavior and architectural decisions are documented.
-- The final diff has been reviewed for unrelated changes and regressions.
+Requested behavior is implemented; relevant tests, lint and types pass; privacy, bounded memory and cancellation remain intact; public behavior/decisions are documented; and the final diff is reviewed for regressions and unrelated changes. Required independent acceptance and Git authorization remain separate.
 
 ## Documentation responsibilities
 
-Update documentation when changing:
+Update guidance when changing behavior/acceptance, component/data-flow boundaries, EPUB rules, models/hardware, audio buffering/cancellation/persistence, or setup/commands/testing. Use ADRs for durable decisions and [ExecPlans](.agents/PLANS.md) for temporary implementation work, moving completed plans to the completed directory.
 
-- Product behavior or acceptance criteria.
-- Component boundaries or data flow.
-- EPUB parsing and normalization rules.
-- TTS model integration or hardware requirements.
-- Audio buffering, cancellation, or persistence behavior.
-- Developer setup, commands, or testing strategy.
-
-Use ADRs under `docs/architecture/decisions/` for durable choices. Keep temporary implementation work in `docs/plans/active/` and move completed plans to `docs/plans/completed/`.
-
-Review `docs/architecture/system-diagram.md` when a task changes major components; package, module, process, or architectural boundaries; dependencies between major components; important runtime or data flows; persistence responsibility; external-system interactions; or deployment/runtime topology. Update it only when the documented architecture actually changes, not for internal refactors that preserve the model. Before completing a relevant task, verify that the diagram still matches the implementation and approved plans.
-
-Review the completed Milestone 5 plan, narration terminology, and canonical system diagram when changing normalization, semantic segmentation, narration contracts, stable locator-range mapping, or the safe-document-to-narration boundary. Update them only when behavior or architecture changes, and never extend its implementation claims to TTS, audio, or synchronization without corresponding code and validation.
+Review the canonical diagram for changes to major components, package/module/process boundaries, major dependencies, runtime/data flows, persistence, external systems or deployment topology. Update it only when architecture changes and verify relevant implementation/approved-plan alignment before completion. Internal refactors preserving the model do not require a diagram edit. Review M005/terminology/diagram for the narration changes listed above; preserve its narrower implementation claims.

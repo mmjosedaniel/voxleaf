@@ -73,16 +73,9 @@ The coordinator supplies:
   code identities to which those results apply. Mark missing evidence honestly.
   Provide only content-safe results; never include private EPUB text or audio.
 
-For a compact request, pin a retrievable immutable record by path, record ID,
-and content identity. List the exact paths inherited from it and provide the
-current identities for additions and replacements, with `DELETED` entries for
-removals and both sides of any rename. Include the supporting inputs needed to
-assess the current patch. The prior records and explicit delta must reconstruct
-the complete current closed manifest. The reviewer checks the cited identities,
-the reconstructed manifest and the actual diff. Missing records or mismatches
-block reuse. The new review must issue its own verdict. The
-[development guidance closeout](../plans/evidence/development-guidance-and-command-clarity/review-final.md)
-shows a manifest built from pinned prior records and current archival identities.
+For a compact request, pin a retrievable immutable manifest by path, record ID and verified SHA-256. Either list the exact inherited subset or inherit its complete closed set plus an explicit delta; do not re-enumerate unchanged paths in the latter case. Record additions/replacements/removals and both rename sides with their current identities. Include unchanged supporting inputs. Reconstruct the complete closed manifest deterministically with existing Git/hash tools (task-local scripts may help), then compare it to the actual diff, untracked contents and current path identities.
+
+Missing records, cycles, duplicate or ambiguous entries and identity mismatches block inheritance. A newly captured full manifest allows a fresh review request, not renewal of an old approval or repair of invalid test evidence. Gate reuse still needs complete input/environment proof and the reviewer must issue a new verdict. Manifest composition never inherits approval.
 
 The reviewer checks that the request covers the actual task diff and snapshots
 base/HEAD and reviewed identities before and after inspection. Evidence from a
@@ -148,23 +141,13 @@ assessment.
 
 ### Compact closeout
 
-Preserve any required implementation approval before archival. Prepare the actual
-final plan, indexes, and guide edits before the applicable review, including any
-plan move. Reserve a unique review ID and destination, then freeze all reviewed
-inputs. The plan may link to the reserved report as the verdict authority while
-the review is pending. Claim approval only after the reviewer issues it. When a
-plan requires separate implementation and archival approvals, use a new review
-ID for the archival candidate and supply its closed manifest.
+Ordinarily review one real final candidate, with final plan location, indexes and guide edits already prepared. Preserve separate implementation/archival approvals when the existing plan requires them. Reserve unique report ID/path and, if needed, one coordinator closeout path before freezing the candidate; both destinations must be absent, never replacements for prior evidence. Use neutral links to those verdict/result authorities rather than a status that must be edited after approval. An archival move is preparation; it does not establish completion.
 
-Keep the reserved report outside its own manifest. After review, save the issued
-report at that path, verify its content against the reviewer output, rerun the
-affected document checks, and recheck the reviewed identities. This permits
-final acceptance without editing the frozen plan or indexes to repeat the verdict.
+Only the exact reserved terminal records are excluded from their own candidate manifest: the authentic reviewer report and a narrow coordinator record of post-persistence commands, outcomes and identity checks. Source, tests, policies, plans and indexes remain reviewed inputs. The coordinator record cannot introduce decisions, expand scope, change requirements, reinterpret results or alter the verdict. Corrections or any other candidate drift require a new assessment under the rules above.
 
-Record the review ID, verdict, addressed findings, and test evidence in the final
-response and, directly or through the reserved report, in the existing ExecPlan
-when one is required. Exempt changes need only the exemption reason. Existing
-plan criteria remain unchanged.
+Save the issued report unchanged and verify it against the reviewer output. Rerun affected document/link checks and recheck frozen identities; save those outcomes briefly in the reserved coordinator record, binding it to the authentic Report ID and verdict without rewriting them. Check that record's privacy/links and compare final HEAD, worktree paths/identities and index to the frozen candidate plus only the exact reserved output additions; the staging-only exception above still applies. Report that last check in the final response without another recursive record. Failure blocks completion. Preserve every failed/corrective review as immutable evidence; do not create separate narratives repeating plan, report and logs.
+
+Link the report from the existing ExecPlan when required. Final delivery names its ID, verdict, addressed findings, exact checks and remaining limitations. Exempt changes need only the exemption reason. This closeout does not alter refactor validation/Git contracts or older plan requirements.
 
 A Change Review Report does not grant Git permissions and cannot replace the
 POST-CHANGE Validation Report required by a refactor Git Action Order. Keep the
