@@ -1,5 +1,10 @@
 # Project brief
 
+For a short introduction, see the [product presentation](../../README.md),
+[engineering case study](../portfolio/case-study.md) and
+[evaluation walkthrough](../portfolio/try-voxleaf.md). This brief retains the
+product motivation, detailed scope and attributed milestone history.
+
 ## Status and purpose
 
 This brief explains the intended VoxLeaf experience and the motivation behind the project. It provides context for product and engineering decisions, but it does not make candidate technologies or tuning values authoritative.

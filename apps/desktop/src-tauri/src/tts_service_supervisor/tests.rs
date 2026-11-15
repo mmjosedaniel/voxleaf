@@ -1035,16 +1035,14 @@ fn sac12_cancel_interrupts_real_blocked_stdin_without_queuing_more_work() {
             }
         }
     });
-    let writing_session = Arc::clone(&session);
-    let (writer_done, writer_done_rx) = mpsc::sync_channel(1);
-    let writing = thread::spawn(move || {
-        let result =
-            CommandDeadline::new(Duration::from_secs(1)).write_control(&writing_session, &control);
-        writer_done.send(result).unwrap();
-        result
-    });
+    // Admit the write before observing it. A caller thread that has not been
+    // scheduled yet is not evidence of a blocked, owned stdin request.
+    let writing = session
+        .input
+        .enqueue(&control, Instant::now() + Duration::from_secs(1))
+        .unwrap();
     let observed_blocked = matches!(
-        writer_done_rx.recv_timeout(Duration::from_millis(30)),
+        writing.recv_timeout(Duration::from_millis(30)),
         Err(RecvTimeoutError::Timeout)
     );
     let extra = session.input.enqueue(
@@ -1058,13 +1056,13 @@ fn sac12_cancel_interrupts_real_blocked_stdin_without_queuing_more_work() {
         segment_id: identity.segment_id,
     });
     let elapsed = began.elapsed();
-    let written = writing.join().unwrap();
+    let written = writing.recv_timeout(Duration::from_secs(1));
     finished.send(()).ok();
     watchdog.join().unwrap();
     assert!(observed_blocked);
     assert!(matches!(extra, Err(TtsNativeFailure::Busy)));
     assert!(cancelled.is_ok(), "{cancelled:?}");
-    assert!(written.is_err());
+    assert!(matches!(written, Ok(Err(_))), "{written:?}");
     assert!(!rescued.load(Ordering::Acquire));
     assert!(elapsed < Duration::from_millis(2500));
     eprintln!(

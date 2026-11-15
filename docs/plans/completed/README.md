@@ -16,6 +16,9 @@ separately below and must not be scheduled for execution.
 
 ## Completed plans
 
+- [Portfolio readiness and presentation](portfolio-readiness-and-presentation.md): accepted test-harness correction, concise product presentation, original sample, truthful agentic-development case study and attributed host checks; closing review is linked in the plan.
+- [Portfolio maintainability review](portfolio-maintainability-review.md): three desktop owners audited; current code retained, with two optional extractions documented for future responsibility changes.
+
 - [Development guidance and Chatterbox command clarity](development-guidance-and-command-clarity.md): accepted contributor guidance, explicit v2 aliases and separate version diagnostics; host checks and independent implementation approval recorded. C05 remains deferred to the next runtime; archival assessment is linked separately.
 
 - [Minimal corrections for the deeply revalidated findings](deep-findings-minimal-corrections.md)

@@ -2,6 +2,15 @@
 
 Documentation is organized by purpose so contributors and Codex can load only the context needed for a task.
 
+## Evaluate the portfolio
+
+Start with the [product presentation](../README.md), the
+[local evaluation walkthrough](portfolio/try-voxleaf.md) and the
+[engineering and agentic-development case study](portfolio/case-study.md).
+The [compact diagram](architecture/system-diagram-compact.md) explains the local
+stack. Current product requirements and canonical architecture remain the
+authorities below; implementation history is retained in completed plans.
+
 ## Reading implementation status
 
 Use the [roadmap](plans/roadmap.md) and [system diagram](architecture/system-diagram.md)
@@ -444,6 +453,9 @@ signing limitations. The static security scan and its limits remain in the
 - [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded TypeScript/Python/Rust refactors, independent host validation, risk-based unit/batch gates, immutable evidence reuse, preparation and retry policy, and authorized Git stewardship.
 
 ## Plans
+
+- [Portfolio readiness and presentation](plans/completed/portfolio-readiness-and-presentation.md): original sample and product presentation, attributed agentic-development case study and accepted VF-0057 test correction.
+- [Portfolio maintainability review](plans/completed/portfolio-maintainability-review.md): bounded three-owner audit; no source refactor accepted, optional proposals retained.
 
 - [Development guidance and Chatterbox command clarity](plans/completed/development-guidance-and-command-clarity.md): accepted status/routing corrections, explicit historical v2 aliases and version-selection stderr; C05 remains a pending successor-runtime criterion. The plan links implementation and archival reviews.
 

@@ -1,5 +1,14 @@
 # Testing strategy
 
+## Portfolio sample
+
+`pnpm.cmd test:portfolio-sample` builds the shared/EPUB packages and checks that
+the original sample has deterministic bytes, opens through the public EPUB API,
+and resolves both navigation destinations exactly. The same Node test is appended
+to `test:typescript`, so existing full and portable CI aggregates include it.
+`pnpm.cmd demo:sample` generates the ignored EPUB for local reader evaluation;
+it does not synthesize speech, download a model or validate a native runtime.
+
 ## Maintainer CLI version selection
 
 `services/tts/tests/test_release_chatterbox_cli.py` exercises the real CLI entry
