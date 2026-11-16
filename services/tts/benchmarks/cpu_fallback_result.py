@@ -36,6 +36,7 @@ from benchmarks.harness import load_corpus
 from benchmarks.metrics import distribution, media_duration_seconds, real_time_factor
 from benchmarks.preflight import PreflightReceipt, PreflightRequest
 from benchmarks.quality import QualitySessionError, _current_aggregate
+from benchmarks.quality_operation import quality_operation
 from benchmarks.summary import (
     build_summary,
     canonical_summary_bytes,
@@ -450,6 +451,27 @@ def derive_result(
 
     if receipt.failures or not receipt.eligible_for_official_run:
         _fail("preflight")
+    try:
+        with quality_operation(_quality_session_path(quality_session_id)):
+            return _derive_result(
+                request,
+                receipt,
+                performance_session_id=performance_session_id,
+                quality_session_id=quality_session_id,
+                authority_commit_sha=authority_commit_sha,
+            )
+    except QualitySessionError as error:
+        _fail("quality-busy" if error.code == "session-busy" else "quality")
+
+
+def _derive_result(
+    request: PreflightRequest,
+    receipt: PreflightReceipt,
+    *,
+    performance_session_id: str,
+    quality_session_id: str,
+    authority_commit_sha: str,
+) -> dict[str, object]:
     raw, performance_session = _load_raw(performance_session_id)
     execution_commit = _result_execution_commit(raw, request.expected_commit_sha)
     _verify_authority(

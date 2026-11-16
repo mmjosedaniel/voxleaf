@@ -76,6 +76,9 @@ the original evidence. Recorded test counts are not fresh test runs on HEAD.
 The [five-search correction plan](plans/completed/five-search-findings-minimal-corrections.md)
 links its final per-case evidence and independent acceptance, including the
 conditional inconclusive/excluded cases and the successor benchmark contract.
+The [reader Stop and quality follow-up](plans/completed/reader-stop-quality-follow-up.md)
+records the later authorized VF-0074 reproduction/correction and VF-0082 overlap
+rejection, preserving the earlier evidence and scope decisions.
 
 ## Product
 

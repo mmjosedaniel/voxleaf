@@ -249,7 +249,11 @@ describe("reader position save coordinator", () => {
         expect(repository.writePosition).toHaveBeenLastCalledWith(
           expect.objectContaining({ locator: locatorAt(3) }),
         );
-        expect(coordinator.schedulePassive(locatorAt(4))).toBe(true);
+        if (proof === "heard")
+          expect(coordinator.schedulePassive(locatorAt(4))).toBe(false);
+        expect(
+          coordinator.schedulePassive(locatorAt(4), proof === "heard"),
+        ).toBe(true);
         await coordinator.flush();
         expect(repository.writePosition).toHaveBeenLastCalledWith(
           expect.objectContaining({ locator: locatorAt(4) }),
@@ -579,13 +583,39 @@ describe("reader position save coordinator", () => {
       repository.writePosition.mock.calls[0]?.[0].locator.textOffsetCodePoints,
     ).toBe(12);
 
-    expect(coordinator.schedulePassive(locatorAt(4))).toBe(true);
+    expect(coordinator.schedulePassive(locatorAt(4))).toBe(false);
+    expect(coordinator.schedulePassive(locatorAt(101), true)).toBe(false);
+    expect(coordinator.schedulePassive(locatorAt(4))).toBe(false);
+    await coordinator.flush();
+    expect(repository.writePosition).toHaveBeenCalledTimes(1);
+    expect(coordinator.schedulePassive(locatorAt(4), true)).toBe(true);
     environment.advance(PASSIVE_POSITION_SAVE_DEBOUNCE_MS);
     await coordinator.flush();
     expect(repository.writePosition).toHaveBeenCalledTimes(2);
     expect(
       repository.writePosition.mock.calls[1]?.[0].locator.textOffsetCodePoints,
     ).toBe(4);
+  });
+
+  it("admits a manual successor even when its first sample equals the heard checkpoint", async () => {
+    const { coordinator, environment, repository } = createHarness();
+    coordinator.beginNarration();
+    coordinator.recordHeardCheckpoint({
+      kind: "segment-started",
+      segmentId: "segment:manual-successor",
+      locator: locatorAt(12),
+    });
+    environment.advance(0);
+    await coordinator.finishNarration();
+
+    expect(coordinator.schedulePassive(locatorAt(12), true)).toBe(false);
+    await coordinator.flush();
+    expect(repository.writePosition).toHaveBeenCalledTimes(1);
+    expect(coordinator.schedulePassive(locatorAt(4))).toBe(true);
+    await coordinator.flush();
+    expect(repository.writePosition.mock.calls[1]?.[0].locator).toEqual(
+      locatorAt(4),
+    );
   });
 
   it("does not turn an unheard visual target into a lifecycle checkpoint", async () => {

@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No current execution plans.
+There are no active implementation plans.
 
 Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
 

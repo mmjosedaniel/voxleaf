@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 import subprocess
 import sys
 import time
@@ -725,6 +726,391 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
             reason_code=CORRECTION_REASON,
             raw_root=raw_root,
         )
+
+
+@pytest.fixture
+def overlap_quality_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, benchmark_v6_repository: Path
+) -> tuple[Path, list[str]]:
+    monkeypatch.setattr("benchmarks.cli.REPOSITORY_ROOT", benchmark_v6_repository)
+    monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
+    session_id = "b" * 32
+    generate_candidate_audio(
+        _request(tmp_path, PIPER_CPU_CANDIDATE_ID),
+        session_id,
+        raw_root=tmp_path,
+        adapter_builder=FakeQualityAdapter,
+    )
+    finalize_session(session_id, 1, raw_root=tmp_path)
+    session = tmp_path / "quality-v2" / session_id
+    template_path = session / "scorecards/evaluator-01.template.json"
+    template = json.loads(template_path.read_text(encoding="utf-8"))
+    for index, sample in enumerate(template["samples"]):
+        sample["scores"] = dict.fromkeys(DIMENSIONS, 4)
+        sample["meaningChangingDefect"] = index < 2
+    # The existing scorecard schema/fixtures supply two legitimate corrections.
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    submit_scorecard(session_id, template, raw_root=tmp_path)
+    aggregate_scores(session_id, raw_root=tmp_path)
+    return session, [sample["caseId"] for sample in template["samples"][:2]]
+
+
+_OVERLAP_WORKER = r"""
+import json, sys, time
+from pathlib import Path
+from benchmarks import quality, cpu_fallback_result
+from unittest.mock import Mock
+from benchmarks.preflight import PreflightReceipt
+root, action, case, ready, release, hold = sys.argv[1:]
+root, ready, release = Path(root), Path(ready), Path(release)
+session_id = "b" * 32
+session = root / "quality-v2" / session_id
+write = quality._write_json
+def held_write(path, value):
+    if hold == "yes":
+        ready.write_text("ready", encoding="ascii")
+        deadline = time.monotonic() + 10
+        while not release.exists():
+            if time.monotonic() > deadline:
+                raise RuntimeError("synthetic-barrier-deadline")
+            time.sleep(0.01)
+    write(path, value)
+quality._write_json = held_write
+try:
+    if action == "correct":
+        quality.correct_meaning_changing_defect(session_id, "evaluator-01", case,
+            reason_code=quality.CORRECTION_REASON, raw_root=root)
+    elif action == "submit":
+        template = session / "scorecards/evaluator-01.template.json"
+        card = json.loads(template.read_text(encoding="utf-8"))
+        quality.submit_scorecard(session_id, card, raw_root=root)
+    elif action == "aggregate":
+        quality.aggregate_scores(session_id, raw_root=root)
+    elif action == "cleanup":
+        quality.cleanup_session(session_id, raw_root=root)
+    elif action == "derive":
+        cpu_fallback_result.RAW_ROOT = root
+        receipt = Mock(spec=PreflightReceipt, failures=(), eligible_for_official_run=True)
+        cpu_fallback_result.derive_result(Mock(), receipt,
+            performance_session_id="a" * 32, quality_session_id=session_id,
+            authority_commit_sha="a" * 40)
+    print(json.dumps({"status": "pass"}))
+except (quality.QualitySessionError, cpu_fallback_result.CpuFallbackResultError) as error:
+    print(json.dumps({"status": "fail", "code": error.code}))
+    sys.exit(2)
+"""
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [
+        ("correct", "correct"),
+        ("submit", "submit"),
+        ("correct", "aggregate"),
+        ("aggregate", "correct"),
+        ("correct", "cleanup"),
+        ("correct", "derive"),
+    ],
+)
+def test_vf0082_overlapping_processes_reject_before_mutating_the_winner(
+    tmp_path: Path, overlap_quality_session: tuple[Path, list[str]], first: str, second: str
+) -> None:
+    session, cases = overlap_quality_session
+    if first == "submit":
+        (session / "scorecards/evaluator-01.completed.json").unlink()
+    ready, release = tmp_path / "ready", tmp_path / "release"
+    processes: list[subprocess.Popen[str]] = []
+
+    def launch(action: str, case: str, hold: bool) -> subprocess.Popen[str]:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                _OVERLAP_WORKER,
+                str(tmp_path),
+                action,
+                case,
+                str(ready),
+                str(release),
+                "yes" if hold else "no",
+            ],
+            cwd=quality.REPOSITORY_ROOT / "services/tts",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        processes.append(process)
+        return process
+
+    def snapshot() -> dict[str, bytes]:
+        return {
+            str(path.relative_to(session)): path.read_bytes()
+            for path in session.rglob("*")
+            if path.is_file()
+        }
+
+    owner = launch(first, cases[0], True)
+    try:
+        deadline = time.monotonic() + 5
+        while not ready.exists() and owner.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert ready.exists(), "owner must reach the real publication boundary"
+        before = snapshot()
+        rival = launch(second, cases[1], False)
+        output, error = rival.communicate(timeout=5)
+        after = snapshot()
+        release.write_text("release", encoding="ascii")
+        owner_output, owner_error = owner.communicate(timeout=5)
+        assert not error and not owner_error
+        assert rival.returncode == 2
+        assert json.loads(output) == {
+            "status": "fail",
+            "code": "quality-busy" if second == "derive" else "session-busy",
+        }
+        assert after == before
+        assert owner.returncode == 0 and json.loads(owner_output) == {"status": "pass"}
+        if first == "correct":
+            accepted = (session / "scorecards/evaluator-01.correction.json").read_bytes()
+            assert json.loads(accepted)["caseId"] == cases[0]
+            with pytest.raises(QualitySessionError, match="correction-state"):
+                correct_meaning_changing_defect(
+                    "b" * 32,
+                    "evaluator-01",
+                    cases[1],
+                    reason_code=CORRECTION_REASON,
+                    raw_root=tmp_path,
+                )
+            assert (session / "scorecards/evaluator-01.correction.json").read_bytes() == accepted
+            result = aggregate_scores("b" * 32, raw_root=tmp_path)
+            assert (
+                cast(dict[str, Any], result["candidates"])[PIPER_CPU_CANDIDATE_ID][
+                    "meaningChangingDefects"
+                ]
+                == 1
+            )
+    finally:
+        release.touch(exist_ok=True)
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.communicate(timeout=5)
+
+
+def test_vf0082_terminated_owner_releases_os_lock_and_allows_retry(
+    tmp_path: Path, overlap_quality_session: tuple[Path, list[str]]
+) -> None:
+    session, cases = overlap_quality_session
+    ready, release = tmp_path / "ready", tmp_path / "release"
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            _OVERLAP_WORKER,
+            str(tmp_path),
+            "correct",
+            cases[0],
+            str(ready),
+            str(release),
+            "yes",
+        ],
+        cwd=quality.REPOSITORY_ROOT / "services/tts",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert ready.exists()
+        process.kill()
+        process.communicate(timeout=5)
+        assert not (session / "scorecards/evaluator-01.correction.json").exists()
+        assert (
+            correct_meaning_changing_defect(
+                "b" * 32, "evaluator-01", cases[1], reason_code=CORRECTION_REASON, raw_root=tmp_path
+            )["status"]
+            == "pass"
+        )
+        assert aggregate_scores("b" * 32, raw_root=tmp_path)["status"] == "pass"
+        cleanup_session("b" * 32, raw_root=tmp_path)
+        assert not session.exists()
+        # The marker is not the lock: its unchanged inode prevents split ownership.
+        marker = session.parent / f".{session.name}.operation.lock"
+        assert marker.is_file() and marker.read_bytes() == b""
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.communicate(timeout=5)
+
+
+def test_vf0082_rejects_nonempty_lock_file_without_touching_session(
+    tmp_path: Path, overlap_quality_session: tuple[Path, list[str]]
+) -> None:
+    session, cases = overlap_quality_session
+    marker = session.parent / f".{session.name}.operation.lock"
+    marker.write_bytes(b"synthetic preserved content")
+    aggregate = (session / "quality.aggregate.json").read_bytes()
+    with pytest.raises(QualitySessionError, match="session-lock"):
+        correct_meaning_changing_defect(
+            "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
+        )
+    assert marker.read_bytes() == b"synthetic preserved content"
+    assert (session / "quality.aggregate.json").read_bytes() == aggregate
+    assert not (session / "scorecards/evaluator-01.correction.json").exists()
+
+
+@pytest.mark.parametrize("target_exists", [False, True])
+def test_vf0082_rejects_existing_lock_link_without_creating_or_changing_its_target(
+    tmp_path: Path,
+    overlap_quality_session: tuple[Path, list[str]],
+    target_exists: bool,
+) -> None:
+    session, cases = overlap_quality_session
+    marker = session.parent / f".{session.name}.operation.lock"
+    marker.unlink()
+    target = tmp_path / "unrelated-synthetic-target"
+    sentinel = b"synthetic existing target"
+    if target_exists:
+        target.write_bytes(sentinel)
+    try:
+        marker.symlink_to(target)
+    except OSError as error:
+        if sys.platform == "win32" and getattr(error, "winerror", None) == 1314:
+            pytest.skip("native file symlink setup requires a host privilege; modeled control runs")
+        raise
+    before = {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    }
+
+    with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:session-lock$"):
+        correct_meaning_changing_defect(
+            "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
+        )
+    assert marker.is_symlink() and marker.readlink() == target
+    assert {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    } == before
+    if target_exists:
+        assert target.read_bytes() == sentinel
+    else:
+        assert not target.exists()
+
+    # Only the test owner removes its unsafe entry; ordinary retry remains usable.
+    marker.unlink()
+    assert (
+        correct_meaning_changing_defect(
+            "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
+        )["status"]
+        == "pass"
+    )
+    assert marker.is_file() and marker.read_bytes() == b""
+
+
+@pytest.mark.parametrize("target_exists", [False, True])
+def test_vf0082_modeled_lock_link_preserves_real_target_and_session(
+    tmp_path: Path,
+    overlap_quality_session: tuple[Path, list[str]],
+    monkeypatch: pytest.MonkeyPatch,
+    target_exists: bool,
+) -> None:
+    session, cases = overlap_quality_session
+    marker = session.parent / f".{session.name}.operation.lock"
+    marker.write_bytes(b"synthetic link entry")
+    target = tmp_path / "modeled-link-target"
+    if target_exists:
+        target.write_bytes(b"synthetic target content")
+    before = {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    }
+    original_open, original_lstat = os.open, Path.lstat
+    link_info = os.stat_result((stat.S_IFLNK | 0o600, *tuple(original_lstat(marker))[1:]))
+    flags_seen: list[int] = []
+
+    def resolve_link(
+        path: object, flags: int, mode: int = 0o777, *, dir_fd: int | None = None
+    ) -> int:
+        if path == marker:
+            flags_seen.append(flags)
+            # Model only an existing Windows link and its resolution. Target I/O
+            # is real: a nonexclusive O_CREAT can create the missing referent.
+            if flags & os.O_CREAT and flags & os.O_EXCL:
+                raise FileExistsError("synthetic existing link")
+            return original_open(target, flags, mode)
+        return original_open(cast(Any, path), flags, mode, dir_fd=dir_fd)
+
+    def inspect_link(path: Path) -> os.stat_result:
+        return link_info if path == marker else original_lstat(path)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "open", resolve_link)
+        patch.setattr(Path, "lstat", inspect_link)
+        with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:session-lock$"):
+            correct_meaning_changing_defect(
+                "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
+            )
+    assert marker.read_bytes() == b"synthetic link entry"
+    assert {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    } == before
+    if target_exists:
+        assert target.read_bytes() == b"synthetic target content"
+    else:
+        assert not target.exists()
+    assert len(flags_seen) == 2
+    assert flags_seen[0] & os.O_EXCL and flags_seen[0] & os.O_CREAT
+    assert not flags_seen[1] & (os.O_CREAT | os.O_TRUNC)
+
+
+@pytest.mark.parametrize("kind", ["hardlink", "different-open-file"])
+def test_vf0082_unsafe_lock_identity_preserves_session(
+    tmp_path: Path,
+    overlap_quality_session: tuple[Path, list[str]],
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+) -> None:
+    session, cases = overlap_quality_session
+    marker = session.parent / f".{session.name}.operation.lock"
+    target = tmp_path / "synthetic-other-lock"
+    target.write_bytes(b"")
+    if kind == "hardlink":
+        marker.unlink()
+        marker.hardlink_to(target)
+        assert target.stat().st_nlink == 2
+    else:
+        original_open = os.open
+
+        def changed_open(
+            path: object, flags: int, mode: int = 0o777, *, dir_fd: int | None = None
+        ) -> int:
+            if path == marker and not flags & os.O_EXCL:
+                return original_open(target, flags, mode)
+            return original_open(cast(Any, path), flags, mode, dir_fd=dir_fd)
+
+        monkeypatch.setattr(os, "open", changed_open)
+    before = {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    }
+    with pytest.raises(QualitySessionError, match=r"^tts-benchmark-quality:session-lock$"):
+        correct_meaning_changing_defect(
+            "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
+        )
+    assert marker.read_bytes() == target.read_bytes() == b""
+    assert {
+        path.relative_to(session): path.read_bytes()
+        for path in session.rglob("*")
+        if path.is_file()
+    } == before
 
 
 def _synthetic_scorecards() -> tuple[dict[str, tuple[str, str]], list[dict[str, object]]]:

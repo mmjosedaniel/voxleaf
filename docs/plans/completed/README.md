@@ -16,7 +16,9 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
-- [Five-search findings: minimal corrections](five-search-findings-minimal-corrections.md) records 17 bounded corrections and the authorized successor benchmark evidence; final acceptance is owned by the linked R04 review/closeout. VF-0074 remains inconclusive and VF-0082 excluded under the sequential contract.
+- [Reader Stop and evaluator correction follow-up](reader-stop-quality-follow-up.md) records the newly demonstrated VF-0074 late-image persistence failure and authorized VF-0082 overlap rejection. Current component/package evidence and the independent verdict are linked from the plan.
+
+- [Five-search findings: minimal corrections](five-search-findings-minimal-corrections.md) records 17 bounded corrections and the authorized successor benchmark evidence; final acceptance is owned by the linked R04 review/closeout. VF-0074 was inconclusive and VF-0082 excluded at that closeout; their subsequent authorized work is recorded in the follow-up above.
 
 - [Four-pass findings corrections](four-pass-findings-corrections.md) records six approved correction units, focused Windows validation and the scoped benchmark and release limits.
 

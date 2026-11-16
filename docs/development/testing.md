@@ -878,6 +878,31 @@ accepts one fluent maintainer for future constrained-demo quality feedback,
 but such feedback is not a retroactive promotable `v3` aggregate and cannot be
 duplicated into multiple evaluator identities.
 
+The [VF-0082 follow-up](../plans/completed/reader-stop-quality-follow-up.md)
+adds defensive rejection of overlapping ready-session operations under
+[ADR-0077](../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md).
+The existing `test_benchmark_quality.py` uses finite child processes and
+synthetic sessions to pause actual publication, reject competing correction,
+submission, aggregation, cleanup and derivation, preserve accepted bytes, and
+retry after owner termination. It also retains the sequential invalidation and
+stale-aggregate consumer controls. No model or acoustic quality claim follows.
+Cleanup removes private session contents but retains its empty sibling lock;
+do not remove that coordination file while a command may still own it.
+R01's file-link admission finding adds a real-I/O model of Windows link
+resolution, native hardlink rejection and descriptor/path mismatch protection.
+The two native symlink cases skip only on Windows privilege error 1314; those
+skips are not native acceptance evidence. See the linked follow-up ledger for
+the independently accepted replacement strategy and recorded limitation.
+
+VF-0074's `FSF-VF-0074` cases in `reader-reflow-restoration.smoke.spec.ts` bind
+the checkpoint before Stop, release a delayed native image decode, follow real
+tracker → App → persistence delivery, and reopen the same synthetic EPUB. The
+image variant does not inject a tracker callback, save call or scroll event.
+Controlled silent PCM/completion callbacks establish application timing, not
+physical audibility. Keyboard movement and same-locator measured movement remain
+successor controls; R7-04, CCF-C08, ordinary reflow and keyboard reading remain
+the adjacent browser union.
+
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 
 ## M009 synchronization and heard-persistence validation

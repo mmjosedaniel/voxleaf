@@ -878,6 +878,13 @@ transient settled-placement snapshot so unchanged image/anchoring notifications
 cannot turn an interior offset into the line's first caret. Real displacement
 resumes ordinary sampling. See its plan for current acceptance.
 
+After narration ends, passive save admission also retains the last heard
+checkpoint until validated manual movement or explicit navigation takes
+authority. A changed late-image layout may legitimately change the visual sample
+without authorizing a durable checkpoint. Measured movement can release that
+protection even when its first locator duplicates the saved one; coalescing still
+avoids a duplicate write. See the [VF-0074 follow-up](../plans/completed/reader-stop-quality-follow-up.md).
+
 JPEG EXIF density may produce a separately verified intrinsic size for decoder
 agreement. Physical SOF dimensions, with orientation, remain the ready source's
 size and allocation charge. Optional density parsing follows only bounded IFD0
