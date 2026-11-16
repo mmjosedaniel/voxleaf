@@ -80,6 +80,22 @@ separate reproductions, failed attempts, current acceptance and qualified reuse.
 | [VF-0055](#vf-0055) | Narration | Inline Stop can precede a stale synthesis dispatch | `fixed` |
 | [VF-0056](#vf-0056) | Release | Missing installer helper unnecessarily retains the application-data backup | `fixed` |
 | [VF-0057](#vf-0057) | Tests | An unscheduled caller is mistaken for a blocked stdin writer | `fixed` |
+| [VF-0058](#vf-0058) | Runtime | Late cancellation loses the Chatterbox installation completion event | `candidate` |
+| [VF-0059](#vf-0059) | Release | Ordinary journey can restore application data without verified smoke cleanup | `candidate` |
+| [VF-0060](#vf-0060) | EPUB | Trailing no-break space rejects a TOC label at the retained limit | `candidate` |
+| [VF-0061](#vf-0061) | Narration | An en space before a Spanish time duplicates the article | `candidate` |
+| [VF-0062](#vf-0062) | Playback | Direct Web Audio playback allocates two extra full-unit buffers | `candidate` |
+| [VF-0063](#vf-0063) | Reader | Shift+Space scrolling cannot recover Play after unavailable placement | `candidate` |
+| [VF-0064](#vf-0064) | EPUB | Implicit paragraphs lose the direction of their XHTML container | `candidate` |
+| [VF-0065](#vf-0065) | Benchmarks | v14 derivation deletes the raw session before validation | `candidate` |
+| [VF-0066](#vf-0066) | Playback | A pending refill can resume below one playable minute after a rate change | `candidate` |
+| [VF-0067](#vf-0067) | Release | The ordinary journey can record a different installer from the one it ran | `candidate` |
+| [VF-0068](#vf-0068) | Release | Attaching receipts can change the build authority of unchanged artifacts | `candidate` |
+| [VF-0069](#vf-0069) | Benchmarks | v14 can pass scheduling after playback simulation fails | `candidate` |
+| [VF-0070](#vf-0070) | Benchmarks | v14 CPU admission accepts a memory signal unrelated to the failed batch | `candidate` |
+| [VF-0071](#vf-0071) | Benchmarks | Externally mixed v14 inputs lack pairing proof; ordinary workflow defect not established | `not-confirmed` |
+| [VF-0072](#vf-0072) | Release | Fresh-build evidence can attribute signature, scan and checksum observations to replaced artifacts | `candidate` |
+| [VF-0073](#vf-0073) | Benchmarks | v14 can report a passed privacy audit after measured-worker privacy detection | `candidate` |
 
 ## VF-0057
 
@@ -219,6 +235,7 @@ request can legitimately be accepted instead of returning Busy.
 - Why it escaped or stayed open — Earlier coverage used ASCII spacing. Article recognition preceded whitespace collapse.
 - Evidence — [Normalizer regression](../../../packages/epub/src/narration/narration-normalizer.test.ts) `SAF-12 preserves the closed Spanish time article` includes both no-break spaces.
 - 2026-11-13 assessment — `inspected-absent` for bounded U+00A0 and U+202F gaps. The article matcher consumes both before the bare time rule runs. U+2009 follows [VF-0039](#vf-0039). [Audit][audit-2026-11-13]
+- 2026-11-15 assessment — `inspected-absent` for those two no-break spaces on the [current audit snapshot][audit-2026-11-15]. The en-space variant has a separate trigger, [VF-0061](#vf-0061).
 
 ## VF-0010
 
@@ -458,6 +475,7 @@ request can legitimately be accepted instead of returning Busy.
 - Why it escaped or stayed open — Visibility observation disconnected after initial admission. Later images had no capacity transition to retry.
 - Evidence — [Browser regression](../../../apps/desktop/tests/browser/reader-image-lifecycle.smoke.spec.ts) `RPI-02 loads later images and reloads released earlier occurrences` and [RPI ledger][rpi-ledger]. The original capacity issue reproduced in Chromium.
 - 2026-11-13 second-pass assessment — `inspected-absent` for the permanent live-capacity exhaustion of later visible occurrences after earlier images leave the retention margin. Visibility retires the earlier source, release advances the capacity revision, and the pump retries visible work first. This assumes the ordinary observer delivers the visibility changes. [Second audit][audit-2026-11-13-pass-2]
+- 2026-11-15 fourth-pass assessment — `inspected-absent` for that capacity failure in the current source when the viewport observer delivers the exit. Retirement releases the old handle, advances the capacity revision and schedules the waiting visible occurrence. A cancelled completion must still match its registered controller to publish. [Fourth-pass assessment][audit-2026-11-15-pass-4]
 
 ## VF-0031
 
@@ -598,6 +616,8 @@ request can legitimately be accepted instead of returning Busy.
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
 
+- 2026-11-15 assessment — `inspected-absent` for U+2009 and the U+2007 companion on the [current audit snapshot][audit-2026-11-15]. Both are in the live matcher. The broader inline-space mismatch is [VF-0061](#vf-0061).
+
 ## VF-0040
 
 **Ordinary Chatterbox installer or uninstaller can block profile restoration.** If the launched installer or uninstaller never exits, the ordinary Windows release journey can wait indefinitely after moving existing application data aside. A stalled uninstall also prevents the finalizer from reporting its retained backup.
@@ -614,6 +634,8 @@ request can legitimately be accepted instead of returning Busy.
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
+
+- 2026-11-15 assessment — `inspected-absent` for the original installer/uninstaller waits on the [current audit snapshot][audit-2026-11-15]; both enter the wrapped deadline and containment receipt path. [VF-0059](#vf-0059) concerns the separately launched narration smoke and loss of its cleanup verdict.
 
 ## VF-0041
 
@@ -719,6 +741,8 @@ request can legitimately be accepted instead of returning Busy.
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
 
+- 2026-11-15 assessment — `inspected-absent` for the original explicit integrity retry and failed ordinary poll before download completion on the [current audit snapshot][audit-2026-11-15]. Cancellation after commit has a different generation handoff, [VF-0058](#vf-0058).
+
 ## VF-0047
 
 **A no-break space at a TOC label edge prevents opening.** EPUB 3 XHTML and EPUB 2 NCX can pass a spine-target label such as `\u00A0Chapter One` through their parsers. BookV1 rejects the retained edge whitespace and opening returns `malformed-package`.
@@ -735,6 +759,8 @@ request can legitimately be accepted instead of returning Busy.
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
+
+- 2026-11-15 assessment — `inspected-absent` for the original short-label edges and blank XHTML label fallback on the [current audit snapshot][audit-2026-11-15]. [VF-0060](#vf-0060) is a pre-trim length rejection, before the corrected finish logic runs.
 
 ## VF-0048
 
@@ -804,6 +830,8 @@ request can legitimately be accepted instead of returning Busy.
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
+- 2026-11-15 second-pass assessment — `inspected-absent` for the original 1,365-item event overflow in public preparation. The public caller retains only leaves and charges structural traversal without retaining those events. [Source trace and snapshot][audit-2026-11-15-pass-2]
+
 
 ## VF-0052
 
@@ -867,6 +895,202 @@ request can legitimately be accepted instead of returning Busy.
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. R01 additionally exposed post-publication local preparation after Stop; the mounted public-preparation witness now admits zero obsolete work. Natural incidence remains unmeasured. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
+## VF-0058
+
+**Late cancellation loses the Chatterbox installation completion event.** On a
+compatible host with Chatterbox selected but unavailable, use Cancel while the
+download command is pending. If verified promotion wins and cleanup succeeds,
+Settings ends at Installed without refreshing that narrator. Play stays
+unavailable until another action refreshes the selection.
+
+- Owners — [OptionalChatterboxClient.cancel and its action generation](../../../apps/desktop/src/tts/optional-chatterbox-client.ts#L313), [App's installation subscriber](../../../apps/desktop/src/App.tsx#L449) and the [native commit](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L1591).
+- Disposition — `candidate`, P2 product availability. `inspected-present` on the [2026-11-15 snapshot][audit-2026-11-15]; high confidence in the stated order, no native frequency established.
+- Lineage — Variant of [VF-0046](#vf-0046). [ADD-01](../../plans/completed/five-pass-audit-revalidation-and-corrections.md) covers the fresh post-cancel display state, including successful installation and cleanup failure. The [client test](../../../apps/desktop/src/tts/optional-chatterbox-client.test.ts#L42) asserts the snapshot and request ownership; the [App test](../../../apps/desktop/src/App.test.tsx#L1096) covers download/retry without post-commit cancellation.
+- Next check — Drive the current Settings/Play boundary through accepted cancellation after native commit, paired download settlement and a fresh Installed result. Verify Play returns without starting speech. Keep pre-commit cancellation, cleanup failure, ordinary completion and stale book/language/profile controls.
+- 2026-11-15 reconciliation — `inspected-present`. ADD-01 exercised the same ordering through the client snapshot. The mounted narrator and the next explicit Play were outside that proof. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0058--chatterbox-cancel-after-install-commit)
+- 2026-11-15 deep validation — `inspected-present`. Traced commit, paired Download settlement, client generation, the App subscriber and hidden Activate for the selected profile. A later visibility/compatibility check can recover availability, so permanent corruption is not claimed. Ordinary completion and stale-owner controls remain effective. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0058--completion-ownership)
+
+## VF-0059
+
+**Ordinary journey can restore application data without verified smoke
+cleanup.** After backing up the application profile, the maintainer journey
+launches native narration smokes. If a smoke exits after reporting uncertain
+process cleanup, its parent sees only an ordinary test failure. The finalizer
+can uninstall and restore the profile without proof that the smoke's
+descendants stopped.
+
+- Owners — [runCommand and runBilingualSmoke](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L833), [finalizeJourney](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L1088), and the native smoke's [cleanup verdict](../../../apps/desktop/scripts/native-startup-smoke.mjs#L101).
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` on the [2026-11-15 snapshot][audit-2026-11-15] when smoke cleanup is unverified and the remaining teardown succeeds. No observed lingering process or data loss is claimed.
+- Lineage — Variant of the recovery rule in [RAC-03](../../plans/completed/revalidated-audit-corrections.md) and adjacent to [VF-0040](#vf-0040) and [VF-0056](#vf-0056). Those paths classify session/installer failures, not the separate bilingual smoke launcher. [The portfolio runner](../../../apps/desktop/scripts/bilingual-portfolio-host.mjs#L232) already consumes the native smoke cleanup receipt.
+- Next check — Through the ordinary journey's real child-result boundary, distinguish a failed assertion with confirmed teardown from failed/missing cleanup evidence. Use a disposable profile and verify only the former can restore it after safe uninstall.
+- 2026-11-15 reconciliation — `inspected-present`. SAF-13 and MAF-01 already use a cleanup receipt on the portfolio and reader-correction routes. The ordinary launcher still discards that distinction. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0059--smoke-containment-before-profile-restoration)
+- 2026-11-15 deep validation — `inspected-present`. The separate smoke's missing containment verdict is not repaired by the already-closed ordinary session or successful uninstall. Verified no-spawn, failed session close and uncertain installer cleanup retain their distinct protections. No orphan or data loss was observed. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0059--restoration-requires-the-smokes-containment)
+
+## VF-0060
+
+**Trailing no-break space rejects a TOC label at the retained limit.** An
+otherwise admitted spine-target label containing 1,024 visible code points
+followed by U+00A0 is rejected before either parser trims the edge, so the
+desktop cannot open the EPUB.
+
+- Owners — [NavigationDocumentParser.appendLabelText](../../../packages/epub/src/navigation/navigation-document.ts#L521) and [NcxNavigationParser.appendLabelText](../../../packages/epub/src/navigation/ncx-navigation-parser.ts#L652), reached by public EPUB opening.
+- Disposition — `candidate`, P3 product compatibility at a narrow boundary. `inspected-present` on the [2026-11-15 snapshot][audit-2026-11-15]; high confidence in the rejection, incidence unknown.
+- Lineage — Variant of [VF-0047](#vf-0047). That fix trims short labels; its retained attribute byte control and the [NCX length control](../../../packages/epub/src/navigation/ncx-navigation-parser.test.ts#L179) exercise normalization and the maximum separately.
+- Next check — Open EPUB 2 and 3 fixtures with padded exact-maximum labels; compare ASCII padding, unpadded labels and a genuinely oversized normalized label. Preserve internal no-break spaces and separate XML/attribute budgets.
+- 2026-11-15 reconciliation — `inspected-present`. Commit `fa2ff5d` added end trimming for VF-0047 and retained the earlier immediate length check. The combined maximum-length plus trailing NBSP case survived that fix. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0060--toc-label-limit-with-a-trailing-nbsp)
+- 2026-11-15 deep validation — `inspected-present`. The same retained-counter/trim mismatch also affects other admitted non-ASCII trailing padding, including U+202F. Leading Unicode padding, trailing ASCII padding and retained attribute UTF-8 charging are distinct controls to preserve. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0060--trim-and-retained-length)
+
+## VF-0061
+
+**An en space before a Spanish time duplicates the article.** In the active
+Spanish narration profiles, synthetic prose `Las\u200214:30.` yields
+`Las las catorce treinta.` at the prepared-text boundary. The article matcher
+omits U+2002 from its inline set, the bare time supplies its own article, and
+the later prose pass treats the space as ordinary whitespace.
+
+- Owner — [matchesLexicalForm](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L988), consumed by the active package preparation path.
+- Disposition — `candidate`, P3 product narration. `inspected-present` on the [2026-11-15 snapshot][audit-2026-11-15]; the predicted text is static evidence, not an audio measurement.
+- Lineage — Variant of [VF-0039](#vf-0039) and [VF-0009](#vf-0009). The finite matcher added the previously reported thin/figure and no-break spaces; U+2002 already belongs to the prose whitespace predicate but remains outside that matcher.
+- Next check — Compare the public prepared text and source spans with the already supported spaces and a bare time. Preserve semantic line/paragraph breaks, code, language barriers and guarded number compounds.
+- 2026-11-15 reconciliation — `inspected-present`. SAF-12, CFR-09 and U4 cover five separators together. U+2002 remains outside that context-specific matcher. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0061--u2002-between-article-and-time)
+- 2026-11-15 deep validation — `inspected-present`. U+2003 and other horizontal separators expose the same mismatch as U+2002. A one-character repair would leave the family incomplete; unrestricted whitespace would risk crossing semantic separators. Preserve the local gap, source spans, code/language guards and bounded continuation. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0061--the-gap-is-wider-than-u2002)
+
+## VF-0062
+
+**Direct Web Audio playback allocates two extra full-unit buffers.** The
+1× route converts the retained FIFO unit into a new `Float32Array`, allocates
+an equally sized `AudioBuffer`, then copies between them. Both are live together
+at the copy. For 480,000 frames this is up to 3,840,000 additional bytes of
+sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
+
+- Owner — [WebAudioPcmPlaybackBackend.#startDirect](../../../apps/desktop/src/tts/playback-backends/web-audio-pcm-playback.ts#L195) and [#readRemainingPcm](../../../apps/desktop/src/tts/playback-backends/web-audio-pcm-playback.ts#L170), reached at the default playback rate. [Buffer authority](../../architecture/adaptive-buffer-authority-v1.md#playback-api-implementation).
+- Disposition — `candidate`, P3 resource budget. `inspected-present` on the [2026-11-15 snapshot][audit-2026-11-15]. This counts logical allocations during a copy; it does not establish process memory, retention across units, an underrun or a leak.
+- Lineage — No matching registry entry found in the inspected playback history. The same allocations predate the backend file split (`fbb39a17`); origin and prior coverage escape are unknown.
+- Next check — Observe allocations for one complete max-sized 1× unit. Preserve finite-sample rejection, exact starter offset, original FIFO ownership, and the separate transferred-input worklet path at slow rates.
+- 2026-11-15 reconciliation — `inspected-present`. Git shows one direct device copy in the parent of `bc4c1a8` and the new staging array in that commit (#169). #230 moved the backend with the existing allocation. The current test counts Web Audio buffers and misses the staging array. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0062--second-full-unit-allocation-at-1)
+- 2026-11-15 deep validation — `inspected-present` as a logical allocation-contract violation. The non-default v3 allowance does not relax the sole direct active-device-copy invariant. No process-memory, leak, crash or audible effect was measured. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0062--allocation-not-a-measured-leak)
+
+## VF-0063
+
+**Shift+Space scrolling cannot recover Play after unavailable placement.** With focus on reader content, moving upward by a page with Shift+Space can reach a readable passage while Play remains disabled. The key handler filters out Shift before arming the manual-scroll measurement, which is the input that can clear the placement gate.
+
+- Owners — [ReaderPublication key and scroll handlers](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1341), [ActiveVisualLocatorTracker.admitManualScrollMovement](../../../apps/desktop/src/reader/active-visual-locator.ts#L429) and [ProductNarrationCoordinator.updateVisibleLocator](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L909).
+- Disposition — `candidate`, P2 reader recovery. `inspected-present` for the source path when the focused viewport scrolls and there is no other pending manual intent. Upstream default scrolling supports the trigger. Installed WebView2 delivery and incidence remain unmeasured. [Second-pass assessment][audit-2026-11-15-pass-2]
+- Lineage — Variant of [VF-0003](#vf-0003) and [VF-0034](#vf-0034) through a keyboard modifier guard. The historical recovery controls exercise wheel, unmodified PageDown and scrollbar movement. The original reason for the broad modifier filter is unknown.
+- Next check — Use a trusted Shift+Space event with upward scroll room and reader focus after an unavailable placement. Check actual movement, Play eligibility and the first prepared locator. Compare unmodified PageUp, a focused button and programmatic scroll.
+- 2026-11-15 reconciliation — `inspected-present` conditional on actual host scrolling. CFR-03 (#314) introduced the modifier guard and proved unmodified PageDown. VF-0034 subsequently exercised the scrollbar route. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0063--shiftspace-after-unavailable-placement)
+- 2026-11-15 deep validation — `inspected-present` conditional on real host viewport movement. Upstream Blink also permits Ctrl+Home/End on Windows, while this guard rejects Ctrl. Retain these as explicit same-owner variants, with installed WebView2 input/geometry still unobserved. A Shift+Space-only fix is insufficient for that broader chord coverage. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0063--modified-scrolling-keys)
+
+## VF-0064
+
+**Implicit paragraphs lose the direction of their XHTML container.** Direct text in a `<div dir="rtl">` inside an otherwise `ltr` chapter becomes a paragraph whose direction comes from the enclosing block collector. The text keeps its RTL context on an inline span. The paragraph retains an LTR base direction, which also supplies the side from which the reader samples its caret.
+
+- Owners — [XhtmlProjector.consumeBodyElement](../../../packages/epub/src/document/xhtml-projector.ts#L947) and [flushPendingParagraph](../../../packages/epub/src/document/xhtml-projector.ts#L1392), through the [semantic paragraph renderer](../../../apps/desktop/src/reader/SemanticDocument.tsx#L546) and [visual locator sample](../../../apps/desktop/src/reader/active-visual-locator.ts#L662). [Direction preservation requirement](../../architecture/decisions/ADR-0008-visual-reader-architecture.md#render-closed-semantic-values-directly-in-the-application-dom).
+- Disposition — `candidate`, P3 reader presentation. `inspected-present` for the RTL wrapper with direct text in an LTR chapter. The emitted attributes and sampling side follow from source. The resulting caret offset depends on geometry. [Second-pass assessment][audit-2026-11-15-pass-2]
+- Lineage — [VF-0036](#vf-0036) concerns locator shifts from an empty inline anchor. This case concerns direction on the projected paragraph. The M003 projection fixture covers inherited chapter direction and the renderer fixture supplies explicit block direction. Origin and earlier escape are unknown.
+- Next check — Compare the semantic and rendered paragraph direction for an implicit RTL paragraph and an explicit `p` under the same wrapper. Check neighboring LTR prose, nested overrides and the measured reading-line caret.
+- 2026-11-15 reconciliation — `inspected-present`. M003 covers inherited context, SFA-04 covers table and definition boundaries, and VF-0036 covers inert anchors. The `div` context discrepancy predates SFA-04. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0064--base-direction-of-implicit-paragraphs)
+- 2026-11-15 deep validation — `inspected-present` for the semantic block direction. Explicit paragraphs preserve effective direction; implicit ones lose the nearest block override. A specific caret offset or damaged saved position remains unproved. Preserve block IDs and inline overrides when fixing. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0064--implicit-block-direction)
+
+## VF-0065
+
+**v14 derivation deletes the raw session before validation.** The official derive command removes the ignored session in a `finally` before checking the loaded evidence and even after an evidence read fails. A recoverable authority mismatch can leave the operator with neither raw input for another attempt nor a validated summary.
+
+- Owners — [batch_result_cli._run_successor](../../../services/tts/benchmarks/batch_result_cli.py#L100), reached by [`benchmark:tts:batch:derive`](../../../package.json#L55), and [derive_v14_summary](../../../services/tts/benchmarks/batch_result.py#L164). [Documented v14 workflow](../../../benchmarks/tts/README.md#L581).
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` for a readable session and a validation rejection after successful directory removal. For v14 hardware evidence, the trigger is prospective. [Second-pass assessment][audit-2026-11-15-pass-2]
+- Lineage — Adjacent to [VF-0024](#vf-0024). This case loses inputs before validation in a separate result owner. The [DCR-17 routing assertion](../../../services/tts/tests/test_benchmark_batch_cli.py#L251) explicitly expects the session to be absent at derivation entry. The reason the destructive ordering was retained is unknown.
+- Next check — Use a complete synthetic v14 session with a mismatched local schema digest, restore the expected schema, and retry with the same session. Keep successful scoped cleanup before summary emission and preserve the frozen legacy derivation routes.
+- 2026-11-15 reconciliation — `inspected-present`. DCR-17 introduced the v13 order in `2e464da` and U11 inherited it in v14. The routing assertion freezes deletion before entry to a substituted deriver. The reviewed decisions contain no requirement to discard retryable input on rejection. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0065--v14-session-deletion-before-validation)
+- 2026-11-15 deep validation — `inspected-present`. Both read failure and authority rejection consume inputs. The documented rule requires deletion before successful output, not before validation. Partial cleanup and output-pipe failure are separate recovery limits; early concurrent derivation is outside the documented sequential flow. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0065--validation-before-consumption)
+
+## VF-0066
+
+**A pending refill can resume below one playable minute after a rate change.** After an involuntary underrun with more narration expected, 45 seconds of source audio qualifies for refill at 0.75×. If the stretcher is still preparing when the listener returns to 1.00×, the scheduler keeps its earlier admission and the direct backend can start the next unit with only 45 playable seconds.
+
+- Owners — [AdaptiveBufferScheduler.selectPlaybackRatePercent](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L642), [refill state](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1067) and [AdaptivePcmPlayer.synchronize](../../../apps/desktop/src/tts/pcm-playback.ts#L201). [Refill authority](../../architecture/adaptive-buffer-authority-v1.md#low-water-and-exhaustion).
+- Disposition — `candidate`, P2 playback. `inspected-present` for a cold slower-rate path with exactly this ordering. Device timing and incidence remain unmeasured. [Third-pass assessment][audit-2026-11-15-pass-3]
+- Lineage — Adjacent to [VF-0041](#vf-0041) and DCR-24. This case concerns admission before a resumed unit starts. Existing controls cover a fixed-rate underrun and first-start rate preparation with Pause. Historical origin and escape are unknown. [Underrun control](../../../apps/desktop/src/tts/pcm-playback.test.ts#L2137), [rate preparation control](../../../apps/desktop/src/tts/pcm-playback.test.ts#L1625).
+- Next check — Deplete a 1.00× run, buffer 45 source seconds, hold slower-rate preparation pending, and return to 1.00×. Observe no device start until the current-rate minute is available. Preserve the complete shorter tail, explicit playback overrides and the rate of a unit already started.
+- 2026-11-15 reconciliation — `inspected-present`. U2/3.2 explicitly corrected 45 seconds at 0.75× followed by 1× before the initial allocation. Its change left the post-underrun case with initial playback already committed. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0066--rate-change-during-pending-automatic-refill)
+- 2026-11-15 deep validation — `inspected-present`. Worklet-preparation failure can automatically fall back to 1x through the same stale refill admission, without a second user rate selection. Preserve ordinary unit succession, explicit Resume/Play available, shorter complete tails and the original underrun count. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0066--both-explicit-and-automatic-rate-fallback)
+
+## VF-0067
+
+**The ordinary journey can record a different installer from the one it ran.** If a build replaces the installer at its original path after installation, the ordinary journey hashes the replacement when writing its result. The attached journey observation can then refer to an installer whose installed behavior the journey did not exercise.
+
+- Owners — [runJourney](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L1131), [receipt construction](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L330) and [receipt admission](../../../apps/desktop/scripts/windows-release.mjs#L416). [Hash-bound journey decision](../../architecture/decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md#context).
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` when the replacement precedes receipt construction and the journey otherwise passes. No actual misattributed receipt was observed. [Third-pass assessment][audit-2026-11-15-pass-3]
+- Lineage — [VF-0015](#vf-0015) and [VF-0023](#vf-0023) cover schema checks after receipt generation. The lifecycle runner separately compares its initial and final installer identity. Historical origin and escape of the ordinary producer gap are unknown. [Lifecycle comparison](../../../scripts/test-windows-package-lifecycle.ps1#L433).
+- Next check — Use disposable files and controlled installer completion. Replace the source at the same path after its launch and assert that a successful receipt can identify only the bytes used for installation. Preserve the separate installed-executable identity and failure cleanup.
+- 2026-11-15 reconciliation — `inspected-present`. The producer's late hash dates to #205. CFR-15/CFR-23 protect the consumer and the separate lifecycle runner compares pre/post identities. The proposal binds the installer actually launched by the ordinary journey. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0067--installer-bytes-attributed-to-the-ordinary-journey)
+- 2026-11-15 deep validation — `inspected-present` for concurrent source-installer replacement. Consumer hash equality cannot prove which bytes were launched. Distinguish the installed executable from the build executable; no misattributed published release was observed. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0067--the-exercised-installer-identity)
+
+## VF-0068
+
+**Attaching receipts can change the build authority of unchanged artifacts.** With valid receipts and an unchanged installer and build executable, an update to the checkout's Piper manifest and matching distribution copy can change the Piper digest on package evidence. The installed resources still come from the original installer.
+
+- Owners — [PowerShell attachment branch](../../../scripts/build-windows-release.ps1#L152), [createPackageEvidence](../../../apps/desktop/scripts/windows-release.mjs#L593) and [writePackageEvidence](../../../apps/desktop/scripts/windows-release.mjs#L764). The [historical desktop layout runner](../../../apps/desktop/scripts/tts-adapter-layout-host.mjs#L1450) also reads this digest as the identity of the packaged resource.
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` when current release inputs pass their configuration checks and differ from the build record. Existing package evidence was not regenerated or exercised. [Third-pass assessment][audit-2026-11-15-pass-3]
+- Lineage — Adjacent to [VF-0019](#vf-0019). CFR-19's attachment controls cover scan preservation and live artifact drift. This case keeps the same artifacts and changes the build authority fields. Historical origin is unknown. [Attachment controls](../../../apps/desktop/scripts/windows-release.node-test.mjs#L1338).
+- Next check — Hold the built and installed bytes and both receipts fixed while changing a current authority digest. Require the attachment to preserve the original authority or refuse the write. Check unchanged-input attachment, new builds and existing signature, scan and receipt checks.
+- 2026-11-15 reconciliation — `inspected-present`. #205 reused the evidence builder for attachment. CFR-19 addresses signature and scan observations. The Piper field represents the packaged manifest digest, which the historical verifier compares against packaged bytes. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0068--build-authority-during-receipt-attachment)
+- 2026-11-15 deep validation — `inspected-present`. Preserving previous JSON is safe only with trustworthy build provenance. Authority inputs can already drift between bundling and the first baseline evidence write. The distinct fresh-build artifact-observation case is [VF-0072](#vf-0072). [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0068--attachment-cannot-establish-build-provenance)
+
+## VF-0069
+
+**v14 can pass scheduling after playback simulation fails.** A sequence of complete two-unit batches can overflow the replay buffer. The official runner records `playback-invalid` and fills the playback measurements with zeros. Those zeros satisfy the summary's buffering and retention predicates, which lets the sustainability conclusion pass if the other checks do.
+
+- Owners — [simulate_bounded_playback](../../../services/tts/benchmarks/batch_playback.py#L92), [batch_official._playback_raw](../../../services/tts/benchmarks/batch_official.py#L676), [batch_result._derive_summary](../../../services/tts/benchmarks/batch_result.py#L403) and the [inherited conclusion validator](../../../services/tts/benchmarks/v4_authority.py#L613).
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` for a completed matrix whose replay is rejected and whose remaining scheduling predicates pass. No v14 run or sustainability claim was reproduced. [Fourth-pass assessment][audit-2026-11-15-pass-4]
+- Lineage — Adjacent to [VF-0065](#vf-0065) in the current derivation command. This defect concerns an emitted conclusion. The simulator's existing limit check expects rejection for over-capacity arrivals. Historical origin is unknown. [Simulator assertion](../../../services/tts/tests/test_benchmark_batch_execution.py#L236), [backpressure and scheduling authority](../../../benchmarks/tts/profile-v4.json#L254).
+- Next check — Carry a completed otherwise qualifying matrix through v14 derivation with consecutive pairs whose unchecked arrival would exceed capacity. Require a permissible bounded replay or a failed scheduling conclusion. Preserve the observed invalid-playback code and verify a valid replay and a real underrun.
+- 2026-11-15 reconciliation — `inspected-present`. The omission dates to the official v4 matrix. DCR-17 and U11 added separate cleanup and cancellation requirements. The current schema and validator accept the all-zero failure placeholder for the otherwise qualifying sequence. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0069--scheduling-pass-after-replay-rejection)
+- 2026-11-15 deep validation — `inspected-present`; scope expanded to both standard viability and sustainability when the remaining gates pass. The producer's ordinary `playback-incomplete` path already carries failed attempts and does not provide the same natural false-PASS example. Demo usefulness stays not-evaluated. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0069--rejected-playback-cannot-prove-a-passing-gate)
+
+## VF-0070
+
+**v14 CPU admission accepts a memory signal unrelated to the failed batch.** A complete full-GPU summary can pair an unrelated measured failure with a qualifying memory code observed at the final sample. The admission check accepts the two aggregate facts without evidence that the first attempt of a two-unit batch hit the memory stop.
+
+- Owners — [monitor final sample](../../../services/tts/benchmarks/batch_official.py#L434), [failed-attempt aggregation](../../../services/tts/benchmarks/batch_result.py#L293) and [load_v14_cpu_admission](../../../services/tts/benchmarks/v14_authority.py#L279). [First-attempt requirement](../../../benchmarks/tts/profile-v4.json#L267).
+- Disposition — `candidate`, P2 maintainer tooling. `inspected-present` for an otherwise valid committed v14 GPU summary satisfying the aggregate predicates. Current CPU admission remains prospective. [Fourth-pass assessment][audit-2026-11-15-pass-4]
+- Lineage — U11/2.3 protects version and committed input identity. ADD-02 correctly ends early/mid-run stops before session publication. The admission fixture supplies a memory code and a positive failure count independently, so it cannot distinguish a stop on the qualifying attempt. Historical origin is unknown. [U11 decision](../../architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md#decision), [existing admission fixture](../../../services/tts/tests/test_benchmark_v14_authority.py#L136).
+- Next check — Distinguish a memory stop attributed to the exact batch-two first attempt from an unrelated attempt failure plus a final-sample reserve breach. Keep the latter nonqualifying and retain version, commit and verified cleanup guards.
+- 2026-11-15 reconciliation — `inspected-present`. v14 inherits the independent aggregate checks from its predecessors. An active safety stop currently exits before a derivable session. A positive CPU admission path needs a versioned proof of attributable stop and cleanup. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0070--batch-specific-cpu-admission)
+- 2026-11-15 deep validation — `inspected-present`. Traced an unrelated measured failure through failed-row completion, valid independent cancellation trials, final-only reserve breach and exact committed-summary admission. Historical placeholders establish matrix structure, not dispatched attempts, and are not a new defect by themselves. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0070--row-counts-are-not-causal-stop-proof)
+
+## VF-0071
+
+**v14 derivation can use cold-load observations from another run.** The runner writes cold-load times to a separate file. Given a session with valid raw evidence and the five well-shaped load observations of another run, derivation combines them and can change the cold-load p95 and the standard conclusion.
+
+- Owners — [batch_cli._run](../../../services/tts/benchmarks/batch_cli.py#L326), [batch_result_cli._run_successor](../../../services/tts/benchmarks/batch_result_cli.py#L100) and [batch_result._load_observations](../../../services/tts/benchmarks/batch_result.py#L74).
+- Historical candidate assessment — `candidate`, P3 evidence integrity. `inspected-present` for mixed local inputs. The normal writer emits the two files from one execution. No naturally mixed session was observed. [Fourth-pass assessment][audit-2026-11-15-pass-4]
+- Lineage — Related to [VF-0065](#vf-0065) at the same input boundary. This case can derive an incorrect summary from two individually readable inputs. Existing [CLI routing assertions](../../../services/tts/tests/test_benchmark_batch_cli.py#L228) check version and cleanup with a substituted deriver. Historical origin is unknown.
+- Next check — Exchange the cold-load files of two complete disposable sessions with different load times. Check that only the original paired observations can contribute to a report. Preserve legacy read semantics and retryable current inputs.
+- 2026-11-15 reconciliation — `inspected-present` for externally mixed inputs. The normal exclusive session writer emits a matched pair. v5 puts load observations in its own raw record. The short-segment route still validates the two files separately. [Case review](audits/2026-11-15-findings-reconciliation.md#vf-0071--cold-load-session-binding)
+- 2026-11-15 deep validation — Disposition changed from `candidate` to `not-confirmed` as an ordinary workflow defect; latest check `inspected-inconclusive` for actionable ordinary-flow failure. The exclusive ID/version directory, one execution and post-write receipt produce a matched pair. External substitution remains source-supported conditional hardening, with no spontaneous mixing route found. The normal-flow input-loss defect is VF-0065. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0071--revise-the-actionable-classification)
+
+## VF-0072
+
+**Fresh package evidence can attribute signature and scan observations to replaced artifacts.** If another build replaces the installer after PowerShell reads its signature, optionally scans it and writes its checksum, but before Node hashes it, the evidence can identify the replacement while retaining the earlier observations. The checksum sidecar can still refer to the earlier installer.
+
+- Owners — [build finalization](../../../scripts/build-windows-release.ps1#L223), [initial evidence identity](../../../apps/desktop/scripts/windows-release.mjs#L551) and [attachment-only observation binding](../../../apps/desktop/scripts/windows-release.mjs#L738).
+- Disposition — `candidate`, P2 maintainer evidence integrity. `inspected-present` at `997cddff2a8658440324a87e44178a98018dea77` on 2026-11-15 for concurrent replacement during this interval. No signing incident, public release or natural occurrence was observed.
+- Lineage — Distinct fresh-build caller variant of [VF-0019](#vf-0019)/CFR-19. Related to [VF-0067](#vf-0067) for executed installer identity and [VF-0068](#vf-0068) for build-input authority. Attachment's observed-hash checks do not run for this caller, while the final rehash only compares the replacement with itself.
+- Next check — Use disposable artifacts and controlled signature/scan results. Replace the installer after the PowerShell observations and before Node's first hash, then require rejection or one identity across observed bytes, checksum and JSON. Keep signed/unsigned, optional scan, unchanged input, attach and later drift controls.
+- Correction boundary — Bind observations and publication to a run-owned immutable artifact snapshot, or fail before corresponding success on drift. Preserve independent installed/build identities and containment. Existing attachment tests do not establish this earlier boundary.
+- Evidence — [Deep validation](audits/2026-11-15-deep-findings-validation.md#vf-0072--build-observations-can-refer-to-replaced-bytes). Source inspection only, no executed reproduction.
+
+## VF-0073
+
+**A measured privacy detection can yield a passing v14 privacy audit.** An isolated measured worker detects forbidden diagnostic content and discards it, returning the fixed code `privacy`. Batch execution converts the resulting adapter exception to `generation-failed`; the summary then declares `audits.privacy = True` unconditionally. With valid independent cancellation trials and cleanup, an otherwise failed result can retain that false audit claim.
+
+- Owners — [isolated detection](../../../services/tts/benchmarks/isolation.py#L228), [measured error conversion](../../../services/tts/benchmarks/batch_execution.py#L237), [summary audit](../../../services/tts/benchmarks/batch_result.py#L348) and [v14 validation/admission](../../../services/tts/benchmarks/v14_authority.py#L263).
+- Disposition — `candidate`, P2 maintainer evidence integrity. `inspected-present` at `997cddff2a8658440324a87e44178a98018dea77` on 2026-11-15 for an otherwise derivable measured-call failure. This establishes a false audit field, not a demonstrated disclosure or global viability PASS.
+- Lineage — Variant of unimported [H4](../../plans/completed/validated-audit-follow-up.md#L238), which corrected unconditional privacy/cleanup success in v8-v11 screen builders. H3 corrected diagnostic detection; the current batch controller and summary are different owners. Related to [VF-0070](#vf-0070), whose CPU admission requires this privacy flag.
+- Next check — A harmless isolated worker prints a synthetic canary only during a measured batch. Verify the fixed privacy failure survives, captured text remains discarded, cleanup is verified, the summary cannot approve privacy, a contradictory direct summary is rejected and CPU admission remains closed. Keep generic generation failures and clean diagnostics as separate controls.
+- Correction boundary — Preserve the closed adapter failure code at the measured boundary and derive/validate failure or unproved privacy, or stop without a derivable result. Do not turn private content back into logs, relax cleanup, or reinterpret frozen historical versions.
+- Evidence — [Deep validation](audits/2026-11-15-deep-findings-validation.md#vf-0073--measured-privacy-detection-is-reported-as-a-passing-audit). Source inspection only, no executed reproduction.
+
 ## VF-0056
 
 **Missing installer helper unnecessarily retains the application-data backup.**
@@ -902,5 +1126,9 @@ restoring the absent destination.
 [audit-2026-11-13-pass-5]: audits/2026-11-13-static-logic-audit-pass-5.md
 [audit-2026-11-13-reconciliation]: audits/2026-11-13-findings-reconciliation.md
 [audit-2026-11-13-deep]: audits/2026-11-13-deep-findings-validation.md
+[audit-2026-11-15]: audits/2026-11-15-static-logic-audit.md
+[audit-2026-11-15-pass-2]: audits/2026-11-15-static-logic-audit-pass-2.md
+[audit-2026-11-15-pass-3]: audits/2026-11-15-static-logic-audit-pass-3.md
+[audit-2026-11-15-pass-4]: audits/2026-11-15-static-logic-audit-pass-4.md
 
 - 2026-11-14 execution — `reproduced` on the original relevant owner: controlled production Reader/coordinator reentrancy with zero retired synthesis dispatch; no natural-incidence or stale-audio claim. Minimal correction is implemented on `fab1c9e186552515e828c33ce75e11628dda8300` plus the task patch; full integration, native artifact and independent approval are pending. Original failures, succeeding controls and input identities are in the [execution ledger](../../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md). This is not yet a `validated` or `fixed` disposition.
