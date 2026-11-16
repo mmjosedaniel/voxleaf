@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans listed.
+- [Five-search findings: minimal corrections](five-search-findings-minimal-corrections.md) — planning only; 17 bounded correction candidates, conditional VF-0074 investigation and VF-0082 excluded under the sequential contract. Execution has not started.
 
 Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
 
