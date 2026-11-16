@@ -220,6 +220,29 @@ def validate_v14_result(
     summary: bool,
     execution_checker: Callable[[str], bool] | None = None,
 ) -> None:
+    _validate_result(root, value, summary=summary, execution_checker=execution_checker)
+
+
+def validate_v14_safety_raw(
+    root: Path,
+    value: object,
+    *,
+    execution_checker: Callable[[str], bool] | None = None,
+) -> None:
+    """Prospective raw keeps the frozen measurements but represents pending restoration."""
+    _validate_result(
+        root, value, summary=False, execution_checker=execution_checker, safety_raw=True
+    )
+
+
+def _validate_result(
+    root: Path,
+    value: object,
+    *,
+    summary: bool,
+    execution_checker: Callable[[str], bool] | None = None,
+    safety_raw: bool = False,
+) -> None:
     from jsonschema import Draft202012Validator
     from referencing import Resource
 
@@ -227,6 +250,18 @@ def validate_v14_result(
     result = _mapping(value, "result-object")
     _reject_private_content(result, predecessor.corpus)
     schema = _load_object(root / (SUMMARY_SCHEMA_PATH if summary else RAW_SCHEMA_PATH))
+    if safety_raw:
+        from benchmarks.benchmark_safety import BATCH_RAW_VERSION
+
+        properties = cast(dict[str, object], schema["properties"])
+        properties["schemaVersion"] = {"const": BATCH_RAW_VERSION}
+        # This is a new in-memory schema, not a mutation of the frozen authority.
+        predecessor_schema = _load_object(root / v13_authority.RAW_SCHEMA_PATH)
+        cleanup = cast(
+            dict[str, object], cast(dict[str, object], predecessor_schema["properties"])["cleanup"]
+        )
+        cast(dict[str, object], cleanup["properties"])["sleepSettingRestored"] = {"const": False}
+        properties["cleanup"] = cleanup
     registry = _schema_registry(predecessor)
     for path in (v13_authority.RAW_SCHEMA_PATH, v13_authority.SUMMARY_SCHEMA_PATH, RAW_SCHEMA_PATH):
         reference = _load_object(root / path)

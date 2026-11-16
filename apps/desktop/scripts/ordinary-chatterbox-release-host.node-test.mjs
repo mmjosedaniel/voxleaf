@@ -17,6 +17,7 @@ import path from "node:path";
 import process from "node:process";
 import test, { after } from "node:test";
 import { URL } from "node:url";
+import { createContext, runInContext } from "node:vm";
 
 import {
   assertNoDevelopmentEnvironment,
@@ -41,10 +42,322 @@ import {
   waitForStableInstallRootAbsence,
 } from "./ordinary-chatterbox-release-host.mjs";
 import { WebDriverClientError } from "./native-webdriver-client.mjs";
-import { boundedDownloadInPage } from "./optional-download-probe.mjs";
+import {
+  boundedDownloadInPage,
+  exerciseOptionalDownloadProbe,
+} from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+for (const mode of [
+  "retry-failure",
+  "reinstall-failure",
+  "delayed-success",
+  "EACCES",
+  "EIO",
+  "unknown",
+  "residue",
+]) {
+  test(`FSF-VF-0076/VF-0081 journey joins Download and proves staging absence: ${mode}`, async () => {
+    const owned = await mkdtemp(path.join(root, "fsf-journey-"));
+    const originalLocalData = process.env.LOCALAPPDATA;
+    const dataRoot = path.join(owned, "com.voxleaf.desktop");
+    const options = {
+      installedRoot: path.join(owned, "VoxLeaf"),
+      installer: path.join(owned, "synthetic-installer.exe"),
+      receipt: path.join(owned, "receipt.json"),
+      tauriDriver: path.join(owned, "driver.exe"),
+      edgeDriver: path.join(owned, "edge.exe"),
+      mode: "journey",
+    };
+    await mkdir(dataRoot);
+    await writeFile(path.join(dataRoot, "sentinel"), "original");
+    for (const file of [
+      options.installer,
+      options.tauriDriver,
+      options.edgeDriver,
+    ])
+      await writeFile(file, "synthetic prerequisite");
+    let state = "absent";
+    let attempts = 0;
+    let acknowledged = 0;
+    let cancelDownload;
+    let uninstallCalls = 0;
+    let closeBeforeTerminal = false;
+    const pending = [];
+    const known = (value) => ({ status: "known", value });
+    const hostReport = {
+      schemaVersion: 1,
+      platform: { operatingSystem: "windows", architecture: "x86_64" },
+      processor: { logicalProcessorCount: known(8) },
+      memory: {
+        totalPhysicalMiB: known(32768),
+        availablePhysicalMiB: known(8192),
+      },
+      providers: {
+        cuda: {
+          availability: "available",
+          deviceClass: "discrete-gpu",
+          precisions: { bfloat16: "available" },
+          dedicatedMemoryMiB: known(8192),
+          availableDedicatedMemoryMiB: known(8192),
+        },
+      },
+      cudaComputeCapability: { status: "known", major: 12, minor: 0 },
+    };
+    const nativeInvoke = async (command) => {
+      if (command === "release_locked_runtime_enabled") return true;
+      if (command === "tts_profile_configuration_available") return false;
+      if (command === "detect_host_profile_compatibility") return hostReport;
+      if (command === "optional_chatterbox_download_diagnostic") return null;
+      if (command === "optional_chatterbox_snapshot") return { state };
+      if (command === "select_optional_chatterbox")
+        return { state: "confirming" };
+      if (command === "cancel_optional_chatterbox") {
+        state = "absent";
+        cancelDownload?.({ state });
+        acknowledged = attempts;
+        return { state };
+      }
+      if (command === "remove_optional_chatterbox") {
+        state = "absent";
+        return { state };
+      }
+      assert.equal(command, "download_optional_chatterbox");
+      const attempt = ++attempts;
+      if (attempt === 1) {
+        state = "downloading";
+        return await new Promise((resolve) => {
+          cancelDownload = resolve;
+        });
+      }
+      state = "installed";
+      const work = new Promise((resolve, reject) =>
+        setTimeout(() => {
+          acknowledged = attempt;
+          if (
+            (mode === "retry-failure" && attempt === 2) ||
+            (mode === "reinstall-failure" && attempt === 3)
+          )
+            reject(new Error("synthetic-terminal-cleanup"));
+          else resolve({ state: "installed" });
+        }, 60),
+      );
+      pending.push(work);
+      return await work;
+    };
+    const inspectionFailure = ["EACCES", "EIO", "unknown", "residue"].includes(
+      mode,
+    );
+    process.env.LOCALAPPDATA = owned;
+    try {
+      const result = await runJourney(
+        options,
+        { ...process.env, USERPROFILE: owned },
+        {
+          runInstaller: async () => {
+            await mkdir(options.installedRoot);
+            await mkdir(dataRoot);
+          },
+          runUninstaller: async () => {
+            uninstallCalls++;
+            await rmdir(options.installedRoot);
+          },
+          runPreflight: async () => ({
+            artifact: { executable: options.installer },
+          }),
+          runBilingualSmoke: async () => {},
+          createOrdinarySession: async () => {
+            const context = createContext({
+              __TAURI_INTERNALS__: { invoke: nativeInvoke },
+            });
+            return {
+              client: {
+                hasSession: true,
+                execute: async (source) =>
+                  await runInContext(`(async () => { ${source} })()`, context),
+              },
+              close: async () => {
+                if (attempts > acknowledged) closeBeforeTerminal = true;
+              },
+            };
+          },
+          inspectStaging: async () => {
+            if (mode === "residue") return {};
+            throw Object.assign(new Error("synthetic-inspection"), {
+              code: inspectionFailure
+                ? mode === "unknown"
+                  ? undefined
+                  : mode
+                : "ENOENT",
+            });
+          },
+        },
+      ).then(
+        (value) => ({ value }),
+        (error) => ({ error }),
+      );
+      await Promise.allSettled(pending);
+      assert.equal(uninstallCalls, 1);
+      assert.equal(
+        await readFile(path.join(dataRoot, "sentinel"), "utf8"),
+        "original",
+      );
+      if (mode === "delayed-success") {
+        assert.equal(result.error, undefined);
+        assert.equal(result.value.result, "passed");
+        assert.equal(attempts, 3);
+        assert.equal(closeBeforeTerminal, false);
+      } else {
+        assert.ok(
+          result.error,
+          "must not publish success from an Installed snapshot or unknown absence",
+        );
+        await assert.rejects(readFile(options.receipt), { code: "ENOENT" });
+        assert.equal(
+          attempts,
+          inspectionFailure ? 1 : mode === "retry-failure" ? 2 : 3,
+        );
+      }
+    } finally {
+      await Promise.allSettled(pending);
+      if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+      else process.env.LOCALAPPDATA = originalLocalData;
+    }
+  });
+}
+
+test("FSF-VF-0088 download probe rejects a response error after its barrier", async () => {
+  const dataRoot = await mkdtemp(path.join(root, "fsf-probe-"));
+  const profileId = "synthetic-profile";
+  const partialParent = path.join(
+    dataRoot,
+    "tts/staging",
+    profileId,
+    "operation/downloads/runtime",
+  );
+  await mkdir(partialParent, { recursive: true });
+  let reads = 0;
+  const diagnostic = {
+    source: "github-release",
+    artifactIndex: 0,
+    stage: "response",
+    kind: "http-status",
+    osError: null,
+  };
+  await assert.rejects(
+    exerciseOptionalDownloadProbe({
+      client: {
+        execute: async (source) =>
+          source.includes("return globalThis.__voxleafDownloadProbe;")
+            ? { state: "failed", peakBytes: 0 }
+            : true,
+        sendKeys: async () => {
+          throw new Error("wrongly-accepted-probe");
+        },
+        findElement: async () => "fixture",
+      },
+      dataRoot,
+      profileId,
+      repositoryRoot: path.resolve("."),
+      invoke: async () => (++reads === 1 ? null : diagnostic),
+    }),
+    /download-probe-error-not-captured/,
+  );
+});
+
+for (const variant of [
+  "matching",
+  "artifact",
+  "source",
+  "kind",
+  "os-error",
+  "export",
+  "cancel-retention",
+]) {
+  test(`FSF-VF-0088 matches file-create evidence and preserves export/Cancel: ${variant}`, async () => {
+    const dataRoot = await mkdtemp(path.join(root, "fsf-probe-"));
+    const profileId = "synthetic-profile";
+    await mkdir(
+      path.join(
+        dataRoot,
+        "tts/staging",
+        profileId,
+        "operation/downloads/runtime",
+      ),
+      { recursive: true },
+    );
+    let diagnosticReads = 0;
+    let begins = 0;
+    let exportPath;
+    const diagnostic = {
+      source: "github-release",
+      artifactIndex: 0,
+      stage: "create-file",
+      kind: "io",
+      osError: 5,
+    };
+    if (variant === "artifact") diagnostic.artifactIndex = 1;
+    if (variant === "source") diagnostic.source = "hugging-face";
+    if (variant === "kind") diagnostic.kind = "connection";
+    if (variant === "os-error") diagnostic.osError = null;
+    const work = exerciseOptionalDownloadProbe({
+      client: {
+        execute: async (source) => {
+          if (source.includes("__voxleafDownloadProbe = null")) begins++;
+          if (source === "return globalThis.__voxleafDownloadProbe;")
+            return begins === 1
+              ? { state: "failed", peakBytes: 0 }
+              : {
+                  state: "absent",
+                  peakBytes: 1_048_576,
+                  cancellationRequested: true,
+                };
+          return true;
+        },
+        findElement: async () => "fixture",
+        sendKeys: async () => {},
+        executeCdp: async (_command, { downloadPath }) => {
+          exportPath = downloadPath;
+        },
+        click: async () => {
+          await writeFile(
+            path.join(exportPath, "voxleaf-download-error.json"),
+            JSON.stringify(variant === "export" ? {} : diagnostic),
+          );
+        },
+      },
+      dataRoot,
+      profileId,
+      repositoryRoot: path.resolve("."),
+      invoke: async () => {
+        diagnosticReads++;
+        if (
+          diagnosticReads === 1 ||
+          (diagnosticReads === 3 && variant === "cancel-retention")
+        )
+          return null;
+        return diagnostic;
+      },
+    });
+    if (variant === "matching") {
+      const result = await work;
+      assert.equal(result.passed, true);
+      assert.deepEqual(result.exported, diagnostic);
+      assert.equal(begins, 2);
+    } else {
+      await assert.rejects(
+        work,
+        variant === "export"
+          ? /export-mismatch/
+          : variant === "cancel-retention"
+            ? /cancel-overwrote-error/
+            : /error-not-captured/,
+      );
+    }
+  });
+}
 
 test("VF-0059 native smoke restores only with confirmed containment", async () => {
   const childPath = path.join(root, "native-receipt.mjs");

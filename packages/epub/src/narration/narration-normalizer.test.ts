@@ -40,6 +40,30 @@ import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 
 const DOCUMENT_ID = "document:normalization" as ContentDocumentId;
 
+it.each(["\u00ad", "\u200b", "\u2060"])(
+  "FSF-VF-0078 retains typed omission and exact source mapping inside an article gap: %s",
+  (mark) => {
+    const leaf = leafFor(paragraph([text(`Las ${mark}14:30.`)]));
+    const normalized = normalizeBilingualNarrationSourceTokens(
+      leaf.sourceTokens,
+      "es",
+    );
+    expect(normalized.text).toBe("Las catorce treinta.");
+    const omission = normalized.units.find(
+      (unit) => unit.sourceSpan.startOffsetCodePoints === 4,
+    );
+    expect(omission).toMatchObject({
+      kind: "omission",
+      reason: mark === "\u00ad" ? "soft-hyphen" : "formatting-mark",
+      sourceSpan: { startOffsetCodePoints: 4, endOffsetCodePoints: 5 },
+    });
+    assertSourceMapping(
+      leaf,
+      normalized as unknown as NarrationNormalizedStream,
+    );
+  },
+);
+
 it.each([
   [
     "same prose",

@@ -5,6 +5,7 @@ import type {
   SemanticTextContext,
   SemanticTextDirection,
 } from "@voxleaf/epub";
+import { AUTO_DIRECTION_PROBE_NODE_COUNT } from "./semantic-auto-direction";
 
 export const LARGE_CHAPTER_BATCH_SIZE_BLOCKS = 250;
 export const LARGE_CHAPTER_BLOCK_LIMIT = 10_000;
@@ -29,6 +30,7 @@ export type SemanticDocumentRenderCapacity =
 interface EffectiveTextContext {
   readonly language?: string;
   readonly direction?: SemanticTextDirection;
+  readonly autoDirectionScope?: number;
 }
 
 const EMPTY_TEXT_CONTEXT: EffectiveTextContext = Object.freeze({});
@@ -62,6 +64,13 @@ function effectiveTextContext(
   inherited: EffectiveTextContext,
 ): EffectiveTextContext {
   return {
+    ...(value.direction === undefined
+      ? inherited.autoDirectionScope === undefined
+        ? {}
+        : { autoDirectionScope: inherited.autoDirectionScope }
+      : value.autoDirectionScope === undefined
+        ? {}
+        : { autoDirectionScope: value.autoDirectionScope }),
     ...(value.language === undefined
       ? inherited.language === undefined
         ? {}
@@ -83,7 +92,9 @@ function changesTextContext(
     (current.language !== undefined &&
       current.language !== inherited.language) ||
     (current.direction !== undefined &&
-      current.direction !== inherited.direction)
+      (current.direction !== inherited.direction ||
+        (current.direction === "auto" &&
+          current.autoDirectionScope !== inherited.autoDirectionScope)))
   );
 }
 
@@ -182,6 +193,8 @@ export function assessSemanticDocumentRendering(
   const context = effectiveTextContext(document, EMPTY_TEXT_CONTEXT);
 
   try {
+    if ((document.autoDirectionScopeCount ?? 0) > 0)
+      counter.addDomNodes(AUTO_DIRECTION_PROBE_NODE_COUNT);
     for (const block of document.blocks) {
       countBlock(block, context, counter);
     }

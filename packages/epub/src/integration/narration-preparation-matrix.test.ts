@@ -31,6 +31,182 @@ afterEach(() => {
 
 describe("public synthetic EPUB-to-narration integration matrix", () => {
   it.each([
+    ...["\u00ad", "\u200b", "\u2060"].flatMap((mark) => [
+      ["VF-0078", "es", `Las ${mark}14:30.`, "Las catorce treinta."],
+      [
+        "VF-0084",
+        "en",
+        `Meet at Baker${mark} St. Then turn.`,
+        "Meet at Baker St. Then turn.",
+      ],
+    ]),
+    ["VF-0092", "en", "St.<code> </code>James", "St. James"],
+    ["VF-0092", "en", "Dr.<code> </code>Morgan", "Dr. Morgan"],
+    ["VF-0092", "en", 'St.<span lang="fr">&#160;</span>James', "St. James"],
+    ["control", "en", "St. James", "Saint James"],
+    ["control", "en", "Dr. Morgan", "Doctor Morgan"],
+    ["control", "es", "Las 14:30.", "Las catorce treinta."],
+    [
+      "VF-0084",
+      "en",
+      `${"a".repeat(156)}#Baker\u200b St. Then turn.`,
+      `${"a".repeat(156)}#Baker St. Then turn.`,
+      // Piper's 160-character boundary falls inside Baker; Chatterbox has a
+      // different bound. The join adds a separator only at Piper's hard split.
+      `${"a".repeat(156)}#Ba ker St. Then turn.`,
+    ],
+  ])(
+    "FSF-%s preserves public context and ranges: %s %s",
+    async (_id, language, source, expected, piperExpected?: string) => {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="${language}"><head><title>Synthetic</title></head><body><p>${source}</p></body></html>`,
+      });
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const opened = await openEpubPublication(bytes);
+        if (!opened.ok) throw new Error(opened.detail);
+        try {
+          const publication = opened.publication;
+          const single = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            language as NarrationPreparationLanguage,
+          );
+          const many = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            8,
+            profile,
+            language as NarrationPreparationLanguage,
+          );
+          expect(single.segments).toEqual(many.segments);
+          expect(single.segments.map((segment) => segment.text).join(" ")).toBe(
+            profile === "narration-piper-v2"
+              ? (piperExpected ?? expected)
+              : expected,
+          );
+          expect(
+            single.segments.at(-1)?.sourceRange.end.textOffsetCodePoints,
+          ).toBe(publication.locators[0]?.textLengthCodePoints);
+          for (const [index, segment] of single.segments.entries())
+            assertPublicSegment(publication, segment, index);
+          for (const segment of single.segments.slice(1)) {
+            const cold = await openEpubPublication(bytes);
+            if (!cold.ok) throw new Error(cold.detail);
+            try {
+              const result = await cold.publication.prepareNarration({
+                startLocator: segment.sourceRange.start,
+                profile,
+                defaultLanguage: language as NarrationPreparationLanguage,
+                maximumSegments: 1,
+              });
+              if (result.status !== "batch" && result.status !== "complete")
+                throw new Error(result.status);
+              expect(result.segments[0]).toEqual(segment);
+            } finally {
+              await cold.publication.close();
+            }
+          }
+        } finally {
+          await opened.publication.close();
+        }
+      }
+    },
+  );
+
+  it("FSF-CR1 Auto metadata preserves mixed unknown admission, anchors and narration", async () => {
+    const source =
+      '<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><title>Synthetic</title></head><body>Before <custom-box dir="auto">First <nested-box dir="auto">Nested <strong>strong.</strong></nested-box><p id="mixed">Mixed paragraph.</p>tail</custom-box> after<custom-box dir="auto"><p>Block one.</p><p>Block two.</p></custom-box><p>Before <custom-box dir="auto">Inline <em>emphasis.</em></custom-box> after</p></body></html>';
+    const bytes = await buildMinimalEpubFixture({ chapterDocument: source });
+    const fixedBytes = await buildMinimalEpubFixture({
+      chapterDocument: source.replaceAll('dir="auto"', 'dir="ltr"'),
+    });
+    const auto = await openEpubPublication(bytes);
+    const fixed = await openEpubPublication(fixedBytes);
+    if (!auto.ok || !fixed.ok)
+      throw new Error("Synthetic mixed-container admission failed");
+    const structural = (value: unknown) =>
+      JSON.parse(
+        JSON.stringify(value, (key, child: unknown) =>
+          [
+            "bookIdentity",
+            "direction",
+            "autoDirectionScope",
+            "autoDirectionScopeCount",
+          ].includes(key)
+            ? undefined
+            : child,
+        ),
+      );
+    try {
+      expect(auto.publication.locators).toHaveLength(6);
+      expect(structural(auto.publication.locators)).toEqual(
+        structural(fixed.publication.locators),
+      );
+      const block = requiredBlock(auto.publication, "mixed");
+      expect(
+        auto.publication.resolveTarget({
+          documentId: block.documentId,
+          fragment: "mixed",
+        }),
+      ).toMatchObject({ status: "exact", locator: block.startLocator });
+      for (const profile of [
+        "narration-piper-v2",
+        "narration-chatterbox-v1",
+      ] as const) {
+        const single = await collectPreparedSegments(
+          auto.publication,
+          auto.publication.defaultStartLocator!,
+          1,
+          profile,
+          "en",
+        );
+        const many = await collectPreparedSegments(
+          auto.publication,
+          auto.publication.defaultStartLocator!,
+          8,
+          profile,
+          "en",
+        );
+        const control = await collectPreparedSegments(
+          fixed.publication,
+          fixed.publication.defaultStartLocator!,
+          8,
+          profile,
+          "en",
+        );
+        expect(single.segments).toEqual(many.segments);
+        expect(structural(single.segments)).toEqual(
+          structural(control.segments),
+        );
+        const cold = await openEpubPublication(bytes);
+        if (!cold.ok) throw new Error(cold.detail);
+        try {
+          const continuation = single.segments[1]!;
+          const result = await cold.publication.prepareNarration({
+            startLocator: continuation.sourceRange.start,
+            profile,
+            defaultLanguage: "en",
+            maximumSegments: 1,
+          });
+          if (result.status !== "batch" && result.status !== "complete")
+            throw new Error(result.status);
+          expect(result.segments[0]).toEqual(continuation);
+        } finally {
+          await cold.publication.close();
+        }
+      }
+    } finally {
+      await auto.publication.close();
+      await fixed.publication.close();
+    }
+  });
+
+  it.each([
     ["VF-0037", "Dijo «Llegó 1.º».", "Dijo «Llegó primero»."],
     ["VF-0037", 'Dijo "Llegó 1.º".', 'Dijo "Llegó primero".'],
     ["VF-0037", "Dijo “Llegó 1.º”.", "Dijo “Llegó primero”."],

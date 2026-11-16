@@ -473,8 +473,22 @@ def generate_screen(
     case_ids = _strings(authority.get("caseIds"))
     applicability = _dimension_applicability(authority)
     session.mkdir(parents=True)
+    owned_session = session.stat()
     staging = session / "staging"
-    staging.mkdir()
+    try:
+        staging.mkdir()
+    except OSError:
+        # Only roll back the empty directory this invocation created. A new
+        # entry, replacement or redirection must remain available for recovery.
+        with suppress(OSError):
+            current = session.lstat()
+            if (
+                (current.st_dev, current.st_ino) == (owned_session.st_dev, owned_session.st_ino)
+                and not session.is_symlink()
+                and not session.is_junction()
+            ):
+                session.rmdir()
+        raise
     adapter = adapter_builder(profile, request.artifact_root.resolve())
     sensitive = tuple(
         value for case in corpus.cases.values() for value in (case.text, case.privacy_canary)

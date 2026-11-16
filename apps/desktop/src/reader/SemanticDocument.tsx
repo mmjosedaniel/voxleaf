@@ -19,8 +19,14 @@ import type {
 import {
   assessSemanticDocumentRendering,
   LargeChapterRenderScheduler,
+  scheduleLargeChapterBrowserYield,
   type ScheduleLargeChapterYield,
 } from "./large-chapter-rendering";
+import {
+  SemanticAutoDirectionResolver,
+  type AutoDirectionProbe,
+  type ResolvedTextDirection,
+} from "./semantic-auto-direction";
 import type { ActiveVisualLocatorTracker } from "./active-visual-locator";
 import type { PublicationRasterImageLoadPort } from "./images/publication-raster-image-loader";
 import type { ReaderTargetAvailability } from "./reader-navigation";
@@ -40,6 +46,8 @@ import {
 interface EffectiveTextContext {
   readonly language?: string;
   readonly direction?: SemanticTextDirection;
+  readonly autoDirectionScope?: number;
+  readonly autoDirections?: ReadonlyMap<number, ResolvedTextDirection>;
 }
 
 interface TextContextAttributes {
@@ -48,6 +56,7 @@ interface TextContextAttributes {
 }
 
 const EMPTY_TEXT_CONTEXT: EffectiveTextContext = Object.freeze({});
+const subscribeWithoutWork = (): (() => void) => () => {};
 const DEFAULT_TARGET_EXPLANATION = "Internal navigation is unavailable.";
 const DEFAULT_TARGET_AVAILABILITY: ReaderTargetAvailability = Object.freeze({
   status: "unavailable",
@@ -84,6 +93,16 @@ function effectiveTextContext(
   inherited: EffectiveTextContext,
 ): EffectiveTextContext {
   return {
+    ...(inherited.autoDirections === undefined
+      ? {}
+      : { autoDirections: inherited.autoDirections }),
+    ...(value.direction === undefined
+      ? inherited.autoDirectionScope === undefined
+        ? {}
+        : { autoDirectionScope: inherited.autoDirectionScope }
+      : value.autoDirectionScope === undefined
+        ? {}
+        : { autoDirectionScope: value.autoDirectionScope }),
     ...(value.language === undefined
       ? inherited.language === undefined
         ? {}
@@ -107,9 +126,19 @@ function textContextAttributes(
       ? {}
       : { lang: current.language }),
     ...(current.direction === undefined ||
-    current.direction === inherited.direction
+    (current.direction === inherited.direction &&
+      (current.direction !== "auto" ||
+        current.autoDirectionScope === inherited.autoDirectionScope))
       ? {}
-      : { dir: current.direction }),
+      : {
+          dir:
+            current.direction === "auto" &&
+            current.autoDirectionScope !== undefined &&
+            current.autoDirections !== undefined
+              ? (current.autoDirections.get(current.autoDirectionScope) ??
+                "ltr")
+              : current.direction,
+        }),
   };
 }
 
@@ -237,7 +266,12 @@ function effectiveContextEqual(
   left: EffectiveTextContext,
   right: EffectiveTextContext,
 ): boolean {
-  return left.language === right.language && left.direction === right.direction;
+  return (
+    left.language === right.language &&
+    left.direction === right.direction &&
+    left.autoDirectionScope === right.autoDirectionScope &&
+    left.autoDirections === right.autoDirections
+  );
 }
 
 function destinationAffectsRange(
@@ -557,6 +591,7 @@ function SemanticBlockElement({
 }
 
 export interface SemanticDocumentContentProps {
+  readonly createAutoDirectionProbe?: () => AutoDirectionProbe;
   readonly document: SemanticDocument;
   readonly targetAvailability?: (
     target: SemanticDocumentTarget,
@@ -575,6 +610,7 @@ export interface SemanticDocumentContentProps {
 
 interface AcceptedSemanticDocumentContentProps extends SemanticDocumentContentProps {
   readonly semanticBlockCount: number;
+  readonly projectedDomNodeCount: number;
 }
 
 function AcceptedSemanticDocumentContent({
@@ -591,24 +627,63 @@ function AcceptedSemanticDocumentContent({
   visualLocatorTracker,
   locatedBlocks,
   semanticBlockCount,
+  projectedDomNodeCount,
+  createAutoDirectionProbe,
 }: AcceptedSemanticDocumentContentProps): ReactElement {
+  const autoResolver = useMemo(
+    () =>
+      new SemanticAutoDirectionResolver(
+        document,
+        projectedDomNodeCount,
+        scheduleRenderYield ?? scheduleLargeChapterBrowserYield,
+        createAutoDirectionProbe,
+      ),
+    [
+      document,
+      projectedDomNodeCount,
+      scheduleRenderYield,
+      createAutoDirectionProbe,
+    ],
+  );
+  const autoDirection = useSyncExternalStore(
+    autoResolver.subscribe,
+    autoResolver.getSnapshot,
+    autoResolver.getSnapshot,
+  );
   const plan = useMemo(() => buildDocumentRenderPlan(document), [document]);
   if (plan.semanticBlockCount !== semanticBlockCount) {
     throw new Error("Semantic reader capacity changed.");
   }
+  // Ordinary updates retain the existing size-based budget. A new Auto scan
+  // starts progressive exposure again after its document-owned resolution.
+  const renderBudget =
+    (document.autoDirectionScopeCount ?? 0) > 0 ? plan : semanticBlockCount;
   const scheduler = useMemo(
     () =>
-      new LargeChapterRenderScheduler(semanticBlockCount, scheduleRenderYield),
-    [scheduleRenderYield, semanticBlockCount],
+      new LargeChapterRenderScheduler(
+        typeof renderBudget === "number"
+          ? renderBudget
+          : renderBudget.semanticBlockCount,
+        scheduleRenderYield,
+      ),
+    [renderBudget, scheduleRenderYield],
   );
   const renderedBlockCount = useSyncExternalStore(
-    scheduler.subscribe,
+    autoDirection.status === "ready"
+      ? scheduler.subscribe
+      : subscribeWithoutWork,
     scheduler.getSnapshot,
     scheduler.getSnapshot,
   );
   const current = useMemo(
-    () => effectiveTextContext(document, EMPTY_TEXT_CONTEXT),
-    [document],
+    () =>
+      effectiveTextContext(
+        document,
+        autoDirection.status === "ready"
+          ? { autoDirections: autoDirection.directions }
+          : EMPTY_TEXT_CONTEXT,
+      ),
+    [document, autoDirection],
   );
   const locatedBlocksByBlock = useMemo(() => {
     if (
@@ -666,6 +741,24 @@ function AcceptedSemanticDocumentContent({
     [destinationBlock, destinationRef, plan.blockIndexes],
   );
   const complete = renderedBlockCount >= semanticBlockCount;
+
+  if (autoDirection.status !== "ready") {
+    return (
+      <article
+        ref={readerRef}
+        tabIndex={-1}
+        className="semantic-document"
+        aria-label="Current reading section"
+        aria-busy={autoDirection.status === "pending" ? true : undefined}
+      >
+        <p role="status">
+          {autoDirection.status === "pending"
+            ? "Preparing this reading section."
+            : "This reading section could not be displayed."}
+        </p>
+      </article>
+    );
+  }
 
   return (
     <>
@@ -736,6 +829,7 @@ export function SemanticDocumentContent(
     <AcceptedSemanticDocumentContent
       {...props}
       semanticBlockCount={capacity.semanticBlockCount}
+      projectedDomNodeCount={capacity.projectedDomNodeCount}
     />
   );
 }

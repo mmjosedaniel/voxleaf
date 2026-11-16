@@ -31,7 +31,8 @@ from benchmarks.batch_official import (
     execute_official_v13,
     execute_official_v14,
 )
-from benchmarks.batch_result import derive_v13_summary, derive_v14_summary
+from benchmarks.batch_result import derive_v13_summary, derive_v14_safety_summary
+from benchmarks.benchmark_safety import VerifiedSafety
 from benchmarks.contracts import (
     AdapterOperationError,
     AdapterPlacementEvidence,
@@ -257,10 +258,11 @@ def test_vf0069_complete_measured_matrix_overflow_cannot_pass(
         monitor=_Monitor(),
     )
     assert execution.raw["failureCodes"] == ["playback-invalid"]
-    summary = derive_v14_summary(
+    summary = derive_v14_safety_summary(
         REPOSITORY_ROOT,
-        execution.raw,
-        list(execution.load_observations),
+        VerifiedSafety(
+            {}, {"raw.json": execution.raw, "loads.json": list(execution.load_observations)}, {}
+        ),
         raw_session_removed=True,
         execution_checker=lambda sha: sha == _head(),
     )
@@ -297,10 +299,12 @@ def test_five_pass_2_3_derives_all_five_distinct_owned_trials() -> None:
         candidate_factory=_Candidate,
         monitor=_Monitor(),
     )
-    summary = derive_v14_summary(
+    assert cast(dict[str, object], execution.raw["cleanup"])["sleepSettingRestored"] is False
+    summary = derive_v14_safety_summary(
         REPOSITORY_ROOT,
-        execution.raw,
-        list(execution.load_observations),
+        VerifiedSafety(
+            {}, {"raw.json": execution.raw, "loads.json": list(execution.load_observations)}, {}
+        ),
         raw_session_removed=True,
         execution_checker=lambda sha: sha == _head(),
     )

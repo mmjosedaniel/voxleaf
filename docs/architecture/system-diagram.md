@@ -498,6 +498,15 @@ flowchart TD
     BUFFER -->|"bounded playback"| DEVICE
 ```
 
+Within the development-only `BATCH_PROBE`, new official runs use
+[prospective safety evidence](../development/benchmark-safety-v1.md). The maintainer
+reads the local Windows power scheme/indexes and keeps a content-free one-use
+journal under the ignored raw root. Private raw/auxiliary data are removed before
+publication; the journal remains for restoration provenance and prevents reuse.
+The existing owned worker pipe also carries bounded adapter-entry witnesses.
+These additions do not enter the product inference/playback or reader persistence
+flows and do not revise the historical rejection of batch/dual-worker selection.
+
 The current product flow continues from `VISUAL` through `PREP`, `BUFFER`,
 `INFER`, and `DEVICE`. The application coordinator starts at the active
 narration locator, selects the preparation profile associated with the admitted

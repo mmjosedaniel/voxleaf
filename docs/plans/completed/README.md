@@ -16,6 +16,8 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
+- [Five-search findings: minimal corrections](five-search-findings-minimal-corrections.md) records 17 bounded corrections and the authorized successor benchmark evidence; final acceptance is owned by the linked R04 review/closeout. VF-0074 remains inconclusive and VF-0082 excluded under the sequential contract.
+
 - [Four-pass findings corrections](four-pass-findings-corrections.md) records six approved correction units, focused Windows validation and the scoped benchmark and release limits.
 
 - [Agent guidance simplification](agent-guidance-simplification.md): reduced procedural duplication and corrected current guidance; acceptance is established by the review and closeout linked from the plan.

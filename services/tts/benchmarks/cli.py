@@ -527,20 +527,28 @@ def _reap_measurement_process(
             _fail("cleanup-failed")
 
 
-def _measure_process(command: tuple[str, ...], payload: str) -> subprocess.CompletedProcess[str]:
-    if len(payload) > MAXIMUM_STDIN_BYTES:
+def run_bounded_worker_process(
+    command: tuple[str, ...],
+    payload: str,
+    *,
+    cwd: Path,
+    timeout_seconds: float,
+    maximum_input_bytes: int,
+) -> subprocess.CompletedProcess[str]:
+    """Bound binary pipes and own the worker tree until terminal cleanup."""
+    if len(payload) > maximum_input_bytes:
         _fail("invalid-input")
     data = payload.encode("utf-8")
-    if len(data) > MAXIMUM_STDIN_BYTES:
+    if len(data) > maximum_input_bytes:
         _fail("invalid-input")
-    deadline = time.monotonic() + MEASUREMENT_TIMEOUT_SECONDS
+    deadline = time.monotonic() + timeout_seconds
     job = _MeasurementJob()
     process: subprocess.Popen[bytes] | None = None
     owners: dict[IO[bytes], threading.Thread] = {}
     try:
         process = subprocess.Popen(
             command,
-            cwd=SERVICE_ROOT,
+            cwd=cwd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -559,6 +567,16 @@ def _measure_process(command: tuple[str, ...], payload: str) -> subprocess.Compl
         finally:
             if process is not None:
                 _reap_measurement_process(process, owners, cleanup_deadline)
+
+
+def _measure_process(command: tuple[str, ...], payload: str) -> subprocess.CompletedProcess[str]:
+    return run_bounded_worker_process(
+        command,
+        payload,
+        cwd=SERVICE_ROOT,
+        timeout_seconds=MEASUREMENT_TIMEOUT_SECONDS,
+        maximum_input_bytes=MAXIMUM_STDIN_BYTES,
+    )
 
 
 def _run_measurement_parent(value: object) -> tuple[dict[str, object], int]:

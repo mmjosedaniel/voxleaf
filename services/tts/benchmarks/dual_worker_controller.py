@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 from typing import Final
 
 from benchmarks.dual_worker_contracts import (
@@ -29,6 +30,16 @@ MAXIMUM_INPUT_UTF8_BYTES: Final = 2_048
 MAXIMUM_REORDER_UNITS: Final = 40
 MAXIMUM_SAMPLE_FRAMES_PER_UNIT: Final = 480_000
 EXPECTED_SAMPLE_RATE_HZ: Final = 24_000
+
+
+@dataclass(frozen=True)
+class ControllerPhase:
+    """Actual controller ownership at a prospective cancellation barrier."""
+
+    name: str
+    queued: tuple[DualUnitRequest, ...]
+    active: tuple[tuple[DualWorkerRole, DualUnitRequest], ...]
+    completed: tuple[DualWorkerCompletion, ...]
 
 
 def _roles_for_arm(arm: DualWorkerArm) -> tuple[DualWorkerRole, ...]:
@@ -147,6 +158,7 @@ class BoundedDualWorkerController:
         requests: tuple[DualUnitRequest, ...],
         after_initial_dispatch: AfterInitialDispatch | None = None,
         before_ordered_release: BeforeOrderedRelease | None = None,
+        observe_phase: Callable[[ControllerPhase], None] | None = None,
     ) -> DualControllerObservation:
         """Run one bounded arm through injected independent workers."""
 
@@ -172,9 +184,17 @@ class BoundedDualWorkerController:
         stale_rejected = 0
         invalidated = False
 
+        def observe(name: str) -> None:
+            if observe_phase is not None:
+                observe_phase(
+                    ControllerPhase(
+                        name, requests[next_claim:], tuple(active.items()), tuple(pending.values())
+                    )
+                )
+
         def dispatch(role: DualWorkerRole) -> None:
             nonlocal next_claim, peak_active, peak_gpu, peak_cpu
-            if next_claim >= len(requests) or role in active:
+            if self._active_identity != identity or next_claim >= len(requests) or role in active:
                 return
             request = requests[next_claim]
             accepted = runtime.submit(role, request)
@@ -208,8 +228,10 @@ class BoundedDualWorkerController:
             peak_cpu = max(peak_cpu, int(CPU_WORKER_ROLE in active))
 
         try:
+            observe("admitted")
             for role in roles:
                 dispatch(role)
+            observe("dispatched")
             if after_initial_dispatch is not None:
                 after_initial_dispatch()
             if self._active_identity != identity:
@@ -298,6 +320,7 @@ class BoundedDualWorkerController:
                     raise DualWorkerBenchmarkError("resource-limit")
                 if before_ordered_release is not None:
                     before_ordered_release(completion)
+                observe("completed")
                 if self._active_identity != identity:
                     observations[dispatch_index] = replace(
                         _failure_observation(dispatch_index, completion),

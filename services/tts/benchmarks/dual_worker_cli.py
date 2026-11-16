@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sys
 import time
 from pathlib import Path
 from typing import Final, cast
 
+from benchmarks import benchmark_safety
 from benchmarks.adapters.factory import create_isolated_candidate_adapter
 from benchmarks.adapters.manifest import (
     QWEN_V3_CANDIDATE_ID,
@@ -31,18 +33,19 @@ from benchmarks.dual_worker_contracts import (
     DualWorkerRole,
     DualWorkIdentity,
 )
-from benchmarks.dual_worker_controller import BoundedDualWorkerController
 from benchmarks.dual_worker_matrix import build_v5_requests
 from benchmarks.dual_worker_official import (
     GIB,
+    MAXIMUM_COMBINED_RAM_BYTES,
     MAXIMUM_GPU_DEDICATED_BYTES,
     MAXIMUM_GPU_SHARED_BYTES,
+    MINIMUM_AVAILABLE_RAM_BYTES,
+    MINIMUM_COMMIT_HEADROOM_BYTES,
     DualWorkerOfficialError,
     placement_load,
     run_measured_arm,
     serialize_dispatches,
     windows_system_memory,
-    write_private_raw,
 )
 from benchmarks.dual_worker_runtime import ThreadedDualWorkerRuntime
 from benchmarks.isolation import IsolatedBenchmarkAdapter, IsolationTimeouts
@@ -126,7 +129,7 @@ def _summary_hash(arm: str, expected: str | None) -> None:
         raise DualWorkerCommandError("authority") from None
     if hashlib.sha256(content).hexdigest() != expected:
         raise DualWorkerCommandError("authority")
-    result = cast(dict[str, object], value)
+    result = _baseline_record(value)
     if (
         result.get("schemaVersion") != "tts-dual-worker-summary-v5"
         or result.get("profileSha256") != PROFILE_SHA256
@@ -134,12 +137,118 @@ def _summary_hash(arm: str, expected: str | None) -> None:
         or result.get("arm") != arm
     ):
         raise DualWorkerCommandError("authority")
+    if arm == "gpu-solo":
+        _qualify_gpu_baseline(result)
     conclusion_name = "cpuSoloAdmission" if arm == "cpu-solo" else None
     if conclusion_name is not None:
-        conclusions = cast(dict[str, object], result["conclusions"])
-        conclusion = cast(dict[str, object], conclusions[conclusion_name])
+        conclusions = _baseline_record(result.get("conclusions"))
+        conclusion = _baseline_record(conclusions.get(conclusion_name))
         if conclusion.get("outcome") != "pass":
             raise DualWorkerCommandError("authority")
+
+
+def _baseline_record(value: object) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise DualWorkerCommandError("authority")
+    return cast(dict[str, object], value)
+
+
+def _baseline_number(value: object) -> float:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise DualWorkerCommandError("authority")
+    return float(value)
+
+
+def _qualify_gpu_baseline(result: dict[str, object]) -> None:
+    """Enforce frozen v5 admission, without claiming production viability."""
+    counts = _baseline_record(result.get("counts"))
+    aggregates = _baseline_record(result.get("aggregates"))
+    gpu = _baseline_record(aggregates.get("gpu"))
+    cancellation = _baseline_record(result.get("cancellation"))
+    audits = _baseline_record(result.get("audits"))
+    memory = _baseline_record(result.get("memory"))
+    expected_counts = {
+        "measuredUnits": 40,
+        "gpuMeasuredUnits": 40,
+        "cpuMeasuredUnits": 0,
+        "completedFirstAttempts": 40,
+        "failedOrTimedOutFirstAttempts": 0,
+        "automaticRetries": 0,
+        "coldLoads": 3,
+        "warmupUnits": 1,
+        "cancellationTrials": 2,
+    }
+    required_audits = (
+        "offline",
+        "artifacts",
+        "license",
+        "privacy",
+        "ordering",
+        "boundedRetention",
+        "cleanup",
+        "cpuZeroGpu",
+        "noDiskOffload",
+        "approvedWorkerIdentities",
+        "firstAttemptsOnly",
+    )
+    exact = (
+        (
+            aggregates,
+            {
+                "orderedPublishedUnits": 40,
+                "duplicateOrMissingIdentities": 0,
+                "reorderedPublishedUnits": 0,
+            },
+        ),
+        (gpu, {"measuredUnits": 40}),
+        (
+            cancellation,
+            {
+                "trialCount": 2,
+                "passedTrialCount": 2,
+                "stalePublishedUnits": 0,
+                "stalePlayedUnits": 0,
+            },
+        ),
+        (counts, expected_counts),
+    )
+    if (
+        result.get("profileVersion") != "tts-dual-worker-profile-v5"
+        or result.get("corpusVersion") != "tts-dual-worker-corpus-v5"
+        or result.get("failureCodes") != []
+        or any(
+            type(record.get(key)) is not int or record[key] != expected
+            for record, expected_values in exact
+            for key, expected in expected_values.items()
+        )
+        or any(audits.get(key) is not True for key in required_audits)
+        or _baseline_number(aggregates.get("mediaSeconds")) < 300
+        or _baseline_number(gpu.get("mediaSeconds")) < 300
+        or _baseline_number(aggregates.get("maximumUnitDurationSeconds")) > 20
+        or _baseline_number(aggregates.get("minimumUnitDurationSeconds")) <= 0
+        or _baseline_number(cancellation.get("maximumIdentityInvalidationMilliseconds")) > 500
+        or _baseline_number(cancellation.get("maximumWorkerTerminationMilliseconds")) > 2000
+        or _baseline_number(memory.get("minimumSystemAvailableRamBytes"))
+        < MINIMUM_AVAILABLE_RAM_BYTES
+        or _baseline_number(memory.get("minimumSystemCommitHeadroomBytes"))
+        < MINIMUM_COMMIT_HEADROOM_BYTES
+        or _baseline_number(memory.get("peakCombinedProcessTreeRamBytes"))
+        > MAXIMUM_COMBINED_RAM_BYTES
+        or max(
+            _baseline_number(memory.get("peakGpuWorkerDedicatedVramBytes")),
+            _baseline_number(memory.get("peakFrameworkReservedVramBytes")),
+        )
+        > MAXIMUM_GPU_DEDICATED_BYTES
+        or _baseline_number(memory.get("peakGpuWorkerSharedGpuBytes")) > MAXIMUM_GPU_SHARED_BYTES
+        or _baseline_number(memory.get("peakCpuWorkerDedicatedVramBytes")) != 0
+        or _baseline_number(memory.get("peakCpuWorkerSharedGpuBytes")) != 0
+    ):
+        raise DualWorkerCommandError("authority")
 
 
 def _identity(role: DualWorkerRole, profile: CandidateProfile) -> DualWorkerIdentity:
@@ -286,19 +395,10 @@ def _cancellation_trials(
     configuration: CandidateConfiguration,
     forbidden_values: tuple[str, ...],
     requests: tuple[DualUnitRequest, ...],
+    evidence: list[dict[str, object]] | None = None,
 ) -> list[dict[str, object]]:
-    trial_ids = {
-        "cpu-solo": ("before-dispatch", "cpu-active"),
-        "gpu-solo": ("before-dispatch", "gpu-active"),
-        "concurrent": (
-            "before-dispatch",
-            "gpu-active",
-            "cpu-active",
-            "both-active",
-            "complete-before-ordered-release",
-            "queued-after-invalidation",
-        ),
-    }[arm]
+    from benchmarks.dual_worker_trials import run_trials
+
     arm_roles = (
         (CPU_WORKER_ROLE,)
         if arm == "cpu-solo"
@@ -306,79 +406,13 @@ def _cancellation_trials(
         if arm == "gpu-solo"
         else (GPU_WORKER_ROLE, CPU_WORKER_ROLE)
     )
-    results: list[dict[str, object]] = []
-    for trial_id in trial_ids:
-        runtime = _runtime(arm_roles, profile, configuration, forbidden_values)
-        controller = BoundedDualWorkerController()
-        invalidation_ms = 0.0
-        cancellation_started = time.perf_counter()
-        try:
-            for role in arm_roles:
-                runtime.load_worker(role)
-            if trial_id == "before-dispatch":
-                cancellation_started = time.perf_counter()
-                invalidation_started = time.perf_counter_ns()
-                controller.invalidate_identity()
-                invalidation_ms = (time.perf_counter_ns() - invalidation_started) / 1_000_000
-            else:
-                selected = requests[: len(arm_roles)]
-
-                def invalidate(active_controller: BoundedDualWorkerController = controller) -> None:
-                    nonlocal cancellation_started, invalidation_ms
-                    cancellation_started = time.perf_counter()
-                    invalidation_started = time.perf_counter_ns()
-                    active_controller.invalidate_identity()
-                    invalidation_ms = (time.perf_counter_ns() - invalidation_started) / 1_000_000
-
-                if trial_id in (
-                    "complete-before-ordered-release",
-                    "queued-after-invalidation",
-                ):
-                    observation = controller.run(
-                        arm=cast(DualWorkerArm, arm),
-                        runtime=runtime,
-                        requests=selected,
-                        before_ordered_release=lambda _completion: invalidate(),
-                    )
-                else:
-                    observation = controller.run(
-                        arm=cast(DualWorkerArm, arm),
-                        runtime=runtime,
-                        requests=selected,
-                        after_initial_dispatch=invalidate,
-                    )
-                if not observation.invalidated:
-                    raise DualWorkerBenchmarkError("stale-identity")
-            cleanup_started = time.perf_counter()
-            controller.close(runtime)
-            cleanup_ms = (time.perf_counter() - cleanup_started) * 1_000
-            termination_ms = (time.perf_counter() - cancellation_started) * 1_000
-            remaining = sum(runtime.worker_pid(role) is not None for role in arm_roles)
-            passed = (
-                invalidation_ms <= 500
-                and termination_ms <= 2_000
-                and cleanup_ms <= 5_000
-                and remaining == 0
-            )
-            results.append(
-                {
-                    "trialId": trial_id,
-                    "passed": passed,
-                    "identityInvalidationMilliseconds": invalidation_ms,
-                    "gpuWorkerTerminationMilliseconds": (
-                        termination_ms if GPU_WORKER_ROLE in arm_roles else None
-                    ),
-                    "cpuWorkerTerminationMilliseconds": (
-                        termination_ms if CPU_WORKER_ROLE in arm_roles else None
-                    ),
-                    "stalePublishedUnits": 0,
-                    "stalePlayedUnits": 0,
-                    "workerProcessesRemaining": remaining,
-                    "cleanupMilliseconds": cleanup_ms,
-                }
-            )
-        finally:
-            runtime.close()
+    results, proofs = run_trials(
+        cast(DualWorkerArm, arm),
+        requests,
+        lambda: _runtime(arm_roles, profile, configuration, forbidden_values),
+    )
+    if evidence is not None:
+        evidence.extend(proofs)
     return results
 
 
@@ -432,6 +466,13 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
         raise DualWorkerCommandError("preflight")
     _summary_hash("cpu-solo", request.prior_cpu_solo_summary_sha256)
     _summary_hash("gpu-solo", request.prior_gpu_solo_summary_sha256)
+    safety_session = None
+    safety_baselines: dict[str, object] = {}
+    if request.purpose == "official":
+        if request.safety_binding is None:
+            raise DualWorkerCommandError("evidence-version")
+        safety_baselines = benchmark_safety.baseline_inputs(REPOSITORY_ROOT, request.safety_binding)
+        safety_session = benchmark_safety.claim(REPOSITORY_ROOT, request.safety_binding)
     base_units = cast(list[dict[str, object]], authority.base_corpus["units"])
     forbidden = tuple(
         cast(str, unit[key])
@@ -467,12 +508,11 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
         else:
             cold_roles = (roles[0], roles[0], roles[0])
             for index, role in enumerate(cold_roles):
-                current = _runtime((role,), profile, configuration, forbidden_values)
-                load_observations.extend(_load_runtime(current, (role,), index))
-                if index == len(cold_roles) - 1:
-                    runtime = current
-                else:
-                    current.close()
+                runtime = _runtime((role,), profile, configuration, forbidden_values)
+                load_observations.extend(_load_runtime(runtime, (role,), index))
+                if index != len(cold_roles) - 1:
+                    runtime.close()
+                    runtime = None
         if runtime is None:
             raise DualWorkerBenchmarkError("worker-crash")
         _warmup(runtime, roles, all_requests)
@@ -601,12 +641,14 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
             }
         runtime.close()
         runtime = None
+        trial_evidence: list[dict[str, object]] = []
         trials = _cancellation_trials(
             arm=request.arm,
             profile=profile,
             configuration=configuration,
             forbidden_values=forbidden_values,
             requests=all_requests,
+            evidence=trial_evidence,
         )
         if request.session_id is None:
             raise DualWorkerCommandError("input")
@@ -633,7 +675,7 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
             ),
         }
         raw: dict[str, object] = {
-            "schemaVersion": "tts-dual-worker-raw-v5",
+            "schemaVersion": benchmark_safety.DUAL_RAW_VERSION,
             "profileVersion": "tts-dual-worker-profile-v5",
             "profileSha256": PROFILE_SHA256,
             "corpusSha256": CORPUS_SHA256,
@@ -663,25 +705,35 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
                 "rawSessionRemoved": False,
                 "generatedAudioRemoved": True,
                 "scorecardRemoved": True,
-                "sleepSettingRestored": True,
+                "sleepSettingRestored": False,
             },
             "failureCodes": [],
         }
-        write_private_raw(REPOSITORY_ROOT, request.session_id, raw)
+        assert safety_session is not None
+        safety_session.complete(raw, {"trials.json": trial_evidence, **safety_baselines})
         return {
             "schemaVersion": "tts-dual-worker-command-receipt-v5",
             "resultPurpose": request.purpose,
             "arm": request.arm,
-            "status": "complete",
+            "status": "pending-restoration",
+            "evidenceVersion": benchmark_safety.VERSION,
             "measuredFirstAttempts": len(observation.dispatches),
             "completedFirstAttempts": len(observation.released),
             "privateRawCaptured": True,
             "eligibleForPromotion": False,
-            "nextStep": "benchmark:tts:dual-worker:derive",
+            "nextStep": "benchmark:tts:safety:finalize",
         }
     finally:
         if runtime is not None:
-            runtime.close()
+            primary_failure = sys.exception()
+            try:
+                runtime.close()
+            except Exception:
+                if primary_failure is None:
+                    raise
+                # Keep the primary stdout receipt; expose uncertain cleanup
+                # separately without serializing either exception's contents.
+                print('{"status":"fail","failureCode":"cleanup-failed"}', file=sys.stderr)
 
 
 def main() -> int:
@@ -691,7 +743,7 @@ def main() -> int:
     try:
         result = _run(parse_dual_worker_command(_read_payload()))
         print(json.dumps(result, ensure_ascii=True, separators=(",", ":")))
-        return 0 if result["status"] == "complete" else 1
+        return 0 if result["status"] in ("complete", "pending-restoration") else 1
     except Exception as error:
         code = (
             error.code

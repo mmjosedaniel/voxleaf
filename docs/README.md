@@ -47,6 +47,7 @@ not change model selection, review independence, evidence reuse or CI obligation
 | Set up the workspace and select current commands | [Development setup](development/setup.md) | [Dependency inventory](development/dependencies.md) |
 | Select checks for an implementation change | [Testing strategy](development/testing.md) | [Evidence retention](development/evidence-retention.md) |
 | Understand runtime/maintainer boundaries and historical v2/v3/v4 tools | [TTS service organization](development/tts-service-organization.md) | [Adapter-layout campaign](plans/completed/tts-adapter-layout.md) |
+| Prepare new official batch/dual-worker evidence | [Prospective benchmark safety v1](development/benchmark-safety-v1.md) | [ADR-0076](architecture/decisions/ADR-0076-prospective-benchmark-safety-evidence.md) |
 | Understand product support and local distribution | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
 | Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
 
@@ -71,6 +72,10 @@ Completed plans and validation receipts preserve the state at their original
 closeout. Statements such as "not committed" or "CI pending" in those records
 are historical; maintained indexes point to later results without rewriting
 the original evidence. Recorded test counts are not fresh test runs on HEAD.
+
+The [five-search correction plan](plans/completed/five-search-findings-minimal-corrections.md)
+links its final per-case evidence and independent acceptance, including the
+conditional inconclusive/excluded cases and the successor benchmark contract.
 
 ## Product
 

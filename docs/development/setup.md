@@ -43,6 +43,10 @@ dual-worker trials, remain in the [completed-plan index](../plans/completed/READ
 [Qwen selection v3](../../benchmarks/tts/selection-v3.md),
 [batch selection v4](../../benchmarks/tts/selection-v4.md) and
 [dual-worker selection v5](../../benchmarks/tts/selection-v5.md).
+New official batch/dual-worker executions require the explicit
+[prospective safety workflow](benchmark-safety-v1.md): original power observation,
+one-use admission, pending raw, manual restoration and verified derivation.
+Historical summaries and their readers retain their original meaning.
 The [M010.2 plan](../plans/completed/M010-002-reader-settings-and-playback-controls.md)
 retains rejected playback v1/v2 comparisons and the accepted WSOLA v3 result.
 These are dated evidence, not current setup prerequisites or new host validation.

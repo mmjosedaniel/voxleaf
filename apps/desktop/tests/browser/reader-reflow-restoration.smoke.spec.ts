@@ -10,6 +10,145 @@ const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
 
+test("FSF-VF-0075 nested explicit Auto resolves locally after same-byte reopen", async ({
+  page,
+}) => {
+  const { buildMinimalEpubFixture } =
+    await import("../../../../packages/epub/test-support/epub-fixture");
+  const bytes = await buildMinimalEpubFixture({
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml" dir="auto"><head><title>Synthetic direction</title></head><body><p>English.</p><p dir="auto">עברית <em dir="auto">English</em></p><p>עברית</p><p dir="rtl">עברית</p></body></html>',
+  });
+  const file = {
+    name: "synthetic-auto.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  };
+  await page.goto(LOCAL_ORIGIN);
+  const savedPosition = () =>
+    page.evaluate(
+      (key) =>
+        JSON.parse(localStorage.getItem(key) ?? "{}").states?.[0]?.locator,
+      POSITION_STORAGE_KEY,
+    );
+  let saved: unknown;
+  for (const pass of ["open", "reopen"]) {
+    if (pass === "reopen") await page.reload();
+    await page.getByLabel("Open a book").setInputFiles(file);
+    const paragraphs = page.locator(".semantic-document p");
+    await expect(paragraphs).toHaveCount(4);
+    if (pass === "reopen") {
+      await expect(page.getByRole("status")).toHaveText(
+        "Reading position restored.",
+      );
+      expect(await savedPosition()).toEqual(saved);
+    }
+    expect(
+      await paragraphs.evaluateAll((values) =>
+        values.map((value) => getComputedStyle(value).direction),
+      ),
+    ).toEqual(["ltr", "rtl", "ltr", "rtl"]);
+    await expect(paragraphs.nth(1)).toHaveAttribute("dir", "rtl");
+    expect(
+      await paragraphs
+        .nth(1)
+        .locator("em")
+        .evaluate((value) => getComputedStyle(value).direction),
+    ).toBe("ltr");
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    await expect.poll(savedPosition).toBeDefined();
+    saved = await savedPosition();
+  }
+});
+
+test("FSF-CR1-VF-0075 flattened Auto containers share direction and survive reopen", async ({
+  page,
+}) => {
+  const { buildMinimalEpubFixture } =
+    await import("../../../../packages/epub/test-support/epub-fixture");
+  const bytes = await buildMinimalEpubFixture({
+    chapterDocument:
+      '<html xmlns="http://www.w3.org/1999/xhtml" dir="auto"><head><title>Synthetic direction</title></head><body><p>א <span dir="auto">א <em>Inherited English</em><span dir="auto">English <strong>עברית nested</strong></span><em dir="ltr">Fixed English</em></span><em>Sibling English</em></p><div dir="auto"><p>א first</p><p>Second English</p></div><div dir="ltr"><p><span dir="auto">א <em>Opposite English</em></span></p></div>' +
+      '<p dir="auto">123 <em dir="rtl">א excluded</em></p>' +
+      `<p><custom-box dir="auto">${".".repeat(8191)}\u{1e900}<em>Late English</em></custom-box></p>` +
+      'Before <custom-box dir="auto">א <nested-box dir="auto">English <strong>עברית unknown</strong></nested-box><p id="mixed">Mixed English</p>tail</custom-box> after' +
+      '<custom-box dir="auto"><p>א first unknown</p><p>Unknown block English</p></custom-box>' +
+      '<p>Before <custom-box dir="auto">א <em>Unknown inline English</em></custom-box> after</p></body></html>',
+  });
+  const file = {
+    name: "synthetic-auto-scopes.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  };
+  await page.goto(LOCAL_ORIGIN);
+  const savedPosition = () =>
+    page.evaluate(
+      (key) =>
+        JSON.parse(localStorage.getItem(key) ?? "{}").states?.[0]?.locator,
+      POSITION_STORAGE_KEY,
+    );
+  let saved: unknown;
+  for (const pass of ["open", "reopen"]) {
+    if (pass === "reopen") await page.reload();
+    await page.getByLabel("Open a book").setInputFiles(file);
+    const paragraphs = page.locator(".semantic-document p");
+    await expect(paragraphs).toHaveCount(12);
+    for (const [label, expected] of [
+      ["Inherited English", "rtl"],
+      ["עברית nested", "ltr"],
+      ["Fixed English", "ltr"],
+      ["Sibling English", "rtl"],
+      ["Opposite English", "rtl"],
+      ["א excluded", "rtl"],
+      ["Late English", "rtl"],
+      ["עברית unknown", "ltr"],
+      ["Mixed English", "rtl"],
+      ["Unknown block English", "rtl"],
+      ["Unknown inline English", "rtl"],
+    ]) {
+      expect
+        .soft(
+          await page
+            .getByText(label!, { exact: true })
+            .evaluate((element) => getComputedStyle(element).direction),
+        )
+        .toBe(expected);
+    }
+    expect
+      .soft(
+        await paragraphs
+          .nth(2)
+          .evaluate((element) => getComputedStyle(element).direction),
+      )
+      .toBe("rtl");
+    expect(
+      await paragraphs
+        .nth(4)
+        .evaluate((element) => getComputedStyle(element).direction),
+    ).toBe("ltr");
+    expect(
+      await page.evaluate(
+        (value) => {
+          const native = document.createElement("span");
+          native.dir = "auto";
+          native.textContent = value;
+          return native.matches(":dir(rtl)");
+        },
+        ".".repeat(8191) + "\u{1e900}",
+      ),
+    ).toBe(true);
+    if (pass === "reopen") {
+      await expect(page.getByRole("status")).toHaveText(
+        "Reading position restored.",
+      );
+      expect(await savedPosition()).toEqual(saved);
+    }
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    await expect.poll(savedPosition).toBeDefined();
+    saved = await savedPosition();
+  }
+});
+
 test("VF-0064 implicit RTL has explicit paragraph geometry after reopening", async ({
   page,
 }) => {
@@ -105,6 +244,10 @@ test("R7-04 audible advancement supersedes a pending typography restoration", ({
   page,
 }) => exerciseAudibleReflow(page, false));
 
+test("FSF-VF-0074 bounded mounted Stop/resize/reopen and manual successor investigation", ({
+  page,
+}) => exerciseAudibleReflow(page, false, true));
+
 test("CCF-C08 completed decoration leaves typography restoration in control", ({
   page,
 }) => exerciseAudibleReflow(page, true));
@@ -112,6 +255,7 @@ test("CCF-C08 completed decoration leaves typography restoration in control", ({
 async function exerciseAudibleReflow(
   page: Page,
   completeBeforeReflow: boolean,
+  investigateAfterStop = false,
 ): Promise<void> {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.name));
@@ -133,24 +277,27 @@ async function exerciseAudibleReflow(
   const initial = opened.publication.locators[5]!.startLocator;
   await opened.publication.close();
   await page.addInitScript(
-    ({ report, initial, key, displayPreference }) => {
-      localStorage.clear();
+    ({ report, initial, key, displayPreference, investigateAfterStop }) => {
+      const retainPosition =
+        investigateAfterStop && localStorage.getItem(key) !== null;
+      if (!retainPosition) localStorage.clear();
       if (displayPreference !== undefined)
         localStorage.setItem(displayPreference.key, displayPreference.value);
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: 1,
-          states: [
-            {
-              schemaVersion: 1,
-              bookIdentity: initial.bookIdentity,
-              locator: initial,
-              preferences: {},
-            },
-          ],
-        }),
-      );
+      if (!retainPosition)
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            schemaVersion: 1,
+            states: [
+              {
+                schemaVersion: 1,
+                bookIdentity: initial.bookIdentity,
+                locator: initial,
+                preferences: {},
+              },
+            ],
+          }),
+        );
       const control = {
         hold: false,
         frames: new Map<number, FrameRequestCallback>(),
@@ -254,6 +401,7 @@ async function exerciseAudibleReflow(
       report,
       initial,
       key: POSITION_STORAGE_KEY,
+      investigateAfterStop,
       ...(completeBeforeReflow
         ? {
             displayPreference: {
@@ -369,6 +517,58 @@ async function exerciseAudibleReflow(
   expect(proof.pending).toBeGreaterThan(0);
   await closeSettings(page, settings);
   await page.locator('[data-narration-action="stop"]').click();
+  if (investigateAfterStop) {
+    const savedPosition = () =>
+      page.evaluate(
+        (key) =>
+          JSON.parse(localStorage.getItem(key) ?? "{}").states?.[0]?.locator,
+        POSITION_STORAGE_KEY,
+      );
+    await expect.poll(savedPosition).toBeDefined();
+    const heard = await savedPosition();
+    const settleAndFlush = () =>
+      page.evaluate(async () => {
+        // Exercise real observer/scroll sampling without calling a save method.
+        const root = document.querySelector(
+          '[data-reader-scroll-owner="true"]',
+        )!;
+        root.dispatchEvent(new Event("scroll"));
+        for (let index = 0; index < 12; index++)
+          await new Promise(requestAnimationFrame);
+        window.dispatchEvent(new Event("pagehide"));
+        await new Promise(requestAnimationFrame);
+      });
+    await page.setViewportSize({ width: 900, height: 640 });
+    await settleAndFlush();
+    expect(await savedPosition()).toEqual(heard);
+    await page.reload();
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-r7-reflow.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(bytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored.",
+    );
+    expect(await savedPosition()).toEqual(heard);
+    await page.getByRole("link", { name: "Skip to reader content" }).focus();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("PageDown");
+    await expect.poll(savedPosition).not.toEqual(heard);
+    const manual = await savedPosition();
+    await settleAndFlush();
+    expect(await savedPosition()).toEqual(manual);
+    await page.reload();
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-r7-reflow.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(bytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored.",
+    );
+    expect(await savedPosition()).toEqual(manual);
+  }
   expect(errors).toEqual([]);
 }
 

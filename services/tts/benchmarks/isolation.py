@@ -111,7 +111,7 @@ def _witness_batch(
     request: BatchGenerationRequest,
     deadline: float,
 ) -> _Message:
-    if request.phase != "cancellation" or len(request.units) != 2:
+    if request.phase != "cancellation" or len(request.units) not in (1, 2):
         raise AdapterOperationError("invalid-request")
     try:
         _validate_request(request)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, wait
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from threading import Event, Lock
 from typing import Final
 
@@ -25,9 +25,20 @@ from benchmarks.dual_worker_contracts import (
     DualWorkerIdentity,
     DualWorkerRole,
 )
-from benchmarks.isolation import IsolatedBenchmarkAdapter
+from benchmarks.isolation import IsolatedBenchmarkAdapter, WitnessedBatchCancellation
 
 NEXT_COMPLETION_TIMEOUT_SECONDS: Final = 125.0
+ENTRY_BARRIER_SECONDS: Final = 20.0
+
+
+@dataclass
+class _EntryBarrier:
+    entered: Event
+    release: Event
+    request: DualUnitRequest | None = None
+    entered_nanoseconds: int = 0
+    invalidated_nanoseconds: int = 0
+    receipt: WitnessedBatchCancellation | None = None
 
 
 @dataclass(frozen=True)
@@ -92,6 +103,71 @@ class ThreadedDualWorkerRuntime:
         self._close_lock = Lock()
         self._closed = False
         self._cleanup_complete = False
+        self._entry_barriers: dict[DualWorkerRole, _EntryBarrier] = {}
+
+    def arm_entry_witnesses(self, roles: tuple[DualWorkerRole, ...]) -> None:
+        """One-shot trial instrumentation; never used by measured generation."""
+        with self._lifecycle_lock:
+            if (
+                self._closed
+                or self._active
+                or self._retired
+                or self._entry_barriers
+                or not roles
+                or len(set(roles)) != len(roles)
+                or not set(roles) <= set(self._candidates)
+            ):
+                raise DualWorkerBenchmarkError("resource-limit")
+            self._entry_barriers = {role: _EntryBarrier(Event(), Event()) for role in roles}
+
+    def await_entry_witnesses(self) -> None:
+        deadline = time.monotonic() + ENTRY_BARRIER_SECONDS
+        for barrier in self._entry_barriers.values():
+            if not barrier.entered.wait(max(0, deadline - time.monotonic())):
+                raise DualWorkerBenchmarkError("timeout")
+        if not self._entry_barriers or any(
+            work.future.done()
+            for role, work in self._active.items()
+            if role in self._entry_barriers
+        ):
+            raise DualWorkerBenchmarkError("invalid-output")
+
+    def release_entry_witnesses(self) -> None:
+        """Called only after the controller invalidates the same active identity."""
+        now = time.perf_counter_ns()
+        for barrier in self._entry_barriers.values():
+            if not barrier.entered.is_set() or barrier.release.is_set():
+                raise DualWorkerBenchmarkError("invalid-output")
+            barrier.invalidated_nanoseconds = now
+        for barrier in self._entry_barriers.values():
+            barrier.release.set()
+
+    def entry_evidence(self) -> list[dict[str, object]]:
+        result: list[dict[str, object]] = []
+        for role, barrier in self._entry_barriers.items():
+            request, receipt = barrier.request, barrier.receipt
+            if (
+                request is None
+                or receipt is None
+                or not barrier.invalidated_nanoseconds
+                or receipt.phase != "adapter-entry"
+                or receipt.call_index != request.source_sequence
+                or receipt.identity
+                != BatchWorkIdentity(request.identity.session_id, request.identity.generation_id)
+            ):
+                raise DualWorkerBenchmarkError("invalid-output")
+            result.append(
+                {
+                    "role": role,
+                    "occurrence": request.occurrence_id,
+                    "sequence": request.source_sequence,
+                    "attempt": request.attempt,
+                    "entered": barrier.entered_nanoseconds,
+                    "invalidated": barrier.invalidated_nanoseconds,
+                    "termination": receipt.termination_nanoseconds,
+                }
+            )
+        return result
 
     @property
     def workers(self) -> tuple[DualWorkerIdentity, ...]:
@@ -145,6 +221,26 @@ class ThreadedDualWorkerRuntime:
         )
         try:
             if cancelled.is_set():
+                return _WorkResult(time.perf_counter_ns(), failure="cancelled")
+            barrier = self._entry_barriers.get(role)
+            if barrier is not None:
+
+                def parked() -> None:
+                    barrier.request = request
+                    barrier.entered_nanoseconds = time.perf_counter_ns()
+                    barrier.entered.set()
+                    if (
+                        not barrier.release.wait(ENTRY_BARRIER_SECONDS)
+                        or not barrier.invalidated_nanoseconds
+                    ):
+                        raise AdapterOperationError("timeout")
+
+                barrier.receipt = self._candidates[role].cancel_witnessed_batch(
+                    replace(batch_request, phase="cancellation"),
+                    "adapter-entry",
+                    lambda: False,
+                    parked,
+                )
                 return _WorkResult(time.perf_counter_ns(), failure="cancelled")
             outputs = self._candidates[role].generate_batch(batch_request, require_loaded=True)
             return _WorkResult(time.perf_counter_ns(), outputs=outputs)
@@ -267,6 +363,12 @@ class ThreadedDualWorkerRuntime:
     def _dispatch_cancellation(self, role: DualWorkerRole, retired: _RetiredWork) -> None:
         succeeded = False
         try:
+            if role in self._entry_barriers:
+                # The witness owns the pipe and termination. Never race its receiver.
+                barrier = self._entry_barriers[role]
+                barrier.release.set()
+                if not wait([retired.work.future], timeout=ENTRY_BARRIER_SECONDS).done:
+                    raise DualWorkerBenchmarkError("cleanup-failed")
             # This runtime owns a submitted batch even before adapter dispatch.
             self._candidates[role].cancel(
                 f"batch-{retired.work.request.source_sequence}", cancel_idle=True
@@ -320,6 +422,8 @@ class ThreadedDualWorkerRuntime:
     def _close(self) -> None:
         if self._cleanup_complete:
             return
+        for barrier in self._entry_barriers.values():
+            barrier.release.set()
         with self._lifecycle_lock:
             self._closed = True
             loading = tuple(self._loading.values())

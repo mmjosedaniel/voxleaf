@@ -1,6 +1,6 @@
 # Five-search ExecPlan: planning closeout
 
-This record binds the [ExecPlan](../../active/five-search-findings-minimal-corrections.md) to the authentic [FSF-PLAN-CR-R01-20261116 report](plan-review-r01.md), verdict **APPROVE**. It records documentary verification only.
+This record binds the [ExecPlan](../../completed/five-search-findings-minimal-corrections.md) to the authentic [FSF-PLAN-CR-R01-20261116 report](plan-review-r01.md), verdict **APPROVE**. It records documentary verification only.
 
 Base and pre-commit HEAD: `079c38ece8687b24859db4f64d4f92bba67bdcee`.
 Branch: `codex/revalidated-findings-execplan`.

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, cast
 
+from benchmarks import benchmark_safety
 from benchmarks.dual_worker_contracts import DualWorkerArm
 
 type DualCommandPurpose = Literal["cpu-solo-pilot", "concurrent-diagnostic", "official"]
@@ -32,7 +33,7 @@ BASE_FIELDS = frozenset(
         "thermalStateAcceptable",
     }
 )
-OFFICIAL_FIELDS = BASE_FIELDS | {"sessionId"}
+OFFICIAL_FIELDS = BASE_FIELDS | {"sessionId", "evidenceVersion"}
 DIAGNOSTIC_FIELDS = BASE_FIELDS | {"diagnosticMaxNewTokens"}
 
 
@@ -59,6 +60,7 @@ class DualWorkerCommandRequest:
     background_load_acceptable: bool
     thermal_state_acceptable: bool
     diagnostic_max_new_tokens: int | None
+    safety_binding: dict[str, object] | None
 
 
 def _string(value: object) -> str:
@@ -159,4 +161,7 @@ def parse_dual_worker_command(value: object) -> DualWorkerCommandRequest:
         background_load_acceptable=cast(bool, booleans[1]),
         thermal_state_acceptable=cast(bool, booleans[2]),
         diagnostic_max_new_tokens=diagnostic_tokens,
+        safety_binding=benchmark_safety._binding_from_validated("dual", dict(payload))
+        if purpose == "official"
+        else None,
     )

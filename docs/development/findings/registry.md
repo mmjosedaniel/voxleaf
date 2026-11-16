@@ -1196,6 +1196,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — Product proposition is now `inspected-inconclusive`; the sink accepts the stipulated distinct unmarked sample, but current tracker/reflow protections leave its mounted post-Stop delivery unproved. Keep P2 as conditional impact. Do not count a reproduced loss of reading progress. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Inconclusive after bounded mounted Stop, resize, same-byte reopen and a real keyboard successor. No failing tracker → App → persistence delivery was established, so persistence was not changed. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0075
 
 **A nested explicit automatic direction is lost in the rendered reader.** In a chapter with `dir="auto"` on the XHTML root and an explicit `dir="auto"` on a later paragraph, an initial LTR paragraph can set the chapter's direction. The later RTL paragraph inherits that direction in the rendered DOM because its own attribute was dropped. Its text alignment and the reading-line caret's sampling side can differ from the source.
@@ -1208,6 +1210,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` for the same-value nested explicit declaration. VF-0064 U3 considered the area, and its retained fixed-direction fixtures do not discriminate explicit Auto from inherited Auto. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` for explicit nested Auto direction. Fixed-direction equality remains valid, while effective Auto lacks declaration provenance. No saved-offset failure is established. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Controlled public reproduction and computed browser direction/reopen checks support the Auto-declaration-scope correction. Independent R01 additionally reproduced separate direction resolution under flattened containers. The revised reader shares a native result per scope with bounded, yielding and cancellable scanning; mixed unknown admission, neutral/late-strong text, exact logical/narration ranges, progressive replacement and same-byte reopen are checked. Inherited sibling direction, fixed RTL and VF-0064 remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0076
 
@@ -1223,6 +1227,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` in both successful acquisition phases. Download acknowledgement is discarded; later cleanup or teardown cannot recover the missed terminal error. The consequence is conditional false evidence, not a demonstrated corrupt install. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Controlled ordinary journey reproductions demonstrated success from Installed before terminal Download acknowledgement in retry/reinstall. Per-attempt terminal ownership now gates receipts; failure cleanup/restoration and the next successful acquisition are checked. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0077
 
 **v14 reports restored sleep settings without observing restoration.** The official CLI accepts an operator assertion that sleep was disabled for preflight. Its raw journal always records restored sleep settings and the summary accepts this field as cleanup evidence. An otherwise qualifying result can pass cleanup while a temporarily changed sleep setting remains in place.
@@ -1235,6 +1241,10 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` for unconditional restoration evidence inherited from v4 (`32e18fb7`). Earlier operator restoration and v14 runtime/raw/privacy corrections establish separate facts. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` as an unsupported positive cleanup assertion. The runner does not itself alter power settings, and zero worker resources do not prove operator restoration. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Decision-blocked: a successor must bind original and final power-policy observations to the same run. Existing closed input/frozen cleanup evidence cannot prove the operator restored the prior setting. No success implementation or historical record was changed. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-16 authorized successor execution — `reproduced`; Original unconditional restoration reproduced before edits. The authorized safety-v1 successor binds original/admitted/restored native observations, one-use admission, exact inputs and private cleanup. Failed/incomplete runs can restore without a derivable result; frozen historical bytes are preserved. Prior worker/resource cleanup coverage lacked power-state equality; the earlier review cause remains unknown. Current evidence and final R04 acceptance are in [case results][fsf-execution].
 
 ## VF-0078
 
@@ -1249,6 +1259,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` for short prose article/mark/time input in both public profiles. Additional approved omitted marks in the same gap share this ID; source ranges and expansion protection must be preserved. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Public Piper/Chatterbox regressions reproduced duplicate articles across admitted omitted marks. The bounded matcher and typed omissions now preserve one article, exact mapping and continuation; plain forms and limits remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0079
 
 **Reordering custom NSIS language keys blocks release validation.** Reversing the two entries of `customLanguageFiles` with identical keys and values changes serialized key order. The release configuration check rejects the mapping before the build starts.
@@ -1261,6 +1273,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` in preflight. The comparator entered main in `b7f75fe4f9ec59ac5e949cb6986d07755a828834`. VF-0015 and U12/4.4 concern receipt records with different consumers. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` for equivalent map reordering at fresh preflight. Ordered fallback languages and byte-bound attachment identity remain separate correct constraints. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Reordered NSIS language-map keys reproduced false rejection. Exact unordered membership now passes while missing/extra/changed entries and reordered language arrays fail. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0080
 
@@ -1275,6 +1289,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — Narrowed to P3, `inspected-present` for an enabled busy Remove and incorrect Stop-and-retry feedback. The earlier P2 activation claim is `inspected-inconclusive`: commit already establishes verified installed bytes, native discovery verifies them independently, and no inspected rule prohibits this explicit eligible activation during staging cleanup. Busy Remove remains protected before Stop/deletion. Do not mandate activation blocking without a violating contract or concrete adverse outcome. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Controlled Settings remount reproduced Remove availability during owned Download cleanup. Persistent ownership now disables Remove with truthful busy guidance through both terminal outcomes; explicit eligible activation and the next Remove remain supported. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0081
 
 **Cancellation evidence treats a failed staging lookup as absence.** After Cancel, the ordinary journey only rethrows its own staging-retained marker. Any error from the lookup satisfies this step. If retry and later gates succeed, the runner can issue `downloadCancellationCleanupPassed: true` without observing absence.
@@ -1287,6 +1303,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` for the ordinary checkpoint. The broad catch originated in `ddd3cbc3b4f337f04ebb9dbdbb17f74ad42a5898`; strict checks in the bounded probe and later teardown cover separate stages. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` at the full journey's non-ENOENT branch. Later retry may erase the missing cleanup observation. The bounded path's strict helper still protects its own checkpoint. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Controlled ordinary cancellation reproduced retry after EACCES/EIO/unknown staging lookup. Strict absence now admits only ENOENT, rejects residue and preserves cleanup/restoration before the next acquisition. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0082
 
@@ -1301,6 +1319,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — Disposition is now `not-confirmed`; latest check `inspected-absent` as a defect of the explicitly supported sequential workflow. The source-supported two-process overwrite is retained as an unsupported concurrency condition, not a regression of CFR-14/VF-0014. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — NOT-APPLICABLE under the supported sequential correction contract. No concurrent publication feature or locking change was introduced. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0083
 
 **Quality generation retains both output pipes before enforcing the result limit.** The quality parent accumulates entire stdout and stderr with `capture_output=True`. The 16 KiB stdout check runs after accumulation and stderr has no length check. The adapter's bounded Python stream capture does not contain arbitrary worker process output.
@@ -1313,6 +1333,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` for child output beyond the limit. U9/1.5 corrected the measurement launcher, while the retained quality launcher and its inner Python capture own different boundaries. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` for missing byte bounds during parent capture. Nonzero exit rejection already exists. Excess memory use in an ordinary run, malformed-output incidence and surviving descendants remain unobserved. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Finite child-process controls reproduced unrestricted pipe reads. Quality generation now shares the existing bounded binary-pipe/Windows Job owner, discards stderr and reaps children; exact-size JSON, invalid output, timeout and inherited-pipe controls run locally. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0084
 
@@ -1327,6 +1349,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` for the left-context omission interaction. Other approved omitted marks and Dr. are same-predicate variants. The separate right-side code-whitespace traversal is VF-0092. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Public omitted-mark predecessor cases reproduced unwanted Saint expansion. Logical predecessor provenance is retained, including profile-specific hard segmentation and cold continuation; ordinary title/numeric/barrier controls remain. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0085
 
 **The lifecycle journal can prevent uninstall and application-data restoration.** The standalone PowerShell lifecycle runner tries to hash the original installer when it journals an uninstall of the test installation. If that source has become unreadable, the journal throws before the installed uninstaller launches. The attempted flag can then prevent retry and the original profile stays in its backup.
@@ -1339,6 +1363,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` after installer unreadability. H13 introduced the current journal dependency; DCR-05 validates final artifact identity and VF-0056 treats a separate Node helper outcome. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` when the original installer becomes unreadable before owned uninstall. The backup remains preserved; the claim is blocked cleanup/restoration, not deletion of the user's original data. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — A real exclusive lock on the synthetic installer reproduced abandoned owned installation during recovery journaling. The entry digest now permits owned uninstall/restoration while fresh final drift and uncertain-containment checks remain strict. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0086
 
@@ -1353,6 +1379,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` for staging creation outside rollback in both versions. Explicit cleanup permits recovery. Adapter construction and diagnostic setup are adjacent pre-rollback controls, not extra incidents. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Both screen versions reproduced a stranded newly created session after staging mkdir failed. Empty-only rollback checks ownership identity; same-ID retry succeeds while competing/replacement/other-version data and failed rollback remain preserved. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0087
 
 **Optional-data cleanup accepts absence beneath an unsafe directory.** An existing reparse-point ancestor such as `tts\cb` stops the requested NSIS removals beneath it. The final checks query the descendant paths directly. If those queries return file/path not found and the other roots are absent or cleaned, the hook skips the optional-data failure warning and status without establishing absence within the owned directory tree.
@@ -1365,6 +1393,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` conditional on missing descendant lookups through unsafe ancestry. LCF-03's exact leaf and access-denied controls leave that branch untested. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` for optional status given unsafe ancestry and missing descendant results. Safe deletion remains guarded, and the actual OS lookup sequence and retained package bytes were not observed. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Compiled NSIS reproduced false success below a junction with absent descendants. Ancestor checks now reject that evidence without touching outside sentinels; existing locked/denied/update/preferences controls pass. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0088
 
@@ -1379,6 +1409,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` only as a probe-specific assertion gap. The receipt retains the actual diagnostic and the historical installed result recorded the intended create-file failure; neither generic export nor that past observation is disproved. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Controlled probe execution reproduced crediting a response-stage error. The injection now requires the intended first-artifact create-file/io OS error; exact export and post-Cancel retention remain checked. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0089
 
 **v5 concurrent execution can start with a failed GPU baseline.** A GPU-solo run with a failed cancellation trial can derive a schema-valid summary that records fewer than two passed trials. Given its exact digest and an otherwise eligible concurrent request, the runner accepts its identity and starts the concurrent stage. The baseline admission branch checks neither the required trial count nor the other GPU-solo gates such as the minimum measured duration.
@@ -1391,6 +1423,8 @@ restoring the absent destination.
 - 2026-11-16 reconciliation — `inspected-present` at automatic baseline qualification. The historical M006-002 GPU result itself qualified, and the subsequent concurrent attempt produced no accepted result. [Case review][audit-2026-11-16-reconciliation].
 
 - 2026-11-16 deep validation — `inspected-present` at automatic qualification with otherwise eligible inputs. Exact hashes do not verify GPU gate success; manual qualification still prevents this route and the historical baseline qualified. [Deep assessment][audit-2026-11-16-deep].
+
+- 2026-11-16 execution — Matching-digest but ineligible GPU summaries reached worker construction in both concurrent entry modes. Frozen count/duration/cancellation/audit/memory gates now block them; eligible boundary data reaches construction and CPU progression is preserved. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 ## VF-0090
 
@@ -1405,6 +1439,8 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` for skipped explicit close/error reporting. Destructor termination remains best effort; no live orphan is established. Early/final cold slots and pilot/concurrent ownership are distinct controls. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — First/second/third cold-load and early-close failures reproduced missing explicit ownership. Runtime ownership now precedes load; every created instance receives explicit close, including warmup failure and a final retry of a failed close. R01 additionally exposed primary-error replacement by cleanup failure. The corrected CLI preserves the primary stdout receipt and emits a fixed content-free secondary stderr diagnostic; combined, primary-only and cleanup-only controls pass. A failing close does not establish successful containment or a safe successor. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
 ## VF-0091
 
 **The v5 queued cancellation trial can pass with no queued request.** The trial gives the concurrent controller one request per worker. Both are dispatched before the first completion. The `queued-after-invalidation` and `complete-before-ordered-release` cases then use the same completion hook and both can pass from invalidation and teardown timings, without a request waiting for dispatch or a later submission.
@@ -1418,6 +1454,10 @@ restoring the absent destination.
 
 - 2026-11-16 deep validation — `inspected-present` as duplicate phase evidence, not demonstrated broken cancellation. Adjacent concurrent gpu-active/cpu-active/both-active labels also share the initial-dispatch setup without separate active-phase witnesses. Keep this under the same ID and preserve historical results. [Deep assessment][audit-2026-11-16-deep].
 
+- 2026-11-16 execution — Decision-blocked on a successor phase-witness contract: define queued/active/completed states and bind observed role/identity/phase to invalidation. Frozen v5 trials remain unchanged and are not newly certified. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-16 authorized successor execution — `reproduced`; Original unwitnessed active trial acceptance reproduced before edits. Controller-admitted third work, concrete pre-release completion and actual child adapter entry now have distinct witnesses, paired queue control and simultaneous both-active barrier. Session/trial/worker/occurrence identities and recomputed acceptance preserve existing isolation/deadline/cleanup protections. The shared completion hook and dispatch-only checks explain the coverage gap; the earlier review cause remains unknown. Current evidence and final R04 acceptance are in [case results][fsf-execution].
+
 ## VF-0092
 
 **English title lookahead can cross inline-code whitespace.** In an English paragraph with `St.<code> </code>James`, the code space survives projection within the same source leaf. The title lookahead skips it without checking prose/language context, finds an English uppercase letter and expands St. to Saint. Dr. has the same route. The code bytes remain unchanged; the abbreviation uses context across a semantic barrier.
@@ -1427,6 +1467,8 @@ restoring the absent destination.
 - Disposition — `candidate`, P3 product preparation. `inspected-present` on `main` at `079c38ece8687b24859db4f64d4f92bba67bdcee`, with only prior audit documents dirty. [Deep source trace][audit-2026-11-16-deep]. No runtime reproduction, natural incidence or engine-pronunciation claim.
 - Next check — Require each skipped right-gap token to be same-language prose. Compare public code-gap and retained foreign-gap inputs with plain accepted titles for both profiles, preserving the original abbreviation/period at barriers, code bytes, raw source endpoints, limit behavior, predecessor controls and warm/cold continuation.
 
+
+- 2026-11-16 execution — Public code-gap and retained foreign-NBSP cases reproduced title expansion across a semantic barrier. Every skipped gap token must now be English prose; accepted plain titles, exact source ranges and both profiles remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 [cfr-plan]: ../../plans/completed/chat-findings-recovery-and-minimal-corrections.md#finding-and-history-register
 [cfr-review]: ../../plans/evidence/chat-findings-recovery/review-final-r03.md
@@ -1458,5 +1500,6 @@ restoring the absent destination.
 [audit-2026-11-16-pass-5]: audits/2026-11-16-repository-logic-audit-pass-5.md
 [audit-2026-11-16-reconciliation]: audits/2026-11-16-findings-reconciliation.md
 [audit-2026-11-16-deep]: audits/2026-11-16-deep-findings-validation.md
+[fsf-execution]: ../../plans/evidence/five-search-findings/case-results.md
 
 - 2026-11-14 execution — `reproduced` on the original relevant owner: controlled production Reader/coordinator reentrancy with zero retired synthesis dispatch; no natural-incidence or stale-audio claim. Minimal correction is implemented on `fab1c9e186552515e828c33ce75e11628dda8300` plus the task patch; full integration, native artifact and independent approval are pending. Original failures, succeeding controls and input identities are in the [execution ledger](../../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md). This is not yet a `validated` or `fixed` disposition.

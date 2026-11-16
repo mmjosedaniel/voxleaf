@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 import sys
+import time
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from unittest.mock import Mock
 
 import pytest
 
 from benchmarks import (
+    cli,
     cpu_fallback_result,
     quality,
     quality_cli,
@@ -42,6 +46,89 @@ from benchmarks.quality import (
 )
 from benchmarks.quality_cli import GENERATE_FIELDS, QualityCommandError, _require_fields
 from benchmarks.quality_scoring import _aggregate_candidate_scores
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows worker containment")
+@pytest.mark.parametrize(
+    "case",
+    ["overflow", "stderr", "exact-limit", "nonzero", "utf8", "json", "timeout", "inherited-pipe"],
+)
+def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    request = replace(_request(tmp_path, QWEN_CANDIDATE_ID), candidate_python=Path(sys.executable))
+    payload: dict[str, object] = dict.fromkeys(GENERATE_FIELDS, None)
+    payload.update(qualityOptIn=True, sessionId="a" * 32)
+    receipt = {
+        "status": "pass",
+        "sessionId": "a" * 32,
+        "candidateId": request.profile.candidate_id,
+        "generatedSamples": 12,
+        "readyForFinalization": True,
+    }
+    output = json.dumps(receipt)
+    if case == "overflow":
+        script = "import sys; sys.stdout.buffer.write(b'x' * 1048576)"
+    elif case == "utf8":
+        script = "import sys; sys.stdout.buffer.write(b'\\xff')"
+    elif case == "json":
+        script = "print('{')"
+    elif case == "timeout":
+        script = "import time; time.sleep(3)"
+    else:
+        if case == "exact-limit":
+            output += " " * (16384 - len(output))
+        script = f"import sys; sys.stdin.read(); sys.stdout.write({output!r}); sys.stdout.flush(); "
+        if case == "stderr":
+            script += "sys.stderr.buffer.write(b'x' * 1048576)"
+        elif case == "nonzero":
+            script += "sys.exit(1)"
+        elif case == "inherited-pipe":
+            script += (
+                "import subprocess; subprocess.Popen([sys.executable, '-c', "
+                "'import time; time.sleep(3)'], stdout=sys.stdout, stderr=sys.stderr)"
+            )
+    script_path = tmp_path / "synthetic-worker.py"
+    script_path.write_text(script, encoding="utf-8")
+    original_popen = subprocess.Popen
+    processes: list[subprocess.Popen[Any]] = []
+    reads: list[int] = []
+    captured: list[dict[str, Any]] = []
+
+    def launch(_args: object, **kwargs: Any) -> subprocess.Popen[Any]:
+        kwargs["cwd"] = tmp_path
+        captured.append(kwargs.copy())
+        process = original_popen([sys.executable, str(script_path)], **kwargs)
+        assert process.stdout is not None
+        read = process.stdout.read
+
+        def observed_read(size: int = -1) -> Any:
+            reads.append(size)
+            return read(size)
+
+        process.stdout.read = observed_read  # type: ignore[method-assign]
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    monkeypatch.setattr(quality_cli, "_preflight_request", lambda _value: request)
+    monkeypatch.setattr(quality_cli, "_preflight_passed", lambda _request: True)
+    monkeypatch.setattr(quality_cli, "GENERATION_TIMEOUT_SECONDS", 1.0)
+    started = time.monotonic()
+    try:
+        result = quality_cli._generate_parent(payload)
+        assert result == (
+            (receipt, 0)
+            if case in ("stderr", "exact-limit")
+            else ({"status": "fail", "failureCode": "generation"}, 2)
+        )
+        assert reads and all(0 < size <= cli.MAXIMUM_WORKER_STDOUT_BYTES + 1 for size in reads)
+        assert captured[0]["stderr"] == subprocess.DEVNULL
+        assert not captured[0].get("text", False)
+        assert time.monotonic() - started < 2.5
+    finally:
+        assert len(processes) == 1
+        assert processes[0].poll() is not None
 
 
 class FakeQualityAdapter:

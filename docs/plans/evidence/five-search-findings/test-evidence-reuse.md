@@ -1,6 +1,6 @@
 # Test evidence reuse for the five-search correction plan
 
-This assessment supports the [ExecPlan](../../active/five-search-findings-minimal-corrections.md). It was prepared on 2026-11-16 at source HEAD `079c38ece8687b24859db4f64d4f92bba67bdcee`, before implementation. No tests, models, installers or benchmarks were executed.
+This assessment supports the [ExecPlan](../../completed/five-search-findings-minimal-corrections.md). It was prepared on 2026-11-16 at source HEAD `079c38ece8687b24859db4f64d4f92bba67bdcee`, before implementation. No tests, models, installers or benchmarks were executed.
 
 ## What was actually checked
 

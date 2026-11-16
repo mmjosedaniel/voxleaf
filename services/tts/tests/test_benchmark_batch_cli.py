@@ -13,7 +13,7 @@ import pytest
 from test_benchmark_v13_authority import LOADS, ROOT, _git
 from test_benchmark_v14_authority import _v14_raw
 
-from benchmarks import batch_cli, batch_result_cli
+from benchmarks import batch_cli, batch_result_cli, benchmark_safety
 from benchmarks.batch_official import OfficialBatchError, OfficialExecution, official_raw_root
 from benchmarks.batch_result import BatchResultError
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
@@ -166,7 +166,7 @@ def test_official_cli_writes_only_v14_session_after_runner_success(
     stopped: bool, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     session_id = "c" * 32
-    session = official_raw_root(tmp_path, session_id, version="v14")
+    session = tmp_path / "prospective-data"
     root_calls: list[str] = []
 
     class Sampler:
@@ -182,9 +182,15 @@ def test_official_cli_writes_only_v14_session_after_runner_success(
             raise OfficialBatchError("shared-gpu-memory")
         return OfficialExecution({"cleanupFailureCodes": [], "failureCodes": []}, ())
 
-    def raw_root(_repo: Path, identifier: str, *, version: str) -> Path:
-        assert identifier == session_id and version == "v14"
-        return session
+    class Claimed:
+        def complete(self, raw: object, auxiliaries: object) -> None:
+            session.mkdir()
+            (session / "raw.json").write_text(json.dumps(raw), encoding="utf-8")
+
+    def claim(_repo: Path, expected: dict[str, object]) -> Claimed:
+        assert expected["session"] == session_id
+        root_calls.append("claim")
+        return Claimed()
 
     monkeypatch.setattr(
         batch_cli,
@@ -204,29 +210,31 @@ def test_official_cli_writes_only_v14_session_after_runner_success(
     monkeypatch.setattr(batch_cli, "WindowsGpuProcessMemorySampler", lambda *_args: Sampler())
     monkeypatch.setattr(batch_cli, "WindowsProcessResourceSampler", lambda **_kwargs: object())
     monkeypatch.setattr(batch_cli, "execute_official_v14", execute)
-    monkeypatch.setattr(batch_cli, "official_raw_root", raw_root)
+    monkeypatch.setattr(benchmark_safety, "claim", claim)
     payload = _input()
     payload.update(
         resultPurpose="official",
         sessionId=session_id,
         profileVersion=PROFILE_VERSION,
         candidatePython=sys.executable,
+        evidenceVersion="tts-benchmark-safety-v1",
     )
     if stopped:
         with pytest.raises(OfficialBatchError, match=":shared-gpu-memory$"):
             batch_cli._run(payload)
         assert not session.exists()
-        assert root_calls == ["run", "close-sampler", "close-sampler"]
+        assert root_calls == ["claim", "run", "close-sampler", "close-sampler"]
         return
     receipt = batch_cli._run(payload)
-    assert receipt["eligibleForDerivation"] is True
+    assert receipt["eligibleForDerivation"] is False
+    assert receipt["status"] == "pending-restoration"
     assert json.loads((session / "raw.json").read_text(encoding="utf-8")) == {
         "cleanupFailureCodes": [],
         "failureCodes": [],
     }
     assert not official_raw_root(tmp_path, session_id).exists()
     assert not official_raw_root(tmp_path, session_id, version="v13").exists()
-    assert root_calls == ["run", "close-sampler", "close-sampler"]
+    assert root_calls == ["claim", "run", "close-sampler", "close-sampler"]
 
 
 def test_vf0065_rejected_v14_read_preserves_session(

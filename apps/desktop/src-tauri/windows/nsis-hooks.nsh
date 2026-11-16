@@ -228,6 +228,23 @@ FunctionEnd
 
 ; A missing ancestor proves absence. Inspect each existing ancestor before
 ; looking beneath it, so a reparse point never supplies false absence evidence.
+!macro CheckOptionalAncestor PATH LABEL SKIP
+  System::Call 'kernel32::GetFileAttributesW(w "${PATH}") i .R1 ?e'
+  Pop $R2
+  StrCmp $R1 -1 ${LABEL}_missing
+  IntOp $R2 $R1 & 0x400
+  StrCmp $R2 0 0 ${LABEL}_unsafe
+  IntOp $R2 $R1 & 0x10
+  StrCmp $R2 0 ${LABEL}_unsafe ${LABEL}_checked
+  ${LABEL}_missing:
+    StrCmp $R2 2 ${SKIP}
+    StrCmp $R2 3 ${SKIP}
+  ${LABEL}_unsafe:
+    StrCpy $R3 "1"
+    Goto ${SKIP}
+  ${LABEL}_checked:
+!macroend
+
 !macro CheckPreferencesAncestor PATH LABEL
   System::Call 'kernel32::GetFileAttributesW(w "${PATH}") i .R1 ?e'
   Pop $R2
@@ -400,6 +417,9 @@ FunctionEnd
   ; Report one aggregate failure while preserving independent preference cleanup.
   StrCmp $RemoveChatterboxData "1" 0 optional_cleanup_checked
   StrCpy $R3 "0"
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop" optional_product optional_cleanup_report
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop\tts" optional_tts optional_cleanup_report
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop\tts\cb" optional_cb optional_profiles_check
   !insertmacro CheckOptionalDataAbsent "tts\cb\.previous" optional_previous
   !insertmacro CheckOptionalDataAbsent "tts\cb\7" optional_current
   !insertmacro CheckOptionalDataAbsent "tts\cb\6" optional_retained_v6
@@ -407,8 +427,14 @@ FunctionEnd
   !insertmacro CheckOptionalDataAbsent "tts\cb\3" optional_v3
   !insertmacro CheckOptionalDataAbsent "tts\cb\2" optional_v2
   !insertmacro CheckOptionalDataAbsent "tts\cb\cache" optional_cache
+  optional_profiles_check:
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop\tts\profiles" optional_profiles optional_staging_check
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop\tts\profiles\chatterbox-multilingual-v3-cuda-bf16-default-v4" optional_profile_parent optional_staging_check
   !insertmacro CheckOptionalDataAbsent "tts\profiles\chatterbox-multilingual-v3-cuda-bf16-default-v4\2" optional_profile
+  optional_staging_check:
+  !insertmacro CheckOptionalAncestor "$LOCALAPPDATA\com.voxleaf.desktop\tts\staging" optional_staging_parent optional_cleanup_report
   !insertmacro CheckOptionalDataAbsent "tts\staging\chatterbox-multilingual-v3-cuda-bf16-default-v4" optional_staging
+  optional_cleanup_report:
   StrCmp $R3 "0" optional_cleanup_checked
     SetErrorLevel 1
     DetailPrint "Some Chatterbox optional data was retained because safe cleanup could not complete."

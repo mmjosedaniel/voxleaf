@@ -208,12 +208,39 @@ def _legacy_cancellation_summary(
     }
 
 
+def derive_v14_safety_summary(
+    repository_root: Path,
+    evidence: object,
+    *,
+    raw_session_removed: bool,
+    execution_checker: Callable[[str], bool] | None = None,
+) -> dict[str, object]:
+    from benchmarks.benchmark_safety import VerifiedSafety, require
+
+    require(isinstance(evidence, VerifiedSafety))
+    assert isinstance(evidence, VerifiedSafety)
+    raw = evidence.files["raw.json"]
+    v14_authority.validate_v14_safety_raw(repository_root, raw, execution_checker=execution_checker)
+    summary = _derive_summary(
+        _mapping(raw, "raw"),
+        evidence.files["loads.json"],
+        raw_session_removed=raw_session_removed,
+        version="v14",
+        external_restoration=True,
+    )
+    v14_authority.validate_v14_result(
+        repository_root, summary, summary=True, execution_checker=execution_checker
+    )
+    return summary
+
+
 def _derive_summary(
     raw: Mapping[str, object],
     load_value: object,
     *,
     raw_session_removed: bool,
     version: Literal["v4", "v13", "v14"] = "v4",
+    external_restoration: bool | None = None,
 ) -> dict[str, object]:
     successor = version != "v4"
     placement_profile_id = raw["placementProfileId"]
@@ -366,7 +393,11 @@ def _derive_summary(
             and raw_cleanup.get("postCleanupProcessTreeVramBytes") == 0
             and (raw_session_removed if successor else raw_cleanup.get("rawSessionRemoved") is True)
             and raw_cleanup.get("generatedAudioRemoved") is True
-            and raw_cleanup.get("sleepSettingRestored") is True
+            and (
+                raw_cleanup.get("sleepSettingRestored") is True
+                if external_restoration is None
+                else external_restoration
+            )
             and not typed_cleanup_failed
         ),
         "noSharedGpuPaging": (_integer(raw_memory.get("peakSharedGpuMemoryBytes"), "memory") == 0),

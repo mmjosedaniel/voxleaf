@@ -31,6 +31,33 @@ import {
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
 
+test("FSF-VF-0079 language records ignore member order but retain exact membership", async () => {
+  const documents = await loadReleaseDocuments(repositoryRoot());
+  const nsis = documents.releaseConfig.bundle.windows.nsis;
+  const original = nsis.customLanguageFiles;
+  nsis.customLanguageFiles = Object.fromEntries(
+    Object.entries(original).reverse(),
+  );
+  validateClosedReleaseValues(documents);
+  for (const invalid of [
+    { English: original.English },
+    { ...original, French: original.English },
+    { ...original, Spanish: original.English },
+  ]) {
+    nsis.customLanguageFiles = invalid;
+    assert.throws(
+      () => validateClosedReleaseValues(documents),
+      /uninstall-language-authority/,
+    );
+  }
+  nsis.customLanguageFiles = original;
+  nsis.languages.reverse();
+  assert.throws(
+    () => validateClosedReleaseValues(documents),
+    /bundle-authority/,
+  );
+});
+
 for (const scenario of [
   "environment directory",
   "configured directory",
@@ -394,10 +421,11 @@ for (const mode of [
   "failed-uninstaller",
   "hanging-uninstaller",
   "installer-drift",
+  "unreadable-source",
   "success",
 ]) {
   test(
-    `VAF H13 lifecycle owns partial installs and restores only after uninstall: ${mode}`,
+    `${mode === "unreadable-source" ? "FSF-VF-0085" : "VAF H13"} lifecycle owns partial installs and restores only after uninstall: ${mode}`,
     {
       skip: process.platform !== "win32",
     },
@@ -440,6 +468,7 @@ $fixtureReceipt = Join-Path $fixtureRoot 'windows-lifecycle-receipt-v1.json'
 [IO.File]::WriteAllText($fixtureReceipt, 'stale prior receipt')
 $fixtureEvents = [Collections.Generic.List[string]]::new()
 $fixtureJournalSeen = [Collections.Generic.List[bool]]::new()
+$fixtureSourceLock = $null
 function Start-Sleep { param($Seconds) }
 function Stop-Process { param($Id, [switch]$Force, $ErrorAction) $fixtureEvents.Add('stop') }
 function New-FixturePackageProcess {
@@ -500,7 +529,10 @@ function Start-Process {
   }
   if ($FilePath -eq (Join-Path $fixtureInstallRoot 'voxleaf-desktop.exe')) {
     $fixtureEvents.Add('start')
-    if ($fixtureMode -in @('failed-uninstaller','hanging-uninstaller')) { throw 'synthetic-after-install' }
+    if ($fixtureMode -eq 'unreadable-source') {
+      $script:fixtureSourceLock = [IO.File]::Open($fixtureInstaller, 'Open', 'Read', 'None')
+    }
+    if ($fixtureMode -in @('failed-uninstaller','hanging-uninstaller','unreadable-source')) { throw 'synthetic-after-install' }
     $process = [pscustomobject]@{HasExited=($fixtureMode -eq 'first-start'); Id=0; StartTime=[DateTime]::UtcNow}
     $process | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milliseconds) return $true }
     $process | Add-Member -MemberType ScriptMethod -Name Kill -Value { $this.HasExited=$true }
@@ -509,12 +541,13 @@ function Start-Process {
   throw 'synthetic-unexpected-process'
 }
 $fixtureFailure = $null
-try { & ${quote(lifecycle)} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message }
+try { & ${quote(lifecycle)} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message } finally { if ($null -ne $fixtureSourceLock) { $fixtureSourceLock.Dispose() } }
 $blockedCleanup = $fixtureMode -in @('missing-uninstaller','failed-uninstaller','hanging-uninstaller')
 if ($fixtureMode -eq 'success') { if ($null -ne $fixtureFailure) { throw $fixtureFailure } }
 elseif ($null -eq $fixtureFailure) { throw 'synthetic-missing-primary-failure' }
 if ($fixtureMode -eq 'partial' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-failed') { throw 'synthetic-primary-failure-lost' }
 if ($fixtureMode -eq 'interrupted' -and $fixtureFailure -ne 'synthetic-interruption') { throw 'synthetic-interruption-lost' }
+if ($fixtureMode -eq 'unreadable-source' -and $fixtureFailure -ne 'synthetic-after-install') { throw 'synthetic-primary-failure-lost' }
 if ($fixtureMode -eq 'installer-drift' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-drift') { throw 'synthetic-installer-drift-not-rejected' }
 if ($fixtureMode -eq 'hanging-uninstaller') {
   if ($fixtureFailure -ne 'synthetic-after-install') { throw 'synthetic-primary-failure-lost' }
@@ -837,7 +870,7 @@ try {
 for (const lcf of [false, true]) {
   test(
     lcf
-      ? "VAF H9 and LCF compiled NSIS report incomplete independent data cleanup"
+      ? "FSF-VF-0087 VAF H9 and LCF compiled NSIS report incomplete independent data cleanup"
       : "CLB-01 compiled NSIS detects directories and each optional root",
     {
       skip: process.platform !== "win32",
@@ -997,6 +1030,27 @@ SectionEnd
             assert.equal(result.error, undefined);
             return result;
           };
+          // Missing leaves below an unsafe intermediate are not proof of
+          // absence. The target has only an outside sentinel, no optional data.
+          for (const relative of [
+            "tts",
+            "tts\\cb",
+            "tts\\profiles",
+            "tts\\staging",
+          ]) {
+            const intermediate = path.join(ownedRoot, relative);
+            await mkdir(path.dirname(intermediate), { recursive: true });
+            await symlink(outside, intermediate, "junction");
+            try {
+              assert.equal(uninstall("/REMOVE_CHATTERBOX_DATA=1"), 1, relative);
+              assert.equal(
+                await readFile(path.join(outside, "keep.bin"), "utf8"),
+                "synthetic",
+              );
+            } finally {
+              await rm(intermediate);
+            }
+          }
           // Each literal root must participate in the final postcondition; there
           // is no .previous directory while testing cb/6 and the other roots.
           for (const relative of [

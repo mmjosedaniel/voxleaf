@@ -64,6 +64,18 @@ Current bilingual, Piper and Chatterbox narration profiles protect Unicode
 numbers alongside letters and marks at lexical boundaries, and preserve dates
 embedded in larger unsupported numeric expressions. Standalone supported forms,
 displayed text, source spans and the frozen legacy profile are unchanged.
+Safe semantic projection also retains a document-local scope for each explicit
+`dir="auto"` declaration. Before exposing its content, the reader resolves each
+scope from eligible safe text in bounded, yielding and cancellable work. A detached
+application-created text-only native probe shares one direction across flattened
+descendants; nested explicit/fixed scopes are excluded and neutral Auto defaults
+to LTR. Scratch text is cleared, probes are released and replacement/closure
+retires pending work. This preserves logical blocks, narration and locator offsets.
+Admitted omitted formatting marks retain their typed source omissions
+inside Spanish article/time expansion and English predecessor context; English
+title lookahead stops at code or foreign-language whitespace. The
+[five-search correction results](../plans/evidence/five-search-findings/case-results.md)
+bind these changes to their current checks and independent acceptance.
 Operational failure containment shuts down pending startup before joining it
 when no synthesis scope is cancellable; active synthesis retains cancellation
 first and all cleanup stages share the existing absolute deadline. Native
@@ -672,6 +684,14 @@ selection, cancellation, restoration, persistence, memory, and privacy
 invariants remain binding.
 
 The desktop application and TTS inference should run in separate local processes.
+
+Retained development benchmark commands have an independent
+[prospective safety-v1 boundary](../development/benchmark-safety-v1.md): read-only
+Windows power observations, a one-use content-free journal and private raw/input
+digests precede verified derivation. The existing isolated child pipe supplies
+bounded adapter-entry witnesses. Private data are removed before publication;
+the journal remains for provenance. This maintainer flow does not alter product
+reader persistence, inference IPC, audio storage or historical engine selection.
 
 Reasons:
 

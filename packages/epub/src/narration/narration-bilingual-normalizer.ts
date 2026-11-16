@@ -463,6 +463,12 @@ function isProseTextToken(token: NarrationSourceToken | undefined): boolean {
   return token?.kind === "text" && !isCodeContext(token.textContext);
 }
 
+function isOmittedFormattingMark(value: string | undefined): boolean {
+  return (
+    value === SOFT_HYPHEN || value === ZERO_WIDTH_SPACE || value === WORD_JOINER
+  );
+}
+
 function isWordContextCodePoint(value: string | undefined): boolean {
   if (value === undefined) {
     return false;
@@ -1008,17 +1014,22 @@ function matchesLexicalForm(
   for (let offset = 0; offset < source.length; offset += 1) {
     const index = endIndexExclusive;
     if (allowTimeArticleSpacing && offset === 3) {
+      let hasSpace = false;
       while (
         endIndexExclusive - startIndex <
           NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum &&
         replacements[endIndexExclusive] === undefined &&
         isProseTextToken(tokens[endIndexExclusive]) &&
         languages[endIndexExclusive] === requiredLanguage &&
-        /^\p{Zs}$/u.test(sourceText(tokens[endIndexExclusive]) ?? "")
+        (/^\p{Zs}$/u.test(sourceText(tokens[endIndexExclusive]) ?? "") ||
+          isOmittedFormattingMark(sourceText(tokens[endIndexExclusive])))
       ) {
+        hasSpace ||= /^\p{Zs}$/u.test(
+          sourceText(tokens[endIndexExclusive]) ?? "",
+        );
         endIndexExclusive += 1;
       }
-      if (endIndexExclusive === index) return undefined;
+      if (!hasSpace) return undefined;
       continue;
     }
     if (
@@ -1150,7 +1161,9 @@ function planLexicalSpan(
   }
 
   const narrationCodePoints = Array.from(narration);
-  const sourceLength = endIndexExclusive - startIndex;
+  const sourceLength = tokens
+    .slice(startIndex, endIndexExclusive)
+    .filter((token) => !isOmittedFormattingMark(sourceText(token))).length;
   const hardMaximum =
     NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum;
   if (narrationCodePoints.length > sourceLength * hardMaximum) {
@@ -1158,14 +1171,25 @@ function planLexicalSpan(
   }
 
   let narrationIndex = 0;
+  let remainingSourcePositions = sourceLength;
   const lexicalExpansion = Object.freeze({});
   for (let index = startIndex; index < endIndexExclusive; index += 1) {
-    const remainingSourcePositions = endIndexExclusive - index;
+    const value = sourceText(tokens[index]);
+    if (isOmittedFormattingMark(value)) {
+      replacements[index] = Object.freeze({
+        kind: "omission",
+        reason: value === SOFT_HYPHEN ? "soft-hyphen" : "formatting-mark",
+        lexicalExpansion,
+        boundaryProtections: protections,
+      });
+      continue;
+    }
     const remainingNarration = narrationCodePoints.length - narrationIndex;
     const chunkLength = Math.min(
       hardMaximum,
       Math.ceil(remainingNarration / remainingSourcePositions),
     );
+    remainingSourcePositions -= 1;
     if (chunkLength === 0) {
       replacements[index] = Object.freeze({
         kind: "omission",
@@ -1294,6 +1318,9 @@ export function summarizeEnglishTitleContext(
         precededByNumber: false,
         complete: false,
       };
+    } else if (isOmittedFormattingMark(value)) {
+      // The omitted source position does not create a new logical predecessor.
+      continue;
     } else if (isOrdinaryWhitespace(value)) {
       state = {
         ...state,
@@ -1338,6 +1365,8 @@ function hasEnglishTitleContext(
   let next = end;
   while (
     next - end < limit &&
+    isProseTextToken(tokens[next]) &&
+    languages[next] === "en" &&
     isOrdinaryWhitespace(sourceText(tokens[next]) ?? "")
   )
     next += 1;

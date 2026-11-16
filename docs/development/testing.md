@@ -34,6 +34,23 @@ preserve a meaningful pre-fix failure where applicable. Historical registry
 imports do not renew test results. Existing host-execution, evidence-reuse and
 independent-review requirements still govern acceptance.
 
+The [five-search correction execution](../plans/evidence/five-search-findings/case-results.md)
+adds public normalization/context and computed-direction/reopen assertions,
+busy Remove remount controls, terminal Download acknowledgement, strict absence,
+compiled NSIS unsafe-ancestor checks and synthetic benchmark ownership gates.
+The Auto regressions also cover flattened unknown inline/block/mixed content,
+neutral and late-strong scopes, unchanged narration/anchors, scratch/work bounds,
+and replacement/unmount while preserving progressive rendering. The cold-load
+CLI distinguishes simultaneous primary/cleanup failures from either alone.
+The quality command shares the existing bounded Windows Job/pipe launcher, so
+its focused union includes `test_benchmark_cli.py`. No model/acoustic campaign
+or live optional download is selected. The final changed Windows package and
+its lifecycle still require current artifact validation; synthetic NSIS tests
+do not replace that gate. VF-0077/VF-0091 use the authorized
+[prospective safety-v1 contract](benchmark-safety-v1.md); final acceptance is
+governed by the correction plan's independent review and identity checks.
+Their historical positive fields are not renewed evidence.
+
 ## Narration settings lifecycle coverage
 
 `NSL-01` through `NSL-04` cover fixed activation rejection/retry feedback,
@@ -2077,3 +2094,13 @@ exact/nearest-valid recovery remains in force. A newly measured manual position
 can be saved and reopened, but this correction promises neither lossless historical
 migration nor a blanket reset of saved books. Current correction evidence is
 indexed in the [deep-findings execution ledger](../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md).
+
+Prospective batch/dual-worker evidence follows [benchmark safety v1](benchmark-safety-v1.md).
+`test_benchmark_safety.py` exercises original/admitted/restored settings, failed-run
+recovery, one-use sessions, substituted inputs, real frozen derivation and private
+cleanup. Its finite spawned adapters prove distinct queued/completed/adapter-entry
+phases, including two overlapping entries; they do not run a model. Retain the
+existing isolation, controller/runtime, command, v5/v13/v14 authority and result
+tests when changing these owners. The read-only `benchmark:tts:safety:observe`
+command checks the native observation boundary without writing power settings.
+No hardware measurement or acoustic acceptance follows from these controls.
