@@ -5823,6 +5823,13 @@ test("VF-0066 real worklet preparation cannot commit a short automatic refill", 
       "buffering",
     );
     await speed.selectOption("75");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => typeof Reflect.get(globalThis, "__rnb").releaseRefill2,
+        ),
+      )
+      .toBe("function");
     await page.evaluate(() =>
       Reflect.get(globalThis, "__rnb").releaseRefill2(),
     );
@@ -5850,6 +5857,22 @@ test("VF-0066 real worklet preparation cannot commit a short automatic refill", 
         page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
       )
       .toBe(false);
+    // Worklet registration and synthesis reach their barriers independently.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => typeof Reflect.get(globalThis, "__rnb").releaseRefill5,
+        ),
+      )
+      .toBe("function");
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "buffering",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-playable-ms",
+      "45000",
+    );
     expect(await starts()).toBe(1);
     await page.evaluate(() =>
       Reflect.get(globalThis, "__rnb").releaseRefill5(),

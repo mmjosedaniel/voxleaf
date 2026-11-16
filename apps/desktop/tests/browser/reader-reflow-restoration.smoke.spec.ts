@@ -19,7 +19,7 @@ test("VF-0064 implicit RTL has explicit paragraph geometry after reopening", asy
   const bytes = await buildMinimalEpubFixture({
     chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr"><head><title>Synthetic direction</title></head><body><div dir="rtl">${sentence}</div><p dir="rtl">${sentence}</p><div dir="ltr"><span dir="rtl">${sentence}</span></div>${"<p>Filler.</p>".repeat(30)}</body></html>`,
   });
-  await page.setViewportSize({ width: 760, height: 450 });
+  await page.setViewportSize({ width: 760, height: 720 });
   await page.goto(LOCAL_ORIGIN);
   const file = {
     name: "synthetic-direction.epub",
@@ -66,11 +66,25 @@ test("VF-0064 implicit RTL has explicit paragraph geometry after reopening", asy
       await page.getByRole("link", { name: "Skip to reader content" }).focus();
       await page.keyboard.press("Enter");
       await expect(viewport.locator("article")).toBeFocused();
-      await page.keyboard.press("End");
+      // Land on a passage rather than the empty scroll runway after the text.
+      await page.keyboard.press("PageDown");
       await expect
         .poll(() => viewport.evaluate((element) => element.scrollTop))
         .toBeGreaterThan(0);
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+      await expect
+        .poll(() =>
+          viewport.evaluate((element, inset) => {
+            const viewport = element.getBoundingClientRect();
+            const readingLine = viewport.top + inset;
+            return Array.from(element.querySelectorAll(".semantic-document p"))
+              .slice(3)
+              .some((paragraph) => {
+                const { top, bottom } = paragraph.getBoundingClientRect();
+                return top < viewport.bottom && readingLine < bottom;
+              });
+          }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX),
+        )
+        .toBe(true);
       await expect
         .poll(async () => (await savedPosition())?.anchor.anchorIndex)
         .toBeGreaterThan(0);
@@ -78,11 +92,11 @@ test("VF-0064 implicit RTL has explicit paragraph geometry after reopening", asy
       await expect
         .poll(() => viewport.evaluate((element) => element.scrollTop))
         .toBe(0);
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
       await expect
         .poll(async () => (await savedPosition())?.anchor.anchorIndex)
         .toBe(0);
       saved = await savedPosition();
+      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
     }
   }
 });

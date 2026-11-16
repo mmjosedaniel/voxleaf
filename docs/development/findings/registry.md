@@ -1014,6 +1014,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. Implicit and explicit RTL matched in projection, visual caret geometry and actual save/reopen in Chromium, with an inline-only direction control. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
 
+- 2026-11-16 CI follow-up — A trusted End could land in the empty trailing scroll area. The Chromium fixture now selects an interior passage with Page Down and waits for the actual noninitial and return-to-start saves. [CI evidence](../../plans/evidence/four-pass-findings-corrections/ci-follow-up.md).
+
 ## VF-0065
 
 **v14 derivation deletes the raw session before validation.** The official derive command removes the ignored session in a `finally` before checking the loaded evidence and even after an evidence read fails. A recoverable authority mismatch can leave the operator with neither raw input for another attempt nor a validated summary.
@@ -1039,6 +1041,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 - 2026-11-15 deep validation — `inspected-present`. Worklet-preparation failure can automatically fall back to 1x through the same stale refill admission, without a second user rate selection. Preserve ordinary unit succession, explicit Resume/Play available, shorter complete tails and the original underrun count. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0066--both-explicit-and-automatic-rate-fallback)
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. An actual Chromium Worklet underrun was followed by no premature restart at slower-rate lead, then one restart when the final 1x watermark was met. Deterministic fallback coverage passed. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
+
+- 2026-11-16 CI follow-up — Worklet registration and the gated synthesis response reached their checkpoints independently. The browser test awaits the fixture callback and still checks 45 seconds of playable audio, buffering and one source start before release. [CI evidence](../../plans/evidence/four-pass-findings-corrections/ci-follow-up.md).
 
 ## VF-0067
 
