@@ -13,11 +13,17 @@ from typing import Any, NoReturn
 import pytest
 
 from benchmarks.batch_contracts import (
+    BatchAudioUnit,
     BatchGenerationRequest,
     BatchUnitRequest,
     BatchWorkIdentity,
 )
-from benchmarks.batch_fake import DeterministicBatchCandidateFactory
+from benchmarks.batch_execution import BoundedOrderedBatchController
+from benchmarks.batch_fake import (
+    DeterministicBatchCandidate,
+    DeterministicBatchCandidateFactory,
+    FakeBatchClock,
+)
 from benchmarks.contracts import AdapterOperationError, AudioChunk, FailureCode, GenerationRequest
 from benchmarks.fake_adapter import FakeMemoryProbe, FakeNanosecondClock
 from benchmarks.harness import (
@@ -798,6 +804,35 @@ def test_worker_termination_discards_late_output_and_restarts_one_clean_worker()
     assert all(chunk.request_id == "replacement" for chunk in replacement)
     adapter.close()
     assert adapter.worker_pid is None
+
+
+class _MeasuredDiagnosticBatchCandidate(DeterministicBatchCandidate):
+    def __init__(self) -> None:
+        super().__init__(FakeBatchClock())
+
+    def generate_batch(self, request: BatchGenerationRequest) -> tuple[BatchAudioUnit, ...]:
+        print("private-synthetic-vf0073")
+        return super().generate_batch(request)
+
+
+def test_vf0073_measured_child_diagnostic_is_redacted_and_worker_reaped(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        _MeasuredDiagnosticBatchCandidate, forbidden_values=("private-synthetic-vf0073",)
+    )
+    controller = BoundedOrderedBatchController(
+        clock=FakeBatchClock(), preserve_measured_privacy_failure=True
+    )
+    try:
+        observed = controller.execute(adapter, _batch_request())
+        assert observed.call.failure_code == "privacy"
+        assert not observed.published
+        assert adapter.worker_pid is None
+        captured = capsys.readouterr()
+        assert "private-synthetic-vf0073" not in captured.out + captured.err
+    finally:
+        adapter.close()
 
 
 def test_worker_returns_one_bounded_ordered_batch_without_payload() -> None:

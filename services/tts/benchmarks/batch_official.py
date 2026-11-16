@@ -1136,7 +1136,7 @@ def _execute_official(
         _require_safety(monitor)
         monitor.begin_measurement()
         observations = _run_measured_batch(
-            repository_root, clock, candidate_factory, monitor, placement_profile_id
+            repository_root, clock, candidate_factory, monitor, placement_profile_id, v14=v14
         )
         cancellation_trials = _run_cancellation_trials(
             repository_root, candidate_factory, monitor, placement_profile_id, v14=v14
@@ -1205,8 +1205,10 @@ def _run_measured_batch(
     candidate_factory: OfficialCandidateFactory,
     monitor: OfficialMemoryMonitor,
     placement_profile_id: str,
+    *,
+    v14: bool,
 ) -> list[BatchExecutionObservation]:
-    controller = BoundedOrderedBatchController(clock=clock)
+    controller = BoundedOrderedBatchController(clock=clock, preserve_measured_privacy_failure=v14)
     observations: list[BatchExecutionObservation] = []
     terminal_code: str | None = None
     _require_safety(monitor)

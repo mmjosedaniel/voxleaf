@@ -133,6 +133,7 @@ interface BlockCollector {
   readonly blocks: SemanticBlock[];
   readonly pendingInlines: RawInline[];
   pendingSourceElementId: string | undefined;
+  pendingParagraphDirection?: TextContext["direction"];
 }
 
 interface InlineCollector {
@@ -1015,8 +1016,7 @@ class XhtmlProjector {
         ? destination.pendingInlines
         : destination.inlines;
     if (destination.kind === "blocks" && inlines.length === 0) {
-      destination.pendingSourceElementId =
-        this.currentParagraphSourceElementId();
+      this.beginPendingParagraph(destination);
     }
     inlines.push(
       Object.freeze({
@@ -1391,9 +1391,11 @@ class XhtmlProjector {
 
   private flushPendingParagraph(collector: BlockCollector): void {
     const sourceId = collector.pendingSourceElementId;
+    const direction = collector.pendingParagraphDirection;
     const children = freezeRawInlines(collector.pendingInlines);
     collector.pendingInlines.length = 0;
     collector.pendingSourceElementId = undefined;
+    delete collector.pendingParagraphDirection;
     if (children.length === 0) {
       return;
     }
@@ -1403,7 +1405,10 @@ class XhtmlProjector {
       Object.freeze({
         kind: "paragraph",
         children,
-        ...contextProperties(collector.context),
+        ...(collector.context.language === undefined
+          ? {}
+          : { language: collector.context.language }),
+        ...(direction === undefined ? {} : { direction }),
       }),
       sourceId,
     );
@@ -1511,8 +1516,7 @@ class XhtmlProjector {
     }
     if (destination.kind === "blocks") {
       if (destination.pendingInlines.length === 0) {
-        destination.pendingSourceElementId =
-          this.currentParagraphSourceElementId();
+        this.beginPendingParagraph(destination);
       }
       destination.pendingInlines.push(inline);
     } else {
@@ -1531,14 +1535,20 @@ class XhtmlProjector {
     }
   }
 
-  private currentParagraphSourceElementId(): string | undefined {
+  private beginPendingParagraph(collector: BlockCollector): void {
     for (let index = this.#elements.length - 1; index >= 0; index -= 1) {
       const frame = this.#elements[index];
       if (frame?.paragraphSourceBoundary === true) {
-        return frame.paragraphSourceElementId;
+        collector.pendingSourceElementId = frame.paragraphSourceElementId;
+        if (frame.context.direction !== undefined) {
+          collector.pendingParagraphDirection = frame.context.direction;
+        }
+        return;
       }
     }
-    return undefined;
+    if (collector.context.direction !== undefined) {
+      collector.pendingParagraphDirection = collector.context.direction;
+    }
   }
 
   private popDestination(expected: SemanticDestination): void {

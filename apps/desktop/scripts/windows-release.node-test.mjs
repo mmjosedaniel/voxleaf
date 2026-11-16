@@ -42,6 +42,7 @@ for (const scenario of [
   "CARGO_BUILD_RUSTC compiler",
   "configured compiler",
   "canonical identical-byte rebuild",
+  "VF-0072 holds observed artifact stable until evidence writer",
   "five-pass 1.8 legacy lifecycle argument",
   "five-pass 1.8 explicit not-run argument",
 ]) {
@@ -55,8 +56,11 @@ for (const scenario of [
           scenario === "five-pass 1.8 legacy lifecycle argument";
         const explicitNotRun =
           scenario === "five-pass 1.8 explicit not-run argument";
+        const lockScenario = scenario.startsWith("VF-0072 ");
         const canonical =
-          scenario === "canonical identical-byte rebuild" || explicitNotRun;
+          scenario === "canonical identical-byte rebuild" ||
+          explicitNotRun ||
+          lockScenario;
         const srcTauri = path.join(fixture, "apps/desktop/src-tauri");
         const release = path.join(srcTauri, "target/release");
         const binary = path.join(release, "voxleaf-desktop.exe");
@@ -86,6 +90,26 @@ for (const scenario of [
         await writeFile(installer, "synthetic installer");
         await writeFile(checksum, "previous receipt");
         await writeFile(trace, "");
+        for (const [relative, contents] of [
+          ["apps/desktop/src-tauri/tauri.release.conf.json", "{}"],
+          ["services/tts/release/core/runtime-manifest-v1.json", "{}"],
+          [
+            "services/tts/release/core/dist/voxleaf-piper-core-v1/runtime-manifest-v1.json",
+            "{}",
+          ],
+          [
+            "services/tts/release/optional/chatterbox/optional-package-manifest-v7.json",
+            "{}",
+          ],
+          [
+            "services/tts/release/optional/chatterbox/runtime-package-evidence-v7.json",
+            "{}",
+          ],
+        ]) {
+          const file = path.join(fixture, relative);
+          await mkdir(path.dirname(file), { recursive: true });
+          await writeFile(file, contents);
+        }
         const cargoConfig = {
           "configured directory": '[build]\ntarget-dir = "alternate-target"\n',
           "configured target": 'build.target = ["x86_64-pc-windows-msvc"]\n',
@@ -131,8 +155,32 @@ $ErrorActionPreference = 'Stop'
 function node {
   if ($args[1] -eq 'evidence') {
     Add-Content -LiteralPath $env:CCF_LAYOUT_TRACE -Value 'evidence'
+    if ($env:CCF_LAYOUT_TEST_LOCK -eq '1') {
+      $writeBlocked = $false
+      try {
+        [IO.File]::WriteAllText($env:CCF_LAYOUT_INSTALLER, 'next synthetic test fixture revision')
+      } catch [IO.IOException] {
+        $writeBlocked = $true
+      }
+      if (!$writeBlocked) {
+        [IO.File]::WriteAllText($env:CCF_LAYOUT_INSTALLER, 'synthetic installer')
+        throw 'synthetic observed artifact was mutable before evidence handling'
+      }
+    }
     $statusIndex = [Array]::IndexOf($args, '--lifecycle-status')
     if ($statusIndex -lt 0 -or $args[$statusIndex + 1] -ne 'not-run') {
+      $global:LASTEXITCODE = 1
+      return
+    }
+    $authorityIndex = [Array]::IndexOf($args, '--build-authority')
+    $installerIndex = [Array]::IndexOf($args, '--verified-installer-sha256')
+    $binaryIndex = [Array]::IndexOf($args, '--verified-binary-sha256')
+    if ($authorityIndex -lt 0 -or $installerIndex -lt 0 -or $binaryIndex -lt 0) {
+      $global:LASTEXITCODE = 1
+      return
+    }
+    $bound = Get-Content -LiteralPath $args[$authorityIndex + 1] -Raw | ConvertFrom-Json
+    if ($bound.installerSha256 -cne $args[$installerIndex + 1] -or $bound.binarySha256 -cne $args[$binaryIndex + 1]) {
       $global:LASTEXITCODE = 1
       return
     }
@@ -199,6 +247,7 @@ if ($env:CCF_LAYOUT_LIFECYCLE) {
               CCF_LAYOUT_INSTALLER: installer,
               CCF_LAYOUT_CANONICAL:
                 canonical || legacyLifecycle ? "1" : undefined,
+              CCF_LAYOUT_TEST_LOCK: lockScenario ? "1" : undefined,
               CCF_LAYOUT_LIFECYCLE: legacyLifecycle
                 ? "local-install-first-start-repair-uninstall-passed"
                 : explicitNotRun
@@ -222,6 +271,14 @@ if ($env:CCF_LAYOUT_LIFECYCLE) {
           assert.match(
             await readFile(checksum, "utf8"),
             /^[a-f0-9]{64} \*VoxLeaf_/u,
+          );
+          const baseline = JSON.parse(
+            await readFile(`${installer}.build-authority.json`, "utf8"),
+          );
+          assert.equal(baseline.schemaVersion, 1);
+          assert.equal(
+            baseline.installerSha256,
+            (await readFile(checksum, "utf8")).split(" ")[0],
           );
         } else {
           assert.equal(result.status, 1, result.stderr || result.stdout);
@@ -1343,6 +1400,12 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
     attach: true,
     verifiedInstaller: unsigned.package.installer.sha256,
     verifiedBinary: unsigned.package.applicationBinary.sha256,
+    buildAuthority: {
+      schemaVersion: 1,
+      installerSha256: unsigned.package.installer.sha256,
+      binarySha256: unsigned.package.applicationBinary.sha256,
+      authority: unsigned.authority,
+    },
   };
   const scanned = {
     ...unsigned,
@@ -1353,6 +1416,69 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
   };
   const prior = JSON.stringify(scanned);
   await writeFile(evidencePath, prior);
+  const fixtureInputs = [
+    "apps/desktop/src-tauri/tauri.release.conf.json",
+    "services/tts/release/core/runtime-manifest-v1.json",
+    "services/tts/release/optional/chatterbox/optional-package-manifest-v7.json",
+    "services/tts/release/optional/chatterbox/runtime-package-evidence-v7.json",
+  ];
+  for (const file of fixtureInputs) {
+    await mkdir(path.dirname(path.join(temporary, file)), { recursive: true });
+    await copyFile(
+      path.join(repositoryRoot(), file),
+      path.join(temporary, file),
+    );
+  }
+  await t.test("VF-0068 rejects drift from build authority", async () => {
+    const manifest = path.join(temporary, fixtureInputs[1]);
+    const original = await readFile(manifest, "utf8");
+    const checksum = `${installer}.sha256`;
+    await writeFile(checksum, "prior synthetic checksum");
+    const attach = async () => {
+      const evidence = await createPackageEvidence({
+        root: temporary,
+        installer,
+        binary,
+        signatureStatus: "unsigned-local",
+        antivirusStatus: "windows-defender-no-threats",
+      });
+      await writePackageEvidence({
+        ...attachment,
+        evidence,
+        rendered: JSON.stringify(evidence),
+        scannedInstaller: attachment.verifiedInstaller,
+      });
+    };
+    try {
+      await writeFile(manifest, original + "\n");
+      await assert.rejects(attach(), /windows-release:build-authority/u);
+      assert.equal(await readFile(evidencePath, "utf8"), prior);
+      assert.equal(
+        await readFile(checksum, "utf8"),
+        "prior synthetic checksum",
+      );
+    } finally {
+      await writeFile(manifest, original);
+    }
+    await attach();
+    assert.equal(await readFile(evidencePath, "utf8"), prior);
+  });
+  assert.equal(await readFile(evidencePath, "utf8"), prior);
+  await t.test(
+    "VF-0072 requires artifact verification for fresh builds",
+    async () =>
+      assert.rejects(
+        writePackageEvidence({
+          ...attachment,
+          attach: false,
+          verifiedInstaller: "0".repeat(64),
+          evidence: unsigned,
+          rendered: JSON.stringify(unsigned),
+        }),
+        /windows-release:artifact-verification/u,
+      ),
+  );
+  assert.equal(await readFile(evidencePath, "utf8"), prior);
   await assert.rejects(
     writePackageEvidence({
       ...attachment,

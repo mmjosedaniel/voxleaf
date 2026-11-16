@@ -167,18 +167,13 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     return context;
   }
 
-  #readRemainingPcm(request: PcmPlaybackRequest): Float32Array {
-    const remaining = request.sampleCountSamples - request.startSampleFrame;
-    if (remaining <= 0) {
-      throw new PcmPlaybackError("invalid-state");
-    }
-    const input = new Float32Array(remaining);
+  #decodeRemainingPcm(request: PcmPlaybackRequest, output: Float32Array): void {
     const data = new DataView(
       request.payload.buffer,
       request.payload.byteOffset,
       request.payload.byteLength,
     );
-    for (let index = 0; index < remaining; index += 1) {
+    for (let index = 0; index < output.length; index += 1) {
       const value = data.getFloat32(
         (request.startSampleFrame + index) *
           ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.bytesPerSample,
@@ -187,9 +182,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       if (!Number.isFinite(value)) {
         throw new PcmPlaybackError("playback-failure");
       }
-      input[index] = value;
+      output[index] = value;
     }
-    return input;
   }
 
   #startDirect(
@@ -201,15 +195,14 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     const gain = this.#gain!;
     gain.gain.value = request.volumePercent / 100;
 
-    const input = this.#readRemainingPcm(request);
-    const remaining = input.length;
+    const remaining = request.sampleCountSamples - request.startSampleFrame;
+    if (remaining <= 0) throw new PcmPlaybackError("invalid-state");
     const audioBuffer = context.createBuffer(
       request.channelCount,
       remaining,
       request.sampleRateHz,
     );
-    const channel = audioBuffer.getChannelData(0);
-    channel.set(input);
+    this.#decodeRemainingPcm(request, audioBuffer.getChannelData(0));
 
     const source = context.createBufferSource();
     source.buffer = audioBuffer;
@@ -333,8 +326,10 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       throw new PcmPlaybackError("invalid-state");
     }
     gain.gain.value = request.volumePercent / 100;
-    const input = this.#readRemainingPcm(request);
-    const remaining = input.length;
+    const remaining = request.sampleCountSamples - request.startSampleFrame;
+    if (remaining <= 0) throw new PcmPlaybackError("invalid-state");
+    const input = new Float32Array(remaining);
+    this.#decodeRemainingPcm(request, input);
     let activatedAt = 0;
     let activation = 0;
     let resumed = false;

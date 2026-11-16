@@ -46,6 +46,11 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
       ["VF-0039", `LAS${space}14:30.`, "LAS catorce treinta."],
       ["VF-0039", `Las${space}14:30:12.`, "Las 14:30:12."],
     ]),
+    ...["\u2002", "\u2003"].map((space) => [
+      "VF-0061",
+      `Las${space}14:30.`,
+      "Las catorce treinta.",
+    ]),
   ])(
     "%s preserves public Spanish context: %s",
     async (_id, source, expected) => {

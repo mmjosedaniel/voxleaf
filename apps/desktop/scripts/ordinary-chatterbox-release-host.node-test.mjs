@@ -22,6 +22,7 @@ import {
   assertNoDevelopmentEnvironment,
   createStageReporter,
   assertHostileDevelopmentEnvironment,
+  createJourneyReceipt,
   evaluateHostGate,
   finalizeJourney,
   createOrdinarySessionCloser,
@@ -33,6 +34,7 @@ import {
   removeWebDriverProfile,
   releaseEnvironment,
   runJourney,
+  runNativeSmoke,
   runInstaller,
   runUninstaller,
   validateOrdinaryArtifact,
@@ -43,6 +45,43 @@ import { boundedDownloadInPage } from "./optional-download-probe.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
+
+test("VF-0059 native smoke restores only with confirmed containment", async () => {
+  const childPath = path.join(root, "native-receipt.mjs");
+  await writeFile(
+    childPath,
+    `
+const result = process.argv[2];
+if (result !== "missing") {
+  process.send?.({type: "voxleaf-native-cleanup", ok: result === "confirmed"});
+}
+process.exitCode = 1;
+`,
+  );
+  for (const result of ["missing", "unconfirmed", "confirmed"]) {
+    let failure;
+    await assert.rejects(
+      runNativeSmoke(childPath, [result], process.env, "offline-narration"),
+      (error) => {
+        failure = error;
+        return true;
+      },
+    );
+    let restored = false;
+    const finalize = finalizeJourney({
+      dataBackup: { root },
+      closeSession: async () => {},
+      uninstall: async () => {},
+      journeyError: failure,
+      restoreData: async () => {
+        restored = true;
+      },
+    });
+    if (result === "confirmed") await finalize;
+    else await assert.rejects(finalize, /recovery-required/);
+    assert.equal(restored, result === "confirmed");
+  }
+});
 
 for (const operation of ["install", "uninstall"]) {
   for (const mode of ["parent", "descendant", "completed"]) {
@@ -217,6 +256,70 @@ test("CCF-C04 missing installer helper restores original and permits retry", asy
     else process.env.LOCALAPPDATA = originalLocalData;
   }
 });
+
+for (const restoreSource of [false, true])
+  test(`VF-0067 installer remains bound across a fixture revision (restore source: ${restoreSource})`, async () => {
+    const owned = await mkdtemp(path.join(root, "vf0067-"));
+    const originalLocalData = process.env.LOCALAPPDATA;
+    const fixture = path.join(owned, "fixture.exe");
+    const executable = path.join(owned, "binary.exe");
+    await writeFile(fixture, "synthetic installer bytes");
+    await writeFile(executable, "synthetic installed binary");
+    const original = await createJourneyReceipt({
+      installer: fixture,
+      executable,
+    });
+    const options = {
+      installedRoot: path.join(owned, "VoxLeaf"),
+      installer: fixture,
+      receipt: path.join(owned, "receipt.json"),
+      tauriDriver: fixture,
+      edgeDriver: fixture,
+      mode: "journey",
+    };
+    let launched;
+    let exercised;
+    process.env.LOCALAPPDATA = owned;
+    try {
+      await assert.rejects(
+        runJourney(options, process.env, {
+          runInstaller: async (file) => {
+            launched = file;
+            await writeFile(fixture, "next synthetic fixture revision");
+            exercised = await readFile(file, "utf8");
+            if (restoreSource)
+              await writeFile(fixture, "synthetic installer bytes");
+          },
+          runPreflight: async () => {
+            assert.equal(exercised, "synthetic installer bytes");
+            const recorded = await createJourneyReceipt({
+              installer: launched,
+              executable,
+            });
+            assert.deepEqual(
+              recorded.artifact.installer,
+              original.artifact.installer,
+            );
+            throw new Error("fixture-complete");
+          },
+          runUninstaller: async () => {},
+        }),
+        /fixture-complete/,
+      );
+      assert.equal(path.basename(launched), path.basename(fixture));
+      assert.notEqual(launched, fixture);
+      await assert.rejects(readFile(launched), { code: "ENOENT" });
+      assert.equal(
+        await readFile(fixture, "utf8"),
+        restoreSource
+          ? "synthetic installer bytes"
+          : "next synthetic fixture revision",
+      );
+    } finally {
+      if (originalLocalData === undefined) delete process.env.LOCALAPPDATA;
+      else process.env.LOCALAPPDATA = originalLocalData;
+    }
+  });
 
 test(
   "VF-0040 uncertain installer containment retains backup before a later safe retry",

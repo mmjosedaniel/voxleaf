@@ -57,12 +57,12 @@ def _payload() -> dict[str, object]:
     return cast(dict[str, object], value)
 
 
-def _run(payload: dict[str, object]) -> dict[str, object]:
+def _run(payload: dict[str, object]) -> dict[str, object] | str:
     profile = payload.get("profileVersion", "tts-short-segment-batch-profile-v4")
     if profile == PROFILE_VERSION:
         return _run_successor(cast(str, payload["sessionId"]), "v13")
     if profile == v14_authority.PROFILE_VERSION:
-        return _run_successor(cast(str, payload["sessionId"]), "v14")
+        return _consume_v14(cast(str, payload["sessionId"]))
     if profile != "tts-short-segment-batch-profile-v4":
         raise BatchResultError("official-version")
     session = official_raw_root(
@@ -97,7 +97,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     return summary
 
 
-def _run_successor(session_id: str, version: Literal["v13", "v14"]) -> dict[str, object]:
+def _run_successor(session_id: str, version: Literal["v13"]) -> dict[str, object]:
     session = official_raw_root(REPOSITORY_ROOT, session_id, version=version)
     try:
         raw = cast(object, json.loads((session / "raw.json").read_text(encoding="utf-8")))
@@ -107,8 +107,25 @@ def _run_successor(session_id: str, version: Literal["v13", "v14"]) -> dict[str,
     finally:
         if session.exists():
             shutil.rmtree(session)
-    derive = derive_v14_summary if version == "v14" else derive_v13_summary
-    return derive(REPOSITORY_ROOT, raw, loads, raw_session_removed=True)
+    return derive_v13_summary(REPOSITORY_ROOT, raw, loads, raw_session_removed=True)
+
+
+def _consume_v14(session_id: str) -> str:
+    session = official_raw_root(REPOSITORY_ROOT, session_id, version="v14")
+    try:
+        raw = cast(object, json.loads((session / "raw.json").read_text(encoding="utf-8")))
+        loads = cast(object, json.loads((session / "loads.json").read_text(encoding="utf-8")))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise BatchResultError("raw") from error
+
+    # Prepare the post-cleanup result privately. It cannot be published until
+    # the owned session has actually been removed.
+    summary = derive_v14_summary(REPOSITORY_ROOT, raw, loads, raw_session_removed=True)
+    serialized = canonical_summary_json(summary)
+    shutil.rmtree(session)
+    if session.exists():
+        raise BatchResultError("cleanup-failed")
+    return serialized
 
 
 def main() -> int:
@@ -116,6 +133,7 @@ def main() -> int:
     if len(args) != 1 or args[0] not in ("derive", "admit-v13-cpu", "admit-v14-cpu"):
         print('{"status":"fail","failureCode":"invalid-request"}')
         return 2
+    result: dict[str, object] | str
     try:
         if args[0] == "admit-v14-cpu":
             result = v14_authority.load_v14_cpu_admission(REPOSITORY_ROOT).as_raw()
@@ -123,7 +141,7 @@ def main() -> int:
             result = load_v13_cpu_admission(REPOSITORY_ROOT).as_raw()
         else:
             result = _run(_payload())
-        print(canonical_summary_json(result), end="")
+        print(result if isinstance(result, str) else canonical_summary_json(result), end="")
         return 0
     except Exception as error:
         if isinstance(

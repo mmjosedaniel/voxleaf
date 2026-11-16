@@ -717,6 +717,16 @@ async function main(arguments_) {
     });
     const rendered = `${JSON.stringify(evidence, null, 2)}\n`;
     if (rest.includes("--write")) {
+      const buildAuthorityPath = option(rest, "--build-authority");
+      let buildAuthority;
+      try {
+        if (buildAuthorityPath !== undefined)
+          buildAuthority = await readJson(
+            path.resolve(root, buildAuthorityPath),
+          );
+      } catch {
+        fail("build-authority");
+      }
       await writePackageEvidence({
         evidencePath,
         rendered,
@@ -724,6 +734,7 @@ async function main(arguments_) {
         installer,
         binary,
         attach: receiptPath !== undefined,
+        buildAuthority,
         verifiedInstaller: option(rest, "--verified-installer-sha256"),
         verifiedBinary: option(rest, "--verified-binary-sha256"),
         scannedInstaller: option(rest, "--scanned-installer-sha256"),
@@ -742,6 +753,7 @@ export async function writePackageEvidence({
   installer,
   binary,
   attach,
+  buildAuthority,
   verifiedInstaller,
   verifiedBinary,
   scannedInstaller,
@@ -749,18 +761,29 @@ export async function writePackageEvidence({
   const expectedInstaller = evidence.package.installer.sha256;
   const expectedBinary = evidence.package.applicationBinary.sha256;
   if (
-    attach &&
-    (verifiedInstaller !== expectedInstaller ||
-      verifiedBinary !== expectedBinary)
+    verifiedInstaller !== expectedInstaller ||
+    verifiedBinary !== expectedBinary
   ) {
     fail("artifact-verification");
   }
   if (
-    attach &&
     evidence.observations.antivirus === "windows-defender-no-threats" &&
     scannedInstaller !== expectedInstaller
   )
     fail("antivirus-observation-unverified");
+  const authorityFields = Object.entries(evidence.authority);
+  if (
+    buildAuthority?.schemaVersion !== 1 ||
+    buildAuthority.installerSha256 !== expectedInstaller ||
+    buildAuthority.binarySha256 !== expectedBinary ||
+    Object.keys(buildAuthority.authority ?? {}).length !==
+      authorityFields.length ||
+    authorityFields.some(
+      ([name, digest]) => buildAuthority.authority[name] !== digest,
+    )
+  ) {
+    fail("build-authority");
+  }
   if (attach) {
     let previous;
     try {

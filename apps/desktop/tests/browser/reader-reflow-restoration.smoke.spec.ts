@@ -10,6 +10,97 @@ const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
 
+test("VF-0064 implicit RTL has explicit paragraph geometry after reopening", async ({
+  page,
+}) => {
+  const { buildMinimalEpubFixture } =
+    await import("../../../../packages/epub/test-support/epub-fixture");
+  const sentence = "עברית בעברית עם טקסט לבדיקה.";
+  const bytes = await buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr"><head><title>Synthetic direction</title></head><body><div dir="rtl">${sentence}</div><p dir="rtl">${sentence}</p><div dir="ltr"><span dir="rtl">${sentence}</span></div>${"<p>Filler.</p>".repeat(30)}</body></html>`,
+  });
+  await page.setViewportSize({ width: 760, height: 720 });
+  await page.goto(LOCAL_ORIGIN);
+  const file = {
+    name: "synthetic-direction.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  };
+  const savedPosition = () =>
+    page.evaluate(
+      (key) =>
+        JSON.parse(localStorage.getItem(key) ?? "{}").states?.[0]?.locator,
+      POSITION_STORAGE_KEY,
+    );
+  let saved: unknown;
+  for (const pass of ["open", "reopen"]) {
+    if (pass === "reopen") await page.reload();
+    await page.getByLabel("Open a book").setInputFiles(file);
+    const paragraphs = page.locator(".semantic-document p");
+    await expect(paragraphs).toHaveCount(33);
+    if (pass === "reopen") {
+      await expect(page.getByRole("status")).toHaveText(
+        "Reading position restored.",
+      );
+      expect(await savedPosition()).toEqual(saved);
+    }
+    const geometry = await paragraphs.evaluateAll((elements) =>
+      elements.slice(0, 3).map((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(true);
+        return {
+          direction: getComputedStyle(element).direction,
+          caretInset: Math.round(
+            element.getBoundingClientRect().right -
+              range.getBoundingClientRect().right,
+          ),
+        };
+      }),
+    );
+    expect(geometry[0]).toEqual(geometry[1]);
+    expect(geometry[0]?.direction).toBe("rtl");
+    expect(geometry[2]?.direction).toBe("ltr");
+    if (pass === "open") {
+      const viewport = page.locator(".reader-viewport");
+      await page.getByRole("link", { name: "Skip to reader content" }).focus();
+      await page.keyboard.press("Enter");
+      await expect(viewport.locator("article")).toBeFocused();
+      // Land on a passage rather than the empty scroll runway after the text.
+      await page.keyboard.press("PageDown");
+      await expect
+        .poll(() => viewport.evaluate((element) => element.scrollTop))
+        .toBeGreaterThan(0);
+      await expect
+        .poll(() =>
+          viewport.evaluate((element, inset) => {
+            const viewport = element.getBoundingClientRect();
+            const readingLine = viewport.top + inset;
+            return Array.from(element.querySelectorAll(".semantic-document p"))
+              .slice(3)
+              .some((paragraph) => {
+                const { top, bottom } = paragraph.getBoundingClientRect();
+                return top < viewport.bottom && readingLine < bottom;
+              });
+          }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX),
+        )
+        .toBe(true);
+      await expect
+        .poll(async () => (await savedPosition())?.anchor.anchorIndex)
+        .toBeGreaterThan(0);
+      await page.keyboard.press("Home");
+      await expect
+        .poll(() => viewport.evaluate((element) => element.scrollTop))
+        .toBe(0);
+      await expect
+        .poll(async () => (await savedPosition())?.anchor.anchorIndex)
+        .toBe(0);
+      saved = await savedPosition();
+      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    }
+  }
+});
+
 test("R7-04 audible advancement supersedes a pending typography restoration", ({
   page,
 }) => exerciseAudibleReflow(page, false));

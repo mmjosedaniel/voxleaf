@@ -111,6 +111,25 @@ def test_five_pass_2_3_retains_truthful_stale_publication_failure() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("failure_code", "audit"),
+    [("playback-invalid", "boundedRetention"), ("privacy", "privacy")],
+)
+def test_v14_known_failure_cannot_pass_dependent_audit(failure_code: str, audit: str) -> None:
+    raw, _ = _v14_raw()
+    raw["failureCodes"] = [failure_code]
+    summary = _derive(raw)
+    assert cast(dict[str, object], summary["audits"])[audit] is False
+    conclusions = cast(dict[str, dict[str, object]], summary["conclusions"])
+    assert conclusions["standardViability"]["outcome"] == "fail"
+    assert conclusions["schedulingSustainability"]["outcome"] == "fail"
+    cast(dict[str, object], summary["audits"])[audit] = True
+    with pytest.raises(v14_authority.V14AuthorityError):
+        v14_authority.validate_v14_result(
+            ROOT, summary, summary=True, execution_checker=lambda _: True
+        )
+
+
 def test_five_pass_2_3_v14_cpu_admission_is_version_owned_and_committed(
     tmp_path: Path,
 ) -> None:
@@ -157,8 +176,8 @@ def test_five_pass_2_3_v14_cpu_admission_is_version_owned_and_committed(
         v14_authority.load_v14_cpu_admission(tmp_path)
     _git(tmp_path, "add", "--", v14_authority.GPU_RESULT_PATH.as_posix())
     _git(tmp_path, "commit", "--quiet", "-m", "synthetic qualifying GPU evidence")
-    admission = v14_authority.load_v14_cpu_admission(tmp_path).as_raw()
-    assert admission["fullGpuMemoryStopCode"] == "shared-gpu-memory"
+    with pytest.raises(v14_authority.V14AuthorityError, match=":cpu-admission-result$"):
+        v14_authority.load_v14_cpu_admission(tmp_path)
     result.write_text("{}", encoding="utf-8")
     with pytest.raises(v14_authority.V14AuthorityError, match=":cpu-admission-result$"):
         v14_authority.load_v14_cpu_admission(tmp_path)

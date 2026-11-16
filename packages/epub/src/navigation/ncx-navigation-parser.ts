@@ -664,7 +664,17 @@ export class NcxNavigationParser {
       if (codePoint === undefined || codePoint <= 0x1f || codePoint === 0x7f) {
         return fail("malformed-package");
       }
-      if (label.text.length === 0 && LABEL_EDGE_WHITESPACE.test(character)) {
+      const edgeWhitespace = LABEL_EDGE_WHITESPACE.test(character);
+      if (label.text.length === 0 && edgeWhitespace) {
+        continue;
+      }
+      if (
+        label.codePointCount + (label.pendingWhitespace ? 2 : 1) >
+        MAX_NAVIGATION_LABEL_CODE_POINTS
+      ) {
+        if (!edgeWhitespace) return fail("malformed-package");
+        // A suffix over the limit is harmless only if all of it trims away.
+        label.codePointCount = MAX_NAVIGATION_LABEL_CODE_POINTS + 1;
         continue;
       }
       if (label.pendingWhitespace) {
@@ -674,9 +684,6 @@ export class NcxNavigationParser {
       }
       label.text += character;
       label.codePointCount += 1;
-      if (label.codePointCount > MAX_NAVIGATION_LABEL_CODE_POINTS) {
-        return fail("malformed-package");
-      }
     }
   }
 }

@@ -22,6 +22,7 @@ from benchmarks.batch_contracts import (
     BatchWorkIdentity,
     BeforePublication,
 )
+from benchmarks.contracts import AdapterOperationError
 
 MAXIMUM_BATCH_SIZE: Final = 2
 MAXIMUM_RETAINED_UNITS: Final = 2
@@ -170,9 +171,11 @@ class BoundedOrderedBatchController:
         *,
         clock: BatchClock,
         resource_probe: BatchResourceProbe | None = None,
+        preserve_measured_privacy_failure: bool = False,
     ) -> None:
         self._clock = clock
         self._resource_probe = resource_probe
+        self._preserve_measured_privacy_failure = preserve_measured_privacy_failure
         self.identity_gate = BatchIdentityGate()
         self._published_sequence = 0
         self._active = False
@@ -246,7 +249,7 @@ class BoundedOrderedBatchController:
                     code=error.code,
                     resource_peak=_maximum_resources(snapshots),
                 )
-            except Exception:
+            except Exception as error:
                 if cancellation is not None:
                     raise
                 completed_ns = self._now_ns()
@@ -255,7 +258,14 @@ class BoundedOrderedBatchController:
                     request,
                     accepted_ns=accepted_ns,
                     completed_ns=completed_ns,
-                    code="generation-failed",
+                    code=(
+                        "privacy"
+                        if self._preserve_measured_privacy_failure
+                        and request.phase == "measured"
+                        and isinstance(error, AdapterOperationError)
+                        and error.code == "privacy"
+                        else "generation-failed"
+                    ),
                     resource_peak=_maximum_resources(snapshots),
                 )
 

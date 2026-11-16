@@ -6,7 +6,9 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-No implementation plan remains in this directory. Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
+There are no active implementation plans listed.
+
+Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

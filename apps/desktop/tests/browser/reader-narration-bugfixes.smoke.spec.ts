@@ -5030,9 +5030,20 @@ for (const geometry of [
   "stopped-exact",
   "stopped-manual-recovery",
   "stopped-keyboard-recovery",
+  "stopped-shift-space-recovery",
+  "stopped-ctrl-home-recovery",
+  "stopped-ctrl-end-recovery",
   "stopped-scrollbar-recovery",
 ] as const) {
-  test(`${geometry === "stopped-scrollbar-recovery" ? "VF-0034 " : ""}CFR-02 CFR-03 PN-02 real preparation and reader placement preserve the requested passage (${geometry})`, async ({
+  const modifiedChord =
+    geometry === "stopped-shift-space-recovery"
+      ? "Shift+Space"
+      : geometry === "stopped-ctrl-home-recovery"
+        ? "Control+Home"
+        : geometry === "stopped-ctrl-end-recovery"
+          ? "Control+End"
+          : undefined;
+  test(`${modifiedChord === undefined ? (geometry === "stopped-scrollbar-recovery" ? "VF-0034 " : "") : "VF-0063 "}CFR-02 CFR-03 PN-02 real preparation and reader placement preserve the requested passage (${geometry})`, async ({
     page,
   }) => {
     await installSyntheticService(page, false, false, false, true);
@@ -5068,6 +5079,7 @@ for (const geometry of [
     const manualRecovery =
       geometry === "stopped-manual-recovery" ||
       geometry === "stopped-keyboard-recovery" ||
+      modifiedChord !== undefined ||
       geometry === "stopped-scrollbar-recovery";
     if (geometry === "controlled-missing-range" || manualRecovery)
       await page.evaluate((hideBlock) => {
@@ -5203,6 +5215,14 @@ for (const geometry of [
             element.scrollHeight - element.clientHeight - element.scrollTop,
         );
         expect(availableScroll).toBeGreaterThan(100);
+        if (modifiedChord !== undefined) {
+          await viewport.evaluate((element) => {
+            element.scrollTop = 2 * element.clientHeight;
+          });
+          await expect(
+            page.locator('[data-narration-action="play"]'),
+          ).toBeDisabled();
+        }
         const beforeScroll = await viewport.evaluate(
           (element) => element.scrollTop,
         );
@@ -5287,20 +5307,26 @@ for (const geometry of [
               Reflect.get(globalThis, "__vfScrollbarEvents"),
             ),
           );
-        } else if (geometry === "stopped-keyboard-recovery") {
+        } else if (
+          geometry === "stopped-keyboard-recovery" ||
+          modifiedChord !== undefined
+        ) {
           await page
             .getByRole("link", { name: "Skip to reader content" })
             .focus();
           await page.keyboard.press("Enter");
           await expect(viewport.locator("article")).toBeFocused();
-          await page.keyboard.press("PageDown");
+          await page.keyboard.press(modifiedChord ?? "PageDown");
         } else {
           await viewport.hover();
           await page.mouse.wheel(0, 280);
         }
-        await expect
-          .poll(() => viewport.evaluate((element) => element.scrollTop))
-          .toBeGreaterThan(beforeScroll);
+        const scroll = expect.poll(() =>
+          viewport.evaluate((element) => element.scrollTop),
+        );
+        if (modifiedChord === "Shift+Space" || modifiedChord === "Control+Home")
+          await scroll.toBeLessThan(beforeScroll);
+        else await scroll.toBeGreaterThan(beforeScroll);
         await expect(
           page.locator('[data-narration-action="play"]'),
         ).toBeEnabled();
@@ -5334,7 +5360,12 @@ for (const geometry of [
           () => Reflect.get(globalThis, "__rnb").prepared[0]?.offset,
         ),
       );
-      if (manualRecovery) await preparedOffset.toBeGreaterThan(0);
+      if (
+        geometry === "stopped-ctrl-home-recovery" ||
+        geometry === "stopped-shift-space-recovery"
+      )
+        await preparedOffset.toBeGreaterThanOrEqual(0);
+      else if (manualRecovery) await preparedOffset.toBeGreaterThan(0);
       else await preparedOffset.toBe(0);
       if (manualRecovery) {
         const range = await page.evaluate(
@@ -5739,6 +5770,122 @@ test("five-pass 3.2 rechecks Prepared lead before first source allocation", asyn
       const state = Reflect.get(globalThis, "__rnb");
       state.release();
       state.releaseAuditFourth?.();
+    });
+  }
+  await page.locator('[data-narration-action="stop"]').click();
+});
+
+test("VF-0066 real worklet preparation cannot commit a short automatic refill", async ({
+  page,
+}) => {
+  test.setTimeout(45_000);
+  await installSyntheticService(page, false, false, false, true);
+  await page.goto("/");
+  await page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__rnb");
+    state.audioFrames = 360_000;
+    state.auditSourceStarts = 0;
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      state.auditSourceStarts += 1;
+      return start.apply(this, args);
+    };
+    const native = Reflect.get(globalThis, "__TAURI_INTERNALS__");
+    const invoke = native.invoke;
+    let synthesis = 0;
+    native.invoke = async (command: string, args: unknown) => {
+      const result = await invoke(command, args);
+      if (command === "synthesize_tts_segment") {
+        synthesis += 1;
+        if (synthesis === 2 || synthesis === 5) {
+          const slot = synthesis;
+          await new Promise<void>((resolve) => {
+            state[`releaseRefill${slot}`] = resolve;
+          });
+        }
+      }
+      return result;
+    };
+  });
+  await openAuditPassages(page, 8);
+  const narration = page.locator(".product-narration");
+  const speed = page.getByLabel("Playback speed", { exact: true });
+  const starts = () =>
+    page.evaluate(() => Reflect.get(globalThis, "__rnb").auditSourceStarts);
+  try {
+    await page.locator('[data-narration-action="play"]').click();
+    await expect.poll(starts).toBe(1);
+    await expect(narration).toHaveAttribute("data-narration-underruns", "1", {
+      timeout: 22_000,
+    });
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "buffering",
+    );
+    await speed.selectOption("75");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => typeof Reflect.get(globalThis, "__rnb").releaseRefill2,
+        ),
+      )
+      .toBe("function");
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseRefill2(),
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+      )
+      .toBe(true);
+    await expect(narration).toHaveAttribute(
+      "data-narration-playable-ms",
+      "60000",
+    );
+    await speed.selectOption("100");
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "buffering",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-playable-ms",
+      "45000",
+    );
+    await page.evaluate(() => Reflect.get(globalThis, "__rnb").release());
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__rnb").preparing),
+      )
+      .toBe(false);
+    // Worklet registration and synthesis reach their barriers independently.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => typeof Reflect.get(globalThis, "__rnb").releaseRefill5,
+        ),
+      )
+      .toBe("function");
+    await expect(narration).toHaveAttribute(
+      "data-narration-phase",
+      "buffering",
+    );
+    await expect(narration).toHaveAttribute(
+      "data-narration-playable-ms",
+      "45000",
+    );
+    expect(await starts()).toBe(1);
+    await page.evaluate(() =>
+      Reflect.get(globalThis, "__rnb").releaseRefill5(),
+    );
+    await expect.poll(starts).toBe(2);
+    await expect(narration).toHaveAttribute("data-narration-phase", "playing");
+    await expect(narration).toHaveAttribute("data-narration-underruns", "1");
+  } finally {
+    await page.evaluate(() => {
+      const state = Reflect.get(globalThis, "__rnb");
+      state.release();
+      state.releaseRefill2?.();
+      state.releaseRefill5?.();
     });
   }
   await page.locator('[data-narration-action="stop"]').click();

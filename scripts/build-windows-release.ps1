@@ -16,6 +16,23 @@ $releaseConfig = Join-Path $srcTauri "tauri.release.conf.json"
 $temporaryConfig = $null
 $signatureStatus = "unsigned-local"
 $antivirusStatus = "not-run"
+$releaseInputLocks = [Collections.Generic.List[IO.FileStream]]::new()
+$temporaryBuildAuthority = $null
+
+function Get-LockedReleaseHash {
+  param([string]$Path)
+
+  # Retain a read share until finalization. Build and observation readers may
+  # open the same bytes, while writes and rename/delete remain excluded.
+  $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+  $releaseInputLocks.Add($stream)
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    return [BitConverter]::ToString($sha256.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
+  } finally {
+    $sha256.Dispose()
+  }
+}
 
 function Invoke-CheckedCommand {
   param(
@@ -155,8 +172,13 @@ try {
     }
     $binary = Join-Path $srcTauri "target\release\voxleaf-desktop.exe"
     $installer = Join-Path $srcTauri "target\release\bundle\nsis\VoxLeaf_0.1.0_x64-setup.exe"
-    $binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
-    $installerHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+    $binaryHash = Get-LockedReleaseHash $binary
+    $installerHash = Get-LockedReleaseHash $installer
+    $buildAuthorityPath = "$installer.build-authority.json"
+    if (!(Test-Path -LiteralPath $buildAuthorityPath -PathType Leaf)) {
+      throw "windows-release-build-authority"
+    }
+    $null = Get-LockedReleaseHash $buildAuthorityPath
     $binarySignature = Get-AuthenticodeSignature -LiteralPath $binary
     $installerSignature = Get-AuthenticodeSignature -LiteralPath $installer
     $signatureStatus = Get-ReleaseSignatureStatus $binarySignature.Status $installerSignature.Status ($binarySignature.Status -eq 'Valid')
@@ -171,6 +193,7 @@ try {
       "apps/desktop/scripts/windows-release.mjs" "evidence" `
       "--installer" $installer "--binary" $binary `
       "--verified-installer-sha256" $installerHash "--verified-binary-sha256" $binaryHash `
+      "--build-authority" $buildAuthorityPath `
       "--signature-status" $signatureStatus "--antivirus-status" $antivirusStatus `
       "--lifecycle-receipt" $LifecycleReceipt "--ordinary-chatterbox-receipt" $OrdinaryChatterboxReceipt `
       "--write" @scanArguments
@@ -178,6 +201,19 @@ try {
   }
   Assert-CanonicalCargoLayout
   Invoke-CheckedCommand node "apps/desktop/scripts/windows-release.mjs" "check" "--require-core"
+
+  $coreDirectory = Join-Path $repositoryRoot "services\tts\release\core"
+  $optionalDirectory = Join-Path $repositoryRoot "services\tts\release\optional\chatterbox"
+  $authority = [ordered]@{
+    releaseConfigSha256 = Get-LockedReleaseHash $releaseConfig
+    piperRuntimeManifestSha256 = Get-LockedReleaseHash (Join-Path $coreDirectory "runtime-manifest-v1.json")
+    optionalChatterboxManifestSha256 = Get-LockedReleaseHash (Join-Path $optionalDirectory "optional-package-manifest-v7.json")
+    optionalChatterboxRuntimeEvidenceSha256 = Get-LockedReleaseHash (Join-Path $optionalDirectory "runtime-package-evidence-v7.json")
+  }
+  $bundledPiperManifestHash = Get-LockedReleaseHash (Join-Path $coreDirectory "dist\voxleaf-piper-core-v1\runtime-manifest-v1.json")
+  if ($bundledPiperManifestHash -cne $authority.piperRuntimeManifestSha256) {
+    throw "windows-release-build-authority"
+  }
 
   $configArgument = "src-tauri/tauri.release.conf.json"
   if ($Sign) {
@@ -226,28 +262,46 @@ try {
     throw "windows-release-artifact-missing"
   }
 
+  $binaryHash = Get-LockedReleaseHash $binary
+  $installerHash = Get-LockedReleaseHash $installer
   $binarySignature = Get-AuthenticodeSignature -LiteralPath $binary
   $installerSignature = Get-AuthenticodeSignature -LiteralPath $installer
   $signatureStatus = Get-ReleaseSignatureStatus $binarySignature.Status $installerSignature.Status ([bool]$Sign)
 
+  $scanArguments = @()
   if ($ScanWithDefender) {
     $antivirusStatus = Invoke-DefenderArtifactScan $installer
+    if ($antivirusStatus -eq 'windows-defender-no-threats') {
+      $scanArguments = @('--scanned-installer-sha256', $installerHash)
+    }
   }
 
-  $checksum = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
   $checksumPath = "$installer.sha256"
   $utf8 = New-Object System.Text.UTF8Encoding($false)
-  [IO.File]::WriteAllText($checksumPath, "$checksum *$([IO.Path]::GetFileName($installer))`n", $utf8)
+  $buildAuthorityPath = "$installer.build-authority.json"
+  $temporaryBuildAuthority = "$buildAuthorityPath.$([Guid]::NewGuid().ToString('N')).tmp"
+  $buildAuthority = [ordered]@{
+    schemaVersion = 1
+    installerSha256 = $installerHash
+    binarySha256 = $binaryHash
+    authority = $authority
+  }
+  [IO.File]::WriteAllText($temporaryBuildAuthority, (($buildAuthority | ConvertTo-Json -Depth 4) + "`n"), $utf8)
 
   Invoke-CheckedCommand node `
     "apps/desktop/scripts/windows-release.mjs" `
     "evidence" `
     "--installer" $installer `
     "--binary" $binary `
+    "--verified-installer-sha256" $installerHash "--verified-binary-sha256" $binaryHash `
+    "--build-authority" $temporaryBuildAuthority `
     "--signature-status" $signatureStatus `
     "--antivirus-status" $antivirusStatus `
     "--lifecycle-status" $LifecycleStatus `
-    "--write"
+    "--write" @scanArguments
+
+  Move-Item -LiteralPath $temporaryBuildAuthority -Destination $buildAuthorityPath -Force
+  [IO.File]::WriteAllText($checksumPath, "$installerHash *$([IO.Path]::GetFileName($installer))`n", $utf8)
 
   Write-Output "windows-release:built"
   Write-Output "installer=$installer"
@@ -255,6 +309,12 @@ try {
   Write-Output "signature=$signatureStatus"
   Write-Output "antivirus=$antivirusStatus"
 } finally {
+  foreach ($stream in $releaseInputLocks) {
+    $stream.Dispose()
+  }
+  if ($temporaryBuildAuthority -and (Test-Path -LiteralPath $temporaryBuildAuthority)) {
+    Remove-Item -LiteralPath $temporaryBuildAuthority -Force
+  }
   if ($temporaryConfig -and (Test-Path -LiteralPath $temporaryConfig)) {
     Remove-Item -LiteralPath $temporaryConfig -Force
   }

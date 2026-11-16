@@ -65,6 +65,8 @@ describe("optional Chatterbox native client", () => {
       });
       const client = new OptionalChatterboxClient(invoke);
       await client.select();
+      const installation = vi.fn();
+      client.subscribe(installation);
       const download = client.download();
       const stale = client.refresh();
       const cancel = client.cancel();
@@ -121,6 +123,11 @@ describe("optional Chatterbox native client", () => {
         installedBytes: final.installedBytes,
       });
       expect(client.cancelPending).toBe(false);
+      expect(
+        installation.mock.calls.filter(
+          ([event]) => event?.phase === "completed",
+        ),
+      ).toHaveLength(state === "installed" ? 1 : 0);
       oldPoll.resolve(snapshot("confirming"));
       await stale;
       expect.soft(client.observe().state).toBe(state);

@@ -2134,6 +2134,72 @@ describe("adaptive PCM playback", () => {
     expect(backend.observedVolumes).toEqual([100, 0, 0]);
   });
 
+  it.each(["selection", "fallback"] as const)(
+    "VF-0066 rechecks automatic refill before allocation after a rate %s",
+    async (change) => {
+      const clock = createManualClock(0);
+      const segments = [
+        segment(1),
+        segment(2),
+        segment(3),
+        segment(4),
+        segment(5),
+        segment(6),
+      ];
+      const scheduler = readyScheduler(clock, segments, false);
+      synthesize(scheduler, segments[0]!, 15_000);
+      const backend = new ManualPcmPlaybackBackend(clock);
+      const player = new AdaptivePcmPlayer(scheduler, backend);
+      let resolvePreparation!: () => void;
+      let rejectPreparation!: (error: Error) => void;
+      const preparation = new Promise<void>((resolve, reject) => {
+        resolvePreparation = resolve;
+        rejectPreparation = reject;
+      });
+      const prepare = vi
+        .spyOn(backend, "preparePlaybackRate")
+        .mockReturnValueOnce(preparation);
+      try {
+        player.synchronize();
+        clock.advanceBy(15_000);
+        backend.pump();
+        expect(player.synchronize()).toMatchObject({
+          state: "buffering",
+          underrunCount: 1,
+        });
+        player.setPlaybackRatePercent(75);
+        for (const unit of segments.slice(1, 4))
+          synthesize(scheduler, unit, 15_000);
+        player.synchronize();
+        expect(prepare).toHaveBeenCalledExactlyOnceWith(75);
+        expect(backend.startedSequences).toEqual([0]);
+        if (change === "selection") {
+          player.setPlaybackRatePercent(100);
+          resolvePreparation();
+        } else {
+          rejectPreparation(new Error("synthetic rate preparation failure"));
+        }
+        await preparation.catch(() => undefined);
+        expect(player.synchronize()).toMatchObject({
+          state: "buffering",
+          underrunCount: 1,
+        });
+        expect(backend.startedSequences).toEqual([0]);
+        synthesize(scheduler, segments[4]!, 15_000);
+        expect(player.synchronize()).toMatchObject({
+          state: "playing",
+          underrunCount: 1,
+        });
+        expect(backend.startedSequences).toEqual([0, 1]);
+        expect(backend.startedRates).toEqual([1, 1]);
+      } finally {
+        resolvePreparation();
+        player.close();
+        await player.waitForCleanup();
+      }
+    },
+  );
+
   it("counts a real underrun once and resumes after the refill target", () => {
     const clock = createManualClock(0);
     const segments = [
@@ -2417,6 +2483,47 @@ describe("Web Audio PCM backend", () => {
       });
       backend.close();
     } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("VF-0062 allocates only the device channel for a full direct unit", () => {
+    const frames = 480_000;
+    const payload = new Uint8Array(new ArrayBuffer(frames * 4 + 1), 1);
+    new DataView(payload.buffer, payload.byteOffset).setFloat32(0, 0.5, true);
+    const context = new FakeAudioContext();
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+    );
+    const allocate = vi.fn();
+    vi.stubGlobal(
+      "Float32Array",
+      new Proxy(Float32Array, {
+        construct(target, args) {
+          if (args[0] === frames) allocate();
+          return Reflect.construct(target, args);
+        },
+      }),
+    );
+    try {
+      backend.start(
+        {
+          sequence: 0,
+          payload,
+          sampleRateHz: 24_000,
+          channelCount: 1,
+          sampleFormat: "float32-le",
+          sampleCountSamples: frames,
+          startSampleFrame: 0,
+          volumePercent: 100,
+          playbackRate: 1,
+        },
+        { ended: vi.fn(), failed: vi.fn() },
+      );
+      expect(allocate).toHaveBeenCalledOnce();
+      expect(context.buffers[0]?.channel[0]).toBe(0.5);
+    } finally {
+      backend.close();
       vi.unstubAllGlobals();
     }
   });

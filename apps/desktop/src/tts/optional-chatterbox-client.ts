@@ -219,7 +219,13 @@ export class OptionalChatterboxClient {
   #nextRequestId = 0;
   #actionGeneration = 0;
   #refreshInFlight: Promise<OptionalChatterboxSnapshot> | undefined;
-  #downloadAttempt: Promise<OptionalChatterboxSnapshot> | undefined;
+  #downloadAttempt:
+    | {
+        generation: number;
+        promise: Promise<OptionalChatterboxSnapshot>;
+        completedInstallation: () => boolean;
+      }
+    | undefined;
   #cancelGeneration: number | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
@@ -295,13 +301,23 @@ export class OptionalChatterboxClient {
   }
 
   public async download(): Promise<OptionalChatterboxSnapshot> {
-    const attempt = this.#call("download_optional_chatterbox", {
-      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
-    });
+    let completedInstallation = false;
+    const attempt = {
+      generation: this.#actionGeneration + 1,
+      promise: this.#call(
+        "download_optional_chatterbox",
+        { profileId: CHATTERBOX_OPTIONAL_PROFILE_ID },
+        (result) => {
+          completedInstallation =
+            result.state === "installed" && result.failure === undefined;
+        },
+      ),
+      completedInstallation: () => completedInstallation,
+    };
     this.#downloadAttempt = attempt;
     this.#publish();
     try {
-      return await attempt;
+      return await attempt.promise;
     } finally {
       if (this.#downloadAttempt === attempt) {
         this.#downloadAttempt = undefined;
@@ -328,9 +344,22 @@ export class OptionalChatterboxClient {
         return cancelled;
       }
       // Installed acknowledges the commit. The paired download still owns cleanup.
-      await pairedDownload;
+      await pairedDownload.promise;
       if (generation !== this.#actionGeneration) return this.#snapshot;
-      return await this.#startSnapshotRead();
+      const current = await this.#startSnapshotRead();
+      if (
+        generation === this.#actionGeneration &&
+        pairedDownload.generation === generation - 1 &&
+        pairedDownload.completedInstallation() &&
+        current.state === "installed" &&
+        current.failure === undefined
+      ) {
+        this.#publish({
+          phase: "completed",
+          generation: pairedDownload.generation,
+        });
+      }
+      return current;
     } finally {
       if (this.#cancelGeneration === generation) {
         this.#cancelGeneration = undefined;
@@ -348,6 +377,7 @@ export class OptionalChatterboxClient {
   async #call(
     command: string,
     args?: Record<string, unknown>,
+    observeAcceptedResponse?: (result: OptionalChatterboxSnapshot) => void,
   ): Promise<OptionalChatterboxSnapshot> {
     const isRefresh =
       command === "optional_chatterbox_snapshot" && args?.retryCleanup !== true;
@@ -372,6 +402,7 @@ export class OptionalChatterboxClient {
     let result: OptionalChatterboxSnapshot;
     try {
       result = decodeSnapshot(await this.#invoke(command, args));
+      observeAcceptedResponse?.(result);
     } catch (error) {
       const failure =
         decodeFailure(error) ?? "optional-profile-operation-failed";

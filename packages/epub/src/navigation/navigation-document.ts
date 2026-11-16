@@ -545,6 +545,16 @@ class NavigationDocumentParser {
       const edgeWhitespace = LABEL_EDGE_WHITESPACE.test(character);
       if (edgeWhitespace && label.text.length === 0) continue;
 
+      if (
+        label.codePointCount + (label.pendingWhitespace ? 2 : 1) >
+        MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS
+      ) {
+        if (!edgeWhitespace) return fail("malformed-package");
+        // A suffix over the limit is harmless only if all of it trims away.
+        label.codePointCount = MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS + 1;
+        continue;
+      }
+
       let attributeBytes = 0;
       if (label.pendingWhitespace) {
         if (label.pendingWhitespace === "attribute") {
@@ -556,9 +566,6 @@ class NavigationDocumentParser {
       }
       label.text += character;
       label.codePointCount += 1;
-      if (label.codePointCount > MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS) {
-        return fail("malformed-package");
-      }
       if (source === "attribute") {
         attributeBytes += decodedUtf8ByteLength(
           character,

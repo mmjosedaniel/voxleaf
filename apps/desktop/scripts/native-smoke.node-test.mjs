@@ -1622,19 +1622,25 @@ for (const diagnosticFails of [false, true]) {
     const failure = new Error("controlled-predicate-timeout");
     const scripts = [];
     const logged = [];
+    let stage = "";
     const originalError = console.error;
+    const originalLog = console.log;
     console.error = (message) => logged.push(message);
+    console.log = () => {};
     try {
       const subject = createNativeTtsScenarios({
+        assert: assert.ok,
         EXERCISE_READER_CORRECTIONS: true,
         injectNativeFile: async () => {},
         waitForCondition: async () => {
-          throw failure;
+          if (!stage.startsWith("VF-0063 ")) throw failure;
         },
       });
       await assert.rejects(
         subject.runAdaptiveTtsExactHostMatrix(
           {
+            findElement: async () => "synthetic-control",
+            sendKeys: async () => {},
             execute: async (script) => {
               scripts.push(script);
               if (script.includes("const owner =")) {
@@ -1646,7 +1652,9 @@ for (const diagnosticFails of [false, true]) {
           },
           "synthetic.epub",
           1,
-          () => {},
+          (nextStage) => {
+            stage = nextStage;
+          },
         ),
         (error) => error === failure,
       );
@@ -1656,6 +1664,7 @@ for (const diagnosticFails of [false, true]) {
       if (!diagnosticFails) assert.match(logged[0], /^READER_RATE_FAILURE /u);
     } finally {
       console.error = originalError;
+      console.log = originalLog;
     }
   });
 }

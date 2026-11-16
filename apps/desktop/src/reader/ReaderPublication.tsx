@@ -1342,10 +1342,10 @@ export function ReaderPublicationContent({
             if (
               event.isTrusted &&
               !event.defaultPrevented &&
-              !event.ctrlKey &&
+              (!event.ctrlKey || event.key === "Home" || event.key === "End") &&
               !event.metaKey &&
               !event.altKey &&
-              !event.shiftKey &&
+              (!event.shiftKey || event.key === " ") &&
               event.target instanceof HTMLElement &&
               event.target.closest(
                 "a,button,input,select,textarea,summary,[contenteditable=true],[role=button]",

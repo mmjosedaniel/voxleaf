@@ -128,6 +128,16 @@ const EXERCISE_PLAYBACK_SPEEDS = process.argv.includes(
 const EXERCISE_READER_CORRECTIONS = process.argv.includes(
   "--exercise-reader-corrections",
 );
+const KEYBOARD_PLACEMENT_ONLY = process.argv
+  .find((argument) => argument.startsWith("--keyboard-placement-only="))
+  ?.split("=")[1];
+if (
+  KEYBOARD_PLACEMENT_ONLY !== undefined &&
+  (!ADAPTIVE_TTS_EXACT_HOST_MODE ||
+    !["shift-space", "ctrl-home", "ctrl-end"].includes(KEYBOARD_PLACEMENT_ONLY))
+) {
+  throw new Error("Unknown focused native keyboard placement scenario.");
+}
 const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
 const ADAPTIVE_TTS_LANGUAGE_ARGUMENT = "--tts-language=";
 const EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT =
@@ -475,6 +485,7 @@ const {
   CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXERCISE_PLAYBACK_SPEEDS,
   EXERCISE_READER_CORRECTIONS,
+  KEYBOARD_PLACEMENT_ONLY,
   EXPECTED_UNAVAILABLE_PROFILE_REASON,
   INTERACTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
