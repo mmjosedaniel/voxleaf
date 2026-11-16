@@ -16,6 +16,8 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
+- [Four-pass findings corrections](four-pass-findings-corrections.md) records six approved correction units, focused Windows validation and the scoped benchmark and release limits.
+
 - [Agent guidance simplification](agent-guidance-simplification.md): reduced procedural duplication and corrected current guidance; acceptance is established by the review and closeout linked from the plan.
 
 - [Documentation consolidation and review closeout](documentation-consolidation-and-review-closeout.md): implementation approved under DCRC-CR-R2-20261115; final archival assessment linked from the plan; runtime, historical evidence and acceptance safeguards preserved.

@@ -1096,6 +1096,8 @@ describe("App preference connection characterization", () => {
   it.each([
     "check",
     "failed-poll",
+    "cancel-first",
+    "download-first",
     "other-book",
     "other-language",
     "other-profile",
@@ -1111,7 +1113,12 @@ describe("App preference connection characterization", () => {
         failure: "installed-package-invalid" as typeof base.failure,
       };
       const pending = deferred<typeof native>();
+      const cancelResult = deferred<typeof native>();
+      const lateCancel =
+        scenario === "cancel-first" || scenario === "download-first";
       mockIPC(async (command, args) => {
+        if (command === "cancel_optional_chatterbox")
+          return (await cancelResult.promise) as never;
         if (
           command === "download_optional_chatterbox" ||
           (command === "optional_chatterbox_snapshot" &&
@@ -1131,7 +1138,14 @@ describe("App preference connection characterization", () => {
         current = { ...current, availability: "available" };
       vi.spyOn(coordinator, "observe").mockImplementation(() => current);
       const refresh = vi.spyOn(coordinator, "refreshSelectedProfile");
+      if (lateCancel) {
+        refresh.mockImplementation(async () => {
+          current = { ...current, availability: "available" };
+          await coordinator.stop();
+        });
+      }
       const start = vi.spyOn(coordinator, "start");
+      const play = vi.spyOn(coordinator, "startAtVisibleLocator");
       const replacement = new ControlledNarrationCoordinator();
       const replacementRefresh = vi.spyOn(
         replacement,
@@ -1160,10 +1174,40 @@ describe("App preference connection characterization", () => {
       let operation!: Promise<unknown>;
       act(() => {
         operation =
-          scenario === "failed-poll"
+          scenario === "failed-poll" || lateCancel
             ? client.download()
             : client.retryCleanup();
       });
+      if (lateCancel) {
+        let cancellation!: Promise<unknown>;
+        act(() => {
+          cancellation = client.cancel();
+        });
+        await act(async () => {
+          native = { ...native, state: "installed", failure: undefined };
+          if (scenario === "cancel-first") {
+            cancelResult.resolve(native);
+            await vi.waitFor(() =>
+              expect(client.observe().state).toBe("installed"),
+            );
+            expect(refresh).not.toHaveBeenCalled();
+            pending.resolve(native);
+          } else {
+            pending.resolve(native);
+            await operation;
+            expect(refresh).not.toHaveBeenCalled();
+            cancelResult.resolve(native);
+          }
+          await operation;
+          await cancellation;
+        });
+        expect(refresh).toHaveBeenCalledOnce();
+        expect(start).not.toHaveBeenCalled();
+        expect(play).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole("button", { name: /^Play$/ }));
+        expect(play).toHaveBeenCalledOnce();
+        return;
+      }
       if (scenario === "failed-poll")
         await act(async () => {
           await client.refresh();

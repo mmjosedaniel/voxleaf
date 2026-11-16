@@ -3,11 +3,13 @@ import { spawn } from "node:child_process";
 import { clearTimeout, setTimeout } from "node:timers";
 import {
   access,
+  copyFile,
   lstat,
   mkdtemp,
   readFile,
   rename,
   rm,
+  rmdir,
   stat,
   writeFile,
 } from "node:fs/promises";
@@ -830,24 +832,44 @@ async function releaseBoundary(client) {
   if (qwenAvailable !== false) fail("development-profile-available");
 }
 
-async function runCommand(executable, arguments_, environment, code) {
+export async function runNativeSmoke(
+  executable,
+  arguments_,
+  environment,
+  code,
+) {
   await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [executable, ...arguments_], {
       cwd: repositoryRoot,
       env: environment,
-      stdio: "inherit",
+      stdio: ["inherit", "inherit", "inherit", "ipc"],
       windowsHide: true,
     });
-    child.once("error", reject);
-    child.once("exit", (exitCode) => {
-      if (exitCode === 0) resolve();
-      else reject(new Error(`ordinary-chatterbox-release-host:${code}`));
+    let receiptCount = 0;
+    let cleanupConfirmed = false;
+    let processError;
+    child.on("message", (message) => {
+      if (message?.type !== "voxleaf-native-cleanup") return;
+      receiptCount += 1;
+      cleanupConfirmed = message.ok === true;
+    });
+    child.once("error", (error) => {
+      processError = error;
+    });
+    child.once("close", (exitCode) => {
+      const failure =
+        processError ?? new Error(`ordinary-chatterbox-release-host:${code}`);
+      if (processError && child.pid === undefined) reject(failure);
+      else if (processError || receiptCount !== 1 || !cleanupConfirmed)
+        reject(new SessionCleanupError([failure]));
+      else if (exitCode !== 0) reject(failure);
+      else resolve();
     });
   });
 }
 
 async function runBilingualSmoke(executable, profileId, language, environment) {
-  await runCommand(
+  await runNativeSmoke(
     path.join(scriptDirectory, "native-startup-smoke.mjs"),
     [
       "--adaptive-tts-exact-host",
@@ -1163,7 +1185,27 @@ export async function runJourney(
     if (error?.message?.includes("preexisting-install-root")) throw error;
     if (!isMissing(error)) fail("install-root-check");
   }
-  const dataBackup = await backupApplicationData();
+  const installerDirectory = await mkdtemp(
+    path.join(tmpdir(), "voxleaf-installer-"),
+  );
+  const ownedInstaller = path.join(
+    installerDirectory,
+    path.basename(options.installer),
+  );
+  const removeOwnedInstaller = async () => {
+    await rm(ownedInstaller, { force: true });
+    await rmdir(installerDirectory);
+  };
+  let installerSha256;
+  let dataBackup;
+  try {
+    await copyFile(options.installer, ownedInstaller);
+    installerSha256 = await sha256(ownedInstaller);
+    dataBackup = await backupApplicationData();
+  } catch (error) {
+    await removeOwnedInstaller();
+    throw error;
+  }
   let session;
   let applicationInstalled = false;
   let installerDidNotSpawn = false;
@@ -1175,7 +1217,7 @@ export async function runJourney(
     // Even a rejected installer may have created a partial installation.
     applicationInstalled = true;
     try {
-      await install(options.installer, releaseEnv);
+      await install(ownedInstaller, releaseEnv);
     } catch (error) {
       installerDidNotSpawn =
         install === runInstaller && installerSpawnFailures.has(error);
@@ -1233,7 +1275,7 @@ export async function runJourney(
       return {
         kind: "bounded-download-probe",
         artifact: {
-          installerSha256: await sha256(options.installer),
+          installerSha256,
           installedBinarySha256: await sha256(artifact.executable),
           packageVersion: artifact.manifest.identity.packageVersion,
         },
@@ -1371,9 +1413,12 @@ export async function runJourney(
       ACQUISITION_TIMEOUT_MS,
     );
     journeyReceipt = await createJourneyReceipt({
-      installer: options.installer,
+      installer: ownedInstaller,
       executable: artifact.executable,
     });
+    if (journeyReceipt.artifact.installer.sha256 !== installerSha256) {
+      fail("owned-installer-changed");
+    }
     await session.close();
     session = undefined;
     stages.mark("journey-uninstall");
@@ -1452,6 +1497,7 @@ export async function runJourney(
           }
         : undefined,
     });
+    await removeOwnedInstaller();
   }
   if (journeyReceipt === undefined) fail("journey-receipt");
   await writeFile(

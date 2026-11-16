@@ -43,6 +43,26 @@ afterEach(() => {
 });
 
 describe("safe XHTML semantic projection", () => {
+  it("VF-0064 uses the nearest block direction for an implicit paragraph", async () => {
+    await withArchive(
+      xhtml(
+        '<h:div dir="rtl">Implicit.</h:div><h:p dir="rtl">Explicit.</h:p><h:div dir="ltr"><h:span dir="rtl">Inline only.</h:span></h:div>',
+      ),
+      {},
+      async (archive) => {
+        const document = await projectXhtmlDocument(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+        expect(document.blocks.map((block) => block.direction)).toEqual([
+          "rtl",
+          "rtl",
+          "ltr",
+        ]);
+      },
+    );
+  });
   it("EBC-C13 accumulates repeated image occurrences across projections", async () => {
     const source = xhtml(
       '<h:p>X<h:img src="../images/cover.png" alt="é😀"/><h:img src="../images/cover.png" alt="é😀"/></h:p>',

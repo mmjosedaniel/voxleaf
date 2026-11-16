@@ -1014,9 +1014,7 @@ function matchesLexicalForm(
         replacements[endIndexExclusive] === undefined &&
         isProseTextToken(tokens[endIndexExclusive]) &&
         languages[endIndexExclusive] === requiredLanguage &&
-        /^[ \u00a0\u202f\u2007\u2009]$/u.test(
-          sourceText(tokens[endIndexExclusive]) ?? "",
-        )
+        /^\p{Zs}$/u.test(sourceText(tokens[endIndexExclusive]) ?? "")
       ) {
         endIndexExclusive += 1;
       }

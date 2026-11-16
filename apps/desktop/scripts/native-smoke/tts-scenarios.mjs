@@ -23,6 +23,7 @@ export function createNativeTtsScenarios({
   CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXERCISE_PLAYBACK_SPEEDS,
   EXERCISE_READER_CORRECTIONS,
+  KEYBOARD_PLACEMENT_ONLY,
   EXPECTED_UNAVAILABLE_PROFILE_REASON,
   INTERACTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
@@ -1053,7 +1054,17 @@ export function createNativeTtsScenarios({
     terminalFixturePath,
   ) {
     const temporaryDirectory = path.dirname(fixturePath);
+    if (KEYBOARD_PLACEMENT_ONLY !== undefined) {
+      await runKeyboardPlacementCorrection(
+        driver,
+        fixturePath,
+        setStage,
+        KEYBOARD_PLACEMENT_ONLY,
+      );
+      return;
+    }
     if (EXERCISE_READER_CORRECTIONS) {
+      await runKeyboardPlacementCorrection(driver, fixturePath, setStage);
       await runSavedRatePauseCorrection(driver, fixturePath, setStage);
       await runPausedEndedCorrection(driver, fixturePath, setStage);
     }
@@ -2597,6 +2608,226 @@ export function createNativeTtsScenarios({
         );
       }
     }
+  }
+
+  async function runKeyboardPlacementCorrection(
+    driver,
+    fixturePath,
+    setStage,
+    chord = "shift-space",
+  ) {
+    setStage("VF-0063 native reader unavailable placement");
+    await injectNativeFile(driver, fixturePath);
+    const play = '[data-narration-action="play"]';
+    const narration = ".product-narration";
+    await waitForCondition(
+      driver,
+      `return document.querySelector('${play}')?.disabled === false;`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await driver.sendKeys(await driver.findElement(play), WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `return document.querySelector('${narration}')?.dataset.narrationPhase === 'playing';`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await driver.sendKeys(
+      await driver.findElement('[data-narration-action="pause"]'),
+      WEBDRIVER_SPACE,
+    );
+    await driver.sendKeys(
+      await driver.findElement('[data-narration-action="details-toggle"]'),
+      WEBDRIVER_SPACE,
+    );
+    await driver.execute(`
+      const rangeRect = Range.prototype.getBoundingClientRect;
+      const rangeRects = Range.prototype.getClientRects;
+      const elementRect = Element.prototype.getBoundingClientRect;
+      globalThis.__vf0063RestoreGeometry = () => {
+        Range.prototype.getBoundingClientRect = rangeRect;
+        Range.prototype.getClientRects = rangeRects;
+        Element.prototype.getBoundingClientRect = elementRect;
+        delete globalThis.__vf0063RestoreGeometry;
+      };
+      Range.prototype.getBoundingClientRect = function () { throw new Error("synthetic-range-unavailable"); };
+      Range.prototype.getClientRects = function () { return []; };
+      Element.prototype.getBoundingClientRect = function () {
+        if (this.matches(".semantic-document p")) return new DOMRect(NaN, NaN, 0, 0);
+        return elementRect.call(this);
+      };
+      return true;
+    `);
+    try {
+      await driver.sendKeys(
+        await driver.findElement('[data-narration-action="next-passage"]'),
+        WEBDRIVER_SPACE,
+      );
+      await waitForCondition(
+        driver,
+        `return document.querySelector('${play}')?.disabled === true &&
+          document.querySelector('${narration}')?.dataset.narrationNavigationSettling === 'false';`,
+        STARTUP_TIMEOUT_MS,
+      );
+    } finally {
+      await driver.execute(
+        "globalThis.__vf0063RestoreGeometry?.(); return true;",
+      );
+    }
+
+    const expected = {
+      "shift-space": {
+        key: " ",
+        control: false,
+        send: "\uE008" + WEBDRIVER_SPACE,
+        direction: -1,
+      },
+      "ctrl-home": {
+        key: "Home",
+        control: true,
+        send: "\uE009\uE011",
+        direction: -1,
+      },
+      "ctrl-end": {
+        key: "End",
+        control: true,
+        send: "\uE009\uE010",
+        direction: 1,
+      },
+    }[chord];
+    setStage(`VF-0063 trusted ${chord} and viewport displacement`);
+    await driver.execute(`
+      const viewport = document.querySelector('[data-reader-scroll-owner="true"]');
+      const article = document.querySelector("article.semantic-document");
+      article.focus({ preventScroll: true });
+      viewport.scrollTop = viewport.clientHeight * 2;
+      const observation = { startY: viewport.scrollTop, keyY: null, trusted: false };
+      globalThis.__vf0063Key = observation;
+      article.addEventListener("keydown", function observe(event) {
+        if (
+          event.key !== ${JSON.stringify(expected.key)} ||
+          event.ctrlKey !== ${expected.control} ||
+          event.shiftKey === ${expected.control}
+        ) return;
+        observation.trusted = event.isTrusted && document.activeElement === article;
+        observation.keyY = viewport.scrollTop;
+        article.removeEventListener("keydown", observe);
+      });
+      return true;
+    `);
+    assert(
+      (await driver.execute(
+        `return document.querySelector('${play}')?.disabled === true;`,
+      )) === true,
+      "VF-0063 precondition: programmatic scroll must leave Play disabled.",
+    );
+    await driver.sendKeys(
+      await driver.findElement("article.semantic-document"),
+      expected.send + "\uE000",
+    );
+    try {
+      await waitForCondition(
+        driver,
+        `const observation = globalThis.__vf0063Key;
+         const scrollTop = document.querySelector('[data-reader-scroll-owner="true"]')?.scrollTop;
+         return observation?.trusted === true && observation.keyY !== null &&
+           (scrollTop - observation.keyY) * ${expected.direction} > 0;`,
+        INTERACTION_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (KEYBOARD_PLACEMENT_ONLY !== undefined) {
+        const observation = await driver.execute(`
+          const observation = globalThis.__vf0063Key;
+          const scrollTop = document.querySelector('[data-reader-scroll-owner="true"]')?.scrollTop;
+          return {
+            trusted: observation?.trusted === true,
+            displacementBeforeKey: observation.keyY - observation.startY,
+            displacementAfterKey: scrollTop - observation.keyY,
+          };
+        `);
+        console.error(
+          `VF-0063 keyboard movement ${chord}: ${JSON.stringify(observation)}`,
+        );
+      }
+      throw error;
+    }
+    setStage("VF-0063 Play must recover after measured manual scrolling");
+    await waitForCondition(
+      driver,
+      `return document.querySelector('${play}')?.disabled === false;`,
+      INTERACTION_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `const observation = globalThis.__vf0063Key;
+       const viewport = document.querySelector('[data-reader-scroll-owner="true"]');
+       const current = viewport.scrollTop;
+       if (current !== observation.settledY) {
+         observation.settledY = current;
+         observation.unchangedSince = performance.now();
+       }
+       return performance.now() - observation.unchangedSince >= 150;`,
+      INTERACTION_TIMEOUT_MS,
+    );
+    await driver.execute(
+      `window.dispatchEvent(new Event("pagehide")); return true;`,
+    );
+    await driver.execute(`
+      globalThis.__vf0063SavedPosition = JSON.parse(
+        localStorage.getItem("voxleaf.reader.positions") ?? "{}"
+      ).states?.[0]?.locator;
+      return true;
+    `);
+    setStage("VF-0063 explicit Play after trusted keyboard recovery");
+    await driver.sendKeys(await driver.findElement(play), WEBDRIVER_SPACE);
+    try {
+      await waitForCondition(
+        driver,
+        `const range = Array.from(CSS.highlights.get('voxleaf-narration-active') ?? [])[0];
+       const sample = globalThis.__vf0063SavedPosition;
+       if (range === undefined || sample === undefined) return false;
+       const article = document.querySelector('article.semantic-document');
+       const blocks = Array.from(article?.querySelectorAll('h1, p') ?? []);
+       const anchor = blocks[sample.anchor.anchorIndex];
+       if (!anchor?.contains(range.startContainer)) return false;
+       const prefix = document.createRange();
+       prefix.selectNodeContents(anchor);
+       prefix.setEnd(range.startContainer, range.startOffset);
+       const startOffset = Array.from(prefix.toString()).length;
+       if (anchor.contains(range.endContainer)) {
+         prefix.setEnd(range.endContainer, range.endOffset);
+         if (Array.from(prefix.toString()).length <= sample.textOffsetCodePoints) return false;
+       }
+       return document.querySelector('${narration}')?.dataset.narrationPhase === 'playing' &&
+         startOffset <= sample.textOffsetCodePoints;`,
+        25_000,
+      );
+    } catch (error) {
+      const status = await driver
+        .execute(
+          `
+        const range = Array.from(CSS.highlights.get('voxleaf-narration-active') ?? [])[0];
+        const blocks = Array.from(document.querySelectorAll('article.semantic-document h1, article.semantic-document p'));
+        return {
+          savedAnchor: globalThis.__vf0063SavedPosition?.anchor.anchorIndex ?? null,
+          audibleAnchor: range === undefined ? null : blocks.findIndex((block) => block.contains(range.startContainer)),
+          phase: document.querySelector('${narration}')?.dataset.narrationPhase ?? null,
+        };
+      `,
+        )
+        .catch(() => undefined);
+      if (status !== undefined)
+        console.error(
+          `VF-0063 locator observation ${chord}: ${JSON.stringify(status)}`,
+        );
+      throw error;
+    }
+    await driver.sendKeys(
+      await driver.findElement('[data-narration-action="stop"]'),
+      WEBDRIVER_SPACE,
+    );
+    console.log(
+      `VF-0063 verified movement and audible locator recovery after ${chord}.`,
+    );
   }
 
   async function runSavedRatePauseCorrection(driver, fixturePath, setStage) {

@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import sys
 from pathlib import Path
 from typing import cast
 
 import pytest
+from test_benchmark_v13_authority import LOADS, ROOT, _git
+from test_benchmark_v14_authority import _v14_raw
 
 from benchmarks import batch_cli, batch_result_cli
 from benchmarks.batch_official import OfficialBatchError, OfficialExecution, official_raw_root
+from benchmarks.batch_result import BatchResultError
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
 from benchmarks.v13_authority import PROFILE_VERSION as V13_PROFILE_VERSION
 from benchmarks.v14_authority import PROFILE_VERSION
@@ -225,6 +229,113 @@ def test_official_cli_writes_only_v14_session_after_runner_success(
     assert root_calls == ["run", "close-sampler", "close-sampler"]
 
 
+def test_vf0065_rejected_v14_read_preserves_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    session_id = "a" * 32
+    session = official_raw_root(tmp_path, session_id, version="v14")
+    session.mkdir(parents=True)
+    raw = session / "raw.json"
+    loads = session / "loads.json"
+    raw.write_text("{}", encoding="utf-8")
+    loads.write_text("invalid", encoding="utf-8")
+    monkeypatch.setattr(batch_result_cli, "REPOSITORY_ROOT", tmp_path)
+
+    with pytest.raises(BatchResultError, match=":raw$"):
+        batch_result_cli._run({"sessionId": session_id, "profileVersion": PROFILE_VERSION})
+
+    assert raw.read_text(encoding="utf-8") == "{}"
+    assert loads.read_text(encoding="utf-8") == "invalid"
+
+
+def test_vf0065_real_authority_rejection_allows_same_session_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    session_id = "b" * 32
+    session = official_raw_root(tmp_path, session_id, version="v14")
+    session.mkdir(parents=True)
+    raw_path = session / "raw.json"
+    loads_path = session / "loads.json"
+    loads_path.write_text(json.dumps(LOADS), encoding="utf-8")
+    raw, _ = _v14_raw()
+    raw["executionCommitSha"] = _git(ROOT, "rev-parse", "HEAD")
+    valid_raw = json.dumps(raw)
+    rejected = json.dumps({**raw, "profileSha256": "0" * 64})
+    raw_path.write_text(rejected, encoding="utf-8")
+    monkeypatch.setattr(batch_result_cli, "official_raw_root", lambda *_a, **_kw: session)
+    monkeypatch.setattr(sys, "argv", ["batch-result", "derive"])
+    payload = json.dumps(
+        {"batchOptIn": True, "sessionId": session_id, "profileVersion": PROFILE_VERSION}
+    )
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
+    assert batch_result_cli.main() == 2
+    assert json.loads(capsys.readouterr().out)["status"] == "fail"
+    assert raw_path.read_text(encoding="utf-8") == rejected
+    assert json.loads(loads_path.read_text(encoding="utf-8")) == LOADS
+
+    raw_path.write_text(valid_raw, encoding="utf-8")
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
+    original_print = print
+
+    def print_after_removal(value: str, *, end: str = "\n") -> None:
+        assert not session.exists()
+        original_print(value, end=end)
+
+    monkeypatch.setattr(batch_result_cli, "print", print_after_removal, raising=False)
+    assert batch_result_cli.main() == 0
+    assert json.loads(capsys.readouterr().out)["audits"]["cleanup"] is True
+
+
+@pytest.mark.parametrize("partial", [False, True])
+def test_vf0065_failed_removal_does_not_publish_success(
+    partial: bool,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    session_id = "c" * 32
+    session = official_raw_root(tmp_path, session_id, version="v14")
+    session.mkdir(parents=True)
+    raw_path = session / "raw.json"
+    loads_path = session / "loads.json"
+    raw, _ = _v14_raw()
+    raw["executionCommitSha"] = _git(ROOT, "rev-parse", "HEAD")
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+    loads_path.write_text(json.dumps(LOADS), encoding="utf-8")
+    monkeypatch.setattr(batch_result_cli, "official_raw_root", lambda *_a, **_kw: session)
+    monkeypatch.setattr(sys, "argv", ["batch-result", "derive"])
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "batchOptIn": True,
+                    "sessionId": session_id,
+                    "profileVersion": PROFILE_VERSION,
+                }
+            )
+        ),
+    )
+    reached = False
+
+    def fail_removal(path: Path) -> None:
+        nonlocal reached
+        assert path == session
+        reached = True
+        if partial:
+            loads_path.unlink()
+        raise PermissionError("synthetic owned-session removal failure")
+
+    with monkeypatch.context() as deletion:
+        deletion.setattr(shutil, "rmtree", fail_removal)
+        assert batch_result_cli.main() == 2
+    assert reached
+    assert json.loads(capsys.readouterr().out) == {"status": "fail", "failureCode": "internal"}
+    assert raw_path.is_file()
+    assert loads_path.is_file() is not partial
+
+
 def test_dcr_17_versioned_derivation_deletes_only_its_owned_session(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -253,15 +364,13 @@ def test_dcr_17_versioned_derivation_deletes_only_its_owned_session(
     ) -> dict[str, object]:
         assert root == tmp_path
         assert raw == {"schemaVersion": "synthetic"} and loads == []
-        assert (
-            raw_session_removed and not current.exists() and legacy.exists() and successor.exists()
-        )
+        assert raw_session_removed and current.exists() and legacy.exists() and successor.exists()
         return {"version": 14}
 
     monkeypatch.setattr(batch_result_cli, "derive_v14_summary", derive_v14)
-    assert batch_result_cli._run({"sessionId": session_id, "profileVersion": PROFILE_VERSION}) == {
-        "version": 14
-    }
+    result = batch_result_cli._run({"sessionId": session_id, "profileVersion": PROFILE_VERSION})
+    assert isinstance(result, str) and json.loads(result) == {"version": 14}
+    assert not current.exists()
     assert batch_result_cli._run(
         {"sessionId": session_id, "profileVersion": V13_PROFILE_VERSION}
     ) == {"version": 13}

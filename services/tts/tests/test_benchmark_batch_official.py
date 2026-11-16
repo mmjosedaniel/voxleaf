@@ -231,6 +231,63 @@ def test_five_pass_2_3_requires_observed_cancellation(
         assert result["suppressedByGate"] == 1
 
 
+def test_vf0069_complete_measured_matrix_overflow_cannot_pass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Clock:
+        value = 0
+
+        def now_ns(self) -> int:
+            self.value += 2_000_000_000
+            return self.value
+
+    class Candidate(_Candidate):
+        def generate_batch(self, request: BatchGenerationRequest) -> tuple[BatchAudioUnit, ...]:
+            return tuple(
+                replace(output, sample_count=360_000) for output in super().generate_batch(request)
+            )
+
+    monkeypatch.setattr(batch_official, "SystemBatchClock", Clock)
+    execution = execute_official_v14(
+        REPOSITORY_ROOT,
+        execution_commit_sha=_head(),
+        host=_host(),
+        preflight=_preflight(),
+        candidate_factory=Candidate,
+        monitor=_Monitor(),
+    )
+    assert execution.raw["failureCodes"] == ["playback-invalid"]
+    summary = derive_v14_summary(
+        REPOSITORY_ROOT,
+        execution.raw,
+        list(execution.load_observations),
+        raw_session_removed=True,
+        execution_checker=lambda sha: sha == _head(),
+    )
+    conclusions = cast(dict[str, dict[str, object]], summary["conclusions"])
+    assert conclusions["standardViability"]["outcome"] == "fail"
+    assert conclusions["schedulingSustainability"]["outcome"] == "fail"
+    assert cast(dict[str, object], summary["audits"])["boundedRetention"] is False
+
+
+def test_vf0073_measured_adapter_privacy_failure_is_retained() -> None:
+    class Candidate(_Candidate):
+        def generate_batch(self, request: BatchGenerationRequest) -> tuple[BatchAudioUnit, ...]:
+            if request.phase == "measured":
+                raise AdapterOperationError("privacy")
+            return super().generate_batch(request)
+
+    execution = execute_official_v14(
+        REPOSITORY_ROOT,
+        execution_commit_sha=_head(),
+        host=_host(),
+        preflight=_preflight(),
+        candidate_factory=Candidate,
+        monitor=_Monitor(),
+    )
+    assert "privacy" in cast(list[str], execution.raw["failureCodes"])
+
+
 def test_five_pass_2_3_derives_all_five_distinct_owned_trials() -> None:
     execution = execute_official_v14(
         REPOSITORY_ROOT,

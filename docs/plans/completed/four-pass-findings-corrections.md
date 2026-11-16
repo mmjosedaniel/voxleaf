@@ -7,18 +7,18 @@ causal corrections and the minimum sufficient validation. Preserve each finding'
 history, reproduce its distinguishing failure before fixing it, and reuse existing
 tests, fixtures and eligible evidence instead of repeating unrelated campaigns.
 
-**Status: planning only; implementation and behavioral validation have not started.**
-The current authorization is to create this plan, create its branch and commit the
-planning/audit documents. It does not authorize executing the milestones below.
+**Status: completed.** Execution was authorized on the prepared
+planning branch at `df0109b0cefb50394e55eed10f2065140de837ec`. The project
+index stayed empty during implementation.
 
 ## User-visible outcome
 
-After execution and acceptance, supported EPUB labels and horizontal time spacing
+Supported EPUB labels and horizontal time spacing
 remain usable at their boundaries; implicit paragraphs retain their correct base
 direction; a completed optional installation recovers the same narrator on the next
 explicit Play; direct playback respects its allocation limit; and automatic refill
-uses the rate that will actually play. Keyboard recovery is corrected only if the
-reported native gesture is reproduced. Maintainer tools preserve recoverable raw
+uses the rate that will actually play. The three reproduced native gestures
+recover Play after unavailable placement. Maintainer tools preserve recoverable raw
 inputs, contain their children before restoring data, and bind release/benchmark
 claims to the work and bytes actually observed.
 
@@ -146,7 +146,7 @@ boundary or flow change. Completed M005 does not certify TTS or synchronization.
 
 ## Milestones
 
-### M0 — Freeze the execution baseline and gate selection — Not started
+### M0 — Freeze the execution baseline and gate selection — Complete
 
 After separate execution authorization, recheck branch/HEAD/index and all task
 inputs. Record any drift from this plan. Capture the exact affected source, test,
@@ -157,7 +157,7 @@ Keep one implementation writer; an independent `change_reviewer` stays read-only
 No full-suite baseline is required just to start: select original-trigger REDs and
 the adjacent controls named below. Reserve real native/model runners serially.
 
-### M1 — Reproduce and correct six bounded units — Not started
+### M1 — Reproduce and correct six bounded units — Complete
 
 Run each new discriminating assertion on its unchanged production owner before
 editing that owner. Combine related REDs in one runner invocation where practical.
@@ -183,7 +183,7 @@ all relevant writes stop. U6's pre-edit host reproduction can be prepared earlie
 do not rebuild once per keyboard variant. After each unit record the actual owner,
 discriminating test, adjacent protection and evidence-backed escape reason (or unknown).
 
-### M2 — Validate the final dependency groups once — Not started
+### M2 — Validate the final dependency groups once — Complete
 
 Execute the selected gates below on frozen inputs. Reuse a just-completed GREEN as
 the final gate when its entire consumed input set still matches and it covers the
@@ -195,21 +195,15 @@ quality corpus, reader performance campaign or complete installer lifecycle matr
 is selected for these narrow corrections. Expand only for a demonstrated changed
 boundary or unresolved failure, and record that reason before execution.
 
-### M3 — Independent acceptance and findings closure — Not started
+### M3 — Independent acceptance and findings closure — Complete
 
-Prepare final documentation, finding assessments and the intended final plan
-location/indexes before one integrated `change_reviewer` review of the exact patch.
-Supply the closed path manifest, immutable RED/GREEN evidence, evidence-reuse
-decisions, host commands/results and limitations. Pause writes during review.
-Address actionable findings, rerun only invalidated gates, and obtain a new verdict
-for changed identities. A plan review is not implementation approval.
-
-Update every included VF ID with its real trigger, test, current snapshot, review
-and scoped disposition. Preserve VF-0071 and any inconclusive U6 observation.
-Move this plan to completed only when the declared implementation and acceptance
-scope is satisfied; otherwise report precisely what remains. An explicit bounded
-VF-0070 rejection does not certify a positive CPU fallback route. No Git delivery
-is implied by completing these milestones.
+The immutable implementation [R01](../evidence/four-pass-findings-corrections/review-r01.md)
+identified five evidence gaps. The
+[execution ledger](../evidence/four-pass-findings-corrections/execution-ledger.md)
+records their resolution. Independent
+[R02](../evidence/four-pass-findings-corrections/review-r02.md)
+approved the exact runtime, test and evidence candidate. The findings registry
+records the bounded dispositions. This plan was archived after that approval.
 
 ## Testing and benchmark strategy
 
@@ -391,8 +385,15 @@ frozen authorities, alter admission thresholds, or suppress failures to close th
   requested three bounded documentary corrections: select one existing native
   profile route, verify/reuse unchanged Piper core inputs, and align the registry
   summary. This candidate includes those changes; the immutable R01 is retained.
-- M0-M3 and U1-U6: **Not started**. No product code, regression tests, installer,
-  browser, model or benchmark execution belongs to this planning task.
+- Execution began from the clean planning commit with an empty index.
+  The [execution ledger](../evidence/four-pass-findings-corrections/execution-ledger.md)
+  records the reproductions and checks performed on the execution branch.
+  Independent R02 accepted the corrected candidate and its scoped evidence.
+- The native host exercised Shift+Space, Ctrl+Home and Ctrl+End with
+  actual trusted movement and explicit Play recovery to the saved
+  visual position. Chromium checked the first prepared range for all
+  three. The unsigned local package and bounded ordinary
+  install, startup, teardown and restoration ran with the existing core.
 
 ## Discoveries and decisions
 
@@ -411,12 +412,23 @@ frozen authorities, alter admission thresholds, or suppress failures to close th
 
 ## Final validation results
 
-**Implementation: not executed.** No original-trigger RED/GREEN, new behavioral
-PASS, runtime acceptance or finding closure is claimed by this plan. Historical
-counts above describe their original receipts only.
+| Unit | Accepted scope and validation |
+| --- | --- |
+| U1 | VF-0065, VF-0069, VF-0070 and VF-0073. G-PY passed 130 tests, covering retry and failed deletion, replay overflow, fail-closed CPU rejection and privacy failure propagation. |
+| U2 | VF-0059, VF-0067, VF-0068 and VF-0072. G-NODE passed 93 ordinary and release cases with 59 unchanged native fixture cases. The unsigned package check and actual installed startup, IPC containment, uninstall and profile restoration passed. |
+| U3 | VF-0060, VF-0061 and VF-0064. G-EPUB passed 574 tests over current package exports. Chromium verified visual RTL save and reopen. |
+| U4 | VF-0058. The mounted App recovery tests checked both response orders, no autoplay and explicit next Play, within the 626-pass desktop union. |
+| U5 | VF-0062 and VF-0066. The desktop union checked bounded direct PCM allocation and both refill variants. Chromium observed real Worklet exhaustion, no early restart and resumed playback at sufficient lead. |
+| U6 | VF-0063. WebView2 observed actual trusted movement, recovered Play and verified native audible recovery for Shift+Space, Ctrl+Home and Ctrl+End. Chromium checked the first prepared range after each chord. |
 
-The reserved planning review/closeout above own the exact document identities,
-document checks and planning verdict. At implementation closeout, replace this
-pending statement with links per unit to the actual owner/test, original failure,
-executed or independently justified reused gates, remaining limits and the authentic
-implementation review ID. Keep inconclusive/excluded/deferred cases explicit.
+The [execution ledger](../evidence/four-pass-findings-corrections/execution-ledger.md)
+records original triggers, corrected continuations, exact commands, gate identities
+and scoped reuse. The [implementation review](../evidence/four-pass-findings-corrections/review-r02.md)
+accepted the implementation. The
+[implementation closeout](../evidence/four-pass-findings-corrections/implementation-closeout.md)
+records the archival checks.
+
+VF-0071 remains excluded and unconfirmed in the ordinary writer. VF-0070 retains
+rejection of admission lacking causal proof. Positive successor admission, signed
+and Defender-tested artifacts, full optional acquisition, new hardware support,
+process RSS improvements and DSP quality remain outside this acceptance.

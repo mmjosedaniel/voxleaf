@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-- [Four-pass findings corrections](four-pass-findings-corrections.md): planning only for VF-0058-VF-0073, with six bounded units, conditional native-keyboard validation, explicit exclusions and minimum sufficient test/evidence-reuse gates. Implementation has not started.
+There are no active implementation plans listed.
 
 Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
 

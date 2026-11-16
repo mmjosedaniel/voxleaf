@@ -349,10 +349,14 @@ def _derive_summary(
         "offline": raw_preflight.get("offlineEnvironmentVerified") is True,
         "artifacts": raw_preflight.get("artifactHashesVerified") is True,
         "license": True,
-        "privacy": True,
+        "privacy": version != "v14" or "privacy" not in raw_failures,
         "ordering": True,
         "boundedRetention": (
-            _integer(raw_playback.get("peakQueuedUnits"), "playback") <= 2
+            (
+                version != "v14"
+                or not v14_authority.PLAYBACK_FAILURE_CODES.intersection(raw_failures)
+            )
+            and _integer(raw_playback.get("peakQueuedUnits"), "playback") <= 2
             and _number(raw_playback.get("peakBufferSeconds"), "playback") <= 40
             and _integer(raw_playback.get("peakActiveBatches"), "playback") <= 1
         ),

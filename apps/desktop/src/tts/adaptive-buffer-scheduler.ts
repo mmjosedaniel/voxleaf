@@ -325,6 +325,7 @@ export class AdaptiveBufferScheduler {
   #resources = emptyResources();
   #rangeComplete = false;
   #initialPlaybackCommitted = false;
+  #automaticRefillPending = false;
   #playbackRateState = initialNarrationPlaybackRateStateV3();
   #activePlaybackSequence: number | undefined;
 
@@ -676,6 +677,7 @@ export class AdaptiveBufferScheduler {
     );
     this.#activePlaybackSequence = current.sequence;
     this.#initialPlaybackCommitted ||= this.#playbackState === "playing";
+    this.#automaticRefillPending = false;
     return this.#playbackRateState.activeRatePercent!;
   }
 
@@ -735,6 +737,7 @@ export class AdaptiveBufferScheduler {
       }
     }
     this.#initialPlaybackCommitted ||= consumed > 0;
+    if (consumed > 0) this.#automaticRefillPending = false;
     this.#refreshPlaybackState();
     return consumed;
   }
@@ -756,6 +759,7 @@ export class AdaptiveBufferScheduler {
     }
     this.#playbackState = "playing";
     this.#initialPlaybackCommitted = true;
+    this.#automaticRefillPending = false;
     return true;
   }
 
@@ -767,6 +771,7 @@ export class AdaptiveBufferScheduler {
       this.#initialPlaybackCommitted && this.#playableSampleFrames() > 0
         ? "playing"
         : "preparing";
+    if (this.#playbackState === "playing") this.#automaticRefillPending = false;
     this.#refreshPlaybackState();
   }
 
@@ -1061,10 +1066,15 @@ export class AdaptiveBufferScheduler {
         this.#playbackState = "failed";
       } else if (this.#initialPlaybackCommitted) {
         this.#playbackState = "buffering";
+        this.#automaticRefillPending = true;
       }
       return;
     }
-    if (this.#playbackState === "playing" && this.#initialPlaybackCommitted) {
+    if (
+      this.#playbackState === "playing" &&
+      this.#initialPlaybackCommitted &&
+      !this.#automaticRefillPending
+    ) {
       return;
     }
     // A complete nonempty tail is playable even when its truthful displayed
@@ -1090,6 +1100,8 @@ export class AdaptiveBufferScheduler {
     );
     if (effectiveListeningDurationMs >= target.targetBufferMs) {
       this.#playbackState = "playing";
+    } else if (this.#automaticRefillPending) {
+      this.#playbackState = "buffering";
     } else if (!this.#initialPlaybackCommitted) {
       this.#playbackState = "preparing";
     }

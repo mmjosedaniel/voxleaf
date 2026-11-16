@@ -146,6 +146,41 @@ describe("public privacy-safe EPUB opening", () => {
     },
   );
 
+  it.each(["xhtml", "ncx"] as const)(
+    "VF-0060 applies the %s limit to retained label points",
+    async (format) => {
+      const exactLabel = "😀".repeat(1024);
+      for (const [label, valid] of [
+        [exactLabel + "\u00a0&#8239;", true],
+        [exactLabel + "\u00a0x", false],
+        [exactLabel + "x", false],
+      ] as const) {
+        const bytes =
+          format === "xhtml"
+            ? await buildMinimalEpubFixture({
+                navigationDocument: minimalNavigationDocument().replace(
+                  "Chapter One</a>",
+                  `${label}</a>`,
+                ),
+              })
+            : await buildMinimalEpub2Fixture({
+                ncxDocument: minimalNcxDocument().replace(
+                  "Chapter One</text>",
+                  `${label}</text>`,
+                ),
+              });
+        const result = await openEpubPublication(bytes);
+        try {
+          expect(result.ok).toBe(valid);
+          if (result.ok)
+            expect(result.publication.navigation[0]?.label).toBe(exactLabel);
+        } finally {
+          if (result.ok) await result.publication.close();
+        }
+      }
+    },
+  );
+
   it("VF-0047 uses title fallback when the visible label is only Unicode whitespace", async () => {
     const result = await openEpubPublication(
       await buildMinimalEpubFixture({

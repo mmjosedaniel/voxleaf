@@ -184,6 +184,7 @@ Use the component map and support matrix for current behavior. The catalogue bel
 
 ## Plans
 
+- [Four-pass findings corrections](plans/completed/four-pass-findings-corrections.md) records the accepted reader, EPUB, playback, release and benchmark fixes and their validation boundaries.
 - [Agent guidance simplification](plans/completed/agent-guidance-simplification.md) records the reduced procedures, corrected guidance and final acceptance authorities.
 - [Documentation consolidation and review closeout](plans/completed/documentation-consolidation-and-review-closeout.md) covers current-version guidance, delivery summaries and review closeout.
 - The [roadmap](plans/roadmap.md) tracks milestones, dependencies, decision gates and major risks. The [active plans](plans/active/) record work awaiting implementation or acceptance.

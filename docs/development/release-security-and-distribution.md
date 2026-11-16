@@ -433,6 +433,14 @@ replacement, removal, and verification behavior and the
 and [code-signing documentation](https://v2.tauri.app/distribute/sign/windows/)
 for the upstream platform mechanisms.
 
+The Windows build holds the release authority inputs stable while packaging.
+After the build it binds signature, optional Defender and checksum observations
+to the installer and the loose build executable. Keep the ignored
+`*.build-authority.json` alongside the original installer for a later
+`-AttachOrdinaryEvidence` run. Attachment requires that local build record,
+the exact artifact pair and matching authority inputs. For an older installer
+without the record, run a fresh build and gather receipts for the new artifact.
+
 ## Optional Chatterbox acquisition boundary
 
 Chatterbox is part of the M011 portfolio direction only as a separately gated

@@ -39,6 +39,7 @@ SUMMARY_SCHEMA_PATH: Final = Path(
     "benchmarks/tts/schemas/short-segment-batch-summary-v14.schema.json"
 )
 GPU_RESULT_PATH: Final = Path("benchmarks/tts/short-segment-batch-result-v14.json")
+PLAYBACK_FAILURE_CODES: Final = frozenset({"playback-invalid", "playback-incomplete"})
 
 TRIAL_ORDER: Final = (
     "before-dispatch",
@@ -266,6 +267,18 @@ def validate_v14_result(
     _verify_summary_conclusions(result)
     audits = _mapping(result["audits"], "audits")
     conclusions = _mapping(result["conclusions"], "conclusions")
+    for failed, audit in (
+        (bool(PLAYBACK_FAILURE_CODES.intersection(failures)), "boundedRetention"),
+        ("privacy" in failures, "privacy"),
+    ):
+        if failed and (
+            audits[audit] is not False
+            or any(
+                _mapping(conclusions[name], "conclusion")["outcome"] != "fail"
+                for name in ("standardViability", "schedulingSustainability")
+            )
+        ):
+            raise V14AuthorityError(f"{audit}-conclusion")
     if (result["cleanupFailureCodes"] or "cleanup-failed" in failures) and (
         audits["cleanup"] is not False
         or any(
@@ -315,7 +328,9 @@ def load_v14_cpu_admission(root: Path) -> V14CpuAdmission:
         )
     ):
         raise V14AuthorityError("cpu-admission-result")
-    return V14CpuAdmission(stop, committed)
+    # The v14 result records aggregate counts and a stop reason. It cannot
+    # attribute that stop to the first attempt of the required batch-two call.
+    raise V14AuthorityError("cpu-admission-result")
 
 
 def load_v14_cpu_admission_from_base(root: Path) -> V14CpuAdmission:
