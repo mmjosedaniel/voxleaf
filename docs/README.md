@@ -21,6 +21,10 @@ Two full v6 live transfers failed. Complete v7 live HTTP delivery remains
 unverified. [Support matrix](architecture/tts-support-matrix-v2.md#profile-identity-and-executable-versions)
 · [V7 refresh evidence](plans/completed/chatterbox-msgpack-security-refresh.md)
 
+The installer in this checkout has a separate passing local lifecycle receipt.
+Its full ordinary Chatterbox acquisition is unverified, and trusted public
+publication remains pending. [Current Windows artifact assessment](development/release-security-and-distribution.md#current-assessment)
+
 ## Task reading routes
 
 Start with the current status, relevant product requirements and AGENTS constraints.
@@ -48,6 +52,8 @@ not change model selection, review independence, evidence reuse or CI obligation
 | Select checks for an implementation change | [Testing strategy](development/testing.md) | [Evidence retention](development/evidence-retention.md) |
 | Understand runtime/maintainer boundaries and historical v2/v3/v4 tools | [TTS service organization](development/tts-service-organization.md) | [Adapter-layout campaign](plans/completed/tts-adapter-layout.md) |
 | Prepare new official batch/dual-worker evidence | [Prospective benchmark safety v1](development/benchmark-safety-v1.md) | [ADR-0076](architecture/decisions/ADR-0076-prospective-benchmark-safety-evidence.md) |
+| Operate a disposable quality session | [Benchmark operator guide](../benchmarks/tts/README.md#disposable-blinded-quality-session) | [ADR-0077](architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md) |
+| Check a Windows build and its validation status | [Package build and lifecycle](development/setup.md#build-the-m011-windows-package) | [Current Windows artifact assessment](development/release-security-and-distribution.md#current-assessment) |
 | Understand product support and local distribution | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
 | Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
 
@@ -73,12 +79,11 @@ closeout. Statements such as "not committed" or "CI pending" in those records
 are historical; maintained indexes point to later results without rewriting
 the original evidence. Recorded test counts are not fresh test runs on HEAD.
 
-The [five-search correction plan](plans/completed/five-search-findings-minimal-corrections.md)
-links its final per-case evidence and independent acceptance, including the
-conditional inconclusive/excluded cases and the successor benchmark contract.
-The [reader Stop and quality follow-up](plans/completed/reader-stop-quality-follow-up.md)
-records the later authorized VF-0074 reproduction/correction and VF-0082 overlap
-rejection, preserving the earlier evidence and scope decisions.
+The five-search plan delivered 17 corrections and the successor benchmark
+contract. The authorized follow-up corrected VF-0074's saved reading position
+after Stop and added VF-0082 overlap rejection. Both plans have independently
+approved closeouts. [Delivery and commit links](plans/completed/README.md#completed-plans)
+· [Findings registry](development/findings/registry.md)
 
 ## Product
 
@@ -184,6 +189,7 @@ Use the component map and support matrix for current behavior. The catalogue bel
 - [Troubleshooting](development/troubleshooting.md)
 - [Dependencies](development/dependencies.md)
 - [Tts service organization](development/tts-service-organization.md)
+- [TTS benchmark operator guide](../benchmarks/tts/README.md) and [prospective evidence workflow](development/benchmark-safety-v1.md)
 - [Release security and distribution](development/release-security-and-distribution.md)
 - [Windows release](user/windows-release.md)
 - [Git workflow](development/git-workflow.md)

@@ -8,7 +8,8 @@ each plan's progress and validation results current.
 
 There are no active implementation plans.
 
-Acceptance for the [agent guidance final candidate](../completed/agent-guidance-simplification.md) is established by its linked review and closeout records.
+The retained deep-chat relocation notice supports links from historical
+receipts. Its canonical record is archived. [Completed deep chat audit](../completed/deep-chat-audit-minimal-corrections.md)
 
 Completed work is listed in the [completed-plan index](../completed/README.md).
 

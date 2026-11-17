@@ -577,10 +577,10 @@ simultaneous ceiling, not a startup target.
 
 ## Milestone closeout and remaining external gate
 
-The implementation milestones below are complete. The only remaining gate in
-this MVP release sequence is external authorization for a trusted signed public
-Windows installer; it does not block the accepted unsigned local/portfolio
-package.
+The implementation milestones below are complete. M011 records local/portfolio
+acceptance for its validated artifact. Later installers have their own lifecycle
+and compatible-host evidence. Trusted public Windows publication still requires
+external signing authorization. [Current Windows artifact assessment](../development/release-security-and-distribution.md#current-assessment)
 
 1. **Milestone 9 — Complete:** all seven M009 milestones are implemented,
    exact-host validated, and covered by passing required Ubuntu and Windows

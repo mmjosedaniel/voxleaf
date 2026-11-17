@@ -1200,6 +1200,8 @@ restoring the absent destination.
 
 - 2026-11-16 authorized follow-up — The new mounted late-image case establishes the previously missing tracker → App → persistence delivery: pre-Stop offset 607 becomes 627 and that replacement survives same-byte reopen. The owner now rejects unmarked passive writes while heard protection remains active, and validated measured movement releases protection even when its first locator duplicates the checkpoint. Current desktop/browser controls pass; final acceptance is governed by the [follow-up ledger](../../plans/evidence/reader-stop-quality-follow-up/execution-ledger.md) and linked independent report. Earlier inconclusive assessments remain historical. Prior tests exercised unchanged geometry and mislabeled an unmarked save as manual; the precise human omission is unknown.
 
+- 2026-11-16 closeout — `fixed`, latest check `validated` on `cafb59e`. R02 approved the mounted Stop, automatic layout and same-byte reopen regression together with the deliberate movement controls. [Approved closeout](../../plans/evidence/reader-stop-quality-follow-up/closeout-r02.md)
+
 ## VF-0075
 
 **A nested explicit automatic direction is lost in the rendered reader.** In a chapter with `dir="auto"` on the XHTML root and an explicit `dir="auto"` on a later paragraph, an initial LTR paragraph can set the chapter's direction. The later RTL paragraph inherits that direction in the rendered DOM because its own attribute was dropped. Its text alignment and the reading-line caret's sampling side can differ from the source.
@@ -1324,6 +1326,8 @@ restoring the absent destination.
 - 2026-11-16 execution — NOT-APPLICABLE under the supported sequential correction contract. No concurrent publication feature or locking change was introduced. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
 - 2026-11-16 authorized follow-up — The user approved defensive overlap rejection. Real child processes reproduce competing successes, stale aggregate publication and removal of an active session. Per-session nonblocking OS ownership now covers correction, submission, aggregation, cleanup and CPU-fallback derivation; rejected admission preserves the winner, and owner termination permits retry. The sequential contract, one immutable correction, original invalidation/retry protection and historical result files remain intact. [ADR-0077](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md) records the retained empty sibling. Current Python checks pass; exact-patch acceptance belongs to the [follow-up ledger](../../plans/evidence/reader-stop-quality-follow-up/execution-ledger.md) and independent report. The prior exclusion was an explicit scope decision, not a demonstrated earlier regression escape.
+
+- 2026-11-16 closeout — `fixed` for the authorized overlap rejection, latest check `validated` on `cafb59e`. R02 approved the real-process controls, recovery after owner termination and the alternative evidence for unavailable native symlink setup. [Approved closeout](../../plans/evidence/reader-stop-quality-follow-up/closeout-r02.md)
 
 ## VF-0083
 

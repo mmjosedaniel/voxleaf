@@ -4,8 +4,8 @@ Current optional authority is V7 under
 [ADR-0064](../architecture/decisions/ADR-0064-admit-msgpack-chatterbox-v7.md).
 The [V7 plan](../plans/completed/chatterbox-msgpack-security-refresh.md) records the
 2026-10-27 msgpack correction and exact publication/integration evidence.
-The production audit passes locally on that graph; four URL/CUDA blind spots
-remain. Historical full-live-download failures are not resolved by this update.
+That checkpoint's production audit passed locally with four URL/CUDA blind
+spots. The recorded full v6 download failures remain unresolved.
 
 ## Purpose
 
@@ -21,7 +21,7 @@ Tests must verify that source strings/URLs/paths never enter the report, that
 cleanup preserves its cause, and that export does not run automatically.
 Bounded installed acquisition probes are not full B06/B07 acceptance evidence.
 
-### Current Chatterbox security successor
+### Historical Chatterbox v5 and v6 refreshes
 
 Historical audit checkpoint (2026-10-23): PR #272's fresh production audit failed
 for `filelock` CVE-2026-112940 and `setuptools` GHSA-xmj3-9gf7-h52w in the
@@ -143,12 +143,20 @@ artifact without changing the package bytes.
 
 ## Current assessment
 
-The current repository and exact unsigned package are suitable for controlled
-local validation with trusted runtimes and synthetic, self-authored, or public-
-domain EPUBs. Exact-artifact lifecycle and ordinary compatible-host Chatterbox
-receipts now support the renewed `piper-core-portfolio-ready`, optional-package,
-and guarded-Download decisions. It is not a trusted general-public Windows
-download because it is unsigned.
+The unsigned installer recorded in this checkout passes the package check
+and the local install, first-start, repair, and uninstall lifecycle. The
+lifecycle receipt matches the installer SHA-256 and covers all six uninstall
+scenarios, cleanup and restoration of preexisting data. The generated record
+shows `lifecycle.status: not-run` because the receipt remains separate. The
+ordinary Chatterbox journey field is also `not-run` for this installer.
+[Generated package record](../../apps/desktop/src-tauri/release/windows-package-evidence-v3.json)
+· [Validated lifecycle and artifact identities](../plans/evidence/reader-stop-quality-follow-up/execution-ledger.md#package-and-acceptance)
+
+M011's local portfolio decision and compatible-host journey apply to the
+historical artifact described below. Current v7 integration uses the published
+host gate and has representative installed runtime evidence. Full v7 live
+delivery remains unverified. Public Windows publication requires trusted
+signing and the applicable exact-artifact checks. [Current runtime support](../architecture/tts-support-matrix-v2.md)
 
 ### Renewed Milestone 7 release decision (2026-08-04)
 
@@ -401,25 +409,17 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The rebuilt unsigned local installer identity is recorded in generated package
-evidence. The artifact passes the static release-package gate and records local
-install/first-start/repair/uninstall lifecycle evidence outside the automation
-sandbox. An exact predecessor passed the installed bilingual portfolio matrix
-and Microsoft Defender; Defender was not run and SmartScreen was not observed
-against the current hash, so no antivirus or reputation claim is made. Under
-authority v2, the current artifact is accepted for the unsigned local/portfolio MVP; it
-is not a trusted public-release artifact. The optional Chatterbox manifest
-is downloadable in the ordinary build only after the compatible-host live gate
-passes twice.
+The generated record identifies the current installer and application binary.
+An earlier installer passed the bilingual portfolio matrix and Microsoft
+Defender. For the current installer, the local lifecycle receipt is separate,
+Defender is `not-run` and SmartScreen is `not-observed`. The ordinary build
+offers Chatterbox Download once the renderer and native pre-network checks both
+pass. [Current artifact assessment](#current-assessment)
 
-An independent Windows-host attempt exposed a visible blank console for the
-private Piper child. The rebuilt candidate now starts every supervised child
-with Windows `CREATE_NO_WINDOW` while retaining the same pipe protocol and Job
-Object termination boundary. Local installed narration and lifecycle validation
-pass for the corrected artifact; Defender was not run against the current hash.
-The visible-console correction is included in the current package evidence; it
-is not a global Piper support
-blocker.
+An earlier Windows-host attempt exposed a visible blank console for the private
+Piper child. That correction validated installed narration and lifecycle for its
+installer. The supervised child launcher uses Windows `CREATE_NO_WINDOW` with
+the existing pipe protocol and Job Object termination boundary.
 
 The signing command accepts only an externally protected certificate
 thumbprint and HTTPS timestamp URL. It emits the release configuration outside
@@ -805,9 +805,9 @@ isolation; Milestone 7 renewed the exact-artifact lifecycle and journey:
 
 A locally built package or maintainer-operated demo may be used in a portfolio
 after the mandatory functional, privacy, dependency, licence, integrity, and
-representative compatible-host checks pass. The current candidate meets that
-boundary. Because it is unsigned, it must be described as a local or portfolio
-build and must not be offered as a trusted general-public installer.
+representative compatible-host checks pass. M011's renewed decision documents
+the accepted portfolio artifact. Describe unsigned builds as local or portfolio
+builds. Check the current artifact assessment for the evidence of a later build.
 A video, screenshots, and sample flow must use synthetic, self-authored, or
 public-domain content rather than copyrighted private books.
 

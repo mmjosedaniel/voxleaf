@@ -16,9 +16,17 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
-- [Reader Stop and evaluator correction follow-up](reader-stop-quality-follow-up.md) records the newly demonstrated VF-0074 late-image persistence failure and authorized VF-0082 overlap rejection. Current component/package evidence and the independent verdict are linked from the plan.
+- Commit `cafb59e` closes VF-0074 with a mounted Stop, late-image and reopen
+  regression, and VF-0082 with overlap rejection for sequential quality
+  operations. R02 approved both and accepted the alternative evidence for the
+  two unavailable native Windows symlink cases. [Follow-up ExecPlan](reader-stop-quality-follow-up.md)
+  · [R02 approval and closeout](../evidence/reader-stop-quality-follow-up/closeout-r02.md)
 
-- [Five-search findings: minimal corrections](five-search-findings-minimal-corrections.md) records 17 bounded corrections and the authorized successor benchmark evidence; final acceptance is owned by the linked R04 review/closeout. VF-0074 was inconclusive and VF-0082 excluded at that closeout; their subsequent authorized work is recorded in the follow-up above.
+- Commit `c407cfa` delivers 17 corrections and the successor benchmark evidence
+  under R04 approval. The original closeout retained VF-0074 as inconclusive and
+  VF-0082 as excluded. Their resolution is recorded in the follow-up above.
+  [Five-search ExecPlan](five-search-findings-minimal-corrections.md)
+  · [R04 approval and closeout](../evidence/five-search-findings/execution-closeout-r04.md)
 
 - [Four-pass findings corrections](four-pass-findings-corrections.md) records six approved correction units, focused Windows validation and the scoped benchmark and release limits.
 
