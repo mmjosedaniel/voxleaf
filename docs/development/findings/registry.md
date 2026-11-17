@@ -1204,6 +1204,8 @@ restoring the absent destination.
 
 - 2026-11-16 PR #325 follow-up — CI exposed six older coordinator tests that labeled unmarked passive input as manual. The test callers now assert automatic rejection before supplying measured intent, preserving original storage/restore/next-Play assertions. Production VF-0074 remains unchanged. The previous focused selection omitted this coordinator file; review omission rationale is unknown. [CI evidence and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-follow-up.md).
 
+- 2026-11-16 PR #325 browser follow-up — Full Windows CI exposed BNC-01's browser-side use of automatic `scrollIntoView()` as manual movement. Replacing that test input with a real wheel gesture preserves all saved-position and explicit-Play assertions. Local RED/GREEN and both mounted VF-0074 controls cover the correction; the production guard remains unchanged. [Browser follow-up and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-browser-follow-up.md).
+
 ## VF-0075
 
 **A nested explicit automatic direction is lost in the rendered reader.** In a chapter with `dir="auto"` on the XHTML root and an explicit `dir="auto"` on a later paragraph, an initial LTR paragraph can set the chapter's direction. The later RTL paragraph inherits that direction in the rendered DOM because its own attribute was dropped. Its text alignment and the reading-line caret's sampling side can differ from the source.

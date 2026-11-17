@@ -22,6 +22,7 @@ Superseded proposals are listed separately and must not be scheduled for executi
   two unavailable native Windows symlink cases. [Follow-up ExecPlan](reader-stop-quality-follow-up.md)
   · [R02 approval and closeout](../evidence/reader-stop-quality-follow-up/closeout-r02.md)
   · [PR #325 test-call and fixture-path corrections](../evidence/reader-stop-quality-follow-up/ci-follow-up.md)
+  · [PR #325 browser manual-gesture correction](../evidence/reader-stop-quality-follow-up/ci-browser-follow-up.md)
 
 - Commit `c407cfa` delivers 17 corrections and the successor benchmark evidence
   under R04 approval. The original closeout retained VF-0074 as inconclusive and
