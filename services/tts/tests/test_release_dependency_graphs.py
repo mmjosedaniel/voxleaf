@@ -292,7 +292,7 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
 def test_release_component_inventory_is_complete_and_content_safe() -> None:
     inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
     components = inventory["components"]
-    assert len(components) == 418
+    assert len(components) == 421
     assert len({component["id"] for component in components}) == len(components)
     onnx = next(
         component for component in components if component["id"] == "pypi:onnxruntime@1.31.0"
@@ -323,8 +323,16 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
         component["id"]
         for component in components
         if component["ecosystem"] == "rust"
-        and component["name"] in {"zip", "typed-path", "zlib-rs"}
-    } == {"cargo:zip@9.0.4", "cargo:typed-path@0.12.3", "cargo:zlib-rs@0.6.7"}
+        and component["name"]
+        in {"zip", "typed-path", "zlib-rs", "constant_time_eq", "rustversion", "zeroize_derive"}
+    } == {
+        "cargo:zip@9.5.1",
+        "cargo:typed-path@0.13.0",
+        "cargo:zlib-rs@0.6.7",
+        "cargo:constant_time_eq@0.6.1",
+        "cargo:rustversion@1.0.23",
+        "cargo:zeroize_derive@1.5.0",
+    }
     assert {
         component["id"]
         for component in components

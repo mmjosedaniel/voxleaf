@@ -43,9 +43,6 @@ Then select the canonical architecture sections and ADRs for the affected owners
   [refactor workflow](development/agentic-refactoring.md). Preserve independent
   baseline/post-change validation for campaigns and all risk-triggered gates.
 
-All acceptance runs in local PowerShell outside the sandbox. Reading routes do
-not change model selection, review independence, evidence reuse or CI obligations.
-
 | Contributor task | Maintained entry point | Retained evidence or decision |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Set up the workspace and select current commands | [Development setup](development/setup.md) | [Dependency inventory](development/dependencies.md) |
@@ -56,6 +53,52 @@ not change model selection, review independence, evidence reuse or CI obligation
 | Check a Windows build and its validation status | [Package build and lifecycle](development/setup.md#build-the-m011-windows-package) | [Current Windows artifact assessment](development/release-security-and-distribution.md#current-assessment) |
 | Understand product support and local distribution | [MVP](product/mvp.md), [support matrix](architecture/tts-support-matrix-v2.md), [Windows release guide](user/windows-release.md) | [M011 closeout](plans/completed/M011-package-validate-and-release-mvp.md) and [ADR-0049](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md) |
 | Follow component ownership and milestone status | [Canonical system diagram](architecture/system-diagram.md), [roadmap](plans/roadmap.md) | [Completed-plan index](plans/completed/README.md) |
+
+### Contributor workflow
+
+Choose the primary model in the composer. Start with Sol Medium for straightforward
+edits and Sol High for bounded implementation or refactor direction. Choose Astra
+High when evidence conflicts or a failure crosses owners, such as the reader,
+native host and local TTS. [OpenAI's GPT-6.2 model guidance](https://learn.chatgpt.com/docs/whats-new/gpt-62-astra-sol#codex)
+
+The primary chat can use up to four helpers. Unnamed helpers default to Sol Medium.
+Named agents use the model and effort assigned to their role. All helpers inherit
+the parent session's sandbox and approvals. [Project defaults](../.codex/config.toml) ·
+[Named roles](development/agentic-refactoring.md#roles)
+
+```mermaid
+flowchart TD
+    accTitle: VoxLeaf contributor workflow
+    accDescr: A logic audit reports findings. A behavioral change receives independent review. A refactor unit has an independent baseline and post-change validation before an authorized Git handoff.
+    task{"What is the task?"}
+    task -->|Logic audit| audit["Coordinator traces the behavior"]
+    audit -.->|Optional on broad audits| helpers["Read-only helpers inspect separate paths"]
+    audit --> findings["Coordinator reconciles findings and coverage"]
+    helpers --> findings
+
+    task -->|Change requiring review| implement["Primary chat or assigned worker implements the change"]
+    implement --> checks["Implementer or test executor runs host checks"]
+    checks --> review["Astra High change reviewer inspects the patch and evidence"]
+    review -->|Corrections| implement
+    review -->|APPROVE| approved["Coordinator rechecks the exact patch"]
+
+    task -->|Refactor campaign| auditor["Sol High auditor assesses one unit"]
+    auditor -->|SKIP| skip["Director records the skip"]
+    auditor -->|Director accepts CHANGE| baseline["Astra High validator checks the pre-edit baseline"]
+    baseline -->|PASS and frozen work order| worker["One Sol High worker edits the unit"]
+    worker --> validate["Astra High validator checks the result"]
+    validate -->|Director orders a correction| worker
+    validate -->|PASS| accepted["Director verifies the report and accepts the unit"]
+    accepted -.->|If the user authorizes Git| git["Sol Medium Git steward executes the exact order"]
+```
+
+For an implementation handoff, give the triggering action, the expected outcome
+and, when timing matters, the next action that proves recovery. Run acceptance
+checks in local PowerShell outside the sandbox and follow the route's evidence
+reuse, batch and CI requirements. The director may execute the same authorized
+refactor Git order if the steward is unavailable. [Logic audits](../.agents/skills/audit-logic/SKILL.md) ·
+[Change review](development/agentic-change-review.md#when-review-is-required) ·
+[Refactor campaigns and Git fallback](development/agentic-refactoring.md#roles)
 
 ## Evaluate the portfolio
 
@@ -198,6 +241,7 @@ Use the component map and support matrix for current behavior. The catalogue bel
 
 ## Plans
 
+- The [Codex contributor model rollout](plans/completed/codex-model-rollout.md) records the fresh-session role checks. The [historical comparison](plans/evidence/codex-model-rollout/historical-comparison.md) reports how the models handled two VoxLeaf cases.
 - [Four-pass findings corrections](plans/completed/four-pass-findings-corrections.md) records the accepted reader, EPUB, playback, release and benchmark fixes and their validation boundaries.
 - [Agent guidance simplification](plans/completed/agent-guidance-simplification.md) records the reduced procedures, corrected guidance and final acceptance authorities.
 - [Documentation consolidation and review closeout](plans/completed/documentation-consolidation-and-review-closeout.md) covers current-version guidance, delivery summaries and review closeout.

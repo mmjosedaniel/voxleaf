@@ -1,6 +1,6 @@
 name = "clean_code_worker"
 description = "Implementation-only VoxLeaf refactor worker that applies one approved behavior-preserving work order without broadening scope."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """

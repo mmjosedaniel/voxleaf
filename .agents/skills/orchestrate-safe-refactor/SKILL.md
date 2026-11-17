@@ -17,13 +17,14 @@ time.
 
 Use the named custom roles so their model, effort, and instructions stay
 explicit. Before implementation, verify that the current session exposes the
-configured role definitions; editing TOML does not reload an existing session.
+configured role definitions after any TOML change.
 If definitions are stale, start a fresh task before running the campaign.
 If an audit, worker, or validation model is unavailable, report the exact blocker
 and obtain a model decision rather than silently substituting or self-validating.
 
-For each unit, provide its target ID, current source paths, invariants, and the
-applicable packet or order. Prefer a fresh context at batch start when supported,
+Name the unit, current source paths and observable behavior to preserve in
+its packet or order. Include the next user or caller action when event order
+matters. Prefer a fresh context at batch start when supported,
 then reuse the role within that bounded batch. Re-read current files between
 units; prior messages are context, not evidence of the current worktree.
 Supporting agents must not delegate. Keep the four-role concurrency limit.
@@ -130,15 +131,12 @@ affected work for replanning with existing edits preserved.
 
 Create one auditor, one worker, and one validator task per campaign batch and
 reuse those role tasks for every unit. Also create and reuse one Git-steward
-task when available. The auditor and worker use GPT-6.1 Sol high, the validator
-uses GPT-6 Astra high, and the steward uses GPT-6.1 Sol medium. The director
-may use Sol or Astra. Do not silently replace an unavailable role model.
-Custom-agent sandbox values are role defaults rather than
-hard isolation because the parent task's active permission mode can override or
-constrain them. Start the director with workspace-write, enforce role boundaries
-through instructions and diff review, and use narrow host approvals only for
-required validation or authorized Git operations. Git remains idle while
-source writing or validation is active.
+task when available. Use the [role configurations](../../../docs/development/agentic-refactoring.md#roles)
+for their model pins. Start the director with workspace-write. Children inherit
+the parent's sandbox and approval settings. Enforce role duties through their
+instructions and diff review, and request narrow host approvals for required
+validation or authorized Git operations. Keep Git idle during source writing
+and validation.
 
 ## Director decision rules
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditDate": "2026-10-27",
+  "auditDate": "2026-11-17",
   "tools": {
     "cargoAudit": "0.22.2",
     "pipAudit": "2.10.1",
@@ -62,6 +62,13 @@
       "package": "rustix",
       "version": "1.1.4",
       "kind": "unsound",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2026-0543",
+      "package": "chrono",
+      "version": "0.4.45",
+      "kind": "unmaintained",
       "windowsReachable": false
     }
   ],

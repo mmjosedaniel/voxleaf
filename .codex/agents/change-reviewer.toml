@@ -1,6 +1,6 @@
 name = "change_reviewer"
 description = "Read-only independent reviewer for VoxLeaf feature and bug-fix behavior, regression coverage, and product constraints. Not a refactor validator or implementation agent."
-model = "gpt-6-astra"
+model = "gpt-6.2-astra"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """

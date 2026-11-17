@@ -4,6 +4,8 @@
 
 VoxLeaf is a pre-alpha privacy-first desktop EPUB reader with local speech generation and bounded in-memory audio playback. Use the roadmap and canonical system diagram for status; never present planned or unvalidated work as implemented.
 
+Run every test and validation command in normal local PowerShell outside the managed sandbox. See [testing expectations](#testing-expectations) for gate selection and evidence.
+
 ## Product constraints
 
 - EPUB contents stay on the user's device; TTS inference runs locally. Generated audio is not persisted by default.
@@ -19,7 +21,7 @@ VoxLeaf is a pre-alpha privacy-first desktop EPUB reader with local speech gener
 
 Before changing code or architecture:
 
-1. Start at [docs/README.md](docs/README.md#task-reading-routes) and the relevant product requirements.
+1. Start with the [task reading routes](docs/README.md#task-reading-routes) and relevant product requirements. Use the [contributor workflow diagram](docs/README.md#contributor-workflow) to choose the primary model and find the roles for the task.
 2. Read relevant component, trust-boundary, flow and invariant sections of [system-diagram.md](docs/architecture/system-diagram.md) and [overview.md](docs/architecture/overview.md), plus applicable ADRs. Changes to components, contracts or data flows require the complete affected boundaries and callers. The compact diagram is orientation only, not acceptance authority.
 3. Inspect existing code, tests and scripts before choosing commands or patterns. Consult history for a specific decision or claim, not as default reading.
 4. Apply [ExecPlan rules](.agents/PLANS.md) for multi-component features, model integration, significant refactors or public contracts; small isolated documentation edits and obvious one-file fixes are exempt from planning, not from applicable checks or behavioral review.
@@ -43,7 +45,7 @@ Ordinary logic audits maintain affected registry entries and a concise indexed a
 
 Use [independent change review](docs/development/agentic-change-review.md) for runtime behavior, public contracts, cross-component changes and acceptance/coverage changes, including one-file fixes. Commands, support or privacy claims and acceptance documentation require substantive review; trivial nonbehavioral editorial changes are exempt.
 
-`change_reviewer` remains GPT-6 Astra high, read-only, with no tests or delegation. Supply local-host evidence and the exact patch; resolve actionable findings and obtain approval of the current identities. Missing evidence or reviewer blocks acceptance. Review does not authorize Git actions or replace checks. Refactor campaigns retain their validator instead of adding this role.
+Use the pinned `change_reviewer` to inspect the exact patch and supplied host evidence. Its role prohibits edits, tests and delegation. Resolve actionable findings and obtain approval of the current identities. Missing evidence or reviewer blocks acceptance. Review does not authorize Git actions or replace checks. Refactor campaigns use their validator.
 
 ## Systematic refactoring
 
@@ -51,13 +53,13 @@ Use [$orchestrate-safe-refactor](.agents/skills/orchestrate-safe-refactor/SKILL.
 
 Audit every target and accept `SKIP`; use cohesive units, normally one production file, tests and at most two coupled support files. The primary task directs one implementation writer and independent host baseline/post-change validation. Select unit/batch gates before edits; pending integration prevents final acceptance. Preserve frozen authorities, historical evidence and completed plans.
 
-Keep the existing Sol auditor/worker/Git steward and Astra validator roles, four supporting slots, role reuse and no silent model substitution. Only an unavailable Git steward may fall back to the director under the same Git Action Order. Start with workspace-write; child sandbox defaults are not hard isolation. Keep the index empty between units and paths initially clean; bind exact-path staging to immutable accepted report identities. No rejected patch may carry into another unit, no hash refresh renews approval, and only the validator may justify gate reuse. Git mutations require current user authorization and idle writers/validation.
+Use the [named role configurations](docs/development/agentic-refactoring.md#roles) and reuse up to four supporting slots. Only an unavailable Git steward may fall back to the director under the same Git Action Order. Never silently substitute a model. Start the parent with workspace-write. Children inherit its sandbox and approvals. Keep the index empty between units and paths initially clean, and bind exact-path staging to immutable accepted report identities. No rejected patch may carry into another unit, no hash refresh renews approval, and only the validator may justify gate reuse. Git mutations require current user authorization and idle writers/validation.
 
 ## Testing expectations
 
 Behavior changes require relevant tests. Use the smallest applicable level: unit for normalization/chunking/queues/buffers, integration for EPUB and desktop/TTS, end-to-end for reading/restoration/playback/navigation, and performance for latency, real-time factor, underruns, memory and cancellation. [Testing guidance](docs/development/testing.md) owns commands and boundaries.
 
-Use only existing configured commands. Run every test and validation command in normal local PowerShell outside the managed sandbox, including format/lint/types, schema/build, Python/Rust, browser/WebView2, GPU/model, firewall and exact-host checks. Sandbox results are exploratory: repeat the unchanged command locally before reporting acceptance PASS, failure or candidate rejection. This preserves the known filesystem, cache, process, network, hardware and teardown environment requirements.
+Use only existing configured commands. The host requirement covers format/lint/types, schema/build, Python/Rust, browser/WebView2, GPU/model, firewall and exact-host checks. Repeat an exploratory sandbox result with the unchanged command locally before reporting acceptance PASS, failure or candidate rejection.
 
 Satisfy all relevant available checks; report exact commands/outcomes and distinguish execution from explicitly reused immutable evidence. Unknown equivalence requires rerunning the affected check.
 

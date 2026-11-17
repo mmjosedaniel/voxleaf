@@ -32,25 +32,19 @@ Audit tracked targets without presuming a defect; `SKIP` is a successful outcome
 
 ## Roles
 
-| Role | Configuration | Default model | Writes source? | Responsibility |
-| --- | --- | --- | --- | --- |
-| Director/orchestrator | Primary Codex task | GPT-6.1 Sol or GPT-6 Astra, selected in the UI | No source; Git only when the steward is unavailable | Own requirements, approve work and Git orders, review diffs, request corrections, and accept results |
-| Auditor | `.codex/agents/clean-code-auditor.toml` | `gpt-6.1-sol`, high | Prohibited by role instructions | Inspect one cohesive unit and return evidence, invariants, risk, and a bounded proposal or skip |
-| Worker | `.codex/agents/clean-code-worker.toml` | `gpt-6.1-sol`, high | Yes | Apply exactly one approved work order and return a Change Packet |
-| Validator | `.codex/agents/refactor-validator.toml` | `gpt-6-astra`, high | Prohibited by role instructions | Establish the baseline, inspect the diff, and run focused plus risk-triggered gates outside the sandbox |
-| Git steward, when available | `.codex/agents/git-steward.toml` | `gpt-6.1-sol`, medium | Git state only | Inspect Git and execute exact branch, staging, commit, push, or PR orders after authorization |
+| Role | Model configuration | Responsibility |
+| --- | --- | --- |
+| Director | Primary chat, selected in the composer | Own requirements and orders, review diffs and accept results. The director may execute Git orders only when the steward is unavailable. |
+| Auditor | [clean_code_auditor](../../.codex/agents/clean-code-auditor.toml) | Inspect one unit and return evidence, invariants, risk and a bounded proposal or skip. |
+| Worker | [clean_code_worker](../../.codex/agents/clean-code-worker.toml) | Make the source edits under one approved work order and return a Change Packet. |
+| Validator | [refactor_validator](../../.codex/agents/refactor-validator.toml) | Establish the baseline, inspect the diff and execute focused and risk-triggered host checks. |
+| Git steward | [git_steward](../../.codex/agents/git-steward.toml) | Mutate Git only under exact authorized orders. |
 
-Start the primary director task with **workspace-write** permission. Custom
-agent `sandbox_mode` values express safe role defaults, but they are not a
-security boundary: the active parent permission mode can override or constrain
-child agents. Auditor and validator non-editing behavior is therefore also an
-explicit instruction and a director-reviewed invariant. Do not use full-access
-mode for an ordinary campaign; request narrowly scoped host execution only for
-the repository commands that require it.
-
-The validator requests workspace-write because builds and tests may produce
-bounded caches or artifacts. Its instructions still prohibit source, test,
-documentation, configuration, and Git edits.
+Start a campaign in **workspace-write** on the parent. Children inherit its
+sandbox and approvals. A role's `sandbox_mode` entry cannot override them.
+The auditor and validator follow explicit prohibitions on editing the evaluated
+files. The validator may produce bounded test outputs and immutable receipts.
+Request narrow host execution for the repository commands that need it.
 
 The project configuration permits up to four supporting threads. Spawn and
 reuse one auditor, one worker, and one validator. Also spawn and reuse one Git
@@ -62,17 +56,11 @@ the thread limit does not authorize parallel mutations.
 
 ## Model selection and delegation
 
-Choose `gpt-6.1-sol` or `gpt-6-astra` for the primary task in the composer.
-The project does not pin the primary model, so either choice remains available.
-Use Sol high for ordinary bounded work; consider Sol xhigh or Astra high when
-cross-package contracts, cancellation, synchronization, or ambiguous evidence
-need deeper review. These are starting settings, not measured quality claims.
-
-The auditor and worker use Sol high. Independent validation uses Astra high;
-its different model is not a substitute for tests or independent evidence.
-The Git steward uses Sol medium because its orders are explicit and bounded.
-Unnamed subagents default to Sol medium, but campaigns must select the named
-roles to retain their instructions and model settings.
+Use the [task reading routes](../README.md#task-reading-routes) to select the
+primary model. The [project configuration](../../.codex/config.toml) sets the
+default model and effort for unnamed helpers. Select the named campaign roles
+to load their individual pins and instructions. Feature and bug acceptance uses
+the separate [change reviewer](../../.codex/agents/change-reviewer.toml).
 
 Do not silently replace an unavailable auditor, worker, or validator. Record
 the unavailable role/model and obtain an explicit model decision. Only the
@@ -84,10 +72,10 @@ role within the bounded batch, but require it to re-read current files between
 units. Supporting agents may not delegate or inherit approval from a prior unit.
 The director controls the four supporting slots and the sole active writer.
 
-Compare correction count, elapsed time, and available usage data after real
-batches before raising effort. No speed, cost, or quality improvement is claimed
-solely from this model migration. Model IDs and per-role configuration follow
-the [official subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+Before tuning effort or concurrency, compare representative work at the same
+effort on identical inputs. Withhold historical verdicts during a replay.
+Record missed defects, false alarms, correction rounds, elapsed time and usage
+when available. [Codex subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents)
 
 ## Repository components
 

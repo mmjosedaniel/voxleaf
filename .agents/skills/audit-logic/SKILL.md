@@ -13,6 +13,11 @@ the records and original sources relevant to the paths being examined.
 - Identify full HEAD, branch and relevant dirty/untracked inputs. Plan the
   requested responsibility/journey coverage, including cross-owner event order.
   Recheck relevant drift before reporting; a path inventory is not full review.
+- For broad audits with independently inspectable journeys, delegate read-only
+  exploration to helpers as useful within the project's four supporting slots.
+  Give each helper a distinct scope and ask for source evidence and gaps. The
+  coordinator traces transitions across scopes, reconciles duplicate findings
+  and is the sole writer of authorized audit records.
 - Inspect code, callers, requirements and existing tests without executing tests
   when forbidden. Maintain audit documentation within `docs/development/findings/`
   under the project default; this grants no product edits, tests, plan creation or
