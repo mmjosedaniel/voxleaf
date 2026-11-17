@@ -979,6 +979,7 @@ def test_vf0082_rejects_existing_lock_link_without_creating_or_changing_its_targ
         if sys.platform == "win32" and getattr(error, "winerror", None) == 1314:
             pytest.skip("native file symlink setup requires a host privilege; modeled control runs")
         raise
+    original_link_target = marker.readlink()
     before = {
         path.relative_to(session): path.read_bytes()
         for path in session.rglob("*")
@@ -989,7 +990,7 @@ def test_vf0082_rejects_existing_lock_link_without_creating_or_changing_its_targ
         correct_meaning_changing_defect(
             "b" * 32, "evaluator-01", cases[0], reason_code=CORRECTION_REASON, raw_root=tmp_path
         )
-    assert marker.is_symlink() and marker.readlink() == target
+    assert marker.is_symlink() and marker.readlink() == original_link_target
     assert {
         path.relative_to(session): path.read_bytes()
         for path in session.rglob("*")

@@ -1333,6 +1333,8 @@ restoring the absent destination.
 
 - 2026-11-16 closeout — `fixed` for the authorized overlap rejection, latest check `validated` on `cafb59e`. R02 approved the real-process controls, recovery after owner termination and the alternative evidence for unavailable native symlink setup. [Approved closeout](../../plans/evidence/reader-stop-quality-follow-up/closeout-r02.md)
 
+- 2026-11-16 PR #325 native link follow-up — The privileged CI runner reached the two locally skipped link fixtures and exposed a literal path-spelling mismatch after successful lock rejection. The test now compares the link's post-operation destination with its actual pre-operation readback; target/session integrity and safe retry assertions remain. Local native execution is still privilege-blocked, and replacement Windows CI is required for native GREEN. [Evidence and independent review](../../plans/evidence/reader-stop-quality-follow-up/ci-symlink-follow-up.md).
+
 ## VF-0083
 
 **Quality generation retains both output pipes before enforcing the result limit.** The quality parent accumulates entire stdout and stderr with `capture_output=True`. The 16 KiB stdout check runs after accumulation and stderr has no length check. The adapter's bounded Python stream capture does not contain arbitrary worker process output.
