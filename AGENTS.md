@@ -21,7 +21,7 @@ Run every test and validation command in normal local PowerShell outside the man
 
 Before changing code or architecture:
 
-1. Start at [docs/README.md](docs/README.md#task-reading-routes) and the relevant product requirements.
+1. Start with the [task reading routes](docs/README.md#task-reading-routes) and relevant product requirements. Use the [contributor workflow diagram](docs/README.md#contributor-workflow) to choose the primary model and find the roles for the task.
 2. Read relevant component, trust-boundary, flow and invariant sections of [system-diagram.md](docs/architecture/system-diagram.md) and [overview.md](docs/architecture/overview.md), plus applicable ADRs. Changes to components, contracts or data flows require the complete affected boundaries and callers. The compact diagram is orientation only, not acceptance authority.
 3. Inspect existing code, tests and scripts before choosing commands or patterns. Consult history for a specific decision or claim, not as default reading.
 4. Apply [ExecPlan rules](.agents/PLANS.md) for multi-component features, model integration, significant refactors or public contracts; small isolated documentation edits and obvious one-file fixes are exempt from planning, not from applicable checks or behavioral review.

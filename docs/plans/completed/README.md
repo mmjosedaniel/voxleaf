@@ -16,7 +16,7 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
-- [Codex contributor model rollout](codex-model-rollout.md) records the role migration and fresh-session checks. The subsequent [historical source comparison](../evidence/codex-model-rollout/historical-comparison.md) covers two VoxLeaf cases.
+- [Codex contributor model rollout](codex-model-rollout.md) records the role migration and fresh-session checks. The [historical source comparison](../evidence/codex-model-rollout/historical-comparison.md) covers two VoxLeaf cases. The [contributor diagram review](../evidence/codex-model-rollout/workflow-diagram-review.md) checks the published workflow against the role settings and rules.
 
 - Commit `cafb59e` closes VF-0074 with a mounted Stop, late-image and reopen
   regression, and VF-0082 with overlap rejection for sequential quality
