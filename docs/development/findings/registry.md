@@ -1202,6 +1202,8 @@ restoring the absent destination.
 
 - 2026-11-16 closeout — `fixed`, latest check `validated` on `cafb59e`. R02 approved the mounted Stop, automatic layout and same-byte reopen regression together with the deliberate movement controls. [Approved closeout](../../plans/evidence/reader-stop-quality-follow-up/closeout-r02.md)
 
+- 2026-11-16 PR #325 follow-up — CI exposed six older coordinator tests that labeled unmarked passive input as manual. The test callers now assert automatic rejection before supplying measured intent, preserving original storage/restore/next-Play assertions. Production VF-0074 remains unchanged. The previous focused selection omitted this coordinator file; review omission rationale is unknown. [CI evidence and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-follow-up.md).
+
 ## VF-0075
 
 **A nested explicit automatic direction is lost in the rendered reader.** In a chapter with `dir="auto"` on the XHTML root and an explicit `dir="auto"` on a later paragraph, an initial LTR paragraph can set the chapter's direction. The later RTL paragraph inherits that direction in the rendered DOM because its own attribute was dropped. Its text alignment and the reading-line caret's sampling side can differ from the source.
@@ -1418,6 +1420,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` only as a probe-specific assertion gap. The receipt retains the actual diagnostic and the historical installed result recorded the intended create-file failure; neither generic export nor that past observation is disproved. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — Controlled probe execution reproduced crediting a response-stage error. The injection now requires the intended first-artifact create-file/io OS error; exact export and post-Cancel retention remain checked. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-16 PR #325 follow-up — The configured desktop Node phase exposed a test-only fixture-root assumption in VF-0088 controls. Test calls now resolve the root from their module, preserving probe assertions from both repository and package working directories. The production probe is unchanged; prior root-only execution missed the package-directory trigger. [CI evidence and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-follow-up.md).
 
 ## VF-0089
 

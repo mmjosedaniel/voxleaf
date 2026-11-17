@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import test, { after } from "node:test";
-import { URL } from "node:url";
+import { fileURLToPath, URL } from "node:url";
 import { createContext, runInContext } from "node:vm";
 
 import {
@@ -47,6 +47,7 @@ import {
   exerciseOptionalDownloadProbe,
 } from "./optional-download-probe.mjs";
 
+const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 after(async () => await rm(root, { recursive: true, force: true }));
 
@@ -260,7 +261,7 @@ test("FSF-VF-0088 download probe rejects a response error after its barrier", as
       },
       dataRoot,
       profileId,
-      repositoryRoot: path.resolve("."),
+      repositoryRoot,
       invoke: async () => (++reads === 1 ? null : diagnostic),
     }),
     /download-probe-error-not-captured/,
@@ -330,7 +331,7 @@ for (const variant of [
       },
       dataRoot,
       profileId,
-      repositoryRoot: path.resolve("."),
+      repositoryRoot,
       invoke: async () => {
         diagnosticReads++;
         if (

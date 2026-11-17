@@ -1830,7 +1830,8 @@ describe("product narration coordinator", () => {
         if (outcome === "stop") await coordinator.stop();
         coordinator.settleExternalNavigation(END_LOCATOR);
         await save.flush();
-        expect.soft(save.schedulePassive(END_LOCATOR)).toBe(true);
+        expect(save.schedulePassive(END_LOCATOR)).toBe(false);
+        expect(save.schedulePassive(END_LOCATOR, true)).toBe(true);
         expect(coordinator.observe()).toMatchObject({
           availability: "checking",
           navigation: { playIntent: "inactive", settling: false },
@@ -2846,7 +2847,8 @@ describe("product narration coordinator", () => {
       ...START_LOCATOR,
       textOffsetCodePoints: 1,
     });
-    expect(save.schedulePassive(manual)).toBe(true);
+    expect(save.schedulePassive(manual)).toBe(false);
+    expect(save.schedulePassive(manual, true)).toBe(true);
     await save.flush();
     for (let index = 0; index < 3; index += 1)
       for (const tick of [...intervals]) tick();
@@ -2966,7 +2968,8 @@ describe("product narration coordinator", () => {
         ...START_LOCATOR,
         textOffsetCodePoints: 1,
       });
-      expect(save.schedulePassive(manual)).toBe(true);
+      expect(save.schedulePassive(manual)).toBe(false);
+      expect(save.schedulePassive(manual, true)).toBe(true);
       await save.flush();
       for (let index = 0; index < 3; index += 1)
         for (const tick of [...intervals]) tick();
