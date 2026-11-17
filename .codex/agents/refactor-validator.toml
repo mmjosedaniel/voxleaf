@@ -1,6 +1,6 @@
 name = "refactor_validator"
 description = "Non-editing VoxLeaf validation agent that establishes baselines, reviews refactor diffs, and runs the smallest authoritative regression gates."
-model = "gpt-6-astra"
+model = "gpt-6.2-astra"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """

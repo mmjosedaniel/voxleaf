@@ -45,7 +45,7 @@ Before requesting review:
 ## Codex Git steward
 
 Systematic refactor campaigns prefer to delegate routine Git operations to
-`git_steward`, a narrowly scoped `gpt-6.1-sol` agent with `medium` reasoning.
+the [named Git steward](../../.codex/agents/git-steward.toml).
 The Sol or Astra director remains the authority that decides what may be
 staged, committed, pushed, or proposed for review. If the steward role cannot
 be spawned, record the unavailability and have the director execute the same

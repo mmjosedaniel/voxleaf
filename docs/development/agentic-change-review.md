@@ -32,11 +32,14 @@ Behavior-preserving refactor campaigns continue to use their independent
 
 ## Roles and permissions
 
-- The coordinator owns scope, requirements, acceptance, and any authorized Git
-  handoff. Prefer GPT-6.1 Sol for implementation, in the primary task or a bounded
-  general-purpose worker. Do not use `clean_code_worker` for behavior changes.
-- `change_reviewer` uses GPT-6 Astra high and read-only permissions. It reviews
-  code and supplied test evidence; it does not execute tests, edit, or delegate.
+- The coordinator owns scope, requirements, acceptance and any authorized Git
+  handoff. Follow the [task routing guidance](../README.md#task-reading-routes)
+  for primary implementation or assign a bounded general-purpose worker.
+  Reserve `clean_code_worker` for behavior-preserving refactors.
+- The [change reviewer](../../.codex/agents/change-reviewer.toml) inspects code
+  and supplied test evidence. Its instructions prohibit edits, tests and
+  delegation. The parent supplies the effective sandbox and approval settings.
+  Choose read-only on the parent when the review needs filesystem enforcement.
 - The implementer or separately assigned test executor runs relevant checks in
   normal local PowerShell outside the sandbox and supplies exact results. Review
   does not replace tests, native/hardware checks, or required human acceptance.
@@ -46,6 +49,12 @@ limit. Pause writing and Git mutations while the patch is being reviewed. Give
 the reviewer the request and source evidence, not a suggested verdict or the
 implementer's reasoning transcript. Prefer fresh context when supported. Reuse
 that reviewer for corrections, with fresh code and evidence for each revision.
+
+Give the implementer the triggering action, the observable outcome and, when
+event order matters, the next action that proves recovery. For example, if a
+successful optional install commits just before Cancel, the already selected
+narrator becomes available after Download settles and stays silent until the
+reader presses Play. Use that behavior to select the regression assertion.
 
 Confirm the named role is available in the current session. If it is missing or
 stale, start a fresh project task to load the definition. If the role/model still

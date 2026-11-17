@@ -1,6 +1,6 @@
 name = "git_steward"
 description = "Sol-based Git custodian for safe inspection, exact path-scoped staging, commits, branches, pushes, and PR handoff only after explicit authorization."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """

@@ -43,8 +43,14 @@ Then select the canonical architecture sections and ADRs for the affected owners
   [refactor workflow](development/agentic-refactoring.md). Preserve independent
   baseline/post-change validation for campaigns and all risk-triggered gates.
 
-All acceptance runs in local PowerShell outside the sandbox. Reading routes do
-not change model selection, review independence, evidence reuse or CI obligations.
+Choose the primary model in the composer. Start with Sol Medium for straightforward
+edits and Sol High for bounded implementation or refactor direction. Choose Astra
+High when evidence conflicts or a failure crosses owners, such as the reader,
+native host and local TTS. The [role configurations](development/agentic-refactoring.md#roles)
+set the models for delegated work. [OpenAI's Codex model guidance](https://learn.chatgpt.com/docs/whats-new/gpt-62-astra-sol#codex)
+
+All acceptance runs in local PowerShell outside the sandbox. The selected route
+retains independent review, evidence reuse rules and CI obligations.
 
 | Contributor task | Maintained entry point | Retained evidence or decision |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -198,6 +204,7 @@ Use the component map and support matrix for current behavior. The catalogue bel
 
 ## Plans
 
+- [Codex contributor model rollout](plans/completed/codex-model-rollout.md) records the fresh-session role checks and model comparison.
 - [Four-pass findings corrections](plans/completed/four-pass-findings-corrections.md) records the accepted reader, EPUB, playback, release and benchmark fixes and their validation boundaries.
 - [Agent guidance simplification](plans/completed/agent-guidance-simplification.md) records the reduced procedures, corrected guidance and final acceptance authorities.
 - [Documentation consolidation and review closeout](plans/completed/documentation-consolidation-and-review-closeout.md) covers current-version guidance, delivery summaries and review closeout.
