@@ -38,6 +38,18 @@ def quality_operation(session: Path) -> Iterator[None]:
     flags = os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
     try:
         try:
+            existing = path.lstat()
+        except FileNotFoundError:
+            existing = None
+        # Windows CRT exclusive creation can still follow a dangling link.
+        # Reject a preexisting unsafe entry before any potentially creating open.
+        if existing is not None and (
+            not stat.S_ISREG(existing.st_mode)
+            or getattr(existing, "st_file_attributes", 0)
+            & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        ):
+            raise QualitySessionError("session-lock")
+        try:
             descriptor = os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o600)
         except FileExistsError:
             # Never create a referent through an existing entry on Windows,

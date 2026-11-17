@@ -1039,10 +1039,8 @@ def test_vf0082_modeled_lock_link_preserves_real_target_and_session(
     ) -> int:
         if path == marker:
             flags_seen.append(flags)
-            # Model only an existing Windows link and its resolution. Target I/O
-            # is real: a nonexclusive O_CREAT can create the missing referent.
-            if flags & os.O_CREAT and flags & os.O_EXCL:
-                raise FileExistsError("synthetic existing link")
+            # Model the Windows resolution observed in CI: even exclusive
+            # creation can follow a dangling link. Target I/O remains real.
             return original_open(target, flags, mode)
         return original_open(cast(Any, path), flags, mode, dir_fd=dir_fd)
 
@@ -1066,9 +1064,7 @@ def test_vf0082_modeled_lock_link_preserves_real_target_and_session(
         assert target.read_bytes() == b"synthetic target content"
     else:
         assert not target.exists()
-    assert len(flags_seen) == 2
-    assert flags_seen[0] & os.O_EXCL and flags_seen[0] & os.O_CREAT
-    assert not flags_seen[1] & (os.O_CREAT | os.O_TRUNC)
+    assert flags_seen == []
 
 
 @pytest.mark.parametrize("kind", ["hardlink", "different-open-file"])

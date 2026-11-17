@@ -729,6 +729,10 @@ retrying. Cleanup retains one empty `.<session-id>.operation.lock` beside its
 private session directory. Leave the sibling in place while commands may still
 use it. [Quality session ownership](../../docs/architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md)
 
+Ready-session lock admission checks preexisting links/reparse entries before
+any potentially creating open, then validates the opened file identity before
+mutable session work. [Windows lock preflight evidence](../../docs/plans/evidence/reader-stop-quality-follow-up/ci-lock-preflight-follow-up.md)
+
 The audio boundary is mono 16-bit PCM WAV using the same bounded conversion for
 both candidates. Each file is capped at 120 seconds and the whole session at
 512 MiB. Audio is temporary benchmark evidence only: never commit, attach,
