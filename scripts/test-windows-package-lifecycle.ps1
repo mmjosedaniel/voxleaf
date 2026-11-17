@@ -146,7 +146,7 @@ function Write-RecoveryJournal {
     installationAttempted = $installationAttempted
     uninstallAttempted = $uninstallAttempted
     installer = $Installer
-    installerSha256 = (Get-FileHash -LiteralPath $Installer -Algorithm SHA256).Hash
+    installerSha256 = $installerIdentity.sha256
     installerRootProcess = $installerRootProcess
     installerCleanupUnverified = $installerCleanupUnverified
     data = $dataState

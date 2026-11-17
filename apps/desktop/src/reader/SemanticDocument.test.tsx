@@ -25,6 +25,121 @@ import {
 
 afterEach(cleanup);
 
+it("FSF-VF-0075 preserves explicit nested Auto and inherited siblings from public EPUB", async () => {
+  const { openEpubPublication } = await import("@voxleaf/epub");
+  const { buildMinimalEpubFixture } =
+    await import("../../../../packages/epub/test-support/epub-fixture");
+  const opened = await openEpubPublication(
+    await buildMinimalEpubFixture({
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml" dir="auto"><head><title>Synthetic</title></head><body><p>English.</p><p dir="auto">עברית <em dir="auto">English</em></p><p>עברית</p></body></html>',
+    }),
+  );
+  if (!opened.ok) throw new Error(opened.detail);
+  try {
+    const document = opened.publication.documents.find(
+      (value) => value.location.kind === "spine",
+    )!;
+    const { container } = render(
+      <SemanticDocumentContent
+        document={document}
+        createAutoDirectionProbe={() => ({
+          measure(value) {
+            const first = value.match(/[A-Za-z\u0590-\u05ff]/u)?.[0];
+            return first === undefined
+              ? undefined
+              : /[A-Za-z]/u.test(first)
+                ? "ltr"
+                : "rtl";
+          },
+          close() {},
+        })}
+      />,
+    );
+    await screen.findByText("English.");
+    const paragraphs = container.querySelectorAll("p");
+    expect(paragraphs[0]).not.toHaveAttribute("dir");
+    expect(paragraphs[1]).toHaveAttribute("dir", "rtl");
+    expect(paragraphs[1]?.querySelector("em")).toHaveAttribute("dir", "ltr");
+    expect(paragraphs[2]).not.toHaveAttribute("dir");
+    expect(paragraphs[1]?.querySelector("span")).toBeNull();
+  } finally {
+    await opened.publication.close();
+  }
+});
+
+it("FSF-CR1 resolves Auto before progressive exposure and retires replaced or unmounted work", () => {
+  const pending: (() => void)[] = [];
+  const schedule: ScheduleLargeChapterYield = (resume) => {
+    pending.push(resume);
+    return () => {};
+  };
+  const close = vi.fn();
+  const probe = () => ({ measure: () => "ltr" as const, close });
+  const source: SemanticDocument = {
+    ...documentWith(
+      Array.from({ length: 501 }, (_, index) => ({
+        kind: "paragraph",
+        children: [
+          {
+            kind: "text",
+            direction: "auto",
+            autoDirectionScope: 1,
+            text: publicationText(`Synthetic Auto ${index}`),
+          },
+        ],
+      })),
+    ),
+    direction: "auto",
+    autoDirectionScope: 1,
+    autoDirectionScopeCount: 1,
+  };
+  const props = {
+    scheduleRenderYield: schedule,
+    createAutoDirectionProbe: probe,
+  };
+  const mounted = render(
+    <SemanticDocumentContent document={source} {...props} />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Preparing this reading section.",
+  );
+  expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
+  act(() => pending.shift()!());
+  expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
+  act(() => pending.shift()!());
+  expect(screen.getByText("Synthetic Auto 249")).toBeInTheDocument();
+  expect(screen.queryByText("Synthetic Auto 250")).toBeNull();
+  expect(close).toHaveBeenCalledOnce();
+  act(() => pending.shift()!());
+  expect(screen.getByText("Synthetic Auto 499")).toBeInTheDocument();
+  expect(screen.queryByText("Synthetic Auto 500")).toBeNull();
+  const fresh = { ...source, id: "replacement" as ContentDocumentId };
+  mounted.rerender(<SemanticDocumentContent document={fresh} {...props} />);
+  expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
+  act(() => pending.shift()!()); // Retired render callback.
+  expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
+  act(() => pending.shift()!()); // Begin the replacement's scan.
+  act(() => pending.shift()!()); // Finish it without consuming a render yield.
+  expect(screen.getByText("Synthetic Auto 249")).toBeInTheDocument();
+  expect(screen.queryByText("Synthetic Auto 250")).toBeNull();
+  mounted.rerender(
+    <SemanticDocumentContent
+      document={{ ...fresh, id: "retired" as ContentDocumentId }}
+      {...props}
+    />,
+  );
+  act(() => pending.shift()!()); // Retired render callback.
+  act(() => pending.shift()!()); // Start another owned probe before unmount.
+  mounted.unmount();
+  expect(close).toHaveBeenCalledTimes(3);
+  act(() => {
+    for (const resume of pending.splice(0)) resume();
+  });
+  expect(screen.queryByRole("article")).toBeNull();
+  expect(close).toHaveBeenCalledTimes(3);
+});
+
 it("RCF-07 renders signed list starts and ordinal overrides", () => {
   const document = documentWith([
     {

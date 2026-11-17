@@ -25,6 +25,7 @@ from benchmarks.contracts import GenerationRequest
 from benchmarks.diagnostics import DiagnosticCapture
 from benchmarks.harness import load_corpus
 from benchmarks.preflight import PreflightRequest
+from benchmarks.quality_operation import quality_operation
 from benchmarks.quality_presentation import _render_evaluator_html as _render_evaluator_html
 from benchmarks.quality_scoring import DIMENSIONS as DIMENSIONS
 from benchmarks.quality_scoring import QualitySessionError as QualitySessionError
@@ -500,6 +501,11 @@ def submit_scorecard(
     raw_root: Path = RAW_ROOT,
 ) -> dict[str, object]:
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    with quality_operation(session):
+        return _submit_scorecard(session, session_id, value)
+
+
+def _submit_scorecard(session: Path, session_id: str, value: object) -> dict[str, object]:
     metadata = _read_mapping(session / "session.json")
     if metadata.get("state") != "ready" or not isinstance(value, dict):
         raise QualitySessionError("invalid-scorecard")
@@ -552,6 +558,15 @@ def correct_meaning_changing_defect(
     """Record one immutable pre-decision evaluator classification correction."""
 
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    with quality_operation(session):
+        return _correct_meaning_changing_defect(
+            session, session_id, evaluator_id, case_id, reason_code
+        )
+
+
+def _correct_meaning_changing_defect(
+    session: Path, session_id: str, evaluator_id: str, case_id: str, reason_code: str
+) -> dict[str, object]:
     metadata = _read_mapping(session / "session.json")
     if (
         metadata.get("state") != "ready"
@@ -687,19 +702,21 @@ def aggregate_scores(
     raw_root: Path = RAW_ROOT,
 ) -> dict[str, object]:
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
-    aggregate, evaluator_count = _current_aggregate(session, session_id)
-    _write_json(session / "quality.aggregate.json", aggregate)
-    return {
-        "status": "pass",
-        "sessionId": session_id,
-        "evaluatorCount": evaluator_count,
-        "eligibleForPromotion": aggregate["eligibleForPromotion"],
-        "candidates": aggregate["candidates"],
-    }
+    with quality_operation(session):
+        aggregate, evaluator_count = _current_aggregate(session, session_id)
+        _write_json(session / "quality.aggregate.json", aggregate)
+        return {
+            "status": "pass",
+            "sessionId": session_id,
+            "evaluatorCount": evaluator_count,
+            "eligibleForPromotion": aggregate["eligibleForPromotion"],
+            "candidates": aggregate["candidates"],
+        }
 
 
 def cleanup_session(session_id: str, *, raw_root: Path = RAW_ROOT) -> None:
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
-    shutil.rmtree(session)
-    if session.exists():
-        raise QualitySessionError("cleanup")
+    with quality_operation(session):
+        shutil.rmtree(session)
+        if session.exists():
+            raise QualitySessionError("cleanup")

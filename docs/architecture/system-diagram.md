@@ -498,6 +498,15 @@ flowchart TD
     BUFFER -->|"bounded playback"| DEVICE
 ```
 
+Within the development-only `BATCH_PROBE`, new official runs use
+[prospective safety evidence](../development/benchmark-safety-v1.md). The maintainer
+reads the local Windows power scheme/indexes and keeps a content-free one-use
+journal under the ignored raw root. Private raw/auxiliary data are removed before
+publication; the journal remains for restoration provenance and prevents reuse.
+The existing owned worker pipe also carries bounded adapter-entry witnesses.
+These additions do not enter the product inference/playback or reader persistence
+flows and do not revise the historical rejection of batch/dual-worker selection.
+
 The current product flow continues from `VISUAL` through `PREP`, `BUFFER`,
 `INFER`, and `DEVICE`. The application coordinator starts at the active
 narration locator, selects the preparation profile associated with the admitted
@@ -525,6 +534,8 @@ simultaneous ceiling, not a startup target.
 - EPUB bytes, safe semantic content, and derived narration text remain inside the local-device trust boundary.
 - Persisted reading and narration preference state is limited to versioned logical locators, exact-byte publication identity, closed display preferences, and bounded language/profile/start/rate choices. An explicitly downloaded Chatterbox runtime and model are stored separately as one integrity-checked, application-owned optional package with removal support. EPUB bytes, derived narration text, model output, and generated audio are not persisted by default.
 - The durable reading position is a stable EPUB logical locator, never a rendered page number.
+- After Stop, changed automatic layout samples cannot replace a heard checkpoint; validated manual movement or explicit navigation returns save authority. The existing reader → App → save/repository boundary is unchanged.
+- Maintainer-only ready quality sessions use the local [ADR-0077](decisions/ADR-0077-exclusive-ready-quality-operations.md) ownership boundary. Competing mutations/derivation fail before reading or changing mutable quality state. Private cleanup retains one empty sibling coordination file; this is outside product reading/audio persistence.
 - Implemented ingestion, raster access, reader rendering, and persistence limits are documented in the [architecture overview](overview.md) and their accepted ADRs. Narration preparation retains the model-independent [base limits](narration-preparation-limits-v1.md), [bilingual normalization](narration-normalization-v2.md), and the profile-specific [Piper v2](piper-narration-preparation-profile-v2.md) and [Chatterbox v1](chatterbox-narration-preparation-profile-v1.md) boundaries.
 - Implemented publication, preparation, constrained inference, and low-level playback work supports cancellation and close within each current boundary. M009 Milestone 4 now propagates identity-first invalidation from user navigation through playback stop, preparation abort, queued-unit release, active-synthesis containment, settled placement, and authorized restart. Playback-only pause may continue bounded same-identity generation; navigation preserves paused intent at its target, while explicit stop and replacement cancel obsolete work.
 - The frozen M008 authority bounds the implemented FIFO by 43,200,000 sample frames, 172,800,000 logical payload bytes, 256 complete units/metadata entries, one prepared batch, 16 prepared segments, inherited narration-v1 text totals, one active synthesis, and zero service-queued synthesis. The Web Audio backend adds only one transient active-unit device buffer bounded by the 20-second service-unit maximum. Underruns, intentional boundary waits, startup latency, preparation progress, playable depth, real-time factor, memory, and cancellation latency remain content-free measurements.
@@ -566,10 +577,10 @@ simultaneous ceiling, not a startup target.
 
 ## Milestone closeout and remaining external gate
 
-The implementation milestones below are complete. The only remaining gate in
-this MVP release sequence is external authorization for a trusted signed public
-Windows installer; it does not block the accepted unsigned local/portfolio
-package.
+The implementation milestones below are complete. M011 records local/portfolio
+acceptance for its validated artifact. Later installers have their own lifecycle
+and compatible-host evidence. Trusted public Windows publication still requires
+external signing authorization. [Current Windows artifact assessment](../development/release-security-and-distribution.md#current-assessment)
 
 1. **Milestone 9 — Complete:** all seven M009 milestones are implemented,
    exact-host validated, and covered by passing required Ubuntu and Windows

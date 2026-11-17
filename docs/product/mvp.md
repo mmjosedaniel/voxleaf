@@ -221,13 +221,16 @@ ornaments deliver the existing scene transition between buffered spoken units;
 they produce neither spoken ornament nor a startup/final delay. Unannotated
 numeric tokens adjoining Unicode letters remain intact during normalization.
 
-The current correction patch selects the first addressable primary spine
-content for a new book (ADR-0060), preserving explicit auxiliary links and valid
-saved auxiliary positions. If primary content has no addressable block, the
-reader reports the existing unreadable outcome. Explicit Chatterbox removal
-also owns abandoned `.previous` promotion data (ADR-0061); failed removal must
-remain visible and retryable. Full installed acceptance for these corrections
-is pending in the active confirmed-correction plan.
+New books open at the first addressable primary spine block. Explicit links
+and valid saved positions in auxiliary content remain available. If primary
+content has no addressable block, the reader reports the unreadable outcome.
+[Primary publication start](../architecture/decisions/ADR-0060-primary-publication-start.md)
+
+Explicit Chatterbox removal includes abandoned `.previous` promotion data. A
+failed removal remains visible and retryable. The completed correction plan
+records installed validation for both changes on its recorded artifacts.
+[Promotion backup ownership](../architecture/decisions/ADR-0061-owned-promotion-backup.md)
+· [Installed validation and approval](../plans/completed/confirmed-logic-bugfixes.md#final-validation-results)
 
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
    check and shows only closed content-free status and rejection reasons.
@@ -262,8 +265,11 @@ is pending in the active confirmed-correction plan.
    cover publication text; its full action/state name remains accessible.
    Ordinary text clicks remain inert.
 10. VoxLeaf saves the canonical heard segment start/end checkpoint while
-    narration owns position, otherwise saves the canonical visual locator, and
-    retains display preferences on the approved bounded lifecycle.
+    narration owns position. After Stop, automatic layout changes preserve the
+    heard checkpoint. Deliberate navigation or validated manual movement can
+    save the canonical visual locator again. Ordinary visual reading saves its
+    visual position. Display preferences use the approved bounded save
+    lifecycle. [Stop and reopen evidence](../plans/completed/reader-stop-quality-follow-up.md)
 11. Immediately before starting the exact model child, VoxLeaf rechecks the
     selected profile and fails closed if host compatibility or the applicable
     native development gate changed. Switching profiles first invalidates and
@@ -370,8 +376,10 @@ The [reader lifecycle follow-up](../plans/completed/reader-position-and-image-li
 protects canonical saved positions across temporary visual fallback and appearance
 changes. Its image policy releases offscreen sources and retries visible images
 when bounded capacity becomes available, including later images in long chapters.
-Simultaneous source/pixel limits, safe failure placeholders and heard-position
-precedence remain unchanged. Current validation status is recorded in that plan.
+The plan records validation of simultaneous source/pixel limits and safe
+failure placeholders. A later correction protects the last heard position
+when a delayed image changes layout after Stop and the book is reopened.
+[Reader Stop follow-up](../plans/completed/reader-stop-quality-follow-up.md)
 
 Implemented and validated:
 

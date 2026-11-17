@@ -1168,7 +1168,7 @@ def _execute_official(
         cleanup_failures.append("resource-residue")
 
     raw: dict[str, object] = {
-        "schemaVersion": v14_authority.RAW_VERSION if v14 else RAW_VERSION,
+        "schemaVersion": "tts-short-segment-batch-raw-v14-safety-v1" if v14 else RAW_VERSION,
         "profileVersion": v14_authority.PROFILE_VERSION if v14 else PROFILE_VERSION,
         "profileSha256": v14_authority.PROFILE_SHA256 if v14 else PROFILE_SHA256,
         "corpusSha256": CORPUS_SHA256,
@@ -1191,7 +1191,7 @@ def _execute_official(
             "postCleanupProcessTreeVramBytes": post_cleanup_vram,
             "rawSessionRemoved": False,
             "generatedAudioRemoved": True,
-            "sleepSettingRestored": True,
+            "sleepSettingRestored": not v14,
         },
         "cleanupFailureCodes": cleanup_failures,
         "failureCodes": sorted(failure_codes),

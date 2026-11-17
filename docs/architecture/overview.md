@@ -64,6 +64,18 @@ Current bilingual, Piper and Chatterbox narration profiles protect Unicode
 numbers alongside letters and marks at lexical boundaries, and preserve dates
 embedded in larger unsupported numeric expressions. Standalone supported forms,
 displayed text, source spans and the frozen legacy profile are unchanged.
+Safe semantic projection also retains a document-local scope for each explicit
+`dir="auto"` declaration. Before exposing its content, the reader resolves each
+scope from eligible safe text in bounded, yielding and cancellable work. A detached
+application-created text-only native probe shares one direction across flattened
+descendants; nested explicit/fixed scopes are excluded and neutral Auto defaults
+to LTR. Scratch text is cleared, probes are released and replacement/closure
+retires pending work. This preserves logical blocks, narration and locator offsets.
+Admitted omitted formatting marks retain their typed source omissions
+inside Spanish article/time expansion and English predecessor context; English
+title lookahead stops at code or foreign-language whitespace. The
+[five-search correction results](../plans/evidence/five-search-findings/case-results.md)
+bind these changes to their current checks and independent acceptance.
 Operational failure containment shuts down pending startup before joining it
 when no synthesis scope is cancellable; active synthesis retains cancellation
 first and all cleanup stages share the existing absolute deadline. Native
@@ -673,6 +685,14 @@ invariants remain binding.
 
 The desktop application and TTS inference should run in separate local processes.
 
+Retained development benchmark commands have an independent
+[prospective safety-v1 boundary](../development/benchmark-safety-v1.md): read-only
+Windows power observations, a one-use content-free journal and private raw/input
+digests precede verified derivation. The existing isolated child pipe supplies
+bounded adapter-entry witnesses. Private data are removed before publication;
+the journal remains for provenance. This maintainer flow does not alter product
+reader persistence, inference IPC, audio storage or historical engine selection.
+
 Reasons:
 
 - Python has the strongest ecosystem for candidate models.
@@ -857,6 +877,13 @@ canonical persistence and heard checkpoints. The visual tracker keeps one
 transient settled-placement snapshot so unchanged image/anchoring notifications
 cannot turn an interior offset into the line's first caret. Real displacement
 resumes ordinary sampling. See its plan for current acceptance.
+
+After narration ends, passive save admission also retains the last heard
+checkpoint until validated manual movement or explicit navigation takes
+authority. A changed late-image layout may legitimately change the visual sample
+without authorizing a durable checkpoint. Measured movement can release that
+protection even when its first locator duplicates the saved one; coalescing still
+avoids a duplicate write. See the [VF-0074 follow-up](../plans/completed/reader-stop-quality-follow-up.md).
 
 JPEG EXIF density may produce a separately verified intrinsic size for decoder
 agreement. Physical SOF dimensions, with orientation, remain the ready source's

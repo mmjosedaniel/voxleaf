@@ -605,12 +605,45 @@ def validate_v5_raw_result(
 ) -> None:
     """Validate a private raw arm against frozen v5 authority."""
 
+    _validate_raw_result(
+        repository_root,
+        value,
+        ancestry_checker=ancestry_checker,
+        authority_tree_checker=authority_tree_checker,
+    )
+
+
+def validate_v5_safety_raw(repository_root: Path, value: object) -> None:
+    """Validate the distinct prospective raw identity without changing frozen readers."""
+    _validate_raw_result(repository_root, value, safety_raw=True)
+
+
+def _validate_raw_result(
+    repository_root: Path,
+    value: object,
+    *,
+    ancestry_checker: Callable[[str, str], bool] | None = None,
+    authority_tree_checker: Callable[[str], bool] | None = None,
+    safety_raw: bool = False,
+) -> None:
+
     from jsonschema import Draft202012Validator
 
     authority = load_frozen_v5_authority(repository_root)
     result = _mapping(value, "result")
+    schema = dict(authority.raw_schema)
+    if safety_raw:
+        from copy import deepcopy
+
+        from benchmarks.benchmark_safety import DUAL_RAW_VERSION
+
+        schema = deepcopy(schema)
+        cast(dict[str, object], schema["properties"])["schemaVersion"] = {"const": DUAL_RAW_VERSION}
+        cleanup = cast(dict[str, object], cast(dict[str, object], schema["$defs"])["cleanup"])
+        cast(dict[str, object], cleanup["properties"])["sleepSettingRestored"] = {"const": False}
+        cast(dict[str, object], cleanup["properties"])["rawSessionRemoved"] = {"const": False}
     errors = sorted(
-        Draft202012Validator(cast(JsonSchema, authority.raw_schema)).iter_errors(value),
+        Draft202012Validator(cast(JsonSchema, schema)).iter_errors(value),
         key=lambda error: tuple(str(part) for part in error.absolute_path),
     )
     if errors:

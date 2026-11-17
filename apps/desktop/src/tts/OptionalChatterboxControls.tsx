@@ -479,6 +479,12 @@ export function OptionalChatterboxControls({
       ) : null}
       {snapshot.state === "installed" ? (
         <div>
+          {downloadRequested ? (
+            <p role="status">
+              Wait for the Chatterbox operation to finish before removing the
+              package.
+            </p>
+          ) : null}
           {active ? null : (
             <button
               type="button"
@@ -490,11 +496,11 @@ export function OptionalChatterboxControls({
           )}
           <button
             type="button"
-            disabled={disabled || actionPending}
+            disabled={disabled || actionPending || downloadRequested}
             onClick={() =>
               run(
                 onRemove,
-                "Chatterbox could not be removed. Stop narration and try again.",
+                "Chatterbox could not be removed. Wait for any active operation to finish, then try again.",
               )
             }
           >
@@ -525,11 +531,11 @@ export function OptionalChatterboxControls({
           </button>
           <button
             type="button"
-            disabled={disabled || actionPending}
+            disabled={disabled || actionPending || downloadRequested}
             onClick={() =>
               run(
                 onRemove,
-                "Chatterbox could not be removed. Stop narration and try again.",
+                "Chatterbox could not be removed. Wait for any active operation to finish, then try again.",
               )
             }
           >

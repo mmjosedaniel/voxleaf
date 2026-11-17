@@ -2873,10 +2873,8 @@ test("BNC-01 rejected navigation settles manual saves and requires explicit Play
   await expect(page.locator(".semantic-document")).toContainText(
     "Synthetic final passage",
   );
-  await page
-    .locator(".semantic-document p")
-    .nth(25)
-    .evaluate((element) => element.scrollIntoView({ block: "start" }));
+  await page.locator(".reader-viewport").hover();
+  await page.mouse.wheel(0, 900);
   const saved = () =>
     page.evaluate(
       () =>

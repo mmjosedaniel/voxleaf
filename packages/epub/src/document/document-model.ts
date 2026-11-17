@@ -46,6 +46,8 @@ export type SemanticTextDirection = "auto" | "ltr" | "rtl";
 export interface SemanticTextContext {
   readonly language?: string;
   readonly direction?: SemanticTextDirection;
+  /** Document-local Auto declaration identity; inherited context keeps the same scope. */
+  readonly autoDirectionScope?: number;
 }
 
 export interface SemanticTextInline extends SemanticTextContext {
@@ -148,6 +150,8 @@ export interface SemanticDocument extends SemanticTextContext {
   readonly id: ContentDocumentId;
   readonly location: SemanticDocumentLocation;
   readonly blocks: readonly SemanticBlock[];
+  /** Bounded by source XML nodes; permits yielding shared Auto resolution before display. */
+  readonly autoDirectionScopeCount?: number;
 }
 
 export interface SemanticDocumentTarget {

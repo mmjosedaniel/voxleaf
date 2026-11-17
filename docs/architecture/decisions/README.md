@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0077: Exclusive operations on ready quality sessions](ADR-0077-exclusive-ready-quality-operations.md) rejects overlapping mutations, derivation and cleanup without extending the sequential workflow.
+- [ADR-0076: Prospective benchmark safety evidence](ADR-0076-prospective-benchmark-safety-evidence.md) defines observed restoration and distinct v5 cancellation phases without changing historical contracts.
 - [ADR-0075: Optional Chatterbox staging reconciliation](ADR-0075-optional-staging-reconciliation.md) records startup and explicit Check ownership.
 - [ADR-0074: Exact comparisons for the CustomVoice v3 screen](ADR-0074-customvoice-exact-screen-comparisons.md) defines successor ranking and session separation.
 

@@ -271,6 +271,9 @@ $derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:derive
 If derivation returns `quality-stale`, rerun the quality aggregation for the
 same session, then retry derivation. Keep the reviewed scorecard and corrections
 in place for both steps.
+If derivation returns `quality-busy`, wait for the other operation on that
+quality session to finish, then retry. The same session is used sequentially
+across correction, aggregation and derivation.
 
 Before derivation, an evaluator may correct one mistaken v6 meaning-change
 classification without altering the original completed scorecard or any
@@ -528,12 +531,13 @@ $batchPilot | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 The receipt is not a frozen v4 raw result, summary, quality admission, or
 selection. Never redirect the private input to a tracked file.
 
-Prospective official execution uses the v14 cancellation-proof authority in
-[ADR-0072](../../docs/architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md).
-Its implementation acceptance is tracked in the completed five-pass plan; no v14
-hardware result is established. Retired official versions are rejected before
-model acquisition. After the pilot succeeds and a measurement milestone is
-explicitly admitted, use a new opaque session ID from a clean committed checkpoint:
+New official execution combines the v14 cancellation-proof authority with
+the prospective safety-v1 workflow. After a successful pilot and explicit
+admission of a measurement milestone, prepare a new opaque session ID from a
+clean committed checkpoint. Capture the original power settings before making
+the operator changes described in the workflow. No v14 hardware result is
+established by the tooling validation. [ADR-0072](../../docs/architecture/decisions/ADR-0072-versioned-batch-cancellation-proof-and-safety.md)
+· [Operator sequence](../../docs/development/benchmark-safety-v1.md#commands-and-operator-sequence)
 
 ```powershell
 $sessionId = [guid]::NewGuid().ToString("N")
@@ -541,6 +545,7 @@ $batchOfficial = @{
   batchOptIn = $true
   resultPurpose = "official"
   profileVersion = "tts-short-segment-batch-profile-v14"
+  evidenceVersion = "tts-benchmark-safety-v1"
   placementProfileId = "qwen3-serena-v4-full-gpu"
   sessionId = $sessionId
   artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
@@ -550,8 +555,15 @@ $batchOfficial = @{
   backgroundLoadAcceptable = $true
   thermalStateAcceptable = $true
 }
-$batchOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
+$batchEvidence = @{ family = 'batch'; request = $batchOfficial }
+$batchEvidence | ConvertTo-Json -Depth 8 | pnpm.cmd benchmark:tts:safety:prepare
 ```
+
+After the required power settings are applied, send the unchanged `$batchOfficial`
+to `benchmark:tts:batch`. Restore the original settings after the attempt and
+use `$batchEvidence` for `benchmark:tts:safety:finalize` and, for an eligible
+session, `benchmark:tts:safety:derive`. The operator sequence above defines the
+required checks at each step.
 
 The targeted-CPU placement identity is official-only; it has no disposable pilot.
 v14 requires its own complete qualifying full-GPU summary, schema/authority
@@ -566,6 +578,7 @@ $batchCpuOfficial = @{
   batchOptIn = $true
   resultPurpose = "official"
   profileVersion = "tts-short-segment-batch-profile-v14"
+  evidenceVersion = "tts-benchmark-safety-v1"
   placementProfileId = "qwen3-serena-v4-speech-tokenizer-cpu"
   sessionId = $sessionId
   artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
@@ -575,30 +588,20 @@ $batchCpuOfficial = @{
   backgroundLoadAcceptable = $true
   thermalStateAcceptable = $true
 }
-$batchCpuOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
+$batchCpuEvidence = @{ family = 'batch'; request = $batchCpuOfficial }
+$batchCpuEvidence | ConvertTo-Json -Depth 8 | pnpm.cmd benchmark:tts:safety:prepare
 ```
 
-Official execution records bounded content-free nanosecond/sample/resource
-observations below the ignored
-`benchmarks/results/raw/short-segment-batch-v14/<session-id>/` directory. It
-does not retain waveform samples. A raw session is not reviewable evidence.
-Derive and validate the allowlisted summary in the base development
-environment; successful derivation deletes the exact ignored session before
-emitting the summary:
+Use the same execution, restoration and derivation sequence with the CPU
+request and its wrapper. The pending measurements live under the ignored
+`benchmarks/results/raw/safety-v1/<session-id>/data/` directory. They contain
+bounded timing, sample-count and resource observations. Successful safety
+derivation removes that private directory before emitting the verified envelope
+and retains the content-free journal. [Evidence bindings](../../docs/development/benchmark-safety-v1.md#closed-version-and-bindings)
 
-```powershell
-$derive = @{
-  batchOptIn = $true
-  sessionId = $sessionId
-  profileVersion = "tts-short-segment-batch-profile-v14"
-}
-$derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch:derive
-```
-
-Legacy derivation remains available: omitted profileVersion defaults to v4;
-explicit `tts-short-segment-batch-profile-v13` selects the unchanged v13 meaning.
-These read paths do not authorize new legacy official runs. The v4 disposable
-pilot remains unchanged.
+`benchmark:tts:batch:derive` reads legacy sessions by profile version. Omitting
+`profileVersion` selects v4 and an explicit v13 or v14 selects that historical
+schema and namespace. Derive new safety-v1 sessions with `benchmark:tts:safety:derive`.
 
 v14 derives cancellation success from closed observed proof, not a standalone
 passed flag. Before-dispatch proof uses the actual identity gate. In-flight
@@ -628,16 +631,18 @@ import, uses CPU float32 with twelve/one threads, and rejects CUDA, disk, meta,
 or implicit placement. The GPU process uses `cuda:0` BF16 with four/one
 threads. Each process owns at most one blocking complete-waveform call.
 
-Milestone 8 adds private raw evidence, cancellation, memory/commit, cleanup,
-and safe-summary derivation. The hardware command still emits only a
-non-promotable receipt. Official raw stays under the ignored
-`benchmarks/results/raw/dual-worker-v5/<session-id>/` boundary. Run the base
-environment derivation with the same arm and session; it validates authority
-and schema, deletes the exact raw session only after successful derivation,
-and emits the content-safe summary. A failed derivation retains ignored raw
-for content-free diagnosis and never emits a result.
+For a new official v5 session, include `evidenceVersion` with the value
+`tts-benchmark-safety-v1` in the closed `tts-dual-worker-command-v5` request.
+Prepare a wrapper with `family = 'dual'` and the full `request` before changing
+power settings. Execute the unchanged request with `benchmark:tts:dual-worker`,
+then restore, finalize and derive through the same safety workflow. A completed
+run returns `pending-restoration` and writes private observations to
+`benchmarks/results/raw/safety-v1/<session-id>/data/`. Successful safety
+derivation removes the private data before publishing. The
+`benchmark:tts:dual-worker:derive` command reads historical sessions from
+`benchmarks/results/raw/dual-worker-v5/<session-id>/`. [Operator sequence](../../docs/development/benchmark-safety-v1.md#commands-and-operator-sequence)
 
-Both positive commands require `HF_HUB_OFFLINE=1` and
+Official measurement commands require `HF_HUB_OFFLINE=1` and
 `TRANSFORMERS_OFFLINE=1`, the exact outbound firewall block, AC power, disabled
 sleep, accepted background/thermal conditions, a clean committed checkpoint,
 and the frozen resource headroom. Later arms also require SHA-256 hashes of the
@@ -690,10 +695,10 @@ production dependency graph or runtime.
 
 ## Disposable blinded quality session
 
-The five `benchmark:tts:quality:*` commands implement the manual listening
+The `benchmark:tts:quality:*` commands implement the manual listening
 boundary. They are explicit native-Windows commands outside CI. They never run
 unless `qualityOptIn` is the JSON boolean `true`, repeat the exact official
-preflight for each candidate, and write only below the ignored
+preflight for each generation candidate, and keep private evaluation data in the ignored
 `benchmarks/results/raw/quality-v2/<session-id>/` directory.
 
 For the retained `v2` comparison, use one caller-created 32-character
@@ -715,6 +720,18 @@ per-case median and dimension-mean arithmetic. Fewer than three evaluators
 remain explicitly ineligible for summary promotion even though the limited
 aggregate can be inspected. `quality:cleanup` removes the exact session and
 all generated audio after the result is recorded.
+
+Run generation, finalization and ready-session operations sequentially.
+Submission, correction, aggregation, cleanup and CPU-fallback derivation reject
+overlap for the same session. If a quality CLI command is rejected with
+`invalid-request` during overlap, wait for the current operation to finish before
+retrying. Cleanup retains one empty `.<session-id>.operation.lock` beside its
+private session directory. Leave the sibling in place while commands may still
+use it. [Quality session ownership](../../docs/architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md)
+
+Ready-session lock admission checks preexisting links/reparse entries before
+any potentially creating open, then validates the opened file identity before
+mutable session work. [Windows lock preflight evidence](../../docs/plans/evidence/reader-stop-quality-follow-up/ci-lock-preflight-follow-up.md)
 
 The audio boundary is mono 16-bit PCM WAV using the same bounded conversion for
 both candidates. Each file is capped at 120 seconds and the whole session at

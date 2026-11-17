@@ -227,13 +227,19 @@ export class ReaderPositionSaveCoordinator {
     measuredManual = false,
   ): boolean {
     if (
+      this.#closed ||
       this.#narrationActive ||
-      (this.#requireIntentBeforePassiveSave && !measuredManual)
+      ((this.#requireIntentBeforePassiveSave || this.#protectHeardCheckpoint) &&
+        !measuredManual)
     ) {
       return false;
     }
     const scheduled = this.#schedulePosition(locator, "passive");
-    if (scheduled) {
+    // A measured movement can begin at the same locator without another write.
+    if (
+      scheduled ||
+      (measuredManual && this.#validatedCanonicalLocator(locator) !== undefined)
+    ) {
       this.#protectHeardCheckpoint = false;
       this.#requireIntentBeforePassiveSave = false;
     }

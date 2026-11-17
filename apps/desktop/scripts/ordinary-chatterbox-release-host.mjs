@@ -676,9 +676,38 @@ async function startAcquisition(client) {
   );
 }
 
-async function assertAbsent(file, code) {
+let acquisitionAttempt = 0;
+
+// Installed is published before native cleanup completes. Keep a terminal
+// acknowledgement for this invocation instead of using that progress snapshot.
+async function completeAcquisition(client) {
+  const attempt = ++acquisitionAttempt;
+  await client.execute(`
+    const owned = { attempt: ${attempt}, status: "pending" };
+    globalThis.__voxleafOwnedDownload = owned;
+    globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).then(
+      result => { owned.state = result?.state; owned.status = "fulfilled"; },
+      () => { owned.status = "rejected"; }
+    ); return true;`);
+  await waitFor(
+    async () => {
+      const result = await client.execute(
+        "return globalThis.__voxleafOwnedDownload;",
+      );
+      if (result?.attempt !== attempt) fail("download-attempt-replaced");
+      if (result.status === "pending") return false;
+      if (result.status !== "fulfilled" || result.state !== "installed")
+        fail("download-terminal-failed");
+      return true;
+    },
+    ACQUISITION_TIMEOUT_MS,
+    "download-terminal-timeout",
+  );
+}
+
+async function assertAbsent(file, code, inspect = lstat) {
   try {
-    await lstat(file);
+    await inspect(file);
   } catch (error) {
     if (isMissing(error)) return;
     throw error;
@@ -1148,6 +1177,9 @@ export async function runJourney(
     runInstaller: install = runInstaller,
     runUninstaller: uninstall = runUninstaller,
     runPreflight: preflight = runPreflight,
+    createOrdinarySession: createSession = createOrdinarySession,
+    runBilingualSmoke: bilingualSmoke = runBilingualSmoke,
+    inspectStaging = lstat,
   } = {},
 ) {
   const stages = createStageReporter();
@@ -1225,7 +1257,7 @@ export async function runJourney(
     }
     const { artifact } = await preflight(options, environment);
     stages.mark("journey-ordinary-session");
-    session = await createOrdinarySession({
+    session = await createSession({
       executable: artifact.executable,
       environment: releaseEnv,
     });
@@ -1236,7 +1268,7 @@ export async function runJourney(
     await session.close();
     session = undefined;
     stages.mark("journey-hostile-session");
-    session = await createOrdinarySession({
+    session = await createSession({
       executable: artifact.executable,
       environment: hostileEnv,
     });
@@ -1263,7 +1295,7 @@ export async function runJourney(
         "probe-staging-retained",
       );
       await session.close();
-      session = await createOrdinarySession({
+      session = await createSession({
         executable: artifact.executable,
         environment: releaseEnv,
       });
@@ -1317,11 +1349,11 @@ export async function runJourney(
       STARTUP_TIMEOUT_MS,
       "cancel-not-finished",
     );
-    await access(path.join(dataBackup.root, "tts", "staging", PROFILE_ID))
-      .then(() => fail("staging-retained"))
-      .catch((error) => {
-        if (error?.message?.includes("staging-retained")) throw error;
-      });
+    await assertAbsent(
+      path.join(dataBackup.root, "tts", "staging", PROFILE_ID),
+      "staging-retained",
+      inspectStaging,
+    );
     stages.mark("journey-download-retry");
     const retryConfirmation = await invoke(
       session.client,
@@ -1329,14 +1361,7 @@ export async function runJourney(
       { profileId: PROFILE_ID },
     );
     if (retryConfirmation?.state !== "confirming") fail("retry-consent-state");
-    await session.client.execute(
-      `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
-    );
-    await waitForOptionalState(
-      session.client,
-      "installed",
-      ACQUISITION_TIMEOUT_MS,
-    );
+    await completeAcquisition(session.client);
     if (corrections !== undefined) {
       const lateCancel = await invoke(
         session.client,
@@ -1350,11 +1375,11 @@ export async function runJourney(
     await session.close();
     session = undefined;
     stages.mark("journey-chatterbox-es");
-    await runBilingualSmoke(artifact.executable, PROFILE_ID, "es", hostileEnv);
+    await bilingualSmoke(artifact.executable, PROFILE_ID, "es", hostileEnv);
     stages.mark("journey-chatterbox-en");
-    await runBilingualSmoke(artifact.executable, PROFILE_ID, "en", hostileEnv);
+    await bilingualSmoke(artifact.executable, PROFILE_ID, "en", hostileEnv);
     stages.mark("journey-restart");
-    session = await createOrdinarySession({
+    session = await createSession({
       executable: artifact.executable,
       environment: hostileEnv,
     });
@@ -1378,21 +1403,21 @@ export async function runJourney(
     await session.close();
     session = undefined;
     stages.mark("journey-piper-es");
-    await runBilingualSmoke(
+    await bilingualSmoke(
       artifact.executable,
       "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
       "es",
       hostileEnv,
     );
     stages.mark("journey-piper-en");
-    await runBilingualSmoke(
+    await bilingualSmoke(
       artifact.executable,
       "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
       "en",
       hostileEnv,
     );
     stages.mark("journey-reinstall");
-    session = await createOrdinarySession({
+    session = await createSession({
       executable: artifact.executable,
       environment: hostileEnv,
     });
@@ -1404,14 +1429,7 @@ export async function runJourney(
     );
     if (reinstallConfirmation?.state !== "confirming")
       fail("reinstall-consent-state");
-    await session.client.execute(
-      `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
-    );
-    await waitForOptionalState(
-      session.client,
-      "installed",
-      ACQUISITION_TIMEOUT_MS,
-    );
+    await completeAcquisition(session.client);
     journeyReceipt = await createJourneyReceipt({
       installer: ownedInstaller,
       executable: artifact.executable,

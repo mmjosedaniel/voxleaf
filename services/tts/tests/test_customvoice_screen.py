@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -99,6 +99,61 @@ def _generate(
     assert result == {"status": "pass", "sessionId": session_id, "sampleCount": 27}
     assert adapter.closed is True
     return raw_root / screen_version / session_id
+
+
+@pytest.mark.parametrize(
+    "version", ["customvoice-spanish-screen-v2", "customvoice-spanish-screen-v3"]
+)
+@pytest.mark.parametrize("failure", ["staging", "competing-data", "replaced-session", "rollback"])
+def test_fsf_vf0086_owned_setup_failure_preserves_retry_and_other_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, version: str, failure: str
+) -> None:
+    session_id = "a" * 32
+    session = tmp_path / "raw" / version / session_id
+    other_version = (
+        "customvoice-spanish-screen-v3"
+        if version.endswith("v2")
+        else "customvoice-spanish-screen-v2"
+    )
+    other = tmp_path / "raw" / other_version / session_id
+    other.mkdir(parents=True)
+    (other / "sentinel").write_text("synthetic", encoding="utf-8")
+    original_mkdir = Path.mkdir
+    original_rmdir = Path.rmdir
+    primary = OSError("synthetic-staging-failure")
+
+    def mkdir(path: Path, *args: Any, **kwargs: Any) -> None:
+        if path == session / "staging":
+            if failure == "competing-data":
+                (session / "sentinel").write_text("competing", encoding="utf-8")
+            if failure == "replaced-session":
+                session.rename(session.with_name("owned-backup"))
+                original_mkdir(session)
+                (session / "sentinel").write_text("replacement", encoding="utf-8")
+            raise primary
+        original_mkdir(path, *args, **kwargs)
+
+    def rmdir(path: Path) -> None:
+        if failure == "rollback" and path == session:
+            raise OSError("synthetic-rollback-failure")
+        original_rmdir(path)
+
+    with monkeypatch.context() as setup:
+        setup.setattr(Path, "mkdir", mkdir)
+        setup.setattr(Path, "rmdir", rmdir)
+        with pytest.raises(OSError) as raised:
+            _generate(tmp_path, monkeypatch, session_id, screen_version=version)
+        assert raised.value is primary
+    assert (other / "sentinel").read_text(encoding="utf-8") == "synthetic"
+    if failure == "staging":
+        assert not session.exists()
+        _generate(tmp_path, monkeypatch, session_id, screen_version=version)
+    else:
+        assert session.exists()
+        if failure in ("competing-data", "replaced-session"):
+            assert (session / "sentinel").is_file()
+        with pytest.raises(ScreenError, match="session-state"):
+            _generate(tmp_path, monkeypatch, session_id, screen_version=version)
 
 
 @pytest.mark.parametrize("tie_breaker", ["pronunciation", "suitability", "speaker-order"])

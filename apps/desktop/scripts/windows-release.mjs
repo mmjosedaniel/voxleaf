@@ -324,8 +324,7 @@ export function validateClosedReleaseValues(documents) {
     fail("bundle-authority");
   }
   if (
-    JSON.stringify(nsis.customLanguageFiles) !==
-    JSON.stringify({
+    !matchesRecord(nsis.customLanguageFiles, {
       English: "windows/nsis-English.nsh",
       Spanish: "windows/nsis-Spanish.nsh",
     })

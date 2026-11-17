@@ -110,7 +110,16 @@ export async function exerciseOptionalDownloadProbe({
     client,
     "optional_chatterbox_download_diagnostic",
   );
-  if (!barrierCreated || errorProbe.state !== "failed" || diagnostic === null)
+  if (
+    !barrierCreated ||
+    errorProbe.state !== "failed" ||
+    diagnostic?.source !== "github-release" ||
+    diagnostic.artifactIndex !== 0 ||
+    diagnostic.stage !== "create-file" ||
+    diagnostic.kind !== "io" ||
+    !Number.isSafeInteger(diagnostic.osError) ||
+    diagnostic.osError <= 0
+  )
     throw new Error("download-probe-error-not-captured");
 
   const exportRoot = await mkdtemp(

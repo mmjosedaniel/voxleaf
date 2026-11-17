@@ -92,6 +92,7 @@ const OMITTED_XHTML_ELEMENTS = new Set([
 interface TextContext {
   readonly language?: string;
   readonly direction?: SemanticTextDirection;
+  readonly autoDirectionScope?: number;
 }
 
 interface RawTextInline extends TextContext {
@@ -134,6 +135,7 @@ interface BlockCollector {
   readonly pendingInlines: RawInline[];
   pendingSourceElementId: string | undefined;
   pendingParagraphDirection?: TextContext["direction"];
+  pendingParagraphAutoDirectionScope?: number;
 }
 
 interface InlineCollector {
@@ -228,6 +230,9 @@ function contextProperties(context: TextContext): SemanticTextContext {
     ...(context.direction === undefined
       ? {}
       : { direction: context.direction }),
+    ...(context.autoDirectionScope === undefined
+      ? {}
+      : { autoDirectionScope: context.autoDirectionScope }),
   };
 }
 
@@ -311,6 +316,7 @@ function hasControlCharacter(value: string): boolean {
 function deriveContext(
   event: XmlStartElementEvent,
   inherited: TextContext,
+  autoDirectionScope: number | undefined,
 ): TextContext {
   const xmlLanguage = attribute(event, XML_NAMESPACE, "lang");
   const htmlLanguage = attribute(event, "", "lang");
@@ -351,6 +357,7 @@ function deriveContext(
         : { language: inherited.language }
       : { language }),
     ...(direction === undefined ? {} : { direction }),
+    ...(autoDirectionScope === undefined ? {} : { autoDirectionScope }),
   });
 }
 
@@ -676,6 +683,7 @@ class XhtmlProjector {
   #sawRoot = false;
   #sawBody = false;
   #closedBody = false;
+  #autoDirectionScopeCount = 0;
 
   public constructor(
     archive: OpenedEpubArchive,
@@ -756,6 +764,9 @@ class XhtmlProjector {
       id: this.#documentId,
       location: this.#documentLocation,
       blocks: this.#blocks,
+      ...(this.#autoDirectionScopeCount === 0
+        ? {}
+        : { autoDirectionScopeCount: this.#autoDirectionScopeCount }),
       ...contextProperties(this.#documentContext),
     });
     const blocks: SemanticBlock[] = [];
@@ -790,8 +801,16 @@ class XhtmlProjector {
 
   private consumeStart(event: XmlStartElementEvent): void {
     const depth = this.#elements.length + 1;
-    const inherited = this.#elements.at(-1)?.context ?? Object.freeze({});
-    const context = deriveContext(event, inherited);
+    const inherited: TextContext =
+      this.#elements.at(-1)?.context ?? Object.freeze({});
+    const declaredDirection = attribute(event, "", "dir");
+    const autoDirectionScope =
+      declaredDirection === "auto"
+        ? ++this.#autoDirectionScopeCount
+        : declaredDirection === undefined
+          ? inherited.autoDirectionScope
+          : undefined;
+    const context = deriveContext(event, inherited, autoDirectionScope);
     const identity = sourceElementIdentity(event);
     for (const observedId of identity.observed) {
       this.#sourceElementIdCounts.set(
@@ -1392,10 +1411,12 @@ class XhtmlProjector {
   private flushPendingParagraph(collector: BlockCollector): void {
     const sourceId = collector.pendingSourceElementId;
     const direction = collector.pendingParagraphDirection;
+    const autoDirectionScope = collector.pendingParagraphAutoDirectionScope;
     const children = freezeRawInlines(collector.pendingInlines);
     collector.pendingInlines.length = 0;
     collector.pendingSourceElementId = undefined;
     delete collector.pendingParagraphDirection;
+    delete collector.pendingParagraphAutoDirectionScope;
     if (children.length === 0) {
       return;
     }
@@ -1409,6 +1430,7 @@ class XhtmlProjector {
           ? {}
           : { language: collector.context.language }),
         ...(direction === undefined ? {} : { direction }),
+        ...(autoDirectionScope === undefined ? {} : { autoDirectionScope }),
       }),
       sourceId,
     );
@@ -1543,11 +1565,19 @@ class XhtmlProjector {
         if (frame.context.direction !== undefined) {
           collector.pendingParagraphDirection = frame.context.direction;
         }
+        if (frame.context.autoDirectionScope !== undefined) {
+          collector.pendingParagraphAutoDirectionScope =
+            frame.context.autoDirectionScope;
+        }
         return;
       }
     }
     if (collector.context.direction !== undefined) {
       collector.pendingParagraphDirection = collector.context.direction;
+    }
+    if (collector.context.autoDirectionScope !== undefined) {
+      collector.pendingParagraphAutoDirectionScope =
+        collector.context.autoDirectionScope;
     }
   }
 

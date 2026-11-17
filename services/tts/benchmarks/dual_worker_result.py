@@ -188,7 +188,53 @@ def derive_v5_summary(
 ) -> dict[str, object]:
     """Validate raw evidence and return the closed content-safe v5 summary."""
 
-    validate_v5_raw_result(repository_root, raw_value)
+    return _derive_v5_summary(repository_root, raw_value, gpu_baseline_value=gpu_baseline_value)
+
+
+def derive_v5_safety_summary(repository_root: Path, evidence: object) -> dict[str, object]:
+    from benchmarks.benchmark_safety import VerifiedSafety, require
+    from benchmarks.dual_worker_contracts import DualWorkerArm, DualWorkIdentity
+    from benchmarks.dual_worker_matrix import build_v5_requests
+    from benchmarks.dual_worker_trials import validate_trials
+
+    require(isinstance(evidence, VerifiedSafety))
+    assert isinstance(evidence, VerifiedSafety)
+    raw = _mapping(evidence.files["raw.json"], "raw")
+    from benchmarks.v5_authority import validate_v5_safety_raw
+
+    validate_v5_safety_raw(repository_root, raw)
+    arm = cast(DualWorkerArm, raw["arm"])
+    requests = build_v5_requests(
+        repository_root,
+        arm=arm,
+        identity=DualWorkIdentity(
+            cast(str, evidence.binding["session"]),
+            f"v5-{arm}-generation",
+        ),
+    )
+    validate_trials(arm, requests, evidence.files["trials.json"], raw["cancellationTrials"])
+    return _derive_v5_summary(
+        repository_root,
+        raw,
+        gpu_baseline_value=evidence.files.get("gpu-baseline.json"),
+        external_restoration=True,
+    )
+
+
+def _derive_v5_summary(
+    repository_root: Path,
+    raw_value: object,
+    *,
+    gpu_baseline_value: object | None = None,
+    external_restoration: bool | None = None,
+) -> dict[str, object]:
+
+    if external_restoration is None:
+        validate_v5_raw_result(repository_root, raw_value)
+    else:
+        from benchmarks.v5_authority import validate_v5_safety_raw
+
+        validate_v5_safety_raw(repository_root, raw_value)
     raw = _mapping(raw_value, "raw")
     arm = cast(str, raw.get("arm"))
     dispatches = tuple(
@@ -297,10 +343,14 @@ def derive_v5_summary(
             and cleanup.get("postCleanupGpuWorkerSharedGpuBytes") == 0
             and cleanup.get("postCleanupCpuWorkerDedicatedVramBytes") == 0
             and cleanup.get("postCleanupCpuWorkerSharedGpuBytes") == 0
-            and cleanup.get("rawSessionRemoved") is True
+            and (cleanup.get("rawSessionRemoved") is True if external_restoration is None else True)
             and cleanup.get("generatedAudioRemoved") is True
             and cleanup.get("scorecardRemoved") is True
-            and cleanup.get("sleepSettingRestored") is True
+            and (
+                cleanup.get("sleepSettingRestored") is True
+                if external_restoration is None
+                else external_restoration
+            )
         ),
         "cpuZeroGpu": cpu_zero,
         "noDiskOffload": all(

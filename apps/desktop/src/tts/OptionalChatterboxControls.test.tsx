@@ -58,6 +58,71 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it.each([false, true])(
+    "FSF-VF-0080 remount preserves busy Remove until terminal cleanup (failure=%s)",
+    async (failed) => {
+      const transfer = deferred();
+      let state: Omit<ReturnType<typeof snapshot>, "failure"> & {
+        failure: string | null;
+      } = snapshot("confirming");
+      const invoke = vi.fn((command: string) =>
+        command === "download_optional_chatterbox"
+          ? transfer.promise
+          : Promise.resolve(state),
+      );
+      const client = new OptionalChatterboxClient(invoke);
+      const props = {
+        client,
+        onActivate: vi.fn(async () => true),
+        onRecheck: async () => true,
+        onRemove: vi.fn(async () => undefined),
+      };
+      const first = render(<OptionalChatterboxControls {...props} />);
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Download Chatterbox" }),
+      );
+      await waitFor(() => expect(client.downloadPending).toBe(true));
+      first.unmount();
+      state = snapshot("installed");
+      render(<OptionalChatterboxControls {...props} />);
+      try {
+        expect
+          .soft(
+            await screen.findByRole("button", { name: "Remove Chatterbox" }),
+          )
+          .toBeDisabled();
+        expect
+          .soft(screen.getByRole("button", { name: "Activate Chatterbox" }))
+          .toBeEnabled();
+        expect
+          .soft(
+            screen.getByText(
+              /Wait for the Chatterbox operation to finish before removing/,
+            ),
+          )
+          .toBeInTheDocument();
+      } finally {
+        await act(async () => {
+          if (failed) {
+            state = {
+              ...snapshot("failed"),
+              failure: "tts-optional-profile-cleanup-failed",
+            };
+            transfer.reject("tts-optional-profile-cleanup-failed");
+          } else transfer.resolve(snapshot("installed"));
+        });
+      }
+      expect(
+        screen.getByRole("button", { name: "Remove Chatterbox" }),
+      ).toBeEnabled();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Remove Chatterbox" }),
+      );
+      await waitFor(() => expect(props.onRemove).toHaveBeenCalledTimes(1));
+      expect(props.onActivate).not.toHaveBeenCalled();
+    },
+  );
+
   it("VF-0038 VF-0043 invalid committed package hides storage and retries Check without acquisition", async () => {
     let repaired = false;
     const invoke = vi.fn(

@@ -34,6 +34,23 @@ preserve a meaningful pre-fix failure where applicable. Historical registry
 imports do not renew test results. Existing host-execution, evidence-reuse and
 independent-review requirements still govern acceptance.
 
+The [five-search correction execution](../plans/evidence/five-search-findings/case-results.md)
+adds public normalization/context and computed-direction/reopen assertions,
+busy Remove remount controls, terminal Download acknowledgement, strict absence,
+compiled NSIS unsafe-ancestor checks and synthetic benchmark ownership gates.
+The Auto regressions also cover flattened unknown inline/block/mixed content,
+neutral and late-strong scopes, unchanged narration/anchors, scratch/work bounds,
+and replacement/unmount while preserving progressive rendering. The cold-load
+CLI distinguishes simultaneous primary/cleanup failures from either alone.
+The quality command shares the existing bounded Windows Job/pipe launcher, so
+its focused union includes `test_benchmark_cli.py`. No model/acoustic campaign
+or live optional download is selected. The final changed Windows package and
+its lifecycle still require current artifact validation; synthetic NSIS tests
+do not replace that gate. VF-0077/VF-0091 use the authorized
+[prospective safety-v1 contract](benchmark-safety-v1.md); final acceptance is
+governed by the correction plan's independent review and identity checks.
+Their historical positive fields are not renewed evidence.
+
 ## Narration settings lifecycle coverage
 
 `NSL-01` through `NSL-04` cover fixed activation rejection/retry feedback,
@@ -860,6 +877,31 @@ That rule remains the historical `v2`/`v3` benchmark implementation. ADR-0014
 accepts one fluent maintainer for future constrained-demo quality feedback,
 but such feedback is not a retroactive promotable `v3` aggregate and cannot be
 duplicated into multiple evaluator identities.
+
+The [VF-0082 follow-up](../plans/completed/reader-stop-quality-follow-up.md)
+adds defensive rejection of overlapping ready-session operations under
+[ADR-0077](../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md).
+The existing `test_benchmark_quality.py` uses finite child processes and
+synthetic sessions to pause actual publication, reject competing correction,
+submission, aggregation, cleanup and derivation, preserve accepted bytes, and
+retry after owner termination. It also retains the sequential invalidation and
+stale-aggregate consumer controls. No model or acoustic quality claim follows.
+Cleanup removes private session contents but retains its empty sibling lock;
+do not remove that coordination file while a command may still own it.
+R01's file-link admission finding adds a real-I/O model of Windows link
+resolution, native hardlink rejection and descriptor/path mismatch protection.
+The two native symlink cases skip only on Windows privilege error 1314; those
+skips are not native acceptance evidence. See the linked follow-up ledger for
+the independently accepted replacement strategy and recorded limitation.
+
+VF-0074's `FSF-VF-0074` cases in `reader-reflow-restoration.smoke.spec.ts` bind
+the checkpoint before Stop, release a delayed native image decode, follow real
+tracker → App → persistence delivery, and reopen the same synthetic EPUB. The
+image variant does not inject a tracker callback, save call or scroll event.
+Controlled silent PCM/completion callbacks establish application timing, not
+physical audibility. Keyboard movement and same-locator measured movement remain
+successor controls; R7-04, CCF-C08, ordinary reflow and keyboard reading remain
+the adjacent browser union.
 
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 
@@ -2077,3 +2119,13 @@ exact/nearest-valid recovery remains in force. A newly measured manual position
 can be saved and reopened, but this correction promises neither lossless historical
 migration nor a blanket reset of saved books. Current correction evidence is
 indexed in the [deep-findings execution ledger](../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md).
+
+Prospective batch/dual-worker evidence follows [benchmark safety v1](benchmark-safety-v1.md).
+`test_benchmark_safety.py` exercises original/admitted/restored settings, failed-run
+recovery, one-use sessions, substituted inputs, real frozen derivation and private
+cleanup. Its finite spawned adapters prove distinct queued/completed/adapter-entry
+phases, including two overlapping entries; they do not run a model. Retain the
+existing isolation, controller/runtime, command, v5/v13/v14 authority and result
+tests when changing these owners. The read-only `benchmark:tts:safety:observe`
+command checks the native observation boundary without writing power settings.
+No hardware measurement or acoustic acceptance follows from these controls.

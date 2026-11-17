@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Final, cast
 
+from benchmarks import benchmark_safety
 from benchmarks.adapters.factory import create_isolated_candidate_adapter
 from benchmarks.adapters.manifest import (
     QWEN_V3_CANDIDATE_ID,
@@ -29,7 +29,6 @@ from benchmarks.batch_official import (
     ThreadedOfficialMemoryMonitor,
     ensure_raw_root_is_ignored,
     execute_official_v14,
-    official_raw_root,
 )
 from benchmarks.contracts import AdapterOperationError
 from benchmarks.memory import (
@@ -131,6 +130,8 @@ def _payload() -> dict[str, object]:
     expected_fields = OFFICIAL_INPUT_FIELDS if purpose == "official" else INPUT_FIELDS
     if purpose == "official" and "profileVersion" in payload:
         expected_fields |= {"profileVersion"}
+    if purpose == "official" and "evidenceVersion" in payload:
+        expected_fields |= {"evidenceVersion"}
     if set(payload) != expected_fields:
         raise BatchCommandError("input")
     if purpose == "official" and (
@@ -139,6 +140,22 @@ def _payload() -> dict[str, object]:
     ):
         raise BatchCommandError("input")
     return payload
+
+
+def validate_official_request(payload: dict[str, object]) -> None:
+    """Static opt-in and scalar checks shared by preparation and official admission."""
+    if (
+        set(payload) != OFFICIAL_INPUT_FIELDS | {"profileVersion", "evidenceVersion"}
+        or payload.get("batchOptIn") is not True
+        or payload.get("resultPurpose") != "official"
+        or any(
+            type(payload.get(field)) is not bool
+            for field in ("sleepDisabled", "backgroundLoadAcceptable", "thermalStateAcceptable")
+        )
+    ):
+        raise BatchCommandError("input")
+    _string(payload.get("artifactRoot"))
+    _string(payload.get("candidatePython"))
 
 
 def _free_vram_bytes() -> int | None:
@@ -211,6 +228,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     if purpose == "official":
         if payload.get("profileVersion") != PROFILE_VERSION:
             raise BatchCommandError("official-version")
+        safety_binding = benchmark_safety.binding("batch", payload)
         authority = load_v14_mechanics_authority(REPOSITORY_ROOT)
     else:
         authority = load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
@@ -270,6 +288,9 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         for unit in (raw_unit,)
         for key in ("sourceText", "narrationText", "privacyCanary")
     )
+    safety_session = (
+        benchmark_safety.claim(REPOSITORY_ROOT, safety_binding) if purpose == "official" else None
+    )
     tracker = FrameworkVramTracker()
     dedicated_gpu = WindowsGpuProcessMemorySampler()
     shared_gpu = WindowsGpuProcessMemorySampler(GPU_PROCESS_SHARED_MEMORY_COUNTER)
@@ -297,13 +318,6 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     try:
         if purpose == "official":
             ensure_raw_root_is_ignored(REPOSITORY_ROOT)
-            session = official_raw_root(
-                REPOSITORY_ROOT,
-                cast(str, payload["sessionId"]),
-                version="v14",
-            )
-            if session.exists():
-                raise BatchCommandError("session")
             monitor = ThreadedOfficialMemoryMonitor(
                 root_pid=os.getpid(),
                 dedicated_sampler=dedicated,
@@ -311,49 +325,26 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                 framework_tracker=tracker,
                 free_vram_probe=_free_vram_bytes,
             )
-            session_created = False
-            try:
-                execution = execute_official_v14(
-                    REPOSITORY_ROOT,
-                    execution_commit_sha=receipt.commit_sha,
-                    host=_host_raw(host),
-                    preflight=_preflight_raw(host),
-                    candidate_factory=candidate_factory,
-                    monitor=monitor,
-                    placement_profile_id=placement_profile_id,
-                    cpu_admission=cpu_admission,
-                )
-                session.mkdir(parents=True)
-                session_created = True
-                (session / "raw.json").write_text(
-                    json.dumps(
-                        execution.raw,
-                        ensure_ascii=False,
-                        indent=2,
-                        sort_keys=True,
-                    )
-                    + "\n",
-                    encoding="utf-8",
-                )
-                (session / "loads.json").write_text(
-                    json.dumps(
-                        execution.load_observations,
-                        ensure_ascii=True,
-                        separators=(",", ":"),
-                    )
-                    + "\n",
-                    encoding="utf-8",
-                )
-            except BaseException:
-                if session_created:
-                    shutil.rmtree(session)
-                raise
+            execution = execute_official_v14(
+                REPOSITORY_ROOT,
+                execution_commit_sha=receipt.commit_sha,
+                host=_host_raw(host),
+                preflight=_preflight_raw(host),
+                candidate_factory=candidate_factory,
+                monitor=monitor,
+                placement_profile_id=placement_profile_id,
+                cpu_admission=cpu_admission,
+            )
+            assert safety_session is not None
+            safety_session.complete(execution.raw, {"loads.json": execution.load_observations})
             return {
                 "schemaVersion": "tts-v14-batch-official-receipt-v1",
                 "resultPurpose": "official",
                 "sessionId": payload["sessionId"],
-                "status": "complete",
-                "eligibleForDerivation": True,
+                "status": "pending-restoration",
+                "evidenceVersion": benchmark_safety.VERSION,
+                "eligibleForDerivation": False,
+                "nextStep": "benchmark:tts:safety:finalize",
                 "cleanupFailureCodes": execution.raw["cleanupFailureCodes"],
                 "failureCodes": execution.raw["failureCodes"],
             }

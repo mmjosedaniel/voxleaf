@@ -8,7 +8,12 @@ import sys
 from collections.abc import Mapping
 from typing import Final, NoReturn, cast
 
-from benchmarks.cli import PREFLIGHT_FIELDS, parse_preflight_request
+from benchmarks.cli import (
+    PREFLIGHT_FIELDS,
+    CommandError,
+    parse_preflight_request,
+    run_bounded_worker_process,
+)
 from benchmarks.preflight import PreflightRequest, run_local_preflight
 from benchmarks.quality import (
     CORRECTION_REASON,
@@ -121,18 +126,16 @@ def _generate_parent(payload: Mapping[str, object]) -> tuple[dict[str, object], 
     if not _preflight_passed(request):
         return {"status": "fail", "failureCode": "preflight"}, 2
     try:
-        completed = subprocess.run(
+        completed = run_bounded_worker_process(
             (
                 str(request.candidate_python.resolve(strict=True)),
                 "-m",
                 "benchmarks.quality_cli",
                 "_generate-worker",
             ),
-            input=json.dumps(payload, ensure_ascii=True, separators=(",", ":")),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=GENERATION_TIMEOUT_SECONDS,
+            json.dumps(payload, ensure_ascii=True, separators=(",", ":")),
+            timeout_seconds=GENERATION_TIMEOUT_SECONDS,
+            maximum_input_bytes=MAXIMUM_STDIN_BYTES,
             cwd=request.candidate_python.resolve(strict=True).parents[5],
         )
         if completed.returncode != 0 or len(completed.stdout.encode("utf-8")) > 16_384:
@@ -147,6 +150,7 @@ def _generate_parent(payload: Mapping[str, object]) -> tuple[dict[str, object], 
         subprocess.SubprocessError,
         json.JSONDecodeError,
         QualityCommandError,
+        CommandError,
     ):
         return {"status": "fail", "failureCode": "generation"}, 2
     return receipt, 0

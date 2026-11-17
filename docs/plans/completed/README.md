@@ -16,6 +16,22 @@ Superseded proposals are listed separately and must not be scheduled for executi
 
 ## Completed plans
 
+- Commit `cafb59e` closes VF-0074 with a mounted Stop, late-image and reopen
+  regression, and VF-0082 with overlap rejection for sequential quality
+  operations. R02 approved both and accepted the alternative evidence for the
+  two unavailable native Windows symlink cases. [Follow-up ExecPlan](reader-stop-quality-follow-up.md)
+  · [R02 approval and closeout](../evidence/reader-stop-quality-follow-up/closeout-r02.md)
+  · [PR #325 test-call and fixture-path corrections](../evidence/reader-stop-quality-follow-up/ci-follow-up.md)
+  · [PR #325 browser manual-gesture correction](../evidence/reader-stop-quality-follow-up/ci-browser-follow-up.md)
+  · [PR #325 native link assertion correction](../evidence/reader-stop-quality-follow-up/ci-symlink-follow-up.md)
+  · [PR #325 unsafe lock preflight correction](../evidence/reader-stop-quality-follow-up/ci-lock-preflight-follow-up.md)
+
+- Commit `c407cfa` delivers 17 corrections and the successor benchmark evidence
+  under R04 approval. The original closeout retained VF-0074 as inconclusive and
+  VF-0082 as excluded. Their resolution is recorded in the follow-up above.
+  [Five-search ExecPlan](five-search-findings-minimal-corrections.md)
+  · [R04 approval and closeout](../evidence/five-search-findings/execution-closeout-r04.md)
+
 - [Four-pass findings corrections](four-pass-findings-corrections.md) records six approved correction units, focused Windows validation and the scoped benchmark and release limits.
 
 - [Agent guidance simplification](agent-guidance-simplification.md): reduced procedural duplication and corrected current guidance; acceptance is established by the review and closeout linked from the plan.

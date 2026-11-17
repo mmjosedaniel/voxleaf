@@ -35,8 +35,11 @@ the filtered Piper runtime and explicitly assembled Chatterbox runtime.
 | `benchmarks/harness_corpus.py` | Legacy and bilingual corpus loading, admission and ordered projection |
 | `benchmarks/harness_errors.py` | One shared harness failure type and raising helper |
 | `benchmarks/quality.py` | Disposable-session containment, opt-in audio, I/O, finalization, submission/correction, aggregate orchestration and cleanup |
+| `benchmarks/quality_operation.py` | Nonblocking process ownership for ready-session mutations, cleanup and CPU-fallback derivation; see [ADR-0077](../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md) |
 | `benchmarks/quality_presentation.py` | Deterministic evaluator HTML with unchanged relative audio paths |
 | `benchmarks/quality_scoring.py` | Shared dimensions/error/score validation and pure per-candidate medians, means and corrected-defect calculation |
+| `benchmarks/benchmark_safety.py`, `benchmark_safety_cli.py`, `power_observation.py` | Prospective official-session reservation, read-only power observations, immutable input binding, restoration and private-data cleanup before publication |
+| `benchmarks/dual_worker_trials.py` | Distinct controller/child cancellation witnesses and their closed prospective validation; measured scheduling remains in the controller/runtime |
 
 Release facades explicitly preserve existing imported bindings. Moved exception
 classes retain their original qualified identities; Chatterbox `PackageLayout`

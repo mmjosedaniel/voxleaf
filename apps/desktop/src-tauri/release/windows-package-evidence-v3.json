@@ -6,10 +6,10 @@
     "version": "0.1.0"
   },
   "authority": {
-    "releaseConfigSha256": "43da61e7853a911babb33847217f314f2119c432f5a9adcee06c6617fa3aeedd",
-    "piperRuntimeManifestSha256": "e3f00256070a9fe11485b009fa015430be1dec5f9bc0fadecf02492c22ba8f20",
-    "optionalChatterboxManifestSha256": "c1d650b589d287974c008229dfd553700a83d87edaaae705a35fd13caffedf12",
-    "optionalChatterboxRuntimeEvidenceSha256": "bbcde47df59d6d9c190238653ab9eae725b9bdfda4fbb33bc59813a2595d4cff"
+    "releaseConfigSha256": "6e9694a63e5a1d9c06379803fd5da573bb474b6beee24e48990937edb0da451d",
+    "piperRuntimeManifestSha256": "bf6d05ee74313230481c5b3ba83378946e144ef4a76a7849e8831371ce449613",
+    "optionalChatterboxManifestSha256": "b398ba1ab7144f920d9d6ddcece57afc1646280121104b7ddf509e66c2585dfd",
+    "optionalChatterboxRuntimeEvidenceSha256": "d27ad6b3dde17d6442945b2d94640787d540d510f570a359e30de0b4181576f2"
   },
   "package": {
     "target": "nsis",
@@ -18,13 +18,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 203538238,
-      "sha256": "d1472f613f0b3e5bf425797c43ba51aabcd752efe63f51da7f2fc1e68767f424"
+      "sizeBytes": 203987591,
+      "sha256": "a32a11e393a6605c95c3c0035e21d56715dbca2e21d0a32202deed86361d9152"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 11814912,
-      "sha256": "9ea7540850997a9f26e50e13657309365f7af1a280bdf8d106858e17787d20da"
+      "sizeBytes": 12023808,
+      "sha256": "1ff0b562c4a0143f16ede777882857f1ab9318093b9fa2f55001b7d6fc292961"
     }
   },
   "payload": {
@@ -43,9 +43,9 @@
     "releaseLockedRuntime": true,
     "rendererCompatibilityGateRequired": true,
     "nativePreNetworkCompatibilityGateRequired": true,
-    "downloadBytes": 8239933601,
-    "installedBytes": 8236377725,
-    "temporaryBytes": 13270915278,
+    "downloadBytes": 8240315465,
+    "installedBytes": 8236757393,
+    "temporaryBytes": 13271679006,
     "minimumFreeBytes": 20000000000,
     "representativeCompatibleHostJourney": "not-run"
   },

@@ -32,6 +32,52 @@ function documentWith(blocks: readonly SemanticBlock[]): SemanticDocument {
 }
 
 describe("large-chapter capacity policy", () => {
+  it("FSF-CR1 counts shared Auto wrappers and its bounded scratch at the DOM limit", () => {
+    const scopeText = {
+      kind: "text",
+      text: "Synthetic" as import("@voxleaf/epub").SensitivePublicationText,
+      direction: "auto",
+      autoDirectionScope: 2,
+    } as const;
+    const source: SemanticDocument = {
+      ...documentWith([{ kind: "paragraph", children: [scopeText] }]),
+      direction: "auto",
+      autoDirectionScope: 1,
+      autoDirectionScopeCount: 2,
+    };
+    expect(assessSemanticDocumentRendering(source)).toEqual({
+      status: "accepted",
+      semanticBlockCount: 1,
+      projectedDomNodeCount: 6,
+    });
+    const exact: SemanticDocument = {
+      ...source,
+      blocks: [
+        {
+          kind: "paragraph",
+          children: [
+            scopeText,
+            ...Array.from(
+              { length: LARGE_CHAPTER_DOM_NODE_LIMIT - 6 },
+              () => LINE_BREAK,
+            ),
+          ],
+        },
+      ],
+    };
+    expect(assessSemanticDocumentRendering(exact)).toEqual({
+      status: "accepted",
+      semanticBlockCount: 1,
+      projectedDomNodeCount: 80000,
+    });
+    expect(
+      assessSemanticDocumentRendering({
+        ...exact,
+        blocks: [...exact.blocks, EMPTY_PARAGRAPH],
+      }).status,
+    ).toBe("chapter-too-large");
+  });
+
   it("accepts the exact semantic-block limit and rejects the next block", () => {
     const exactBlocks = Object.freeze(
       Array.from({ length: LARGE_CHAPTER_BLOCK_LIMIT }, () => EMPTY_PARAGRAPH),

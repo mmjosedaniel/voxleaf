@@ -12,6 +12,17 @@ the current Qwen post-seek failure passed. See
 The milestone descriptions below retain their historical implementation/evidence
 status; this priority does not reopen or rewrite completed plans.
 
+The unsigned Windows x64 local/portfolio MVP and compatibility-gated optional
+Chatterbox channel have completed M011 acceptance. The current checkout's
+installer passed its local lifecycle. Ordinary live acquisition for that
+installer and trusted public signing have separate evidence requirements.
+[Current Windows artifact assessment](../development/release-security-and-distribution.md#current-assessment)
+
+The five-search plan and its follow-up are complete on this checkout. They
+record the reader's post-Stop saved position, the sequential quality session
+rules and the prospective batch/dual-worker evidence workflow.
+[Completed plans and reviews](completed/README.md#completed-plans)
+
 VoxLeaf is pre-alpha. Milestones 1 through 10.2, M008.1, and M009.1 are
 complete. M010 records the final support/recovery decision. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
@@ -1692,8 +1703,9 @@ pending.
 
 ## MVP completion boundary
 
-Milestone 3.1 has passed its bounded EPUB 2 acceptance matrix. The roadmap is
-complete only when Milestone 11 validates the complete user journey and the
-definition of done in `AGENTS.md`. Finishing scaffolding, one EPUB parser, one
-TTS prototype, one host observation, or one successful playback demonstration
-is progress, not completion of VoxLeaf.
+Milestone 3.1 passed the bounded EPUB 2 acceptance matrix. M011 established
+local/portfolio MVP acceptance for its recorded installer. Later builds have
+their own lifecycle and optional acquisition evidence. Trusted signed public
+distribution remains pending external authorization and release checks.
+[M011 closeout](completed/M011-package-validate-and-release-mvp.md)
+· [Current Windows artifact assessment](../development/release-security-and-distribution.md#current-assessment)

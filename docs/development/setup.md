@@ -43,6 +43,10 @@ dual-worker trials, remain in the [completed-plan index](../plans/completed/READ
 [Qwen selection v3](../../benchmarks/tts/selection-v3.md),
 [batch selection v4](../../benchmarks/tts/selection-v4.md) and
 [dual-worker selection v5](../../benchmarks/tts/selection-v5.md).
+New official batch/dual-worker executions require the explicit
+[prospective safety workflow](benchmark-safety-v1.md): original power observation,
+one-use admission, pending raw, manual restoration and verified derivation.
+Historical summaries and their readers retain their original meaning.
 The [M010.2 plan](../plans/completed/M010-002-reader-settings-and-playback-controls.md)
 retains rejected playback v1/v2 comparisons and the accepted WSOLA v3 result.
 These are dated evidence, not current setup prerequisites or new host validation.
@@ -56,9 +60,9 @@ around unavailable controls or buffering.
 
 The selected versions establish a reproducible foundation with the reviewed low-level EPUB ZIP/XML dependencies and the narrow official Tauri invoke API used by the model-free M007 probe, but without selecting renderer, audio-player, or TTS-model dependencies.
 
-| Prerequisite             | Selected version or policy                                                       | Minimum supported version                                          | Verified Windows state                         |
+| Prerequisite             | Selected version or policy                                                       | Minimum supported version                                          | Reference Windows observation                  |
 | ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------- |
-| Windows development host | Native 64-bit Windows; current host is 25H2 build `26200.8875`                   | Windows 10 version 1803, 64-bit                                    | Satisfied                                      |
+| Windows development host | Native 64-bit Windows                                                           | Windows 10 version 1803, 64-bit                                    | 25H2 build `26200.8875`                         |
 | Node.js                  | `24.18.0` LTS, pinned in `.nvmrc`                                                | `22.22.2` on Node 22 or `24.15.0` on Node 24; see `engines.node`   | `v24.18.0`                                     |
 | Package manager          | pnpm `11.15.1`, pinned by `packageManager` and `engines.pnpm` in `package.json`  | Exactly `11.15.1` for reproducible installs                        | `11.15.1`                                      |
 | Rust compiler            | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml`                        | `1.77.2`, the Tauri 2 baseline                                     | `rustc 1.97.1`                                 |
@@ -103,7 +107,7 @@ powershell -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/0.11.29/in
 
 The repository-root `.python-version` selects CPython `3.12.10`. uv creates `services/tts/.venv` from that declaration; the environment is ignored and must not be shared with WSL. The committed `services/tts/uv.lock` is the reproducible dependency source. Do not install project tools globally or add a parallel requirements file.
 
-WebView2 Evergreen, Visual Studio Build Tools, MSVC, and the Windows SDK are native prerequisites rather than repository-managed dependencies. Their observed versions belong in the matrix, but automatic security and servicing updates may advance them. Re-run native validation after such updates.
+WebView2 Evergreen, Visual Studio Build Tools, MSVC, and the Windows SDK are native prerequisites. The matrix records a reference Windows setup. Check the versions on the host you are using because security and servicing updates can advance them. Re-run native validation after such updates.
 
 Native Rust compilation executes unsigned build scripts and procedural macro libraries generated under Cargo's target directory. An enforced Windows Application Control or Smart App Control policy may reject those intermediates with operating-system error `4551`; moving the target directory does not remove the signing requirement. Use an approved developer environment or an authorized policy configuration, and do not weaken an organization-managed policy without administrator approval.
 
@@ -536,10 +540,14 @@ bundle it.
 From a normal local PowerShell session outside the automation sandbox:
 
 ```powershell
-pnpm.cmd package:windows:check
 pnpm.cmd package:windows
+pnpm.cmd package:windows:check
 pnpm.cmd package:windows:lifecycle
 ```
+
+Use `pnpm.cmd package:windows:verified-core` for the build step when the
+existing Piper core already matches its locked manifest. The package check
+requires the built Piper payload.
 
 The lifecycle script writes
 `tmp/evidence/windows-release/windows-lifecycle-receipt-v1.json` after the
@@ -584,13 +592,11 @@ This guard uses the already pinned CPython 3.12.10 through uv in offline mode;
 that interpreter must already be discoverable. It does not download Python or
 infer that an unchanged executable hash means the build was stale.
 
-The rebuilt candidate identity is emitted into generated package evidence. A
-rebuild changes that identity and requires new hash-bound lifecycle and ordinary
-journey receipts before carrying forward exact-artifact acceptance. The current
-candidate has those receipts, is `unsigned-local`, and is accepted for
-controlled local use and the portfolio MVP under ADR-0049/release authority v2.
-It is not a trusted public artifact; that channel requires an authorized
-signature and its verification evidence.
+The generated package evidence identifies the built candidate. Match each
+lifecycle and ordinary acquisition receipt to that installer before attaching
+the results. The current checkout's installer passed the local lifecycle with
+a separate receipt. Its full ordinary Chatterbox journey and trusted signing
+remain separate gates. [Current artifact assessment](release-security-and-distribution.md#current-assessment)
 
 Use the PowerShell release wrapper to attach both exact candidate receipts:
 
