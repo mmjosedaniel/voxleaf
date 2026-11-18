@@ -1,5 +1,7 @@
 # PR #325 unsafe lock preflight correction
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base/HEAD `8edc35e12a8cbbb54574338f3ba92f7fb577cf23`, initially clean on
 `codex/revalidated-findings-execplan`. This is a bounded owner correction with
 its regression and maintained documentation; no new public contract or
@@ -8,7 +10,7 @@ multi-component implementation plan is needed. Acceptance is governed by
 
 ## Newly reached failure
 
-[Run 44001206035](https://github.com/mmjosedaniel/voxleaf/actions/runs/44001206035)
+Run 44001206035
 passed browser, WebView2, TypeScript/Node and Rust before reaching Python.
 Python finished with 1,233 passes and one failure. The existing-target native
 link variant passed. The absent-target variant passed link identity and session

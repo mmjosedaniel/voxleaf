@@ -150,7 +150,7 @@ scenarios, cleanup and restoration of preexisting data. The generated record
 shows `lifecycle.status: not-run` because the receipt remains separate. The
 ordinary Chatterbox journey field is also `not-run` for this installer.
 [Generated package record](../../apps/desktop/src-tauri/release/windows-package-evidence-v3.json)
-· [Validated lifecycle and artifact identities](../plans/evidence/reader-stop-quality-follow-up/execution-ledger.md#package-and-acceptance)
+· [Windows build privacy and current artifact identities](../plans/completed/windows-build-privacy.md)
 
 M011's local portfolio decision and compatible-host journey apply to the
 historical artifact described below. Current v7 integration uses the published
@@ -434,12 +434,21 @@ and [code-signing documentation](https://v2.tauri.app/distribute/sign/windows/)
 for the upstream platform mechanisms.
 
 The Windows build holds the release authority inputs stable while packaging.
-After the build it binds signature, optional Defender and checksum observations
-to the installer and the loose build executable. Keep the ignored
-`*.build-authority.json` alongside the original installer for a later
-`-AttachOrdinaryEvidence` run. Attachment requires that local build record,
-the exact artifact pair and matching authority inputs. For an older installer
-without the record, run a fresh build and gather receipts for the new artifact.
+It binds signature, optional Defender and checksum observations to the
+installer and loose executable, and publishes the canonical SHA-256 sidecar
+before promoting build authority. Keep the ignored
+`*.build-authority.json` and checksum beside the original installer for a
+later `-AttachOrdinaryEvidence` run. Attachment independently checks the exact
+artifact pair, matching authority inputs and the canonical checksum bytes,
+including the exact installer filename. For an older installer without the
+record, run a fresh build and gather receipts for the new artifact.
+
+Run the Windows installer validators sequentially on an account they can own
+through restoration. Their preflight rejects a pre-existing install, an
+existing uninstall registration or a remembered custom destination before
+backing up data or invoking setup. Each runner uses its own verified installer
+snapshot for the validation phases. Keep the receipt tied to that installer
+identity and verify cleanup before restoring existing application data.
 
 ## Optional Chatterbox acquisition boundary
 

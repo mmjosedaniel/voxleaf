@@ -70,8 +70,14 @@ export interface SemanticCodeInline extends SemanticTextContext {
   readonly children: readonly SemanticInline[];
 }
 
+export interface SemanticDirectionSpanInline extends SemanticTextContext {
+  readonly kind: "direction-span";
+  readonly children: readonly SemanticInline[];
+}
+
 export interface SemanticLineBreakInline {
   readonly kind: "line-break";
+  readonly language?: string;
 }
 
 export interface SemanticInternalLinkInline extends SemanticTextContext {
@@ -89,6 +95,7 @@ export interface SemanticRasterImageInline extends SemanticTextContext {
 /** Closed allowlist of inert inline values. */
 export type SemanticInline =
   | SemanticCodeInline
+  | SemanticDirectionSpanInline
   | SemanticEmphasisInline
   | SemanticInternalLinkInline
   | SemanticLineBreakInline

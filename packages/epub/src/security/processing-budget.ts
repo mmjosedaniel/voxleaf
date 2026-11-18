@@ -175,11 +175,18 @@ export class EpubProcessingBudget {
     }
 
     this.assertCompressionRatio(uncompressedSize, compressedSize);
-    this.assertCompressionRatio(nextDeclaredBytes, nextDeclaredCompressedBytes);
 
     this.#archiveEntryCount = nextEntryCount;
     this.#declaredCompressedBytes = nextDeclaredCompressedBytes;
     this.#declaredUncompressedBytes = nextDeclaredBytes;
+  }
+
+  public checkDeclaredArchiveCompressionRatio(): void {
+    this.checkpoint();
+    this.assertCompressionRatio(
+      this.#declaredUncompressedBytes,
+      this.#declaredCompressedBytes,
+    );
   }
 
   public beginArchiveEntryRead(

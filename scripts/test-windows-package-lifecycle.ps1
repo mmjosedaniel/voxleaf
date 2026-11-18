@@ -19,6 +19,7 @@ $Installer = (Resolve-Path -LiteralPath $Installer).Path
 
 . (Join-Path $PSScriptRoot "windows-package-lifecycle-data.ps1")
 . (Join-Path $PSScriptRoot "windows-package-lifecycle-installer.ps1")
+Assert-LifecycleInstallRegistrationAbsent
 
 function Get-LifecycleInstallerIdentity {
   $file = Get-Item -LiteralPath $Installer
@@ -172,7 +173,7 @@ function Invoke-Installer {
   $script:installationAttempted = $true
   $script:uninstallAttempted = $false
   Write-RecoveryJournal
-  $exitCode = Invoke-LifecycleInstallerJob -InstallerPath $Installer -RecordRoot {
+  $exitCode = Invoke-LifecycleInstallerJob -InstallerPath $ownedInstaller -RecordRoot {
     param($Id, $StartedUtc)
     $script:installerRootProcess = [ordered]@{ id = $Id; startedUtc = $StartedUtc }
   } -Journal {
@@ -321,6 +322,13 @@ function Invoke-SilentScenario {
 try {
   New-Item -ItemType Directory -Path $sentinelDirectory | Out-Null
   $ownsSentinelDirectory = $true
+  $snapshotDirectory = New-Item -ItemType Directory -Path (Join-Path $sentinelDirectory 'installer')
+  $ownedInstaller = Join-Path $snapshotDirectory.FullName $installerIdentity.fileName
+  [IO.File]::Copy($Installer, $ownedInstaller, $false)
+  $installerReadLock = [IO.File]::Open($ownedInstaller, 'Open', 'Read', 'Read')
+  if ((Get-FileHash -LiteralPath $ownedInstaller -Algorithm SHA256).Hash -ne $installerIdentity.sha256) {
+    throw "windows-release-lifecycle-installer-drift"
+  }
   Write-RecoveryJournal
   [IO.File]::WriteAllText($sentinel, "synthetic sentinel; not a real publication")
   $sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
@@ -379,6 +387,7 @@ try {
 } catch {
   $primaryFailure = $_
 } finally {
+  if ($null -ne $installerReadLock) { $installerReadLock.Dispose() }
   try {
     Stop-LifecycleProcess $applicationProcess
     Stop-LifecycleProcess $packageProcess

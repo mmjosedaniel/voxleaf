@@ -147,3 +147,45 @@ def test_fixture_manifest_marks_sensitive_narration_and_required_contract_famili
         "tts-protocol-control-v1-synthesize",
     ]
     assert {fixture_case.schema_id for fixture_case in fixture_cases} == REQUIRED_SCHEMA_IDS
+
+
+def test_v2_wire_preserves_control_families_and_scopes_the_provider_error() -> None:
+    registry = load_schema_registry()
+    folder = SCHEMA_ROOT / "tts-protocol-control"
+    v1 = Draft202012Validator(read_mapping(load_json(folder / "v1.schema.json")), registry=registry)
+    v2 = Draft202012Validator(read_mapping(load_json(folder / "v2.schema.json")), registry=registry)
+    for fixture in (CONTRACT_FIXTURE_ROOT / "tts-protocol-control" / "v1").glob("valid-*.json"):
+        control = read_mapping(load_json(fixture))
+        assert v1.is_valid(control) and not v2.is_valid(control), fixture.name
+        assert v2.is_valid({**control, "protocolVersion": 2}), fixture.name
+
+    failure = {
+        "schemaVersion": 1,
+        "protocolVersion": 2,
+        "kind": "error",
+        "serviceInstanceId": "service:synthetic-1",
+        "reason": "torch-cuda-unavailable",
+        "error": {
+            "schemaVersion": 1,
+            "code": "internal-failure",
+            "category": "internal",
+            "severity": "fatal",
+        },
+    }
+    assert v2.is_valid(failure)
+    assert not v1.is_valid({**failure, "protocolVersion": 1})
+    ordinary = read_mapping(
+        load_json(CONTRACT_FIXTURE_ROOT / "tts-protocol-control/v1/valid-error.json")
+    )
+    assert not v2.is_valid({**failure, "workIdentity": ordinary["workIdentity"]})
+    assert not v2.is_valid(
+        {**failure, "error": {**read_mapping(failure["error"]), "severity": "recoverable"}}
+    )
+    assert not v2.is_valid(
+        {
+            "schemaVersion": 1,
+            "protocolVersion": 2,
+            "kind": "protocolRejected",
+            "reason": "torch-cuda-unavailable",
+        }
+    )

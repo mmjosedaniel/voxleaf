@@ -21,6 +21,11 @@ precision. The [results](../../plans/evidence/deep-findings-minimal-corrections/
 and [execution ledger](../../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md)
 separate reproductions, failed attempts, current acceptance and qualified reuse.
 
+The November 18 implementation covers VF-0093 through VF-0132. Current
+per-case results, host prerequisites and the exact independent review are
+linked from the [implementation ledger](../../plans/evidence/november-17-findings/implementation-cases.md)
+and [completed ExecPlan](../../plans/completed/november-17-findings-corrections.md).
+
 | ID | Area | Finding | Historical disposition |
 | --- | --- | --- | --- |
 | [VF-0001](#vf-0001) | Reader | Recovery starts at the last heard position | `intentional` |
@@ -114,6 +119,47 @@ separate reproductions, failed attempts, current acceptance and qualified reuse.
 | [VF-0089](#vf-0089) | Benchmarks | v5 concurrent execution can start with a failed GPU baseline | `candidate` |
 | [VF-0090](#vf-0090) | Benchmarks | v5 can skip explicit worker cleanup after a cold-load observation fails | `candidate` |
 | [VF-0091](#vf-0091) | Benchmarks | The v5 queued cancellation trial can pass with no queued request | `candidate` |
+| [VF-0092](#vf-0092) | Narration | English title lookahead can cross inline-code whitespace | `candidate` |
+| [VF-0093](#vf-0093) | Runtime | Cancel start can miss in-flight native package verification | `candidate` |
+| [VF-0094](#vf-0094) | Release | The download probe rejects the native first-artifact diagnostic | `candidate` |
+| [VF-0095](#vf-0095) | Settings | Late Cancel can hide the post-commit Chatterbox cleanup action | `candidate` |
+| [VF-0096](#vf-0096) | Reader | Flattened inline direction scopes can scramble visual run order | `candidate` |
+| [VF-0097](#vf-0097) | Reader | Hidden Auto markup can push a chapter over the live-node limit | `candidate` |
+| [VF-0098](#vf-0098) | Benchmarks | Forced quality-generation timeout can strand private staging and block retry | `candidate` |
+| [VF-0099](#vf-0099) | Benchmarks | An invalid v5 authority commit reaches official execution | `candidate` |
+| [VF-0100](#vf-0100) | Release | Windows validation can install in a remembered nondefault location | `candidate` |
+| [VF-0101](#vf-0101) | Release | Standalone lifecycle receipt can credit installer bytes it did not exercise | `candidate` |
+| [VF-0102](#vf-0102) | Playback | Late rate failure after paused final audio can overwrite the saved speed | `candidate` |
+| [VF-0103](#vf-0103) | Playback | A short underrun can report zero buffering time | `candidate` |
+| [VF-0104](#vf-0104) | Benchmarks | Interrupted safety journal write can block restoration retry | `candidate` |
+| [VF-0105](#vf-0105) | Benchmarks | A warm-up privacy detection can leave a passing v14 audit | `candidate` |
+| [VF-0106](#vf-0106) | Runtime | Chatterbox can start while a newer compatibility check is pending | `candidate` |
+| [VF-0107](#vf-0107) | Release | Windows evidence attachment can accept a missing or stale checksum | `candidate` |
+| [VF-0108](#vf-0108) | EPUB | Central-directory ordering can change ZIP compression admission | `candidate` |
+| [VF-0109](#vf-0109) | EPUB | Empty CDATA can reject an XHTML document at its node limit | `candidate` |
+| [VF-0110](#vf-0110) | Narration | A warm batch boundary can lose an ampersand expansion | `candidate` |
+| [VF-0111](#vf-0111) | Narration | A scene ornament can lose its silent classification across a source window | `candidate` |
+| [VF-0112](#vf-0112) | Runtime | Chatterbox acquisition can follow a redirected staging directory | `candidate` |
+| [VF-0113](#vf-0113) | Narration | An implicit paragraph can lose the language of its line break | `candidate` |
+| [VF-0114](#vf-0114) | Runtime | Chatterbox provider loss during load is reported as a warm-up failure | `candidate` |
+| [VF-0115](#vf-0115) | Benchmarks | An accepted v6 quality scorecard can be impossible to aggregate | `candidate` |
+| [VF-0116](#vf-0116) | Benchmarks | CPU fallback CLI loses the retryable `quality-busy` result | `candidate` |
+| [VF-0117](#vf-0117) | Benchmarks | A failed quality correction can print a filesystem traceback | `candidate` |
+| [VF-0118](#vf-0118) | Settings | An over-limit saved profile can stop playback before Chatterbox activation fails | `candidate` |
+| [VF-0119](#vf-0119) | EPUB | A chapter filename containing `#` can prevent a book from opening | `candidate` |
+| [VF-0120](#vf-0120) | EPUB | A padded `xml:id` can send navigation to chapter start | `candidate` |
+| [VF-0121](#vf-0121) | Settings | Replacing a focused Settings action can leave Escape unhandled | `candidate` |
+| [VF-0122](#vf-0122) | Playback | A stale fallback warning can follow an explicit selection of 1× | `candidate` |
+| [VF-0123](#vf-0123) | Benchmarks | Native refill wall timing starts after resource sampling | `candidate` |
+| [VF-0124](#vf-0124) | Benchmarks | Native active-cancellation evidence can credit a Stop after generation completes | `candidate` |
+| [VF-0125](#vf-0125) | Benchmarks | Reader reflow benchmarks time frame callbacks without observing realignment | `candidate` |
+| [VF-0126](#vf-0126) | Narration | Chatterbox can fail before speech after a long silent prefix | `candidate` |
+| [VF-0127](#vf-0127) | Settings | A known oversized language preference can interrupt narration | `candidate` |
+| [VF-0128](#vf-0128) | Narration | An explicitly foreign line break can permit a Spanish word join | `candidate` |
+| [VF-0129](#vf-0129) | Benchmarks | v6 calls a multi-evaluator quality session eligible | `candidate` |
+| [VF-0130](#vf-0130) | Benchmarks | Malformed preflight fields can bypass the CLI failure receipt | `candidate` |
+| [VF-0131](#vf-0131) | Benchmarks | Quick-start lead is sampled after playback starts | `candidate` |
+| [VF-0132](#vf-0132) | Runtime | Graceful shutdown can accept invalid trailing protocol output | `candidate` |
 
 ## VF-0057
 
@@ -162,6 +208,8 @@ request can legitimately be accepted instead of returning Busy.
 - 2026-11-13 assessment — `inspected-absent` for a policy violation. Explicit recovery still prioritizes the latest heard locator and falls back to the attempted start. [Audit][audit-2026-11-13]
 - 2026-11-16 assessment — `inspected-absent` for the alleged violation on `079c38ece8687b24859db4f64d4f92bba67bdcee`. Explicit Recover still uses the latest heard locator when one exists. A later write to the durable checkpoint has its own trigger in [VF-0074](#vf-0074). [Audit][audit-2026-11-16]
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the alleged recovery-target policy violation. Explicit recovery still uses the latest heard locator when present and the attempted start otherwise. [Recovery owner](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L1155) [Audit][audit-2026-11-17]
+
 ## VF-0002
 
 **Play after Stop during a pending placement.** Pause at A, request B, stop before placement settles, then press Play. Use the measured exact or fallback destination if available. An unavailable result gates Play. Stop still suppresses automatic restart and checkpoint writes.
@@ -207,6 +255,7 @@ request can legitimately be accepted instead of returning Busy.
 - Lineage — CFR-05 follows LCF-02, RCF-13, CAF R1.3 and C14. [VF-0022](#vf-0022) covers related storage reporting.
 - Why it escaped or stayed open — Earlier protections addressed concurrent polling and live operation provenance. This trigger begins in a fresh manager.
 - Evidence — [Rust regression](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs) `cfr05_startup_and_check_retry_preserve_installed_and_backup_during_staging_recovery`.
+- 2026-11-17 fourth-pass assessment — `inspected-absent` for the original abandoned, owned staging lifecycle on `50f3b9e`. Startup and ordinary Check use the [ancestry-checked reconciler](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2031). [VF-0112](#vf-0112) concerns different acquisition callers. [Fourth audit][audit-2026-11-17-pass-4]
 
 ## VF-0006
 
@@ -312,6 +361,7 @@ request can legitimately be accepted instead of returning Busy.
 - Why it escaped or stayed open — Earlier output recovery did not exercise failure between correction publication and aggregate invalidation.
 - Evidence — [Python regression](../../../services/tts/tests/test_benchmark_quality.py) `test_v6_quality_preserves_and_applies_one_classification_correction`. The documented direction can cause false rejection.
 - 2026-11-16 second-pass assessment — `inspected-absent` for the original sequential unlink failure. Removal precedes publication and the [current derivation](../../../services/tts/benchmarks/cpu_fallback_result.py#L400) rejects stale aggregates. Concurrent correction publication has a separate admission defect, [VF-0082](#vf-0082). [Second pass][audit-2026-11-16-pass-2]
+- 2026-11-17 fourth-pass assessment — `inspected-absent` on `50f3b9e` for publishing the correction before aggregate removal. [VF-0117](#vf-0117) concerns the command's failure receipt for the same filesystem fault. [Fourth audit][audit-2026-11-17-pass-4]
 
 ## VF-0015
 
@@ -497,6 +547,8 @@ request can legitimately be accepted instead of returning Busy.
 - Evidence — [Browser regression](../../../apps/desktop/tests/browser/reader-image-lifecycle.smoke.spec.ts) `RPI-02 loads later images and reloads released earlier occurrences` and [RPI ledger][rpi-ledger]. The original capacity issue reproduced in Chromium.
 - 2026-11-13 second-pass assessment — `inspected-absent` for the permanent live-capacity exhaustion of later visible occurrences after earlier images leave the retention margin. Visibility retires the earlier source, release advances the capacity revision, and the pump retries visible work first. This assumes the ordinary observer delivers the visibility changes. [Second audit][audit-2026-11-13-pass-2]
 - 2026-11-15 fourth-pass assessment — `inspected-absent` for that capacity failure in the current source when the viewport observer delivers the exit. Retirement releases the old handle, advances the capacity revision and schedules the waiting visible occurrence. A cancelled completion must still match its registered controller to publish. [Fourth-pass assessment][audit-2026-11-15-pass-4]
+
+- 2026-11-17 third-pass assessment — `inspected-absent` on `50f3b9e` for permanent raster capacity exhaustion after earlier occurrences leave the retention margin. Outside status retires their handles, release advances the capacity revision, and the loader pumps visible demand ahead of queued prefetch. [Visibility handling](../../../apps/desktop/src/reader/images/publication-raster-image-loader.ts#L155), [release and retry](../../../apps/desktop/src/reader/images/publication-raster-image-loader.ts#L267). [Third audit][audit-2026-11-17-pass-3]
 
 ## VF-0031
 
@@ -802,6 +854,8 @@ request can legitimately be accepted instead of returning Busy.
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. R01 additionally exposed empty-tail and paused-end completion; their late-success/rejection/reset witnesses now pass without changing SAC-11. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
 
+- 2026-11-17 second-pass assessment — `inspected-absent` on `50f3b9e` for the reported pending-rate behavior after logical completion. The [player](../../../apps/desktop/src/tts/pcm-playback.ts#L877) retires the future-rate attempt once the scheduler reports complete. [VF-0102](#vf-0102) follows a final unit that has ended while the scheduler is still paused. [Second audit][audit-2026-11-17-pass-2]
+
 ## VF-0049
 
 **Reselecting healthy Chatterbox resets narration metrics.** Clicking the checked Chatterbox profile while it plays preserves the admitted service owner but clears the recovery episode's accumulated playback, buffering, intentional wait and underrun totals.
@@ -891,6 +945,8 @@ request can legitimately be accepted instead of returning Busy.
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
 
+- 2026-11-17 third-pass assessment — `inspected-absent` on `50f3b9e` for loss of an already classified scene boundary after a Piper punctuation elision in the examined path. [The product preparation callback](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2134) transfers that boundary to the following speakable unit. [VF-0111](#vf-0111) concerns a scene that the package never classifies. [Third audit][audit-2026-11-17-pass-3]
+
 ## VF-0054
 
 **A split lexical expansion loses text on warm continuation.** A Piper hard boundary can split a multi-origin Spanish expansion that fits in a fresh segment. The next request renormalizes the raw suffix, losing letters and differing from cold preparation at the same locator.
@@ -905,6 +961,8 @@ request can legitimately be accepted instead of returning Busy.
 
 - 2026-11-14 closure — `fixed`, latest check `validated` on `fab1c9e186552515e828c33ce75e11628dda8300` plus the exact DFM-CR-R03-20261114 approved patch. The per-case result identifies the discriminating regression, adjacent controls and successful next action; runtime/static gates and restoration are accepted with explicit input-matched reuse. [Results](../../plans/evidence/deep-findings-minimal-corrections/results.md), [review](../../plans/evidence/deep-findings-minimal-corrections/review-r03.md).
 
+
+- 2026-11-17 third-pass assessment — `inspected-absent` on `50f3b9e` for the original lexical expansion interior split. [Packing](../../../packages/epub/src/narration/narration-segment-packer.ts#L536) excludes lexical expansion interiors. [VF-0110](#vf-0110) uses an allowed boundary before the expansion and loses preceding context. [Third audit][audit-2026-11-17-pass-3]
 
 ## VF-0055
 
@@ -1058,6 +1116,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. The v14 CLI preserved raw input on rejected derivation, supported same-session retry and removed inputs before success. Failed or partial removal produced failure. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
 
+- 2026-11-17 second-pass assessment — `inspected-absent` on `50f3b9e` for validation-after-delete in the [prospective safety deriver](../../../services/tts/benchmarks/benchmark_safety_cli.py#L19). It validates and encodes before removing the owned data directory and checks absence before success output. [Second audit][audit-2026-11-17-pass-2]
+
 ## VF-0066
 
 **A pending refill can resume below one playable minute after a rate change.** After an involuntary underrun with more narration expected, 45 seconds of source audio qualifies for refill at 0.75×. If the stretcher is still preparing when the listener returns to 1.00×, the scheduler keeps its earlier admission and the direct backend can start the next unit with only 45 playable seconds.
@@ -1074,6 +1134,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 
 - 2026-11-16 assessment — `inspected-absent` for a changed speed while the refill's stretcher is still pending on `079c38ece8687b24859db4f64d4f92bba67bdcee`. Rate selection recomputes effective lead with automatic refill pending up to successor start. [Audit][audit-2026-11-16]
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the pending automatic refill rate-change trigger. [Rate selection](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L643) refreshes effective lead and the [state gate](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1073) keeps the refill pending until playback admission. [Audit][audit-2026-11-17]
+
 ## VF-0067
 
 **The ordinary journey can record a different installer from the one it ran.** If a build replaces the installer at its original path after installation, the ordinary journey hashes the replacement when writing its result. The attached journey observation can then refer to an installer whose installed behavior the journey did not exercise.
@@ -1086,6 +1148,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 - 2026-11-15 deep validation — `inspected-present` for concurrent source-installer replacement. Consumer hash equality cannot prove which bytes were launched. Distinguish the installed executable from the build executable; no misattributed published release was observed. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0067--the-exercised-installer-identity)
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. Disposable fixture revisions, including a restored original, left the exercised run-owned installer bytes stable. The unsigned installed journey verified startup, containment, uninstall and profile restoration. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
+
+- 2026-11-17 second-pass assessment — `inspected-absent` on `50f3b9e` for replacement of the source installer in the [ordinary runner](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L1220), which hashes and launches its owned copy. The standalone lifecycle producer is a separate variant in [VF-0101](#vf-0101). [Second audit][audit-2026-11-17-pass-2]
 
 ## VF-0068
 
@@ -1125,6 +1189,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 - 2026-11-15 deep validation — `inspected-present`. Traced an unrelated measured failure through failed-row completion, valid independent cancellation trials, final-only reserve breach and exact committed-summary admission. Historical placeholders establish matrix structure, not dispatched attempts, and are not a new defect by themselves. [Detailed assessment](audits/2026-11-15-deep-findings-validation.md#vf-0070--row-counts-are-not-causal-stop-proof)
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. The v14 admission surface rejects aggregate memory evidence without attributable causal proof. Acceptance covers this fail-closed path only. Positive successor admission is deferred. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for positive v14 CPU admission with unrelated memory evidence. The [current authority](../../../services/tts/benchmarks/v14_authority.py#L327) retains the deliberate fail-closed rule. [Audit][audit-2026-11-17]
 
 ## VF-0071
 
@@ -1166,6 +1232,8 @@ sample storage versus the specified 1,920,000-byte extra-buffer ceiling.
 
 - 2026-11-15 implementation closure — `fixed`, latest check `validated` on the R02-approved patch based on `df0109b0cefb50394e55eed10f2065140de837ec`. A spawned synthetic measured worker exercised closed privacy failure propagation, redacted diagnostics and verified process reap. The final and directly supplied summaries could not assert a passing privacy audit. [Execution evidence](../../plans/evidence/four-pass-findings-corrections/execution-ledger.md).
 
+- 2026-11-17 second-pass assessment — `inspected-absent` on `50f3b9e` for a detected privacy failure during measured v14 synthesis. The [controller](../../../services/tts/benchmarks/batch_execution.py#L252) preserves the code for measured requests, and the [validator](../../../services/tts/benchmarks/v14_authority.py#L303) rejects a contradicting audit. Warm-up uses a separate branch tracked in [VF-0105](#vf-0105). [Second audit][audit-2026-11-17-pass-2]
+
 ## VF-0056
 
 **Missing installer helper unnecessarily retains the application-data backup.**
@@ -1182,6 +1250,8 @@ restoring the absent destination.
 - Correction — Preserve the actual spawn error and privately mark no-spawn only when the actual child has no PID and a spawn syscall. Keep session/install/destination absence checks; uncertainty after process creation still retains the backup. No public contract or architectural change.
 - Evidence and final acceptance — [CI follow-up](../../plans/evidence/deep-findings-ci-follow-up/acceptance.md), [independent report](../../plans/evidence/deep-findings-ci-follow-up/review-r01.md). Historical completed plans and reviews remain unchanged.
 - 2026-11-16 third-pass assessment — `inspected-absent` for the missing helper at the Node owner. The [spawn check](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L962) records no-spawn and the [finalizer](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L1490) checks absence before restore. [VF-0085](#vf-0085) concerns cleanup after successful installation in another runner. [Third pass][audit-2026-11-16-pass-3]
+
+- 2026-11-17 third-pass assessment — `inspected-absent` on `50f3b9e` for the original fresh-JSON artifact drift trigger. [PowerShell](../../../scripts/build-windows-release.ps1#L291) supplies locked hashes and [the writer](../../../apps/desktop/scripts/windows-release.mjs#L801) rechecks the pair before replacing JSON. [VF-0107](#vf-0107) concerns a later checksum failure after that guarded write. [Third audit][audit-2026-11-17-pass-3]
 
 ## VF-0074
 
@@ -1206,6 +1276,8 @@ restoring the absent destination.
 
 - 2026-11-16 PR #325 browser follow-up — Full Windows CI exposed BNC-01's browser-side use of automatic `scrollIntoView()` as manual movement. Replacing that test input with a real wheel gesture preserves all saved-position and explicit-Play assertions. Local RED/GREEN and both mounted VF-0074 controls cover the correction; the production guard remains unchanged. [Browser follow-up and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-browser-follow-up.md).
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the original Stop and delayed unmarked sample trigger. [Save admission](../../../apps/desktop/src/persistence/reader-position-save-coordinator.ts#L225) rejects automatic samples while the heard checkpoint owns persistence. Validated manual movement, including an equal sample, releases protection. [Audit][audit-2026-11-17]
+
 ## VF-0075
 
 **A nested explicit automatic direction is lost in the rendered reader.** In a chapter with `dir="auto"` on the XHTML root and an explicit `dir="auto"` on a later paragraph, an initial LTR paragraph can set the chapter's direction. The later RTL paragraph inherits that direction in the rendered DOM because its own attribute was dropped. Its text alignment and the reading-line caret's sampling side can differ from the source.
@@ -1220,6 +1292,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` for explicit nested Auto direction. Fixed-direction equality remains valid, while effective Auto lacks declaration provenance. No saved-offset failure is established. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — Controlled public reproduction and computed browser direction/reopen checks support the Auto-declaration-scope correction. Independent R01 additionally reproduced separate direction resolution under flattened containers. The revised reader shares a native result per scope with bounded, yielding and cancellable scanning; mixed unknown admission, neutral/late-strong text, exact logical/narration ranges, progressive replacement and same-byte reopen are checked. Inherited sibling direction, fixed RTL and VF-0064 remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the nested explicit Auto classification trigger. [Projection and scope allocation](../../../packages/epub/src/document/xhtml-projector.ts#L802) distinguish inherited and explicitly declared Auto. The [renderer](../../../apps/desktop/src/reader/SemanticDocument.tsx#L128) uses each scope's resolved direction. Related visual-order and capacity cases are [VF-0096](#vf-0096) and [VF-0097](#vf-0097). [Audit][audit-2026-11-17]
 
 ## VF-0076
 
@@ -1236,6 +1310,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` in both successful acquisition phases. Download acknowledgement is discarded; later cleanup or teardown cannot recover the missed terminal error. The consequence is conditional false evidence, not a demonstrated corrupt install. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — Controlled ordinary journey reproductions demonstrated success from Installed before terminal Download acknowledgement in retry/reinstall. Per-attempt terminal ownership now gates receipts; failure cleanup/restoration and the next successful acquisition are checked. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for ordinary retry and reinstall crediting provisional Installed. Both await [terminal acquisition](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L683) before using the result. [Audit][audit-2026-11-17]
 
 ## VF-0077
 
@@ -1254,6 +1330,8 @@ restoring the absent destination.
 
 - 2026-11-16 authorized successor execution — `reproduced`; Original unconditional restoration reproduced before edits. The authorized safety-v1 successor binds original/admitted/restored native observations, one-use admission, exact inputs and private cleanup. Failed/incomplete runs can restore without a derivable result; frozen historical bytes are preserved. Prior worker/resource cleanup coverage lacked power-state equality; the earlier review cause remains unknown. Current evidence and final R04 acceptance are in [case results][fsf-execution].
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for unconditional sleep restoration as official v14 acceptance. [Raw capture](../../../services/tts/benchmarks/batch_official.py#L1188) records false and [finalization](../../../services/tts/benchmarks/benchmark_safety.py#L335) compares original and restored native observations before derivation. [Audit][audit-2026-11-17]
+
 ## VF-0078
 
 **An omitted formatting mark before a Spanish time duplicates the article.** In synthetic Spanish prose `Las \u200B14:30.`, the article matcher sees a space followed by U+200B and misses the combined form. The bare time matcher skips the mark in its lookbehind and adds its own article. Formatting omission then leaves `Las las catorce treinta.` in prepared text.
@@ -1268,6 +1346,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` for short prose article/mark/time input in both public profiles. Additional approved omitted marks in the same gap share this ID; source ranges and expansion protection must be preserved. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — Public Piper/Chatterbox regressions reproduced duplicate articles across admitted omitted marks. The bounded matcher and typed omissions now preserve one article, exact mapping and continuation; plain forms and limits remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the short omitted-mark Spanish article/time trigger. The [combined matcher](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L1016) accepts the omitted mark within bounded same-language prose context. [Audit][audit-2026-11-17]
 
 ## VF-0079
 
@@ -1299,6 +1379,8 @@ restoring the absent destination.
 
 - 2026-11-16 execution — Controlled Settings remount reproduced Remove availability during owned Download cleanup. Persistent ownership now disables Remove with truthful busy guidance through both terminal outcomes; explicit eligible activation and the next Remove remain supported. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the narrowed Remove presentation trigger while ordinary Download owns cleanup. [Installed and failed Settings actions](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L480) consult client download ownership across remount. [Audit][audit-2026-11-17]
+
 ## VF-0081
 
 **Cancellation evidence treats a failed staging lookup as absence.** After Cancel, the ordinary journey only rethrows its own staging-retained marker. Any error from the lookup satisfies this step. If retry and later gates succeed, the runner can issue `downloadCancellationCleanupPassed: true` without observing absence.
@@ -1313,6 +1395,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` at the full journey's non-ENOENT branch. Later retry may erase the missing cleanup observation. The bounded path's strict helper still protects its own checkpoint. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — Controlled ordinary cancellation reproduced retry after EACCES/EIO/unknown staging lookup. Strict absence now admits only ENOENT, rejects residue and preserves cleanup/restoration before the next acquisition. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the staging lookup treating arbitrary I/O failure as absence. [The ordinary runner](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L708) accepts `ENOENT` only. [Audit][audit-2026-11-17]
 
 ## VF-0082
 
@@ -1332,10 +1416,13 @@ restoring the absent destination.
 - 2026-11-16 authorized follow-up — The user approved defensive overlap rejection. Real child processes reproduce competing successes, stale aggregate publication and removal of an active session. Per-session nonblocking OS ownership now covers correction, submission, aggregation, cleanup and CPU-fallback derivation; rejected admission preserves the winner, and owner termination permits retry. The sequential contract, one immutable correction, original invalidation/retry protection and historical result files remain intact. [ADR-0077](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md) records the retained empty sibling. Current Python checks pass; exact-patch acceptance belongs to the [follow-up ledger](../../plans/evidence/reader-stop-quality-follow-up/execution-ledger.md) and independent report. The prior exclusion was an explicit scope decision, not a demonstrated earlier regression escape.
 
 - 2026-11-16 closeout — `fixed` for the authorized overlap rejection, latest check `validated` on `cafb59e`. R02 approved the real-process controls, recovery after owner termination and the alternative evidence for unavailable native symlink setup. [Approved closeout](../../plans/evidence/reader-stop-quality-follow-up/closeout-r02.md)
+- 2026-11-17 fourth-pass assessment — `inspected-absent` on `50f3b9e` for competing correction publication. [Per-session operation admission](../../../services/tts/benchmarks/quality.py#L549) precedes the write. [VF-0116](#vf-0116) concerns presentation of a correctly rejected overlap at the derivation CLI. [Fourth audit][audit-2026-11-17-pass-4]
 
 - 2026-11-16 PR #325 native link follow-up — The privileged CI runner reached the two locally skipped link fixtures and exposed a literal path-spelling mismatch after successful lock rejection. The test now compares the link's post-operation destination with its actual pre-operation readback; target/session integrity and safe retry assertions remain. Local native execution is still privilege-blocked, and replacement Windows CI is required for native GREEN. [Evidence and independent review](../../plans/evidence/reader-stop-quality-follow-up/ci-symlink-follow-up.md).
 
 - 2026-11-16 PR #325 lock-owner follow-up — Reopened the unsafe-entry subcase after native CI reached the formerly masked assertion: a dangling coordination link caused creation of its absent referent before `session-lock`. The prior model incorrectly forced exclusive creation on a link to fail. Updated real-target-I/O RED/GREEN supports pre-open `lstat` rejection, while descriptor checks, all five callers and sequential recovery remain covered. Native GREEN still requires replacement Windows CI. [Owner correction and evidence](../../plans/evidence/reader-stop-quality-follow-up/ci-lock-preflight-follow-up.md).
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for competing operations on the same ready quality session. The [ready-session owner](../../../services/tts/benchmarks/quality_operation.py#L28) serializes mutations and derivation under [ADR-0077](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md#decision). Admitted generation timeout is tracked in [VF-0098](#vf-0098). [Audit][audit-2026-11-17]
 
 ## VF-0083
 
@@ -1352,6 +1439,8 @@ restoring the absent destination.
 
 - 2026-11-16 execution — Finite child-process controls reproduced unrestricted pipe reads. Quality generation now shares the existing bounded binary-pipe/Windows Job owner, discards stderr and reaps children; exact-size JSON, invalid output, timeout and inherited-pipe controls run locally. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for unbounded quality-launcher pipes. [The launcher](../../../services/tts/benchmarks/quality_cli.py#L129) uses the [bounded worker](../../../services/tts/benchmarks/cli.py#L530). A separate timeout staging route is [VF-0098](#vf-0098). [Audit][audit-2026-11-17]
+
 ## VF-0084
 
 **An omitted mark can turn an ambiguous English street abbreviation into Saint.** A zero-width space after `Baker` resets the preceding capitalized-word summary. Given a later uppercase `Then`, `St.` is treated as a title. The invisible mark is omitted and the prepared text changes the street abbreviation and its punctuation.
@@ -1367,6 +1456,8 @@ restoring the absent destination.
 
 - 2026-11-16 execution — Public omitted-mark predecessor cases reproduced unwanted Saint expansion. Logical predecessor provenance is retained, including profile-specific hard segmentation and cold continuation; ordinary title/numeric/barrier controls remain. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the same-language omitted-mark predecessor trigger. [The title classifier](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L1306) retains the preceding capitalized-word evidence before considering expansion. [Audit][audit-2026-11-17]
+
 ## VF-0085
 
 **The lifecycle journal can prevent uninstall and application-data restoration.** The standalone PowerShell lifecycle runner tries to hash the original installer when it journals an uninstall of the test installation. If that source has become unreadable, the journal throws before the installed uninstaller launches. The attempted flag can then prevent retry and the original profile stays in its backup.
@@ -1381,6 +1472,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` when the original installer becomes unreadable before owned uninstall. The backup remains preserved; the claim is blocked cleanup/restoration, not deletion of the user's original data. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — A real exclusive lock on the synthetic installer reproduced abandoned owned installation during recovery journaling. The entry digest now permits owned uninstall/restoration while fresh final drift and uncertain-containment checks remain strict. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for failure to read the original installer during recovery journaling. The [journal](../../../scripts/test-windows-package-lifecycle.ps1#L149) uses the entry digest and the [terminal check](../../../scripts/test-windows-package-lifecycle.ps1#L433) rereads the current artifact separately. [Audit][audit-2026-11-17]
 
 ## VF-0086
 
@@ -1412,6 +1505,8 @@ restoring the absent destination.
 
 - 2026-11-16 execution — Compiled NSIS reproduced false success below a junction with absent descendants. Ancestor checks now reject that evidence without touching outside sentinels; existing locked/denied/update/preferences controls pass. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the selected explicit-cleanup route under an unsafe ancestor. The [NSIS checks](../../../apps/desktop/src-tauri/windows/nsis-hooks.nsh#L417) record it before testing absent descendants. [Audit][audit-2026-11-17]
+
 ## VF-0088
 
 **A download probe can accept an unrelated error as its injected file-create failure.** Once the barrier directory has been created, any failed first download with a non-null diagnostic satisfies the capture gate. A transient HTTP failure before file creation can supply that diagnostic. Export equality and a successful later cancellation can then produce a passing bounded probe without exercising the intended file-create error.
@@ -1429,6 +1524,8 @@ restoring the absent destination.
 
 - 2026-11-16 PR #325 follow-up — The configured desktop Node phase exposed a test-only fixture-root assumption in VF-0088 controls. Test calls now resolve the root from their module, preserving probe assertions from both repository and package working directories. The production probe is unchanged; prior root-only execution missed the package-directory trigger. [CI evidence and independent assessment](../../plans/evidence/reader-stop-quality-follow-up/ci-follow-up.md).
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for crediting an unrelated HTTP response-stage failure. The [probe](../../../apps/desktop/scripts/optional-download-probe.mjs#L114) now fails closed on that mismatch. Its rejection of the intended diagnostic is tracked in [VF-0094](#vf-0094). [Audit][audit-2026-11-17]
+
 ## VF-0089
 
 **v5 concurrent execution can start with a failed GPU baseline.** A GPU-solo run with a failed cancellation trial can derive a schema-valid summary that records fewer than two passed trials. Given its exact digest and an otherwise eligible concurrent request, the runner accepts its identity and starts the concurrent stage. The baseline admission branch checks neither the required trial count nor the other GPU-solo gates such as the minimum measured duration.
@@ -1444,6 +1541,8 @@ restoring the absent destination.
 
 - 2026-11-16 execution — Matching-digest but ineligible GPU summaries reached worker construction in both concurrent entry modes. Frozen count/duration/cancellation/audit/memory gates now block them; eligible boundary data reaches construction and CPU progression is preserved. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for official v5 pre-worker admission with a known failing GPU-solo summary. The [runner](../../../services/tts/benchmarks/dual_worker_cli.py#L467) validates the summaries before construction. Run authority identity has a separate unchecked input in [VF-0099](#vf-0099). [Audit][audit-2026-11-17]
+
 ## VF-0090
 
 **v5 can skip explicit worker cleanup after a cold-load observation fails.** In an official solo arm, the cold worker has already loaded when GPU counters or placement can fail. The local runtime is transferred to the finalizer's variable only after the observation succeeds, and the earlier cold runtimes close only on the successful observation branch. A failure skips explicit close and leaves the adapter's best-effort destructor, which suppresses cleanup errors.
@@ -1458,6 +1557,8 @@ restoring the absent destination.
 - 2026-11-16 deep validation — `inspected-present` for skipped explicit close/error reporting. Destructor termination remains best effort; no live orphan is established. Early/final cold slots and pilot/concurrent ownership are distinct controls. [Deep assessment][audit-2026-11-16-deep].
 
 - 2026-11-16 execution — First/second/third cold-load and early-close failures reproduced missing explicit ownership. Runtime ownership now precedes load; every created instance receives explicit close, including warmup failure and a final retry of a failed close. R01 additionally exposed primary-error replacement by cleanup failure. The corrected CLI preserves the primary stdout receipt and emits a fixed content-free secondary stderr diagnostic; combined, primary-only and cleanup-only controls pass. A failing close does not establish successful containment or a safe successor. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for lack of a retained handle at the selected v5 cold-load boundary. [The runner](../../../services/tts/benchmarks/dual_worker_cli.py#L496) assigns runtime ownership before observation and [closes in `finally`](../../../services/tts/benchmarks/dual_worker_cli.py#L726). [Audit][audit-2026-11-17]
 
 ## VF-0091
 
@@ -1476,6 +1577,8 @@ restoring the absent destination.
 
 - 2026-11-16 authorized successor execution — `reproduced`; Original unwitnessed active trial acceptance reproduced before edits. Controller-admitted third work, concrete pre-release completion and actual child adapter entry now have distinct witnesses, paired queue control and simultaneous both-active barrier. Session/trial/worker/occurrence identities and recomputed acceptance preserve existing isolation/deadline/cleanup protections. The shared completion hook and dispatch-only checks explain the coverage gap; the earlier review cause remains unknown. Current evidence and final R04 acceptance are in [case results][fsf-execution].
 
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the phase-alias trigger for new official v5 results. [Trial creation](../../../services/tts/benchmarks/dual_worker_trials.py#L165) requires the queued occurrence and [derivation](../../../services/tts/benchmarks/dual_worker_result.py#L194) consumes its distinct witness. [Audit][audit-2026-11-17]
+
 ## VF-0092
 
 **English title lookahead can cross inline-code whitespace.** In an English paragraph with `St.<code> </code>James`, the code space survives projection within the same source leaf. The title lookahead skips it without checking prose/language context, finds an English uppercase letter and expands St. to Saint. Dr. has the same route. The code bytes remain unchanged; the abbreviation uses context across a semantic barrier.
@@ -1487,6 +1590,574 @@ restoring the absent destination.
 
 
 - 2026-11-16 execution — Public code-gap and retained foreign-NBSP cases reproduced title expansion across a semantic barrier. Every skipped gap token must now be English prose; accepted plain titles, exact source ranges and both profiles remain controls. The [case results][fsf-execution] record the distinguishing assertions, earlier coverage limits and next action; exact-patch acceptance is governed by the linked execution review/closeout. HEAD is `6130e2fed61f5d632e3f31c69775d1fa60c97373` plus the identified task patch, not a new commit.
+
+- 2026-11-17 assessment — `inspected-absent` on `50f3b9e` for the retained code-space and foreign-language NBSP cases. The [title lookahead](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L1366) stops before crossing either context. [Audit][audit-2026-11-17]
+
+## VF-0093
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0093) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0093)
+
+**Cancel start can miss in-flight native package verification.** On packaged Piper, press Cancel start after native startup takes its operation lock and begins verifying the installed package, before a child occupies the session slot. Shutdown finds no child or matching termination receipt. Native startup can still create and handshake the obsolete child. If the wait for verification and containment passes the five-second deadline, narration reports cleanup failure and ordinary Play stays blocked pending recovery.
+
+- Owners — [Native startup and publication](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1504), [empty-slot shutdown](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1835), [installed Piper verification](../../../apps/desktop/src-tauri/src/tts_release_core.rs#L119), [typed-client shutdown](../../../apps/desktop/src/tts/process-client.ts#L567) and [coordinator cleanup](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L1568).
+- Lineage — Variant of [CCF-C07](../../plans/completed/confirmed-chat-findings-minimal-corrections.md#L263), which covers pre-dispatch compatibility work. [ADR-0056](../../architecture/decisions/ADR-0056-bound-reader-narration-lifecycle-operations.md#decision) keeps exact-client containment for dispatch races and addresses already-published load/warm. The [dispatched-start test](../../../apps/desktop/src/tts/product-narration-coordinator.test.ts#L1258) uses a fake shutdown outside native verification. First introduction unknown.
+- Disposition — `candidate`, P2 product startup given the cleanup-deadline overrun. `inspected-present` on `50f3b9e` for the ordered interleaving and its conditional outcome. The stale-run guard prevents obsolete synthesis. Host incidence and eventual termination timing remain unmeasured. [Audit][audit-2026-11-17]
+- Next check — Hold native verification before slot publication, cancel the exact start, and release verification. Assert that the abandoned start creates no child and that the next Play can start after bounded cleanup. Preserve interruption after publication and exact-instance protection for replacements.
+
+- 2026-11-17 second-pass assessment — `inspected-present` on `50f3b9e` for Cancel processed after a packaged Piper native startup begins verification and before child publication. The [busy shutdown](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1835) records no cancellation for the pending start while the [client](../../../apps/desktop/src/tts/process-client.ts#L567) awaits settlement. The Play-blocking outcome still depends on exceeding the cleanup deadline. [Second audit][audit-2026-11-17-pass-2]
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. An empty native slot admits an obsolete spawn. Blocking the next Play additionally requires a cleanup timeout. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0093)
+
+## VF-0094
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0094) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — Git traces the ordinal mismatch to the VF-0088 correction in `e85837d`. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0094)
+
+**The download probe rejects the native first-artifact diagnostic.** On a compatible Windows host, the bounded probe's injected first-runtime-part file-create failure yields GitHub artifact index `1` with stage `create-file` and kind `io`. The runner requires index `0` and fails before checking export and cancellation.
+
+- Owners — [Probe gate](../../../apps/desktop/scripts/optional-download-probe.mjs#L114) and [native producer](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2301). [ADR-0059](../../architecture/decisions/ADR-0059-optional-download-diagnostics.md#decision) defines one-based artifact indexes.
+- Lineage — False rejection variant of [VF-0088](#vf-0088). `e85837d` introduced the index predicate. The [paired fixture](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs#L297) admits zero and uses one as a negative control, which explains the missed interface mismatch.
+- Disposition — `candidate`, P2 maintainer release evidence, `inspected-present` on `50f3b9e`. All correctly indexed first-part failures fail this gate. No new installed transfer ran. [Audit][audit-2026-11-17]
+- Next check — Use the native one-based diagnostic shape as the passing case. A later part, response-stage failure and invalid OS code should still fail. Continue the genuine diagnostic through export equality and subsequent cancellation.
+
+- 2026-11-17 second-pass assessment — `inspected-present` on `50f3b9e` for the first runtime artifact's correct file-create diagnostic. Rechecked [native serialization input](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2301), the [zero-based probe gate](../../../apps/desktop/scripts/optional-download-probe.mjs#L114) and its [fixture](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs#L297). [Second audit][audit-2026-11-17-pass-2]
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The native one-based first artifact fails the probe's zero comparison. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0094)
+
+## VF-0095
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0095) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0095)
+
+**Late Cancel can hide the post-commit Chatterbox cleanup action.** Settings still shows Verifying when native promotion commits and cleanup fails. Cancel reaches native after it has recorded `Failed` and returns `tts-optional-profile-invalid`. The client supersedes Download's terminal result and publishes a generic failed snapshot. With acquisition still eligible, Settings offers **Review Chatterbox download again**. Choosing Review can replace the retained cleanup receipt with a new confirmation. A fresh snapshot before Review can restore the cleanup action. A new Download still requires explicit consent.
+
+- Owners — [Native terminal failure](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2384), [Cancel](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2448), [client action ownership](../../../apps/desktop/src/tts/optional-chatterbox-client.ts#L329), [Settings failed-state actions](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L511) and [native reselection](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2180).
+- Lineage — Variant of [VF-0043](#vf-0043) and [VF-0058](#vf-0058). The [late-Cancel test](../../../apps/desktop/src/tts/optional-chatterbox-client.test.ts#L47) varies Download settlement while Cancel returns Installed. This ordering requires native `Failed` before Cancel and no later fresh poll. Introduction unknown.
+- Disposition — `candidate`, P3 product recovery, `inspected-present` on `50f3b9e` given the described UI/native ordering. Host incidence remains unmeasured. [Audit][audit-2026-11-17]
+- Next check — Hold the staging failure and Cancel response through the client, verify the mounted Settings offers **Check Chatterbox again**, and continue through successful cleanup. Keep late Installed and ordinary pre-commit cancellation controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The late Cancel hides the cleanup receipt in the client. A fresh authoritative read still offers Check. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0095)
+
+## VF-0096
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0096) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0096)
+
+**Flattened inline direction scopes can scramble visual run order.** In an LTR paragraph, a single RTL span around text interrupted by inline emphasis has one bidi isolate in XHTML. Flattening the span and assigning RTL individually to bare text and the retained wrapper creates multiple sibling isolates, changing their display order within the LTR paragraph.
+
+- Owners — [Flattened XHTML context](../../../packages/epub/src/document/xhtml-projector.ts#L967), [resolved scope direction](../../../apps/desktop/src/reader/semantic-auto-direction.ts#L195) and [inline attributes](../../../apps/desktop/src/reader/SemanticDocument.tsx#L244). [HTML bidirectional rendering](https://html.spec.whatwg.org/multipage/rendering.html#bidirectional-text) and [Unicode isolate rules](https://www.unicode.org/reports/tr9/#Explicit_Directional_Isolates) establish the inferred display order.
+- Lineage — Variant of [VF-0075](#vf-0075). The [current browser control](../../../apps/desktop/tests/browser/reader-reflow-restoration.smoke.spec.ts#L64) checks direction and restoration. This case concerns grouping even when all computed directions match. Fixed-direction flattening uses the same mechanism. First introduction unknown.
+- Disposition — `candidate`, P3 product rendering, `inspected-present` on `50f3b9e` for a single-line mixed-direction paragraph. The visual order follows from the projected DOM and the bidi rules. Actual WebView2 geometry remains unmeasured. [Audit][audit-2026-11-17]
+- Next check — Compare the horizontal order of the same three code points in the reader and a native HTML reference. Preserve the mirrored case, logical offsets, and admission and reflow coverage.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. One authored scope becomes sibling isolates across formatting. Installed glyph geometry was unmeasured. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0096)
+
+## VF-0097
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0097) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — Git traces the hidden-scope scratch charge to the VF-0075 correction in `e85837d`. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0097)
+
+**Hidden Auto markup can push a chapter over the live-node limit.** The XHTML projector counts `dir="auto"` before discarding hidden content. With no retained Auto text and 79,999 projected live nodes, the renderer still adds two direction-probe nodes and rejects the chapter at 80,001.
+
+- Owners — [Scope allocation](../../../packages/epub/src/document/xhtml-projector.ts#L802), [hidden omission](../../../packages/epub/src/document/xhtml-projector.ts#L860), [probing only surviving scoped text](../../../apps/desktop/src/reader/semantic-auto-direction.ts#L195) and [live-node admission](../../../apps/desktop/src/reader/large-chapter-rendering.ts#L195). [ADR-0007 hidden-content policy](../../architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md#content-handling-matrix) and [ADR-0008 cap](../../architecture/decisions/ADR-0008-visual-reader-architecture.md#L139) apply.
+- Lineage — Regression introduced in `e85837d` alongside [VF-0075](#vf-0075). The [capacity test](../../../apps/desktop/src/reader/large-chapter-rendering.test.ts#L130) accounts for a visible scope. A projected document whose only declaration is discarded by ingestion exercises a different admission input.
+- Disposition — `candidate`, P3 product availability, `inspected-present` on `50f3b9e` near the renderer cap. [Audit][audit-2026-11-17]
+- Next check — Open equivalent synthetic chapters with and without the hidden declaration at the retained-node limit, and a separate chapter that needs a real direction probe. Verify equivalent visible markup and genuine cap enforcement.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Hidden-only Auto can charge two nonexistent probe nodes and can also trigger a needless scan below capacity. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0097)
+
+## VF-0098
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0098) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0098)
+
+**Forced quality-generation timeout can strand private staging and block retry.** An admitted `quality:generate` worker can stall after creating candidate staging and writing a WAV. The parent terminates the worker when the watchdog expires and reports generation failure. Cleanup lives in the terminated worker. The same-ID retry reaches the existing candidate directory and aborts before generating, then attempts whole-session cleanup itself.
+
+- Owners — [Parent timeout handling](../../../services/tts/benchmarks/quality_cli.py#L123), [owned worker termination](../../../services/tts/benchmarks/cli.py#L560), [staging and failure cleanup](../../../services/tts/benchmarks/quality.py#L242) and [generation-failure contract](../../../benchmarks/tts/README.md#L704).
+- Lineage — Stranded-staging variant of [VF-0086](#vf-0086) in a different command, with [VF-0083](#vf-0083) as an adjacent worker-launch control and [VF-0006](#vf-0006) as a pre-admission control. The [timeout fixture](../../../services/tts/tests/test_benchmark_quality.py#L114) stalls without staging. The [worker cleanup fixture](../../../services/tts/tests/test_benchmark_quality.py#L494) throws inside the worker. Introduction of the ownership gap is unknown.
+- Disposition — `candidate`, P3 maintainer workflow, `inspected-present` on `50f3b9e` when timeout precedes the terminal metadata update. Private residue is local. Worker containment can succeed and explicit session cleanup remains available. [Audit][audit-2026-11-17]
+- Next check — Time out a disposable worker after its first WAV. Check for intact pre-existing sessions after rejection, zero partial data after an admitted timeout and successful same-ID retry following the specified cleanup.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Forced exit after a WAV write skips rollback. The first same-ID retry can fail before it cleans staging. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0098)
+
+## VF-0099
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0099) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0099)
+
+**An invalid v5 authority commit reaches official execution.** A well-formed but stale `authorityCommitSha` can pass the official dual-worker request and prerequisite checks, consume a one-use reservation, and run model work. After a completed measurement and successful power restoration, the journal can report `eligibleForDerivation: true`. Derivation then rejects the recorded authority commit against the exact frozen commit and ancestry criteria.
+
+- Owners — [Request decoder](../../../services/tts/benchmarks/dual_worker_command.py#L104), [pre-worker admission](../../../services/tts/benchmarks/dual_worker_cli.py#L467), [restoration receipt](../../../services/tts/benchmarks/benchmark_safety.py#L335) and [derivation authority](../../../services/tts/benchmarks/v5_authority.py#L470).
+- Lineage — Prerequisite admission variant of [VF-0089](#vf-0089), which concerns the GPU baseline summary. The [original milestone](../../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md#L1307) records the cost of discovering an ancestry mismatch after a run. The request shape check predates prospective safety. The precise earlier escape cause is unknown.
+- Disposition — `candidate`, P3 maintainer workflow, `inspected-present` on `50f3b9e` with otherwise admissible official inputs. The committed authority is a strict ancestor of this HEAD. A stale authority can waste a run and reservation, while derivation still prevents publication. [Audit][audit-2026-11-17]
+- Next check — Compare a wrong commit and a non-ancestral execution with the valid authority/ancestry pair. Reject invalid lineage before reservation claim or worker construction and retain claim/restoration behavior for valid requests.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The strict frozen-commit and ancestry gate is downstream of official execution. Summary publication still rejects the result. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0099)
+
+## VF-0100
+
+2026-11-18 follow-up. Both real installer validators preserved the live custom installation, the stale-registration sentinel and the data in both failed-launch controls on a disposable Windows profile. Account, profile and staging cleanup were independently verified. The outer launcher returned exit 1 during receipt aggregation. [Executed host evidence](../../plans/evidence/november-17-findings/execution-gates.md#follow-up-for-vf-0100-and-vf-0114)
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0100) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0100)
+
+**Windows validation can install in a remembered nondefault location.** The standalone lifecycle and ordinary Chatterbox runners check the default `%LOCALAPPDATA%\VoxLeaf` directory before launching the current-user installer with `/S`. Tauri can restore a remembered custom destination instead. A prior installation in that location may be modified. If a previous uninstall left only the remembered location, the new validation install can still land there and escape cleanup that checks the default directory. The standalone finalizer can restore the application's data with that redirected installation still present.
+
+- Owners — [Standalone admission](../../../scripts/test-windows-package-lifecycle.ps1#L61), [ordinary admission](../../../apps/desktop/scripts/ordinary-chatterbox-release-host.mjs#L1188), [shared installer invocation](../../../scripts/windows-package-lifecycle-installer.ps1#L99) and [standalone cleanup](../../../scripts/test-windows-package-lifecycle.ps1#L391). [Pinned Tauri destination initialization](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.3/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi#L474-L493), [remembered path lookup](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.3/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi#L851-L855) and [VoxLeaf uninstall hook](../../../apps/desktop/src-tauri/windows/nsis-hooks.nsh#L211).
+- Lineage — [VF-0087](#vf-0087) concerns optional-data ancestry. [VF-0085](#vf-0085) concerns an already owned install and its recovery journal. This case concerns proof of the effective install destination at admission. [Testing contract](../testing.md#L261) requires blocking a pre-existing install. Introduction and prior escape beyond the default-root fixture scope are unknown.
+- Disposition — `candidate`, P2 maintainer workflow, `inspected-present` on `50f3b9e` for the default root absent and a remembered nondefault destination. The override follows from the pinned template and the shared launch arguments. No installed host or user data was exercised. [Audit][audit-2026-11-17-pass-2]
+- Next check — In a disposable Windows context, verify both runners reject a live nondefault installation before backup or launch. Exercise a stale remembered path and a genuinely clean default install, and require verified absence at the actual destination before restoration.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Default-directory admission misses a remembered destination. The two finalizers differ in how they handle the missing default-root installation. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0100)
+
+## VF-0101
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0101) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0101)
+
+**The standalone lifecycle receipt can credit installer bytes it did not exercise.** The runner reads the original installer's identity at entry but launches each installer from the original path. If another compatible installer is present for a launch and the original file is back by the final identity check, the receipt can credit the exercised behavior to the original bytes. Receipt validation sees the expected original digest and timestamps.
+
+- Owners — [Entry identity](../../../scripts/test-windows-package-lifecycle.ps1#L23), [shared runner invocation](../../../scripts/test-windows-package-lifecycle.ps1#L167), [terminal identity and receipt](../../../scripts/test-windows-package-lifecycle.ps1#L433) and [receipt consumer](../../../apps/desktop/scripts/windows-release.mjs#L487).
+- Lineage — Standalone validator variant of [VF-0067](#vf-0067). Its ordinary runner uses a run-owned copy. [Standalone drift coverage](../../../apps/desktop/scripts/windows-release.node-test.mjs#L525) changes the source persistently, which the final reread catches. The [earlier reconciliation](audits/2026-11-15-findings-reconciliation.md#vf-0067--installer-bytes-attributed-to-the-ordinary-journey) noted the limit of two observations. First origin unknown.
+- Disposition — `candidate`, P2 release evidence, `inspected-present` on `50f3b9e` conditional on temporary source drift and the other checks succeeding. No false receipt was produced in this pass. [Audit][audit-2026-11-17-pass-2]
+- Next check — Use owned fixture artifacts and controlled launch. Require the receipt to identify the same artifact across every lifecycle invocation, including when the source changes and is later restored. Keep the final drift, containment and journal-read failure controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Temporary installer substitution evades endpoint hashes. The ordinary runner's copied artifact is a control. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0101)
+
+## VF-0102
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0102) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0102)
+
+**Late rate failure after paused final audio can overwrite the saved speed.** Select a slow speed during the final direct-playback unit and Pause just before its end callback is delivered. The callback releases the unit while the scheduler stays paused. If future-rate preparation fails before Resume, the player treats the preparation as needed and falls back to 100%. The coordinator persists 100% even though the final unit has already ended and no successor can consume the prepared rate.
+
+- Owners — [Paused device completion](../../../apps/desktop/src/tts/pcm-playback.ts#L447), [paused scheduler](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1044), [future-rate retirement](../../../apps/desktop/src/tts/pcm-playback.ts#L860) and [fallback persistence](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2252).
+- Lineage — Paused-before-Resume variant of [VF-0048](#vf-0048). The [existing completion test](../../../apps/desktop/src/tts/product-narration-coordinator.test.ts#L544) resumes before rejecting preparation, so it exercises logical completion. Earlier origin unknown.
+- Disposition — `candidate`, P3 product preference, `inspected-present` on `50f3b9e` for end delivery and preparation rejection in that order with a known complete range. Device timing and failure frequency remain unmeasured. [Audit][audit-2026-11-17-pass-2]
+- Next check — Deliver final end while paused, reject future-rate preparation before Resume, and verify the saved speed and the next explicit Play. Keep paused runs with a real successor, unfinished preparation ranges and explicit rate fallback covered.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. End during Pause and future-rate rejection before Resume can save a fallback after the last unit. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0102)
+
+## VF-0103
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0103) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0103)
+
+**A short underrun can report zero buffering time.** Device end can exhaust the queued audio and increment the underrun counter. If the final short successor then becomes available before the next coordinator sample, the player can resume right away. The coordinator observes playing on both sides of the interval and adds no buffering duration, despite the recorded underrun.
+
+- Owners — [Device-end accounting](../../../apps/desktop/src/tts/pcm-playback.ts#L487), [short complete tail admission](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1084), [coordinator duration integration](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2294) and [installed metric consumer](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L1908).
+- Lineage — [VF-0050](#vf-0050) addresses the precision of source frames observed during Stop. This case is wall-clock duration through a complete state transition between observations. The [coordinator control](../../../apps/desktop/src/tts/product-narration-coordinator.test.ts#L2587) samples during a longer gap. Earlier origin unknown.
+- Disposition — `candidate`, P3 playback measurement, `inspected-present` on `50f3b9e` for a nonzero interruption bracketed by two playing samples. Scope is reported duration. Actual device timing and effect on a measured MVP result remain open. [Audit][audit-2026-11-17-pass-2]
+- Next check — Use the existing device and clock seams to end a unit after a tick and admit an already-final successor before the next. Assert one underrun and the positive involuntary duration. Retain the long-gap, Stop, complete-tail and intentional-delay controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Left-endpoint sampling can both miss a short refill and charge time after an early resumption. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0103)
+
+## VF-0104
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0104) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0104)
+
+**An interrupted safety journal write can block restoration retry.** With original power settings restored, finalization opens `restored.json` exclusively and writes the record in place. A short write or interruption after file creation can leave it undecodable. Retrying with the same valid request takes the existing-file branch and fails before it can publish restoration or permit derivation. The same writer serves claim and settlement records.
+
+- Owners — [Exclusive writer](../../../services/tts/benchmarks/benchmark_safety.py#L95), [finalization and retry](../../../services/tts/benchmarks/benchmark_safety.py#L335) and [derivation input](../../../services/tts/benchmarks/benchmark_safety.py#L387). [ADR-0076 retry contract](../../architecture/decisions/ADR-0076-prospective-benchmark-safety-evidence.md#decision)
+- Lineage — [VF-0077](#vf-0077) addresses an unsupported positive restoration assertion. [VF-0065](#vf-0065) concerns prior destructive derivation ordering. The new journal writer entered in `e85837d`. The [retry fixture](../../../services/tts/tests/test_benchmark_safety.py#L228) rejects wrong power values before opening the journal file.
+- Disposition — `candidate`, P3 maintainer retry, `inspected-present` on `50f3b9e` for an interrupted write leaving a visible partial record. Restoration of actual Windows power settings and the journal's evidence are separate states. No disk or process fault was injected. [Audit][audit-2026-11-17-pass-2]
+- Next check — Inject an incomplete write in disposable storage and retry finalization with unchanged evidence. Keep valid one-use claim, mismatch rejection and complete receipt immutability under the same ownership boundary.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. A partially written final journal file persists across retry even when settings actually match. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0104)
+
+## VF-0105
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0105) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0105)
+
+**A warm-up privacy detection can leave a passing v14 audit.** An official warm-up batch uses corpus text. If the isolated worker detects private output in this phase, it discards the diagnostics and raises `privacy`. The batch controller maps that failure to generic `generation-failed`. If the remaining evidence and derivation complete, the published privacy field can be `true` alongside failed machine conclusions.
+
+- Owners — [Warm-up requests](../../../services/tts/benchmarks/batch_matrix.py#L90), [worker privacy detection](../../../services/tts/benchmarks/isolation.py#L228), [phase-specific failure mapping](../../../services/tts/benchmarks/batch_execution.py#L252), [audit projection](../../../services/tts/benchmarks/batch_result.py#L368) and [v14 receipt check](../../../services/tts/benchmarks/v14_authority.py#L303).
+- Lineage — Warm-up variant of [VF-0073](#vf-0073). The [measured-path regression](../../../services/tts/tests/test_benchmark_batch_official.py#L275) injects a fault only after warm-up. The limited predicate accounts for the different outcome. Exact origin of the current warm-up behavior is unknown.
+- Disposition — `candidate`, P3 benchmark evidence, `inspected-present` on `50f3b9e` given an isolated warm-up detection and otherwise sufficient evidence for failed-result derivation. The worker redaction path remains effective in the source trace. No disclosure or passing machine result was observed. [Audit][audit-2026-11-17-pass-2]
+- Next check — Have a harmless fixture yield a privacy detection during warm-up and follow the actual safety-v1 flow through raw capture and derivation. Assert redacted diagnostics, a failed privacy audit and verified cleanup. Keep the measured and clean controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The warm-up privacy error loses its typed code. The privacy field can pass while machine conclusions fail. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0105)
+
+## VF-0106
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0106) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0106)
+
+**Chatterbox can start while a newer compatibility check is pending.** Play passes the first fresh hardware check and awaits installed package/configuration availability. A hidden-to-visible transition begins a newer hardware check, setting status to `checking` while retaining the profile ID and language. If the package result returns while the new check is pending, the coordinator's final guard sees matching IDs and dispatches native startup using the earlier hardware decision. The newer check can later deny fresh startup.
+
+- Owners — [Play admission](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L1969), [configuration wait and final guard](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2011), [compatibility publication](../../../apps/desktop/src/tts/hardware-profile-compatibility.ts#L381), [visibility recheck](../../../apps/desktop/src/tts/hardware-compatibility-check-binding.ts#L22) and [native start command](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L2104).
+- Lineage — Variant of [NCC-02](../../plans/completed/narration-chatterbox-correctness.md#L18). The current visibility binding reconciles settled findings. This ordering occurs between the original gate and native dispatch during a second, unsettled observation. The [startup-gate test](../../../apps/desktop/src/tts/hardware-profile-compatibility.test.ts#L604) lowers capacity during the original fresh check. Earlier origin unknown.
+- Disposition — `candidate`, P2 product admission, `inspected-present` on `50f3b9e` for the ordered window. The native configuration path still verifies the package and a later check can reconcile the current owner. No resource exhaustion, audible output or natural timing was measured. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Hold the package availability result after an admitted fresh check, start a real visibility-triggered recheck, and complete availability before the newer result. Verify that a denied newer result prevents native dispatch and that a valid result still permits the next explicit start. Keep already-loaded continuation distinct.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The final Play dispatch can consume IDs retained by a newer pending hardware check. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0106)
+
+## VF-0107
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0107) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — Git traces the current checksum publication order to `079c38e`. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0107)
+
+**Windows evidence attachment can accept a missing or stale checksum.** Fresh build publication replaces the canonical evidence JSON and build-authority sidecar before writing the adjacent checksum. If that final write fails, the command reports failure while leaving new evidence beside an absent or older checksum. A later attachment with valid receipts for those new bytes verifies the installer and authority but can accept the package evidence with that checksum still absent or stale.
+
+- Owners — [Fresh-build write order](../../../scripts/build-windows-release.ps1#L291), [attachment inputs](../../../scripts/build-windows-release.ps1#L169), [evidence checksum field](../../../apps/desktop/scripts/windows-release.mjs#L649) and [atomic JSON publication](../../../apps/desktop/scripts/windows-release.mjs#L801). [User checksum procedure](../../user/windows-release.md#L254)
+- Lineage — Publication failure variant of [VF-0072](#vf-0072), whose original trigger is replacement of artifact bytes during build observations. The [fresh-build fixture](../../../apps/desktop/scripts/windows-release.node-test.mjs#L289) covers prepublication rejection and successful checksum output. The [attachment control](../../../apps/desktop/scripts/windows-release.node-test.mjs#L1486) verifies build-authority drift, then accepts restored authority with a synthetic checksum still present. No checksum-failure recovery is established by either check.
+- Disposition — `candidate`, P2 release evidence, `inspected-present` on `50f3b9e` given a failed checksum write and otherwise valid later attachment. This leaves inconsistent on-disk release evidence. No artifact, signing or release operation ran in this audit. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Use disposable outputs, fail only the checksum write after successful JSON/authority staging, then attempt attachment with receipts for the exact new installer. Require a coherent checksum or rejection before positive evidence. Keep normal unsigned/signed hash binding and prior drift controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. A later attachment can credit otherwise matching evidence when checksum publication failed. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0107)
+
+## VF-0108
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0108) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0108)
+
+**Central-directory ordering can change ZIP compression admission.** Two individually grace-exempt compressed entries can put a central-directory prefix over the 1 MiB grace and 100:1 ratio, even though a later stored entry brings the complete archive under the limit. The inventory applies aggregate ratio during enumeration. Moving the stored entry earlier in the directory permits the otherwise identical EPUB, with the same physical entry order and initial decompression work.
+
+- Owners — [Central enumeration](../../../packages/epub/src/archive/archive-inventory.ts#L598), [declared aggregate accounting](../../../packages/epub/src/security/processing-budget.ts#L150) and [public ingest](../../../packages/epub/src/public/open-epub-publication.ts#L137). [Budget authority](../../architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md#authoritative-security-budgets)
+- Lineage — [M003](../../plans/completed/M003-secure-epub-ingestion-and-document-model.md#L719) distinguishes declared aggregate preflight from observed inflation. The [physical-order test](../../../packages/epub/src/archive/archive-inventory.test.ts#L171) uses small entries and the [aggregate limit test](../../../packages/epub/src/archive/archive-inventory.test.ts#L480) exceeds the complete ratio. First origin unknown.
+- Disposition — `candidate`, P3 EPUB admission, `inspected-present` on `50f3b9e` for an over-limit prefix and an in-limit complete declaration. Unused compressible resources can stay out of actual inflation. This does not concern enforcement of the live decompression ratio. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Compare public opening for equivalent valid ZIP central record orders, keeping physical order and measured reads fixed. Require real per-entry, whole-archive and observed overflow to keep failing independently.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Only the declaration order changes the prefix ratio. Actual read limits remain independently enforced. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0108)
+
+## VF-0109
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0109) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — The adapter's current callback distinction dates to `86926596`. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0109)
+
+**Empty CDATA can reject an XHTML document at its node limit.** The pinned XML parser emits an empty CDATA callback. The VoxLeaf CDATA handler charges a document node even when no text is present. Adding one empty section to a valid document at the documented exact maximum can therefore reject the EPUB while rendering and narration text are equivalent.
+
+- Owners — [Text and CDATA event handlers](../../../packages/epub/src/xml/xml-event-reader.ts#L448), [node counter](../../../packages/epub/src/xml/xml-event-reader.ts#L313) and the [nonempty callback rule](../../plans/completed/M003-secure-epub-ingestion-and-document-model.md#L722).
+- Lineage — An individual XML event-accounting case. The [exact-limit definition](../../../packages/epub/src/xml/xml-event-reader.test.ts#L426) covers elements, nonempty text, comments and processing instructions. The pinned `saxes` 6.0.0 implementation calls the CDATA handler unconditionally at section end. First origin unknown.
+- Disposition — `candidate`, P3 EPUB admission at the node ceiling, `inspected-present` on `50f3b9e` against the current documented nonempty text/CDATA counting rule. No parser or browser execution supported the finding. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Compare exact-limit documents with and without empty CDATA. Include nonempty CDATA and the other counted event types as positive charges, and keep max-plus-one and byte/work limits enforced.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The pinned parser emits empty CDATA and the adapter charges it against the exact ceiling. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0109)
+
+## VF-0110
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0110) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0110)
+
+**A warm batch boundary can lose an ampersand expansion.** The packer can finish the eighth segment immediately before an ampersand in ordinary English prose that normalized to “and.” The exact warm continuation starts at the symbol, with neither the left word nor its space available to the normalizer. It preserves `&` instead. A cold reconstruction of the same locator within the same paragraph retains that context and emits “and.”
+
+- Owners — [Space and word recognition](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L647), [packing before symbols](../../../packages/epub/src/narration/narration-segment-packer.ts#L659), [warm source selection](../../../packages/epub/src/narration/narration-preparation.ts#L656), [returned context](../../../packages/epub/src/narration/narration-preparation.ts#L991) and [desktop batch caller](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2110).
+- Lineage — Variant of [VF-0054](#vf-0054) at a legal boundary before a lexical expansion. The earlier trigger split an expansion internally. [SAF-10](../../plans/completed/static-audit-follow-up.md#L76) preserves preceding English title context, and its [public test](../../../packages/epub/src/integration/narration-preparation-matrix.test.ts#L1182) exercises titles. Exact origin unknown.
+- Disposition — `candidate`, P3 prepared-text consistency, `inspected-present` on `50f3b9e` for context-sensitive symbols at the stated cutoff. Prepared text can differ without changing the canonical source position. Model pronunciation and ordinary incidence remain open. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Compare one public warm batch with a fresh cold seek at its returned locator for each current profile. Preserve exact range endpoints, short/long runs, legal whitespace splits, and contexts where the symbol should remain literal.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. An eight-segment warm boundary discards left context that a cold preparation of the same locator reconstructs. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0110)
+
+## VF-0111
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0111) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0111)
+
+**A scene ornament can lose its silent classification across a source window.** A top-level scene paragraph starts with enough nonbreaking spaces to fill a source window, followed by `***`. The first slice advances as unspoken. The next starts at a nonzero offset, which prevents whole-paragraph scene recognition even though the preceding slice was whitespace only. Chatterbox receives the ornament as text. Piper skips it and can miss the scene pause when the following spoken unit is buffered.
+
+- Owners — [Window progress](../../../packages/epub/src/narration/narration-preparation.ts#L945), [scene recognition](../../../packages/epub/src/narration/narration-segment-packer.ts#L768) and [Piper omission and pending scene metadata](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2134). [Accepted normalized spacing](../../plans/completed/M005-narration-text-preparation.md#L1051)
+- Lineage — Producer-side variant adjacent to [VF-0053](#vf-0053), which propagates an already classified boundary. The [SFA-01 control](../../../packages/epub/src/integration/narration-preparation-matrix.test.ts#L901) puts the large silent stretch in a separate preceding paragraph. Exact origin unknown.
+- Disposition — `candidate`, P3 narration correctness, `inspected-present` on `50f3b9e` for the source-window split through a padded scene. Chatterbox pronunciation and actual pause timing were unobserved. [Third audit][audit-2026-11-17-pass-3]
+- Next check — Compare short and window-spanning padding inside one scene paragraph through public preparation and the desktop caller. Preserve an ordinary paragraph, image/code/quote/list boundaries, source offsets and the absent-successor pause control.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The source-window split defeats whole-paragraph scene recognition before profile-specific handling. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0111)
+
+## VF-0112
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0112) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0112)
+
+**Chatterbox acquisition can follow a redirected staging directory.** If the staging parent is already a Windows junction, explicit Remove refuses it. Download setup and confirmation Cancel use a weaker cleanup guard. Cancellation can delete an existing directory reached through the junction inside the managed root. With an absent profile leaf and a junction resolving outside the root, an admitted Download can create staging outside the managed root before promotion checks containment.
+
+- Owners — [Cleanup helper](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L823), [Download setup](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2266), [confirmation Cancel](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2440), and [Settings retry action](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L511).
+- Lineage — [DCR-19](../../plans/completed/deep-chat-audit-minimal-corrections.md#L101) guards explicit Remove with an ancestor walk. [VF-0005](#vf-0005) concerns startup and Check recovery. [VF-0087](#vf-0087) concerns installer cleanup. The [native fixture](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs#L2041) exercises Remove. Introduction unknown.
+- Disposition — `candidate`, P2 filesystem ownership, `inspected-present` on `50f3b9e` for the two stated staging conditions. Existing Windows directory state and the supported Settings action are prerequisites. Host incidence and filesystem effects remain unmeasured. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — With disposable directory fixtures, assert acquisition refuses invalid ancestry before deletion, creation or transfer. Cover both present and absent profile leaves, and preserve ordinary staging cleanup, explicit consent and successful retry.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Download, confirmation Cancel and postcommit Check use the weaker staging helper. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0112)
+
+## VF-0113
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0113) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0113)
+
+**An implicit paragraph can lose the language of its line break.** In a French-language chapter with Spanish normalization, the text in `<div lang="es">narra-<br/>ción.</div>` retains Spanish. Its synthesized paragraph carries French, so the line break is classified as unknown and the accepted join to `narración.` fails. An explicit Spanish paragraph supplies Spanish context for the break and the surrounding text.
+
+- Owners — [Inherited language contract](../../architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md#L131), [implicit paragraph](../../../packages/epub/src/document/xhtml-projector.ts#L1411), [nearest block context](../../../packages/epub/src/document/xhtml-projector.ts#L1560), [line-break source token](../../../packages/epub/src/narration/narration-source-window.ts#L593), and [hyphenation guard](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L1872).
+- Lineage — Variant of [VF-0064](#vf-0064) with a different inherited property and a narration outcome. Its direction correction preserves the nearest block's direction. Normalization's accepted join is [explicitly allowlisted](../../../packages/epub/src/narration/bilingual-spanish-normalization.ts#L16). Introduction unknown.
+- Disposition — `candidate`, P3 narration correctness, `inspected-present` on `50f3b9e` for the supported inherited-language case. Prepared text is the observable result. Voice pronunciation and how often a book uses this shape remain open. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — Compare public preparation of implicit and explicit paragraphs with the same effective language. Preserve the source locator span, within-paragraph language overrides, code protection and a real language change across a line break.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The frozen child erases a known provider-loss reason before verified cleanup and recovery selection. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0113)
+
+## VF-0114
+
+2026-11-18 follow-up. A verified local v8 package now identifies Torch-only CUDA loss during its owning Load. The native supervisor and real WebView2 reader verified containment and explicit profile recheck. Missing models retained the generic failure, and healthy Prepare reached Ready. Published v7 retains its historical protocol and distribution. [Exact host gates](../../plans/evidence/november-17-findings/execution-gates.md#follow-up-for-vf-0100-and-vf-0114) and [corrected-candidate review](../../plans/evidence/november-17-findings/implementation-review-r05.md).
+
+2026-11-18 implementation — Partial correction for confirmed native CUDA loss. The frozen v7 producer cannot discriminate Torch-only loss. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0114) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0114)
+
+**Chatterbox provider loss during load is reported as a warm-up failure.** After an eligible host check, the v7 child can find CUDA unavailable when it loads the model. Its generic engine failure reaches the combined Prepare operation. After successful containment, the renderer offers Restart for a warm-up failure. The recovery policy calls for profile selection or recheck for provider unavailability.
+
+- Owners — [Frozen v7 source binding](../../../services/tts/src/voxleaf_tts/packaging/chatterbox_sources.py#L97), [native engine failure mapping](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1329), [native Prepare](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1578), [renderer classification](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L326), and [recovery policy](../../architecture/tts-support-matrix-v1.md#L61).
+- Lineage — [CLB-03](../../plans/completed/confirmed-logic-bugfixes.md#L236) distinguishes valid operational responses from protocol rejection. The combined load/warm handling deliberately shares the restart path for generic engine failures. [VF-0106](#vf-0106) concerns a pending compatibility report before native startup. Exact origin unknown.
+- Disposition — `candidate`, P3 recovery guidance, `inspected-present` on `50f3b9e` for a child reporting provider loss after admission and subsequent verified containment. Actual CUDA loss, the frequency of this transition and installed UI behavior remain unmeasured. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — Through the packaged-equivalent service and desktop recovery boundary, distinguish provider loss during load from generic load/warm failure. Verify the correct explicit action after cleanup, zero automatic restarts and rejection of invalid protocol context.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The first completed single-evaluator card can be immutable yet have no numeric evidence for one dimension. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0114)
+
+## VF-0115
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0115) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0115)
+
+**An accepted v6 quality scorecard can be impossible to aggregate.** The single evaluator can select `not-applicable` for an entire required dimension in the generated form. Submission returns success and writes the immutable completed card. Aggregation requires numeric data in every dimension and rejects the session. Resubmission is blocked and the supported correction changes only a meaning-change classification.
+
+- Owners — [Evaluator form](../../../services/tts/benchmarks/quality_presentation.py#L45), [submission](../../../services/tts/benchmarks/quality.py#L524), [aggregation](../../../services/tts/benchmarks/quality_scoring.py#L75), [correction](../../../services/tts/benchmarks/quality.py#L567), and [frozen v6 scoring policy](../../../benchmarks/tts/profile-v6.json#L183).
+- Lineage — [VF-0014](#vf-0014) concerns stale aggregate invalidation. [Missing-dimension coverage](../../../services/tts/tests/test_benchmark_quality.py#L1231) exercises aggregation directly. This case concerns acceptance before the completed record is locked. Introduction unknown.
+- Disposition — `candidate`, P3 retained benchmark workflow, `inspected-present` on `50f3b9e` for an otherwise well-formed single-evaluator v6 card with an entirely unscored dimension. Existing published v6 evidence is outside this case. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — Verify that an unscorable card is rejected before writing the completed record, then submit the corrected original evaluation and aggregate the same session. Preserve per-sample `not-applicable`, valid multi-evaluator rules and first-evaluation integrity.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. CPU derive masks lock contention in its public serializer. The quality CLI has its own intentional generic envelope. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0115)
+
+## VF-0116
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0116) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0116)
+
+**CPU fallback CLI loses the retryable `quality-busy` result.** The ready-session lock rejects overlapping derivation before mutation and reports `quality-busy` to the command. The CLI maps it to `invalid-request`. The documented wait-and-retry guidance is keyed to the lost result.
+
+- Owners — [Derivation library](../../../services/tts/benchmarks/cpu_fallback_result.py#L452), [CLI serializer](../../../services/tts/benchmarks/cpu_fallback_result_cli.py#L100), and [public command](../../../package.json#L52). [ADR-0077](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md#L36) and the [operator procedure](../../../benchmarks/tts/README.md#L271) define the receipt.
+- Lineage — Adjacent to [VF-0082](#vf-0082). The [real-process regression](../../../services/tts/tests/test_benchmark_quality.py#L815) verifies library-level rejection. The lock remains effective here. The failure is serialization above that guard.
+- Disposition — `candidate`, P3 retained benchmark recovery, `inspected-present` on `50f3b9e` for an otherwise admitted derivation while the same session is busy. Runtime lock behavior was outside this pass. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — Assert the documented command returns `quality-busy` and a nonzero exit while a disposable session is owned. Preserve `quality-stale`, content-free invalid-input output and winner bytes, then verify admission again after release.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. An unlink denial escapes the public command handler. The library retains aggregate ordering and supports retry. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0116)
+
+## VF-0117
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0117) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0117)
+
+**A failed quality correction can print a filesystem traceback.** A filesystem error while removing an existing aggregate propagates as `OSError`. The correction CLI's typed exception boundary misses it, so the command can print a traceback with a local path and fail to emit its content-free receipt. The aggregate and the opportunity to retry the correction remain intact.
+
+- Owners — [Aggregate removal](../../../services/tts/benchmarks/quality.py#L589), [CLI dispatch and exception boundary](../../../services/tts/benchmarks/quality_cli.py#L244), and [public command](../../../package.json#L64). [Content-free CLI contract](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md#L36)
+- Lineage — [VF-0014](#vf-0014) fixes ordering for this unlink failure. Its [library fault fixture](../../../services/tts/tests/test_benchmark_quality.py#L654) expects `OSError` and checks retained bytes. [VF-0042](#vf-0042) covers setup error handling under a different command. Introduction unknown.
+- Disposition — `candidate`, P3 retained benchmark failure reporting, `inspected-present` on `50f3b9e` when unlink fails in a valid v6 correction. No actual path disclosure or external transfer was observed. [Fourth audit][audit-2026-11-17-pass-4]
+- Next check — Inject a denied unlink at the command boundary in a disposable session. Assert a fixed failure receipt, no path in CLI output, intact aggregate and no published correction. Clear the fault and verify one successful correction and fresh aggregation.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The diagnosed oversized profile value cannot be written after otherwise eligible activation stops Piper. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0117)
+
+## VF-0118
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0118) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — NSL-01's known-impossible preflight criterion applies to the omitted over-limit state. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0118)
+
+**An over-limit saved profile can stop playback before Chatterbox activation fails.** Compatibility exposes the already-detected `over-limit` preference as writable. A host compatible with Piper and installed Chatterbox can use Piper and show an enabled Activate Chatterbox action. Selection verifies the package and contains Piper before the reversible preference write refuses the same oversized value. Playback stops and the profile change fails.
+
+- Owners — [Compatibility state](../../../apps/desktop/src/tts/hardware-profile-compatibility.ts#L620), [Activate admission](../../../apps/desktop/src/settings/ReaderSettingsDialog.tsx#L250), [configuration action](../../../apps/desktop/src/settings/narration-settings-actions.ts#L82), and [reversible write](../../../apps/desktop/src/persistence/hardware-profile-preference.ts#L197).
+- Lineage — [NSL-01](../../plans/completed/narration-settings-lifecycle-corrections.md#L47) requires known impossible activation to fail before teardown. The [existing rejection matrix](../../../apps/desktop/src/settings/narration-settings-actions.test.ts#L282) includes future-version and unavailable storage. The over-limit read and save decisions are exercised separately. Exact introduction unknown.
+- Disposition — `candidate`, P2 playback interruption and profile admission, `inspected-present` on `50f3b9e` with protected oversized stored data, compatible profiles and working Piper. The current writer's normal production of such stored data and incidence on actual hosts remain unestablished. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — Exercise installed Activate while Piper plays with an existing over-limit preference. Keep the oversized bytes and current playback intact. Check the rejection feedback, a valid activation and an intentionally recoverable stored value.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Supported auxiliary and raster manifest paths also reach the rejecting projection, even when unvisited. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0118)
+
+## VF-0119
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0119) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0119)
+
+**A chapter filename containing `#` can prevent a book from opening.** The OCF parser maps `part%231.xhtml` to the local archive member `part#1.xhtml`. The manifest and spine accept this member, then the BookV1 projection passes the decoded path into a schema that rejects `#`. Opening reports a malformed package before building the reader's locators. EPUB 3.3 permits this filename and an escaped URL path.
+
+- Owners — [OCF reference parsing](../../../packages/epub/src/paths/ocf-reference.ts#L85), [manifest lookup](../../../packages/epub/src/package/package-document.ts#L379), [BookV1 projection](../../../packages/epub/src/book/book-v1-projection.ts#L101), and [shared path schema](../../../packages/shared/schemas/book/v1.schema.json#L106). [EPUB 3.3 filename rules](https://www.w3.org/TR/epub-33/#sec-container-filenames)
+- Lineage — [SAC-13 public coverage](../../../packages/epub/src/public/open-epub-publication.test.ts#L653) exercises encoded punctuation in fragments. [OCF path coverage](../../../packages/epub/src/paths/ocf-reference.test.ts#L14) exercises a different percent-encoded filename. This case concerns a supported archive member that cannot cross the BookV1 boundary. The precise review escape is unknown.
+- Disposition — `candidate`, P2 EPUB opening failure, `inspected-present` on `50f3b9e` for a valid local member with a literal `#` and a percent-encoded package reference. Incidence in user books remains unknown. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — Use the public opener with an escaped name and a separate chapter-fragment target. Verify navigation and exact-byte reopen, and preserve the published schema and rejection of real URL fragments, separators and unsafe paths at the appropriate boundaries.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Raw XML ID spelling affects both fragment lookup and normalized duplicate detection. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0119)
+
+## VF-0120
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0120) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0120)
+
+**A padded `xml:id` can send navigation to chapter start.** The projector's supported `xml:id` path retains `xml:id=" note "` verbatim. A link to `#note` cannot find that raw key, so the reader uses the missing-fragment recovery to the first block instead of the later destination. XML ID processing normalizes surrounding space before assigning the ID.
+
+- Owners — [XML attribute bridge](../../../packages/epub/src/xml/xml-event-reader.ts#L215), [source-ID comparison](../../../packages/epub/src/document/xhtml-projector.ts#L256), [fragment lookup](../../../packages/epub/src/locator/target-resolver.ts#L280), and [reader target handling](../../../apps/desktop/src/reader/reader-navigation.ts#L273). [XML ID processing](https://www.w3.org/TR/xml-id/#processing)
+- Lineage — [ADR-0007](../../architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md#L167) admits unique `xml:id` values. Existing [projector fixtures](../../../packages/epub/src/document/xhtml-projector.test.ts#L498) exercise unpadded and conflicting source identities. SAC-13 covers the decoded link fragment. The review escape is unknown.
+- Disposition — `candidate`, P3 EPUB navigation, `inspected-present` on `50f3b9e` for the repository's supported XML ID compatibility path. The resolved logical destination follows from source. Actual host positioning and natural occurrence remain open. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — Compare an XML-space-padded ID with an unpadded one through public navigation and same-byte reopen. Preserve literal XHTML `id` behavior, duplicate IDs that become equal after normalization, and recovery for a genuinely missing target.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The static handler gap is established. Routing of the next Escape after replacement in the installed WebView2 needs a keyboard-only witness. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0120)
+
+## VF-0121
+
+2026-11-18 implementation — `reproduced` on installed Windows. The same trusted Escape reached the page body on both artifacts. After the fix it closed Settings once and restored focus to the opener. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0121) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0121)
+
+**Replacing a focused Settings action can leave Escape unhandled.** Activating Review Chatterbox download by keyboard can replace the focused button with a confirmation while Settings stays open. When the browser resets focus to the viewport, the modal has no focused descendant. Its outside-focus listener covers `focusin`, and its Escape handler is attached to the dialog. Escape can miss the dialog until focus returns.
+
+- Owners — [Conditional package actions](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L399), [modal focus containment](../../../apps/desktop/src/settings/ReaderSettingsDialog.tsx#L295), and [Escape handler](../../../apps/desktop/src/settings/ReaderSettingsDialog.tsx#L348). [Interaction requirement](../../product/reader-settings-and-playback-controls.md#L601) · [Browser focus behavior](https://developer.mozilla.org/en-US/docs/Web/API/Element/blur_event)
+- Lineage — [R8-06](../../plans/completed/eight-revalidated-findings-minimal-corrections.md#L109) and its [component control](../../../apps/desktop/src/settings/ReaderSettingsDialog.test.tsx#L725) cover an outside element actively taking focus. [H7](../../plans/completed/validated-audit-follow-up.md#L60) covers Tab wrapping over `summary`. This case begins when the focused descendant is retired.
+- Disposition — `candidate`, P3 keyboard accessibility, `inspected-present` on `50f3b9e` conditional on viewport focus reset during the documented action replacement. Exact WebView2 delivery and customer frequency remain unmeasured. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — From an eligible Settings confirmation, observe focus after the action changes and press Escape without pressing Tab first. Check close and trigger focus, normal Tab wrapping, and the explicit narration-focus containment controls.
+
+- 2026-11-17 deep review — `inspected-inconclusive` on `50f3b9e`. The settled failure can reissue the warning and save after a successful explicit 100% selection. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0121)
+
+## VF-0122
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0122) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0122)
+
+**A stale fallback warning can follow an explicit selection of 1×.** A slow-rate preparation failure changes the player to 1× and increments its fallback count. The listener chooses 1× with the speed control before the coordinator consumes the count. The explicit selection clears the warning, but the next tick interprets the same numeric rate as proof that the older fallback still owns it. The coordinator shows the warning again and issues a duplicate save.
+
+- Owners — [Speed control](../../../apps/desktop/src/tts/ProductNarrationControls.tsx#L205), [explicit selection](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L758), and [fallback observation](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2252).
+- Lineage — [RCF-19](../../plans/completed/revalidated-chat-findings-minimal-corrections.md#L301) requires a newer 100% choice to win. The [existing player fixture](../../../apps/desktop/src/tts/pcm-playback.test.ts#L1554) changes the choice before the asynchronous failure settles. The [coordinator fixture](../../../apps/desktop/src/tts/product-narration-coordinator.test.ts#L700) consumes the failure before the later action. [VF-0102](#vf-0102) concerns a different paused-final state and the stored speed itself.
+- Disposition — `candidate`, P3 stale playback feedback, `inspected-present` on `50f3b9e` for failure settlement followed by explicit selection before the next observation. The chosen rate remains 1×. The host timing window remains unmeasured. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — Hold the observation until after the user's 1× selection. Verify uninterrupted current playback, one explicit preference write, and accurate feedback. Retain the genuine fallback and Stop/replacement controls.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Refill during probes can vanish from the timing. Successive depletions may pair different intervals. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0122)
+
+## VF-0123
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0123) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — The historical M010.1 measurement used this sample ordering. Its exact timing error is unknown. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0123)
+
+**Native refill wall timing starts after resource sampling.** The native adaptive runner sees buffering, awaits process working-set and GPU observations, then marks the start of the refill interval. Playback may resume during those probes. The reported `refillMs` and `bufferingObservationWallMs` can omit most of the observed interval. The product's separate buffering counters are collected independently.
+
+- Owners — [Depletion observation](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L982), [resource probes and timer](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L1882), and [published measurements](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L2380). [Refill wall-time claim](../../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md#L641)
+- Lineage — [VF-0103](#vf-0103) concerns the product accumulator. The exact-host runner independently derives elapsed observation time. Its timing begins after recorded depletion. No prior reported value was revalidated.
+- Disposition — `candidate`, P3 native evidence accuracy, `inspected-present` on `50f3b9e` when refill overlaps the resource probes. Timing and frequency on actual devices remain open. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — In the runner, allow observed buffering to resolve while resource probes are outstanding. Assert the observation begins with depletion and ends at the resumption witness, keeping the stable/no-depletion and product-counter paths distinct.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Completion before Stop still meets cleanup conditions and lacks a same-request active cancellation witness. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0123)
+
+## VF-0124
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0124) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0124)
+
+**Native active-cancellation evidence can credit a Stop after generation completes.** The runner polls `generating`, then separately locates and activates Stop. Generation can finish between those actions. The idle, zero-retention, highlight and checkpoint observations can pass even though no generation was active at Stop. The runner still publishes active-cancellation timing.
+
+- Owners — [Native adaptive active-cancellation arm](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L1942) and [command mapping](../../../apps/desktop/package.json#L19). [Exact-host evidence table](../../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md#L632)
+- Lineage — [VF-0091](#vf-0091) concerns a separate Python benchmark's queued request. The [model-free native probe](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L3365) checks a terminal cancellation result. The adaptive arm currently checks post-Stop cleanup and intentionally accepts a safe preview or checkpoint.
+- Disposition — `candidate`, P3 native evidence completeness, `inspected-present` on `50f3b9e` if natural completion wins before input delivery. The cleanup observations retain their meaning. No historical false pass or product Stop failure was established. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — In a disposable evidence fixture, distinguish an owned request still in flight at Stop from completion first. Require request-owned cancellation evidence for the active arm and retain ordinary Stop and cleanup checks.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The timers can pass an ignored or late scale change. Separate functional coverage has no same-run timestamp. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0124)
+
+## VF-0125
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0125) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0125)
+
+**Reader reflow benchmarks time frame callbacks without observing realignment.** The packaged native benchmark dispatches a text scale change and records the time to three animation frames. The Chromium production benchmark uses two frames. Both can publish a passing timing if the preference was ignored, or if measured placement remained pending beyond those callbacks.
+
+- Owners — [Native timer and threshold](../../../apps/desktop/scripts/native-smoke/reader-scenarios.mjs#L1182), [Chromium timer](../../../apps/desktop/tests/browser/reader-performance.benchmark.spec.ts#L898), and [reflow and realignment budget](../../architecture/performance-budget.md#L76).
+- Lineage — [M004 Task 5.4](../../plans/completed/M004-reflowable-visual-reader-and-position-restoration.md#L1028) promises performance/resource observations. Separate reader interaction checks exercise functional reflow. The timers accept a fixed frame count without tying it to the measured operation's success.
+- Disposition — `candidate`, P3 benchmark evidence completeness, `inspected-present` on `50f3b9e` for an ignored or late preference operation. Current renderer correctness and historical measurement values were outside this inference. [Fifth audit][audit-2026-11-17-pass-5]
+- Next check — Establish a pre-change reading-line target. Time the applied change through observed placement at that target, using a bounded wait. The same check should reject a no-op and detect completion past the threshold.
+
+- 2026-11-17 deep review — `inspected-present` on `50f3b9e`. undefined [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0125)
+
+## VF-0126
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0126) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**Chatterbox can fail before speech after a long silent prefix.** A supported current Chatterbox passage can begin with 320 nonbreaking spaces followed by one spoken character. The first candidate that contains speech spans 321 source positions. All the earlier candidates are silent and the profile's hard bound is 320. When no candidate fits, the packer drains safe leading omissions only for the Piper v2 policy. Public Chatterbox preparation therefore returns a resource-limit failure before synthesis.
+
+- Disposition — `candidate`, P2. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [Chatterbox limit](../../../packages/epub/src/narration/narration-chatterbox-policy.ts#L8) · [candidate selection](../../../packages/epub/src/narration/narration-segment-packer.ts#L597)
+- Prior scope and next check — CFR-20 fixed this trigger for Piper in VF-0020. VF-0052 covers Piper formatting marks. Preserve both earlier controls and both profiles' hard limits. Compare 319 and 320 spaces before the same character, an entirely silent leaf, a substantive protected unit, and the returned source offset after draining. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0126)
+
+## VF-0127
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0127) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**A known oversized language preference can interrupt narration.** The language repository recognizes an over-limit value and supplies the default language. The hardware snapshot still calls language persistence available and the Settings fieldset remains enabled. Selecting another language stops active Piper before the writer rejects the same bytes. The old language survives and the user has to start narration again.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [stored state](../../../apps/desktop/src/persistence/narration-language-preference.ts#L102) · [capability](../../../apps/desktop/src/tts/hardware-profile-compatibility.ts#L637)
+- Prior scope and next check — This is a different key, control and action from VF-0118. The source proves avoidable teardown under an already-known rejection. Preserve the default language and existing stored bytes, valid language changes, contained teardown on a real change and the documented best-effort cross-key Reset. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0127)
+
+## VF-0128
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0128) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**An explicitly foreign line break can permit a Spanish word join.** In an explicit Spanish paragraph an author can put a different language on the break or on a flattened span surrounding just the break. The projector computes the new context but emits a contextless break. Narration gives that break the paragraph language. Two Spanish word fragments on either side can now pass the same-language guard and be incorrectly joined.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [inheritance contract](../../../docs/architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md#L133) · [break construction](../../../packages/epub/src/document/xhtml-projector.ts#L959)
+- Prior scope and next check — VF-0113 suppresses a valid join through the synthesized paragraph. This variant can create an invalid join even with an explicit paragraph. Preserve the break's effective language through projection and source traversal, its one-position width and locator ranges. Compare a break with inherited Spanish, an explicit foreign break and a flattened foreign span. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0128)
+
+## VF-0129
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0129) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**v6 calls a multi-evaluator quality session eligible.** The public finalizer accepts one through eight evaluators for a staged v6 session. It consumes staging, makes the session ready and reports promotion eligibility for any count of at least one. With two complete numeric cards the aggregator repeats that eligibility. The frozen v6 derivation requires exactly one and rejects the result. An operator who follows the documented one-evaluator instruction avoids the discrepancy.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [v6 authority](../../../benchmarks/tts/profile-v6.json#L185) · [finalizer](../../../services/tts/benchmarks/quality.py#L372)
+- Prior scope and next check — Distinct from VF-0115's score coverage. The mistaken input can be detected before moving any staged audio. Check a v6 count of two at finalization, a subsequent one-evaluator submission using the same staging, and a legitimate multi-evaluator legacy session. Existing frozen results are outside this trigger. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0129)
+
+## VF-0130
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0130) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**Malformed preflight fields can bypass the CLI failure receipt.** In an otherwise correctly shaped v6 assess or derive request, a non-string candidate ID raises the shared preflight parser's `CommandError` before host observation. The CPU CLI catches its own command/result error types and misses this one. Quality generate likewise calls the shared parser before its worker error boundary. These configured commands can emit a Python traceback and omit their fixed JSON error receipt.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [configured entry points](../../../package.json#L51) · [shared exception](../../../services/tts/benchmarks/cli.py#L94)
+- Prior scope and next check — VF-0116 concerns a valid busy result after admission. VF-0117 concerns filesystem denial during an admitted correction. This case needs neither a retained session nor a working model. Translate the known parser error at each public boundary, preserve `quality-stale` and busy semantics, and check the JSON, exit code and stderr for both valid outer shapes with the wrong inner type. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0130)
+
+## VF-0131
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0131) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**Quick-start lead is sampled after playback starts.** The host runner waits for Playing, separately waits for a highlight transition, then reads `data-narration-playable-ms`. The attribute exposes the scheduler's current effective listening duration. Consumption can lower it and newly accepted generation can raise it before the sample. The output labels that value `playableLeadAtStartMs`. A positive-value assertion cannot demonstrate the lead at start.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [live duration](../../../apps/desktop/src/tts/adaptive-preparation.ts#L315) · [DOM value](../../../apps/desktop/src/tts/ProductNarrationControls.tsx#L88)
+- Prior scope and next check — VF-0103 and VF-0123 measure refill duration. Define the intended start event, capture the same run's lead at that event or label the sample with its actual timing. Vary consumption and intervening generation independently. The existing start command-to-audible observation has a different owner. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0131)
+
+## VF-0132
+
+2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0132) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
+
+**Graceful shutdown can accept invalid trailing protocol output.** Protocol v1 requires a whole active request to fail on extra or truncated records. Native graceful shutdown accepts the expected two state records, waits for process exit and returns those records without establishing that stdout ended cleanly. A faulty producer can therefore receive a successful graceful-shutdown result at the consumer. The ordinary pinned service produces the expected ending.
+
+- Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [protocol rule](../../../docs/architecture/tts-service-protocol-v1.md#L76) · [shutdown command](../../../docs/architecture/tts-service-protocol-v1.md#L93)
+- Prior scope and next check — Promoted from one of the six observations. DCR-12 checked the separate Node host. Keep graceful frame validation bounded by the shutdown deadline and record process containment independently. Compare clean EOF with a faulty terminal stream after the expected pair. Whether every nonzero exit must itself invalidate a valid pair is a separate contract question. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0132)
 
 [cfr-plan]: ../../plans/completed/chat-findings-recovery-and-minimal-corrections.md#finding-and-history-register
 [cfr-review]: ../../plans/evidence/chat-findings-recovery/review-final-r03.md
@@ -1518,6 +2189,11 @@ restoring the absent destination.
 [audit-2026-11-16-pass-5]: audits/2026-11-16-repository-logic-audit-pass-5.md
 [audit-2026-11-16-reconciliation]: audits/2026-11-16-findings-reconciliation.md
 [audit-2026-11-16-deep]: audits/2026-11-16-deep-findings-validation.md
+[audit-2026-11-17]: audits/2026-11-17-repository-logic-audit.md
+[audit-2026-11-17-pass-2]: audits/2026-11-17-repository-logic-audit-pass-2.md
+[audit-2026-11-17-pass-3]: audits/2026-11-17-repository-logic-audit-pass-3.md
+[audit-2026-11-17-pass-4]: audits/2026-11-17-repository-logic-audit-pass-4.md
+[audit-2026-11-17-pass-5]: audits/2026-11-17-repository-logic-audit-pass-5.md
 [fsf-execution]: ../../plans/evidence/five-search-findings/case-results.md
 
 - 2026-11-14 execution — `reproduced` on the original relevant owner: controlled production Reader/coordinator reentrancy with zero retired synthesis dispatch; no natural-incidence or stale-audio claim. Minimal correction is implemented on `fab1c9e186552515e828c33ce75e11628dda8300` plus the task patch; full integration, native artifact and independent approval are pending. Original failures, succeeding controls and input identities are in the [execution ledger](../../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md). This is not yet a `validated` or `fixed` disposition.

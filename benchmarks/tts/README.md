@@ -19,6 +19,10 @@ before taking ownership of generation cleanup. Completed audio, evaluator pages
 and submitted scorecards remain intact on that rejected invocation; a genuinely
 failed partial generation still removes its disposable session.
 
+After a forced quality-generation timeout the parent may remove its owned
+partial session after confirming the worker is gone. Sequential retry can use
+the same ID after cleanup. An existing completed session remains intact.
+
 The measurement parent's subprocess contract bounds stdin and stdout at 16 KiB,
 detects stdout overflow during reading, and discards stderr. Stdin delivery,
 stdout reading and process exit share one absolute measurement deadline; the
@@ -258,7 +262,11 @@ $assessment | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:ass
 
 Only a `qualityAdmitted: true` result permits the existing
 `benchmark:tts:quality:generate`, `finalize`, `submit`, and `aggregate`
-workflow. Use one evaluator for v6. Final derivation additionally accepts the
+workflow. Finalization requires exactly one evaluator for v6. Across that
+evaluator's samples, each required dimension needs at least one numeric score.
+A sample may still mark an individual dimension inapplicable. Submission
+rejects an entirely unscored dimension before storing the completed card, so
+the evaluator can correct it and resubmit. Final derivation also accepts the
 quality session ID, validates all machine/listening gates, writes only
 `cpu-fallback-result-v6.json`, and deletes both private sessions:
 
@@ -633,6 +641,10 @@ threads. Each process owns at most one blocking complete-waveform call.
 
 For a new official v5 session, include `evidenceVersion` with the value
 `tts-benchmark-safety-v1` in the closed `tts-dual-worker-command-v5` request.
+Preparation and official execution check the frozen authority commit and its
+ancestry before reservation or worker acquisition. Derivation verifies the
+lineage again. Restoration of an earlier reservation remains available through
+the existing safety workflow.
 Prepare a wrapper with `family = 'dual'` and the full `request` before changing
 power settings. Execute the unchanged request with `benchmark:tts:dual-worker`,
 then restore, finalize and derive through the same safety workflow. A completed

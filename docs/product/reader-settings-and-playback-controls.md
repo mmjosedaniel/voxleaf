@@ -768,6 +768,10 @@ Appearance changes remain active in memory when storage rejects them. Settings
 reports the failure and carries its status into the next book until a later save
 succeeds. Oversized narration preference envelopes are rejected before parsing
 or unbounded encoding, including during Reset; their bytes remain intact.
+If the saved profile or language is known to exceed its storage bound,
+Settings keeps its corresponding choice unavailable. Attempting that choice
+preserves the current playback. A rejected profile change leaves the language
+choice governed by its own preference state, and vice versa.
 When queued and active units use different playback rates, loaded duration is
 described as available listening time without attributing the total to one rate.
 

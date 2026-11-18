@@ -65,7 +65,9 @@ from benchmarks.v5_authority import (
     CPU_PROFILE_ID,
     GPU_PROFILE_ID,
     PROFILE_SHA256,
+    V5AuthorityError,
     load_frozen_v5_authority,
+    require_v5_lineage,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -419,6 +421,13 @@ def _cancellation_trials(
 def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
     """Run the reviewed v5 pilot or capture one private official arm."""
 
+    if request.purpose == "official":
+        try:
+            require_v5_lineage(
+                REPOSITORY_ROOT, request.authority_commit_sha, request.expected_commit_sha
+            )
+        except V5AuthorityError:
+            raise DualWorkerCommandError("result-before-authority") from None
     authority = load_frozen_v5_authority(REPOSITORY_ROOT, validate_schemas=False)
     profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
     candidate_python = request.candidate_python.resolve()

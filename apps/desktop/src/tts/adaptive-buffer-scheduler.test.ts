@@ -551,6 +551,49 @@ describe("adaptive buffer scheduler", () => {
     expect(JSON.stringify(scheduler.observe())).not.toContain("sourceRange");
   });
 
+  it("NOV17 records the initial lead and exact buffering transitions without polling", () => {
+    const clock = createManualClock(0);
+    const scheduler = makeReadyScheduler(clock);
+    const first = segment(1);
+    const segments = [
+      first,
+      segment(2),
+      segment(3),
+      segment(4),
+      segment(5),
+      segment(6),
+    ];
+    prepare(scheduler, segments, true);
+    synthesize(scheduler, ownedUnit(first.segmentId, 15_000));
+    expect(scheduler.observe()).toMatchObject({ initialPlaybackLeadMs: null });
+    scheduler.activateCurrentPlaybackRate();
+    scheduler.consumeSampleFrames(sampleFramesFromPlayableMilliseconds(15_000));
+    clock.advanceBy(32);
+    for (const prepared of segments.slice(1, 5)) {
+      synthesize(scheduler, ownedUnit(prepared.segmentId, 15_000));
+    }
+    clock.advanceBy(100);
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "playing",
+      bufferingMs: 32,
+      initialPlaybackLeadMs: 15_000,
+    });
+    scheduler.consumeSampleFrames(sampleFramesFromPlayableMilliseconds(60_000));
+    clock.advanceBy(20);
+    scheduler.pausePlayback();
+    clock.advanceBy(500);
+    synthesize(scheduler, ownedUnit(segments[5]!.segmentId, 1_000));
+    expect(scheduler.observe()).toMatchObject({ bufferingMs: 52 });
+    scheduler.resumePlayback();
+    scheduler.consumeSampleFrames(sampleFramesFromPlayableMilliseconds(1_000));
+    clock.advanceBy(100);
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "complete",
+      bufferingMs: 52,
+      initialPlaybackLeadMs: 15_000,
+    });
+  });
+
   it("starts quick playback only from contiguous complete units and fills toward one minute", () => {
     const scheduler = makeReadyScheduler(createManualClock(0));
     prepare(scheduler, [segment(1), segment(2), segment(3)]);

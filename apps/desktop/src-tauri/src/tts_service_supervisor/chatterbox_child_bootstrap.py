@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 site_packages = Path(sys.argv[1]).resolve(strict=True)
+module = "voxleaf_tts.chatterbox_service"
+if sys.argv[2:3] == ["--chatterbox-protocol-v2"]:
+    module = "voxleaf_tts.chatterbox_service_v2"
+    del sys.argv[2]
 runtime = Path(sys.executable).resolve(strict=True).parent
 private = site_packages / "sklearn" / ".libs"
 # Keep directory and library handles alive for the entire protocol service.
@@ -55,5 +59,5 @@ else:
             raise ValueError("invalid-native-diagnostic")
         observer = runpy.run_path(sys.argv[3])["install_native_observation"]
         observer(Path(sys.argv[4]), origins)
-    sys.argv = ["voxleaf_tts.chatterbox_service"]
-    runpy.run_module("voxleaf_tts.chatterbox_service", run_name="__main__")
+    sys.argv = [module]
+    runpy.run_module(module, run_name="__main__")

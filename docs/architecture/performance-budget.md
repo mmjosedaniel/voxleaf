@@ -30,6 +30,9 @@ is satisfied. Prepared playback is a separate explicit choice and may wait for
 1, 2, 5, or 10 playable minutes. Benchmarks must report wall-clock preparation
 time and playable buffer depth so a fast model is not made to wait
 unnecessarily and a slow model's preparation cost remains visible.
+The quick-start `playableLeadAtStartMs` sample belongs to the scheduler's
+first playing transition. The later highlight observation measures its own
+event and does not resample initial lead.
 
 ### Real-time factor
 
@@ -47,6 +50,13 @@ Track seconds of playable audio available, not only the number of chunks.
 
 Count each transition from playing to involuntary buffering and record its duration without recording book text.
 
+The scheduler measures logical buffering at its own monotonic entry and exit
+edges. The exact-host refill result pairs depletion and resume within the
+same playback and refill identity, independently of resource sampling.
+If the paired edges are unavailable after a reported depletion, the refill
+duration is absent. These values describe application state. Physical
+audibility requires separate evidence.
+
 Record intentional adaptive paragraph/chapter waits separately. They are
 listening-policy time, not underruns and not evidence that generation is real
 time.
@@ -55,11 +65,24 @@ time.
 
 Measure from cancellation request until the generator stops producing frames for the cancelled session.
 
+The exact-host Stop reports cleanup latency separately from active cancellation.
+An active cancellation sample requires the matching native terminal
+acknowledgment for that synthesis request and Stop. When generation completes
+before Stop or no matching acknowledgment is observed, the active cancellation
+sample is absent. Cleanup still requires idle playback, zero retained audio,
+cleared highlighting, and a safe preview or a checkpoint supported by heard
+audio.
+
 ### Memory
 
 Track model memory separately from text queues and audio buffers.
 
 ## Visual-reader reference limits
+
+Measure preference reflow from the scale action through observing the requested
+scale and the same noninitial locator settled at the reading line. Chromium and
+WebView2 use this endpoint with the 250 ms threshold. Treat the historical
+reference values below as observations under their original measurement method.
 
 Task 1.6 established implementation acceptance gates for the visual reader from a synthetic Chromium prototype. These are not universal end-user guarantees or minimum-hardware requirements. Task 3.6 remeasures the production React renderer on the same Chromium/reference-host boundary. Task 5.3 supplies the broader native WebView2 interaction and restoration matrix; Task 5.4 adds repeated production lifecycle stress plus packaged WebView2 performance/resource evidence.
 
@@ -81,7 +104,7 @@ Rendering all 10,000 blocks in one operation consumed 124.3 ms of uninterrupted 
 
 ADR-0010's static-raster safety limits remain the reader image limits: one concurrent decode, at most eight live sources, and at most 16,777,216 aggregate decoded pixels. Eight sequential synthetic 1,448 × 1,448 PNG decodes exercised 16,773,632 live pixels in 64.4 ms with an 80.9 MiB Chromium working-set increase. The accepted reference gates are 150 ms total decode time and 112 MiB working-set increase for that near-cap fixture. The combined 10,000-block/eight-image fixture observed 78,132 DOM nodes and a 174.8 MiB increase; its accepted reader-wide working-set increase is 208 MiB.
 
-The reference host was native Windows 11 Home Single Language version `10.0.26200`, build `26200`, with an Intel Core Ultra 7 255HX (20 logical processors), 33,752,997,888 bytes of RAM, NVIDIA GeForce RTX 5060 Laptop GPU plus Intel Graphics, Node.js `24.18.0`, pnpm `11.15.1`, Playwright `1.61.1`, and Chrome for Testing `149.0.7827.55` / Chromium revision `1228`. The benchmark does not claim which display adapter Chromium used.
+The reference host ran native Windows x64 with Chromium. Exact host and toolchain details are retained privately. The benchmark does not claim which display adapter Chromium used.
 
 Task 3.6's production React case opens a repository-authored exact-limit EPUB, holds the scheduler after its synchronous first 250-block commit, then observes all 39 remaining callback-to-DOM commits. On the same reference boundary, the final accepted run measured 7.2 ms maximum batch work, 795.1 ms deep-target readiness, 761.2 ms incremental append, 101.3 ms preference reflow, 50,167 additional Chromium DOM-counter nodes, 127.5 MiB post-first-batch incremental renderer working-set growth, and 160.6 MiB full open-publication/application growth. The incremental measurement remains below the 144-MiB DOM-work ceiling, while the complete application delta remains below the 208-MiB reader-wide envelope. File selection to first content measured 128.5 ms but includes browser file transfer, identity hashing, EPUB ingestion, capacity preflight, render-plan creation, and the first React commit; it is recorded rather than compared with the 50-ms renderer-only prototype gate. No title, prose, identifier, path, URL, bytes, or source fragment enters the report.
 

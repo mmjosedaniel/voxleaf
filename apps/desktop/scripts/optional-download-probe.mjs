@@ -114,7 +114,7 @@ export async function exerciseOptionalDownloadProbe({
     !barrierCreated ||
     errorProbe.state !== "failed" ||
     diagnostic?.source !== "github-release" ||
-    diagnostic.artifactIndex !== 0 ||
+    diagnostic.artifactIndex !== 1 ||
     diagnostic.stage !== "create-file" ||
     diagnostic.kind !== "io" ||
     !Number.isSafeInteger(diagnostic.osError) ||

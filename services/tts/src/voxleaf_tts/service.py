@@ -16,6 +16,7 @@ from .engine import (
 )
 from .protocol import (
     CHANNEL_COUNT,
+    CHATTERBOX_PROTOCOL_VERSION,
     PROTOCOL_VERSION,
     SAMPLE_FORMAT,
     SAMPLE_RATE_HZ,
@@ -25,6 +26,7 @@ from .protocol import (
     FrozenJson,
     ProtocolFailure,
     ProtocolReason,
+    ProtocolVersion,
     ServiceState,
     decode_control_payload,
     encode_control_message,
@@ -67,6 +69,7 @@ def _operational_error(reason: ProtocolReason) -> dict[str, object]:
         )
     elif reason in {
         ProtocolReason.ENGINE_FAILURE,
+        ProtocolReason.TORCH_CUDA_UNAVAILABLE,
         ProtocolReason.ENGINE_TIMEOUT,
         ProtocolReason.FORMAT_MISMATCH,
         ProtocolReason.SEQUENCE_GAP,
@@ -82,15 +85,17 @@ def _operational_error(reason: ProtocolReason) -> dict[str, object]:
     }
 
 
-def _control(message: Mapping[str, object]) -> Frame:
-    return Frame(FrameKind.CONTROL, encode_control_message(message))
-
-
 class ModelFreeTtsService:
     """One-active/no-queue protocol owner with an injected engine and fake default."""
 
-    def __init__(self, engine: TtsEngine | None = None) -> None:
+    def __init__(
+        self,
+        engine: TtsEngine | None = None,
+        *,
+        protocol_version: ProtocolVersion = PROTOCOL_VERSION,
+    ) -> None:
         self._engine = engine or FakeTtsEngine()
+        self._protocol_version = protocol_version
         self._state = ServiceState.STARTING
         self._service_instance_id: str | None = None
         self._active_identity: WorkIdentity | None = None
@@ -109,15 +114,21 @@ class ModelFreeTtsService:
             raise ProtocolFailure(ProtocolReason.INVALID_STATE)
         return {
             "schemaVersion": SCHEMA_VERSION,
-            "protocolVersion": PROTOCOL_VERSION,
+            "protocolVersion": self._protocol_version,
             "kind": kind,
             "serviceInstanceId": self._service_instance_id,
         }
 
+    def _control(self, message: Mapping[str, object]) -> Frame:
+        return Frame(
+            FrameKind.CONTROL,
+            encode_control_message(message, protocol_version=self._protocol_version),
+        )
+
     def _state_record(self, state: ServiceState | None = None) -> Frame:
         message = self._base("state")
         message["state"] = (state or self._state).value
-        return _control(message)
+        return self._control(message)
 
     def _capabilities_record(self) -> Frame:
         capabilities = self._engine.capabilities()
@@ -137,7 +148,7 @@ class ModelFreeTtsService:
                 "cancellationContainment": ("identity-invalidation-then-worker-termination"),
             }
         )
-        return _control(message)
+        return self._control(message)
 
     def _error_record(
         self,
@@ -149,7 +160,7 @@ class ModelFreeTtsService:
         message["error"] = _operational_error(reason)
         if identity is not None:
             message["workIdentity"] = _work_identity_dict(identity)
-        return _control(message)
+        return self._control(message)
 
     def _verify_service_identity(self, message: Mapping[str, FrozenJson]) -> None:
         if message.get("serviceInstanceId") != self._service_instance_id:
@@ -161,7 +172,7 @@ class ModelFreeTtsService:
         self._service_instance_id = cast(str, message["serviceInstanceId"])
         self._state = ServiceState.HANDSHAKING
         handshaking = self._state_record()
-        accepted = _control(self._base("handshakeAccepted"))
+        accepted = self._control(self._base("handshakeAccepted"))
         self._state = ServiceState.UNLOADED
         return (
             handshaking,
@@ -177,8 +188,14 @@ class ModelFreeTtsService:
         loading = self._state_record()
         try:
             self._engine.load()
-        except EngineFailure:
-            return self._fail_engine()
+        except EngineFailure as error:
+            reason = (
+                ProtocolReason.TORCH_CUDA_UNAVAILABLE
+                if self._protocol_version == CHATTERBOX_PROTOCOL_VERSION
+                and error.code is EngineFailureCode.TORCH_CUDA_UNAVAILABLE
+                else ProtocolReason.ENGINE_FAILURE
+            )
+            return self._fail_engine(reason=reason)
         self._state = ServiceState.WARMING
         return (loading, self._state_record())
 
@@ -229,7 +246,7 @@ class ModelFreeTtsService:
         cancelled = self._base("cancelled")
         cancelled["workIdentity"] = _work_identity_dict(identity)
         self._state = ServiceState.STOPPED
-        return (cancelling, _control(cancelled), self._state_record())
+        return (cancelling, self._control(cancelled), self._state_record())
 
     def _handle_health(self) -> tuple[Frame, ...]:
         return (self._state_record(), self._capabilities_record())
@@ -328,7 +345,9 @@ class ModelFreeTtsService:
             }
         )
         try:
-            metadata_payload = encode_control_message(metadata)
+            metadata_payload = encode_control_message(
+                metadata, protocol_version=self._protocol_version
+            )
             validate_audio_payload(result.payload, metadata)
         except ProtocolFailure:
             self._engine.release_result()
@@ -344,7 +363,7 @@ class ModelFreeTtsService:
         return (
             Frame(FrameKind.CONTROL, metadata_payload),
             Frame(FrameKind.AUDIO, audio),
-            _control(completed),
+            self._control(completed),
             self._state_record(),
         )
 
@@ -357,48 +376,56 @@ class ModelFreeTtsService:
             self._state = ServiceState.STOPPED
 
 
-def _write_records(writer: BinaryIO, records: tuple[Frame, ...]) -> None:
+def _write_records(
+    writer: BinaryIO, records: tuple[Frame, ...], protocol_version: ProtocolVersion
+) -> None:
     for record in records:
-        write_frame(writer, record)
+        write_frame(writer, record, protocol_version=protocol_version)
     writer.flush()
 
 
-def _protocol_rejected(reason: ProtocolReason) -> Frame:
-    return _control(
+def _protocol_rejected(reason: ProtocolReason, protocol_version: ProtocolVersion) -> Frame:
+    payload = encode_control_message(
         {
             "schemaVersion": SCHEMA_VERSION,
-            "protocolVersion": PROTOCOL_VERSION,
+            "protocolVersion": protocol_version,
             "kind": "protocolRejected",
             "reason": reason.value,
-        }
+        },
+        protocol_version=protocol_version,
     )
+    return Frame(FrameKind.CONTROL, payload)
 
 
 def run_service(
     reader: BinaryIO,
     writer: BinaryIO,
     engine: TtsEngine | None = None,
+    *,
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION,
 ) -> int:
     """Run the bounded service loop until shutdown, clean EOF, or rejection."""
 
-    service = ModelFreeTtsService(engine)
+    service = ModelFreeTtsService(engine, protocol_version=protocol_version)
     try:
         while True:
-            frame = read_frame(reader)
+            frame = read_frame(reader, protocol_version=protocol_version)
             if frame is None:
                 clean_exit = service.state is ServiceState.STOPPED
                 service.cleanup()
                 return 0 if clean_exit else 1
             if frame.kind is not FrameKind.CONTROL:
                 raise ProtocolFailure(ProtocolReason.UNKNOWN_RECORD_KIND)
-            message = decode_control_payload(frame.payload)
-            _write_records(writer, service.handle_control(message))
-            _write_records(writer, service.settle_active())
+            message = decode_control_payload(frame.payload, protocol_version=protocol_version)
+            _write_records(writer, service.handle_control(message), protocol_version)
+            _write_records(writer, service.settle_active(), protocol_version)
             if service.state is ServiceState.STOPPED:
                 return 0
     except ProtocolFailure as error:
         with suppress(OSError, ProtocolFailure):
-            _write_records(writer, (_protocol_rejected(error.reason),))
+            _write_records(
+                writer, (_protocol_rejected(error.reason, protocol_version),), protocol_version
+            )
         service.cleanup()
         return 1
     except (OSError, EngineFailure):

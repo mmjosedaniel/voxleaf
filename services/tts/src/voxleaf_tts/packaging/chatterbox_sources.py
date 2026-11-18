@@ -59,6 +59,7 @@ LOCAL_RUNTIME_MODULES: Final = (
     "generated/__init__.py",
     "generated/protocol_schemas.py",
 )
+PROVIDER_LOSS_RUNTIME_MODULES: Final = (*LOCAL_RUNTIME_MODULES, "chatterbox_service_v2.py")
 
 
 def _read_git_blob(root: Path, commit: str, module: str) -> bytes:
@@ -104,13 +105,14 @@ def resolve_runtime_sources(root: Path, manifest: Mapping[str, object]) -> dict[
         if modules != list(HISTORICAL_IDENTITIES[source_version]):
             raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
         return historical_sources(root, source_version)
-    if version != "4" or modules != list(LOCAL_RUNTIME_MODULES):
+    local_modules = {"4": LOCAL_RUNTIME_MODULES, "8": PROVIDER_LOSS_RUNTIME_MODULES}.get(version)
+    if local_modules is None or modules != list(local_modules):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     source = root / "services/tts/src/voxleaf_tts"
     try:
         canonical = source.resolve(strict=True)
         resolved: dict[str, bytes] = {}
-        for module in LOCAL_RUNTIME_MODULES:
+        for module in local_modules:
             path = source / module
             if path.is_symlink() or not path.resolve(strict=True).is_relative_to(canonical):
                 raise ReleaseChatterboxError("chatterbox-package-source-invalid")

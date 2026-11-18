@@ -759,6 +759,92 @@ it.each(["saved", "unavailable"] as const)(
   },
 );
 
+it.each(["final-device-end", "explicit-100"] as const)(
+  "NOV17 rate fallback respects %s after rejecting preparation",
+  async (scenario) => {
+    const repository: NarrationPlaybackPreferenceRepository = {
+      read: async () => ({ status: "ready", playbackRatePercent: 100 }),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const { coordinator, backend, intervals } = createHarness({
+      playbackPreferenceRepository: repository,
+    });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => backend.active !== undefined);
+      let reject!: (reason: unknown) => void;
+      vi.spyOn(backend, "preparePlaybackRate").mockImplementationOnce(
+        () =>
+          new Promise<void>((_resolve, fail) => {
+            reject = fail;
+          }),
+      );
+      expect(await coordinator.setPlaybackRatePercent(85)).toBe(true);
+      if (scenario === "final-device-end") {
+        coordinator.pause();
+        backend.finish();
+        expect(coordinator.observe().state?.phase).toBe("paused");
+      }
+      reject(new Error("synthetic rejected rate preparation"));
+      for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
+      if (scenario === "explicit-100") {
+        expect(await coordinator.setPlaybackRatePercent(100)).toBe(true);
+      }
+      intervals[0]!();
+      expect(coordinator.observe().playbackRateFallback).toBe(false);
+      expect(repository.write).toHaveBeenCalledTimes(
+        scenario === "final-device-end" ? 1 : 2,
+      );
+      if (scenario === "final-device-end") {
+        coordinator.resume();
+        expect(coordinator.observe().state?.phase).toBe("complete");
+        expect(coordinator.observe().playbackRatePercent).toBe(85);
+      } else {
+        expect(coordinator.observe().state?.phase).toBe("playing");
+      }
+    } finally {
+      await coordinator.close();
+    }
+  },
+);
+
+it.each(["terminal-cancellation", "completion-first"] as const)(
+  "NOV17 Stop credits only %s from the owned synthesis",
+  async (outcome) => {
+    const { coordinator, client } = createHarness({ blockSynthesis: true });
+    try {
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(() => client.observe().hasActiveGeneration);
+      const generation = coordinator.observe().metrics.activeSynthesisIndex;
+      const previousStop = coordinator.observe().metrics.stopIndex ?? 0;
+      if (outcome === "completion-first") {
+        vi.spyOn(client, "cancel").mockRejectedValueOnce(
+          new TtsProcessClientError("tts-service-invalid-state"),
+        );
+      }
+      await coordinator.stop();
+      const metrics = coordinator.observe().metrics;
+      expect(metrics.lastStopCancellation).toEqual(
+        outcome === "terminal-cancellation"
+          ? {
+              stopIndex: previousStop + 1,
+              synthesisIndex: generation,
+              elapsedMs: 0,
+            }
+          : undefined,
+      );
+      expect(metrics.activeSynthesisIndex).toBeUndefined();
+      expect(metrics.retainedAudioUnitCount).toBe(0);
+      expect(coordinator.observe().serviceState).toBe("stopped");
+    } finally {
+      await coordinator.close();
+    }
+  },
+);
+
 function createHarness(
   options: {
     readonly result?: NarrationPreparationResult;
@@ -3125,6 +3211,48 @@ describe("product narration coordinator", () => {
       await coordinator.close();
     },
   );
+
+  it("VF-0106 rejects a fresh start while a newer compatibility probe is pending", async () => {
+    const profile = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    let checking = false;
+    const { coordinator, client } = createHarness({
+      profileCompatibility: {
+        check: async () => undefined,
+        activeProfileId: () => profile,
+        activeLanguage: () => "en",
+        isProfileCurrentlyAllowed: () => (checking ? undefined : true),
+        isProfileStartAllowed: async () => true,
+      },
+    });
+    await coordinator.checkAvailability();
+    let release = (): void => undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const availability = vi
+      .spyOn(client, "profileConfigurationAvailability")
+      .mockImplementationOnce(async () => {
+        await pending;
+        return "available";
+      });
+    coordinator.start();
+    await settleUntil(() => availability.mock.calls.length === 1);
+    checking = true;
+    release();
+    await settleUntil(
+      () =>
+        client.startedProfiles.length > 0 ||
+        coordinator.observe().availability === "unavailable",
+    );
+    expect(client.startedProfiles).toEqual([]);
+    checking = false;
+    coordinator.resetRecoveryEpisode();
+    await settleUntil(() => coordinator.observe().availability === "available");
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    expect(client.startedProfiles).toEqual([profile]);
+    await coordinator.close();
+  });
 
   it("NLC-03 ignores a delayed compatibility result after close", async () => {
     let selected = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
@@ -6309,6 +6437,97 @@ describe("product narration coordinator", () => {
       await coordinator.close();
     }
   });
+
+  it.each([true, false])(
+    "VF-0114 uses successor Torch evidence only after verified containment (%s)",
+    async (contained) => {
+      const profile = CHATTERBOX_OPTIONAL_PROFILE_ID;
+      const confirmProviderUnavailable = vi.fn(async () => false);
+      const { client, coordinator } = createHarness({
+        profileCompatibility: {
+          activeProfileId: () => profile,
+          activeLanguage: () => "en",
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+          confirmProviderUnavailable,
+        },
+      });
+      const prepare = vi
+        .spyOn(client, "prepare")
+        .mockRejectedValueOnce(
+          new TtsProcessClientError("tts-service-torch-cuda-unavailable"),
+        );
+      const shutdown = vi.spyOn(client, "shutdown");
+      if (!contained) shutdown.mockRejectedValue(new Error("fixture"));
+      try {
+        await coordinator.checkAvailability();
+        coordinator.start();
+        await settleUntil(
+          () =>
+            coordinator.observe().recovery.failureCode ===
+            (contained ? "provider-unavailable" : "cleanup-failed"),
+        );
+        expect(coordinator.observe().recovery).toMatchObject(
+          contained
+            ? { action: "select-compatible-profile", canRecover: true }
+            : { canRecover: false },
+        );
+        expect(confirmProviderUnavailable).not.toHaveBeenCalled();
+        expect(prepare).toHaveBeenCalledTimes(1);
+        coordinator.recover();
+        if (contained) {
+          coordinator.resetRecoveryEpisode();
+          await settleUntil(
+            () => coordinator.observe().recovery.phase === "operational",
+          );
+        }
+        expect(client.startedProfiles).toEqual([profile]);
+      } finally {
+        shutdown.mockRestore();
+        await coordinator.close();
+      }
+    },
+  );
+
+  it.each([true, false])(
+    "VF-0114 uses a contained Chatterbox provider observation (%s)",
+    async (unavailable) => {
+      const profile = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+      const confirmProviderUnavailable = vi.fn<
+        (profileId: string, language: string) => Promise<boolean>
+      >(async () => unavailable);
+      const compatibility = {
+        activeProfileId: () => profile,
+        activeLanguage: () => "en" as const,
+        isProfileCurrentlyAllowed: () => true,
+        isProfileStartAllowed: async () => true,
+        confirmProviderUnavailable,
+      };
+      const { client, coordinator } = createHarness({
+        profileCompatibility: compatibility,
+      });
+      const prepare = vi
+        .spyOn(client, "prepare")
+        .mockRejectedValueOnce(
+          new TtsProcessClientError("tts-service-internal-failure"),
+        );
+      confirmProviderUnavailable.mockImplementation(async () => {
+        expect(client.observe().state).toBe("stopped");
+        return unavailable;
+      });
+      await coordinator.checkAvailability();
+      coordinator.start();
+      await settleUntil(
+        () => coordinator.observe().recovery.phase === "recovery-available",
+      );
+      expect(confirmProviderUnavailable).toHaveBeenCalledWith(profile, "en");
+      expect(coordinator.observe().recovery.action).toBe(
+        unavailable ? "select-compatible-profile" : "explicit-service-restart",
+      );
+      expect(prepare).toHaveBeenCalledTimes(1);
+      await coordinator.close();
+    },
+  );
 
   it.each(["tts-service-internal-failure", "tts-service-timeout"] as const)(
     "CLB-03 contains %s before exposing one explicit identity-safe restart",

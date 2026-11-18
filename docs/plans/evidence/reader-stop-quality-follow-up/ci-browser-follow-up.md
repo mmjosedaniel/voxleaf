@@ -1,5 +1,7 @@
 # PR #325 browser follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base/HEAD `3f1bd55d1dd022a9d2b185e849016987466d2923`, branch
 `codex/revalidated-findings-execplan`, initially clean tree/index.
 The [first CI correction](ci-follow-up.md) remains historical and unchanged.
@@ -9,7 +11,7 @@ Acceptance is governed by [review R02](ci-review-r02.md) and
 
 ## Trigger and scope
 
-[Foundation run 43994526958](https://github.com/mmjosedaniel/voxleaf/actions/runs/43994526958)
+Foundation run 43994526958
 passed Ubuntu portable and Rust. Windows passed pinned NSIS download/hash
 verification, then failed BNC-01 with saved spine 0 rather than 1; 102 other
 browser cases passed. The separate dependency audit also passed on that head.

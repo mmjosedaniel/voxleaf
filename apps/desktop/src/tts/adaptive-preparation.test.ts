@@ -41,6 +41,10 @@ function schedulerObservation(
     playableSampleFrames: sampleFramesFromPlayableMilliseconds(5_000),
     playableDurationMs: 5_000,
     effectiveListeningDurationMs: 5_000,
+    initialPlaybackLeadMs: null,
+    bufferingMs: 0,
+    activeRefillIndex: undefined,
+    lastCompletedRefill: undefined,
     playbackRateState: Object.freeze({
       selectedRatePercent: 100,
       activeRatePercent: null,

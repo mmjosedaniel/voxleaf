@@ -39,6 +39,117 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it.each(["installed", "failed"] as const)(
+    "VF-0114 direct candidate Remove preserves its exact snapshot (%s)",
+    async (state) => {
+      const candidate = {
+        ...snapshot(state),
+        removalSupported: false,
+        failure: state === "failed" ? "installed-package-invalid" : null,
+      };
+      const invoke = vi.fn(async (command: string) => {
+        if (command === "remove_optional_chatterbox")
+          throw "tts-optional-profile-unavailable";
+        return candidate;
+      });
+      const client = new OptionalChatterboxClient(invoke);
+      await client.refresh();
+      const before = client.observe();
+      const listener = vi.fn();
+      client.subscribe(listener);
+      await expect(client.remove()).resolves.toBe(before);
+      expect(client.observe()).toBe(before);
+      expect(listener).not.toHaveBeenCalled();
+      expect(invoke).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("VF-0114 a failed candidate refresh retains removal refusal", async () => {
+    const candidate = {
+      ...snapshot("installed"),
+      removalSupported: false,
+    };
+    const invoke = vi
+      .fn<() => Promise<unknown>>()
+      .mockResolvedValueOnce(candidate)
+      .mockRejectedValueOnce("tts-optional-profile-unavailable");
+    const client = new OptionalChatterboxClient(invoke);
+    await client.refresh();
+    await client.refresh();
+    const failed = client.observe();
+    expect(failed).toMatchObject({ state: "failed", removalSupported: false });
+    await expect(client.remove()).resolves.toBe(failed);
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("VF-0114 rejects malformed native capability without loosening known refusal", async () => {
+    const installed = snapshot("installed");
+    const invoke = vi
+      .fn<() => Promise<unknown>>()
+      .mockResolvedValueOnce({ ...installed, removalSupported: false })
+      .mockResolvedValueOnce({ ...installed, removalSupported: "false" });
+    const client = new OptionalChatterboxClient(invoke);
+    await client.refresh();
+    await expect(client.refresh()).resolves.toMatchObject({
+      state: "failed",
+      removalSupported: false,
+      failure: "optional-profile-operation-failed",
+    });
+    await client.remove();
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["cancel-first", "download-first"] as const)(
+    "VF-0095 preserves Check after invalid late Cancel (%s)",
+    async (order) => {
+      const transfer = deferred();
+      const cancellation = deferred();
+      const cleanupFailure = {
+        ...snapshot("failed"),
+        failure: "tts-optional-profile-cleanup-failed",
+      };
+      const invoke = vi.fn(
+        (command: string, args?: Record<string, unknown>) => {
+          if (command === "download_optional_chatterbox")
+            return transfer.promise;
+          if (command === "cancel_optional_chatterbox")
+            return cancellation.promise;
+          if (command === "optional_chatterbox_snapshot") {
+            return Promise.resolve(
+              args?.retryCleanup ? snapshot("installed") : cleanupFailure,
+            );
+          }
+          return Promise.resolve(snapshot("confirming"));
+        },
+      );
+      const client = new OptionalChatterboxClient(invoke);
+      await client.select();
+      const download = client.download();
+      const cancel = client.cancel();
+      if (order === "download-first") {
+        transfer.reject("tts-optional-profile-cleanup-failed");
+        await download;
+      }
+      cancellation.reject("tts-optional-profile-invalid");
+      if (order === "cancel-first") {
+        await vi.waitFor(() =>
+          expect(client.observe().failure).toBe("tts-optional-profile-invalid"),
+        );
+        transfer.reject("tts-optional-profile-cleanup-failed");
+      }
+      await download;
+      await expect(cancel).resolves.toMatchObject(cleanupFailure);
+      await expect(client.retryCleanup()).resolves.toMatchObject({
+        state: "installed",
+      });
+      expect(
+        invoke.mock.calls.filter(
+          ([command]) => command === "download_optional_chatterbox",
+        ),
+      ).toHaveLength(1);
+    },
+  );
+
   it.each([
     ["cancel-first", "failed"],
     ["download-first", "failed"],

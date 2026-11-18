@@ -471,6 +471,22 @@ describe("bounded namespace-aware XML events", () => {
     expect(budget.getSnapshot().decodedPublicationTextBytes).toBe(4);
   });
 
+  it("VF-0109 counts nonempty CDATA at the exact node cap", () => {
+    const read = (cdata: string) =>
+      createXmlEventReader(
+        createEpubProcessingBudget({
+          policy: { maxXmlNodesPerDocument: 2 },
+        }),
+      ).read(
+        encodeUtf8(`<root><child/>${cdata}</root>`),
+        "content",
+        () => undefined,
+      );
+
+    expect(read("<![CDATA[]]>")).toEqual(read(""));
+    expectXmlError(() => read("<![CDATA[sample]]>"), "resource-limit-exceeded");
+  });
+
   it("stops at an AbortSignal checkpoint between events", () => {
     const controller = new AbortController();
     const budget = createEpubProcessingBudget({ signal: controller.signal });

@@ -44,6 +44,39 @@ afterEach(() => {
 });
 
 describe("EPUB ZIP inventory", () => {
+  it("VF-0108 admits the same contents in either declaration order", async () => {
+    const pair = [
+      { name: "EPUB/one.txt", data: "a".repeat(50), options: { level: 6 } },
+      { name: "EPUB/two.txt", data: "b".repeat(50), options: { level: 6 } },
+    ];
+    const ballast = {
+      name: "EPUB/stored.txt",
+      data: " ".repeat(100),
+      options: { level: 0 },
+    };
+    const policy = { compressionRatioGraceBytes: 75, maxCompressionRatio: 2 };
+    const original = await createArchive([mimetypeEntry(), ...pair, ballast]);
+    const reordered = original.slice();
+    const view = dataView(original);
+    const start = findCentralDirectory(view, pair[0]!.name);
+    const pivot = findCentralDirectory(view, ballast.name);
+    const end = pivot + centralDirectoryRecordLength(view, pivot);
+    reordered.set(original.subarray(pivot, end), start);
+    reordered.set(original.subarray(start, pivot), start + end - pivot);
+    for (const bytes of [original, reordered]) {
+      await expect(
+        inventoryEpubArchive(bytes, { policy }),
+      ).resolves.toMatchObject({
+        entryCount: 4,
+        totalDeclaredUncompressedBytes: 220,
+      });
+    }
+    await expect(
+      inventoryEpubArchive(await createArchive([mimetypeEntry(), ...pair]), {
+        policy,
+      }),
+    ).rejects.toMatchObject({ code: "resource-limit-exceeded" });
+  });
   it("CAF-R2.3 close joins the pending reader and releases its entry map once", async () => {
     const bytes = await createArchive([
       mimetypeEntry(),

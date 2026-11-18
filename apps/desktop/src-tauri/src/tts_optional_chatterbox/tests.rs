@@ -2044,6 +2044,115 @@ fn dcr_19_rejects_intermediate_junction_to_owned_root_sibling() {
 
 #[cfg(windows)]
 #[test]
+fn nov17_staging_cleanup_rejects_a_non_directory_ancestor() {
+    let root = TestRoot::new();
+    let staging = root.0.join("staging");
+    fs::write(&staging, b"keep").unwrap();
+    assert_eq!(
+        clean_staging(&root.0),
+        Err(OptionalProfileError::VerificationFailed)
+    );
+    assert_eq!(fs::read(&staging).unwrap(), b"keep");
+    fs::remove_file(&staging).unwrap();
+    assert_eq!(clean_staging(&root.0), Ok(()));
+}
+
+#[cfg(windows)]
+#[test]
+fn nov17_cancel_and_download_refuse_unowned_staging_before_mutation() {
+    for download in [false, true] {
+        let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        let staging = root.0.join("staging");
+        assert_eq!(
+            manager.select_at(&root.0).unwrap().state,
+            OptionalProfileState::Confirming
+        );
+        fs::write(&staging, b"ordinary-file").unwrap();
+        let calls = Arc::new(AtomicU64::new(0));
+        let transfer_calls = Arc::clone(&calls);
+        DOWNLOAD_HOOK.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move |_, _| {
+                transfer_calls.fetch_add(1, Ordering::SeqCst);
+                Err(OptionalProfileError::DownloadFailed)
+            }));
+        });
+        let blocked = if download {
+            download_at_if_host_admitted(&manager, &root.0, || true)
+        } else {
+            manager.cancel_at(&root.0)
+        };
+        assert_eq!(blocked, Err(OptionalProfileError::VerificationFailed));
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+        assert_eq!(fs::read(&staging).unwrap(), b"ordinary-file");
+        assert!(!package_root(&root.0).exists());
+
+        fs::remove_file(&staging).unwrap();
+        assert_eq!(
+            manager.select_at(&root.0).unwrap().state,
+            OptionalProfileState::Confirming
+        );
+        if download {
+            assert_eq!(
+                download_at_if_host_admitted(&manager, &root.0, || true),
+                Err(OptionalProfileError::DownloadFailed)
+            );
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+        } else {
+            assert_eq!(
+                manager.cancel_at(&root.0).unwrap().state,
+                OptionalProfileState::Absent
+            );
+        }
+        DOWNLOAD_HOOK.with(|slot| slot.borrow_mut().take());
+        assert!(!staging_root(&root.0).exists());
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn nov17_check_refuses_unowned_staging_before_removing_verified_promotion_backup() {
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    let active = package_root(&root.0);
+    let authority = write_runtime(&active);
+    let executable = active.join("runtime/python.exe");
+    let original = fs::read(&executable).unwrap();
+    let backup = promotion_backup_root(&root.0);
+    fs::create_dir_all(&backup).unwrap();
+    let marker = backup.join("old.bin");
+    fs::write(&marker, b"prior-promotion").unwrap();
+    let staging = root.0.join("staging");
+    fs::write(&staging, b"ordinary-file").unwrap();
+    manager.set_operation(
+        OptionalProfileState::Failed,
+        0,
+        Some(OptionalProfileError::CleanupFailed.code()),
+        None,
+    );
+    manager.operation.lock().unwrap().post_commit_cleanup = Some((
+        canonical_managed_root(&root.0).unwrap(),
+        runtime_authority_key(&authority).unwrap(),
+    ));
+
+    assert_eq!(
+        manager.retry_cleanup(&root.0, &authority),
+        Err(OptionalProfileError::VerificationFailed)
+    );
+    assert_eq!(fs::read(&staging).unwrap(), b"ordinary-file");
+    assert_eq!(fs::read(&marker).unwrap(), b"prior-promotion");
+    assert_eq!(fs::read(&executable).unwrap(), original);
+    fs::remove_file(&staging).unwrap();
+    assert_eq!(
+        manager.retry_cleanup(&root.0, &authority).unwrap().state,
+        OptionalProfileState::Installed
+    );
+    assert!(!backup.exists());
+    assert_eq!(fs::read(executable).unwrap(), original);
+}
+
+#[cfg(windows)]
+#[test]
 fn dcr_19_rejects_intermediate_junction_to_outside_root_before_any_deletion() {
     assert_intermediate_junction_blocks_removal(false, true);
 }
@@ -2308,6 +2417,131 @@ fn write_runtime(root: &Path) -> OptionalPackageManifest {
     authority
 }
 
+#[cfg(all(windows, feature = "local-chatterbox-v8-candidate"))]
+fn write_candidate_fixture(package: &Path) -> OptionalPackageManifest {
+    let mut authority = write_runtime(package);
+    authority.identity.package_version = "8".to_owned();
+    let old_manifest = package.join(RUNTIME_MANIFEST_NAME);
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(&old_manifest).unwrap()).unwrap();
+    fs::remove_file(old_manifest).unwrap();
+    let path = "runtime/Lib/site-packages/voxleaf_tts/chatterbox_service";
+    fs::rename(
+        package.join(format!("{path}.py")),
+        package.join(format!("{path}_v2.py")),
+    )
+    .unwrap();
+    manifest["packageId"] = serde_json::json!("voxleaf-chatterbox-v8");
+    manifest["packageVersion"] = serde_json::json!("8");
+    manifest["serviceModule"] = serde_json::json!("voxleaf_tts.chatterbox_service_v2");
+    manifest["files"][1]["path"] = serde_json::json!(format!("{path}_v2.py"));
+    let bytes = serde_json::to_vec(&manifest).unwrap();
+    fs::write(package.join("runtime-manifest-v8.json"), &bytes).unwrap();
+    authority
+        .runtime_artifact
+        .as_mut()
+        .unwrap()
+        .runtime_manifest_sha256 = encode_sha256(Sha256::digest(&bytes));
+    authority
+}
+
+#[cfg(all(windows, feature = "local-chatterbox-v8-candidate"))]
+#[test]
+fn vf0114_local_candidate_selects_only_a_verified_install_on_an_admitted_host() {
+    let fixture = TestRoot::new();
+    let root = fixture.0.join("candidate/tts");
+    let package = root.join("cb/8");
+    let authority = write_candidate_fixture(&package);
+    let manager = OptionalChatterboxManager::default();
+    let select = |admitted| select_profile_at(&manager, &root, &authority, admitted);
+    assert_eq!(select(true).unwrap().state, OptionalProfileState::Installed);
+    assert_eq!(
+        select(false).unwrap_err(),
+        OptionalProfileError::IncompatibleHost
+    );
+    let service = package.join("runtime/Lib/site-packages/voxleaf_tts/chatterbox_service_v2.py");
+    fs::write(&service, b"invalid service").unwrap();
+    assert_eq!(select(true).unwrap_err(), OptionalProfileError::Unavailable);
+    fs::rename(&package, fixture.0.join("absent-from-candidate")).unwrap();
+    assert_eq!(select(true).unwrap_err(), OptionalProfileError::Unavailable);
+    assert!(manager.operation_snapshot(&authority).is_none());
+    assert!(manager.download_attempt().is_err());
+    assert!(!staging_root(&root).exists());
+}
+
+#[cfg(all(windows, feature = "local-chatterbox-v8-candidate"))]
+#[test]
+fn vf0114_local_candidate_reports_unsupported_removal_in_all_snapshot_states() {
+    let fixture = TestRoot::new();
+    let root = fixture.0.join("candidate/tts");
+    let package = root.join("cb/8");
+    let authority = write_candidate_fixture(&package);
+    let snapshot = || {
+        let snapshot = exact_local_successor::candidate_snapshot(&root, &authority).unwrap();
+        let wire = serde_json::to_value(&snapshot).unwrap();
+        assert_eq!(
+            wire.get("removalSupported"),
+            Some(&serde_json::json!(false))
+        );
+        snapshot.state
+    };
+    assert_eq!(snapshot(), OptionalProfileState::Installed);
+    let service = package.join("runtime/Lib/site-packages/voxleaf_tts/chatterbox_service_v2.py");
+    fs::write(service, b"invalid service").unwrap();
+    assert_eq!(snapshot(), OptionalProfileState::Failed);
+    fs::rename(&package, fixture.0.join("absent-from-candidate")).unwrap();
+    assert_eq!(snapshot(), OptionalProfileState::Withheld);
+}
+
+#[cfg(all(windows, feature = "local-chatterbox-v8-candidate"))]
+#[test]
+fn vf0114_local_candidate_rejects_redirected_root_and_cache_ancestry() {
+    for relative in [
+        "candidate",
+        "candidate/tts",
+        "candidate/tts/cb",
+        "candidate/tts/cb/8",
+        "candidate/tts/cb/cache",
+    ] {
+        let fixture = TestRoot::new();
+        let outside = TestRoot::new();
+        let root = fixture.0.join("candidate/tts");
+        let package = root.join("cb/8");
+        let cache = root.join("cb/cache");
+        fs::create_dir_all(&cache).unwrap();
+        let authority = write_candidate_fixture(&package);
+        assert!(
+            verify_discovered_runtime(&root, &authority).is_ok(),
+            "{relative}: real owned tree"
+        );
+
+        let link = fixture.0.join(relative);
+        let target = outside.0.join("redirected");
+        fs::rename(&link, &target).unwrap();
+        let status = std::process::Command::new("powershell.exe")
+            .args(["-NoProfile", "-NonInteractive", "-Command", "New-Item -ItemType Junction -Path $env:VOXLEAF_TEST_LINK -Target $env:VOXLEAF_TEST_TARGET -ErrorAction Stop | Out-Null"])
+            .env("VOXLEAF_TEST_LINK", &link)
+            .env("VOXLEAF_TEST_TARGET", &target)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let start = verify_discovered_runtime(&root, &authority);
+        let snapshot = exact_local_successor::candidate_snapshot(&root, &authority);
+        fs::remove_dir(&link).unwrap();
+        assert_eq!(
+            start,
+            Err(OptionalProfileError::VerificationFailed),
+            "{relative}: launch"
+        );
+        assert_eq!(
+            snapshot.unwrap().state,
+            OptionalProfileState::Failed,
+            "{relative}: snapshot"
+        );
+        assert!(target.is_dir());
+    }
+}
+
 #[test]
 fn checked_in_authority_enables_the_measured_ordinary_package() {
     let manifest: OptionalPackageManifest = serde_json::from_slice(include_bytes!(
@@ -2370,6 +2604,28 @@ fn downloadable_manifest_rejects_non_https_and_incomplete_integrity_facts() {
 }
 
 #[test]
+fn downloadable_manifest_requires_exact_runtime_repository_release_and_part() {
+    let mut manifest = downloadable_package_manifest();
+    let original = manifest.runtime_artifact.as_ref().unwrap().parts[0]
+        .url
+        .clone();
+    let replacements = [
+        original.replace("/voxleaf/", "/other-repository/"),
+        original.replace("/chatterbox-runtime-v7/", "/chatterbox-runtime-v6/"),
+        original.replace(".part-001", ".part-002"),
+        format!("{original}?asset=another"),
+    ];
+    for url in replacements {
+        assert_ne!(url, original);
+        manifest.runtime_artifact.as_mut().unwrap().parts[0].url = url;
+        assert_eq!(
+            validate_manifest(&manifest),
+            Err(OptionalProfileError::Invalid)
+        );
+    }
+}
+
+#[test]
 fn redirect_policy_rejects_source_substitution_and_non_https_targets() {
     assert!(redirect_host_allowed(
         DownloadSource::HuggingFace,
@@ -2423,8 +2679,7 @@ fn downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation(
     let path = root.0.join("artifact.bin");
     let mut artifact = RuntimePart {
         filename: "artifact.bin".to_owned(),
-        url: "https://github.com/mmjosedaniel/voxleaf/releases/download/test/artifact.bin"
-            .to_owned(),
+        url: "https://example.invalid/artifact.bin".to_owned(),
         sha256: encode_sha256(Sha256::digest(b"data")),
         download_bytes: 4,
     };
@@ -3070,9 +3325,10 @@ fn rcf13_ordinary_snapshot_preserves_incomplete_prior_operation_until_explicit_r
 fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();
+    let manifest = exact_manifest().expect("checked in manifest should be valid");
 
     assert_eq!(
-        select_at_if_host_admitted(&manager, &root.0, false),
+        select_profile_at(&manager, &root.0, &manifest, false),
         Err(OptionalProfileError::IncompatibleHost)
     );
     assert_eq!(
@@ -3080,7 +3336,6 @@ fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
         Err(OptionalProfileError::IncompatibleHost)
     );
 
-    let manifest = exact_manifest().expect("checked in manifest should be valid");
     assert!(manager.operation_snapshot(&manifest).is_none());
     assert!(!staging_root(&root.0).exists());
     assert!(!profile_root(&root.0).exists());
@@ -3090,14 +3345,20 @@ fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
 fn ordinary_selection_requires_confirmation_without_creating_staging() {
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();
+    let manifest = exact_manifest().expect("checked in manifest should be valid");
     let before = manager
         .snapshot_at(&root.0)
         .expect("snapshot should succeed");
     assert_eq!(before.state, OptionalProfileState::Absent);
-    let selected = manager
-        .select_at(&root.0)
+    let selected = select_profile_at(&manager, &root.0, &manifest, true)
         .expect("selection should reach consent");
     assert_eq!(selected.state, OptionalProfileState::Confirming);
+    assert!(
+        serde_json::to_value(&selected)
+            .unwrap()
+            .get("removalSupported")
+            .is_none()
+    );
     assert_eq!(selected.download_bytes, Some(8_240_315_465));
     assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
     assert!(!staging_root(&root.0).exists());

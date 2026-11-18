@@ -1,5 +1,6 @@
 use std::{
     fs,
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
     process::{Child, ChildStdin, Command, Stdio},
     sync::{
@@ -21,7 +22,7 @@ use std::os::windows::process::CommandExt;
 use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
 
 use crate::{
-    tts_optional_chatterbox::discover_installed_chatterbox_runtime,
+    tts_optional_chatterbox::{InstalledChatterboxRuntime, discover_installed_chatterbox_runtime},
     tts_protocol_contract::{
         MAX_AUDIO_BYTES, MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES,
         MAX_NARRATION_CODE_POINTS, MAX_NARRATION_UTF8_BYTES, valid_identifier,
@@ -29,8 +30,9 @@ use crate::{
     tts_release_core::{PackagedCoreError, discover_packaged_piper_runtime},
     tts_service_fake_child::NORMAL_SCENARIO,
     tts_service_protocol::{
-        Frame, FrameKind, TtsNativeFailure, control_kind, decode_control, encode_control,
-        read_frame, validate_audio, write_frame,
+        ChildControl, Frame, FrameKind, TtsChildProtocol, TtsNativeFailure, control_kind,
+        decode_child_control, encode_child_control, read_child_frame, validate_audio,
+        write_child_frame,
     },
 };
 
@@ -198,6 +200,7 @@ struct ExactRuntime {
     service_module: &'static str,
     runtime_environment: Vec<(&'static str, &'static str)>,
     numba_cache_root: Option<PathBuf>,
+    protocol: TtsChildProtocol,
 }
 
 #[cfg(not(feature = "release-locked-runtime"))]
@@ -256,6 +259,7 @@ impl ExactRuntime {
             service_module: "voxleaf_tts.qwen_service",
             runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_QWEN_VOICE", "serena-es")],
             numba_cache_root: None,
+            protocol: TtsChildProtocol::V1,
         })
     }
 
@@ -319,6 +323,7 @@ impl ExactRuntime {
             service_module: "voxleaf_tts.piper_service",
             runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_PIPER_VOICE", runtime_voice)],
             numba_cache_root: None,
+            protocol: TtsChildProtocol::V1,
         })
     }
 
@@ -335,6 +340,7 @@ impl ExactRuntime {
                     runtime.runtime_voice,
                 )],
                 numba_cache_root: None,
+                protocol: TtsChildProtocol::V1,
             }),
             Ok(None) => {
                 #[cfg(feature = "release-locked-runtime")]
@@ -393,6 +399,7 @@ impl ExactRuntime {
                 if language == "es" { "es" } else { "en" },
             )],
             numba_cache_root: None,
+            protocol: TtsChildProtocol::V1,
         })
     }
 
@@ -401,18 +408,10 @@ impl ExactRuntime {
             return Err(TtsNativeFailure::InvalidInput);
         }
         match discover_installed_chatterbox_runtime() {
-            Ok(Some(runtime)) => Ok(Self {
-                python: runtime.python,
-                model_root: runtime.model_root,
-                service_source: runtime.site_packages.clone(),
-                service_site_packages: runtime.site_packages,
-                service_module: "voxleaf_tts.chatterbox_service",
-                runtime_environment: vec![(
-                    "VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE",
-                    if language == "es" { "es" } else { "en" },
-                )],
-                numba_cache_root: Some(runtime.numba_cache_root),
-            }),
+            Ok(Some(runtime)) => Ok(Self::installed_chatterbox(
+                runtime,
+                if language == "es" { "es" } else { "en" },
+            )),
             Ok(None) | Err(_) => {
                 #[cfg(feature = "release-locked-runtime")]
                 {
@@ -425,6 +424,23 @@ impl ExactRuntime {
                     Self::chatterbox_from_environment(language)
                 }
             }
+        }
+    }
+
+    fn installed_chatterbox(runtime: InstalledChatterboxRuntime, language: &'static str) -> Self {
+        let service_module = match runtime.protocol {
+            TtsChildProtocol::V1 => "voxleaf_tts.chatterbox_service",
+            TtsChildProtocol::V2 => "voxleaf_tts.chatterbox_service_v2",
+        };
+        Self {
+            python: runtime.python,
+            model_root: runtime.model_root,
+            service_source: runtime.site_packages.clone(),
+            service_site_packages: runtime.site_packages,
+            service_module,
+            runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE", language)],
+            numba_cache_root: Some(runtime.numba_cache_root),
+            protocol: runtime.protocol,
         }
     }
 
@@ -480,13 +496,18 @@ impl ExactRuntime {
         };
         let mut command = Command::new(child_process_path(&self.python));
         command.arg("-s");
-        if self.service_module == "voxleaf_tts.chatterbox_service"
-            && self.service_source == self.service_site_packages
+        if matches!(
+            self.service_module,
+            "voxleaf_tts.chatterbox_service" | "voxleaf_tts.chatterbox_service_v2"
+        ) && self.service_source == self.service_site_packages
         {
             command
                 .arg("-c")
                 .arg(CHATTERBOX_CHILD_BOOTSTRAP)
                 .arg(&service_site_packages);
+            if self.protocol == TtsChildProtocol::V2 {
+                command.arg("--chatterbox-protocol-v2");
+            }
             #[cfg(test)]
             if let Some((observer, receipt)) = tests::chatterbox_observer_arguments(&self.python) {
                 command
@@ -531,6 +552,17 @@ impl ExactRuntime {
         }
         for (key, value) in &self.runtime_environment {
             command.env(key, value);
+        }
+        #[cfg(feature = "local-chatterbox-v8-candidate")]
+        if self.protocol == TtsChildProtocol::V2
+            && std::env::var("VOXLEAF_V8_DIAGNOSTIC_HIDE_TORCH_CUDA")
+                .ok()
+                .as_deref()
+                == Some("1")
+        {
+            // The opt-in candidate can exercise an independent child failure
+            // without hiding the adapter from the parent Windows probe.
+            command.env("CUDA_VISIBLE_DEVICES", "-1");
         }
         Ok(command)
     }
@@ -654,15 +686,23 @@ struct Lifecycle {
     // One rejected attempt proven to have no remaining child. Its
     // acknowledgment is independent of any later session and cannot stop it.
     rejected_start: Option<(String, String)>,
+    pending_start: Option<(String, String)>,
+    // A competing Busy request can replace the rejection receipt while the
+    // retired owner still holds the pre-spawn operation.
+    retired_start: Option<(String, String)>,
 }
 
 impl Lifecycle {
+    fn no_child_start_instance(&self, request: &str) -> Option<&str> {
+        [self.retired_start.as_ref(), self.rejected_start.as_ref()]
+            .into_iter()
+            .flatten()
+            .find_map(|(owner, instance)| (owner == request).then_some(instance.as_str()))
+    }
+
     fn retains_start(&self, request: &str) -> bool {
         self.contained_start_request_id.as_deref() == Some(request)
-            || self
-                .rejected_start
-                .as_ref()
-                .is_some_and(|(id, _)| id == request)
+            || self.no_child_start_instance(request).is_some()
     }
 
     fn record_termination(&mut self, session: &ServiceSession) {
@@ -850,10 +890,11 @@ struct ControlWriter {
     worker: Mutex<Option<thread::JoinHandle<()>>>,
     busy: Arc<AtomicBool>,
     closed: Arc<AtomicBool>,
+    protocol: TtsChildProtocol,
 }
 
 impl ControlWriter {
-    fn spawn(mut input: ChildStdin) -> Self {
+    fn spawn(mut input: ChildStdin, protocol: TtsChildProtocol) -> Self {
         let (sender, requests) = mpsc::sync_channel::<ControlWriteRequest>(1);
         let busy = Arc::new(AtomicBool::new(false));
         let closed = Arc::new(AtomicBool::new(false));
@@ -867,7 +908,7 @@ impl ControlWriter {
                 } else if Instant::now() > request.deadline {
                     Err(TtsNativeFailure::TimedOut)
                 } else {
-                    write_frame(&mut input, FrameKind::Control, &request.payload)
+                    write_child_frame(&mut input, FrameKind::Control, &request.payload, protocol)
                         .and_then(|()| {
                             input
                                 .flush()
@@ -903,6 +944,7 @@ impl ControlWriter {
             worker: Mutex::new(Some(worker)),
             busy,
             closed,
+            protocol,
         }
     }
 
@@ -913,6 +955,7 @@ impl ControlWriter {
             worker: Mutex::new(None),
             busy: Arc::new(AtomicBool::new(false)),
             closed: Arc::new(AtomicBool::new(true)),
+            protocol: TtsChildProtocol::V1,
         }
     }
 
@@ -929,7 +972,7 @@ impl ControlWriter {
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .map_err(|_| TtsNativeFailure::Busy)?;
         let result = (|| {
-            let payload = encode_control(control)?;
+            let payload = encode_child_control(control, self.protocol)?;
             let (completion, receiver) = mpsc::sync_channel(1);
             let requests = self
                 .requests
@@ -997,8 +1040,9 @@ struct ServiceSession {
     service_instance_id: String,
     start_request_id: Option<String>,
     input: ControlWriter,
-    frames: Mutex<Receiver<Result<Frame, TtsNativeFailure>>>,
+    frames: Mutex<Receiver<Result<Option<Frame>, TtsNativeFailure>>>,
     process: Mutex<Option<ChildProcess>>,
+    protocol: TtsChildProtocol,
 }
 
 impl ServiceSession {
@@ -1015,9 +1059,12 @@ impl ServiceSession {
             *child_may_exist = true;
             return Ok(session);
         }
+        let protocol = match child_configuration {
+            ServiceChild::Exact(runtime) => runtime.protocol,
+            _ => TtsChildProtocol::V1,
+        };
         let mut process = ChildProcess::spawn(child_configuration, child_may_exist)?;
-        let (Some(input), Some(mut output)) =
-            (process.child.stdin.take(), process.child.stdout.take())
+        let (Some(input), Some(output)) = (process.child.stdin.take(), process.child.stdout.take())
         else {
             process.terminate()?;
             *child_may_exist = false;
@@ -1025,10 +1072,24 @@ impl ServiceSession {
         };
         let (sender, frames) = mpsc::sync_channel(1);
         thread::spawn(move || {
+            let mut output = BufReader::new(output);
             loop {
-                let frame = read_frame(&mut output);
-                let failed = frame.is_err();
-                if sender.send(frame).is_err() || failed {
+                let frame = match output.fill_buf() {
+                    Ok([]) => Ok(None),
+                    Ok(_) => read_child_frame(&mut output, protocol)
+                        .map(Some)
+                        .map_err(|failure| {
+                            if failure == TtsNativeFailure::ChildUnavailable {
+                                TtsNativeFailure::ProtocolRejected
+                            } else {
+                                failure
+                            }
+                        }),
+                    Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                    Err(_) => Err(TtsNativeFailure::ChildUnavailable),
+                };
+                let terminal = !matches!(frame, Ok(Some(_)));
+                if sender.send(frame).is_err() || terminal {
                     break;
                 }
             }
@@ -1036,9 +1097,10 @@ impl ServiceSession {
         Ok(Arc::new(Self {
             service_instance_id,
             start_request_id,
-            input: ControlWriter::spawn(input),
+            input: ControlWriter::spawn(input, protocol),
             frames: Mutex::new(frames),
             process: Mutex::new(Some(process)),
+            protocol,
         }))
     }
 
@@ -1064,6 +1126,11 @@ impl ServiceSession {
     }
 
     fn receive(&self, timeout: Duration) -> Result<Frame, TtsNativeFailure> {
+        self.receive_stdout(timeout)?
+            .ok_or(TtsNativeFailure::ChildUnavailable)
+    }
+
+    fn receive_stdout(&self, timeout: Duration) -> Result<Option<Frame>, TtsNativeFailure> {
         #[cfg(test)]
         if let Some(result) = tests::receive_hook(timeout) {
             return result;
@@ -1127,6 +1194,13 @@ impl ServiceSession {
     }
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum EngineErrorScope {
+    Reject,
+    Accept,
+    Load,
+}
+
 pub struct TtsServiceSupervisor {
     admission: Mutex<()>,
     operation: Mutex<()>,
@@ -1171,7 +1245,9 @@ impl TtsServiceSupervisor {
                 active: None,
                 contained_service_instance_id: None,
                 contained_start_request_id: None,
+                pending_start: None,
                 rejected_start: None,
+                retired_start: None,
             }),
             session: Mutex::new(None),
             child_configuration: Mutex::new(child_configuration),
@@ -1294,7 +1370,12 @@ impl TtsServiceSupervisor {
         deadline: &CommandDeadline,
         expected_kind: &str,
     ) -> Result<Value, TtsNativeFailure> {
-        self.receive_control_with_engine_errors(session, deadline, expected_kind, false)
+        self.receive_control_with_engine_errors(
+            session,
+            deadline,
+            expected_kind,
+            EngineErrorScope::Reject,
+        )
     }
 
     fn receive_control_with_engine_errors(
@@ -1302,18 +1383,25 @@ impl TtsServiceSupervisor {
         session: &ServiceSession,
         deadline: &CommandDeadline,
         expected_kind: &str,
-        allow_engine_error: bool,
+        error_scope: EngineErrorScope,
     ) -> Result<Value, TtsNativeFailure> {
         let frame = deadline.receive(session)?;
         if frame.kind != FrameKind::Control {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
-        let control = decode_control(&frame.payload)?;
-        let actual_kind = control_kind(&control)?;
-        if actual_kind != "protocolRejected"
-            && control.get("serviceInstanceId").and_then(Value::as_str)
-                != Some(session.service_instance_id.as_str())
-        {
+        let decoded = decode_child_control(&frame.payload, session.protocol)?;
+        let response_id = match &decoded {
+            ChildControl::Standard(control) if control_kind(control)? == "protocolRejected" => {
+                Some(session.service_instance_id.as_str())
+            }
+            ChildControl::Standard(control) => {
+                control.get("serviceInstanceId").and_then(Value::as_str)
+            }
+            ChildControl::TorchCudaUnavailable {
+                service_instance_id,
+            } => Some(service_instance_id.as_str()),
+        };
+        if response_id != Some(session.service_instance_id.as_str()) {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
         let current = self
@@ -1326,7 +1414,26 @@ impl TtsServiceSupervisor {
         {
             return Err(TtsNativeFailure::Cancelled);
         }
-        if actual_kind == "error" && allow_engine_error {
+        let ChildControl::Standard(control) = decoded else {
+            deadline.check()?;
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            // Load queues state records on success but can return an immediate
+            // error without an preceding loading record.
+            return if error_scope == EngineErrorScope::Load
+                && expected_kind == "state"
+                && lifecycle.active.is_none()
+                && matches!(lifecycle.state.as_str(), "unloaded" | "loading")
+            {
+                Err(TtsNativeFailure::TorchCudaUnavailable)
+            } else {
+                Err(TtsNativeFailure::ProtocolRejected)
+            };
+        };
+        let actual_kind = control_kind(&control)?;
+        if actual_kind == "error" && error_scope != EngineErrorScope::Reject {
             let lifecycle = self
                 .lifecycle
                 .lock()
@@ -1388,7 +1495,12 @@ impl TtsServiceSupervisor {
         deadline: &CommandDeadline,
         expected_state: &str,
     ) -> Result<Value, TtsNativeFailure> {
-        let state = self.receive_control_with_engine_errors(session, deadline, "state", true)?;
+        let error_scope = match expected_state {
+            "loading" | "warming" => EngineErrorScope::Load,
+            _ => EngineErrorScope::Accept,
+        };
+        let state =
+            self.receive_control_with_engine_errors(session, deadline, "state", error_scope)?;
         if state.get("state").and_then(Value::as_str) != Some(expected_state) {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
@@ -1470,6 +1582,14 @@ impl TtsServiceSupervisor {
             service_instance_id.clone(),
             &mut child_may_exist,
         );
+        if let Ok(mut lifecycle) = self.lifecycle.lock()
+            && lifecycle
+                .pending_start
+                .as_ref()
+                .is_some_and(|(_, id)| id == &service_instance_id)
+        {
+            lifecycle.pending_start = None;
+        }
         if result.is_err()
             && !child_may_exist
             && let Some(request) = start_request_id
@@ -1503,6 +1623,19 @@ impl TtsServiceSupervisor {
     ) -> Result<Vec<Value>, TtsNativeFailure> {
         let admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
+        if let Some(request) = &start_request_id {
+            let slot = self
+                .session
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if slot.is_some() {
+                return Err(TtsNativeFailure::InvalidState);
+            }
+            self.lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .pending_start = Some((request.clone(), service_instance_id.clone()));
+        }
         if let Some(profile_id) = profile_id {
             self.configure_profile_locked(profile_id, language)?;
         }
@@ -1517,13 +1650,14 @@ impl TtsServiceSupervisor {
             return Err(TtsNativeFailure::InvalidState);
         }
         if let Some(request) = &start_request_id {
-            let lifecycle = self
+            let mut lifecycle = self
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
             if lifecycle.retains_start(request) {
-                return Err(TtsNativeFailure::InvalidState);
+                return Err(TtsNativeFailure::Cancelled);
             }
+            lifecycle.pending_start = None;
         }
         let child_configuration = self
             .child_configuration
@@ -1576,8 +1710,18 @@ impl TtsServiceSupervisor {
     }
 
     pub(crate) fn prepare_measured(&self) -> Result<PrepareMeasurement, TtsNativeFailure> {
+        self.prepare_measured_for(None)
+    }
+
+    fn prepare_measured_for(
+        &self,
+        expected_service_instance_id: Option<&str>,
+    ) -> Result<PrepareMeasurement, TtsNativeFailure> {
         let _operation = self.acquire_operation()?;
         let session = self.active_session()?;
+        if expected_service_instance_id.is_some_and(|id| id != session.service_instance_id) {
+            return Err(TtsNativeFailure::Cancelled);
+        }
         let result = (|| {
             let load_started = Instant::now();
             let load_deadline = CommandDeadline::new(LOAD_TIMEOUT);
@@ -1660,7 +1804,7 @@ impl TtsServiceSupervisor {
                 &session,
                 &deadline,
                 "audioMetadata",
-                true,
+                EngineErrorScope::Accept,
             )?;
             if metadata.get("requestId").and_then(Value::as_str)
                 != Some(identity.request_id.as_str())
@@ -1822,9 +1966,7 @@ impl TtsServiceSupervisor {
                     .lifecycle
                     .lock()
                     .map_err(|_| TtsNativeFailure::InternalFailure)?;
-                if let Some((owner, id)) = &lifecycle.rejected_start
-                    && owner == request
-                {
+                if let Some(id) = lifecycle.no_child_start_instance(request) {
                     return Ok(vec![
                         state_control(id, "stopping"),
                         state_control(id, "stopped"),
@@ -1850,6 +1992,18 @@ impl TtsServiceSupervisor {
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if expected.is_none()
+                && let Some(request) = start_request_id
+                && let Some((pending, id)) = &lifecycle.pending_start
+                && pending == request
+            {
+                let id = id.clone();
+                lifecycle.retired_start = Some((request.to_owned(), id.clone()));
+                return Ok(vec![
+                    state_control(&id, "stopping"),
+                    state_control(&id, "stopped"),
+                ]);
+            }
             let id = lifecycle
                 .contained_service_instance_id
                 .clone()
@@ -1922,6 +2076,10 @@ impl TtsServiceSupervisor {
             )?;
             let stopping = self.receive_expected_state(&session, &deadline, "stopping")?;
             let stopped = self.receive_expected_state(&session, &deadline, "stopped")?;
+            session.input.close()?;
+            if session.receive_stdout(deadline.remaining()?)?.is_some() {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
             session.wait_for_exit(deadline.remaining()?)?;
             deadline.check()?;
             Ok(vec![stopping, stopped])
@@ -1963,6 +2121,9 @@ impl TtsServiceSupervisor {
         lifecycle.contained_service_instance_id = None;
         lifecycle.contained_start_request_id = None;
         lifecycle.rejected_start = None;
+        if lifecycle.retired_start != lifecycle.pending_start {
+            lifecycle.retired_start = None;
+        }
         Ok(())
     }
 }
@@ -2117,9 +2278,21 @@ pub async fn start_tts_service(
 #[tauri::command]
 pub async fn prepare_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+    service_instance_id: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
-    blocking(move || supervisor.prepare()).await
+    blocking(move || {
+        supervisor
+            .prepare_measured_for(service_instance_id.as_deref())
+            .map(|measurement| measurement.records)
+            .map_err(|failure| match (failure, service_instance_id.as_ref()) {
+                // Legacy callers may still prepare, but only an exact owned
+                // Prepare IPC request receives the typed recovery distinction.
+                (TtsNativeFailure::TorchCudaUnavailable, None) => TtsNativeFailure::InternalFailure,
+                _ => failure,
+            })
+    })
+    .await
 }
 
 #[tauri::command]

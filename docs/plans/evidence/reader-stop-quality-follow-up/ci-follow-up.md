@@ -1,5 +1,7 @@
 # PR #325 CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and HEAD before this patch are `d912f20fcca7e993ccdf47b78d118c3ef019a4de`
 on `codex/revalidated-findings-execplan`. The initial tree/index were clean.
 This bounded correction changes two desktop test files and their documentation;
@@ -9,7 +11,7 @@ The independent result and terminal identity checks are recorded in
 
 ## Original failures and correction
 
-[Foundation run 43992357344](https://github.com/mmjosedaniel/voxleaf/actions/runs/43992357344)
+Foundation run 43992357344
 failed on the PR merge of this head. Ubuntu reached six failures in
 `product-narration-coordinator.test.ts`. Windows stopped earlier with an HTTP
 504 downloading the pinned NSIS archive. Its SHA-256 check remains required;

@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import {
   access,
@@ -784,6 +785,19 @@ export async function writePackageEvidence({
     fail("build-authority");
   }
   if (attach) {
+    const checksum = Buffer.from(
+      `${expectedInstaller} *${path.basename(installer)}\n`,
+    );
+    const checksumPath = `${installer}.sha256`;
+    try {
+      if (
+        (await stat(checksumPath)).size !== checksum.length ||
+        !(await readFile(checksumPath)).equals(checksum)
+      )
+        fail("checksum");
+    } catch {
+      fail("checksum");
+    }
     let previous;
     try {
       previous = await readJson(evidencePath);

@@ -11,6 +11,8 @@
 
 ## Boundary corrections
 
+The native supervisor chooses the child control protocol from the verified package identity. The Chatterbox v8 local candidate can identify a Torch-only CUDA loss during Load. Verified native containment and the current Prepare identity determine whether the reader may offer a profile recheck. The distributed v7 worker uses protocol v1. [Provider-loss decision](decisions/ADR-0078-version-chatterbox-provider-loss.md)
+
 Residual audit corrections retain these component and process boundaries. EPUB
 opening builds package lookup context once, keeps occurrence-specific self-links,
 and appends admitted locator blocks without an argument-list expansion. Each
@@ -462,7 +464,7 @@ local/portfolio core, **GO when the published host gate passes** for Chatterbox
 runtime support, and **GO on a compatible host** for the optional package.
 Piper's representative evidence includes successful use on an independent
 older Windows computer; Chatterbox's includes installed Spanish and English
-journeys on the current compatible Windows/RTX 5060 Laptop computer. These
+journeys on a representative compatible Windows host. These
 results support the requirements-defined compatible classes without promising
 identical operation on every PC. Signed public publication remains **pending
 external authorization**. Automatic updates,
@@ -814,6 +816,13 @@ Narration text is local sensitive data. It must not be persisted, logged, placed
 
 The accepted limits evidence publishes only measurements and content-free outcomes; an internal test helper compares independently rebuilt narration bytes and source ranges without returning them. It separately accounts for Unicode code points, UTF-8 bytes, sentences, protected tokens, parser lookahead, traversal depth, normalization expansion, work, retained intermediate state, and one lookahead segment. Cancellation is targeted every 512 work units and required by 1,024; deterministic yielding is targeted every 4,096 units and required by 8,192. Exact hard maxima pass, and max-plus-one observations produce one fixed content-free failure without a partial result. Task 2.3 enforces the source inspection, traversal-depth, retained source token/event, checkpoint, yield, cancellation, and close subset. Tasks 3.2-3.3 enforce the accepted hard maximum of 16 output code points per source code point for closed Spanish symbol and lexical expansions, Task 3.3 enforces the 128-code-point parser-lookahead ceiling, Task 4.1 enforces the 256-code-point protected-token ceiling, and Tasks 4.2-4.3 enforce the per-segment source/code-point/UTF-8-byte/sentence dimensions, the 17-entry retained-segment ceiling, the 8,832-code-point/26,624-byte retained narration ceilings, bounded temporary scan indexes, and checkpointed/yielding cancellable packing. Task 4.4 keeps the same 17-entry bound while validating canonical locator-linked prepared output. Task 5.1 production-enforces the 1-16 requested segment count plus the independent 8,192-code-point, 24,576-byte, and 64-sentence public batch totals, retaining at most one lookahead segment before publishing a frozen result.
 
+Current profile preparation preserves paragraph language and the effective
+language of each line break, including an authored change on a break or its
+parent. Warm continuation can retain bounded ampersand context at the same
+source position. A scene ornament remains recognizable across bounded source
+slices. Safe leading omissions can advance the Chatterbox source before
+packing speech within its existing hard segment limits.
+
 ## Required invariants
 
 - Audio from an inactive reading session is never played.
@@ -848,6 +857,7 @@ The accepted limits evidence publishes only measurements and content-free outcom
 
 - React constructs repository-owned semantic HTML directly in the application DOM from closed immutable semantic values.
 - The desktop does not reconstruct publisher HTML, use raw-HTML APIs, expose publisher fragments as DOM IDs/browser URLs, or activate external links.
+- The renderer preserves one safe inline direction scope across formatted children and keeps its semantic leaf mappings. Omitted content contributes no Auto-direction resolver work or scratch nodes.
 - One coordinator owns active document/locator state and routes table-of-contents, internal-link, previous/next, and direct-locator navigation.
 - `@voxleaf/epub` owns semantic target-to-locator matching through a closed public resolution operation; non-spine/empty/invalid targets remain unavailable rather than receiving fabricated locators.
 - The initial reader uses continuous vertical scrolling and persists no rendered page, pixel, percentage, DOM path, or text quotation as position authority.
@@ -906,6 +916,16 @@ Passive position updates use a trailing 500 ms debounce, while explicit navigati
 The application now reads validated global preferences before mounting the ready reader and resolves saved state only for the selected exact-byte identity. An exact locator remains unchanged; package-owned recovery supplies the nearest canonical locator; and all non-readable repository states fall back safely without coercing or deleting future-version data. The reader materializes the target document and aligns the mapped range before settlement, suppresses passive sampling during that transaction, never moves focus, and saves a recovered canonical locator only after settlement. The packaged Windows startup smoke now performs navigation/save, complete application closure, restart with the same disposable profile, exact-file reselection, restoration, and close. This integration adds no dependency, native command, plugin, capability, path contract, or shared-schema change.
 
 ## Secure EPUB ingestion boundary
+
+The serialized `BookV1` spine and resource paths serve as local join keys.
+Where a supported archive key contains a literal hash character the projection
+assigns a deterministic, collision-checked local alias in both serialized
+fields. The EPUB package retains the exact private archive key for validation,
+resource reads, internal targets, and fragment resolution. Normal local paths
+retain their spelling and exact EPUB bytes still define publication identity.
+In semantic fragment resolution, `xml:id` uses XML whitespace normalization
+before uniqueness and addressability checks. XHTML `id` keeps its literal
+spelling.
 
 [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) establishes the accepted Milestone 3 support profile and the single authority for archive, XML, graph, content, resource, and processing limits. Ingestion accepts bounded in-memory EPUB bytes, validates the ZIP/OCF structure before interpreting publication data, resolves only case-sensitive virtual in-container paths, and never extracts to disk or performs network access.
 

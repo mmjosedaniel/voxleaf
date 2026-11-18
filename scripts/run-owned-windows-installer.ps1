@@ -1,9 +1,14 @@
 param(
-  [Parameter(Mandatory)][string]$InstallerPath,
+  [Parameter(Mandatory, ParameterSetName='Install')][string]$InstallerPath,
+  [Parameter(Mandatory, ParameterSetName='Admission')][switch]$CheckRegistration,
   [ValidateRange(1, 120000)][int]$TimeoutMilliseconds = 120000
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'windows-package-lifecycle-installer.ps1')
+if ($CheckRegistration) {
+  Assert-LifecycleInstallRegistrationAbsent
+  return
+}
 $script:InstallerBudget = $TimeoutMilliseconds
 function Get-LifecycleInstallerBudgetMilliseconds { $script:InstallerBudget }
 $script:RecordedRoot = $false

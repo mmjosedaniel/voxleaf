@@ -77,6 +77,13 @@ timeout, cleanup failure, and repeated recovery remain contained with no retry.
 Every automatic-attempt count is zero. A mid-segment restart resumes from the
 segment start; stale audio is never reused.
 
+After verified containment of a generic Chatterbox Prepare failure, a fresh
+complete native probe can establish that CUDA is unavailable for the same
+failed profile and language. This offers profile selection or recheck. The
+ordinary restart action remains available when the probe returns available,
+unknown, stale, or no usable result and cleanup otherwise succeeds. The pinned
+v7 service reason leaves Torch-only loss on a healthy driver unresolved.
+
 ## Runtime, license, offline, and packaging boundary
 
 The admitted runtimes remain isolated from the base service graph:

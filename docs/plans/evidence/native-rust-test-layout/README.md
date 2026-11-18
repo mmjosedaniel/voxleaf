@@ -1,5 +1,7 @@
 # Native Rust test-layout evidence
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Execution started 2026-10-09 in local Windows PowerShell outside the managed
 sandbox, at HEAD `f06c80e04da2025342b1002a548f03ca17e7cc0b` on the pre-existing
 `codex/native-rust-test-layout` branch. The initial worktree and index were
@@ -25,7 +27,7 @@ captures remain reviewable at the full commit link below. Local scratch paths
 in unchanged receipts are historical provenance, not current checkout links.
 See the [retention policy](../../../development/evidence-retention.md).
 
-[Original collection at source commit](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/native-rust-test-layout).
+Original collection at source commit (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/native-rust-test-layout`).
 
 ## Immutable unit records
 

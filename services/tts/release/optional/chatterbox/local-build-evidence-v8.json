@@ -1,0 +1,94 @@
+{
+  "authority": {
+    "dependencyLockSha256": "f9f3f707ae6ccb5d4a93919fad4265be70ed69dc2d93064f2384ba4f78565aed",
+    "sourceManifestSha256": "b1aad2461d25502d57e9ba8264a9716432572d7d7f0bef03694795127ac4816e"
+  },
+  "distribution": {
+    "admitted": false,
+    "published": false
+  },
+  "measurements": {
+    "archiveSha256": "2539f7c255bca3605f17c8313346c33fe2a02eef8cc0c9d409d2685c6e785a8c",
+    "compressedBytes": 5031379155,
+    "fileCount": 13094,
+    "installedBytes": 5027820533,
+    "runtimeManifestSha256": "c81a2dbf6536ce0f0e2ef8902d23228a740146c7e63ae98a724fff49ee2c70df"
+  },
+  "packageId": "voxleaf-chatterbox-v8",
+  "packageVersion": "8",
+  "parts": [
+    {
+      "filename": "voxleaf-chatterbox-runtime-v8.zip.part-001",
+      "sha256": "086b44e59192acbf3e524e120c460c7674eb96a73445d8feb5f6cf0ce761bae4",
+      "sizeBytes": 1900000000
+    },
+    {
+      "filename": "voxleaf-chatterbox-runtime-v8.zip.part-002",
+      "sha256": "00bfb39c8b52152bef247e944a4be2446c077b6dfa27e767585030c4cf21092a",
+      "sizeBytes": 1900000000
+    },
+    {
+      "filename": "voxleaf-chatterbox-runtime-v8.zip.part-003",
+      "sha256": "86256b8e7aa147732f0480cc8ee7e8dab3b87a1c3de19d76de41959c389af5e2",
+      "sizeBytes": 1231379155
+    }
+  ],
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "__init__.py",
+      "sha256": "e73f48db20d063411d2b6e7a0b599a24b01159f3b233f5506c835cc09a8e49b5",
+      "sizeBytes": 240
+    },
+    {
+      "path": "engine.py",
+      "sha256": "6964075a6496cad340af733abb2471c081502e325ebe23aceb2676ce85c0d527",
+      "sizeBytes": 2154
+    },
+    {
+      "path": "protocol.py",
+      "sha256": "d16cc465a0652ae95b858172ea556c7c8bf8674b8823af8f2f2d343599ca7350",
+      "sizeBytes": 14913
+    },
+    {
+      "path": "service.py",
+      "sha256": "4c6a8bda48ff8eba8649e9d0795f2cce1fdee8b8099b4bd4b7b29b48b8433ea9",
+      "sizeBytes": 16325
+    },
+    {
+      "path": "chatterbox_service.py",
+      "sha256": "790f7e48df2929827914432a3df0cf5dbce7aa7c3ae692ebcee6c852d68fdb3c",
+      "sizeBytes": 1090
+    },
+    {
+      "path": "adapters/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    },
+    {
+      "path": "adapters/chatterbox.py",
+      "sha256": "311bd25e7aba0dd5f4c8cbc8a04528a0f3938d8bd5ab6087a92875eac9cfded4",
+      "sizeBytes": 14836
+    },
+    {
+      "path": "adapters/fake.py",
+      "sha256": "1863c0e3e1617b71cd9ca9d647aed05e6384ec71f33ef6e47221983a6fbb8023",
+      "sizeBytes": 6917
+    },
+    {
+      "path": "generated/__init__.py",
+      "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
+      "sizeBytes": 62
+    },
+    {
+      "path": "generated/protocol_schemas.py",
+      "sha256": "9a5ea07ef73c71ab0c8ee095924ba789ef68314c245744b87a8b2d50eed45665",
+      "sizeBytes": 46811
+    },
+    {
+      "path": "chatterbox_service_v2.py",
+      "sha256": "62cbba604279eaf59fd135967daa2ba30bd212ae6fc80f36722f333e0db67e42",
+      "sizeBytes": 399
+    }
+  ]
+}

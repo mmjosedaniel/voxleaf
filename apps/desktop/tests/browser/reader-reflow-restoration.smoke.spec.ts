@@ -10,6 +10,67 @@ const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 const PREFERENCE_STORAGE_KEY = "voxleaf.reader.preferences";
 
+for (const [element, direction, href] of [
+  ["span", "rtl", ""],
+  ["span", "auto", ""],
+  ["small", "rtl", ""],
+  ["a", "rtl", ""],
+  ["a", "rtl", ' href="https://example.invalid/direction-label"'],
+] as const) {
+  test(`VF-0096 preserves visual order across strong formatting in ${element} for ${direction}${href ? " with external href" : ""}`, async ({
+    page,
+  }) => {
+    const { buildMinimalEpubFixture } =
+      await import("../../../../packages/epub/test-support/epub-fixture");
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr"><body><p id="target">Before <${element} dir="${direction}"${href}>א<strong>ב</strong>ג</${element}> after</p><p dir="ltr">A<strong>B</strong>C</p><small dir="rtl"><p>Block retained.</p></small></body></html>`,
+    });
+    await page.goto(LOCAL_ORIGIN);
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-inline-direction.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(bytes),
+    });
+    const paragraphs = page.locator(".semantic-document p");
+    await expect(paragraphs).toHaveCount(3);
+    await expect(paragraphs.nth(2)).toHaveText("Block retained.");
+    await expect(
+      paragraphs.nth(0).locator("a, button, [role=link], [href]"),
+    ).toHaveCount(0);
+    const coordinates = (paragraph: Element, glyphs: string) => {
+      const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+      const positions: { x: number; y: number }[] = [];
+      for (const glyph of glyphs) {
+        walker.currentNode = paragraph;
+        for (
+          let node = walker.nextNode();
+          node !== null;
+          node = walker.nextNode()
+        ) {
+          const offset = node.textContent?.indexOf(glyph) ?? -1;
+          if (offset === -1) continue;
+          const range = document.createRange();
+          range.setStart(node, offset);
+          range.setEnd(node, offset + 1);
+          const rect = range.getBoundingClientRect();
+          positions.push({ x: rect.x, y: rect.y });
+          break;
+        }
+      }
+      return positions;
+    };
+    const rtl = await paragraphs.nth(0).evaluate(coordinates, "אבג");
+    expect(rtl).toHaveLength(3);
+    expect(rtl[0]!.y).toBe(rtl[2]!.y);
+    expect(rtl[0]!.x).toBeGreaterThan(rtl[1]!.x);
+    expect(rtl[1]!.x).toBeGreaterThan(rtl[2]!.x);
+    const ltr = await paragraphs.nth(1).evaluate(coordinates, "ABC");
+    expect(ltr).toHaveLength(3);
+    expect(ltr[0]!.x).toBeLessThan(ltr[1]!.x);
+    expect(ltr[1]!.x).toBeLessThan(ltr[2]!.x);
+  });
+}
+
 test("FSF-VF-0075 nested explicit Auto resolves locally after same-byte reopen", async ({
   page,
 }) => {

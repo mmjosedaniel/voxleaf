@@ -1,0 +1,24 @@
+# Change Review Report
+
+**Review ID** `NOV17-EXEC-CR-R02-20261118`  
+**Task ID** `NOV17-EXEC`  
+**Verdict** `CHANGES_REQUESTED`  
+**Base commit and reviewed HEAD** `50f3b9ec76022efae72c239015bb47080920d7a0`
+
+**Reviewed paths and identities.** All 350 entries in `tmp/evidence/nov17-integration/implementation-inputs-r02.json`, ID `NOV17-EXEC-INPUTS-R02`, SHA-256 `6d5a0182687b276d66c7f10b1b927d0c5724c3713f661b94099f9ef3436d5194`. The supplemental direct caller `packages/epub/src/locator/locator-resolver.ts` matched HEAD blob `3afd2fbf6052e3f03e8debb68285625247375197`, SHA-256 `171bd177366298f9fd8559ba270b7933c84c52acf8c9eb61f08830127407f21d`.
+
+**Identity recheck.** PASS. Base, HEAD, worktree paths, statuses and all manifest identities matched before and after review. The index was empty and both reserved R02 records were absent.
+
+**Acceptance review.** The revised code and regression assertions address the five specific R01 triggers. A competing Busy start preserves retirement of the cancelled owner. Character-referenced whitespace stays distinct from literal XML attribute padding. The tested generated-anchor collision, transparent `small` direction scope and interrupted private settlement now recover correctly. Two adjacent cases still violate the same-byte restoration and authored-direction requirements.
+
+**Findings**
+
+1. **P2 — VF-0120, a normalized duplicate can redirect a previously saved publisher anchor.** Consider three paragraphs in source order. The first has no ID, the second has `id="voxleaf-s0-a0"`, and the third has `xml:id=" voxleaf-s0-a0 "`. Before the change, the second paragraph owns `voxleaf-s0-a0` and the first receives a suffixed generated anchor. After normalization, both publisher IDs lose uniqueness. The projector drops both candidates, allowing the first paragraph to acquire `voxleaf-s0-a0`. Restoring a saved position in the second paragraph now finds that value on the first paragraph before trying the saved index. The new test covers a publisher ID gaining a generated spelling. This failure occurs when a previously valid publisher ID loses one. Preserve the original block and nonzero offset on same-byte reopen while retaining duplicate-fragment fallback. The relevant decisions are in `packages/epub/src/document/xhtml-projector.ts:824`, `packages/epub/src/locator/locator-index.ts:279` and `packages/epub/src/locator/locator-resolver.ts:255`.
+
+2. **P3 — VF-0096, inert anchor labels still lose their authored direction boundary.** Inside an LTR paragraph, an `<a dir="rtl">` without `href` can contain text on either side of `strong`. `beginLink` marks the label transparent, and its close action appends the three children individually. The renderer therefore receives sibling isolates, reproducing the split that the Chromium test caught for `small`. External links follow the same inert-label route. Preserve one noninteractive direction wrapper around the label, keep the URL out of the semantic model, and verify glyph order and locator mapping through public opening. The separate link path is in `packages/epub/src/document/xhtml-projector.ts:1285`, `:1323` and `:1465`.
+
+**Test evidence reviewed.** Coordinator-supplied Windows receipts recorded the failing R01 witnesses and the corrected selections. Rust passed 47 default and 46 release-locked supervisor cases, with five existing ignores in each. The EPUB, reader and Chromium selections passed 105, 14 and five cases respectively. The Python settlement union passed 155 with zero skips. The verified-core build, package check and installed lifecycle passed for installer SHA-256 `a21259912d3bb22164ef7483637570ca4a348bf38368e76abab996e401463c89`. Its installed keyboard check returned focus to the opener, reader reflow measured 78.1 ms, and the lifecycle restored the original data. The release receipt SHA-256 was `1a96024bb73c21f9a943edb4dd81f77339356c84a83e655d206dab4528b67028`. The Serena measurements remain attributed to their earlier development executable. The reviewer ran no tests.
+
+**Remaining uncertainty.** VF-0114 still lacks a distinguishable Torch-only provider failure on an admitted producer. VF-0100 still lacks the live custom-registration witness on a disposable Windows account. The two findings above are confirmed by source inspection and await host regression witnesses.
+
+**Required next action.** Correct the two EPUB paths, add the distinguishing restoration and inert-label geometry assertions, and renew the affected host and embedded-package evidence. Include the locator resolver in the next manifest and submit the corrected candidate under a fresh review ID.

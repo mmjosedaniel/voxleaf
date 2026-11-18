@@ -930,6 +930,7 @@ function renderInlines(inlines: readonly SemanticInline[]): string {
         case "raster-image":
           return `[${String(inline.alternativeText ?? "image")}]`;
         case "code":
+        case "direction-span":
         case "emphasis":
         case "internal-link":
         case "strong":

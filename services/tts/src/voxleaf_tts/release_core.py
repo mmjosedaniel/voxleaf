@@ -216,6 +216,7 @@ def _excluded_site_file(path: Path) -> bool:
         "voxleaf_tts/chatterbox_adapter.py",
         "voxleaf_tts/adapters/chatterbox.py",
         "voxleaf_tts/chatterbox_service.py",
+        "voxleaf_tts/chatterbox_service_v2.py",
         "voxleaf_tts/qwen_adapter.py",
         "voxleaf_tts/adapters/qwen.py",
         "voxleaf_tts/qwen_service.py",

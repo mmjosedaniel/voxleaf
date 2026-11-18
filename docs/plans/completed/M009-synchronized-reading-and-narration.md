@@ -1,5 +1,9 @@
 # M009 synchronized reading and narration
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 > Historical authority note (2026-07-28): M009.1 exact-host validation amended
 > the passive-navigation decision recorded in this completed plan. Ordinary
 > viewport scrolling now inspects the publication without replacing narration;
@@ -567,7 +571,7 @@ Complete.
   resources, prompt cancellation, zero generated-audio persistence, and zero
   external requests. Performance remains an observation, not a production
   claim.
-- Actual result: Passed on 2026-07-27 on the documented RTX 5060 Laptop GPU
+- Actual result: Passed on 2026-07-27 on the NVIDIA RTX 50-series laptop GPU
   Windows/CUDA host with the outbound-blocking rule enabled. The packaged
   synthetic matrix observed six audible transitions, valid segment ranges,
   0.7 ms p95 follow latency, focus-safe keyboard pause/resume, a 40.815-second
@@ -616,7 +620,7 @@ Complete.
   validation, or documentation boundary; no generated audio, model weights,
   raw benchmark output, logs, private paths, secrets, or unrelated changes
   were committed. Pull request
-  [#133](https://github.com/mmjosedaniel/voxleaf/pull/133) merged as
+  #133 merged as
   `35de3c76d830801dfe3ba9f10e9ccf639d9b45a2`. GitHub Actions run
   `30320789239` passed both required jobs: Ubuntu portable foundation and
   Windows native foundation.
@@ -818,7 +822,7 @@ persistence. Do not use destructive storage migration as rollback.
   review found only 26 synchronization implementation, validation, and
   documentation files and no generated audio, model artifacts, raw results,
   logs, secrets, private paths, or unrelated changes. Pull request
-  [#133](https://github.com/mmjosedaniel/voxleaf/pull/133) merged as
+  #133 merged as
   `35de3c76d830801dfe3ba9f10e9ccf639d9b45a2`; GitHub Actions run
   `30320789239` passed the required Ubuntu portable and Windows native
   foundation jobs. M009 is complete and this plan is archived.

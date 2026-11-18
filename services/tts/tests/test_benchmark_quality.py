@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import stat
@@ -12,6 +13,7 @@ import time
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
 from unittest.mock import Mock
 
@@ -20,6 +22,7 @@ import pytest
 from benchmarks import (
     cli,
     cpu_fallback_result,
+    cpu_fallback_result_cli,
     quality,
     quality_cli,
     quality_presentation,
@@ -46,13 +49,71 @@ from benchmarks.quality import (
     submit_scorecard,
 )
 from benchmarks.quality_cli import GENERATE_FIELDS, QualityCommandError, _require_fields
+from benchmarks.quality_operation import quality_operation
 from benchmarks.quality_scoring import _aggregate_candidate_scores
+
+
+def _invoke_nov17_cli(
+    patch: pytest.MonkeyPatch, module: ModuleType, action: str, payload: dict[str, object]
+) -> tuple[int, object]:
+    stdout, stderr = io.StringIO(), io.StringIO()
+    with patch.context() as command:
+        command.setattr(sys, "argv", [module.__name__, action])
+        command.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        command.setattr(sys, "stdout", stdout)
+        command.setattr(sys, "stderr", stderr)
+        code = module.main()
+    assert stderr.getvalue() == ""
+    return code, json.loads(stdout.getvalue())
+
+
+@pytest.mark.parametrize("action", ["generate", "assess", "derive"])
+def test_nov17_malformed_preflight_uses_cli_receipt(
+    monkeypatch: pytest.MonkeyPatch, action: str
+) -> None:
+    module: ModuleType
+    if action == "generate":
+        module = quality_cli
+        payload = dict.fromkeys(GENERATE_FIELDS, None)
+        payload["qualityOptIn"] = True
+        worker = Mock()
+        monkeypatch.setattr(quality_cli, "run_bounded_worker_process", worker)
+    else:
+        module = cpu_fallback_result_cli
+        fields = (
+            cpu_fallback_result_cli.ASSESS_FIELDS
+            if action == "assess"
+            else cpu_fallback_result_cli.DERIVE_FIELDS
+        )
+        payload = dict.fromkeys(fields, None)
+        payload["cpuFallbackOptIn"] = True
+    payload["candidateId"] = 42
+    observe = Mock()
+    monkeypatch.setattr(module, "run_local_preflight", observe)
+    assert _invoke_nov17_cli(monkeypatch, module, action, payload) == (
+        2,
+        {"status": "fail", "failureCode": "invalid-request"},
+    )
+    observe.assert_not_called()
+    if action == "generate":
+        worker.assert_not_called()
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows worker containment")
 @pytest.mark.parametrize(
     "case",
-    ["overflow", "stderr", "exact-limit", "nonzero", "utf8", "json", "timeout", "inherited-pipe"],
+    [
+        "overflow",
+        "stderr",
+        "exact-limit",
+        "nonzero",
+        "utf8",
+        "json",
+        "timeout",
+        "inherited-pipe",
+        "nov17-timeout-with-audio",
+        "nov17-timeout-with-existing-audio",
+    ],
 )
 def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
@@ -60,6 +121,16 @@ def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
     request = replace(_request(tmp_path, QWEN_CANDIDATE_ID), candidate_python=Path(sys.executable))
     payload: dict[str, object] = dict.fromkeys(GENERATE_FIELDS, None)
     payload.update(qualityOptIn=True, sessionId="a" * 32)
+    session = tmp_path / "quality-v2" / ("a" * 32)
+    preexisting = case == "nov17-timeout-with-existing-audio"
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    if preexisting:
+        generate_candidate_audio(
+            _request(tmp_path, SUPERTONIC_CANDIDATE_ID),
+            "a" * 32,
+            raw_root=tmp_path,
+            adapter_builder=FakeQualityAdapter,
+        )
     receipt = {
         "status": "pass",
         "sessionId": "a" * 32,
@@ -76,6 +147,14 @@ def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
         script = "print('{')"
     elif case == "timeout":
         script = "import time; time.sleep(3)"
+    elif case.startswith("nov17-"):
+        candidate = session / "staging" / QWEN_CANDIDATE_ID
+        script = (
+            "from pathlib import Path; import time; "
+            f"p = Path({str(candidate)!r}); p.mkdir(parents=True); "
+            "(p / 'sample.wav').write_bytes(b'synthetic data'); "
+            f"Path({str(tmp_path / 'generated.marker')!r}).touch(); time.sleep(3)"
+        )
     else:
         if case == "exact-limit":
             output += " " * (16384 - len(output))
@@ -114,6 +193,7 @@ def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
     monkeypatch.setattr(subprocess, "Popen", launch)
     monkeypatch.setattr(quality_cli, "_preflight_request", lambda _value: request)
     monkeypatch.setattr(quality_cli, "_preflight_passed", lambda _request: True)
+    monkeypatch.setattr(quality_cli, "RAW_ROOT", tmp_path, raising=False)
     monkeypatch.setattr(quality_cli, "GENERATION_TIMEOUT_SECONDS", 1.0)
     started = time.monotonic()
     try:
@@ -130,6 +210,18 @@ def test_fsf_vf0083_quality_parent_bounds_binary_pipes_and_reaps(
     finally:
         assert len(processes) == 1
         assert processes[0].poll() is not None
+    if case.startswith("nov17-"):
+        assert (tmp_path / "generated.marker").exists()
+        assert not candidate.exists()
+        if preexisting:
+            assert (session / "session.json").is_file()
+            assert (session / "staging" / SUPERTONIC_CANDIDATE_ID).is_dir()
+        else:
+            assert not session.exists()
+        retry = generate_candidate_audio(
+            request, "a" * 32, raw_root=tmp_path, adapter_builder=FakeQualityAdapter
+        )
+        assert retry["candidateId"] == QWEN_CANDIDATE_ID
 
 
 class FakeQualityAdapter:
@@ -607,7 +699,7 @@ def test_v3_quality_session_is_single_candidate_and_identity_bound(
     assert QWEN_V3_CANDIDATE_ID not in (session / "evaluator-01.html").read_text(encoding="utf-8")
 
 
-def test_v6_quality_preserves_and_applies_one_classification_correction(
+def test_nov17_v6_quality_preserves_and_applies_one_classification_correction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     benchmark_v6_repository: Path,
@@ -624,6 +716,7 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
     )
     assert generated["generatedSamples"] == 8
     assert generated["readyForFinalization"] is True
+    session = raw_root / "quality-v2" / session_id
     sample_ids = iter(f"{index:032x}" for index in range(61, 69))
     finalize_session(
         session_id,
@@ -631,7 +724,6 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
         raw_root=raw_root,
         id_factory=lambda: next(sample_ids),
     )
-    session = raw_root / "quality-v2" / session_id
     completed_path = session / "scorecards" / "evaluator-01.completed.json"
     template = json.loads(
         (session / "scorecards" / "evaluator-01.template.json").read_text(encoding="utf-8")
@@ -668,6 +760,25 @@ def test_v6_quality_preserves_and_applies_one_classification_correction(
                 reason_code=CORRECTION_REASON,
                 raw_root=raw_root,
             )
+        patch.setattr(
+            quality_cli,
+            "correct_meaning_changing_defect",
+            lambda *args, **kwargs: correct_meaning_changing_defect(
+                *args, **kwargs, raw_root=raw_root
+            ),
+        )
+        assert _invoke_nov17_cli(
+            patch,
+            quality_cli,
+            "correct",
+            {
+                "qualityOptIn": True,
+                "sessionId": session_id,
+                "evaluatorId": "evaluator-01",
+                "caseId": corrected_case_id,
+                "reasonCode": CORRECTION_REASON,
+            },
+        ) == (2, {"status": "fail", "failureCode": "invalid-request"})
     assert not correction_path.exists()
     assert aggregate_path.read_bytes() == old_aggregate
 
@@ -753,6 +864,86 @@ def overlap_quality_session(
     submit_scorecard(session_id, template, raw_root=tmp_path)
     aggregate_scores(session_id, raw_root=tmp_path)
     return session, [sample["caseId"] for sample in template["samples"][:2]]
+
+
+@pytest.mark.parametrize("action", ["finalize", "submit"])
+def test_nov17_v6_quality_credit_requires_one_scorecard_with_all_dimensions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_v6_repository: Path,
+    action: str,
+) -> None:
+    monkeypatch.setattr(cli, "REPOSITORY_ROOT", benchmark_v6_repository)
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    session_id = "c" * 32
+    generate_candidate_audio(
+        _request(tmp_path, PIPER_CPU_CANDIDATE_ID),
+        session_id,
+        raw_root=tmp_path,
+        adapter_builder=FakeQualityAdapter,
+    )
+    session = tmp_path / "quality-v2" / session_id
+    if action == "finalize":
+        staged = (session / "session.json").read_bytes()
+        with pytest.raises(QualitySessionError, match="evaluator-count"):
+            finalize_session(session_id, 2, raw_root=tmp_path)
+        assert (session / "session.json").read_bytes() == staged
+        assert (session / "staging").is_dir()
+    assert finalize_session(session_id, 1, raw_root=tmp_path)["eligibleForPromotion"] is True
+    if action == "submit":
+        card = json.loads(
+            (session / "scorecards/evaluator-01.template.json").read_text(encoding="utf-8")
+        )
+        dimension = DIMENSIONS[0]
+        for sample in card["samples"]:
+            sample["scores"] = dict.fromkeys(DIMENSIONS, 4)
+            sample["scores"][dimension] = "not-applicable"
+            sample["meaningChangingDefect"] = False
+        with pytest.raises(QualitySessionError, match="missing-dimension"):
+            submit_scorecard(session_id, card, raw_root=tmp_path)
+        assert not (session / "scorecards/evaluator-01.completed.json").exists()
+        card["samples"][0]["scores"][dimension] = 4
+        submit_scorecard(session_id, card, raw_root=tmp_path)
+        assert aggregate_scores(session_id, raw_root=tmp_path)["eligibleForPromotion"] is True
+
+
+def test_nov17_cpu_derive_cli_preserves_retryable_quality_busy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    overlap_quality_session: tuple[Path, list[str]],
+) -> None:
+    session, _ = overlap_quality_session
+    monkeypatch.setattr(cpu_fallback_result, "RAW_ROOT", tmp_path)
+    monkeypatch.setattr(
+        cpu_fallback_result_cli,
+        "_request",
+        lambda *_args: _request(tmp_path, PIPER_CPU_CANDIDATE_ID),
+    )
+    monkeypatch.setattr(
+        cpu_fallback_result_cli,
+        "run_local_preflight",
+        lambda _request: Mock(spec=PreflightReceipt, failures=(), eligible_for_official_run=True),
+    )
+    payload: dict[str, object] = {
+        "qualitySessionId": session.name,
+        "performanceSessionId": "a" * 32,
+        "authorityCommitSha": "a" * 40,
+    }
+    aggregate = session / "quality.aggregate.json"
+    original = aggregate.read_bytes()
+    with quality_operation(session):
+        assert _invoke_nov17_cli(monkeypatch, cpu_fallback_result_cli, "derive", payload) == (
+            2,
+            {"status": "fail", "failureCode": "quality-busy"},
+        )
+    assert aggregate.read_bytes() == original
+    derive = Mock(return_value={"status": "pass"})
+    monkeypatch.setattr(cpu_fallback_result, "_derive_result", derive)
+    assert _invoke_nov17_cli(monkeypatch, cpu_fallback_result_cli, "derive", payload) == (
+        0,
+        {"status": "pass"},
+    )
+    derive.assert_called_once()
 
 
 _OVERLAP_WORKER = r"""

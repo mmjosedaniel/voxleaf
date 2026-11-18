@@ -48,6 +48,7 @@ from benchmarks.memory import FrameworkVramTracker, ProcessResourceSample
 from benchmarks.v4_authority import (
     CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
+    RAW_SCHEMA_RELATIVE_PATH,
 )
 from benchmarks.v13_authority import validate_v13_result
 
@@ -272,10 +273,11 @@ def test_vf0069_complete_measured_matrix_overflow_cannot_pass(
     assert cast(dict[str, object], summary["audits"])["boundedRetention"] is False
 
 
-def test_vf0073_measured_adapter_privacy_failure_is_retained() -> None:
+@pytest.mark.parametrize("phase", ["warmup", "measured"])
+def test_nov17_adapter_privacy_failure_is_retained(phase: str) -> None:
     class Candidate(_Candidate):
         def generate_batch(self, request: BatchGenerationRequest) -> tuple[BatchAudioUnit, ...]:
-            if request.phase == "measured":
+            if request.phase == phase:
                 raise AdapterOperationError("privacy")
             return super().generate_batch(request)
 
@@ -288,6 +290,15 @@ def test_vf0073_measured_adapter_privacy_failure_is_retained() -> None:
         monitor=_Monitor(),
     )
     assert "privacy" in cast(list[str], execution.raw["failureCodes"])
+    summary = derive_v14_safety_summary(
+        REPOSITORY_ROOT,
+        VerifiedSafety(
+            {}, {"raw.json": execution.raw, "loads.json": list(execution.load_observations)}, {}
+        ),
+        raw_session_removed=True,
+        execution_checker=lambda sha: sha == _head(),
+    )
+    assert cast(dict[str, object], summary["audits"])["privacy"] is False
 
 
 def test_five_pass_2_3_derives_all_five_distinct_owned_trials() -> None:
@@ -357,17 +368,12 @@ def _head() -> str:
 
 
 def _host() -> dict[str, object]:
+    raw_schema = json.loads((REPOSITORY_ROOT / RAW_SCHEMA_RELATIVE_PATH).read_bytes())
+    properties = cast(dict[str, dict[str, object]], raw_schema["$defs"]["host"]["properties"])
     return {
-        "operatingSystem": "Windows",
-        "osVersion": "10.0.26200",
-        "architecture": "x86_64",
-        "pythonVersion": "3.12.10",
-        "cpuModel": "Intel Core Ultra 7 255HX",
+        **{field: schema["const"] for field, schema in properties.items() if "const" in schema},
         "logicalProcessors": 32,
         "totalRamBytes": 34_000_000_000,
-        "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
-        "totalVramBytes": 8_546_942_976,
-        "driverVersion": "577.05",
     }
 
 

@@ -1,5 +1,7 @@
 # Linux Rust repair and comparative validation
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Date: 2026-10-10. Comparative verdict: **PASS**.
 [Independent comparison report](LINUX-RUST-REPAIR-COMPARE-02.md).
 The CI addition has separate review evidence. At original closeout, remote CI execution had not yet been run; the later Ubuntu Rust foundation run passed on source HEAD `5401f899e3ffabfc8f3e79873bc0b5fa45b11155`.
@@ -19,7 +21,7 @@ captures remain reviewable at the full commit link below. Local scratch paths
 in unchanged receipts are historical provenance, not current checkout links.
 See the [retention policy](../../../development/evidence-retention.md).
 
-[Original repair captures](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair).
+Original repair captures (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair`).
 
 ## Scope and provenance
 
@@ -35,7 +37,7 @@ native test-layout refactor is preserved. Three paths repair Linux compatibility
 - `icons/icon.png`: the exact existing ICO entry 5 payload, offset 4554, length
   4292 bytes; 256x256 RGBA8. SHA256
   `008b8ae27d726ce284bc2edd9217c927fb4254fcde8aa4f79ee1804b5b648db8`.
-  [apply-two-file-repair.ps1.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/apply-two-file-repair.ps1.txt) records extraction and signature/chunk CRC checks.
+  apply-two-file-repair.ps1.txt (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair/apply-two-file-repair.ps1.txt`) records extraction and signature/chunk CRC checks.
   No image regeneration, dependency, ICO/SVG or Tauri configuration change.
 
 Fresh Ubuntu snapshots compare **HEAD plus the repair** against **the accepted
@@ -73,7 +75,7 @@ After the icon/parameter fix, `attempt-01-evidence` records passing 85/86 tests
 but Clippy failures on the five Windows-only constructed variants. The final
 `attempt-02-evidence` records all six configured script executions returning 0.
 A preliminary format check identified four multiline attribute formatting fixes;
-[detector-format-packet.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/detector-format-packet.json.txt) records the corrected 32-line annotation delta.
+detector-format-packet.json.txt (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair/detector-format-packet.json.txt`) records the corrected 32-line annotation delta.
 
 The first Windows invocation encountered pnpm 11.25.0 from the injected fallback
 PATH and stopped at the engine guard. The authoritative retry uses process-local
@@ -83,8 +85,8 @@ WebView session with driver 150.0.4078.83 against installed WebView2 155.0.4283.
 The existing CI acquisition tool obtained driver 155.0.4283.45; its Microsoft
 Authenticode signature was verified. The unchanged command passed with that
 isolated driver selected only for the test process. The old driver and browser
-installation were not modified. [windows-results.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/windows-results.json.txt) retains the first
-smoke failure; [windows-native-retry-result.json.txt](https://github.com/mmjosedaniel/voxleaf/blob/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair/windows-native-retry-result.json.txt) records its successful retry.
+installation were not modified. windows-results.json.txt (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair/windows-results.json.txt`) retains the first
+smoke failure; windows-native-retry-result.json.txt (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair/windows-native-retry-result.json.txt`) records its successful retry.
 
 ## Evidence layout
 

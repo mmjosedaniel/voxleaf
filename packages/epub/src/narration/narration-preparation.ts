@@ -12,6 +12,7 @@ import {
 } from "@voxleaf/shared";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
+import type { SemanticInline } from "../document/document-model.js";
 import type {
   NarrationPreparationBatchMeasurements,
   NarrationPreparationFailure,
@@ -45,6 +46,7 @@ import {
 import {
   isApostropheContext as isBilingualApostropheContext,
   NarrationLanguageClassifier,
+  precedingAmpersandLanguage,
   summarizeEnglishTitleContext,
   type NarrationEnglishTitleContext,
 } from "./narration-bilingual-normalizer.js";
@@ -83,6 +85,7 @@ interface MutablePreparationMeasurements {
 export interface NarrationPreparationCheckpoint {
   context?: string;
   continuation?: ReadingLocatorV1;
+  ampersandLanguage?: "es" | "en";
   englishTitleContext?: Readonly<{
     continuation: ReadingLocatorV1;
     summary: NarrationEnglishTitleContext;
@@ -629,6 +632,48 @@ function titleContextAt(
   });
 }
 
+/** Check a long paragraph as a whole before any partial ornament can speak. */
+async function isLongSceneOrnament(
+  leaf: NarrationSourceTokenLeafEvent,
+  work: NarrationWorkController,
+  operation: MutablePreparationMeasurements,
+): Promise<boolean> {
+  const block = leaf.locatedBlock.block;
+  if (
+    block.kind !== "paragraph" ||
+    leaf.sourceStartOffsetCodePoints !== 0 ||
+    leaf.sourceEndOffsetCodePoints === leaf.locatedBlock.textLengthCodePoints ||
+    leaf.structuralContext.quoteDepth !== 0 ||
+    leaf.structuralContext.listPath.length !== 0
+  )
+    return false;
+
+  let marker = "";
+  async function scan(inlines: readonly SemanticInline[]): Promise<boolean> {
+    for (const inline of inlines) {
+      await work.observe();
+      if (inline.kind === "line-break") continue;
+      if (inline.kind === "raster-image" || inline.kind === "code")
+        return false;
+      if ("children" in inline) {
+        if (!(await scan(inline.children))) return false;
+        continue;
+      }
+      for (const point of inline.text) {
+        await work.observe();
+        observeSourceWindow(operation, 1, 0);
+        if (/\p{White_Space}/u.test(point)) continue;
+        if ((point !== "*" && point !== "⁂") || marker.length === 3)
+          return false;
+        marker += point;
+      }
+    }
+    return true;
+  }
+
+  return (await scan(block.children)) && (marker === "***" || marker === "⁂");
+}
+
 /**
  * Runs one bounded public preparation request over immutable publication state.
  * Callers own publication-level concurrency and linked-close cancellation.
@@ -666,6 +711,15 @@ export async function prepareNarrationBatch(
     delete checkpoint.quotationContext;
     let titleContext = warm ? checkpoint.englishTitleContext : undefined;
     let returnedTitleContext: NarrationPreparationCheckpoint["englishTitleContext"];
+    let ampersandContext =
+      warm && checkpoint.ampersandLanguage !== undefined
+        ? {
+            continuation: canonicalLocator,
+            language: checkpoint.ampersandLanguage,
+          }
+        : undefined;
+    let returnedAmpersandLanguage: "es" | "en" | undefined;
+    delete checkpoint.ampersandLanguage;
     delete checkpoint.englishTitleContext;
     delete checkpoint.continuation;
     checkpoint.context = context;
@@ -765,7 +819,69 @@ export async function prepareNarrationBatch(
           continue;
         }
         let leaf = tokenLeafFromWindow(event);
+        const sceneWork = new NarrationWorkController(
+          signal,
+          scheduler,
+          operation.work,
+        );
+        if (await isLongSceneOrnament(leaf, sceneWork, operation)) {
+          const lastIndex = candidates.segments.length - 1;
+          const previous = candidates.segments[lastIndex];
+          if (previous !== undefined) {
+            candidates.segments[lastIndex] = Object.freeze({
+              ...previous,
+              boundaryReason: "scene-break",
+            });
+          }
+          nextCursor = createBlockLocatorAtOffset(
+            leaf.locatedBlock,
+            leaf.locatedBlock.textLengthCodePoints,
+          );
+          requiresAnotherWindow = true;
+        }
+        operation.checkpointCount = addSafe(
+          operation.checkpointCount,
+          sceneWork.checkpointCount,
+        );
+        if (requiresAnotherWindow) break;
         while (true) {
+          const leafStart = createBlockLocatorAtOffset(
+            leaf.locatedBlock,
+            leaf.sourceStartOffsetCodePoints,
+          );
+          const ampersandLanguage =
+            ampersandContext !== undefined &&
+            sameLocatorPosition(ampersandContext.continuation, leafStart)
+              ? ampersandContext.language
+              : undefined;
+          const ampersandLanguageAt = (continuation: ReadingLocatorV1) => {
+            const offset =
+              continuation.textOffsetCodePoints -
+              leaf.sourceStartOffsetCodePoints;
+            if (
+              classifier === undefined ||
+              !sameLocatorBlock(continuation, leafStart)
+            )
+              return undefined;
+            if (offset === 0) return ampersandLanguage;
+            if (offset < 2 || offset > leaf.sourceTokens.length)
+              return undefined;
+            const next = leaf.sourceTokens[offset];
+            if (
+              next === undefined
+                ? continuation.textOffsetCodePoints ===
+                  leaf.locatedBlock.textLengthCodePoints
+                : next.kind !== "text" || next.text !== "&"
+            )
+              return undefined;
+            operation.work.charge(2);
+            observeSourceWindow(operation, 2, 0);
+            return precedingAmpersandLanguage(
+              leaf.sourceTokens,
+              offset,
+              classifier,
+            );
+          };
           const precedingTitleContext =
             titleContext !== undefined &&
             sameLocatorPosition(
@@ -864,6 +980,9 @@ export async function prepareNarrationBatch(
               ...(precedingTitleContext === undefined
                 ? {}
                 : { precedingEnglishTitleContext: precedingTitleContext }),
+              ...(ampersandLanguage === undefined
+                ? {}
+                : { precedingAmpersandLanguage: ampersandLanguage }),
             }),
           );
           operation.checkpointCount = addSafe(
@@ -911,6 +1030,9 @@ export async function prepareNarrationBatch(
             returnedQuotationContext = quotationContextAt(
               segment.sourceRange.end,
             );
+            returnedAmpersandLanguage = ampersandLanguageAt(
+              segment.sourceRange.end,
+            );
             if (retainTitleContext)
               returnedTitleContext = titleContextAt(
                 leaf,
@@ -925,6 +1047,11 @@ export async function prepareNarrationBatch(
             break;
           }
           quotationContext = quotationContextAt(nextCursor);
+          const nextAmpersandLanguage = ampersandLanguageAt(nextCursor);
+          ampersandContext =
+            nextAmpersandLanguage === undefined
+              ? undefined
+              : { continuation: nextCursor, language: nextAmpersandLanguage };
           titleContext = retainTitleContext
             ? titleContextAt(
                 leaf,
@@ -1000,6 +1127,8 @@ export async function prepareNarrationBatch(
         checkpoint.quotationContext = returnedQuotationContext;
       if (returnedTitleContext !== undefined)
         checkpoint.englishTitleContext = returnedTitleContext;
+      if (returnedAmpersandLanguage !== undefined)
+        checkpoint.ampersandLanguage = returnedAmpersandLanguage;
       const retained = retainedCandidateMeasurements(candidates);
       observeResourceSnapshot(resourceObserver, {
         activeRequestCount: 1,

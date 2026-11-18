@@ -1,11 +1,13 @@
 # PR #311: native timeout diagnostics and manual-scroll precondition
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Work date: 2026-11-10. Base and reviewed HEAD before this follow-up:
 `90a2d137db4a8440976c398fa465a090c86f0022`.
 
 ## Observed CI failure
 
-[Foundation run 42864371400](https://github.com/mmjosedaniel/voxleaf/actions/runs/42864371400)
+Foundation run 42864371400
 failed twice in `Windows native foundation`, during `RPI-02 native image 2
 decode`, with `webdriver-condition-timeout`. The original job was
 `129998637958`; the authorized failed-job retry was `130262976380`.

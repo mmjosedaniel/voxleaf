@@ -828,6 +828,40 @@ describe("hardware profile compatibility coordinator", () => {
     },
   );
 
+  it.each(["available", "unavailable", "unknown"] as const)(
+    "VF-0114 uses a fresh complete CUDA observation (%s)",
+    async (availability) => {
+      const report = completeReport();
+      const detector = {
+        detect: vi.fn(async () => completeReport()),
+      };
+      const selected = CHATTERBOX_ACQUISITION_PROFILE_ID;
+      const coordinator = new HardwareProfileCompatibilityCoordinator(
+        dependencies({
+          detector,
+          preference: preference({ status: "ready", profileId: selected }),
+        }),
+      );
+      try {
+        await coordinator.ensureChecked();
+        expect(coordinator.activeProfileId()).toBe(selected);
+        detector.detect.mockResolvedValueOnce({
+          ...report,
+          providers: {
+            ...report.providers,
+            cuda: { ...report.providers.cuda, availability },
+          },
+        });
+        await expect(
+          coordinator.confirmProviderUnavailable(selected, "es"),
+        ).resolves.toBe(availability === "unavailable");
+        expect(detector.detect).toHaveBeenCalledTimes(2);
+      } finally {
+        coordinator.close();
+      }
+    },
+  );
+
   it("preserves a newer language when the pending host probe fails", async () => {
     let rejectReport!: (error: Error) => void;
     const detector = { detect: vi.fn(async () => completeReport()) };

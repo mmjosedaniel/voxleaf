@@ -171,6 +171,16 @@ function preferenceStatus(
   return matches.preferenceState;
 }
 
+function canPersistPreference(
+  preference:
+    HardwareProfilePreferenceReadResult | NarrationLanguagePreferenceReadResult,
+): boolean {
+  return (
+    preference.status !== "unsupported-version" &&
+    preference.status !== "over-limit"
+  );
+}
+
 function statusFor(
   active: HardwareProfileMatchV1 | undefined,
   profiles: readonly HardwareProfileMatchV1[],
@@ -358,6 +368,27 @@ export class HardwareProfileCompatibilityCoordinator {
 
   public activeLanguage(): NarrationLanguageV1 {
     return this.#snapshot.language;
+  }
+
+  public async confirmProviderUnavailable(
+    profileId: string,
+    language: NarrationLanguageV1,
+  ): Promise<boolean> {
+    if (
+      this.#closed ||
+      profileId !== CHATTERBOX_ACQUISITION_PROFILE_ID ||
+      this.#snapshot.activeProfileId !== profileId ||
+      this.#snapshot.language !== language
+    )
+      return false;
+    const snapshot = this.#snapshot;
+    const report = await this.#detector.detect();
+    return (
+      !this.#closed &&
+      this.#snapshot === snapshot &&
+      report.probeStatus === "complete" &&
+      report.providers.cuda.availability === "unavailable"
+    );
   }
 
   public ensureChecked(): Promise<HardwareCompatibilitySnapshotV1> {
@@ -631,10 +662,10 @@ export class HardwareProfileCompatibilityCoordinator {
               profile.role === "cpu-fallback" &&
               admittedForLanguage(profile, language),
           ),
-        canPersistSelection: preference.status !== "unsupported-version",
+        canPersistSelection: canPersistPreference(preference),
         language,
         languagePreferenceStatus: languagePreference.status,
-        canPersistLanguage: languagePreference.status !== "unsupported-version",
+        canPersistLanguage: canPersistPreference(languagePreference),
         languageReason:
           choice.profileId === undefined
             ? "no-profile-for-language"
@@ -666,14 +697,14 @@ export class HardwareProfileCompatibilityCoordinator {
         canPersistSelection:
           preference === undefined
             ? this.#snapshot.canPersistSelection
-            : preference.status !== "unsupported-version",
+            : canPersistPreference(preference),
         language: languagePreference?.language ?? this.#snapshot.language,
         languagePreferenceStatus:
           languagePreference?.status ?? this.#snapshot.languagePreferenceStatus,
         canPersistLanguage:
           languagePreference === undefined
             ? this.#snapshot.canPersistLanguage
-            : languagePreference.status !== "unsupported-version",
+            : canPersistPreference(languagePreference),
         languageReason: "no-profile-for-language",
       }) satisfies HardwareCompatibilitySnapshotV1;
       if (!this.#closed && sequence === this.#sequence) {

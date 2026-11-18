@@ -467,19 +467,16 @@ def _git_is_strict_ancestor(repository_root: Path, ancestor: str, descendant: st
     return ancestor != descendant and completed.returncode == 0
 
 
-def _verify_result_authority(
+def require_v5_lineage(
     repository_root: Path,
-    result: Mapping[str, object],
+    authority_commit: object,
+    execution_commit: object,
     *,
-    ancestry_checker: Callable[[str, str], bool] | None,
-    authority_tree_checker: Callable[[str], bool] | None,
+    ancestry_checker: Callable[[str, str], bool] | None = None,
+    authority_tree_checker: Callable[[str], bool] | None = None,
 ) -> None:
-    authority_commit = result.get("authorityCommitSha")
-    execution_commit = result.get("executionCommitSha")
     if (
-        result.get("profileSha256") != PROFILE_SHA256
-        or result.get("corpusSha256") != CORPUS_SHA256
-        or not isinstance(authority_commit, str)
+        not isinstance(authority_commit, str)
         or not isinstance(execution_commit, str)
         or authority_commit == execution_commit
     ):
@@ -497,6 +494,24 @@ def _verify_result_authority(
         execution_commit,
     ):
         raise _fail("result-before-authority")
+
+
+def _verify_result_authority(
+    repository_root: Path,
+    result: Mapping[str, object],
+    *,
+    ancestry_checker: Callable[[str, str], bool] | None,
+    authority_tree_checker: Callable[[str], bool] | None,
+) -> None:
+    if result.get("profileSha256") != PROFILE_SHA256 or result.get("corpusSha256") != CORPUS_SHA256:
+        raise _fail("result-before-authority")
+    require_v5_lineage(
+        repository_root,
+        result.get("authorityCommitSha"),
+        result.get("executionCommitSha"),
+        ancestry_checker=ancestry_checker,
+        authority_tree_checker=authority_tree_checker,
+    )
 
 
 def _verify_raw_dispatches(result: Mapping[str, object]) -> None:

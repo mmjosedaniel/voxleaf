@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
+import io
+import json
 import struct
+import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
@@ -20,6 +24,7 @@ from voxleaf_tts.adapters.chatterbox import (
     ChatterboxMultilingualTtsEngine,
 )
 from voxleaf_tts.engine import EngineFailure, EngineFailureCode
+from voxleaf_tts.packaging.chatterbox_sources import historical_sources
 from voxleaf_tts.protocol import MAX_AUDIO_SAMPLE_COUNT
 
 
@@ -150,6 +155,11 @@ def _adapter(
     cuda_available: bool = True,
     bf16_available: bool = True,
     capability: tuple[int, int] = (12, 0),
+    adapter_type: type[ChatterboxMultilingualTtsEngine] = ChatterboxMultilingualTtsEngine,
+    import_failure: str | None = None,
+    model_load_failure: bool = False,
+    imported_torch_version: str = TORCH_VERSION,
+    cuda_probe_failure: bool = False,
 ) -> tuple[ChatterboxMultilingualTtsEngine, dict[str, object]]:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
@@ -165,15 +175,22 @@ def _adapter(
         def from_local(path: str, **kwargs: object) -> FakeModel:
             calls["load_path"] = path
             calls["load"] = kwargs
+            if model_load_failure:
+                raise RuntimeError("unexpected model load details")
             return selected_model
+
+    def probe_cuda() -> bool:
+        if cuda_probe_failure:
+            raise RuntimeError("unexpected CUDA query details")
+        return cuda_available
 
     torch = ModuleType("torch")
     torch.__dict__.update(
         {
-            "__version__": TORCH_VERSION,
+            "__version__": imported_torch_version,
             "device": lambda value: value,
             "cuda": SimpleNamespace(
-                is_available=lambda: cuda_available,
+                is_available=probe_cuda,
                 is_bf16_supported=lambda: bf16_available,
                 get_device_capability=lambda: capability,
                 get_arch_list=lambda: ["sm_120"],
@@ -194,11 +211,17 @@ def _adapter(
         "torch": TORCH_VERSION,
         "torchaudio": TORCHAUDIO_VERSION,
     }
-    adapter = ChatterboxMultilingualTtsEngine(
+
+    def importer(name: str) -> ModuleType:
+        if name == import_failure:
+            raise ImportError("unexpected import details")
+        return modules[name]
+
+    adapter = adapter_type(
         artifact_root,
         language,
         artifacts=artifacts,
-        importer=modules.__getitem__,
+        importer=importer,
         version_reader=selected_versions.__getitem__,
         distribution_root_reader=lambda _name: distributions,
         runtime_root=runtime_root,
@@ -215,6 +238,205 @@ def _segment(text: str) -> dict[str, object]:
         "generationId": "generation:test",
         "segmentId": "segment:test",
     }
+
+
+def _vf_0114_run(
+    entry: ModuleType,
+    adapter: ChatterboxMultilingualTtsEngine,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    version: int,
+    language: str = "es",
+    commands: tuple[str, ...] = ("handshake", "load"),
+    wrong_load_identity: bool = False,
+    wrong_frame_version: bool = False,
+    wrong_payload_version: bool = False,
+) -> tuple[int, list[dict[str, Any]]]:
+    source = io.BytesIO()
+    header = struct.Struct(">4sHBBI")
+    for kind in commands:
+        control = {
+            "schemaVersion": 1,
+            "protocolVersion": 1 if wrong_payload_version else version,
+            "kind": kind,
+            "serviceInstanceId": (
+                "service:wrong" if kind == "load" and wrong_load_identity else "service:vf-0114"
+            ),
+        }
+        encoded = json.dumps(control).encode("utf-8")
+        frame_version = 1 if wrong_frame_version else version
+        source.write(header.pack(b"VLTP", frame_version, 1, 0, len(encoded)) + encoded)
+    source.seek(0)
+    destination = io.BytesIO()
+    with monkeypatch.context() as patch:
+        patch.setenv("VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE", language)
+        patch.setattr(entry, "ChatterboxMultilingualTtsEngine", lambda *_args: adapter)
+        patch.setattr(sys, "stdin", SimpleNamespace(buffer=source))
+        patch.setattr(sys, "stdout", SimpleNamespace(buffer=destination))
+        exit_code = int(entry.main())
+
+    records = []
+    destination.seek(0)
+    while raw := destination.read(header.size):
+        magic, observed_version, kind_value, flags, size = header.unpack(raw)
+        assert (magic, observed_version, kind_value, flags) == (b"VLTP", version, 1, 0)
+        record = json.loads(destination.read(size))
+        assert record["protocolVersion"] == version
+        records.append(record)
+    return exit_code, records
+
+
+def test_vf_0114_frozen_v7_conflates_torch_unavailable_and_model_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # V7 selects this exact frozen closure, even when newer entry points exist.
+    root = Path(__file__).resolve().parents[3]
+    snapshot = tmp_path / "frozen_v7"
+    for relative, contents in historical_sources(root, "3").items():
+        target = snapshot / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(contents)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    entry = importlib.import_module("frozen_v7.chatterbox_service")
+    results = []
+    for scenario in ("torch", "model"):
+        fixture = tmp_path / scenario
+        fixture.mkdir()
+        adapter, calls = _adapter(
+            fixture,
+            monkeypatch,
+            adapter_type=entry.ChatterboxMultilingualTtsEngine,
+            cuda_available=scenario != "torch",
+            model_load_failure=scenario == "model",
+        )
+        exit_code, records = _vf_0114_run(entry, adapter, monkeypatch, version=1)
+        assert exit_code == 1
+        assert records[-1]["state"] == "failed"
+        assert ("load" in calls) == (scenario == "model")
+        results.append(records[-2])
+    assert results[0] == results[1]
+    assert results[0]["reason"] == "engine-failure"
+
+
+@pytest.mark.parametrize(
+    ("case", "reason"),
+    [
+        ("torch-unavailable", "torch-cuda-unavailable"),
+        ("torch-version", "engine-failure"),
+        ("import", "engine-failure"),
+        ("artifact", "engine-failure"),
+        ("probe-exception", "engine-failure"),
+        ("bf16", "engine-failure"),
+        ("model-load", "engine-failure"),
+        ("warm", "engine-failure"),
+    ],
+)
+def test_vf_0114_successor_load_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str, reason: str
+) -> None:
+    entry = importlib.import_module("voxleaf_tts.chatterbox_service_v2")
+    adapter, calls = _adapter(
+        tmp_path,
+        monkeypatch,
+        model=FakeModel({}, failure=RuntimeError("unexpected warm-up details"))
+        if case == "warm"
+        else None,
+        cuda_available=case not in {"torch-unavailable", "torch-version", "import", "artifact"},
+        imported_torch_version="unexpected" if case == "torch-version" else TORCH_VERSION,
+        import_failure="chatterbox.mtl_tts" if case == "import" else None,
+        bf16_available=case != "bf16",
+        model_load_failure=case == "model-load",
+        cuda_probe_failure=case == "probe-exception",
+    )
+    if case == "artifact":
+        (tmp_path / "model" / "conds.pt").write_bytes(b"changed")
+
+    commands = ("handshake", "load", "warm") if case == "warm" else ("handshake", "load")
+    exit_code, records = _vf_0114_run(entry, adapter, monkeypatch, version=2, commands=commands)
+
+    assert exit_code == 1
+    assert records[1]["kind"] == "handshakeAccepted"
+    assert records[-2] == {
+        "schemaVersion": 1,
+        "protocolVersion": 2,
+        "kind": "error",
+        "reason": reason,
+        "serviceInstanceId": "service:vf-0114",
+        "error": {
+            "schemaVersion": 1,
+            "code": "internal-failure",
+            "category": "internal",
+            "severity": "fatal",
+        },
+    }
+    assert records[-1]["state"] == "failed"
+    assert ("load" in calls) == (case in {"model-load", "warm"})
+
+
+@pytest.mark.parametrize("wrong", ["frame-version", "payload-version", "instance", "language"])
+def test_vf_0114_successor_requires_matching_connection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, wrong: str
+) -> None:
+    entry = importlib.import_module("voxleaf_tts.chatterbox_service_v2")
+    adapter, calls = _adapter(tmp_path, monkeypatch, cuda_available=False)
+    exit_code, records = _vf_0114_run(
+        entry,
+        adapter,
+        monkeypatch,
+        version=2,
+        language="unsupported" if wrong == "language" else "es",
+        wrong_load_identity=wrong == "instance",
+        wrong_frame_version=wrong == "frame-version",
+        wrong_payload_version=wrong == "payload-version",
+    )
+    assert exit_code == 1
+    assert not calls
+    if wrong == "language":
+        assert records == []
+    else:
+        assert records[-1]["kind"] == "protocolRejected"
+        assert records[-1]["reason"] == (
+            "identity-mismatch" if wrong == "instance" else "unsupported-protocol-version"
+        )
+
+
+def test_vf_0114_successor_healthy_load_warm_and_shutdown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    entry = importlib.import_module("voxleaf_tts.chatterbox_service_v2")
+    adapter, calls = _adapter(tmp_path, monkeypatch, "en")
+    exit_code, records = _vf_0114_run(
+        entry,
+        adapter,
+        monkeypatch,
+        version=2,
+        language="en",
+        commands=("handshake", "load", "warm", "health", "shutdown"),
+    )
+    assert exit_code == 0
+    assert [record.get("state") for record in records if record["kind"] == "state"] == [
+        "handshaking",
+        "unloaded",
+        "loading",
+        "warming",
+        "ready",
+        "ready",
+        "stopping",
+        "stopped",
+    ]
+    assert calls["cleaned"] is True
+
+
+def test_vf_0114_local_v1_does_not_publish_successor_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    entry = importlib.import_module("voxleaf_tts.chatterbox_service")
+    adapter, calls = _adapter(tmp_path, monkeypatch, cuda_available=False)
+    exit_code, records = _vf_0114_run(entry, adapter, monkeypatch, version=1)
+    assert exit_code == 1
+    assert not calls
+    assert records[-2]["reason"] == "engine-failure"
+    assert records[-1]["state"] == "failed"
 
 
 @pytest.mark.parametrize(
@@ -357,7 +579,12 @@ def test_load_fails_closed_for_unreviewed_runtime_or_provider(
     with pytest.raises(EngineFailure) as failure:
         adapter.load()
 
-    assert failure.value.code is EngineFailureCode.UNAVAILABLE
+    expected = (
+        EngineFailureCode.TORCH_CUDA_UNAVAILABLE
+        if versions is None and not cuda_available
+        else EngineFailureCode.UNAVAILABLE
+    )
+    assert failure.value.code is expected
 
 
 def test_language_outside_the_admitted_pair_is_rejected(tmp_path: Path) -> None:

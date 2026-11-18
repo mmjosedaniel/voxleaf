@@ -287,6 +287,7 @@ describe("narration source projection", () => {
     >();
     expectTypeOf<SemanticInline["kind"]>().toEqualTypeOf<
       | "code"
+      | "direction-span"
       | "emphasis"
       | "internal-link"
       | "line-break"

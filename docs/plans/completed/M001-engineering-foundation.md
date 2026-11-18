@@ -1,5 +1,7 @@
 # Establish the engineering foundation
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Complete Milestone 1 of the VoxLeaf development roadmap by turning the documentation-only repository into a reproducible, minimal development workspace for the desktop application, shared TypeScript code, EPUB package, Rust shell, and Python TTS service.
@@ -451,7 +453,7 @@ pnpm.cmd build
 
 After pushing the implementation branch, record the exact GitHub Actions check names and successful run URL in the progress log.
 
-**Status:** Complete. The pinned workflow passed on the implementation branch in GitHub Actions run [29800516177](https://github.com/mmjosedaniel/voxleaf/actions/runs/29800516177). The exact successful job names were `Windows native foundation` and `Ubuntu portable foundation`.
+**Status:** Complete. The pinned workflow passed on the implementation branch in GitHub Actions run 29800516177. The exact successful job names were `Windows native foundation` and `Ubuntu portable foundation`.
 
 ### Task 5.3: Complete setup, testing, and dependency documentation
 
@@ -575,7 +577,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 4.1. Installed and pinned uv `0.11.29`; added the isolated `voxleaf-tts` pure-Python package, lockfile, deterministic version smoke test, and development-only Ruff, mypy, pytest, and `uv_build`; verified the locked environment, formatting, linting, strict typing, test, and distribution build without model, server, network, audio, or hardware behavior.
 - 2026-07-20: Completed Task 5.1. Added the root cross-language format, lint, type-check, test, build, and aggregate check surface; introduced the selected ESLint flat configuration and Prettier; and verified every root command on Windows. A temporary unformatted fixture made `format:check` return nonzero and was removed, confirming failure propagation. TypeScript was adjusted from `7.0.2` to supported stable `6.0.3` because `typescript-eslint` `8.64.0` supports TypeScript only below `6.1.0`.
 - 2026-07-20: Implemented Task 5.2 locally. Added the pinned `Foundation checks` workflow with `Windows native foundation` as the authoritative job and `Ubuntu portable foundation` as the intentionally limited TypeScript/Python job.
-- 2026-07-21: Completed Task 5.2. The first remote run exposed a Windows checkout line-ending mismatch before native compilation, so `.gitattributes` now enforces LF for repository text while preserving the icon as binary. GitHub Actions run [29800516177](https://github.com/mmjosedaniel/voxleaf/actions/runs/29800516177) then passed with the exact job names `Windows native foundation` and `Ubuntu portable foundation`.
+- 2026-07-21: Completed Task 5.2. The first remote run exposed a Windows checkout line-ending mismatch before native compilation, so `.gitattributes` now enforces LF for repository text while preserving the icon as binary. GitHub Actions run 29800516177 then passed with the exact job names `Windows native foundation` and `Ubuntu portable foundation`.
 - 2026-07-21: Completed Task 5.3. Replaced stale setup claims, added a contributor quick start, verified the browser development server with a local HTTP response, documented the implemented smoke tests and deferred product coverage, and added a complete direct-dependency inventory with production alternatives and transitive-lock review rules. `git diff --check`, both locked installs, and the separate root format, lint, type-check, test, and production-build commands passed in native Windows PowerShell.
 
 ## Discoveries and decisions
@@ -635,6 +637,6 @@ Completed on 2026-07-21.
 - The TypeScript smoke tests passed: one shared-package resolution test, one EPUB-package isolation test, and one accessible React-shell render test.
 - Cargo test and the native Tauri production build passed; the minimal Rust shell intentionally has no domain unit tests, broad capabilities, commands, plugins, or installer bundling.
 - The Python version smoke test, strict typing, linting, formatting, and source and wheel distribution builds passed without runtime dependencies.
-- GitHub Actions run [29801109249](https://github.com/mmjosedaniel/voxleaf/actions/runs/29801109249) passed at the final Task 5.2 branch head with `Windows native foundation` and `Ubuntu portable foundation`; Task 5.3 changes only documentation.
+- GitHub Actions run 29801109249 passed at the final Task 5.2 branch head with `Windows native foundation` and `Ubuntu portable foundation`; Task 5.3 changes only documentation.
 - The dependency, permissions, logs, ignored artifacts, and changed-file scope were reviewed. No EPUB, book, TTS model, audio, persistence, hardware, installer, secret, private data, content-bearing log, or unrelated application behavior was added.
 - Milestone 1 is complete. The next roadmap work is Milestone 2, which requires a just-in-time ExecPlan before public contracts or multi-component behavior are implemented.

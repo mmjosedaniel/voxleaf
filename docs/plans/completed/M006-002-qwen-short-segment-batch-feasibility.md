@@ -1,5 +1,7 @@
 # Prove Qwen short-segment and dual-worker feasibility
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
 ## Relationship to Milestones 6, 6.1, and 7
 
 Roadmap Milestone 6 is complete. Its frozen `v2` evaluation selected no viable
@@ -102,8 +104,8 @@ selected CPU fallback.
   memory. The targeted placement moved only the speech tokenizer after an
   exact CUDA load; it was not an independent CPU-only Qwen worker and therefore
   did not test the new topology.
-- The reference host has 33,752,997,888 bytes of physical RAM and an Intel
-  Core Ultra 7 255HX with 20 logical processors. Capacity arithmetic alone
+- The reference host has 32 GB-class physical RAM and a multicore mobile CPU.
+  Capacity arithmetic alone
   does not prove that a second complete model instance is safe or fast enough.
 - Historical `v3` total sustained RTF was 1.4521558253532183, or approximately
   0.6886 seconds of audio per wall-clock second. As a planning estimate only,
@@ -1316,9 +1318,8 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
     sidecar, derives the p95 in the base environment, and deletes the sidecar
     with the raw journal. No authority field or reviewable private evidence is
     added.
-20. Windows reports the exact reference CPU as
-    `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
-    intentionally omits trademark markers. Exact-host comparison must remove
+20. Windows reports trademark markers in the CPU name. The frozen v4
+    reference label omits them. Exact-host comparison must remove
     only `(R)` and `(TM)` plus duplicate whitespace before comparing and
     before writing the frozen raw host identity.
 21. The disposable pilot's 81,788,928-byte shared-memory observation was not

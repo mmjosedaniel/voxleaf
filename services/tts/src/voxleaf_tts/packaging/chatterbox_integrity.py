@@ -15,7 +15,7 @@ SOURCE_MANIFEST_NAME: Final = "source-manifest-v2.json"
 RUNTIME_ARCHIVE_NAME: Final = "voxleaf-chatterbox-runtime-v2.zip"
 MAXIMUM_PART_BYTES: Final = 1_900_000_000
 HASH_BLOCK_BYTES: Final = 8 * 1024 * 1024
-PackageVersion = Literal["2", "3", "4", "5", "6", "7"]
+PackageVersion = Literal["2", "3", "4", "5", "6", "7", "8"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +25,7 @@ class PackageLayout:
     version: PackageVersion = "2"
 
     def __post_init__(self) -> None:
-        if self.version not in {"2", "3", "4", "5", "6", "7"}:
+        if self.version not in {"2", "3", "4", "5", "6", "7", "8"}:
             raise ReleaseChatterboxError("chatterbox-package-version-invalid")
 
     @property
@@ -53,8 +53,15 @@ class PackageLayout:
             "5": "chatterbox-v5",
             "6": "chatterbox-v6",
             "7": "chatterbox-v7",
+            "8": "chatterbox-v7",
         }[self.version]
         return f"services/tts/release/profiles/{profile}/requirements.lock"
+
+    @property
+    def service_module(self) -> str:
+        if self.version == "8":
+            return "voxleaf_tts.chatterbox_service_v2"
+        return "voxleaf_tts.chatterbox_service"
 
     def dist(self, root: Path, output_root: Path | None = None) -> Path:
         if output_root is not None:
@@ -193,7 +200,7 @@ def build_runtime_manifest(
         "pythonPath": "runtime/python.exe",
         "sitePackagesPath": "runtime/Lib/site-packages",
         "modelRoot": "models",
-        "serviceModule": "voxleaf_tts.chatterbox_service",
+        "serviceModule": layout.service_module,
         "files": files,
     }
 

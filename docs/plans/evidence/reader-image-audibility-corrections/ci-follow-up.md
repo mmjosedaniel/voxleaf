@@ -1,5 +1,7 @@
 # PR #295: wait for settled Stop before stale resume rejection
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Starting HEAD: `fd36c2cd03e9fd2cb53b5f6a70afd70d7ac9ce9d` on
 `codex/reader-image-audibility-plan`; worktree and index initially clean.
 This follow-up preserves the completed ExecPlan and original acceptance receipts.
@@ -8,7 +10,7 @@ validation, commit and PR update; merge remains outside scope.
 
 ## Reproduction and cause
 
-[Windows job 125000043679](https://github.com/mmjosedaniel/voxleaf/actions/runs/41357311657/job/125000043679)
+Windows job 125000043679 (GitHub Actions run 41357311657)
 passed 46 Chromium cases and failed RIA-03: the test expected narration phase
 `stopped`, but the observed settled phase was `idle`, with service `stopped`,
 failure `none`, inactive intent and zero retained audio. The later native and

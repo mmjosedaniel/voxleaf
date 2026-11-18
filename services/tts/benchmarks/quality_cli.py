@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Final, NoReturn, cast
 
 from benchmarks.cli import (
@@ -17,7 +19,10 @@ from benchmarks.cli import (
 from benchmarks.preflight import PreflightRequest, run_local_preflight
 from benchmarks.quality import (
     CORRECTION_REASON,
+    RAW_ROOT,
     QualitySessionError,
+    _load_staging_session,
+    _session_path,
     aggregate_scores,
     cleanup_session,
     correct_meaning_changing_defect,
@@ -25,6 +30,7 @@ from benchmarks.quality import (
     generate_candidate_audio,
     submit_scorecard,
 )
+from benchmarks.quality_operation import quality_operation
 
 MAXIMUM_STDIN_BYTES: Final = 262_144
 GENERATION_TIMEOUT_SECONDS: Final = 7_200
@@ -125,6 +131,34 @@ def _generate_parent(payload: Mapping[str, object]) -> tuple[dict[str, object], 
     request = _preflight_request(payload)
     if not _preflight_passed(request):
         return {"status": "fail", "failureCode": "preflight"}, 2
+    session_id = payload.get("sessionId")
+    if not isinstance(session_id, str):
+        _fail("invalid-input")
+    try:
+        session = _session_path(session_id, raw_root=RAW_ROOT)
+        if session.name != session_id:
+            _fail("generation")
+        session.parent.mkdir(parents=True, exist_ok=True)
+        with quality_operation(session, require_session=False):
+            return _run_generation_worker(payload, request, session, session_id)
+    except (OSError, QualityCommandError, QualitySessionError):
+        return {"status": "fail", "failureCode": "generation"}, 2
+
+
+def _run_generation_worker(
+    payload: Mapping[str, object], request: PreflightRequest, session: Path, session_id: str
+) -> tuple[dict[str, object], int]:
+    existed = session.exists()
+    metadata = _load_staging_session(session) if existed else None
+    candidate = session / "staging" / request.profile.candidate_id
+    temporary = session / "session.json.tmp"
+    owned_paths = (session, candidate, temporary)
+    if (
+        candidate.exists()
+        or temporary.exists()
+        or any(path.resolve() != path for path in owned_paths)
+    ):
+        _fail("candidate-state")
     try:
         completed = run_bounded_worker_process(
             (
@@ -143,8 +177,23 @@ def _generate_parent(payload: Mapping[str, object]) -> tuple[dict[str, object], 
         receipt = _validate_generation_receipt(
             cast(object, json.loads(completed.stdout)),
             request,
-            payload.get("sessionId"),
+            session_id,
         )
+    except subprocess.TimeoutExpired:
+        # The bounded worker reports a watchdog timeout only after tree cleanup.
+        try:
+            if any(path.resolve() != path for path in owned_paths):
+                return {"status": "fail", "failureCode": "cleanup-failed"}, 2
+            if not existed:
+                if session.exists():
+                    shutil.rmtree(session)
+            elif _load_staging_session(session) == metadata:
+                if candidate.exists():
+                    shutil.rmtree(candidate)
+                temporary.unlink(missing_ok=True)
+        except (OSError, QualitySessionError):
+            return {"status": "fail", "failureCode": "cleanup-failed"}, 2
+        return {"status": "fail", "failureCode": "generation"}, 2
     except (
         OSError,
         subprocess.SubprocessError,
@@ -201,15 +250,16 @@ def _correct(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
         _fail("invalid-input")
     if reason_code != CORRECTION_REASON:
         _fail("invalid-input")
-    return (
-        correct_meaning_changing_defect(
+    try:
+        result = correct_meaning_changing_defect(
             cast(str, session_id),
             cast(str, evaluator_id),
             cast(str, case_id),
             reason_code=reason_code,
-        ),
-        0,
-    )
+        )
+    except OSError:
+        _fail("correction")
+    return result, 0
 
 
 def _aggregate(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
@@ -258,7 +308,7 @@ def main() -> int:
             output, code = _aggregate(payload)
         else:
             output, code = _cleanup(payload)
-    except (QualityCommandError, QualitySessionError):
+    except (QualityCommandError, QualitySessionError, CommandError):
         output, code = {"status": "fail", "failureCode": "invalid-request"}, 2
     print(json.dumps(output, ensure_ascii=True, separators=(",", ":")))
     return code

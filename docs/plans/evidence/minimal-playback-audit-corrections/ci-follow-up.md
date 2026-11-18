@@ -1,12 +1,14 @@
 # PR #290 paused-navigation CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and tested HEAD: `032ded44330c96259ba532559b27b440b8346f72`.
 This follow-up preserves the completed ExecPlan and its original acceptance
 receipts. It corrects a reader interaction exposed by the broader hosted suite.
 
 ## Failure and correction
 
-The [original Windows job](https://github.com/mmjosedaniel/voxleaf/actions/runs/41163615622/job/124426325418)
+The original Windows job (GitHub Actions run 41163615622 and job 124426325418)
 passed 39 browser tests but failed `VCA-06/09`: paused Next/Previous never
 cleared `data-narration-navigation-settling`. The other three jobs passed.
 The same isolated browser case failed locally before production edits.

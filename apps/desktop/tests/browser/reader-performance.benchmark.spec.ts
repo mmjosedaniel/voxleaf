@@ -9,6 +9,8 @@ import {
   type Page,
 } from "@playwright/test";
 import { closeSettings, openSettings } from "./settings-helpers";
+import { measureReaderReflowAtPassage } from "../../scripts/native-smoke/reader-reflow-measurement.mjs";
+import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
 
 const BATCH_SIZE_BLOCKS = 250;
 const SELECTED_LIVE_BLOCK_LIMIT = 10_000;
@@ -95,11 +97,13 @@ async function buildProductionLimitFixture(): Promise<Uint8Array> {
     buildReaderLongChapterEpubFixture(options: {
       readonly semanticBlockCount: number;
       readonly deepTargetBlockIndex: number;
+      readonly reflowTarget: boolean;
     }): Promise<Uint8Array>;
   };
   return fixtureModule.buildReaderLongChapterEpubFixture({
     semanticBlockCount: 10_000,
     deepTargetBlockIndex: 8_999,
+    reflowTarget: true,
   });
 }
 
@@ -895,24 +899,18 @@ test("measures the production React renderer at the accepted chapter limit", asy
     const incrementalAppendMs =
       instrumentation.completeAt - instrumentation.resumeStartedAt;
 
+    await page.evaluate(measureReaderReflowAtPassage, {
+      readingLineInset: ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX,
+      limitMs: SELECTED_REFLOW_LIMIT_MS,
+      prepare: true,
+    });
     const settings = await openSettings(page);
     const preferenceReflowMs = await page.evaluate(
-      () =>
-        new Promise<number>((resolve, reject) => {
-          const select = document.querySelector<HTMLSelectElement>(
-            'select[name="textScale"]',
-          );
-          if (select === null) {
-            reject(new Error("reader-benchmark-preference-unavailable"));
-            return;
-          }
-          const startedAt = performance.now();
-          select.value = "large";
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => resolve(performance.now() - startedAt)),
-          );
-        }),
+      measureReaderReflowAtPassage,
+      {
+        readingLineInset: ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX,
+        limitMs: SELECTED_REFLOW_LIMIT_MS,
+      },
     );
 
     await closeSettings(page, settings);
@@ -963,6 +961,55 @@ test("measures the production React renderer at the accepted chapter limit", asy
     );
   } finally {
     await context.unroute("**/*");
+  }
+});
+
+test("NOV17 reflow requires scale and current passage geometry within the deadline", async ({
+  page,
+}) => {
+  const limitMs = 100;
+  for (const transition of ["ignored", "unsettled", "late"] as const) {
+    await page.setContent(`
+      <section class="semantic-reader" data-reader-text-scale="normal">
+        <select name="textScale"><option value="normal">Normal</option>
+          <option value="large">Large</option></select>
+        <div data-reader-scroll-owner="true" style="width: 370px; height: 220px; overflow: auto; overflow-anchor: none">
+          <article class="semantic-document">
+            <h2 style="margin-top: 700px">Synthetic heading</h2>
+            <p>${"Synthetic passage words for interior reflow measurement. ".repeat(12).trimEnd()}</p>
+            <div style="height: 700px"></div>
+          </article>
+        </div>
+      </section>
+    `);
+    await page.evaluate(
+      ({ transition, limitMs }) => {
+        const reader = document.querySelector<HTMLElement>(".semantic-reader")!;
+        const paragraph = reader.querySelector("p")!;
+        reader.querySelector("select")!.addEventListener("change", () => {
+          if (transition === "ignored") return;
+          const change = () => {
+            reader.dataset.readerTextScale = "large";
+            paragraph.style.fontSize = "28px";
+            paragraph.style.transform = "translateY(50px)";
+          };
+          if (transition === "late") setTimeout(change, limitMs * 2);
+          else change();
+        });
+      },
+      { transition, limitMs },
+    );
+    const options = {
+      readingLineInset: ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX,
+      limitMs,
+    };
+    await page.evaluate(measureReaderReflowAtPassage, {
+      ...options,
+      prepare: true,
+    });
+    await expect(
+      page.evaluate(measureReaderReflowAtPassage, options),
+    ).rejects.toThrow("reader-reflow-alignment-timeout");
   }
 });
 

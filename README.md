@@ -1,5 +1,7 @@
 # VoxLeaf
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Read and listen to your EPUBs with AI speech generated on your own computer.
 VoxLeaf combines a reflowable reader, bilingual local narration and bounded
 in-memory audio in a Windows desktop application.
@@ -96,7 +98,7 @@ Full desktop prerequisites and checks are in [development setup](docs/developmen
 
 - [Engineering case study and evidence](docs/portfolio/case-study.md)
 - [Documentation index](docs/README.md) and [roadmap](docs/plans/roadmap.md)
-- [Testing strategy](docs/development/testing.md) and [CI](https://github.com/mmjosedaniel/voxleaf/actions)
+- [Testing strategy](docs/development/testing.md) and CI
 - [Contributing](CONTRIBUTING.md) and [security policy](SECURITY.md)
 
 ## License

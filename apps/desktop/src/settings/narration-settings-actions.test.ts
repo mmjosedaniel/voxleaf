@@ -1,5 +1,7 @@
 import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import { describe, expect, it, vi } from "vitest";
+import { createWebStorageHardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
+import { createWebStorageNarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 
 import {
   CHATTERBOX_OPTIONAL_PROFILE_ID,
@@ -330,6 +332,67 @@ describe("narration settings actions", () => {
     },
   );
 
+  it.each(["VF-0118", "VF-0127"] as const)(
+    "%s preserves loaded Piper when its requested preference is oversized",
+    async (finding) => {
+      const f = fixture();
+      const oversized = "x".repeat(2_048);
+      let stored: string | null = oversized;
+      const storage = {
+        getItem: () => stored,
+        setItem: vi.fn((_key: string, next: string) => {
+          stored = next;
+        }),
+      };
+      const hardware = new HardwareProfileCompatibilityCoordinator({
+        detector: { detect: async () => supportedDevelopmentHost() },
+        developmentGate: { exactDemoAvailability: async () => "unavailable" },
+        preferenceRepository:
+          createWebStorageHardwareProfilePreferenceRepository({
+            storage: () =>
+              finding === "VF-0118"
+                ? storage
+                : { getItem: () => null, setItem: vi.fn() },
+          }),
+        languagePreferenceRepository:
+          createWebStorageNarrationLanguagePreferenceRepository(() =>
+            finding === "VF-0127"
+              ? storage
+              : { getItem: () => null, setItem: vi.fn() },
+          ),
+      });
+      try {
+        await hardware.ensureChecked();
+        expect(hardware.observe().activeProfileId).toBe(
+          PIPER_ENGLISH_CPU_PROFILE_ID,
+        );
+        const select = () =>
+          finding === "VF-0118"
+            ? f.actions.selectProfile(
+                CHATTERBOX_OPTIONAL_PROFILE_ID,
+                hardware,
+                f.coordinator,
+                f.optional,
+              )
+            : f.actions.selectLanguage("es", hardware, f.coordinator);
+        await expect(select()).resolves.toBe(false);
+        expect.soft(f.steps.stop).not.toHaveBeenCalled();
+        expect(storage.setItem).not.toHaveBeenCalled();
+        expect(stored).toBe(oversized);
+        expect(hardware.observe()).toMatchObject({
+          language: "en",
+          activeProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+        });
+        stored = null;
+        await hardware.check("explicit-recheck");
+        await expect(select()).resolves.toBe(true);
+        expect(storage.setItem).toHaveBeenCalledTimes(1);
+      } finally {
+        hardware.close();
+      }
+    },
+  );
+
   it("CFR-08 preserves an already loaded saved Piper profile", async () => {
     const f = fixture();
     const profileId = PIPER_ENGLISH_CPU_PROFILE_ID;
@@ -597,6 +660,31 @@ describe("narration settings actions", () => {
             ? ["stop", "profile"]
             : ["stop"],
       );
+    },
+  );
+
+  it.each(["installed", "failed"] as const)(
+    "VF-0114 unsupported candidate Remove precedes narration containment (%s)",
+    async (state) => {
+      const f = fixture();
+      const beginConfigurationChange = vi.fn(() => vi.fn());
+      const onAdmitted = vi.fn();
+      const observed = {
+        ...new OptionalChatterboxClient().observe(),
+        state,
+        removalSupported: false,
+      };
+      f.optional.observe.mockReturnValue(observed);
+      await f.actions.removeChatterbox(
+        { ...f.coordinator, beginConfigurationChange },
+        f.optional,
+        onAdmitted,
+      );
+      expect.soft(onAdmitted).not.toHaveBeenCalled();
+      expect.soft(beginConfigurationChange).not.toHaveBeenCalled();
+      expect.soft(f.steps.stop).not.toHaveBeenCalled();
+      expect.soft(f.steps.remove).not.toHaveBeenCalled();
+      expect(f.steps.refresh).not.toHaveBeenCalled();
     },
   );
 

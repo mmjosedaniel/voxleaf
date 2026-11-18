@@ -1,5 +1,9 @@
 # Milestone 6: Prove local TTS feasibility and select engine profiles
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Complete roadmap Milestone 6 by evaluating local text-to-speech candidates with one reproducible, privacy-safe protocol and either:
@@ -774,13 +778,12 @@ Completed on 2026-07-25.
   failure, resource/power/sleep/operator gates, platform/profile rejection,
   closed input, and private-path exclusion. Focused Ruff and strict mypy over
   26 source files pass.
-- The observed native host has Windows build 26200, an Intel Core Ultra 7
-  255HX with 20 logical processors, 32 GB RAM, an NVIDIA GeForce RTX 5060
-  Laptop GPU with 8,151 MiB VRAM and driver 577.05, ample disk, and AC power.
+- The native test ran on Windows with 32 GB RAM, a multicore mobile CPU,
+  and an NVIDIA RTX 50-series laptop GPU with 8 GB-class VRAM.
   This is setup evidence only, not an official candidate result.
 - Both candidate environments now install from their exact locks. The Qwen
   environment occupies 5,165,928,540 bytes and reports `qwen-tts 0.1.1`,
-  `torch 2.9.1+cu128`, available CUDA/bfloat16, and the expected RTX 5060.
+  `torch 2.9.1+cu128`, available CUDA/bfloat16, and the expected NVIDIA laptop GPU.
   The Supertonic environment occupies 111,602,972 bytes and reports
   `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPU device, and the package's
   source-confirmed `CPUExecutionProvider` default.
@@ -805,7 +808,7 @@ Completed on 2026-07-25.
   interpreter and restoring at least 12 GiB free RAM; the observed
   11,009,933,312 free bytes did not meet that frozen headroom gate.
 - A later bounded CUDA allocation probe established a more fundamental
-  balanced-role blocker before the Qwen model loaded. This RTX 5060 uses WDDM,
+  balanced-role blocker before the Qwen model loaded. The NVIDIA laptop GPU uses WDDM,
   and `nvidia-smi --query-compute-apps=pid,used_gpu_memory` returned `[N/A]`
   for the exact allocating PID. NVIDIA documents that NVML process
   `usedGpuMemory` is always unavailable under WDDM because Windows KMD owns
@@ -1174,7 +1177,7 @@ selection without rewriting intake authority.
 | Redistribution and commercial use | Redistribution and commercial use are permitted. Distribution must include the Apache-2.0 license, preserve applicable notices, mark modified files, and carry any upstream `NOTICE` attribution if present. The frozen model snapshot contains no separate acceptance gate or additional voice terms. | Redistribution and charged end-use are permitted, but downstream terms must make the paragraph 5 use restrictions enforceable, notify recipients, include the license, retain notices, and mark modified files. Attachment A restricts listed harmful uses and requires machine-generated-content disclosure in its specified context. The license also asks for reasonable efforts to use the latest model. These are product-license and update-policy requirements, not optional attribution alone. |
 | Acquisition and offline behavior | Networked setup is required to obtain the wheel and approximately 2.50 GB verified snapshot. Upstream documents automatic or explicit Hugging Face/ModelScope download and accepts a local directory. Official runs used the local revision with `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and `local_files_only=true`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. | Networked setup is required to obtain the wheel and approximately 414.7 MB snapshot. Upstream documents a first-run download, but also describes entirely on-device synthesis. Official runs instead used the verified local directory with `auto_download=false` and `HF_HUB_OFFLINE=1`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. |
 | Measured installed footprint | Model snapshot: `2,498,444,461` bytes across 27 files. Isolated environment: `5,227,411,977` bytes across 32,460 files and 88 distributions. Combined: `7,725,856,438` bytes. Its 373 `.dll`, `.pyd`, and `.exe` files occupy `4,713,151,865` bytes; the largest include PyTorch CUDA, cuBLAS, cuDNN, and cuSPARSE binaries. | Model snapshot: `414,741,773` bytes across 79 files, including the 292,046-byte F1 style. Isolated environment: `111,691,023` bytes across 2,402 files and 24 distributions. Combined: `526,432,796` bytes. Its 42 `.dll`, `.pyd`, and `.exe` files occupy `77,514,569` bytes, led by OpenBLAS and ONNX Runtime. |
-| Verified platform | Windows `10.0.26200`, CPython `3.12.10`, PyTorch `2.9.1+cu128`, torchaudio `2.9.1+cu128`, CUDA/bfloat16/SDPA, NVIDIA driver `577.05`, and RTX 5060 Laptop GPU with 8,546,942,976 bytes VRAM. This is the only measured balanced configuration. | Windows `10.0.26200`, CPython `3.12.10`, `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPUExecutionProvider, and float32 on the Intel Core Ultra 7 255HX. No GPU is required. This is the only measured compatibility configuration. |
+| Verified platform | Windows `10.0.26200`, CPython `3.12.10`, PyTorch `2.9.1+cu128`, torchaudio `2.9.1+cu128`, CUDA/bfloat16/SDPA and an NVIDIA RTX 50-series laptop GPU with 8 GB-class VRAM. This is the only measured balanced configuration. | Windows `10.0.26200`, CPython `3.12.10`, `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPUExecutionProvider, and float32 on a multicore mobile CPU. No GPU is required. This is the only measured compatibility configuration. |
 | Packaging risk | High. The benchmark lock pulls a broad 88-distribution graph, approximately 4.71 GB of native executables, GPU-driver compatibility, and packages not needed by the selected inference path, including Gradio and ONNX Runtime. FlashAttention was deliberately excluded, so there is no selected local build step, but a production package would need a purpose-built reduced lock, native-DLL notice collection, driver preflight, and a separate model-acquisition/update design. | Moderate. The core wheel is pure Python and the selected lock avoids playback and server extras, but ONNX Runtime, OpenBLAS, SoundFile, Hugging Face/Xet, and their native notices still require installer review. A production package should remove acquisition-only dependencies if feasible, preserve OpenRAIL-M terms in the application flow, define update handling, and keep model storage separate from ephemeral audio. |
 | Advisory check | The exact PyPI release JSON reported no known vulnerabilities for `qwen-tts==0.1.1`. This is not a transitive dependency audit and does not clear its 88-distribution graph. | The exact PyPI release JSON reported no known vulnerabilities for `supertonic==1.3.1`. This is not a transitive dependency audit and does not clear ONNX Runtime or other dependencies. |
 
@@ -1531,10 +1534,10 @@ Completed on 2026-07-25.
   hardware support, and packaging remain blocked or deferred.
 - Task 5.1 passed the authoritative native and portable aggregate commands on
   this branch. Pull request
-  [#97](https://github.com/mmjosedaniel/voxleaf/pull/97) tested exact
+  #97 tested exact
   implementation-and-evidence head
   `4f06d8460cdee2e140602436f2004e30cfe83fb8` in foundation run
-  [30181825607](https://github.com/mmjosedaniel/voxleaf/actions/runs/30181825607).
+  30181825607.
   `Ubuntu portable foundation` passed in 1 minute 25 seconds and `Windows
   native foundation` passed in 12 minutes 59 seconds.
 

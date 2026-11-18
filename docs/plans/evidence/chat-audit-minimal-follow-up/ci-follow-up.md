@@ -1,5 +1,7 @@
 # CAF CI follow-up: preserve aligned block fallback
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Status: correction implemented and host validation complete. Independent
 acceptance is governed by the separate [CAF-CI-R1-20261104 report](ci-review-R1.md);
 a pending report is not approval. Hosted CI for the delivered commit is separate.
@@ -11,7 +13,7 @@ or its historical acceptance reports.
 
 ## Reproduction and cause
 
-[Foundation checks run 41747237301](https://github.com/mmjosedaniel/voxleaf/actions/runs/41747237301)
+Foundation checks run 41747237301
 failed in Windows job `126303211857`, during `pnpm.cmd test:browser`.
 MAF-07 expected the restored empty line-break block to be less than one pixel
 from the reading line; its measured displacement was 24.5 pixels. The other 59

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type KeyboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactElement,
 } from "react";
 
@@ -291,6 +291,11 @@ export function ReaderSettingsDialog({
   }, []);
   const narrationSelectionPending =
     narrationSettingsPending || pendingSelections > 0;
+  const requestClose = useCallback((): void => {
+    if (closing.current) return;
+    closing.current = true;
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -310,6 +315,18 @@ export function ReaderSettingsDialog({
     document.addEventListener("focusin", containFocus);
     return () => document.removeEventListener("focusin", containFocus);
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    // A focused action can be replaced and leave focus on the viewport.
+    const dismissOnEscape = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      requestClose();
+    };
+    document.addEventListener("keydown", dismissOnEscape);
+    return () => document.removeEventListener("keydown", dismissOnEscape);
+  }, [open, requestClose]);
 
   useEffect(() => {
     if (!open) {
@@ -340,17 +357,7 @@ export function ReaderSettingsDialog({
   const readerControlsDisabled =
     readerPreferencesStatus === "loading" || !canPersistReaderPreferences;
 
-  const requestClose = (): void => {
-    closing.current = true;
-    onClose();
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      requestClose();
-      return;
-    }
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
     if (event.key !== "Tab" || dialogRef.current === null) {
       return;
     }

@@ -7,7 +7,7 @@ import sys
 from collections.abc import Mapping
 from typing import Final, NoReturn, cast
 
-from benchmarks.cli import PREFLIGHT_FIELDS, parse_preflight_request
+from benchmarks.cli import PREFLIGHT_FIELDS, CommandError, parse_preflight_request
 from benchmarks.cpu_fallback_result import (
     CpuFallbackResultError,
     assess_machine_result,
@@ -98,9 +98,11 @@ def main() -> int:
             )
         code = 0 if output.get("status") == "pass" else 2
     except CpuFallbackResultError as error:
-        failure_code = "quality-stale" if error.code == "quality-stale" else "invalid-request"
+        failure_code = (
+            error.code if error.code in ("quality-stale", "quality-busy") else "invalid-request"
+        )
         output, code = {"status": "fail", "failureCode": failure_code}, 2
-    except CpuFallbackResultCommandError:
+    except (CpuFallbackResultCommandError, CommandError):
         output, code = {"status": "fail", "failureCode": "invalid-request"}, 2
     print(json.dumps(output, ensure_ascii=True, separators=(",", ":")))
     return code

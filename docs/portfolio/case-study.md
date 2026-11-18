@@ -1,5 +1,7 @@
 # VoxLeaf: local AI through agentic development
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 VoxLeaf turns a local EPUB into an interactive reading and listening experience.
 The project combines a React frontend, a Rust desktop host and a Python inference
 service. Here, full stack means these cooperating local layers; the application
@@ -95,7 +97,7 @@ For a compact example of the review process, the
 ties selected-version diagnostics to regression assertions and a documented
 1,114-test Python run. That count describes its historical patch, not a new run
 or a code-coverage percentage. Current workflow results are on
-[GitHub Actions](https://github.com/mmjosedaniel/voxleaf/actions).
+GitHub Actions.
 
 ## Current product boundary
 

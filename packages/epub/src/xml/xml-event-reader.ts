@@ -445,18 +445,16 @@ function readXmlDocument(
         }),
       );
     });
-    parser.on("text", (text) => {
+    const emitText = (text: string) => {
       if (text.length === 0) {
         return;
       }
 
       documentBudget.observeText(text);
       emitSafely(consume, Object.freeze({ type: "text", text }));
-    });
-    parser.on("cdata", (text) => {
-      documentBudget.observeText(text);
-      emitSafely(consume, Object.freeze({ type: "text", text }));
-    });
+    };
+    parser.on("text", emitText);
+    parser.on("cdata", emitText);
     parser.on("comment", () => documentBudget.observeIgnoredNode());
     parser.on("processinginstruction", (instruction) => {
       documentBudget.observeIgnoredNode();

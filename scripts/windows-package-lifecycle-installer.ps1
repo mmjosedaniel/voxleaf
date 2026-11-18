@@ -1,3 +1,31 @@
+function Test-LifecycleInstallRegistration {
+  # The pinned current-user x64 NSIS reads the default product value in
+  # RestorePreviousInstallLocation and shares an account-wide uninstall entry.
+  $hive = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Registry64')
+  try {
+    $product = $hive.OpenSubKey('Software\VoxLeaf Project\VoxLeaf')
+    if ($null -ne $product) {
+      try {
+        $remembered = $product.GetValue('')
+        $defaultDestination = Join-Path $env:LOCALAPPDATA 'VoxLeaf'
+        if ($remembered -and $remembered -ne $defaultDestination) { return $true }
+      } finally { $product.Dispose() }
+    }
+    $uninstall = $hive.OpenSubKey('Software\Microsoft\Windows\CurrentVersion\Uninstall\VoxLeaf')
+    if ($null -ne $uninstall) {
+      $uninstall.Dispose()
+      return $true
+    }
+    return $false
+  } finally { $hive.Dispose() }
+}
+
+function Assert-LifecycleInstallRegistrationAbsent {
+  if (Test-LifecycleInstallRegistration) {
+    throw "windows-release-lifecycle-preexisting-registration"
+  }
+}
+
 function Initialize-LifecycleInstallerJob {
   if ("VoxLeaf.LifecycleInstallerJob" -as [type]) { return }
   Add-Type -TypeDefinition @'
@@ -96,7 +124,9 @@ namespace VoxLeaf {
                 startup.Size = (uint)Marshal.SizeOf(startup);
                 startup.Flags = UseShowWindow;
                 ProcessInformation created;
-                var command = new StringBuilder("\"" + installer + "\" /S");
+                // NSIS requires /D to be last and its absolute path to be unquoted.
+                string root = System.IO.Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "VoxLeaf");
+                var command = new StringBuilder("\"" + installer + "\" /S /D=" + root);
                 if (!CreateProcess(installer, command, IntPtr.Zero, IntPtr.Zero, false,
                     CreateSuspended | CreateNoWindow, IntPtr.Zero, null, ref startup, out created))
                     throw NativeFailure("create");

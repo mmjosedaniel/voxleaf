@@ -241,6 +241,10 @@ Use the component map and support matrix for current behavior. The catalogue bel
 
 ## Plans
 
+- [Windows build privacy](plans/completed/windows-build-privacy.md) identifies the verified Windows artifacts and the scope of the source privacy checks.
+
+- [November 17 findings corrections](plans/completed/november-17-findings-corrections.md) records acceptance for VF-0093 through VF-0132, including the Windows installer checks and local Chatterbox v8 recovery.
+
 - The [Codex contributor model rollout](plans/completed/codex-model-rollout.md) records the fresh-session role checks. The [historical comparison](plans/evidence/codex-model-rollout/historical-comparison.md) reports how the models handled two VoxLeaf cases.
 - [Four-pass findings corrections](plans/completed/four-pass-findings-corrections.md) records the accepted reader, EPUB, playback, release and benchmark fixes and their validation boundaries.
 - [Agent guidance simplification](plans/completed/agent-guidance-simplification.md) records the reduced procedures, corrected guidance and final acceptance authorities.

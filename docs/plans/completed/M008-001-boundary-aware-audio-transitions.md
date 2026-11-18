@@ -1,5 +1,7 @@
 # M008.1 boundary-aware audio transitions
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Preserve natural separation between independently generated local narration
@@ -198,12 +200,12 @@ human listening may tune a future version but cannot silently alter v1.
   the 19-file privacy/artifact scan, and `git diff --check`. Replacement
   required pull-request checks are the only remaining archival gate.
 - 2026-07-29: Pull request
-  [#150](https://github.com/mmjosedaniel/voxleaf/pull/150) Foundation
-  [run 30490042472](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472)
+  #150 Foundation
+  run 30490042472
   passed the required Ubuntu portable
-  [job 90705351522](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351522)
+  job 90705351522 (GitHub Actions run 30490042472)
   and Windows native
-  [job 90705351575](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351575)
+  job 90705351575 (GitHub Actions run 30490042472)
   checks. This closes the replacement clean-runner gate and completes M008.1.
 
 ## Discoveries and decisions

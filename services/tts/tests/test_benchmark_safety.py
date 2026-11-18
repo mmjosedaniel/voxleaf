@@ -5,12 +5,14 @@ from __future__ import annotations
 import copy
 import io
 import json
+import os
 import shutil
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import cast
+from typing import BinaryIO, cast
 from unittest.mock import Mock
 
 import pytest
@@ -44,6 +46,35 @@ from benchmarks.v14_authority import PROFILE_VERSION
 
 ORIGINAL = PowerSnapshot("381b4222-f694-41f0-9685-ff5bb260df2e", 900, 600, 3600, 1800)
 DISABLED = replace(ORIGINAL, standby_ac=0, standby_dc=0, hibernate_ac=0, hibernate_dc=0)
+
+
+@pytest.mark.parametrize("record_name", ["consumed.json", "settled.json", "restored.json"])
+def test_nov17_journal_publication_leaves_no_partial_final_entry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, record_name: str
+) -> None:
+    target = tmp_path / record_name
+    original_open = Path.open
+
+    @contextmanager
+    def interrupt(path: Path, mode: str) -> Iterator[BinaryIO]:
+        with original_open(path, mode) as stream:
+
+            def interrupted_write(data: bytes) -> int:
+                stream.write(data[:1])
+                stream.flush()
+                raise OSError("synthetic interruption")
+
+            yield cast(BinaryIO, Mock(wraps=stream, write=interrupted_write))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", interrupt)
+        with pytest.raises(OSError, match="synthetic interruption"):
+            safety.write_once(target, {"sample": "original"})
+    assert not target.exists()
+    safety.write_once(target, {"sample": "original"})
+    with pytest.raises(FileExistsError):
+        safety.write_once(target, {"sample": "conflict"})
+    assert safety.decode(target.read_bytes()) == {"sample": "original"}
 
 
 @pytest.mark.parametrize(
@@ -116,6 +147,8 @@ def test_fsf_cr3_valid_preparation_matches_execution_binding(
     payload.update(evidenceVersion=safety.VERSION, resultPurpose="official", sessionId="f" * 32)
     if family == "batch":
         payload["profileVersion"] = PROFILE_VERSION
+    else:
+        monkeypatch.setattr("benchmarks.v5_authority._git_is_strict_ancestor", lambda *_args: True)
     current = [ORIGINAL]
     monkeypatch.setattr(safety, "observe_power", lambda: current[0])
     monkeypatch.setattr("benchmarks.batch_official.ensure_raw_root_is_ignored", lambda _root: None)
@@ -133,6 +166,25 @@ def test_fsf_cr3_valid_preparation_matches_execution_binding(
         assert parse_dual_worker_command(payload).safety_binding == expected
     current[0] = DISABLED
     assert safety.claim(tmp_path, expected).binding == expected
+
+
+@pytest.mark.parametrize("invalid", ["authority", "ancestry"])
+def test_nov17_dual_preparation_rejects_wrong_lineage_before_observation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, invalid: str
+) -> None:
+    payload = _payload(purpose="official")
+    if invalid == "authority":
+        payload["authorityCommitSha"] = "a" * 40
+    ancestry = Mock(return_value=False)
+    monkeypatch.setattr("benchmarks.v5_authority._git_is_strict_ancestor", ancestry)
+    observe = Mock(return_value=ORIGINAL)
+    monkeypatch.setattr(safety, "observe_power", observe)
+    expected = safety.binding("dual", payload)
+    with pytest.raises(safety.SafetyError, match="result-before-authority"):
+        safety.prepare(tmp_path, expected)
+    observe.assert_not_called()
+    assert not (tmp_path / "benchmarks").exists()
+    assert ancestry.called == (invalid == "ancestry")
 
 
 def _prepare(
@@ -182,6 +234,136 @@ def test_fsf_vf0077_original_settings_bound_once_and_failed_run_remains_restorab
         safety.verify(tmp_path, expected)
     with pytest.raises(FileExistsError):
         safety.prepare(tmp_path, expected)
+
+
+@pytest.mark.parametrize("phase", ["consumed", "settled", "restored"])
+def test_nov17_interrupted_journal_operation_retries_with_same_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    phase: str,
+) -> None:
+    expected, settings = _prepare(monkeypatch, tmp_path)
+    path = safety.root(tmp_path, cast(str, expected["session"]))
+    target = path / f"{phase}.json"
+    original_link = os.link
+    disarmed = False
+
+    def interrupt(source: Path, destination: Path) -> None:
+        nonlocal disarmed
+        if destination == target and not disarmed:
+            disarmed = True
+            raise OSError("synthetic publication failure")
+        original_link(source, destination)
+
+    monkeypatch.setattr(os, "link", interrupt)
+    settings[0] = DISABLED
+    if phase == "consumed":
+        with pytest.raises(OSError, match="synthetic publication failure"):
+            safety.claim(tmp_path, expected)
+        assert not target.exists()
+    claim = safety.claim(tmp_path, expected)
+    raw, _ = _v14_raw()
+    raw["executionCommitSha"] = expected["execution"]
+    raw["schemaVersion"] = safety.BATCH_RAW_VERSION
+    cast(dict[str, object], raw["cleanup"])["sleepSettingRestored"] = False
+    cast(dict[str, object], raw["cleanup"])["rawSessionRemoved"] = False
+    if phase == "settled":
+        with pytest.raises(OSError, match="synthetic publication failure"):
+            claim.complete(raw, {"loads.json": LOADS})
+        assert not target.exists()
+    claim.complete(raw, {"loads.json": LOADS})
+    settings[0] = ORIGINAL
+    if phase == "restored":
+        with pytest.raises(OSError, match="synthetic publication failure"):
+            safety.finalize(tmp_path, expected)
+        assert not target.exists()
+    result = safety.finalize(tmp_path, expected)
+    assert result["eligibleForDerivation"] is True
+    assert safety.verify(tmp_path, expected).binding == expected
+
+
+@pytest.mark.parametrize("target_name", ["cpu-baseline.json", "trials.json"])
+def test_nov17_interrupted_private_publication_can_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, target_name: str
+) -> None:
+    payload = _payload(purpose="official", arm="gpu-solo")
+    baseline = (ROOT / "benchmarks/tts/dual-worker-result-v5-cpu-solo.json").read_bytes()
+    payload["priorCpuSoloSummarySha256"] = safety.digest(baseline)
+    expected = safety.binding("dual", payload)
+    monkeypatch.setattr("benchmarks.v5_authority._git_is_strict_ancestor", lambda *_args: True)
+    monkeypatch.setattr("benchmarks.batch_official.ensure_raw_root_is_ignored", lambda _repo: None)
+    settings = [ORIGINAL]
+    monkeypatch.setattr(safety, "observe_power", lambda: settings[0])
+    safety.prepare(tmp_path, expected)
+    settings[0] = DISABLED
+    claim = safety.claim(tmp_path, expected)
+    raw = _raw_fixture()
+    raw.update(
+        schemaVersion=safety.DUAL_RAW_VERSION,
+        executionCommitSha=expected["execution"],
+        authorityCommitSha=AUTHORITY_COMMIT_SHA,
+        arm=expected["arm"],
+    )
+    cast(dict[str, object], raw["cleanup"]).update(
+        sleepSettingRestored=False, rawSessionRemoved=False
+    )
+    trials: list[dict[str, str]] = [{"phase": "controlled-interruption"}]
+    auxiliary: dict[str, object] = {"trials.json": trials, "cpu-baseline.json": baseline}
+    selected = baseline if target_name == "cpu-baseline.json" else safety.encode(trials)
+    data = claim.path / "data"
+    interrupted: list[Path] = []
+    original_open = Path.open
+    original_unlink = Path.unlink
+
+    @contextmanager
+    def interrupted_open(path: Path, mode: str) -> Iterator[BinaryIO]:
+        with original_open(path, mode) as stream:
+
+            def write(value: bytes) -> int:
+                if value == selected:
+                    stream.write(value[:5])
+                    stream.flush()
+                    interrupted.append(path)
+                    raise OSError("private output interrupted")
+                return stream.write(value)
+
+            yield cast(BinaryIO, Mock(wraps=stream, write=write))
+
+    def interrupted_unlink(path: Path, missing_ok: bool = False) -> None:
+        if path in interrupted:
+            raise OSError("simulated forced termination before unlink")
+        original_unlink(path, missing_ok=missing_ok)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", interrupted_open)
+        patch.setattr(Path, "unlink", interrupted_unlink)
+        with pytest.raises(OSError, match="private output interrupted"):
+            claim.complete(raw, auxiliary)
+    assert len(interrupted) == 1 and interrupted[0].read_bytes() == selected[:5]
+    assert not (claim.path / "settled.json").exists()
+    foreign = data / "unrelated.tmp"
+    foreign.write_bytes(selected[:5])
+    with pytest.raises(safety.SafetyError, match=":files$"):
+        claim.complete(raw, auxiliary)
+    assert foreign.read_bytes() == selected[:5]
+    foreign.unlink()
+    interrupted[0].write_bytes(b"unmatched prefix")
+    with pytest.raises(safety.SafetyError, match=":digest$"):
+        claim.complete(raw, auxiliary)
+    assert interrupted[0].read_bytes() == b"unmatched prefix"
+    interrupted[0].write_bytes(selected[:5])
+    conflicting = data / target_name
+    conflicting.write_bytes(selected[:5])
+    with pytest.raises(safety.SafetyError, match=":digest$"):
+        claim.complete(raw, auxiliary)
+    assert conflicting.read_bytes() == selected[:5]
+    conflicting.unlink()
+    claim.complete(raw, auxiliary)
+    assert (data / target_name).read_bytes() == selected
+    assert interrupted[0].read_bytes() == selected[:5]
+    settings[0] = ORIGINAL
+    assert safety.finalize(tmp_path, expected)["eligibleForDerivation"] is True
+    assert safety.verify(tmp_path, expected).binding == expected
 
 
 @pytest.mark.parametrize(
@@ -343,6 +525,7 @@ def test_fsf_vf0091_real_children_distinct_phases_and_substitution_rejection(
     expected = safety.binding("dual", payload)
     current = [ORIGINAL]
     monkeypatch.setattr(safety, "observe_power", lambda: current[0])
+    monkeypatch.setattr("benchmarks.v5_authority._git_is_strict_ancestor", lambda *_args: True)
     monkeypatch.setattr("benchmarks.batch_official.ensure_raw_root_is_ignored", lambda _repo: None)
     safety.prepare(tmp_path, expected)
     current[0] = DISABLED

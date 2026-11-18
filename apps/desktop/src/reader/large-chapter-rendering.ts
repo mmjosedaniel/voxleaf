@@ -110,6 +110,7 @@ function countInline(
 ): void {
   switch (inline.kind) {
     case "code":
+    case "direction-span":
     case "emphasis":
     case "strong": {
       const current = effectiveTextContext(inline, inherited);

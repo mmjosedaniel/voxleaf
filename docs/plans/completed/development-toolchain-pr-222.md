@@ -1,5 +1,7 @@
 # Development toolchain compatibility for PR #222
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Prepare the existing development dependency PR #222 against current main, fixing
@@ -148,6 +150,6 @@ Host evidence is recorded under ignored `tmp/pr-222/`:
 Independent acceptance: `PR222-v3-20261009-A1`, APPROVE, no findings. The
 documentation closeout receives a separate review before commit. Exact-head
 remote CI is a separate integration gate: consult
-[PR #222](https://github.com/mmjosedaniel/voxleaf/pull/222) for its current result.
+PR #222 for its current result.
 No remote success or fresh model/installer acceptance is claimed by this record.
 The existing canonical system diagram still matches the implementation.

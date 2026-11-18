@@ -30,7 +30,10 @@ import {
   closeNativeSessionForRestart,
 } from "./native-startup-smoke.mjs";
 import { createNativeReaderScenarios } from "./native-smoke/reader-scenarios.mjs";
-import { createNativeTtsScenarios } from "./native-smoke/tts-scenarios.mjs";
+import {
+  createNativeTtsScenarios,
+  matchingNarrationElapsedMs,
+} from "./native-smoke/tts-scenarios.mjs";
 import {
   WebDriverClient,
   WebDriverClientError,
@@ -38,6 +41,73 @@ import {
 import { openEpubPublication } from "@voxleaf/epub";
 import { buildMinimalEpubFixture } from "../../../packages/epub/test-support/epub-fixture.ts";
 import { chatterboxPlaybackSpeedParagraph } from "./native-smoke/narration-fixture.mjs";
+
+test("NOV17 measurement accepts the completed edge for the observed operation only", () => {
+  assert.equal(matchingNarrationElapsedMs(1, 1, 32), 32);
+  assert.equal(matchingNarrationElapsedMs(1, 2, 1), null);
+  assert.equal(matchingNarrationElapsedMs(2, 1, 32), null);
+  assert.equal(matchingNarrationElapsedMs(0, 0, 0), null);
+  assert.equal(matchingNarrationElapsedMs(4, 4, null), null);
+  assert.equal(matchingNarrationElapsedMs(4, 4, -1), null);
+});
+
+test("NOV17 delayed observation preserves the first refill and rejects replacement", async () => {
+  const cases = [
+    [
+      {
+        playbackIndex: 7,
+        activeRefillIndex: 2,
+        completedRefillIndex: 1,
+        completedRefillMs: 32,
+      },
+      32,
+    ],
+    [
+      {
+        playbackIndex: 7,
+        activeRefillIndex: 3,
+        completedRefillIndex: 2,
+        completedRefillMs: 10,
+      },
+      null,
+    ],
+    [
+      {
+        playbackIndex: 8,
+        activeRefillIndex: 2,
+        completedRefillIndex: 1,
+        completedRefillMs: 10,
+      },
+      null,
+    ],
+  ];
+  for (const [next, elapsed] of cases) {
+    let now = 5_000;
+    const subject = createNativeTtsScenarios({
+      STARTUP_TIMEOUT_MS: 100,
+      now: () => now,
+      delay: async () => {
+        now += 122;
+      },
+    });
+    const driver = {
+      execute: async (script) => {
+        assert.match(script, /data-narration-completed-refill-index/);
+        return next;
+      },
+    };
+    assert.equal(
+      await subject.observeAdaptiveRefill(driver, {
+        playbackIndex: 7,
+        phase: "buffering",
+        activeRefillIndex: 1,
+        completedRefillIndex: 0,
+        completedRefillMs: null,
+      }),
+      elapsed,
+    );
+  }
+});
 
 test("PSC-CI restart waits for captured process exit after deleting the session", async () => {
   const events = [];
