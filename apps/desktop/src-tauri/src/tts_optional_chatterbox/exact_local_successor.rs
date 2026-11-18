@@ -161,7 +161,7 @@ pub(super) fn candidate_snapshot(
     Ok(snapshot)
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 fn env_path(name: &str) -> PathBuf {
     let path = PathBuf::from(std::env::var_os(name).expect("explicit v8 diagnostic directory"));
     assert!(path.is_absolute() && path.is_dir());
@@ -169,7 +169,7 @@ fn env_path(name: &str) -> PathBuf {
 }
 
 /// Reassemble and unpack verified build parts, then invoke the shipping tree/hash verifier.
-#[cfg(test)]
+#[cfg(all(test, windows))]
 pub(crate) fn admit_exact_local_v8(scratch: &Path) -> InstalledChatterboxRuntime {
     let dist = env_path("VOXLEAF_V8_DIST");
     let model_source = env_path("VOXLEAF_V8_MODELS");

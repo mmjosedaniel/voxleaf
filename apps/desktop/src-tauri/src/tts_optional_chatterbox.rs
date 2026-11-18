@@ -2863,9 +2863,9 @@ mod tests;
 
 #[cfg(any(
     feature = "local-chatterbox-v8-candidate",
-    all(test, feature = "release-locked-runtime")
+    all(test, windows, feature = "release-locked-runtime")
 ))]
 mod exact_local_successor;
 
-#[cfg(all(test, feature = "release-locked-runtime"))]
+#[cfg(all(test, windows, feature = "release-locked-runtime"))]
 pub(crate) use exact_local_successor::admit_exact_local_v8;
