@@ -190,7 +190,14 @@ function StatusCopy({
     case "removing":
       return <p aria-live="polite">Removing the local Chatterbox package.</p>;
     case "failed":
-      return renderOptionalChatterboxFailure(snapshot.failure);
+      return snapshot.removalSupported === false ? (
+        <p role="status">
+          The staged Chatterbox package could not be verified. Check it again
+          after its local files are restored.
+        </p>
+      ) : (
+        renderOptionalChatterboxFailure(snapshot.failure)
+      );
     case "withheld":
       return (
         <p>
@@ -237,9 +244,10 @@ export function OptionalChatterboxControls({
   const [exportStatus, setExportStatus] = useState("");
   const storageFootprintBytes = snapshot.installedBytes;
   const retryAcquisition =
-    snapshot.failure === "tts-optional-profile-download-failed" ||
-    snapshot.failure === "tts-optional-profile-insufficient-space" ||
-    snapshot.failure === "tts-optional-profile-invalid";
+    snapshot.removalSupported !== false &&
+    (snapshot.failure === "tts-optional-profile-download-failed" ||
+      snapshot.failure === "tts-optional-profile-insufficient-space" ||
+      snapshot.failure === "tts-optional-profile-invalid");
   const recheckCompatibility =
     snapshot.failure === "tts-optional-profile-incompatible-host" ||
     (retryAcquisition && !acquisitionAllowed);
@@ -331,6 +339,22 @@ export function OptionalChatterboxControls({
       setExporting(false);
     }
   };
+
+  const removeButton =
+    snapshot.removalSupported === false ? null : (
+      <button
+        type="button"
+        disabled={disabled || actionPending || downloadRequested}
+        onClick={() =>
+          run(
+            onRemove,
+            "Chatterbox could not be removed. Wait for any active operation to finish, then try again.",
+          )
+        }
+      >
+        Remove Chatterbox
+      </button>
+    );
 
   return (
     <section
@@ -494,18 +518,7 @@ export function OptionalChatterboxControls({
               Activate Chatterbox
             </button>
           )}
-          <button
-            type="button"
-            disabled={disabled || actionPending || downloadRequested}
-            onClick={() =>
-              run(
-                onRemove,
-                "Chatterbox could not be removed. Wait for any active operation to finish, then try again.",
-              )
-            }
-          >
-            Remove Chatterbox
-          </button>
+          {removeButton}
         </div>
       ) : null}
       {snapshot.state === "failed" ? (
@@ -529,18 +542,7 @@ export function OptionalChatterboxControls({
                 ? "Review Chatterbox download again"
                 : "Check Chatterbox again"}
           </button>
-          <button
-            type="button"
-            disabled={disabled || actionPending || downloadRequested}
-            onClick={() =>
-              run(
-                onRemove,
-                "Chatterbox could not be removed. Wait for any active operation to finish, then try again.",
-              )
-            }
-          >
-            Remove Chatterbox
-          </button>
+          {removeButton}
         </div>
       ) : null}
     </section>

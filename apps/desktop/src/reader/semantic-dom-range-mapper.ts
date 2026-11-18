@@ -106,6 +106,7 @@ function inlineLengthCodePoints(
         inlineLength = 1;
         break;
       case "code":
+      case "direction-span":
       case "emphasis":
       case "internal-link":
       case "strong":

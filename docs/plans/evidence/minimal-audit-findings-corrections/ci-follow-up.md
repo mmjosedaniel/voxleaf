@@ -1,9 +1,11 @@
 # MAF pull-request CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Scope and original failure
 
 PR #286 at `af852ee81f593998bd14f1a25d0877a9610e6bcf` failed two jobs in
-[Foundation checks run 40967802580](https://github.com/mmjosedaniel/voxleaf/actions/runs/40967802580).
+Foundation checks run 40967802580.
 Ubuntu Rust and the separate dependency audit passed. Entry worktree/index were
 clean on `codex/minimal-audit-findings-corrections`. The existing user authorization
 to commit and update this PR continues; no merge is authorized.

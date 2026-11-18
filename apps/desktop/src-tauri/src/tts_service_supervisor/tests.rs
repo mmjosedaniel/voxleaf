@@ -1,4 +1,140 @@
 use super::*;
+use crate::tts_service_protocol::encode_control;
+
+#[test]
+fn nov17_cancel_retires_matching_start_before_spawn() {
+    let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
+    let (selected, wait_selected) = mpsc::sync_channel(1);
+    let (release, wait_release) = mpsc::sync_channel(1);
+    let owner = Arc::clone(&supervisor);
+    let starting = thread::spawn(move || {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        R7_SELECTION.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                selected.send(()).unwrap();
+                wait_release.recv_timeout(Duration::from_secs(5)).unwrap();
+            }));
+        });
+        let result = owner.start_selected(Some("r7-es"), Some("es"), Some("start:nov17-a".into()));
+        (result, R7_SPAWNED.with(|slot| slot.borrow_mut().take()))
+    });
+    wait_selected.recv_timeout(Duration::from_secs(5)).unwrap();
+    let foreign = supervisor.shutdown_owned(None, Some("start:foreign"));
+    let cancelled = supervisor.shutdown_owned(None, Some("start:nov17-a"));
+    let competing = supervisor.start_owned(Some("start:nov17-b".into()));
+    release.send(()).unwrap();
+    let (started, spawn_binding) = starting.join().unwrap();
+    assert!(foreign.is_err());
+    assert!(cancelled.is_ok());
+    assert_eq!(competing, Err(TtsNativeFailure::Busy));
+    assert_eq!(started.unwrap_err(), TtsNativeFailure::Cancelled);
+    assert!(spawn_binding.is_none());
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    assert!(supervisor.start_owned(Some("start:nov17-c".into())).is_ok());
+    assert!(
+        supervisor
+            .shutdown_owned(None, Some("start:nov17-a"))
+            .is_ok()
+    );
+    assert!(
+        supervisor
+            .shutdown_owned(None, Some("start:nov17-b"))
+            .is_ok()
+    );
+    assert!(supervisor.active_session().is_ok());
+    supervisor
+        .shutdown_owned(None, Some("start:nov17-c"))
+        .unwrap();
+}
+
+#[test]
+fn nov17_shutdown_rejects_terminal_trailing_record() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "trailing-shutdown");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    supervisor.start().unwrap();
+    assert_eq!(
+        supervisor.shutdown(),
+        Err(TtsNativeFailure::ProtocolRejected)
+    );
+    assert!(supervisor.session.lock().unwrap().is_none());
+}
+
+#[cfg(windows)]
+#[test]
+fn nov17_graceful_shutdown_checks_live_stdout_through_eof() {
+    fn child_command() -> Command {
+        let mode = NOV17_STDOUT_MODE.with(|mode| mode.get());
+        let mut command = Command::new("node.exe");
+        command.args([
+            "-e",
+            r#"
+const fs = require("node:fs");
+const mode = process.argv[1];
+function read(size) {
+  const data = Buffer.alloc(size);
+  let offset = 0;
+  while (offset < size) {
+    const count = fs.readSync(0, data, offset, size - offset);
+    if (count === 0) process.exit(2);
+    offset += count;
+  }
+  return data;
+}
+function request() {
+  const header = read(12);
+  return JSON.parse(read(header.readUInt32BE(8)));
+}
+const { serviceInstanceId } = request();
+function write(kind, data = {}) {
+  const body = Buffer.from(JSON.stringify({
+    schemaVersion: 1, protocolVersion: 1, kind, serviceInstanceId, ...data
+  }));
+  const header = Buffer.from("564c54500001010000000000", "hex");
+  header.writeUInt32BE(body.length, 8);
+  fs.writeSync(1, Buffer.concat([header, body]));
+}
+const state = (value) => write("state", {state: value});
+state("handshaking");
+write("handshakeAccepted");
+state("unloaded");
+write("capabilities", {
+  report: {schemaVersion: 1, capabilities: {
+    localSpeechGeneration: "unknown", streamingGeneration: "unsupported",
+    generationCancellation: "unsupported", hardwareAcceleration: "unknown",
+    cpuFallback: "unsupported"
+  }},
+  cancellationContainment: "identity-invalidation-then-worker-termination"
+});
+if (request().kind !== "shutdown") process.exit(3);
+state("stopping");
+state("stopped");
+if (mode === "extra") state("stopped");
+if (mode === "partial") fs.writeSync(1, Buffer.from("VL"));
+if (mode === "held") setTimeout(() => {}, 2_000);
+"#,
+            mode,
+        ]);
+        command
+    }
+    thread_local! {
+        static NOV17_STDOUT_MODE: std::cell::Cell<&'static str> = const { std::cell::Cell::new("clean") };
+    }
+    let supervisor = TtsServiceSupervisor::with_child(ServiceChild::TestCommand(child_command));
+    for (mode, expected) in [
+        ("extra", Err(TtsNativeFailure::ProtocolRejected)),
+        ("partial", Err(TtsNativeFailure::ProtocolRejected)),
+        ("held", Err(TtsNativeFailure::TimedOut)),
+        ("clean", Ok(())),
+    ] {
+        NOV17_STDOUT_MODE.set(mode);
+        supervisor.start().unwrap();
+        COMMAND_BUDGET.set(Some(Duration::from_millis(750)));
+        let result = supervisor.shutdown().map(|_| ());
+        COMMAND_BUDGET.set(None);
+        assert_eq!(result, expected, "{mode}");
+        assert!(supervisor.session.lock().unwrap().is_none());
+    }
+}
 
 #[test]
 fn caf_r5_1_cancel_receipt_can_finish_cleanup_after_lost_reply() {
@@ -139,7 +275,7 @@ thread_local! {
 }
 
 type ControlWriteHook = Box<dyn FnMut(&Value) -> Result<(), TtsNativeFailure>>;
-type ReceiveHook = Box<dyn FnMut(Duration) -> Result<Frame, TtsNativeFailure>>;
+type ReceiveHook = Box<dyn FnMut(Duration) -> Result<Option<Frame>, TtsNativeFailure>>;
 
 pub(super) fn spawn_session_hook(
     configuration: &ServiceChild,
@@ -176,6 +312,7 @@ pub(super) fn r7_profile(
         service_module: "synthetic",
         runtime_environment: vec![("synthetic", binding)],
         numba_cache_root: None,
+        protocol: TtsChildProtocol::V1,
     }))
 }
 
@@ -250,7 +387,7 @@ pub(super) fn write_control_hook(value: &Value) -> Option<Result<(), TtsNativeFa
     CONTROL_WRITE_HOOK.with(|slot| slot.borrow_mut().as_mut().map(|hook| hook(value)))
 }
 
-pub(super) fn receive_hook(timeout: Duration) -> Option<Result<Frame, TtsNativeFailure>> {
+pub(super) fn receive_hook(timeout: Duration) -> Option<Result<Option<Frame>, TtsNativeFailure>> {
     RECEIVE_HOOK.with(|slot| slot.borrow_mut().as_mut().map(|hook| hook(timeout)))
 }
 
@@ -518,6 +655,7 @@ impl CommandFixture {
                     "load" => vec![state("loading"), state("warming")],
                     "warm" => vec![state("ready"), capabilities()],
                     "health" => vec![state("ready"), capabilities()],
+                    "shutdown" if slow_command == "trailing-shutdown" => vec![state("stopping"), state("stopped"), state("stopped")],
                     "shutdown" => vec![state("stopping"), state("stopped")],
                     "synthesize" => {
                         let segment = &control["segment"];
@@ -542,6 +680,9 @@ impl CommandFixture {
                 let mut frames = frames.into_iter();
                 RECEIVE_HOOK.with(|slot| {
                     *slot.borrow_mut() = Some(Box::new(move |timeout| {
+                        if frames.len() == 0 {
+                            return Ok(None);
+                        }
                         let now = COMMAND_CLOCK.get().unwrap();
                         let frame_delay = frame_delay + if frames.len() == 1 { final_extra } else { Duration::ZERO };
                         if frame_delay > timeout {
@@ -549,7 +690,7 @@ impl CommandFixture {
                             return Err(TtsNativeFailure::TimedOut);
                         }
                         COMMAND_CLOCK.set(Some(now + frame_delay));
-                        frames.next().ok_or(TtsNativeFailure::ChildUnavailable)
+                        Ok(frames.next())
                     }));
                 });
                 Ok(())
@@ -680,7 +821,7 @@ fn sac12_expired_or_late_queued_controls_never_update_lifecycle() {
         supervisor.set_state("loading").unwrap();
         let deadline = CommandDeadline::new(Duration::from_millis(10));
         sender
-            .send(Ok(state_frame(&session.service_instance_id, "ready")))
+            .send(Ok(Some(state_frame(&session.service_instance_id, "ready"))))
             .unwrap();
         if late_after_receive {
             RECEIVE_HOOK.with(|slot| {
@@ -690,7 +831,7 @@ fn sac12_expired_or_late_queued_controls_never_update_lifecycle() {
                             + Duration::from_millis(10)
                             + Duration::from_millis(1),
                     ));
-                    Ok(state_frame("service:synthetic-1", "ready"))
+                    Ok(Some(state_frame("service:synthetic-1", "ready")))
                 }))
             });
         } else {
@@ -1279,6 +1420,7 @@ fn chat_audit_f13_bootstraps_private_dlls_before_importing_chatterbox() {
         service_module: "voxleaf_tts.chatterbox_service",
         runtime_environment: Vec::new(),
         numba_cache_root: None,
+        protocol: TtsChildProtocol::V1,
     };
     let command = runtime.command().unwrap();
     assert_eq!(command.get_args().nth(1), Some(std::ffi::OsStr::new("-c")));
@@ -1491,7 +1633,7 @@ fn fixture_segment() -> Value {
 
 fn channel_session() -> (
     ServiceSession,
-    mpsc::SyncSender<Result<Frame, TtsNativeFailure>>,
+    mpsc::SyncSender<Result<Option<Frame>, TtsNativeFailure>>,
 ) {
     let (sender, frames) = mpsc::sync_channel(1);
     let session = ServiceSession {
@@ -1500,6 +1642,7 @@ fn channel_session() -> (
         input: ControlWriter::empty(),
         frames: Mutex::new(frames),
         process: Mutex::new(None),
+        protocol: TtsChildProtocol::V1,
     };
     (session, sender)
 }
@@ -1509,6 +1652,140 @@ fn state_frame(service_instance_id: &str, state: &str) -> Frame {
         kind: FrameKind::Control,
         payload: encode_control(&state_control(service_instance_id, state))
             .expect("state should encode"),
+    }
+}
+
+#[test]
+fn vf0114_prepare_binds_provider_loss_to_owned_v2_load_and_containment() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    for (protocol, faulty_stage, wrong_id, termination_fails, expected) in [
+        (
+            TtsChildProtocol::V2,
+            "load",
+            false,
+            false,
+            TtsNativeFailure::TorchCudaUnavailable,
+        ),
+        (
+            TtsChildProtocol::V2,
+            "load-after-progress",
+            false,
+            false,
+            TtsNativeFailure::TorchCudaUnavailable,
+        ),
+        (
+            TtsChildProtocol::V2,
+            "load",
+            true,
+            false,
+            TtsNativeFailure::ProtocolRejected,
+        ),
+        (
+            TtsChildProtocol::V2,
+            "warm",
+            false,
+            false,
+            TtsNativeFailure::ProtocolRejected,
+        ),
+        (
+            TtsChildProtocol::V2,
+            "generic-warm",
+            false,
+            false,
+            TtsNativeFailure::InternalFailure,
+        ),
+        (
+            TtsChildProtocol::V1,
+            "load",
+            false,
+            false,
+            TtsNativeFailure::ProtocolRejected,
+        ),
+        (
+            TtsChildProtocol::V2,
+            "load",
+            false,
+            true,
+            TtsNativeFailure::InternalFailure,
+        ),
+    ] {
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        let (mut session, _sender) = channel_session();
+        session.protocol = protocol;
+        let session = Arc::new(session);
+        *supervisor.session.lock().unwrap() = Some(Arc::clone(&session));
+        supervisor.set_state("unloaded").unwrap();
+        let id = &session.service_instance_id;
+        let preceding_states: &[_] = match faulty_stage {
+            "load" => &[],
+            "load-after-progress" => &["loading"],
+            _ => &["loading", "warming"],
+        };
+        let mut frames: Vec<_> = preceding_states
+            .iter()
+            .map(|state| Frame {
+                kind: FrameKind::Control,
+                payload: encode_child_control(&state_control(id, state), protocol).unwrap(),
+            })
+            .collect();
+        frames.push(Frame {
+            kind: FrameKind::Control,
+            payload: serde_json::to_vec(&json!({
+                "schemaVersion": 1, "protocolVersion": protocol as u16, "kind": "error",
+                "serviceInstanceId": if wrong_id { "service:foreign" } else { id },
+                "reason": if faulty_stage == "generic-warm" { "engine-failure" } else { "torch-cuda-unavailable" },
+                "error": {"schemaVersion": 1, "code": "internal-failure", "category": "internal", "severity": "fatal"},
+            })).unwrap(),
+        });
+        let mut frames = frames.into_iter();
+        RECEIVE_HOOK.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(move |_| {
+                frames
+                    .next()
+                    .map(Some)
+                    .ok_or(TtsNativeFailure::ChildUnavailable)
+            }))
+        });
+        let checks = Arc::new(AtomicU64::new(0));
+        let observed = checks.clone();
+        CONTROL_WRITE_HOOK.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(move |control| {
+                let index = observed.fetch_add(1, Ordering::Relaxed);
+                assert_eq!(control["kind"], if index == 0 { "load" } else { "warm" });
+                Ok(())
+            }))
+        });
+
+        assert_eq!(
+            supervisor
+                .prepare_measured_for(Some("service:stale"))
+                .unwrap_err(),
+            TtsNativeFailure::Cancelled,
+        );
+        assert_eq!(checks.load(Ordering::Relaxed), 0);
+        if termination_fails {
+            let _ = std::panic::catch_unwind(|| {
+                let _process = session.process.lock().unwrap();
+                panic!("synthetic termination ownership failure");
+            });
+        }
+        assert_eq!(
+            supervisor.prepare_measured_for(Some(id)).unwrap_err(),
+            expected
+        );
+        assert_eq!(
+            checks.load(Ordering::Relaxed),
+            if preceding_states.len() == 2 { 2 } else { 1 }
+        );
+        CONTROL_WRITE_HOOK.with(|hook| hook.borrow_mut().take());
+        RECEIVE_HOOK.with(|hook| hook.borrow_mut().take());
+        if termination_fails {
+            assert!(supervisor.shutdown_instance(Some(id)).is_err());
+            assert!(supervisor.active_session().is_ok());
+        } else {
+            assert!(supervisor.active_session().is_err());
+            assert!(supervisor.shutdown_instance(Some(id)).is_ok());
+        }
     }
 }
 
@@ -1545,17 +1822,17 @@ fn clb03_engine_errors_preserve_operational_classification() {
                 supervisor.lifecycle.lock().unwrap().active = Some(identity);
             }
             sender
-                .send(Ok(Frame {
+                .send(Ok(Some(Frame {
                     kind: FrameKind::Control,
                     payload: encode_control(&control).unwrap(),
-                }))
+                })))
                 .unwrap();
             assert_eq!(
                 supervisor.receive_control_with_engine_errors(
                     &session,
                     &CommandDeadline::new(Duration::from_secs(1)),
                     kind,
-                    true
+                    EngineErrorScope::Accept
                 ),
                 Err(expected)
             );
@@ -1677,17 +1954,21 @@ fn clb03_errors_do_not_weaken_identity_schema_or_sequence_validation() {
             _ => (),
         }
         sender
-            .send(Ok(Frame {
+            .send(Ok(Some(Frame {
                 kind: FrameKind::Control,
                 payload: serde_json::to_vec(&control).unwrap(),
-            }))
+            })))
             .unwrap();
         assert_eq!(
             supervisor.receive_control_with_engine_errors(
                 &session,
                 &CommandDeadline::new(Duration::from_secs(1)),
                 kind,
-                fault != "disallowed"
+                if fault == "disallowed" {
+                    EngineErrorScope::Reject
+                } else {
+                    EngineErrorScope::Accept
+                }
             ),
             Err(TtsNativeFailure::ProtocolRejected),
             "{fault}"
@@ -1721,7 +2002,7 @@ fn late_old_control_cannot_change_a_replacement_session() {
     *supervisor.session.lock().unwrap() = Some(Arc::new(replacement));
     supervisor.set_state("loading").unwrap();
     sender
-        .send(Ok(state_frame(&old.service_instance_id, "ready")))
+        .send(Ok(Some(state_frame(&old.service_instance_id, "ready"))))
         .unwrap();
     assert_eq!(
         supervisor.receive_control(&old, &CommandDeadline::new(Duration::from_secs(1)), "state"),
@@ -1751,7 +2032,7 @@ fn expected_state_returns_original_control_and_updates_lifecycle() {
     *supervisor.session.lock().unwrap() = Some(session.clone());
     let control = state_control(&session.service_instance_id, "ready");
     sender
-        .send(Ok(state_frame(&session.service_instance_id, "ready")))
+        .send(Ok(Some(state_frame(&session.service_instance_id, "ready"))))
         .expect("frame should be queued");
     assert_eq!(
         supervisor.receive_expected_state(
@@ -1771,7 +2052,10 @@ fn unexpected_valid_state_updates_lifecycle_before_rejection() {
     let session = Arc::new(session);
     *supervisor.session.lock().unwrap() = Some(session.clone());
     sender
-        .send(Ok(state_frame(&session.service_instance_id, "warming")))
+        .send(Ok(Some(state_frame(
+            &session.service_instance_id,
+            "warming",
+        ))))
         .expect("frame should be queued");
     assert_eq!(
         supervisor.receive_expected_state(
@@ -1792,7 +2076,7 @@ fn wrong_service_identity_rejects_before_lifecycle_update() {
         .expect("state should be seeded");
     let (session, sender) = channel_session();
     sender
-        .send(Ok(state_frame("service:synthetic-2", "ready")))
+        .send(Ok(Some(state_frame("service:synthetic-2", "ready"))))
         .expect("frame should be queued");
     assert_eq!(
         supervisor.receive_expected_state(
@@ -1987,6 +2271,7 @@ fn exact_runtime_never_writes_bytecode_into_verified_packages() {
         service_module: "voxleaf_tts.piper_service",
         runtime_environment: Vec::new(),
         numba_cache_root: None,
+        protocol: TtsChildProtocol::V1,
     };
     let command = runtime.command().expect("command should be created");
     assert!(command.get_envs().any(|(key, value)| {
@@ -2005,6 +2290,7 @@ fn exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_sta
         service_module: "voxleaf_tts.chatterbox_service",
         runtime_environment: Vec::new(),
         numba_cache_root: None,
+        protocol: TtsChildProtocol::V1,
     };
 
     let command = runtime.command().expect("command should be created");
@@ -2080,6 +2366,7 @@ fn exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package()
         service_module: "voxleaf_tts.chatterbox_service",
         runtime_environment: Vec::new(),
         numba_cache_root: Some(cache.clone()),
+        protocol: TtsChildProtocol::V1,
     };
 
     let command = runtime.command().expect("command should be created");
@@ -2104,6 +2391,7 @@ fn exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary() {
         service_module: "voxleaf_tts.chatterbox_service",
         runtime_environment: Vec::new(),
         numba_cache_root: None,
+        protocol: TtsChildProtocol::V1,
     };
 
     let command = runtime.command().expect("command should be created");

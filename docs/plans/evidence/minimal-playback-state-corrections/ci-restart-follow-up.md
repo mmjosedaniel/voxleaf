@@ -1,5 +1,7 @@
 # PR #291 native restart follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 This is a second, additive CI correction after commit
 `6e338eb29fb15783ba0ec7a10eeb787b57898266`. The
 [first follow-up](ci-follow-up.md) and its independent report retain their
@@ -8,7 +10,7 @@ original scope and uncertainty.
 ## Evidence and scope
 
 The single hosted retry of the original commit,
-[Windows job 124705058309](https://github.com/mmjosedaniel/voxleaf/actions/runs/41251601002/job/124705058309),
+Windows job 124705058309 (GitHub Actions run 41251601002),
 passed initial startup but failed at `native restart session creation` with
 `webdriver-session-not-created`. The raw log remains ignored locally as
 `tmp/evidence/psc-ci-follow-up/windows-retry.log`. This is distinct from the

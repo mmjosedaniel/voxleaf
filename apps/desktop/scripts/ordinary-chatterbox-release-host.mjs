@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
 import { clearTimeout, setTimeout } from "node:timers";
 import {
   access,
@@ -1174,6 +1175,24 @@ export async function runJourney(
   options,
   environment = process.env,
   {
+    checkInstallRegistration = async () => {
+      await promisify(execFile)(
+        path.join(
+          process.env.SystemRoot,
+          "System32/WindowsPowerShell/v1.0/powershell.exe",
+        ),
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          path.join(repositoryRoot, "scripts/run-owned-windows-installer.ps1"),
+          "-CheckRegistration",
+        ],
+        { windowsHide: true, timeout: 15000 },
+      );
+    },
     runInstaller: install = runInstaller,
     runUninstaller: uninstall = runUninstaller,
     runPreflight: preflight = runPreflight,
@@ -1217,6 +1236,7 @@ export async function runJourney(
     if (error?.message?.includes("preexisting-install-root")) throw error;
     if (!isMissing(error)) fail("install-root-check");
   }
+  await checkInstallRegistration();
   const installerDirectory = await mkdtemp(
     path.join(tmpdir(), "voxleaf-installer-"),
   );

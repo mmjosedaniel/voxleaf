@@ -1,5 +1,7 @@
 # Services function readability: PR #253 CI repair
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Repair the bounded dependency and compilation failures exposed while validating
@@ -145,5 +147,5 @@ of extraction, not coverage of the new ZIP name-decoding error branch.
 
 This closes the bounded local dependency/API repair. Hosted CI is pending at
 this historical closeout and must pass before the PR repair is declared complete;
-its later results belong to [PR #253](https://github.com/mmjosedaniel/voxleaf/pull/253).
+its later results belong to PR #253.
 No fresh installer, model inference or public-release claim is made.

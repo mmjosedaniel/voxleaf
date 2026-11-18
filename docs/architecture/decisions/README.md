@@ -1,5 +1,7 @@
 # Architecture decision records
 
+- [ADR-0078. Version the Chatterbox provider-loss signal](ADR-0078-version-chatterbox-provider-loss.md) records the verified worker, native containment and reader recovery boundaries.
+
 - [ADR-0077: Exclusive operations on ready quality sessions](ADR-0077-exclusive-ready-quality-operations.md) rejects overlapping mutations, derivation and cleanup without extending the sequential workflow.
 - [ADR-0076: Prospective benchmark safety evidence](ADR-0076-prospective-benchmark-safety-evidence.md) defines observed restoration and distinct v5 cancellation phases without changing historical contracts.
 - [ADR-0075: Optional Chatterbox staging reconciliation](ADR-0075-optional-staging-reconciliation.md) records startup and explicit Check ownership.
@@ -74,7 +76,7 @@ ADR-0002-short-description.md
 - [`ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md`](ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md): preserve resultless v7 and supersede it with exact local Qwen/Serena Spanish and Qwen/Aiden English v8 profiles before results.
 - [`ADR-0026-correct-bilingual-candidate-decision-authority.md`](ADR-0026-correct-bilingual-candidate-decision-authority.md): treat Qwen's approximately 1.44 RTF as constrained-buffer capacity evidence, require real Chatterbox and MOSS tests, and prohibit harness-recorded candidate rejection.
 - [`ADR-0027-freeze-chatterbox-cuda-v10-correction.md`](ADR-0027-freeze-chatterbox-cuda-v10-correction.md): preserve v9 MOSS evidence while freezing an exact CUDA 12.4 Chatterbox environment after the v9 CPU-wheel configuration stop.
-- [`ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md`](ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md): preserve v9/v10 evidence and freeze an explicit Torch 2.9.1+cu128 compatibility screen for the exact RTX 5060 host without recording a candidate rejection.
+- [`ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md`](ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md): preserve v9/v10 evidence and freeze an explicit Torch 2.9.1+cu128 compatibility screen on a representative RTX 50-series host without recording a candidate rejection.
 - [`ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md`](ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md): advance exact Chatterbox to the next full matrix, defer MOSS without rejection, and retain Qwen Serena/Aiden as hardware-dependent constrained-buffer candidates.
 - [`ADR-0030-freeze-corrective-full-evaluation-v12.md`](ADR-0030-freeze-corrective-full-evaluation-v12.md): freeze the complete Chatterbox bilingual matrix and independent Qwen language-quality controls before new result-bearing work.
 - [`ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admit Chatterbox for both languages and Qwen/Aiden English integration while retaining Qwen/Serena Spanish and explicit compatibility limits.

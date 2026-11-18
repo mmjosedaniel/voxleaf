@@ -34,7 +34,7 @@ import {
   processTerminated,
   removeWebDriverProfile,
   releaseEnvironment,
-  runJourney,
+  runJourney as runReleaseJourney,
   runNativeSmoke,
   runInstaller,
   runUninstaller,
@@ -49,6 +49,51 @@ import {
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
+function runJourney(options, environment, dependencies) {
+  return runReleaseJourney(options, environment, {
+    checkInstallRegistration: async () => {},
+    ...dependencies,
+  });
+}
+
+test("VF-0100 ordinary validator checks registration before touching data", async () => {
+  const owned = await mkdtemp(path.join(root, "admission-"));
+  const prior = process.env.LOCALAPPDATA;
+  const fixture = path.join(owned, "fixture.exe");
+  const data = path.join(owned, "com.voxleaf.desktop");
+  await mkdir(data);
+  await writeFile(path.join(data, "marker"), "original");
+  await writeFile(fixture, "synthetic");
+  process.env.LOCALAPPDATA = owned;
+  try {
+    await assert.rejects(
+      runJourney(
+        {
+          installedRoot: path.join(owned, "VoxLeaf"),
+          installer: fixture,
+          tauriDriver: fixture,
+          edgeDriver: fixture,
+          receipt: path.join(owned, "receipt.json"),
+          mode: "journey",
+        },
+        process.env,
+        {
+          checkInstallRegistration: async () => {
+            throw new Error("registered-install");
+          },
+          runInstaller: async () => {
+            throw new Error("unexpected-launch");
+          },
+        },
+      ),
+      /registered-install/,
+    );
+    assert.equal(await readFile(path.join(data, "marker"), "utf8"), "original");
+  } finally {
+    if (prior === undefined) delete process.env.LOCALAPPDATA;
+    else process.env.LOCALAPPDATA = prior;
+  }
+});
 after(async () => await rm(root, { recursive: true, force: true }));
 
 for (const mode of [
@@ -242,7 +287,7 @@ test("FSF-VF-0088 download probe rejects a response error after its barrier", as
   let reads = 0;
   const diagnostic = {
     source: "github-release",
-    artifactIndex: 0,
+    artifactIndex: 1,
     stage: "response",
     kind: "http-status",
     osError: null,
@@ -271,6 +316,8 @@ test("FSF-VF-0088 download probe rejects a response error after its barrier", as
 for (const variant of [
   "matching",
   "artifact",
+  "zero-index",
+  "string-index",
   "source",
   "kind",
   "os-error",
@@ -294,12 +341,14 @@ for (const variant of [
     let exportPath;
     const diagnostic = {
       source: "github-release",
-      artifactIndex: 0,
+      artifactIndex: 1,
       stage: "create-file",
       kind: "io",
       osError: 5,
     };
-    if (variant === "artifact") diagnostic.artifactIndex = 1;
+    if (variant === "artifact") diagnostic.artifactIndex = 2;
+    if (variant === "zero-index") diagnostic.artifactIndex = 0;
+    if (variant === "string-index") diagnostic.artifactIndex = "1";
     if (variant === "source") diagnostic.source = "hugging-face";
     if (variant === "kind") diagnostic.kind = "connection";
     if (variant === "os-error") diagnostic.osError = null;
@@ -768,6 +817,7 @@ let uninstalls=0;
 let failure;
 try {
   await runJourney({installedRoot,installer,tauriDriver:driver,edgeDriver:driver,receipt,mode:'journey'},process.env,{
+    checkInstallRegistration: async()=>{},
     runInstaller: async()=>{await mkdir(installedRoot);await mkdir(data);await writeFile(path.join(data,'sentinel'),'temporary');},
     runPreflight: async()=>({artifact:{executable:installer}}),
     runUninstaller: async()=>{uninstalls++;if(uncertain==='true')throw new Error('synthetic-uninstall-uncertain');await rmdir(installedRoot);},

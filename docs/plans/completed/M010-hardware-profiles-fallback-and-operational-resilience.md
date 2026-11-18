@@ -1,5 +1,7 @@
 # M010 hardware profiles, fallback, and operational resilience
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Add a privacy-safe, evidence-backed hardware compatibility and recovery layer
@@ -868,12 +870,12 @@ rewrite unrelated reader state.
   `git diff --check` also pass. Only replacement Ubuntu portable and Windows
   native pull-request checks remain before M010 and M008.1 can be archived.
 - 2026-07-29: Pull request
-  [#150](https://github.com/mmjosedaniel/voxleaf/pull/150) Foundation
-  [run 30490042472](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472)
+  #150 Foundation
+  run 30490042472
   passed the required Ubuntu portable
-  [job 90705351522](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351522)
+  job 90705351522 (GitHub Actions run 30490042472)
   and Windows native
-  [job 90705351575](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351575)
+  job 90705351575 (GitHub Actions run 30490042472)
   checks on the replacement closeout branch. This closes Milestone 7 and the
   M010 archival gate without changing the recorded support decision.
 - 2026-07-29: Implemented the corrective Qwen matcher rule after authority
@@ -1262,7 +1264,7 @@ rewrite unrelated reader state.
   app mount at `webdriver-session-not-created`; no native product assertion
   failed, and clean-host CI remained the authoritative packaged gate.
 - 2026-07-28: Pull request #146 run
-  [`30414223390`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390)
+  `30414223390`
   passed both required checks on the Milestone 3 implementation head:
   Ubuntu portable foundation in 1m56s and Windows native foundation in 14m36s.
   The clean-host Windows result closes the local pre-mount automation gap, so
@@ -1558,9 +1560,9 @@ Milestone 3 validation results:
   production Windows bounded-host-report smoke, native clippy, the release
   Tauri build, and Python source/wheel builds.
 - Pull request #146 Ubuntu portable foundation: passed in 1m56s
-  ([job `90457052148`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052148)).
+  (job `90457052148` (GitHub Actions run 30414223390)).
 - Pull request #146 Windows native foundation: passed in 14m36s
-  ([job `90457052208`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052208)),
+  (job `90457052208` (GitHub Actions run 30414223390)),
   closing the authoritative packaged validation gate.
 - `git diff --check`: passed.
 - Complete 28-file branch scope/privacy review: passed. Changes are limited to

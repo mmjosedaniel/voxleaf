@@ -42,6 +42,7 @@ export interface OptionalChatterboxSnapshot {
   readonly downloadBytes: number | undefined;
   readonly downloadedBytes: number;
   readonly installedBytes: number | undefined;
+  readonly removalSupported?: boolean;
   readonly temporaryBytes: number | undefined;
   readonly minimumFreeBytes: number | undefined;
   readonly coldStartSeconds: number | undefined;
@@ -147,6 +148,8 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     typeof state !== "string" ||
     !STATES.has(state as OptionalChatterboxState) ||
     downloadedBytes === undefined ||
+    (object.removalSupported !== undefined &&
+      typeof object.removalSupported !== "boolean") ||
     typeof object.licenseSummary !== "string" ||
     object.licenseSummary.length === 0 ||
     (object.failure !== null &&
@@ -195,6 +198,9 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     downloadBytes: values[0],
     downloadedBytes,
     installedBytes: values[1],
+    ...(object.removalSupported === undefined
+      ? {}
+      : { removalSupported: object.removalSupported }),
     temporaryBytes: values[2],
     minimumFreeBytes: values[3],
     coldStartSeconds: values[4],
@@ -338,12 +344,16 @@ export class OptionalChatterboxClient {
     try {
       const cancelled = await request;
       if (generation !== this.#actionGeneration) return cancelled;
-      if (cancelled.state !== "installed" || pairedDownload === undefined) {
+      const mayHaveCommitted =
+        cancelled.state === "installed" ||
+        cancelled.failure === "tts-optional-profile-invalid";
+      if (!mayHaveCommitted || pairedDownload === undefined) {
         if (this.#downloadAttempt === pairedDownload)
           this.#downloadAttempt = undefined;
         return cancelled;
       }
-      // Installed acknowledges the commit. The paired download still owns cleanup.
+      // Invalid can arrive after commit and failed cleanup. In both cases
+      // the paired download still owns cleanup and native state is authoritative.
       await pairedDownload.promise;
       if (generation !== this.#actionGeneration) return this.#snapshot;
       const current = await this.#startSnapshotRead();
@@ -369,6 +379,7 @@ export class OptionalChatterboxClient {
   }
 
   public async remove(): Promise<OptionalChatterboxSnapshot> {
+    if (this.#snapshot.removalSupported === false) return this.#snapshot;
     return this.#call("remove_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });

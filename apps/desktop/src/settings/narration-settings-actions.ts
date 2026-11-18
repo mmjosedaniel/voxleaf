@@ -132,10 +132,12 @@ export function createNarrationSettingsActions(development: boolean) {
       >,
       onAdmitted?: () => void,
     ): Promise<void> {
+      const snapshot = optional.observe();
+      if (snapshot.removalSupported === false) return;
       if (
         optional.downloadPending ||
         ["confirming", "downloading", "verifying", "removing"].includes(
-          optional.observe().state,
+          snapshot.state,
         )
       ) {
         throw new Error("Chatterbox is busy.");
@@ -155,9 +157,11 @@ export function createNarrationSettingsActions(development: boolean) {
       hardware: Pick<
         HardwareProfileCompatibilityCoordinator,
         "selectLanguage" | "check"
-      >,
+      > &
+        Partial<Pick<HardwareProfileCompatibilityCoordinator, "observe">>,
       coordinator: NarrationSettings | undefined,
     ): Promise<boolean> {
+      if (hardware.observe?.().canPersistLanguage === false) return false;
       const release = coordinator?.beginConfigurationChange?.();
       try {
         await stopForConfigurationChange(coordinator);

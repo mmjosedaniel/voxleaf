@@ -651,6 +651,49 @@ describe("reader Settings dialog", () => {
     expect(subject.onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("VF-0121 handles Escape at the viewport when acquisition replaces the focused Review button", async () => {
+    const hardware = hardwareSource();
+    hardware.publish({
+      ...hardware.observe(),
+      status: "compatible",
+      profiles: [
+        {
+          profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+          role: "standard",
+          supportState: "supported",
+          state: "compatible",
+          reason: undefined,
+        },
+      ],
+    });
+    const client = new OptionalChatterboxClient(async (command) => ({
+      ...new OptionalChatterboxClient().observe(),
+      state: command === "select_optional_chatterbox" ? "confirming" : "absent",
+      failure: null,
+    }));
+    const view = renderSettings({
+      hardwareCompatibility:
+        hardware as unknown as HardwareProfileCompatibilityCoordinator,
+    });
+    view.rerenderSettings({ optionalChatterbox: client });
+    const review = await screen.findByRole("button", {
+      name: "Review Chatterbox download",
+    });
+    review.focus();
+    expect(review).toHaveFocus();
+    fireEvent.click(review);
+    await screen.findByRole("button", { name: "Download Chatterbox" });
+    expect(review.isConnected).toBe(false);
+    expect(document.body).toHaveFocus();
+    expect(fireEvent.keyDown(document.body, { key: "Escape" })).toBe(false);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(view.onClose).toHaveBeenCalledTimes(1);
+
+    view.rerenderSettings({ open: false });
+    expect(fireEvent.keyDown(document.body, { key: "Escape" })).toBe(true);
+    expect(view.onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("routes a changed reading control through the existing preference boundary", () => {
     const subject = renderSettings();
     fireEvent.change(screen.getByLabelText("Content width"), {

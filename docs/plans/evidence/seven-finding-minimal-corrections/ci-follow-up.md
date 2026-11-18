@@ -1,11 +1,13 @@
 # PR #289 historical v6 fixture correction
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and tested HEAD: `68d8667e7421732bba5a8d6b16c621760f49c7fb`.
 This follow-up preserves the completed ExecPlan and R7-R1/R2/R3 evidence.
 
 ## Failure and bounded correction
 
-The [Ubuntu portable job](https://github.com/mmjosedaniel/voxleaf/actions/runs/41148280632/job/124378424037)
+The Ubuntu portable job (GitHub Actions run 41148280632 and job 124378424037)
 failed five Python tests: three v6 authority/adapter cases and two quality-session
 cases. Its result was 5 failed, 810 passed and 7 skipped. The frozen v6 profile
 correctly rejected the current normalizer after R7-05 changed that implementation.
@@ -54,6 +56,6 @@ The immutable CI review report and its closed identities accompany this
 follow-up. Review is required because the change corrects historical test input
 selection. The report records the exact verdict and evidence independently.
 Fresh hosted results for the eventual follow-up commit are reported in
-[PR #289](https://github.com/mmjosedaniel/voxleaf/pull/289); this document does not
+PR #289; this document does not
 claim an unexecuted hosted pass. The earlier Piper host-resource limitation in
 the completed plan remains outside this test-fixture correction.

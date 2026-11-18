@@ -9,6 +9,7 @@ publish = false
 [features]
 default = []
 release-locked-runtime = []
+local-chatterbox-v8-candidate = ["release-locked-runtime"]
 
 [build-dependencies]
 tauri-build = { version = "=2.6.3", features = [] }

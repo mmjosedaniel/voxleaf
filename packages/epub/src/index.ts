@@ -23,6 +23,7 @@ export type {
   SemanticBlock,
   SemanticBlockQuoteBlock,
   SemanticCodeInline,
+  SemanticDirectionSpanInline,
   SemanticDocument,
   SemanticDocumentLocation,
   SemanticDocumentTarget,

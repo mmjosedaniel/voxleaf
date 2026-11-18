@@ -6,14 +6,18 @@ directory is removed during derivation. Operations are sequential per session.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import os
 import re
 import stat
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
+from uuid import uuid4
 
 from benchmarks.power_observation import PowerSnapshot, observe_power
 
@@ -93,11 +97,26 @@ def read(path: Path) -> bytes:
 
 
 def write_once(path: Path, value: object) -> None:
+    _write_bytes_once(path, encode(value), ".journal-")
+
+
+def _write_bytes_once(path: Path, data: bytes, pending_prefix: str) -> None:
     _safe_path(path)
-    data = encode(value)
     require(len(data) <= MAX_FILE_BYTES, "input-limit")
-    with path.open("xb") as stream:
-        stream.write(data)
+    temporary = path.with_name(f"{pending_prefix}{uuid4().hex[:12]}.tmp")
+    created = False
+    try:
+        with temporary.open("xb") as stream:
+            created = True
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        # Publishing a hard link is atomic and never replaces an existing record.
+        os.link(temporary, path)
+    finally:
+        if created:
+            with suppress(OSError):
+                temporary.unlink()
 
 
 def binding(family: str, payload: dict[str, object]) -> dict[str, object]:
@@ -188,13 +207,63 @@ def _snapshot(value: object) -> tuple[int, PowerSnapshot]:
 
 def prepare(repository: Path, expected: dict[str, object]) -> dict[str, object]:
     from benchmarks.batch_official import ensure_raw_root_is_ignored
+    from benchmarks.v5_authority import V5AuthorityError, require_v5_lineage
 
+    if expected["family"] == "dual":
+        try:
+            require_v5_lineage(repository, expected["authority"], expected["execution"])
+        except V5AuthorityError:
+            raise SafetyError("result-before-authority") from None
     ensure_raw_root_is_ignored(repository)
     path = root(repository, cast(str, expected["session"]))
     original = _observation()
     path.mkdir(parents=True, exist_ok=False)
     write_once(path / "reservation.json", {"binding": expected, "original": original})
     return {"schemaVersion": VERSION, "sessionId": expected["session"], "status": "prepared"}
+
+
+def _private_output_names(binding: dict[str, object]) -> set[str]:
+    if binding["family"] == "batch":
+        return {"raw.json", "loads.json"}
+    names = {"raw.json", "trials.json"}
+    for role in ("cpu", "gpu"):
+        if binding[f"{role}Baseline"] is not None:
+            names.add(f"{role}-baseline.json")
+    return names
+
+
+def _pending_prefix(claim_sha: str, name: str, contents: bytes) -> str:
+    owner = hashlib.sha256(encode([claim_sha, name, digest(contents)])).digest()
+    identity = base64.urlsafe_b64encode(owner).decode("ascii").rstrip("=")
+    return f".p-{identity}-"
+
+
+def _check_private_entries(
+    data: Path, claim_sha: str, payloads: dict[str, bytes], *, complete: bool
+) -> None:
+    _safe_path(data)
+    prefixes = {
+        _pending_prefix(claim_sha, name, contents): contents for name, contents in payloads.items()
+    }
+    published: set[str] = set()
+    for entry in data.iterdir():
+        if entry.name in payloads:
+            published.add(entry.name)
+            continue
+        prefix, _, attempt = entry.name.rpartition("-")
+        expected = prefixes.get(f"{prefix}-")
+        require(
+            expected is not None and re.fullmatch(r"[0-9a-f]{12}\.tmp", attempt) is not None,
+            "files",
+        )
+        # Retain interrupted writes as private data until verified derivation removes
+        # the session data. Their names and bytes must belong to this exact claim.
+        assert expected is not None
+        _safe_path(entry)
+        require(stat.S_ISREG(entry.lstat().st_mode), "files")
+        require(expected.startswith(read(entry)), "digest")
+    if complete:
+        require(published == set(payloads), "files")
 
 
 @dataclass(frozen=True)
@@ -204,35 +273,37 @@ class ClaimedSession:
 
     def complete(self, raw: dict[str, object], auxiliaries: dict[str, object]) -> None:
         require(not (self.path / "restored.json").exists(), "already-finalized")
+        if (self.path / "settled.json").exists():
+            raise FileExistsError
+        _journal(self.path, self.binding)
+        claim_sha = digest(read(self.path / "consumed.json"))
         _check_raw(self.binding, raw)
+        require(set(auxiliaries) == _private_output_names(self.binding) - {"raw.json"}, "files")
+        payloads = {
+            name: value if isinstance(value, bytes) else encode(value)
+            for name, value in {"raw.json": raw, **auxiliaries}.items()
+        }
+        require(all(len(value) <= MAX_FILE_BYTES for value in payloads.values()), "input-limit")
         data = self.path / "data"
         _safe_path(data)
-        data.mkdir(exist_ok=False)
+        data.mkdir(exist_ok=True)
+        _check_private_entries(data, claim_sha, payloads, complete=False)
         files: dict[str, str] = {}
-        for name, value in {"raw.json": raw, **auxiliaries}.items():
-            require(
-                name
-                in {
-                    "raw.json",
-                    "loads.json",
-                    "trials.json",
-                    "cpu-baseline.json",
-                    "gpu-baseline.json",
-                }
-            )
-            if isinstance(value, bytes):
-                require(len(value) <= MAX_FILE_BYTES)
-                with (data / name).open("xb") as stream:
-                    stream.write(value)
-            else:
-                write_once(data / name, value)
-            files[name] = digest(read(data / name))
+        for name, contents in payloads.items():
+            destination = data / name
+            try:
+                _write_bytes_once(destination, contents, _pending_prefix(claim_sha, name, contents))
+            except FileExistsError:
+                # A retry after interrupted settlement can reuse identical private evidence.
+                require(read(destination) == contents, "digest")
+            files[name] = digest(contents)
+        _check_private_entries(data, claim_sha, payloads, complete=True)
         write_once(
             self.path / "settled.json",
             {
                 "binding": self.binding,
                 "files": files,
-                "claimSha256": digest(read(self.path / "consumed.json")),
+                "claimSha256": claim_sha,
             },
         )
 
@@ -294,23 +365,15 @@ def _journal(path: Path, expected: dict[str, object]) -> tuple[PowerSnapshot, in
 
 def _settled(path: Path, expected: dict[str, object]) -> dict[str, object]:
     settled = record(decode(read(path / "settled.json")), {"binding", "files", "claimSha256"})
-    require(
-        settled["binding"] == expected
-        and settled["claimSha256"] == digest(read(path / "consumed.json")),
-        "binding",
-    )
-    keys = (
-        {"raw.json", "loads.json"} if expected["family"] == "batch" else {"raw.json", "trials.json"}
-    )
-    if expected["family"] == "dual":
-        for role in ("cpu", "gpu"):
-            if expected[f"{role}Baseline"] is not None:
-                keys.add(f"{role}-baseline.json")
+    claim_sha = digest(read(path / "consumed.json"))
+    require(settled["binding"] == expected and settled["claimSha256"] == claim_sha, "binding")
+    keys = _private_output_names(expected)
     files = record(settled["files"], keys)
-    require({item.name for item in (path / "data").iterdir()} == keys, "files")
+    data = path / "data"
+    payloads = {name: read(data / name) for name in keys}
+    _check_private_entries(data, claim_sha, payloads, complete=True)
     values: dict[str, object] = {}
-    for name in keys:
-        contents = read(path / "data" / name)
+    for name, contents in payloads.items():
         require(files[name] == digest(contents), "digest")
         if name.endswith("-baseline.json"):
             require(digest(contents) == expected[name.split("-")[0] + "Baseline"], "baseline")

@@ -1,5 +1,7 @@
 # PR #289 Windows cancellation-fixture follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and tested HEAD: `ce11f0154efc701e20e1f38f0c4e2d800b8170b7`.
 This is a separate correction after the immutable historical-v6 CI follow-up.
 
@@ -9,7 +11,7 @@ On that head, Ubuntu portable, Ubuntu Rust and dependency audit passed.
 Ubuntu Python passed 818 tests with seven platform skips. Windows browser and
 packaged WebView2 passed, but the release-locked Rust suite failed:
 153 passed, one failed, seven ignored. The
-[original Windows job](https://github.com/mmjosedaniel/voxleaf/actions/runs/41150625835/job/124386023826)
+original Windows job (GitHub Actions run 41150625835 and job 124386023826)
 reported `Option::unwrap()` on the cleared cancellation field inside
 `saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging`.
 
@@ -47,6 +49,6 @@ Existing dependencies and Cargo artifacts were used without reinstallation.
 
 Independent review and exact source/receipt identities accompany this record.
 Fresh hosted status for the next commit remains available on
-[PR #289](https://github.com/mmjosedaniel/voxleaf/pull/289); no pending check is
+PR #289; no pending check is
 reported here as passed. The completed ExecPlan and prior review reports retain
 their original outcomes and limitations.

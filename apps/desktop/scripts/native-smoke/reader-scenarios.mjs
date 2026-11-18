@@ -1,6 +1,7 @@
 import console from "node:console";
 import { setTimeout as wait } from "node:timers/promises";
 import { runWebDriverInteractionWithRetry } from "../native-webdriver-client.mjs";
+import { measureReaderReflowAtPassage } from "./reader-reflow-measurement.mjs";
 
 export function createNativeReaderScenarios({
   assert,
@@ -1179,22 +1180,18 @@ export function createNativeReaderScenarios({
       renderInstrumentation.selectionStartedAt;
     const incrementalAppendMs =
       renderInstrumentation.completeAt - renderInstrumentation.firstContentAt;
+    await driver.execute(
+      `return (${measureReaderReflowAtPassage.toString()})({
+        readingLineInset: 24,
+        limitMs: ${NATIVE_REFLOW_LIMIT_MS},
+        prepare: true,
+      });`,
+    );
     await openReaderSettings(driver);
     const preferenceReflowMs = await driver.execute(
-      `return new Promise((resolve, reject) => {
-       const select = document.querySelector('select[name="textScale"]');
-       if (!(select instanceof HTMLSelectElement)) {
-         reject(new Error("reader-preference-unavailable"));
-         return;
-       }
-       const startedAt = performance.now();
-       select.value = "large";
-       select.dispatchEvent(new Event("change", { bubbles: true }));
-       requestAnimationFrame(() =>
-         requestAnimationFrame(() =>
-           requestAnimationFrame(() => resolve(performance.now() - startedAt)),
-         ),
-       );
+      `return (${measureReaderReflowAtPassage.toString()})({
+        readingLineInset: 24,
+        limitMs: ${NATIVE_REFLOW_LIMIT_MS},
       });`,
     );
     await closeReaderSettings(driver);

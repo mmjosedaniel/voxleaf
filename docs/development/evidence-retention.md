@@ -1,5 +1,7 @@
 # Evidence retention
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Commit concise acceptance summaries and the exact source identities needed to
 review them: commands, outcomes, environment, report ID, tested HEAD, hashes,
 invariants, and material limitations. Preserve failed baselines and later
@@ -87,8 +89,8 @@ Extract selected entries to ignored scratch, verify them against the manifest,
 and avoid overwriting unrelated work. This archive is local only.
 
 Reviewers with repository access can use the original commit's
-[native layout collection](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/native-rust-test-layout),
-[failed Linux comparison](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-comparison),
-and [Linux repair collection](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-repair).
+native layout collection (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/native-rust-test-layout`),
+failed Linux comparison (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-comparison`),
+and Linux repair collection (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-repair`).
 The retained indexes distinguish these historical captures from current files;
 local paths in unchanged reports remain historical execution provenance.

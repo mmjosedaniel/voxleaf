@@ -27,8 +27,13 @@ from .chatterbox_integrity import (
     safe_relative_path,
     sha256_file,
 )
-from .chatterbox_sources import LOCAL_RUNTIME_MODULES, historical_sources
+from .chatterbox_sources import (
+    LOCAL_RUNTIME_MODULES,
+    PROVIDER_LOSS_RUNTIME_MODULES,
+    historical_sources,
+)
 
+HISTORICAL_FIRST_RUNTIME_PART_URL: Final = "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001"
 HISTORICAL_INSTALLED_BYTES: Final = 8_228_465_805
 INSTALLED_BYTES_CORRECTION: Final = 37_504
 CURRENT_INSTALLED_BYTES: Final = HISTORICAL_INSTALLED_BYTES + INSTALLED_BYTES_CORRECTION
@@ -45,6 +50,7 @@ MODEL_CARD_SOURCE: Final = (
 PERTH_SOURCE: Final = (
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e"
 )
+SUCCESSOR_FIRST_RUNTIME_PART_URL: Final = "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v3/voxleaf-chatterbox-runtime-v3.zip.part-001"
 SUCCESSOR_BUILD_COMMIT: Final = "998c7b24cda7e969e9ed0344f348506bf38af3b0"
 SUCCESSOR_ARCHIVE_SHA256: Final = "87bfb2baae44cf13daae15328f8287cbee60e6782f04735d814d2ed849e8c45c"
 SUCCESSOR_RUNTIME_SHA256: Final = "470ec7e8a6fa1e91f9831e42de7988249220b51d4ecd4352452f3c70b2b6084a"
@@ -143,21 +149,20 @@ def load_source_manifest(
     expected_release: dict[str, object] = {
         "maximumPartBytes": MAXIMUM_PART_BYTES,
         "maximumParts": 4,
-        "repository": "mmjosedaniel/voxleaf",
+        "repository": HISTORICAL_FIRST_RUNTIME_PART_URL.removeprefix(
+            "https://github.com/"
+        ).partition("/releases/download/")[0],
         "tag": f"chatterbox-runtime-v{layout.version}",
     }
-    if package_version == "4":
-        expected_release = {
-            "maximumPartBytes": MAXIMUM_PART_BYTES,
-            "maximumParts": 4,
-            "published": False,
-            "admitted": False,
-        }
+    if package_version in {"4", "8"}:
+        expected_release = _local_release()
     if release != expected_release:
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "3" and manifest != successor_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version == "4" and manifest != local_source_manifest(base):
+        raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
+    if package_version == "8" and manifest != provider_loss_source_manifest(base):
         raise ReleaseChatterboxError("chatterbox-package-source-manifest-invalid")
     if package_version in {"5", "6", "7"} and manifest != security_source_manifest(
         base, package_version=package_version
@@ -239,12 +244,28 @@ def local_source_manifest(root: Path | None = None) -> dict[str, object]:
     manifest["packageId"] = PackageLayout("4").directory
     manifest["packageVersion"] = "4"
     manifest["runtimeModules"] = list(LOCAL_RUNTIME_MODULES)
-    manifest["runtimeRelease"] = {
+    manifest["runtimeRelease"] = _local_release()
+    return manifest
+
+
+def _local_release() -> dict[str, object]:
+    return {
         "maximumPartBytes": MAXIMUM_PART_BYTES,
         "maximumParts": 4,
         "published": False,
         "admitted": False,
     }
+
+
+def provider_loss_source_manifest(root: Path | None = None) -> dict[str, object]:
+    """Prepare a distinct producer with the exact v7 dependencies and model sources."""
+
+    manifest = load_source_manifest(root, package_version="7")
+    layout = PackageLayout("8")
+    manifest["packageId"] = layout.directory
+    manifest["packageVersion"] = layout.version
+    manifest["runtimeModules"] = list(PROVIDER_LOSS_RUNTIME_MODULES)
+    manifest["runtimeRelease"] = _local_release()
     return manifest
 
 
@@ -252,6 +273,13 @@ def write_local_source_manifest(root: Path | None = None) -> Path:
     base = root or repository_root()
     target = base / "services/tts/release/optional/chatterbox/source-manifest-v4.json"
     target.write_bytes(render_manifest(local_source_manifest(base)))
+    return target
+
+
+def write_provider_loss_source_manifest(root: Path | None = None) -> Path:
+    base = root or repository_root()
+    target = base / "services/tts/release/optional/chatterbox/source-manifest-v8.json"
+    target.write_bytes(render_manifest(provider_loss_source_manifest(base)))
     return target
 
 
@@ -275,10 +303,7 @@ def successor_acquisition_manifest(root: Path | None = None) -> dict[str, object
             "downloadBytes": size,
             "filename": f"voxleaf-chatterbox-runtime-v3.zip.part-{index:03}",
             "sha256": digest,
-            "url": (
-                "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v3/"
-                f"voxleaf-chatterbox-runtime-v3.zip.part-{index:03}"
-            ),
+            "url": SUCCESSOR_FIRST_RUNTIME_PART_URL.removesuffix("001") + f"{index:03}",
         }
         for index, (size, digest) in enumerate(SUCCESSOR_PARTS, start=1)
     ]
@@ -517,7 +542,7 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
                 "downloadBytes": 1_900_000_000,
                 "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
                 "sha256": "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b",
-                "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001",
+                "url": HISTORICAL_FIRST_RUNTIME_PART_URL,
             },
             {
                 "downloadBytes": 1_900_000_000,

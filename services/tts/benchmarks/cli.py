@@ -508,7 +508,10 @@ def _reap_measurement_process(
     try:
         if process.poll() is None:
             process.kill()
-        process.wait(timeout=max(0.001, deadline - time.monotonic()))
+        try:
+            process.wait(timeout=max(0.001, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            _fail("cleanup-failed")
     finally:
         unfinished = False
         for stream in (process.stdin, process.stdout):

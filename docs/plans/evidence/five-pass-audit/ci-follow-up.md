@@ -1,7 +1,9 @@
 # Five-pass audit CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Date: 2026-11-12. Base: `e859c64b4f6880ca13119af82fea73368d8b252c`.
-This is a bounded follow-up to [PR #312](https://github.com/mmjosedaniel/voxleaf/pull/312),
+This is a bounded follow-up to PR #312,
 not a revision of the completed ExecPlan or its issued evidence.
 
 ## Reproduction and correction

@@ -1,5 +1,6 @@
 [CmdletBinding()]
 param(
+  [switch]$LocalChatterboxCandidate,
   [switch]$Sign,
   [switch]$ScanWithDefender,
   [switch]$AttachOrdinaryEvidence,
@@ -45,6 +46,103 @@ function Invoke-CheckedCommand {
   & $Command @Arguments
   if ($LASTEXITCODE -ne 0) {
     throw "windows-release-command-failed"
+  }
+}
+
+function Get-EffectiveCargoRustFlags {
+  # Cargo exposes the selected flags to a build script after applying its own
+  # configuration hierarchy and target predicates. Use the same working
+  # directory and implicit host target as Tauri, with independent outputs.
+  $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+  $probe = Join-Path $tempRoot ("voxleaf-build-flags-" + [Guid]::NewGuid().ToString("N"))
+  $target = Join-Path $probe "target"
+  $previousBuildDir = [Environment]::GetEnvironmentVariable("CARGO_BUILD_BUILD_DIR")
+  New-Item -ItemType Directory -Path $probe | Out-Null
+  try {
+    $manifest = Join-Path $probe "Cargo.toml"
+    [IO.File]::WriteAllText($manifest, @'
+[package]
+name = "voxleaf-build-flags"
+version = "0.0.0"
+edition = "2024"
+
+[[bin]]
+name = "voxleaf-build-flags"
+path = "main.rs"
+
+[workspace]
+'@)
+    [IO.File]::WriteAllText((Join-Path $probe "main.rs"), "fn main() {}")
+    [IO.File]::WriteAllText((Join-Path $probe "build.rs"), @'
+use std::{env, fs, path::Path};
+
+fn main() {
+    let output = Path::new(env!("CARGO_MANIFEST_DIR")).join("rustflags");
+    let flags = env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default();
+    fs::write(output, flags).unwrap();
+}
+'@)
+    Push-Location -LiteralPath $srcTauri
+    try {
+      $env:CARGO_BUILD_BUILD_DIR = $target
+      Invoke-CheckedCommand cargo "build" "--quiet" "--offline" "--manifest-path" $manifest "--target-dir" $target | Out-Host
+    } finally {
+      [Environment]::SetEnvironmentVariable("CARGO_BUILD_BUILD_DIR", $previousBuildDir)
+      Pop-Location
+    }
+    return [IO.File]::ReadAllText((Join-Path $probe "rustflags"))
+  } finally {
+    $ownedProbe = Get-Item -LiteralPath $probe
+    if ($ownedProbe.Parent.FullName.TrimEnd('\') -ine $tempRoot.TrimEnd('\') -or
+        ($ownedProbe.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw "windows-release-flags-probe-path"
+    }
+    Remove-Item -LiteralPath $ownedProbe.FullName -Recurse -Force
+  }
+}
+
+function Invoke-PrivateWindowsTauriBuild {
+  param([string[]]$BuildArguments)
+
+  $separator = [char]31
+  $previousFlags = [Environment]::GetEnvironmentVariable("CARGO_ENCODED_RUSTFLAGS")
+  $flags = @()
+  if ($null -ne $previousFlags) {
+    if ($previousFlags) { $flags += $previousFlags.Split($separator) }
+  } elseif ($env:RUSTFLAGS) {
+    $flags += $env:RUSTFLAGS.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
+  } else {
+    $configuredFlags = Get-EffectiveCargoRustFlags
+    if ($configuredFlags) { $flags += $configuredFlags.Split($separator) }
+  }
+  $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE ".cargo" }
+  $rustupHome = if ($env:RUSTUP_HOME) { $env:RUSTUP_HOME } else { Join-Path $env:USERPROFILE ".rustup" }
+
+  # Rust uses the last matching prefix. Give the specific roots priority over
+  # the profile fallback and recognize both Windows path spellings.
+  $roots = @(
+    @{ Path = $env:USERPROFILE; Label = "profile" }
+    @{ Path = $env:TEMP; Label = "build-temp" }
+    @{ Path = $env:TMP; Label = "build-temp" }
+    @{ Path = $rustupHome; Label = "toolchain" }
+    @{ Path = $cargoHome; Label = "cargo" }
+    @{ Path = $repositoryRoot; Label = "voxleaf" }
+  )
+  foreach ($root in $roots) {
+    if (!$root.Path) { continue }
+    $path = [IO.Path]::GetFullPath($root.Path)
+    $flags += "--remap-path-prefix=$path=$($root.Label)"
+    $flags += "--remap-path-prefix=$($path.Replace('\', '/'))=$($root.Label)"
+  }
+  # Keep the executable's CodeView reference portable even when the Microsoft
+  # linker emits a PDB. The PDB itself is local build output.
+  $flags += "-Cdebuginfo=0", "-Clink-arg=/PDBALTPATH:%_PDB%"
+
+  try {
+    $env:CARGO_ENCODED_RUSTFLAGS = $flags -join $separator
+    Invoke-CheckedCommand pnpm.cmd "--filter" "@voxleaf/desktop" "tauri" "build" @BuildArguments
+  } finally {
+    [Environment]::SetEnvironmentVariable("CARGO_ENCODED_RUSTFLAGS", $previousFlags)
   }
 }
 
@@ -166,6 +264,18 @@ function Invoke-DefenderArtifactScan {
 
 Push-Location $repositoryRoot
 try {
+  if ($LocalChatterboxCandidate) {
+    if ($Sign -or $ScanWithDefender -or $AttachOrdinaryEvidence -or $LifecycleReceipt -or $OrdinaryChatterboxReceipt) {
+      throw "windows-release-candidate-arguments"
+    }
+    Assert-CanonicalCargoLayout
+    Invoke-PrivateWindowsTauriBuild @(
+      "--debug", "--no-bundle",
+      "--config", "src-tauri/tauri.local-chatterbox-v8.conf.json",
+      "--features", "local-chatterbox-v8-candidate"
+    )
+    return
+  }
   if ($AttachOrdinaryEvidence) {
     if ($Sign -or !$LifecycleReceipt -or !$OrdinaryChatterboxReceipt) {
       throw 'windows-release-attach-arguments'
@@ -179,6 +289,7 @@ try {
       throw "windows-release-build-authority"
     }
     $null = Get-LockedReleaseHash $buildAuthorityPath
+    $null = Get-LockedReleaseHash "$installer.sha256"
     $binarySignature = Get-AuthenticodeSignature -LiteralPath $binary
     $installerSignature = Get-AuthenticodeSignature -LiteralPath $installer
     $signatureStatus = Get-ReleaseSignatureStatus $binarySignature.Status $installerSignature.Status ($binarySignature.Status -eq 'Valid')
@@ -246,15 +357,10 @@ try {
     $configArgument = "src-tauri/$temporaryName"
   }
 
-  Invoke-CheckedCommand pnpm.cmd `
-    "--filter" `
-    "@voxleaf/desktop" `
-    "tauri" `
-    "build" `
-    "--config" `
-    $configArgument `
-    "--features" `
-    "release-locked-runtime"
+  Invoke-PrivateWindowsTauriBuild @(
+    "--config", $configArgument,
+    "--features", "release-locked-runtime"
+  )
 
   $binary = Join-Path $srcTauri "target\release\voxleaf-desktop.exe"
   $installer = Join-Path $srcTauri "target\release\bundle\nsis\VoxLeaf_0.1.0_x64-setup.exe"
@@ -300,8 +406,8 @@ try {
     "--lifecycle-status" $LifecycleStatus `
     "--write" @scanArguments
 
-  Move-Item -LiteralPath $temporaryBuildAuthority -Destination $buildAuthorityPath -Force
   [IO.File]::WriteAllText($checksumPath, "$installerHash *$([IO.Path]::GetFileName($installer))`n", $utf8)
+  Move-Item -LiteralPath $temporaryBuildAuthority -Destination $buildAuthorityPath -Force
 
   Write-Output "windows-release:built"
   Write-Output "installer=$installer"

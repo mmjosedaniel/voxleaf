@@ -20,6 +20,7 @@ from benchmarks.dual_worker_command import (
 )
 from benchmarks.dual_worker_contracts import DualWorkerBenchmarkError
 from benchmarks.dual_worker_official import GIB, DualWorkerOfficialError
+from benchmarks.v5_authority import AUTHORITY_COMMIT_SHA
 
 GIT_A = "a" * 40
 GIT_B = "b" * 40
@@ -53,6 +54,7 @@ def test_fsf_vf0091_unwitnessed_runtime_cannot_pass_active_trials(
 
 
 def _fsf_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("benchmarks.v5_authority._git_is_strict_ancestor", lambda *_args: True)
     monkeypatch.setattr(benchmark_safety, "claim", Mock())
     monkeypatch.setattr(benchmark_safety, "baseline_inputs", lambda *_args: {})
     monkeypatch.setattr(
@@ -69,6 +71,21 @@ def _fsf_host(monkeypatch: pytest.MonkeyPatch) -> None:
         "windows_system_memory",
         lambda: (16 * GIB, 0, 32 * GIB),
     )
+
+
+def test_nov17_wrong_lineage_does_not_consume_official_reservation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _fsf_host(monkeypatch)
+    payload = _payload(purpose="official")
+    payload["candidatePython"] = sys.executable
+    payload["authorityCommitSha"] = GIT_A
+    construct = Mock(side_effect=RuntimeError("synthetic-worker-boundary"))
+    monkeypatch.setattr(dual_worker_cli, "_runtime", construct)
+    with pytest.raises(DualWorkerCommandError, match="result-before-authority"):
+        dual_worker_cli._run(parse_dual_worker_command(payload))
+    cast(Mock, benchmark_safety.claim).assert_not_called()
+    construct.assert_not_called()
 
 
 @pytest.mark.parametrize("purpose", ["official", "concurrent-diagnostic"])
@@ -263,6 +280,7 @@ def _payload(
     if purpose == "official":
         value["sessionId"] = "0123456789abcdef0123456789abcdef"
         value["evidenceVersion"] = "tts-benchmark-safety-v1"
+        value["authorityCommitSha"] = AUTHORITY_COMMIT_SHA
     elif purpose == "concurrent-diagnostic":
         value["diagnosticMaxNewTokens"] = 256
     return value

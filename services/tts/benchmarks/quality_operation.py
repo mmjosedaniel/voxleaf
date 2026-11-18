@@ -26,7 +26,7 @@ def _acquire(descriptor: int) -> None:
 
 
 @contextmanager
-def quality_operation(session: Path) -> Iterator[None]:
+def quality_operation(session: Path, *, require_session: bool = True) -> Iterator[None]:
     """Reject overlap; close/process exit releases ownership without a stale lock.
 
     Callers pass their validated session path. The zero-byte sibling is retained:
@@ -74,7 +74,7 @@ def quality_operation(session: Path) -> Iterator[None]:
         except OSError as error:
             code = "session-busy" if error.errno in (errno.EACCES, errno.EAGAIN) else "session-lock"
             raise QualitySessionError(code) from None
-        if not session.is_dir():
+        if require_session and not session.is_dir():
             raise QualitySessionError("invalid-session")
         yield
     finally:

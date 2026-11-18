@@ -1,12 +1,14 @@
 # PR #303: platform-correct RAF-16 acquisition control
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and reviewed HEAD: `f4cb6b93c860f74b0faec54d14d062a5f8ffa0f2`.
 The worktree and index were clean at the start of this follow-up. The completed
 ExecPlan and original acceptance reports remain unchanged.
 
 ## Reproduction and cause
 
-[Ubuntu Rust job 125997539835](https://github.com/mmjosedaniel/voxleaf/actions/runs/41659171723/job/125997539835)
+Ubuntu Rust job 125997539835 (GitHub Actions run 41659171723)
 failed `raf_16_preflight_cannot_acquire_replacement_confirmation`: expected
 `Err(DownloadFailed)`, observed `Err(Unavailable)`. The default Rust suite had
 135 passing tests and one failure. The initial stale-attempt cancellation,

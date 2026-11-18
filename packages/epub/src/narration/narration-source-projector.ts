@@ -262,6 +262,13 @@ function projectSourceUnits(
     const { inline } = task;
 
     switch (inline.kind) {
+      case "direction-span":
+        pushInlineChildren(
+          tasks,
+          inline.children,
+          effectiveTextContext(inline, task.textContext),
+        );
+        break;
       case "code":
       case "emphasis":
       case "internal-link":
@@ -280,7 +287,7 @@ function projectSourceUnits(
           Object.freeze({
             kind: "line-break",
             sourceCodePoints: indexFrom(1),
-            textContext: task.textContext,
+            textContext: effectiveTextContext(inline, task.textContext),
           }),
         );
         break;

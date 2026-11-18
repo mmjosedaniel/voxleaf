@@ -161,6 +161,8 @@ export interface ReaderLongChapterEpubFixtureOptions {
   readonly semanticBlockCount: number;
   /** Optional zero-based block index for a navigable deep target heading. */
   readonly deepTargetBlockIndex?: number;
+  /** Add a second-line position in the paragraph immediately after the deep heading. */
+  readonly reflowTarget?: boolean;
 }
 
 export type ReaderRasterFixtureCase =
@@ -846,11 +848,15 @@ export async function buildReaderLongChapterEpubFixture(
 
   const blocks: string[] = ['<h1 id="chapter-one">Limit section</h1>'];
   for (let index = 1; index < semanticBlockCount; index += 1) {
-    blocks.push(
-      index === deepTargetBlockIndex
-        ? '<h2 id="deep-target">Deep target</h2>'
-        : "<p>Synthetic production reader block.</p>",
-    );
+    if (index === deepTargetBlockIndex) {
+      blocks.push('<h2 id="deep-target">Deep target</h2>');
+    } else if (options.reflowTarget && index - 1 === deepTargetBlockIndex) {
+      blocks.push(
+        `<p>${"Synthetic passage words for interior reflow measurement. ".repeat(12).trimEnd()}</p>`,
+      );
+    } else {
+      blocks.push("<p>Synthetic production reader block.</p>");
+    }
   }
 
   const navigationDocument =

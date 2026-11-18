@@ -239,8 +239,9 @@ export function HardwareCompatibilityControls({
       </p>
       {!snapshot.canPersistLanguage ? (
         <p>
-          A newer saved language preference is preserved and cannot be changed
-          by this version.
+          {snapshot.languagePreferenceStatus === "over-limit"
+            ? "The saved language preference is too large to change."
+            : "A newer saved language preference is preserved and cannot be changed by this version."}
         </p>
       ) : null}
       {selectable.length === 0 ? null : (
@@ -270,8 +271,9 @@ export function HardwareCompatibilityControls({
       )}
       {!snapshot.canPersistSelection ? (
         <p>
-          A newer saved profile preference is preserved and cannot be changed by
-          this version.
+          {snapshot.preferenceStatus === "over-limit"
+            ? "The saved profile preference is too large to change."
+            : "A newer saved profile preference is preserved and cannot be changed by this version."}
         </p>
       ) : null}
       <button

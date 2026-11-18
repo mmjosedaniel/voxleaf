@@ -1,5 +1,7 @@
 # Canonical system diagram
 
+On the native supervisor–Chatterbox worker edge, the local v8 candidate uses a v2 handshake and a load-specific provider error. The release channel selects v7 and its v1 handshake. The renderer receives the recovery classification only after the supervisor contains the matching worker. [Wire contract and admission decision](decisions/ADR-0078-version-chatterbox-provider-loss.md)
+
 [ADR-0065](decisions/ADR-0065-validated-runtime-and-narration-boundaries.md) retains
 this topology. The typed host-report edge includes default CUDA architecture;
 pending-start cancellation carries the original request ID. The existing

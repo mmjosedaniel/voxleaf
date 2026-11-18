@@ -987,7 +987,8 @@ async function packNarrationBoundaryScanInternal(
     if (candidate === undefined) {
       const unit = scan.normalized.units[startUnitIndex];
       if (
-        limits.segmentPolicy === NARRATION_PIPER_V2_SEGMENT_POLICY &&
+        (limits.segmentPolicy === NARRATION_PIPER_V2_SEGMENT_POLICY ||
+          limits.segmentPolicy === NARRATION_CHATTERBOX_V1_SEGMENT_POLICY) &&
         isUnprotectedSilentPrefix(unit) &&
         context.safeBoundaries[startUnitIndex + 1] === true
       ) {

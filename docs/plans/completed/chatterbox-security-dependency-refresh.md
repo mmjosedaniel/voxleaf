@@ -1,5 +1,7 @@
 # Chatterbox security dependency refresh
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Status: complete on 2026-10-07. See the final closeout for accepted review,
 integration CI and remaining release limitations. Earlier checkpoints preserve
 the investigation history.
@@ -428,7 +430,7 @@ The implementation, independent review and integration CI gates are complete.
 Earlier pending/failed statements above are chronological checkpoints, not the
 final outcome. The accepted integration commit is
 `f86b3b819a2f9440580d83e9eb1571fe7be8dcb0` on
-[PR #226](https://github.com/mmjosedaniel/voxleaf/pull/226).
+PR #226.
 
 Independent review
 [`CB-V3-INTEGRATION-REVIEW-01-20261007`](../evidence/chatterbox-security-refresh/change-review-integration-01.md)
@@ -441,9 +443,9 @@ that report. The index and worktree were clean after the integration commit.
 
 GitHub results for that exact commit:
 
-- [Production dependency graphs](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287128/job/112881253708): SUCCESS.
-- [Ubuntu portable foundation](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287013/job/112881254098): SUCCESS.
-- [Windows native foundation](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287013/job/112881254454): SUCCESS.
+- Production dependency graphs (GitHub Actions run 37647287128 and job 112881253708): SUCCESS.
+- Ubuntu portable foundation (GitHub Actions run 37647287013 and job 112881254098): SUCCESS.
+- Windows native foundation (GitHub Actions run 37647287013 and job 112881254454): SUCCESS.
 
 The local commands and exact results are preserved in
 [host validation](../evidence/chatterbox-security-refresh/integration-host-validation.md):

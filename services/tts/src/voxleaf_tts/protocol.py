@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from types import MappingProxyType
-from typing import BinaryIO, Final, cast
+from typing import BinaryIO, Final, Literal, cast
 
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
@@ -18,6 +18,7 @@ from .generated.protocol_schemas import SCHEMAS_BY_ID
 
 MAGIC: Final = b"VLTP"
 PROTOCOL_VERSION: Final = 1
+CHATTERBOX_PROTOCOL_VERSION: Final = 2
 SCHEMA_VERSION: Final = 1
 HEADER_BYTES: Final = 12
 MAX_CONTROL_PAYLOAD_BYTES: Final = 16_384
@@ -33,6 +34,7 @@ SAMPLE_FORMAT: Final = "float32-le"
 _HEADER: Final = struct.Struct(">4sHBBI")
 _FLOAT32_LE: Final = struct.Struct("<f")
 _CONTROL_SCHEMA_ID: Final = "urn:voxleaf:schema:tts-protocol-control:v1"
+_CHATTERBOX_CONTROL_SCHEMA_ID: Final = "urn:voxleaf:schema:tts-protocol-control:v2"
 _CONTROL_KINDS: Final = frozenset(
     {
         "handshake",
@@ -55,6 +57,7 @@ _CONTROL_KINDS: Final = frozenset(
 
 type JsonScalar = None | bool | int | float | str
 type FrozenJson = JsonScalar | tuple[FrozenJson, ...] | Mapping[str, FrozenJson]
+type ProtocolVersion = Literal[1, 2]
 
 
 class FrameKind(IntEnum):
@@ -85,6 +88,7 @@ class ProtocolReason(StrEnum):
     FORMAT_MISMATCH = "format-mismatch"
     BUSY = "busy"
     ENGINE_FAILURE = "engine-failure"
+    TORCH_CUDA_UNAVAILABLE = "torch-cuda-unavailable"
     ENGINE_TIMEOUT = "engine-timeout"
     OPERATION_CANCELLED = "operation-cancelled"
     RESOURCE_EXHAUSTED = "resource-exhausted"
@@ -129,10 +133,15 @@ def _schema_registry() -> Registry:
     return registry
 
 
-_CONTROL_VALIDATOR: Final = Draft202012Validator(
-    SCHEMAS_BY_ID[_CONTROL_SCHEMA_ID],
-    registry=_schema_registry(),
-)
+_SCHEMA_REGISTRY: Final = _schema_registry()
+_CONTROL_VALIDATORS: Final = {
+    PROTOCOL_VERSION: Draft202012Validator(
+        SCHEMAS_BY_ID[_CONTROL_SCHEMA_ID], registry=_SCHEMA_REGISTRY
+    ),
+    CHATTERBOX_PROTOCOL_VERSION: Draft202012Validator(
+        SCHEMAS_BY_ID[_CHATTERBOX_CONTROL_SCHEMA_ID], registry=_SCHEMA_REGISTRY
+    ),
+}
 
 
 def _payload_bounds(kind: FrameKind) -> tuple[int, int]:
@@ -159,7 +168,9 @@ def _read_exact(reader: BinaryIO, count: int, *, clean_eof: bool = False) -> byt
     return bytes(buffer)
 
 
-def read_frame(reader: BinaryIO) -> Frame | None:
+def read_frame(
+    reader: BinaryIO, *, protocol_version: ProtocolVersion = PROTOCOL_VERSION
+) -> Frame | None:
     """Read one record, rejecting its declared bound before payload allocation."""
 
     raw_header = _read_exact(reader, HEADER_BYTES, clean_eof=True)
@@ -169,7 +180,7 @@ def read_frame(reader: BinaryIO) -> Frame | None:
     magic, version, raw_kind, flags, payload_bytes = _HEADER.unpack(raw_header)
     if magic != MAGIC:
         raise ProtocolFailure(ProtocolReason.MALFORMED_FRAME)
-    if version != PROTOCOL_VERSION:
+    if version != protocol_version:
         raise ProtocolFailure(ProtocolReason.UNSUPPORTED_PROTOCOL_VERSION)
     try:
         kind = FrameKind(raw_kind)
@@ -190,7 +201,9 @@ def read_frame(reader: BinaryIO) -> Frame | None:
     return Frame(kind=kind, payload=payload)
 
 
-def encode_frame(kind: FrameKind, payload: bytes) -> bytes:
+def encode_frame(
+    kind: FrameKind, payload: bytes, *, protocol_version: ProtocolVersion = PROTOCOL_VERSION
+) -> bytes:
     """Encode one already-owned bounded record."""
 
     minimum, maximum = _payload_bounds(kind)
@@ -198,13 +211,15 @@ def encode_frame(kind: FrameKind, payload: bytes) -> bytes:
         raise ProtocolFailure(ProtocolReason.EMPTY_PAYLOAD)
     if len(payload) > maximum:
         raise ProtocolFailure(ProtocolReason.OVER_LIMIT)
-    return _HEADER.pack(MAGIC, PROTOCOL_VERSION, int(kind), 0, len(payload)) + payload
+    return _HEADER.pack(MAGIC, protocol_version, int(kind), 0, len(payload)) + payload
 
 
-def write_frame(writer: BinaryIO, frame: Frame) -> None:
+def write_frame(
+    writer: BinaryIO, frame: Frame, *, protocol_version: ProtocolVersion = PROTOCOL_VERSION
+) -> None:
     """Write one complete record without retaining another pending record."""
 
-    encoded = encode_frame(frame.kind, frame.payload)
+    encoded = encode_frame(frame.kind, frame.payload, protocol_version=protocol_version)
     view = memoryview(encoded)
     offset = 0
     while offset < len(encoded):
@@ -235,7 +250,9 @@ def _freeze_json(value: object) -> FrozenJson:
     return cast(JsonScalar, value)
 
 
-def _read_supported_versions(value: object) -> Mapping[str, object]:
+def _read_supported_versions(
+    value: object, expected_protocol_version: ProtocolVersion
+) -> Mapping[str, object]:
     if not isinstance(value, dict):
         raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
 
@@ -250,7 +267,7 @@ def _read_supported_versions(value: object) -> Mapping[str, object]:
         raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
     if schema_version != SCHEMA_VERSION:
         raise ProtocolFailure(ProtocolReason.UNSUPPORTED_SCHEMA_VERSION)
-    if protocol_version != PROTOCOL_VERSION:
+    if protocol_version != expected_protocol_version:
         raise ProtocolFailure(ProtocolReason.UNSUPPORTED_PROTOCOL_VERSION)
     return value
 
@@ -264,6 +281,7 @@ def _expected_error_code(reason: str) -> str:
         return "resource-exhausted"
     if reason in {
         "engine-failure",
+        "torch-cuda-unavailable",
         "engine-timeout",
         "format-mismatch",
         "sequence-gap",
@@ -330,7 +348,9 @@ def _semantic_validate(message: Mapping[str, object]) -> None:
             raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
 
 
-def decode_control_payload(payload: bytes) -> Mapping[str, FrozenJson]:
+def decode_control_payload(
+    payload: bytes, *, protocol_version: ProtocolVersion = PROTOCOL_VERSION
+) -> Mapping[str, FrozenJson]:
     """Decode, structurally validate, semantically validate, and freeze one control."""
 
     if not payload:
@@ -352,17 +372,19 @@ def decode_control_payload(payload: bytes) -> Mapping[str, FrozenJson]:
     except (ValueError, RecursionError):
         raise ProtocolFailure(ProtocolReason.MALFORMED_JSON) from None
 
-    message = _read_supported_versions(value)
+    message = _read_supported_versions(value, protocol_version)
     kind = message.get("kind")
     if not isinstance(kind, str) or kind not in _CONTROL_KINDS:
         raise ProtocolFailure(ProtocolReason.UNKNOWN_MESSAGE_KIND)
-    if not _CONTROL_VALIDATOR.is_valid(message):
+    if not _CONTROL_VALIDATORS[protocol_version].is_valid(message):
         raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE)
     _semantic_validate(message)
     return cast(Mapping[str, FrozenJson], _freeze_json(message))
 
 
-def encode_control_message(message: Mapping[str, object]) -> bytes:
+def encode_control_message(
+    message: Mapping[str, object], *, protocol_version: ProtocolVersion = PROTOCOL_VERSION
+) -> bytes:
     """Encode a schema-valid control object as compact deterministic UTF-8 JSON."""
 
     try:
@@ -375,7 +397,7 @@ def encode_control_message(message: Mapping[str, object]) -> bytes:
         ).encode("utf-8")
     except (TypeError, ValueError, RecursionError) as error:
         raise ProtocolFailure(ProtocolReason.INVALID_MESSAGE) from error
-    decode_control_payload(payload)
+    decode_control_payload(payload, protocol_version=protocol_version)
     return payload
 
 

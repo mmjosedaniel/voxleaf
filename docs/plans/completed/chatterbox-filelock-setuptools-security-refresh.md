@@ -1,5 +1,7 @@
 # Chatterbox v6 filelock and setuptools security refresh
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Prepare and validate an additive Chatterbox v6 runtime for PR #272, replacing
@@ -999,7 +1001,7 @@ is still pending and is not inferred from v5 or CLB evidence.
 
 ## Concrete publication candidate
 
-Published prerelease: [`chatterbox-runtime-v6`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v6).
+Published prerelease: `chatterbox-runtime-v6`.
 The user approved the exact three parts below after independent preparation
 review. Older tags/assets are preserved; no model files or VoxLeaf installer
 were published. Upload and publication readback matched the approved identities.

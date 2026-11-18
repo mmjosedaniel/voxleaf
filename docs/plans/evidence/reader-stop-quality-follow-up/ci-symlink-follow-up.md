@@ -1,5 +1,7 @@
 # PR #325 native link test follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base/HEAD `7ae2c940faae245a632ca26329ec0e39fef44244`, branch
 `codex/revalidated-findings-execplan`, initially clean tree/index.
 This bounded patch changes one assertion's baseline in the existing Python
@@ -8,7 +10,7 @@ test and its documentation. See [review R03](ci-review-r03.md) and
 
 ## Trigger and correction
 
-[Foundation run 43996966830](https://github.com/mmjosedaniel/voxleaf/actions/runs/43996966830)
+Foundation run 43996966830
 passed Ubuntu portable/Rust, Windows browser and packaged WebView2 startup.
 Windows then reached Python tests: 1,232 passed and two VF-0082 native symlink
 cases failed. The separate production dependency audit passed. This was not

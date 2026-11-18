@@ -1,5 +1,7 @@
 # Chatterbox v7 msgpack security refresh
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Completed on 2026-10-27: verified package retained and published, V7 integrated,
 independent local acceptance obtained, and all four hosted checks passed on
 integration commit `5695f4ed4a52885e6d6aa03976d23b5c34defde8`. The staged
@@ -147,7 +149,7 @@ Original temporary storage was preserved. `C1-retained-package` ran
 copied runtime, archive and all ordered parts. Part hashes were checked again
 before uploading; no package rebuild or model download occurred.
 
-Published prerelease: <https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v7>,
+Published prerelease: `chatterbox-runtime-v7`,
 release ID `425862980`, target `a74fc85be0c93fe7abdecbfcaf633ecd6cf1a569`,
 published `2026-10-27T19:05:33Z`. GitHub readback confirmed all three exact
 sizes/digests, public uploaded state, prerelease status and unchanged latest
@@ -263,14 +265,14 @@ blob checks resolved this without discarding or changing any staged content.
 Staged diff/evidence checks passed.
 
 Integration commit `5695f4ed4a52885e6d6aa03976d23b5c34defde8` was pushed to
-[PR #278](https://github.com/mmjosedaniel/voxleaf/pull/278); worktree and index
+PR #278; worktree and index
 were clean at that checkpoint. The GitHub connector returned 403 editing PR
 metadata; authenticated `gh pr edit --body-file` succeeded. The title and body
 now describe NCC corrections plus V7 and retain validation failures/limits.
 
 Fresh hosted runs for this head:
-[Foundation checks 40572573748](https://github.com/mmjosedaniel/voxleaf/actions/runs/40572573748)
-and [Release dependency audit 40572573753](https://github.com/mmjosedaniel/voxleaf/actions/runs/40572573753).
+Foundation checks 40572573748
+and Release dependency audit 40572573753.
 Both started; all four jobs are pending/in progress at this entry. The earlier
 preparation-head audit failure is preserved, not attributed to this new head.
 

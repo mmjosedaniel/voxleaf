@@ -147,6 +147,10 @@ export interface AdaptiveBufferSchedulerObservation {
   readonly playableSampleFrames: number;
   readonly playableDurationMs: number;
   readonly effectiveListeningDurationMs: number;
+  readonly initialPlaybackLeadMs: number | null;
+  readonly bufferingMs: number;
+  readonly activeRefillIndex: number | undefined;
+  readonly lastCompletedRefill: AdaptiveBufferRefill | undefined;
   readonly playbackRateState: NarrationPlaybackRateStateV3;
   readonly targetBufferMs: number;
   readonly lowBuffer: boolean;
@@ -156,6 +160,11 @@ export interface AdaptiveBufferSchedulerObservation {
   readonly discardedAudioUnitCount: number;
   readonly resourceSnapshot: AdaptiveBufferResourceSnapshot;
   readonly nextAction: AdaptiveBufferSchedulerAction;
+}
+
+interface AdaptiveBufferRefill {
+  readonly index: number;
+  readonly elapsedMs: number;
 }
 
 interface RetainedAudioUnit {
@@ -325,6 +334,11 @@ export class AdaptiveBufferScheduler {
   #resources = emptyResources();
   #rangeComplete = false;
   #initialPlaybackCommitted = false;
+  #initialPlaybackLeadMs: number | null = null;
+  #bufferingMs = 0;
+  #bufferingStartedAtMs: number | undefined;
+  #refillIndex = 0;
+  #lastCompletedRefill: AdaptiveBufferRefill | undefined;
   #automaticRefillPending = false;
   #playbackRateState = initialNarrationPlaybackRateStateV3();
   #activePlaybackSequence: number | undefined;
@@ -371,6 +385,17 @@ export class AdaptiveBufferScheduler {
       playableDurationMs:
         playableMillisecondsFromSampleFrames(playableSampleFrames),
       effectiveListeningDurationMs,
+      initialPlaybackLeadMs: this.#initialPlaybackLeadMs,
+      bufferingMs:
+        this.#bufferingMs +
+        (this.#bufferingStartedAtMs === undefined
+          ? 0
+          : Math.max(0, this.#clock.nowMs - this.#bufferingStartedAtMs)),
+      activeRefillIndex:
+        this.#bufferingStartedAtMs === undefined
+          ? undefined
+          : this.#refillIndex,
+      lastCompletedRefill: this.#lastCompletedRefill,
       playbackRateState: this.#playbackRateState,
       targetBufferMs,
       lowBuffer:
@@ -427,7 +452,7 @@ export class AdaptiveBufferScheduler {
     }
     this.#serviceState = "failed";
     if (this.#playableSampleFrames() === 0) {
-      this.#playbackState = "failed";
+      this.#setPlaybackState("failed");
     }
   }
 
@@ -521,8 +546,7 @@ export class AdaptiveBufferScheduler {
       activeNarrationPreparations: 0,
     };
     this.#serviceState = "failed";
-    this.#playbackState =
-      this.#playableSampleFrames() === 0 ? "failed" : this.#playbackState;
+    if (this.#playableSampleFrames() === 0) this.#setPlaybackState("failed");
   }
 
   public beginSynthesis(): string {
@@ -570,7 +594,7 @@ export class AdaptiveBufferScheduler {
       this.#settleActiveSynthesis();
       this.#serviceState = "failed";
       if (this.#playableSampleFrames() === 0) {
-        this.#playbackState = "failed";
+        this.#setPlaybackState("failed");
       }
       return "invalid";
     }
@@ -676,6 +700,7 @@ export class AdaptiveBufferScheduler {
         : "after-complete-unit-ended-before-successor-start",
     );
     this.#activePlaybackSequence = current.sequence;
+    this.#initialPlaybackLeadMs ??= this.#effectiveListeningDurationMs();
     this.#initialPlaybackCommitted ||= this.#playbackState === "playing";
     this.#automaticRefillPending = false;
     return this.#playbackRateState.activeRatePercent!;
@@ -691,7 +716,7 @@ export class AdaptiveBufferScheduler {
     this.#settleActiveSynthesis();
     this.#serviceState = "failed";
     if (this.#playableSampleFrames() === 0) {
-      this.#playbackState = "failed";
+      this.#setPlaybackState("failed");
     }
   }
 
@@ -750,14 +775,14 @@ export class AdaptiveBufferScheduler {
     ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
-    this.#playbackState = "paused";
+    this.#setPlaybackState("paused");
   }
 
   public playAvailableAudio(): boolean {
     if (!this.#canPlayAvailableAudio()) {
       return false;
     }
-    this.#playbackState = "playing";
+    this.#setPlaybackState("playing");
     this.#initialPlaybackCommitted = true;
     this.#automaticRefillPending = false;
     return true;
@@ -767,11 +792,10 @@ export class AdaptiveBufferScheduler {
     if (this.#playbackState !== "paused") {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
-    this.#playbackState =
-      this.#initialPlaybackCommitted && this.#playableSampleFrames() > 0
-        ? "playing"
-        : "preparing";
-    if (this.#playbackState === "playing") this.#automaticRefillPending = false;
+    const resumesWithAudio =
+      this.#initialPlaybackCommitted && this.#playableSampleFrames() > 0;
+    this.#setPlaybackState(resumesWithAudio ? "playing" : "preparing");
+    if (resumesWithAudio) this.#automaticRefillPending = false;
     this.#refreshPlaybackState();
   }
 
@@ -814,7 +838,7 @@ export class AdaptiveBufferScheduler {
     this.#activeSynthesis = undefined;
     this.#rangeComplete = false;
     this.#activePlaybackSequence = undefined;
-    this.#playbackState = "stopped";
+    this.#setPlaybackState("stopped");
     this.#serviceState = transition === "cancel" ? "cancelling" : "stopping";
     return transition;
   }
@@ -1041,6 +1065,36 @@ export class AdaptiveBufferScheduler {
     }
   }
 
+  public hasRemainingPlayback(): boolean {
+    return (
+      !this.#rangeComplete ||
+      this.#audioUnits.length > 0 ||
+      this.#pendingSegments.length > 0 ||
+      this.#activeSynthesis !== undefined
+    );
+  }
+
+  #setPlaybackState(state: AdaptiveBufferPlaybackState): void {
+    if (state === this.#playbackState) return;
+    const now = this.#clock.nowMs;
+    if (this.#bufferingStartedAtMs !== undefined) {
+      const elapsedMs = Math.max(0, now - this.#bufferingStartedAtMs);
+      this.#bufferingMs += elapsedMs;
+      if (state === "playing") {
+        this.#lastCompletedRefill = Object.freeze({
+          index: this.#refillIndex,
+          elapsedMs,
+        });
+      }
+      this.#bufferingStartedAtMs = undefined;
+    }
+    if (state === "buffering") {
+      this.#refillIndex += 1;
+      this.#bufferingStartedAtMs = now;
+    }
+    this.#playbackState = state;
+  }
+
   #refreshPlaybackState(): void {
     const playableFrames = this.#playableSampleFrames();
     const effectiveListeningDurationMs = this.#effectiveListeningDurationMs();
@@ -1056,16 +1110,16 @@ export class AdaptiveBufferScheduler {
         this.#pendingSegments.length === 0 &&
         this.#activeSynthesis === undefined
       ) {
-        this.#playbackState = "complete";
+        this.#setPlaybackState("complete");
         this.#playbackRateState = Object.freeze({
           ...this.#playbackRateState,
           activeRatePercent: null,
           pendingRatePercent: null,
         });
       } else if (this.#serviceState === "failed") {
-        this.#playbackState = "failed";
+        this.#setPlaybackState("failed");
       } else if (this.#initialPlaybackCommitted) {
-        this.#playbackState = "buffering";
+        this.#setPlaybackState("buffering");
         this.#automaticRefillPending = true;
       }
       return;
@@ -1085,7 +1139,7 @@ export class AdaptiveBufferScheduler {
       this.#activeSynthesis === undefined &&
       effectiveListeningDurationMs === 0
     ) {
-      this.#playbackState = "playing";
+      this.#setPlaybackState("playing");
       return;
     }
     const target = createAdaptiveBufferThresholds(
@@ -1099,11 +1153,11 @@ export class AdaptiveBufferScheduler {
         : undefined,
     );
     if (effectiveListeningDurationMs >= target.targetBufferMs) {
-      this.#playbackState = "playing";
+      this.#setPlaybackState("playing");
     } else if (this.#automaticRefillPending) {
-      this.#playbackState = "buffering";
+      this.#setPlaybackState("buffering");
     } else if (!this.#initialPlaybackCommitted) {
-      this.#playbackState = "preparing";
+      this.#setPlaybackState("preparing");
     }
   }
 

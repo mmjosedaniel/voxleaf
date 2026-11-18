@@ -1,12 +1,14 @@
 # Portfolio CI diagnosis: VF-0057
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base: `97d36c213e16ea015c24b1589454d61dab4379ea`.
 Owner: `apps/desktop/src-tauri/src/tts_service_supervisor/tests.rs`.
 Scope: cancellation test ordering only; production supervisor bytes unchanged.
 
-The [previous main run](https://github.com/mmjosedaniel/voxleaf/actions/runs/43625830795)
+The previous main run (GitHub Actions run 43625830795)
 failed the SAC12 cancellation test at `matches!(extra, Err(TtsNativeFailure::Busy))`.
-The [current main run](https://github.com/mmjosedaniel/voxleaf/actions/runs/43642787754)
+The current main run (GitHub Actions run 43642787754)
 and PR #317 checks subsequently passed. Neither outcome identifies the exact
 hosted scheduling sequence.
 

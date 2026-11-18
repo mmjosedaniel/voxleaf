@@ -67,6 +67,7 @@ fn runtime(root: &Path, models: &Path, cache: &Path, language: &'static str) -> 
         service_module: "voxleaf_tts.chatterbox_service",
         runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE", language)],
         numba_cache_root: Some(cache.to_path_buf()),
+        protocol: TtsChildProtocol::V1,
     }
 }
 
@@ -149,6 +150,87 @@ impl Drop for StopOwnedSupervisor {
         let _ = self.0.force_stop();
         CHATTERBOX_OBSERVER.with(|slot| *slot.borrow_mut() = None);
     }
+}
+
+#[cfg(feature = "release-locked-runtime")]
+#[test]
+#[ignore = "explicit verified local v8, six models, and the native CUDA host"]
+fn vf0114_packaged_v8_distinguishes_torch_cuda_loss_during_owned_prepare() {
+    use crate::host_profile_detection::optional_cuda_bf16_profile_admitted;
+    use crate::tts_optional_chatterbox::admit_exact_local_v8;
+
+    let base = PathBuf::from(
+        std::env::var_os("VOXLEAF_V8_SCRATCH").expect("short disposable v8 scratch root required"),
+    );
+    assert!(base.is_absolute());
+    let scratch = base
+        .canonicalize()
+        .unwrap()
+        .join(format!("prepare-{}", std::process::id()));
+    fs::create_dir(&scratch).unwrap();
+    struct RemoveOwnedScratch(PathBuf);
+    impl Drop for RemoveOwnedScratch {
+        fn drop(&mut self) {
+            if self.0.is_dir() {
+                let _ = fs::remove_dir_all(&self.0);
+            }
+        }
+    }
+    let _scratch_cleanup = RemoveOwnedScratch(scratch.clone());
+    let package = admit_exact_local_v8(&scratch);
+    assert!(optional_cuda_bf16_profile_admitted(0, 0, 0, 0, 0));
+    let supervisor = Arc::new(TtsServiceSupervisor::with_child(ServiceChild::Unavailable));
+    let _stop = StopOwnedSupervisor(Arc::clone(&supervisor));
+    let empty_models = scratch.join("empty-model-control");
+    fs::create_dir(&empty_models).unwrap();
+    for (condition, expected) in [
+        (
+            "torch-cuda-hidden",
+            Some(TtsNativeFailure::TorchCudaUnavailable),
+        ),
+        (
+            "model-files-missing",
+            Some(TtsNativeFailure::InternalFailure),
+        ),
+        ("healthy", None),
+    ] {
+        let mut exact = ExactRuntime::installed_chatterbox(package.clone(), "es");
+        if condition == "torch-cuda-hidden" {
+            exact
+                .runtime_environment
+                .push(("CUDA_VISIBLE_DEVICES", "-1"));
+        } else if condition == "model-files-missing" {
+            exact.model_root.clone_from(&empty_models);
+        }
+        *supervisor.child_configuration.lock().unwrap() = ServiceChild::Exact(exact);
+        let start_request = format!("start:vf0114-{condition}");
+        supervisor.start_owned(Some(start_request.clone())).unwrap();
+        let current = supervisor.active_session().unwrap();
+        let service_id = current.service_instance_id.clone();
+        assert_eq!(current.protocol, TtsChildProtocol::V2);
+        let prepared = supervisor.prepare_measured_for(Some(&service_id));
+        if let Some(expected) = expected {
+            assert_eq!(prepared.unwrap_err(), expected);
+            assert!(current.process.lock().unwrap().is_none());
+            assert!(supervisor.active_session().is_err());
+        } else {
+            verify_exact_capabilities(&prepared.unwrap().records).unwrap();
+        }
+        let receipt = supervisor
+            .shutdown_owned(Some(&service_id), Some(&start_request))
+            .unwrap();
+        assert_eq!(receipt[1], state_control(&service_id, "stopped"));
+        assert!(current.process.lock().unwrap().is_none());
+        assert!(supervisor.active_session().is_err());
+        assert!(supervisor.lifecycle.lock().unwrap().active.is_none());
+        assert!(optional_cuda_bf16_profile_admitted(0, 0, 0, 0, 0));
+        eprintln!(
+            "native-v8-prepare: {condition} => {} (owned child contained; native CUDA available)",
+            expected.map_or("ready", TtsNativeFailure::code)
+        );
+    }
+    fs::remove_dir_all(&scratch).unwrap();
+    assert!(!scratch.exists());
 }
 
 #[test]

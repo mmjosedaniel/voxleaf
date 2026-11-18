@@ -86,6 +86,32 @@ export function ProductNarrationControls({
       data-narration-recovery-phase={snapshot.recovery.phase}
       data-narration-recovery-code={snapshot.recovery.failureCode ?? "none"}
       data-narration-playable-ms={snapshot.state?.readyMs ?? 0}
+      data-narration-initial-playback-lead-ms={
+        snapshot.metrics.initialPlaybackLeadMs ?? ""
+      }
+      data-narration-active-refill-index={snapshot.metrics.activeRefillIndex}
+      data-narration-refill-playback-index={
+        snapshot.metrics.refillPlaybackIndex
+      }
+      data-narration-completed-refill-index={
+        snapshot.metrics.lastCompletedRefill?.index
+      }
+      data-narration-completed-refill-ms={
+        snapshot.metrics.lastCompletedRefill?.elapsedMs
+      }
+      data-narration-active-synthesis-index={
+        snapshot.metrics.activeSynthesisIndex
+      }
+      data-narration-stop-index={snapshot.metrics.stopIndex}
+      data-narration-cancelled-stop-index={
+        snapshot.metrics.lastStopCancellation?.stopIndex
+      }
+      data-narration-cancelled-synthesis-index={
+        snapshot.metrics.lastStopCancellation?.synthesisIndex
+      }
+      data-narration-terminal-cancellation-ms={
+        snapshot.metrics.lastStopCancellation?.elapsedMs
+      }
       data-narration-target-ms={snapshot.state?.targetMs ?? 0}
       data-narration-service-state={snapshot.serviceState}
       data-narration-underruns={snapshot.metrics.underrunCount}

@@ -7,6 +7,7 @@ import type {
   SemanticInline,
   SensitivePublicationText,
 } from "@voxleaf/epub";
+import { openEpubPublication } from "@voxleaf/epub";
 import { createIndex } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -58,6 +59,70 @@ function locatedBlock(
 }
 
 describe("semantic DOM range mapping", () => {
+  it.each([
+    ["small", ""],
+    ["a", ""],
+    ["a", ' href="https://example.invalid/direction-label"'],
+  ])(
+    "VF-0096 round-trips an authored direction on <%s%s> across strong markup",
+    async (element, attributes) => {
+      const { buildMinimalEpubFixture } =
+        await import("../../../../packages/epub/test-support/epub-fixture");
+      const result = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr"><body><p>A<${element} dir="rtl"${attributes}>א<strong>ב</strong>ג</${element}>Z</p><small dir="rtl">ד<strong>ה</strong>ו<p>Block retained.</p>ז<strong>ח</strong>ט</small></body></html>`,
+        }),
+      );
+      if (!result.ok) throw new Error(result.detail);
+      const publication = result.publication;
+      try {
+        const document = publication.documents.find(
+          ({ location }) => location.kind === "spine",
+        )!;
+        const located = publication.locators[0]!;
+        expect(JSON.stringify(document)).not.toContain("example.invalid");
+        const mapper = new SemanticDomRangeMapper();
+        render(
+          <SemanticDocumentContent
+            document={document}
+            locatedBlocks={publication.locators}
+            domRangeMapper={mapper}
+          />,
+        );
+        const paragraphs = screen.getAllByRole("paragraph");
+        expect(paragraphs.map((paragraph) => paragraph.textContent)).toEqual([
+          "AאבגZ",
+          "דהו",
+          "Block retained.",
+          "זחט",
+        ]);
+        for (const [emphasized, isolated] of [
+          ["ב", "אבג"],
+          ["ה", "דהו"],
+          ["ח", "זחט"],
+        ]) {
+          const wrapper = screen
+            .getByText(emphasized!)
+            .closest("strong")?.parentElement;
+          expect(wrapper).toHaveAttribute("dir", "rtl");
+          expect(wrapper?.textContent).toBe(isolated);
+        }
+        expect(mapper.rangeBetween(located, 1, 4)?.toString()).toBe("אבג");
+        for (const offset of [1, 2, 3, 4]) {
+          const position = mapper.positionFor(
+            mapper.rangeFor(located, offset)!,
+          );
+          expect(position).toEqual({
+            locatedBlock: located,
+            textOffsetCodePoints: offset,
+          });
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
   it("round-trips every legal code-point offset through nested rendered DOM", () => {
     const documentId = "document:dom-mapper-inline" as ContentDocumentId;
     const paragraph = Object.freeze({

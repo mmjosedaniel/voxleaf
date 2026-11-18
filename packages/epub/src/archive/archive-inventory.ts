@@ -611,6 +611,8 @@ export async function openEpubArchive(
       candidates.push(candidate);
     }
 
+    budget.checkDeclaredArchiveCompressionRatio();
+
     assertNoArchivePathCollisions(
       candidates.map(({ inventoryEntry }) => inventoryEntry.path),
     );

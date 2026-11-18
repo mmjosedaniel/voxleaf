@@ -4,6 +4,12 @@
 - Use [current Chatterbox v7 validation](#current-chatterbox-v7-validation) for optional-runtime checks and [M011 packaging validation](#m011-packaging-and-release-validation) for release artifact checks and historical evidence.
 - Use the [findings workflow](#findings-based-regression-coverage) and [retention guidance](#validation-artifact-retention) when recording evidence.
 
+## Chatterbox protocol-v2 candidate on Windows
+
+The ordinary Windows release uses v7. The separate local candidate validates VF-0114 against a hash-bound v8 worker and the same six official model files. Use normal local PowerShell. `pnpm.cmd package:chatterbox-optional:v8:check-source` checks the source manifest. `pnpm.cmd package:chatterbox-optional:v8 --output-root <private-output-root>` builds the runtime and its three parts. `pnpm.cmd package:chatterbox-optional:v8:check-local --output-root <private-output-root>` verifies the prepared artifact.
+
+Use `pnpm.cmd build:desktop:chatterbox-v8-candidate` for the corresponding no-bundle desktop build. Its separate application identifier is `com.voxleaf.chatterboxcandidate`. Candidate discovery verifies its own `tts/cb/8` runtime tree against the compiled receipt and model authority before enabling Prepare. Record the build receipt, executable identity and actual installed-tree and UI observations separately. The [protocol decision](../architecture/decisions/ADR-0078-version-chatterbox-provider-loss.md) describes which failure and recovery controls distinguish Torch-only loss.
+
 ## Portfolio sample
 
 `pnpm.cmd test:portfolio-sample` builds the shared/EPUB packages and checks that

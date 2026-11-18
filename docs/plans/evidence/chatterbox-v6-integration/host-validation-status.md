@@ -1,5 +1,7 @@
 # Chatterbox v6 integration: current host validation
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 This records accepted integration evidence under the explicitly revised scope
 for implementation commit
 `9073ad4b1a54b9dc86e811526cbcdb6dea2ee56d`, based on
@@ -129,8 +131,8 @@ installer cycle is required while those inputs remain unchanged.
 
 All required jobs succeeded on implementation head `9073ad4`:
 
-- [Foundation checks](https://github.com/mmjosedaniel/voxleaf/actions/runs/40238341429): Windows native, Ubuntu portable and Ubuntu Rust; Windows completed at 2026-10-25 22:21:41 UTC.
-- [Production dependency graphs](https://github.com/mmjosedaniel/voxleaf/actions/runs/40238341460): completed successfully at 2026-10-25 22:04:48 UTC.
+- Foundation checks (GitHub Actions run 40238341429): Windows native, Ubuntu portable and Ubuntu Rust; Windows completed at 2026-10-25 22:21:41 UTC.
+- Production dependency graphs (GitHub Actions run 40238341460): completed successfully at 2026-10-25 22:04:48 UTC.
 
 The dependency-audit CI failure is resolved on this head. These jobs do not run
 the missing full installed Chatterbox acquisition/recovery acceptance journey.

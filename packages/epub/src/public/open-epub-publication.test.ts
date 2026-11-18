@@ -682,6 +682,244 @@ describe("public privacy-safe EPUB opening", () => {
     }
   });
 
+  it("VF-0097 only publishes Auto scopes that retain text", async () => {
+    for (const visible of [false, true]) {
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Visible</p><p hidden=""><span dir="auto">Sample</span></p><p><span dir="auto"><br/></span>${visible ? '<span dir="auto">Visible Auto</span>' : ""}</p></body></html>`,
+      });
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      try {
+        const chapter = opened.publication.documents.find(
+          ({ location }) => location.kind === "spine",
+        );
+        expect(chapter?.autoDirectionScopeCount ?? 0).toBe(visible ? 1 : 0);
+      } finally {
+        await opened.publication.close();
+      }
+    }
+  });
+
+  it("VF-0120 resolves padded XML IDs while keeping XHTML IDs literal and old checkpoints usable", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      navigationDocument: minimalNavigationDocument().replace(
+        "#chapter-one",
+        "#normalized",
+      ),
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>First</p><p xml:id=" normalized ">Target</p><p id=" literal ">Literal</p><p xml:id="plain">Plain</p><p xml:id=" repeat ">One</p><p xml:id="repeat">Two</p></body></html>',
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error(opened.detail);
+    try {
+      const { locators, navigation } = opened.publication;
+      const link = navigation[0];
+      if (link?.kind !== "link") throw new Error("expected navigation link");
+      const target = locators[1]!.startLocator;
+      expect(opened.publication.resolveTarget(link.target)).toMatchObject({
+        status: "exact",
+        reason: "fragment",
+        locator: target,
+      });
+      expect(target.anchor.value).toBe("voxleaf-s0-a1");
+      expect(locators[2]!.startLocator.anchor.value).not.toBe("literal");
+      expect(locators[3]!.startLocator.anchor.value).toBe("plain");
+      expect(locators[5]!.startLocator.anchor.value).toBe("repeat");
+      expect(
+        opened.publication.resolveTarget({
+          documentId: link.target.documentId,
+          fragment: "repeat",
+        }),
+      ).toMatchObject({ status: "recovered", reason: "fragment-unresolved" });
+      const checkpoint = {
+        ...target,
+        anchor: { ...target.anchor, value: "voxleaf-s0-a1" },
+        textOffsetCodePoints: createIndex(2),
+      };
+      expect(opened.publication.resolveLocator(checkpoint)).toMatchObject({
+        locator: { anchor: target.anchor, textOffsetCodePoints: 2 },
+      });
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
+  it("VF-0120 preserves a historical generated checkpoint when a normalized ID claims its value", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      navigationDocument: minimalNavigationDocument().replace(
+        "#chapter-one",
+        "#voxleaf-s0-a0",
+      ),
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Original</p><p xml:id=" voxleaf-s0-a0 ">Second</p></body></html>',
+    });
+    const result = await openEpubPublication(bytes);
+    if (!result.ok) throw new Error(result.detail);
+    const publication = result.publication;
+    try {
+      const [first, second] = publication.locators;
+      const saved = {
+        ...first!.startLocator,
+        anchor: { ...first!.startLocator.anchor, value: "voxleaf-s0-a0" },
+        textOffsetCodePoints: createIndex(3),
+      };
+      const link = publication.navigation[0];
+      if (link?.kind !== "link") throw new Error("expected navigation link");
+      expect(publication.resolveTarget(link.target)).toMatchObject({
+        status: "exact",
+        locator: second!.startLocator,
+      });
+      expect(publication.resolveLocator(saved)).toMatchObject({
+        locator: {
+          anchor: first!.startLocator.anchor,
+          textOffsetCodePoints: 3,
+        },
+      });
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("VF-0120 retains a saved publisher anchor after its normalized fragment becomes ambiguous", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      navigationDocument: minimalNavigationDocument().replace(
+        "#chapter-one",
+        "#voxleaf-s0-a0",
+      ),
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Unlabelled</p><p id="voxleaf-s0-a0">Original owner</p><p xml:id=" voxleaf-s0-a0 ">Duplicate</p></body></html>',
+    });
+    const result = await openEpubPublication(bytes);
+    if (!result.ok) throw new Error(result.detail);
+    let saved;
+    try {
+      const link = result.publication.navigation[0];
+      if (link?.kind !== "link") throw new Error("expected navigation link");
+      expect(result.publication.resolveTarget(link.target)).toMatchObject({
+        status: "recovered",
+        reason: "fragment-unresolved",
+      });
+      saved = {
+        ...result.publication.locators[1]!.startLocator,
+        anchor: {
+          ...result.publication.locators[1]!.startLocator.anchor,
+          value: "voxleaf-s0-a0",
+        },
+        textOffsetCodePoints: createIndex(4),
+      };
+    } finally {
+      await result.publication.close();
+    }
+    const reopened = await openEpubPublication(bytes);
+    if (!reopened.ok) throw new Error(reopened.detail);
+    try {
+      expect(reopened.publication.resolveLocator(saved)).toMatchObject({
+        status: "exact",
+        locatedBlock: reopened.publication.locators[1],
+        locator: {
+          anchor: { anchorIndex: 1, value: "voxleaf-s0-a0" },
+          textOffsetCodePoints: 4,
+        },
+      });
+    } finally {
+      await reopened.publication.close();
+    }
+  });
+
+  it.each(["&#x9;", "&#xD;", "&#xA;"])(
+    "VF-0120 keeps referenced whitespace %s distinct while normalizing literal whitespace",
+    async (reference) => {
+      const bytes = await buildMinimalEpubFixture({
+        navigationDocument: minimalNavigationDocument().replace(
+          "#chapter-one",
+          "#note",
+        ),
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>First</p><p xml:id="${reference}note">Different</p><p xml:id="\t\r\n note \t">Target</p></body></html>`,
+      });
+      const result = await openEpubPublication(bytes);
+      if (!result.ok) throw new Error(result.detail);
+      const publication = result.publication;
+      try {
+        const link = publication.navigation[0];
+        if (link?.kind !== "link") throw new Error("expected navigation link");
+        expect(publication.resolveTarget(link.target)).toMatchObject({
+          status: "exact",
+          locator: publication.locators[2]!.startLocator,
+        });
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it("VF-0119 opens an escaped hash chapter with distinct literal-percent resource paths", async () => {
+    const chapterDocument =
+      '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>First</p><p id="chapter-one">Destination</p></body></html>';
+    const rasterBytes = syntheticStaticPngBytes();
+    const bytes = await buildMinimalEpubFixture({
+      packageDocument: minimalPackageDocument()
+        .replace("text/chapter.xhtml", "text/chapter%23one.xhtml")
+        .replace(
+          "</manifest>",
+          '<item id="aux" href="text/chapter%2523one.xhtml" media-type="application/xhtml+xml"/><item id="alias" href="../voxleaf-resource/0" media-type="application/xhtml+xml"/><item id="image" href="figure%23one.png" media-type="image/png"/></manifest>',
+        ),
+      chapterDocument: null,
+      navigationDocument: minimalNavigationDocument().replace(
+        "text/chapter.xhtml",
+        "text/chapter%23one.xhtml",
+      ),
+      additionalEntries: [
+        { name: "EPUB/text/chapter#one.xhtml", content: chapterDocument },
+        {
+          name: "EPUB/text/chapter%23one.xhtml",
+          content: minimalChapterDocument(),
+        },
+        { name: "voxleaf-resource/0", content: minimalChapterDocument() },
+        { name: "EPUB/figure#one.png", content: rasterBytes },
+      ],
+    });
+    const opened = await openEpubPublication(bytes);
+    expect(opened).toMatchObject({ ok: true });
+    if (!opened.ok) return;
+    let locator;
+    try {
+      const { book, locators, navigation } = opened.publication;
+      const paths = book.resources.map(({ path }) => path);
+      expect(new Set(paths).size).toBe(5);
+      expect(paths).toContain("EPUB/text/chapter%23one.xhtml");
+      expect(paths).toContain("voxleaf-resource/0");
+      expect(book.spine[0]?.resourcePath).not.toBe("voxleaf-resource/0");
+      expect(book.spine[0]?.resourcePath).not.toBe(
+        "EPUB/text/chapter%23one.xhtml",
+      );
+      expect(paths).toContain(book.spine[0]?.resourcePath);
+      const image = opened.publication.resources[0];
+      if (image === undefined) throw new Error("expected synthetic image");
+      expect(await opened.publication.readResource(image.id)).toEqual(
+        rasterBytes,
+      );
+      const link = navigation[0];
+      if (link?.kind !== "link") throw new Error("expected synthetic link");
+      locator = locators[1]!.startLocator;
+      expect(opened.publication.resolveTarget(link.target)).toMatchObject({
+        status: "exact",
+        locator,
+      });
+    } finally {
+      await opened.publication.close();
+    }
+    const reopened = await openEpubPublication(bytes);
+    if (!reopened.ok) throw new Error("expected same-byte reopen");
+    try {
+      expect(reopened.publication.resolveLocator(locator!)).toMatchObject({
+        status: "exact",
+        locator,
+      });
+    } finally {
+      await reopened.publication.close();
+    }
+  });
+
   it("CHAT-AUDIT F03 opens each spine occurrence of a shared XHTML fallback with its own locator", async () => {
     const result = await openEpubPublication(
       await buildMinimalEpubFixture({

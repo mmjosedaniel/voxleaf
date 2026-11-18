@@ -1208,7 +1208,7 @@ def _run_measured_batch(
     *,
     v14: bool,
 ) -> list[BatchExecutionObservation]:
-    controller = BoundedOrderedBatchController(clock=clock, preserve_measured_privacy_failure=v14)
+    controller = BoundedOrderedBatchController(clock=clock, preserve_privacy_failure=v14)
     observations: list[BatchExecutionObservation] = []
     terminal_code: str | None = None
     _require_safety(monitor)

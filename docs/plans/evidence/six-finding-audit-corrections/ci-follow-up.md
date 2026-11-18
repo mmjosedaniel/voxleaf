@@ -1,16 +1,18 @@
 # PR #287 Windows CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 This additive receipt preserves the completed ExecPlan and R1/R2 evidence.
 Base and reviewed HEAD: `d7873978c6da1c3952099d4de5522e3b18b48a19`.
 
 ## Hosted failure and bounded correction
 
-[Foundation run 40983868682](https://github.com/mmjosedaniel/voxleaf/actions/runs/40983868682)
+Foundation run 40983868682
 first failed in Windows job `123830129888` during native restart session
 creation (`webdriver-session-not-created`). All 35 Chromium cases and the
 native build had passed. Ubuntu portable, Ubuntu Rust and dependency checks
 passed. One targeted job rerun, requested with
-`gh run rerun 40983868682 --job 123830129888 --repo mmjosedaniel/voxleaf`,
+`gh run rerun 40983868682 --job 123830129888 --repo OWNER/REPO`,
 passed native startup on unchanged source. The initial WebDriver cause remains
 unconfirmed; it was not reproduced in that retry.
 

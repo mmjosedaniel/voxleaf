@@ -822,7 +822,7 @@ def test_vf0073_measured_child_diagnostic_is_redacted_and_worker_reaped(
         _MeasuredDiagnosticBatchCandidate, forbidden_values=("private-synthetic-vf0073",)
     )
     controller = BoundedOrderedBatchController(
-        clock=FakeBatchClock(), preserve_measured_privacy_failure=True
+        clock=FakeBatchClock(), preserve_privacy_failure=True
     )
     try:
         observed = controller.execute(adapter, _batch_request())

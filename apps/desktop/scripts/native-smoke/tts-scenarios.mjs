@@ -12,6 +12,20 @@ import {
 import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "../bilingual-portfolio-host.mjs";
 import { selectAdaptiveTtsAlternateProfile } from "../adaptive-tts-profile-selection.mjs";
 
+export function matchingNarrationElapsedMs(
+  expectedIndex,
+  observedIndex,
+  elapsedMs,
+) {
+  return Number.isSafeInteger(expectedIndex) &&
+    expectedIndex > 0 &&
+    expectedIndex === observedIndex &&
+    Number.isFinite(elapsedMs) &&
+    elapsedMs >= 0
+    ? elapsedMs
+    : null;
+}
+
 export function createNativeTtsScenarios({
   assert,
   waitForCondition,
@@ -997,6 +1011,11 @@ export function createNativeTtsScenarios({
          playIntent: owner.getAttribute("data-narration-play-intent"),
          navigationSettling:
            owner.getAttribute("data-narration-navigation-settling"),
+         activeRefillIndex: Number(owner.getAttribute("data-narration-active-refill-index")),
+         playbackIndex: Number(owner.getAttribute("data-narration-refill-playback-index")),
+         completedRefillIndex: Number(owner.getAttribute("data-narration-completed-refill-index")),
+         completedRefillMs: owner.hasAttribute("data-narration-completed-refill-ms")
+           ? Number(owner.getAttribute("data-narration-completed-refill-ms")) : null,
          playbackMs: Number(
            owner.getAttribute("data-narration-playback-ms"),
          ),
@@ -1009,7 +1028,10 @@ export function createNativeTtsScenarios({
          ),
        };`,
       );
-      if (observation?.phase === "buffering") {
+      if (
+        observation?.phase === "buffering" ||
+        observation?.completedRefillIndex > 0
+      ) {
         return Object.freeze({ kind: "depleted", observation });
       }
       if (observation?.phase === "complete") {
@@ -1044,6 +1066,43 @@ export function createNativeTtsScenarios({
       `ADAPTIVE_TTS_DEPLETION_OBSERVATION ${JSON.stringify(observation)}`,
     );
     throw new Error("Native synchronized narration proof failed.");
+  }
+
+  async function observeAdaptiveRefill(driver, depletion) {
+    const expectedIndex =
+      depletion.completedRefillIndex || depletion.activeRefillIndex;
+    if (expectedIndex <= 0 || depletion.playbackIndex <= 0) return null;
+    const deadline = now() + 5 * STARTUP_TIMEOUT_MS;
+    let observation = depletion;
+    while (now() < deadline) {
+      if (observation?.playbackIndex !== depletion.playbackIndex) return null;
+      const elapsed = matchingNarrationElapsedMs(
+        expectedIndex,
+        observation?.completedRefillIndex,
+        observation?.completedRefillMs,
+      );
+      if (elapsed !== null) return elapsed;
+      if (
+        observation?.phase === "failed" ||
+        observation?.phase === "complete" ||
+        observation?.activeRefillIndex !== expectedIndex
+      ) {
+        return null;
+      }
+      await delay(100);
+      observation = await driver.execute(
+        `const owner = document.querySelector(".product-narration");
+         return owner === null ? null : {
+           phase: owner.getAttribute("data-narration-phase"),
+           activeRefillIndex: Number(owner.getAttribute("data-narration-active-refill-index")),
+           playbackIndex: Number(owner.getAttribute("data-narration-refill-playback-index")),
+           completedRefillIndex: Number(owner.getAttribute("data-narration-completed-refill-index")),
+           completedRefillMs: owner.hasAttribute("data-narration-completed-refill-ms")
+             ? Number(owner.getAttribute("data-narration-completed-refill-ms")) : null,
+         };`,
+      );
+    }
+    return null;
   }
 
   async function runAdaptiveTtsExactHostMatrix(
@@ -1296,6 +1355,7 @@ export function createNativeTtsScenarios({
     let preparedWorkingSetBytes;
     let preparedGpu;
     let cancellationMs;
+    let stopCleanupMs;
     let pauseResumeObservation;
     let playbackSpeedMatrix = null;
     let terminalSceneProof = null;
@@ -1375,8 +1435,8 @@ export function createNativeTtsScenarios({
          commandToAudibleMs: Number(
            owner.getAttribute("data-narration-command-to-audible-ms"),
          ),
-         playableMs: Number(
-           owner.getAttribute("data-narration-playable-ms"),
+         playableLeadAtStartMs: Number(
+           owner.getAttribute("data-narration-initial-playback-lead-ms"),
          ),
          retainedUnits: Number(
            owner.getAttribute("data-narration-retained-units"),
@@ -1395,7 +1455,7 @@ export function createNativeTtsScenarios({
           quickObservation.commandToAudibleMs > 0 &&
           quickObservation.commandToAudibleMs <=
             now() - quickCommandAtMs + 1_000 &&
-          quickObservation.playableMs > 0 &&
+          quickObservation.playableLeadAtStartMs > 0 &&
           quickObservation.retainedUnits > 0 &&
           synchronizationObservation?.transitionCount >= 1 &&
           synchronizationObservation.highlightPresent === true &&
@@ -1882,25 +1942,23 @@ export function createNativeTtsScenarios({
       setStage("adaptive exact-host depletion");
       depletionObservation =
         await observeAdaptiveDepletionOrStablePlayback(driver);
-      quickResourceWorkingSetBytes =
-        await processWorkingSetBytes(rootProcessId);
-      quickGpu = await nvidiaSnapshot();
       if (depletionObservation.kind === "depleted") {
-        const depletedAtMs = now();
+        setStage("adaptive exact-host refill");
+      }
+      [refillMs, quickResourceWorkingSetBytes, quickGpu] = await Promise.all([
+        depletionObservation.kind === "depleted"
+          ? observeAdaptiveRefill(driver, depletionObservation.observation)
+          : null,
+        processWorkingSetBytes(rootProcessId),
+        nvidiaSnapshot(),
+      ]);
+      if (depletionObservation.kind === "depleted") {
         assert(
           depletionObservation.observation.intentionalWaitMs >= 0 &&
             depletionObservation.observation.playbackMs > 0 &&
             depletionObservation.observation.underruns > 0,
           "Native synchronized narration proof failed.",
         );
-        setStage("adaptive exact-host refill");
-        await waitForCondition(
-          driver,
-          `return document.querySelector(".product-narration")
-           ?.getAttribute("data-narration-phase") === "playing";`,
-          5 * STARTUP_TIMEOUT_MS,
-        );
-        refillMs = now() - depletedAtMs;
         await delay(500);
         quickMetrics = await driver.execute(
           `const owner = document.querySelector(".product-narration");
@@ -1951,6 +2009,13 @@ export function createNativeTtsScenarios({
         STARTUP_TIMEOUT_MS,
       );
       setStage("adaptive exact-host active cancellation stop");
+      const expectedStop = await driver.execute(
+        `const owner = document.querySelector(".product-narration");
+         return owner === null ? null : {
+           stopIndex: Number(owner.getAttribute("data-narration-stop-index")) + 1,
+           synthesisIndex: Number(owner.getAttribute("data-narration-active-synthesis-index")),
+         };`,
+      );
       const cancellationAtMs = now();
       const stopButton = await driver.findElement(
         '[data-narration-action="stop"]',
@@ -1964,7 +2029,24 @@ export function createNativeTtsScenarios({
          owner.getAttribute("data-narration-discarded-units") === "0";`,
         STARTUP_TIMEOUT_MS,
       );
-      cancellationMs = now() - cancellationAtMs;
+      stopCleanupMs = now() - cancellationAtMs;
+      const receipt = await driver.execute(
+        `const owner = document.querySelector(".product-narration");
+         return owner === null ? null : {
+           stopIndex: Number(owner.getAttribute("data-narration-cancelled-stop-index")),
+           synthesisIndex: Number(owner.getAttribute("data-narration-cancelled-synthesis-index")),
+           elapsedMs: owner.hasAttribute("data-narration-terminal-cancellation-ms")
+             ? Number(owner.getAttribute("data-narration-terminal-cancellation-ms")) : null,
+         };`,
+      );
+      cancellationMs =
+        expectedStop?.stopIndex === receipt?.stopIndex
+          ? matchingNarrationElapsedMs(
+              expectedStop?.synthesisIndex,
+              receipt?.synthesisIndex,
+              receipt?.elapsedMs,
+            )
+          : null;
       setStage("adaptive exact-host active cancellation highlight cleanup");
       await waitForCondition(
         driver,
@@ -1977,6 +2059,7 @@ export function createNativeTtsScenarios({
       console.error(
         `ADAPTIVE_TTS_CANCELLATION_OBSERVATION ${JSON.stringify({
           cancellationMs,
+          stopCleanupMs,
           ...checkpointObservation,
         })}`,
       );
@@ -2383,10 +2466,11 @@ export function createNativeTtsScenarios({
         language: ADAPTIVE_TTS_LANGUAGE,
         quick: {
           commandToAudibleMs: quickObservation.commandToAudibleMs,
-          playableLeadAtStartMs: quickObservation.playableMs,
+          playableLeadAtStartMs: quickObservation.playableLeadAtStartMs,
           depletionObserved: depletionObservation.kind === "depleted",
           rangeCompleteObserved: depletionObservation.kind === "range-complete",
-          bufferingObservationWallMs: refillMs ?? 0,
+          bufferingObservationWallMs:
+            depletionObservation.kind === "depleted" ? refillMs : 0,
           bufferingSecondsPerPlaybackMinute: rounded(
             quickMetrics.bufferingMs /
               1_000 /
@@ -2394,7 +2478,7 @@ export function createNativeTtsScenarios({
           ),
           underruns: quickMetrics.underruns,
           intentionalWaitMs: quickMetrics.intentionalWaitMs,
-          refillObserved: depletionObservation.kind === "depleted",
+          refillObserved: refillMs != null,
           refillMs: refillMs ?? null,
           stablePlaybackObservationMs:
             depletionObservation.kind === "stable"
@@ -2404,6 +2488,7 @@ export function createNativeTtsScenarios({
         prepared: preparedObservation,
         warmPreparedRtf,
         cancellationMs,
+        stopCleanupMs,
         startupCancellationMs,
         startupNativePhase,
         startupShutdownMs,
@@ -3377,6 +3462,7 @@ export function createNativeTtsScenarios({
     cancelAdaptiveStartup,
     paragraphLeafActivationDelivered,
     waitForAdaptivePlaying,
+    observeAdaptiveRefill,
     runAdaptiveTtsExactHostMatrix,
     selectAdaptiveTtsProfile,
     exerciseNarrationLanguagePreference,

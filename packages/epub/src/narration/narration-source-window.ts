@@ -577,6 +577,14 @@ async function projectLeafWindow(
     task.index += 1;
     tasks.push(task);
     switch (inline.kind) {
+      case "direction-span":
+        pushInlineChildren(
+          tasks,
+          inline.children,
+          task.depth,
+          effectiveTextContext(inline, task.textContext),
+        );
+        break;
       case "code":
       case "emphasis":
       case "internal-link":
@@ -600,7 +608,7 @@ async function projectLeafWindow(
               locatedBlock,
               Object.freeze({
                 kind: "line-break",
-                textContext: task.textContext,
+                textContext: effectiveTextContext(inline, task.textContext),
               }),
               offset,
             ),

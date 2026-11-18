@@ -1388,6 +1388,161 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     },
   );
 
+  it.each([
+    ["narration-piper-v2", 110],
+    ["narration-chatterbox-v1", 192],
+  ] as const)(
+    "VF-0110 matches cold ampersand context for %s",
+    async (profile, offset) => {
+      const prefix = `${"a".repeat(offset)} Brown `;
+      const bytes = await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><body>${"<p>Short paragraph.</p>".repeat(7)}<p>${prefix}&amp; ${"Smith ".repeat(42)}.</p><p><code>Brown &amp; Smith</code></p></body></html>`,
+      });
+      const warm = await openEpubPublication(bytes);
+      const cold = await openEpubPublication(bytes);
+      if (!warm.ok || !cold.ok)
+        throw new Error("expected synthetic publications");
+      try {
+        const request = {
+          profile,
+          defaultLanguage: "en",
+          maximumSegments: 8,
+        } as const;
+        const first = await warm.publication.prepareNarration({
+          ...request,
+          startLocator: warm.publication.defaultStartLocator!,
+        });
+        if (first.status !== "batch") throw new Error("expected first batch");
+        expect(first.continuation.textOffsetCodePoints).toBe(prefix.length);
+        const seek = { ...request, startLocator: first.continuation };
+        const continued = await warm.publication.prepareNarration(seek);
+        const fresh = await cold.publication.prepareNarration(seek);
+        if (
+          (continued.status !== "batch" && continued.status !== "complete") ||
+          (fresh.status !== "batch" && fresh.status !== "complete")
+        )
+          throw new Error("expected continuation");
+        expect(fresh.segments[0]?.text).toMatch(/^and Smith/);
+        expect(continued.segments).toEqual(fresh.segments);
+        expect(fresh.segments.at(-1)?.text).toBe("Brown & Smith");
+      } finally {
+        await warm.publication.close();
+        await cold.publication.close();
+      }
+    },
+  );
+
+  it("VF-0126 drains a Chatterbox silent prefix at its source limit", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="prefix">${"\u00a0".repeat(320)}A</p><p>${"\u00a0".repeat(321)}</p><p id="next">Next.</p></body></html>`,
+      }),
+    );
+    if (!opened.ok) throw new Error(opened.detail);
+    const publication = opened.publication;
+    try {
+      const { segments } = await collectPreparedSegments(
+        publication,
+        publication.defaultStartLocator!,
+        1,
+        "narration-chatterbox-v1",
+        "en",
+      );
+      expect(segments.map(({ text }) => text)).toEqual(["A", "Next."]);
+      expect(segments[0]?.sourceRange.start.textOffsetCodePoints).toBe(320);
+      expect(segments[1]?.sourceRange.start).toEqual(
+        requiredBlock(publication, "next").startLocator,
+      );
+      expect(
+        segments.every(
+          ({ measurements }) => measurements.sourceCodePoints <= 320,
+        ),
+      ).toBe(true);
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it.each(["narration-piper-v2", "narration-chatterbox-v1"] as const)(
+    "VF-0111 preserves a scene break after a padded source window for %s",
+    async (profile) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="before">Before.</p><p>${"\u00a0".repeat(4096)}***${"\u00a0".repeat(4096)}</p><p id="after">After.</p><p>Text *** inside.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      const publication = opened.publication;
+      try {
+        const { segments } = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          1,
+          profile,
+          "en",
+        );
+        expect(segments[0]).toMatchObject({
+          text: "Before.",
+          boundaryReason: "scene-break",
+        });
+        expect(segments[1]).toMatchObject({
+          text: "After.",
+          sourceRange: {
+            start: requiredBlock(publication, "after").startLocator,
+          },
+        });
+        expect(segments[2]?.boundaryReason).not.toBe("scene-break");
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each([
+    ["VF-0113", '<div lang="es">narra-<br/>ción.</div>', "narración."],
+    ["VF-0128", '<p lang="es">narra-<br lang="fr"/>ción.</p>', "narra- ción."],
+    [
+      "VF-0128",
+      '<p lang="es">narra-<span lang="fr"><br/></span>ción.</p>',
+      "narra- ción.",
+    ],
+  ])(
+    "%s keeps the language of the authored break for %s",
+    async (_id, markup, text) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body lang="fr">${markup}<p lang="es">narra-<br/>ción.</p></body></html>`,
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      const publication = opened.publication;
+      try {
+        expect(publication.locators[0]?.block).toMatchObject({
+          language: "es",
+        });
+        for (const profile of [
+          "narration-piper-v2",
+          "narration-chatterbox-v1",
+        ] as const) {
+          const { segments } = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            "es",
+          );
+          expect(segments.map(({ text }) => text)).toEqual([
+            text,
+            "narración.",
+          ]);
+          expect(segments[0]?.sourceRange.end.textOffsetCodePoints).toBe(12);
+        }
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
   it("SAC-08 drains silent tails at segment limits without skipping the following paragraph", async () => {
     const opened = await openEpubPublication(
       await buildMinimalEpubFixture({

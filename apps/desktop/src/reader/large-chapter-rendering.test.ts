@@ -4,6 +4,7 @@ import type {
   SemanticDocument,
   SemanticInline,
 } from "@voxleaf/epub";
+import { openEpubPublication } from "@voxleaf/epub";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -32,6 +33,43 @@ function documentWith(blocks: readonly SemanticBlock[]): SemanticDocument {
 }
 
 describe("large-chapter capacity policy", () => {
+  it("VF-0097 admits 79,999 retained nodes with hidden Auto markup", async () => {
+    const { buildMinimalEpubFixture } =
+      await import("../../../../packages/epub/test-support/epub-fixture");
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Readable</p><p dir="auto" hidden="">Hidden</p></body></html>',
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error(opened.detail);
+    try {
+      const document = opened.publication.documents.find(
+        ({ location }) => location.kind === "spine",
+      )!;
+      const fill = (count: number): SemanticDocument => ({
+        ...document,
+        blocks: [
+          {
+            kind: "paragraph",
+            children: Array.from({ length: count }, () => LINE_BREAK),
+          },
+        ],
+      });
+      expect(
+        assessSemanticDocumentRendering(fill(LARGE_CHAPTER_DOM_NODE_LIMIT - 3)),
+      ).toMatchObject({
+        status: "accepted",
+        projectedDomNodeCount: 79_999,
+      });
+      expect(
+        assessSemanticDocumentRendering(fill(LARGE_CHAPTER_DOM_NODE_LIMIT - 1))
+          .status,
+      ).toBe("chapter-too-large");
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
   it("FSF-CR1 counts shared Auto wrappers and its bounded scratch at the DOM limit", () => {
     const scopeText = {
       kind: "text",

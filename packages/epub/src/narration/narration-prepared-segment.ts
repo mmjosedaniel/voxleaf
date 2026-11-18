@@ -59,6 +59,7 @@ interface NarrationPreparationOptions extends NarrationPackingOptions {
   readonly normalizationProfile?: NarrationNormalizationProfile;
   readonly languageClassifier?: NarrationLanguageClassifier;
   readonly precedingEnglishTitleContext?: NarrationEnglishTitleContext;
+  readonly precedingAmpersandLanguage?: "es" | "en";
   readonly precedingQuotationContext?: NarrationQuotationContext;
 }
 
@@ -341,6 +342,7 @@ export async function prepareNarrationSourceLeaf(
           options.languageClassifier,
           source.sourceEndOffsetCodePoints ===
             source.locatedBlock.textLengthCodePoints,
+          options.precedingAmpersandLanguage,
         )
       : normalizeNarrationSourceTokens(
           source.sourceTokens,

@@ -13,6 +13,7 @@ class EngineFailureCode(StrEnum):
 
     INVALID_STATE = "invalid-state"
     UNAVAILABLE = "unavailable"
+    TORCH_CUDA_UNAVAILABLE = "torch-cuda-unavailable"
     FAILURE = "failure"
     TIMEOUT = "timeout"
     CRASH = "crash"

@@ -209,6 +209,7 @@ function inlineTextLengthCodePoints(
         count = addLengths(count, 1);
         break;
       case "code":
+      case "direction-span":
       case "emphasis":
       case "internal-link":
       case "strong":
@@ -235,16 +236,22 @@ function blockTextLengthCodePoints(
   return createIndex(length);
 }
 
+function durableElementId(
+  projected: ProjectedAddressableBlock,
+): string | undefined {
+  return projected.locatorElementId === null
+    ? undefined
+    : (projected.locatorElementId ?? projected.sourceElementId);
+}
+
 function sourceCandidateCounts(
   blocks: readonly ProjectedAddressableBlock[],
 ): ReadonlyMap<string, number> {
   const counts = new Map<string, number>();
   for (const block of blocks) {
-    if (block.sourceElementId !== undefined) {
-      counts.set(
-        block.sourceElementId,
-        (counts.get(block.sourceElementId) ?? 0) + 1,
-      );
+    const candidate = durableElementId(block);
+    if (candidate !== undefined) {
+      counts.set(candidate, (counts.get(candidate) ?? 0) + 1);
     }
   }
   return counts;
@@ -266,7 +273,7 @@ function locateDocumentBlocks(
     projected,
   ] of projection.addressableBlocks.entries()) {
     budget.checkpoint();
-    const candidate = projected.sourceElementId;
+    const candidate = durableElementId(projected);
     const locator =
       candidate !== undefined && counts.get(candidate) === 1
         ? trySourceLocator(book, spineItem, candidate, anchorIndex)

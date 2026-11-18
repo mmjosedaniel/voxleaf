@@ -116,6 +116,19 @@ function effectiveTextContext(
   };
 }
 
+function renderedDirection(
+  context: EffectiveTextContext,
+): SemanticTextDirection | undefined {
+  if (
+    context.direction === "auto" &&
+    context.autoDirectionScope !== undefined &&
+    context.autoDirections !== undefined
+  ) {
+    return context.autoDirections.get(context.autoDirectionScope) ?? "ltr";
+  }
+  return context.direction;
+}
+
 function textContextAttributes(
   current: EffectiveTextContext,
   inherited: EffectiveTextContext,
@@ -131,13 +144,7 @@ function textContextAttributes(
         current.autoDirectionScope === inherited.autoDirectionScope))
       ? {}
       : {
-          dir:
-            current.direction === "auto" &&
-            current.autoDirectionScope !== undefined &&
-            current.autoDirections !== undefined
-              ? (current.autoDirections.get(current.autoDirectionScope) ??
-                "ltr")
-              : current.direction,
+          dir: renderedDirection(current)!,
         }),
   };
 }
@@ -175,6 +182,17 @@ function SemanticInlineElement({
         <code {...textContextAttributes(current, inherited)}>
           {renderInlineChildren(inline.children, current, services)}
         </code>
+      );
+    }
+    case "direction-span": {
+      const current = effectiveTextContext(inline, inherited);
+      return (
+        <span
+          {...textContextAttributes(current, inherited)}
+          dir={renderedDirection(current)}
+        >
+          {renderInlineChildren(inline.children, current, services)}
+        </span>
       );
     }
     case "emphasis": {

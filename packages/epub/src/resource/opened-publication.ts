@@ -299,6 +299,7 @@ class OpenedPublicationHandle implements OpenedPublication {
       );
       if (result.status !== "batch" && result.status !== "complete") {
         delete this.#narrationCheckpoint.englishTitleContext;
+        delete this.#narrationCheckpoint.ampersandLanguage;
         delete this.#narrationCheckpoint.continuation;
         delete this.#narrationCheckpoint.source.leaf;
         delete this.#narrationCheckpoint.source.structural;
@@ -313,6 +314,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     } finally {
       if (this.#closed || linkedSignal.signal.aborted) {
         delete this.#narrationCheckpoint.englishTitleContext;
+        delete this.#narrationCheckpoint.ampersandLanguage;
         delete this.#narrationCheckpoint.continuation;
         delete this.#narrationCheckpoint.source.leaf;
         delete this.#narrationCheckpoint.source.structural;
@@ -333,6 +335,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.#closed = true;
     this.#closeController.abort();
     delete this.#narrationCheckpoint.englishTitleContext;
+    delete this.#narrationCheckpoint.ampersandLanguage;
     delete this.#narrationCheckpoint.continuation;
     delete this.#narrationCheckpoint.source.leaf;
     delete this.#narrationCheckpoint.source.structural;

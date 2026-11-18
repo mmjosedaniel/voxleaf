@@ -171,11 +171,11 @@ class BoundedOrderedBatchController:
         *,
         clock: BatchClock,
         resource_probe: BatchResourceProbe | None = None,
-        preserve_measured_privacy_failure: bool = False,
+        preserve_privacy_failure: bool = False,
     ) -> None:
         self._clock = clock
         self._resource_probe = resource_probe
-        self._preserve_measured_privacy_failure = preserve_measured_privacy_failure
+        self._preserve_privacy_failure = preserve_privacy_failure
         self.identity_gate = BatchIdentityGate()
         self._published_sequence = 0
         self._active = False
@@ -260,8 +260,8 @@ class BoundedOrderedBatchController:
                     completed_ns=completed_ns,
                     code=(
                         "privacy"
-                        if self._preserve_measured_privacy_failure
-                        and request.phase == "measured"
+                        if self._preserve_privacy_failure
+                        and request.phase in ("warmup", "measured")
                         and isinstance(error, AdapterOperationError)
                         and error.code == "privacy"
                         else "generation-failed"

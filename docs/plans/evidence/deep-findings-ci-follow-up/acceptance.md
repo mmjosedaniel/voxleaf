@@ -1,5 +1,7 @@
 # PR #316 installer helper CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Scope and starting state
 
 Task: repair the failed PR CI without weakening the retained recovery controls.
@@ -7,7 +9,7 @@ Base and starting HEAD: `1058d991cfc78cb3fdbadc6526059b04f783735f` on
 `codex/deep-findings-minimal-corrections`; index and worktree initially clean.
 The completed ExecPlan and its original receipts remain immutable.
 
-The original [Ubuntu portable job](https://github.com/mmjosedaniel/voxleaf/actions/runs/43618371942/job/132518325540)
+The original Ubuntu portable job (GitHub Actions run 43618371942 and job 132518325540)
 failed `CCF-C04 installer spawn failure restores original`: `error.syscall` was
 undefined. Its Node group recorded 136 passing, one failing and 76 skipped tests.
 Windows native foundation, Ubuntu Rust foundation and the dependency audit passed.

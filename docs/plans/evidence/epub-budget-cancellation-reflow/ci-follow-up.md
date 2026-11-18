@@ -1,12 +1,14 @@
 # PR #307 Windows stdin-fixture cleanup follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Base and tested HEAD: `e530a20b2085e6ac42e6d864ce10c2d19ad5f1aa`.
 This is a narrow test-fixture follow-up; the completed EPUB plan and its earlier
 acceptance reports remain unchanged historical records.
 
 ## Hosted failure and deterministic reproduction
 
-The [original Windows job](https://github.com/mmjosedaniel/voxleaf/actions/runs/42292888381/job/128150608007)
+The original Windows job (GitHub Actions run 42292888381 and job 128150608007)
 passed 175 Rust tests and failed one, with eight ignored, in the default mode.
 `sac12_cancel_interrupts_real_blocked_stdin_without_queuing_more_work` panicked
 at the original `tests.rs:810` immediate `remove_file(capacity_path).unwrap()`:

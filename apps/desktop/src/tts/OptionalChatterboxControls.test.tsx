@@ -58,6 +58,85 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it.each(["installed", "failed"] as const)(
+    "VF-0114 local candidate hides unsupported removal and acquisition (%s)",
+    async (state) => {
+      const candidate = {
+        ...snapshot(state),
+        removalSupported: false,
+        failure: state === "failed" ? "installed-package-invalid" : null,
+      };
+      const invoke = vi.fn(async () => candidate);
+      const client = new OptionalChatterboxClient(invoke);
+      const onRemove = vi.fn(async () => undefined);
+      const onActivate = vi.fn(async () => true);
+      const onRecheck = vi.fn(async () => true);
+      render(
+        <OptionalChatterboxControls
+          client={client}
+          onActivate={onActivate}
+          onRecheck={onRecheck}
+          onRemove={onRemove}
+        />,
+      );
+      await waitFor(() => expect(client.observe().state).toBe(state));
+      expect(
+        screen.queryByRole("button", { name: "Remove Chatterbox" }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: /download Chatterbox/iu }),
+      ).toBeNull();
+      expect(onRemove).not.toHaveBeenCalled();
+      if (state === "installed") {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Activate Chatterbox" }),
+        );
+        expect(onActivate).toHaveBeenCalledOnce();
+      } else {
+        expect(
+          screen.getByText(/staged Chatterbox package could not be verified/u),
+        ).toBeDefined();
+        expect(
+          screen.queryByText(/remove and download Chatterbox/u),
+        ).toBeNull();
+        fireEvent.click(
+          screen.getByRole("button", { name: "Check Chatterbox again" }),
+        );
+        await waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
+        expect(invoke.mock.calls).toEqual([
+          ["optional_chatterbox_snapshot", undefined],
+          ["optional_chatterbox_snapshot", { retryCleanup: true }],
+        ]);
+      }
+    },
+  );
+
+  it("VF-0114 a staged failure never offers acquisition review", async () => {
+    const invoke = vi.fn(async () => ({
+      ...snapshot("failed"),
+      removalSupported: false,
+      failure: "tts-optional-profile-invalid",
+    }));
+    const client = new OptionalChatterboxClient(invoke);
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={async () => undefined}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Check Chatterbox again" }),
+    );
+    expect(screen.queryByText("Review Chatterbox download again")).toBeNull();
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
+    expect(invoke.mock.calls).toEqual([
+      ["optional_chatterbox_snapshot", undefined],
+      ["optional_chatterbox_snapshot", { retryCleanup: true }],
+    ]);
+  });
+
   it.each([false, true])(
     "FSF-VF-0080 remount preserves busy Remove until terminal cleanup (failure=%s)",
     async (failed) => {

@@ -1,5 +1,9 @@
 # Resolve the local TTS profile blocker
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Relationship to Milestones 6 and 7
 
 Roadmap Milestone 6 is complete and its accepted evidence remains unchanged.
@@ -941,8 +945,7 @@ dependency changes are involved.
   the unchanged TypeScript/EPUB/desktop suites and builds. The exact isolated
   candidate-interpreter import smoke also passed without loading the model.
 - 2026-07-25: Confirmed the exact candidate firewall rule, local model and
-  interpreter, 15,365,660,672 free RAM bytes, and an NVIDIA GeForce RTX 5060
-  Laptop GPU with 8,151 MiB total / 7,810 MiB free VRAM. Disabled AC sleep
+  interpreter, sufficient free RAM, and an NVIDIA laptop GPU with 8 GB-class VRAM. Disabled AC sleep
   only for the run with an independent restoration watcher.
 - 2026-07-25: Rejected the first invocation before preflight because Windows
   PowerShell had added a byte-order mark to the private standard-input JSON.
@@ -1026,8 +1029,8 @@ dependency changes are involved.
   the run on the deliberately unchanged 45-minute AC sleep setting, an
   unaccepted background-load declaration, and `12,279,525,376` free RAM bytes,
   which were `605,376,512` bytes below the frozen 12 GiB admission gate.
-  NVIDIA reported an idle, 50 C RTX 5060 Laptop GPU with 7,810 MiB free VRAM;
-  a five-sample host check measured 4.8% mean and 6% maximum CPU use.
+  The NVIDIA laptop GPU was idle with sufficient free VRAM. A five-sample
+  host check confirmed low CPU use.
 - 2026-07-26: Reconfirmed the exact installed model card and
   `qwen-tts==0.1.1` package as Apache-2.0. Serena is embedded in the model and
   has no separate voice artifact or acceptance terms. Redistribution remains
@@ -1212,9 +1215,9 @@ dependency changes are involved.
   change. All 111 relative links resolved, `git diff --check` passed, and the
   changed-file privacy/credential scan found no private path or secret.
 - 2026-07-26: Pull request
-  [#104](https://github.com/mmjosedaniel/voxleaf/pull/104) tested exact evidence
+  #104 tested exact evidence
   commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db` in Foundation
-  [run 30212387595](https://github.com/mmjosedaniel/voxleaf/actions/runs/30212387595).
+  run 30212387595.
   Ubuntu portable foundation passed. The first Windows attempt built the
   release executable and stopped at the second WebDriver session creation; the
   unchanged job rerun passed the complete Windows native foundation matrix.
@@ -1312,7 +1315,7 @@ dependency changes are involved.
     evaluation, but this footprint remains an explicit high packaging risk
     for Milestone 11 rather than an implicit production acceptance.
 20. The 1.7B CustomVoice profile fits the frozen RAM and VRAM ceilings on this
-    exact RTX 5060 Laptop host, but its complete-waveform boundary misses every
+    NVIDIA RTX 50-series laptop host, but its complete-waveform boundary misses every
     startup/throughput gate. Passing resource fit is therefore not evidence of
     viable interactive narration.
 21. Worker termination provides credible cancellation before dispatch or

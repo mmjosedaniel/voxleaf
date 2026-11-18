@@ -22,6 +22,7 @@ export type TtsProcessClientErrorCode =
   | "tts-service-invalid-state"
   | "tts-service-protocol-rejected"
   | "tts-service-resource-limit"
+  | "tts-service-torch-cuda-unavailable"
   | "tts-service-timeout"
   | "tts-service-unavailable";
 
@@ -130,7 +131,13 @@ function zero(payload: Uint8Array): void {
   payload.fill(0);
 }
 
-function fixedFailure(error: unknown): TtsProcessClientError {
+function fixedFailure(
+  error: unknown,
+  ownedPrepare = false,
+): TtsProcessClientError {
+  if (ownedPrepare && error === "tts-service-torch-cuda-unavailable") {
+    return new TtsProcessClientError(error);
+  }
   if (
     typeof error === "string" &&
     NATIVE_ERROR_CODES.has(error as TtsProcessClientErrorCode)
@@ -382,17 +389,18 @@ export class TtsProcessClient {
   }
 
   public async prepare(): Promise<TtsProcessClientObservation> {
-    if (this.state !== "unloaded") {
+    const serviceInstanceId = this.serviceInstanceId;
+    if (this.state !== "unloaded" || serviceInstanceId === undefined) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
     const token = this.invalidation;
-    const controls = await this.invokeControls("prepare_tts_service").catch(
-      (error: unknown) => {
-        if (token !== this.invalidation)
-          throw new TtsProcessClientError("tts-service-cancelled");
-        throw error;
-      },
-    );
+    const controls = await this.invokeControls("prepare_tts_service", {
+      serviceInstanceId,
+    }).catch((error: unknown) => {
+      if (token !== this.invalidation)
+        throw new TtsProcessClientError("tts-service-cancelled");
+      throw error;
+    });
     if (token !== this.invalidation)
       throw new TtsProcessClientError("tts-service-cancelled");
     expectKinds(controls, ["state", "state", "state", "capabilities"]);
@@ -406,7 +414,7 @@ export class TtsProcessClient {
       warming.state !== "warming" ||
       ready.kind !== "state" ||
       ready.state !== "ready" ||
-      hasForeignServiceInstance(controls, this.serviceInstanceId)
+      hasForeignServiceInstance(controls, serviceInstanceId)
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }
@@ -676,7 +684,11 @@ export class TtsProcessClient {
       if (error instanceof TtsProcessClientError) {
         throw error;
       }
-      throw fixedFailure(error);
+      throw fixedFailure(
+        error,
+        command === "prepare_tts_service" &&
+          typeof args?.serviceInstanceId === "string",
+      );
     }
   }
 }

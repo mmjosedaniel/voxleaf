@@ -1,5 +1,7 @@
 # Chatterbox certifi and Pillow security refresh
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Created: 2026-10-20. Completed: 2026-10-21. V5 is published; production
 integration, installed gates, repository/browser/native checks, host restoration,
 independent acceptance and fresh PR CI pass. PR #266 remains open.
@@ -513,8 +515,8 @@ rechecked and committed as `194846add1770388edb725425f1a5b685796de30`, then
 pushed normally to PR #266. GitHub readback confirmed the same head. Fresh CI
 for that commit passes all four jobs: Windows native foundation, Ubuntu
 portable foundation, Ubuntu Rust foundation and production dependency graphs.
-The successful runs are [Foundation checks 39632594632](https://github.com/mmjosedaniel/voxleaf/actions/runs/39632594632)
-and [Release dependency audit 39632594985](https://github.com/mmjosedaniel/voxleaf/actions/runs/39632594985),
+The successful runs are Foundation checks 39632594632
+and Release dependency audit 39632594985,
 observed complete on 2026-10-21 after the push. The PR title and description
 include the final reader, security-runtime, diagnostic and harness scope.
 

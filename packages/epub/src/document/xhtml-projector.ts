@@ -101,7 +101,7 @@ interface RawTextInline extends TextContext {
 }
 
 interface RawContainerInline extends TextContext {
-  readonly kind: "code" | "emphasis" | "strong";
+  readonly kind: "code" | "direction-span" | "emphasis" | "strong";
   readonly children: RawInline[];
 }
 
@@ -113,6 +113,7 @@ interface RawLinkInline extends TextContext {
 
 interface RawLineBreakInline {
   readonly kind: "line-break";
+  readonly language?: string;
 }
 
 interface RawImageInline extends TextContext {
@@ -133,9 +134,12 @@ interface BlockCollector {
   readonly context: TextContext;
   readonly blocks: SemanticBlock[];
   readonly pendingInlines: RawInline[];
-  pendingSourceElementId: string | undefined;
+  pendingSourceElementId: BlockElementIds | undefined;
+  pendingParagraphLanguage?: TextContext["language"];
   pendingParagraphDirection?: TextContext["direction"];
   pendingParagraphAutoDirectionScope?: number;
+  activeDirectionFrames?: ElementFrame[];
+  pendingDirectionRuns?: Map<ElementFrame, RawContainerInline>;
 }
 
 interface InlineCollector {
@@ -164,26 +168,25 @@ type CloseAction =
   | {
       readonly collector: BlockCollector;
       readonly kind: "block-quote";
-      readonly sourceElementId?: string;
+      readonly sourceElementId?: BlockElementIds;
     }
   | { readonly collector: BlockCollector; readonly kind: "body" }
   | {
       readonly collector: InlineCollector;
       readonly kind: "heading";
       readonly level: 1 | 2 | 3 | 4 | 5 | 6;
-      readonly sourceElementId?: string;
+      readonly sourceElementId?: BlockElementIds;
     }
   | {
       readonly collector: InlineCollector;
       readonly kind: "inline";
-      readonly inlineKind:
-        "code" | "emphasis" | "internal-link" | "strong" | "transparent";
+      readonly inlineKind: RawContainerInline["kind"] | "internal-link";
       readonly target?: SemanticDocumentTarget;
     }
   | {
       readonly collector: ListCollector;
       readonly kind: "list";
-      readonly sourceElementId?: string;
+      readonly sourceElementId?: BlockElementIds;
     }
   | {
       readonly collector: BlockCollector;
@@ -193,7 +196,7 @@ type CloseAction =
   | {
       readonly collector: InlineCollector;
       readonly kind: "paragraph";
-      readonly sourceElementId?: string;
+      readonly sourceElementId?: BlockElementIds;
     };
 
 interface ElementFrame {
@@ -202,12 +205,15 @@ interface ElementFrame {
   readonly omitted: boolean;
   readonly closeAction?: CloseAction;
   readonly paragraphSourceBoundary?: boolean;
-  readonly paragraphSourceElementId?: string;
+  readonly paragraphSourceElementId?: BlockElementIds;
+  readonly directionRunOwner?: BlockCollector;
 }
 
 export interface ProjectedAddressableBlock {
   readonly block: SemanticBlock;
   readonly sourceElementId?: string;
+  /** Override the fragment ID for durable locators. Null uses a generated ID. */
+  readonly locatorElementId?: string | null;
 }
 
 export interface XhtmlDocumentProjection {
@@ -253,11 +259,15 @@ interface SourceElementIdentity {
   readonly observed: readonly string[];
 }
 
+interface BlockElementIds {
+  readonly fragment?: string;
+  readonly locator?: string;
+}
+
 function sourceElementIdentity(
-  event: XmlStartElementEvent,
+  xhtmlId: string | undefined,
+  xmlId: string | undefined,
 ): SourceElementIdentity {
-  const xhtmlId = attribute(event, "", "id");
-  const xmlId = attribute(event, XML_NAMESPACE, "id");
   const observed = Object.freeze(
     xhtmlId === undefined
       ? xmlId === undefined
@@ -277,6 +287,22 @@ function sourceElementIdentity(
   });
 }
 
+function countId(counts: Map<string, number>, id: string | undefined): void {
+  if (id !== undefined) counts.set(id, (counts.get(id) ?? 0) + 1);
+}
+
+function uniqueId(
+  id: string | undefined,
+  elementCounts: ReadonlyMap<string, number>,
+  blockCounts: ReadonlyMap<string, number>,
+): string | undefined {
+  return id !== undefined &&
+    elementCounts.get(id) === 1 &&
+    blockCounts.get(id) === 1
+    ? id
+    : undefined;
+}
+
 function collectAddressableBlocks(
   blocks: readonly SemanticBlock[],
   output: SemanticBlock[],
@@ -289,6 +315,19 @@ function collectAddressableBlocks(
       for (const item of block.items) {
         collectAddressableBlocks(item.children, output);
       }
+    }
+  }
+}
+
+function collectAutoTextScopes(
+  inlines: readonly SemanticInline[],
+  scopes: Set<number>,
+): void {
+  for (const inline of inlines) {
+    if (inline.kind === "text" && inline.autoDirectionScope !== undefined) {
+      scopes.add(inline.autoDirectionScope);
+    } else if ("children" in inline) {
+      collectAutoTextScopes(inline.children, scopes);
     }
   }
 }
@@ -456,7 +495,7 @@ function freezeRawInlines(
       case "line-break":
         state.pendingSpace = false;
         state.emittedContent = false;
-        output.push(Object.freeze({ kind: "line-break" }));
+        output.push(rawInline);
         break;
       case "raster-image": {
         if (state.pendingSpace && state.emittedContent) {
@@ -505,6 +544,7 @@ function freezeRawInlines(
         }
         break;
       }
+      case "direction-span":
       case "emphasis":
       case "strong":
       case "internal-link": {
@@ -547,6 +587,7 @@ function inlineBoundaryCharacter(
       case "raster-image":
         return "\ufffc";
       case "code":
+      case "direction-span":
       case "emphasis":
       case "internal-link":
       case "strong": {
@@ -568,7 +609,7 @@ function freezeCodeInlines(
     if (rawInline.kind === "text") {
       appendTextNode(output, rawInline.text, rawInline);
     } else if (rawInline.kind === "line-break") {
-      output.push(Object.freeze({ kind: "line-break" }));
+      output.push(rawInline);
     } else if (rawInline.kind === "raster-image") {
       output.push(
         Object.freeze({
@@ -675,7 +716,8 @@ class XhtmlProjector {
   readonly #elements: ElementFrame[] = [];
   readonly #destinations: SemanticDestination[] = [];
   readonly #sourceElementIdCounts = new Map<string, number>();
-  readonly #sourceElementIdsByBlock = new Map<SemanticBlock, string>();
+  readonly #locatorElementIdCounts = new Map<string, number>();
+  readonly #sourceElementIdsByBlock = new Map<SemanticBlock, BlockElementIds>();
   #documentId: ContentDocumentId | undefined;
   #documentContext: TextContext = Object.freeze({});
   #documentLocation: SemanticDocumentLocation | undefined;
@@ -760,36 +802,51 @@ class XhtmlProjector {
       return fail("malformed-package");
     }
 
+    const blocks: SemanticBlock[] = [];
+    collectAddressableBlocks(this.#blocks, blocks);
+    const autoTextScopes = new Set<number>();
+    if (this.#autoDirectionScopeCount !== 0) {
+      for (const block of blocks) {
+        this.#archive.budget.checkpoint();
+        if (block.kind === "paragraph" || block.kind === "heading") {
+          collectAutoTextScopes(block.children, autoTextScopes);
+        }
+      }
+    }
     const document = Object.freeze({
       id: this.#documentId,
       location: this.#documentLocation,
       blocks: this.#blocks,
-      ...(this.#autoDirectionScopeCount === 0
+      ...(autoTextScopes.size === 0
         ? {}
-        : { autoDirectionScopeCount: this.#autoDirectionScopeCount }),
+        : { autoDirectionScopeCount: autoTextScopes.size }),
       ...contextProperties(this.#documentContext),
     });
-    const blocks: SemanticBlock[] = [];
-    collectAddressableBlocks(document.blocks, blocks);
-    const candidateCounts = new Map<string, number>();
+    const fragmentCounts = new Map<string, number>();
+    const locatorCounts = new Map<string, number>();
     for (const block of blocks) {
-      const candidate = this.#sourceElementIdsByBlock.get(block);
-      if (candidate !== undefined) {
-        candidateCounts.set(
-          candidate,
-          (candidateCounts.get(candidate) ?? 0) + 1,
-        );
-      }
+      const ids = this.#sourceElementIdsByBlock.get(block);
+      countId(fragmentCounts, ids?.fragment);
+      countId(locatorCounts, ids?.locator);
     }
     const addressableBlocks = blocks.map((block) => {
-      const candidate = this.#sourceElementIdsByBlock.get(block);
-      const sourceIsUnique =
-        candidate !== undefined &&
-        this.#sourceElementIdCounts.get(candidate) === 1 &&
-        candidateCounts.get(candidate) === 1;
+      const ids = this.#sourceElementIdsByBlock.get(block);
+      const fragment = uniqueId(
+        ids?.fragment,
+        this.#sourceElementIdCounts,
+        fragmentCounts,
+      );
+      // Keep locator assignment for the same EPUB bytes independent of XML ID
+      // normalization in the fragment index.
+      const locator = uniqueId(
+        ids?.locator,
+        this.#locatorElementIdCounts,
+        locatorCounts,
+      );
       return Object.freeze({
         block,
-        ...(sourceIsUnique ? { sourceElementId: candidate } : {}),
+        ...(fragment === undefined ? {} : { sourceElementId: fragment }),
+        ...(fragment === locator ? {} : { locatorElementId: locator ?? null }),
       });
     });
 
@@ -811,14 +868,29 @@ class XhtmlProjector {
           ? inherited.autoDirectionScope
           : undefined;
     const context = deriveContext(event, inherited, autoDirectionScope);
-    const identity = sourceElementIdentity(event);
-    for (const observedId of identity.observed) {
-      this.#sourceElementIdCounts.set(
-        observedId,
-        (this.#sourceElementIdCounts.get(observedId) ?? 0) + 1,
-      );
-    }
-    const elementId = identity.candidate;
+    const xhtmlId = attribute(event, "", "id");
+    const rawXmlId = attribute(event, XML_NAMESPACE, "id");
+    // The parser handles literal whitespace. XML ID collapses U+0020 in the
+    // parsed attribute, leaving referenced tab, CR and LF distinct.
+    const xmlId = rawXmlId?.replace(/ +/g, " ").replace(/^ | $/g, "");
+    const locator = sourceElementIdentity(xhtmlId, rawXmlId);
+    const fragment =
+      xmlId === rawXmlId ? locator : sourceElementIdentity(xhtmlId, xmlId);
+    for (const id of locator.observed)
+      countId(this.#locatorElementIdCounts, id);
+    for (const id of fragment.observed)
+      countId(this.#sourceElementIdCounts, id);
+    const elementId =
+      locator.candidate === undefined && fragment.candidate === undefined
+        ? undefined
+        : {
+            ...(locator.candidate === undefined
+              ? {}
+              : { locator: locator.candidate }),
+            ...(fragment.candidate === undefined
+              ? {}
+              : { fragment: fragment.candidate }),
+          };
 
     if (depth === 1) {
       if (
@@ -872,7 +944,7 @@ class XhtmlProjector {
   private consumeRootChild(
     event: XmlStartElementEvent,
     context: TextContext,
-    elementId: string | undefined,
+    elementId: BlockElementIds | undefined,
   ): void {
     if (event.name.namespaceUri !== XHTML_NAMESPACE) {
       return fail("malformed-package");
@@ -912,7 +984,7 @@ class XhtmlProjector {
   private consumeBodyElement(
     event: XmlStartElementEvent,
     context: TextContext,
-    elementId: string | undefined,
+    elementId: BlockElementIds | undefined,
   ): void {
     const name = event.name.localName;
     if (name === "body" || name === "head" || name === "html") {
@@ -957,7 +1029,14 @@ class XhtmlProjector {
         this.beginLink(event, context);
         return;
       case "br":
-        this.appendRawInline(Object.freeze({ kind: "line-break" }));
+        this.appendRawInline(
+          Object.freeze({
+            kind: "line-break",
+            ...(context.language === undefined
+              ? {}
+              : { language: context.language }),
+          }),
+        );
         this.#elements.push({ name: event.name, context, omitted: false });
         return;
       case "img":
@@ -982,9 +1061,36 @@ class XhtmlProjector {
               : { paragraphSourceElementId: elementId }),
           });
         } else {
-          this.#elements.push({ name: event.name, context, omitted: false });
+          this.beginTransparentElement(event, context);
         }
     }
+  }
+
+  private beginTransparentElement(
+    event: XmlStartElementEvent,
+    context: TextContext,
+  ): void {
+    const direction = attribute(event, "", "dir");
+    const destination = this.currentDestination();
+    const ownsDirection =
+      direction === "ltr" || direction === "rtl" || direction === "auto";
+    if (ownsDirection && destination.kind === "inlines") {
+      this.beginInline(event, context, "direction-span");
+      return;
+    }
+
+    const frame: ElementFrame = {
+      name: event.name,
+      context,
+      omitted: false,
+      ...(ownsDirection && destination.kind === "blocks"
+        ? { directionRunOwner: destination }
+        : {}),
+    };
+    if (frame.directionRunOwner !== undefined) {
+      (frame.directionRunOwner.activeDirectionFrames ??= []).push(frame);
+    }
+    this.#elements.push(frame);
   }
 
   private consumeEnd(event: XmlEndElementEvent): void {
@@ -997,6 +1103,10 @@ class XhtmlProjector {
       return fail("malformed-package");
     }
 
+    if (frame.directionRunOwner !== undefined) {
+      frame.directionRunOwner.activeDirectionFrames?.pop();
+      frame.directionRunOwner.pendingDirectionRuns?.delete(frame);
+    }
     if (frame.closeAction !== undefined) {
       this.completeAction(frame.closeAction, frame.context);
     }
@@ -1030,14 +1140,7 @@ class XhtmlProjector {
       return;
     }
 
-    const inlines =
-      destination.kind === "blocks"
-        ? destination.pendingInlines
-        : destination.inlines;
-    if (destination.kind === "blocks" && inlines.length === 0) {
-      this.beginPendingParagraph(destination);
-    }
-    inlines.push(
+    this.appendRawInline(
       Object.freeze({
         kind: "text",
         text,
@@ -1050,7 +1153,7 @@ class XhtmlProjector {
     event: XmlStartElementEvent,
     context: TextContext,
     level?: 1 | 2 | 3 | 4 | 5 | 6,
-    elementId?: string,
+    elementId?: BlockElementIds,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -1087,7 +1190,7 @@ class XhtmlProjector {
   private beginBlockQuote(
     event: XmlStartElementEvent,
     context: TextContext,
-    elementId: string | undefined,
+    elementId: BlockElementIds | undefined,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -1116,7 +1219,7 @@ class XhtmlProjector {
     event: XmlStartElementEvent,
     context: TextContext,
     ordered: boolean,
-    elementId: string | undefined,
+    elementId: BlockElementIds | undefined,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -1148,7 +1251,7 @@ class XhtmlProjector {
   private beginListItem(
     event: XmlStartElementEvent,
     context: TextContext,
-    elementId: string | undefined,
+    elementId: BlockElementIds | undefined,
   ): void {
     const parent = this.currentDestination();
     if (parent.kind !== "list") {
@@ -1187,7 +1290,7 @@ class XhtmlProjector {
   private beginInline(
     event: XmlStartElementEvent,
     context: TextContext,
-    inlineKind: "code" | "emphasis" | "strong",
+    inlineKind: RawContainerInline["kind"],
   ): void {
     this.assertInlineDestination();
     const collector: InlineCollector = {
@@ -1215,20 +1318,11 @@ class XhtmlProjector {
     ) {
       return fail("malformed-package");
     }
-    const href = attribute(event, "", "href");
-    const destination = this.currentDestination();
-    if (
-      destination.kind === "blocks" &&
-      (href === undefined || this.isNonLocalReference(href))
-    ) {
-      this.#elements.push({
-        name: event.name,
-        context,
-        omitted: false,
-      });
+    const target = this.resolveLink(attribute(event, "", "href"));
+    if (target === undefined) {
+      this.beginTransparentElement(event, context);
       return;
     }
-    const target = this.resolveLink(href);
     const collector: InlineCollector = {
       kind: "inlines",
       context,
@@ -1242,8 +1336,8 @@ class XhtmlProjector {
       closeAction: {
         kind: "inline",
         collector,
-        inlineKind: target === undefined ? "transparent" : "internal-link",
-        ...(target === undefined ? {} : { target }),
+        inlineKind: "internal-link",
+        target,
       },
     });
   }
@@ -1384,12 +1478,6 @@ class XhtmlProjector {
       }
       case "inline": {
         this.popDestination(action.collector);
-        if (action.inlineKind === "transparent") {
-          for (const child of action.collector.inlines) {
-            this.appendRawInline(child);
-          }
-          return;
-        }
         this.appendRawInline(
           action.inlineKind === "internal-link"
             ? Object.freeze({
@@ -1410,11 +1498,14 @@ class XhtmlProjector {
 
   private flushPendingParagraph(collector: BlockCollector): void {
     const sourceId = collector.pendingSourceElementId;
+    const language = collector.pendingParagraphLanguage;
     const direction = collector.pendingParagraphDirection;
     const autoDirectionScope = collector.pendingParagraphAutoDirectionScope;
     const children = freezeRawInlines(collector.pendingInlines);
     collector.pendingInlines.length = 0;
+    collector.pendingDirectionRuns?.clear();
     collector.pendingSourceElementId = undefined;
+    delete collector.pendingParagraphLanguage;
     delete collector.pendingParagraphDirection;
     delete collector.pendingParagraphAutoDirectionScope;
     if (children.length === 0) {
@@ -1426,9 +1517,7 @@ class XhtmlProjector {
       Object.freeze({
         kind: "paragraph",
         children,
-        ...(collector.context.language === undefined
-          ? {}
-          : { language: collector.context.language }),
+        ...(language === undefined ? {} : { language }),
         ...(direction === undefined ? {} : { direction }),
         ...(autoDirectionScope === undefined ? {} : { autoDirectionScope }),
       }),
@@ -1540,7 +1629,22 @@ class XhtmlProjector {
       if (destination.pendingInlines.length === 0) {
         this.beginPendingParagraph(destination);
       }
-      destination.pendingInlines.push(inline);
+      let inlines = destination.pendingInlines;
+      for (const frame of destination.activeDirectionFrames ?? []) {
+        const runs = (destination.pendingDirectionRuns ??= new Map());
+        let run = runs.get(frame);
+        if (run === undefined) {
+          run = {
+            kind: "direction-span",
+            children: [],
+            ...contextProperties(frame.context),
+          };
+          runs.set(frame, run);
+          inlines.push(run);
+        }
+        inlines = run.children;
+      }
+      inlines.push(inline);
     } else {
       destination.inlines.push(inline);
     }
@@ -1549,7 +1653,7 @@ class XhtmlProjector {
   private appendBlock(
     destination: BlockCollector,
     block: SemanticBlock,
-    elementId?: string,
+    elementId?: BlockElementIds,
   ): void {
     destination.blocks.push(block);
     if (elementId !== undefined) {
@@ -1562,6 +1666,9 @@ class XhtmlProjector {
       const frame = this.#elements[index];
       if (frame?.paragraphSourceBoundary === true) {
         collector.pendingSourceElementId = frame.paragraphSourceElementId;
+        if (frame.context.language !== undefined) {
+          collector.pendingParagraphLanguage = frame.context.language;
+        }
         if (frame.context.direction !== undefined) {
           collector.pendingParagraphDirection = frame.context.direction;
         }
@@ -1571,6 +1678,9 @@ class XhtmlProjector {
         }
         return;
       }
+    }
+    if (collector.context.language !== undefined) {
+      collector.pendingParagraphLanguage = collector.context.language;
     }
     if (collector.context.direction !== undefined) {
       collector.pendingParagraphDirection = collector.context.direction;

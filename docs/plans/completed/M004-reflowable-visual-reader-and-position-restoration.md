@@ -1,5 +1,9 @@
 # Deliver the reflowable visual reader and position restoration
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Complete roadmap Milestone 4 by turning the implemented, framework-independent EPUB publication model into a safe, accessible, reflowable desktop reading experience that can reopen an exact-byte-identical book at the same logical passage or the nearest valid passage.
@@ -1254,7 +1258,7 @@ Task 6.2 local validation completed on 2026-07-24:
 - `pnpm.cmd check` passed the authoritative Windows aggregate: formatting, TypeScript/Rust/Python lint and type checks, 18 shared files/175 tests, 23 EPUB files/379 tests, 20 desktop files/204 tests plus six protocol tests, Rust tests, three Python tests, package builds, the 109-module Vite/Tauri release build, and Python source/wheel builds. `pnpm.cmd check:portable` also passed the portable Ubuntu-equivalent surface. Vite retained only the existing approximately 570.58 kB chunk advisory.
 - The privacy/scope audit confirmed the CSP remains `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:` with no `unsafe-eval`, inline/remote origin, runtime Ajv/code generation, Tauri command/plugin/capability, Cargo change, path contract, or external request. Production storage remains limited to the two decoder-validated keys, 128 positions, 262,144 position-envelope code units, and 1,024 preference-envelope code units. No private/copyrighted book, filename/path/content log, audio, model, generated media, TTS, narration, dependency, manifest, lockfile, shared/EPUB contract, or production source changed.
 - The system diagram and final diff were reviewed. Task 6.2 changes only the native test harness and current documentation; disposable files/profiles are removed.
-- Pull-request [Foundation checks run 30110610686](https://github.com/mmjosedaniel/voxleaf/actions/runs/30110610686) passed on commit `4a97928`: Ubuntu portable foundation passed in 1 minute 8 seconds and Windows native foundation passed in 13 minutes 21 seconds, including the expanded packaged WebView2 matrix and authoritative root checks. The superseded pre-fix PageDown run is retained as failure evidence; the replacement run is the closure gate.
+- Pull-request Foundation checks run 30110610686 passed on commit `4a97928`: Ubuntu portable foundation passed in 1 minute 8 seconds and Windows native foundation passed in 13 minutes 21 seconds, including the expanded packaged WebView2 matrix and authoritative root checks. The superseded pre-fix PageDown run is retained as failure evidence; the replacement run is the closure gate.
 - With every task and acceptance gate complete, the roadmap status was updated and this plan moved from `docs/plans/active/` to `docs/plans/completed/`.
 
 Task 6.1 validation completed on 2026-07-24:
@@ -1473,7 +1477,7 @@ Task 1.5 validation completed on 2026-07-22:
 
 Task 1.6 validation completed on 2026-07-22:
 
-- Reference host: Windows 11 Home Single Language `10.0.26200` build `26200`; Intel Core Ultra 7 255HX with 20 logical processors; 33,752,997,888 bytes RAM; NVIDIA GeForce RTX 5060 Laptop GPU plus Intel Graphics; Node.js `24.18.0`; pnpm `11.15.1`; Playwright `1.61.1`; Chrome for Testing `149.0.7827.55` / revision `1228`. The benchmark does not claim which display adapter Chromium used.
+- Reference host ran Windows 11 with 32 GB RAM, integrated graphics, and a discrete NVIDIA RTX 50-series laptop GPU. Tools included Node.js `24.18.0`, pnpm `11.15.1`, Playwright `1.61.1`, and Chrome for Testing. The benchmark does not claim which display adapter Chromium used.
 - `pnpm.cmd benchmark:reader` passed the final thresholded run: 4 tests in 27.0 seconds. The 10,000-block incremental case observed 9.7 ms first useful content, 12.8 ms maximum batch work, 587.8 ms deep-target readiness, 654.3 ms total append, 132.5 ms preference reflow, 78,123 DOM nodes, and 111.8 MiB working-set growth. The combined exact block/eight-image case observed 78,132 DOM nodes and 174.8 MiB growth.
 - The 20,000-block stress case exceeded the accepted boundaries with 156,251 DOM nodes, 20.7 ms maximum batch work, 1,213.4 ms target readiness, 263.8 ms reflow, and 182.7 MiB growth. The 50,000-block sample reached 390,623 DOM nodes and 425.9 MiB growth. Complete 10,000-block rendering consumed 124.3 ms of uninterrupted script work, supporting incremental selection.
 - `pnpm.cmd test:browser` passed: the benchmark specs remained excluded and the fixed foundation smoke passed.

@@ -1268,6 +1268,7 @@ async function run() {
             buildReaderLongChapterEpubFixture({
               semanticBlockCount: 10_000,
               deepTargetBlockIndex: 8_999,
+              reflowTarget: true,
             }),
             buildReaderLongChapterEpubFixture({
               semanticBlockCount: 10_001,

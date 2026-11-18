@@ -160,8 +160,9 @@ describe("EPUB processing budget", () => {
       },
     });
     aboveAggregateRatio.registerArchiveEntryDeclaration(1, 4);
+    aboveAggregateRatio.registerArchiveEntryDeclaration(1, 4);
     expect(() =>
-      aboveAggregateRatio.registerArchiveEntryDeclaration(1, 4),
+      aboveAggregateRatio.checkDeclaredArchiveCompressionRatio(),
     ).toThrowError(
       expect.objectContaining({ code: "resource-limit-exceeded" }),
     );

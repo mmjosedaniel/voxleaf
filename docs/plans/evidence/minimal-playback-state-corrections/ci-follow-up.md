@@ -1,5 +1,7 @@
 # PR #291 CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 This record follows the completed PSC plan without rewriting its historical
 receipts or acceptance. Base: `91f17ab6e393f61d4bd97815c9ad1baa14b6b751`.
 The maintainer authorized corrections, local validation, commit and push until
@@ -7,7 +9,7 @@ the PR checks pass. Merge is not authorized.
 
 ## Observed failures
 
-[Foundation run 41251601002](https://github.com/mmjosedaniel/voxleaf/actions/runs/41251601002)
+Foundation run 41251601002
 failed in two independent jobs:
 
 - Ubuntu portable: 1,050 desktop tests passed; three `App.test.tsx` cases failed.

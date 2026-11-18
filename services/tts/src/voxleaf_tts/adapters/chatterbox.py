@@ -265,9 +265,13 @@ class ChatterboxMultilingualTtsEngine:
             with _discard_process_stdout():
                 torch = cast(Any, self._importer("torch"))
                 chatterbox = cast(Any, self._importer("chatterbox.mtl_tts"))
+                if str(torch.__version__) != TORCH_VERSION:
+                    raise EngineFailure(EngineFailureCode.UNAVAILABLE)
+                cuda_available = torch.cuda.is_available()
+                if cuda_available is False:
+                    raise EngineFailure(EngineFailureCode.TORCH_CUDA_UNAVAILABLE)
                 if (
-                    str(torch.__version__) != TORCH_VERSION
-                    or not bool(torch.cuda.is_available())
+                    cuda_available is not True
                     or not bool(torch.cuda.is_bf16_supported())
                     or tuple(torch.cuda.get_device_capability()) != (12, 0)
                     or "sm_120" not in tuple(torch.cuda.get_arch_list())

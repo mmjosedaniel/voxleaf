@@ -45,6 +45,7 @@ export interface AdaptivePcmPlayerObservation {
   readonly playableDurationMs: number;
   readonly lowBuffer: boolean;
   readonly underrunCount: number;
+  readonly bufferingMs: number;
   readonly volumePercent: number;
   readonly playbackRate: number;
   readonly selectedPlaybackRatePercent: NarrationPlaybackRatePercentV3;
@@ -478,7 +479,7 @@ export class AdaptivePcmPlayer {
     }
     const observation = this.#scheduler.observe();
     if (
-      observation.playbackState === "complete" ||
+      !this.#scheduler.hasRemainingPlayback() ||
       (observation.playbackRateState.selectedRatePercent === 100 &&
         observation.playbackRateState.activeRatePercent !== 100)
     ) {
@@ -876,7 +877,7 @@ export class AdaptivePcmPlayer {
 
   #retireCompletedRatePreparation(): boolean {
     // A silent continuation or Resume can complete without another device end.
-    if (this.#scheduler.observe().playbackState !== "complete") return false;
+    if (this.#scheduler.hasRemainingPlayback()) return false;
     if (
       this.#futureRatePreparation ||
       this.#playbackRatePreparation !== undefined
@@ -908,6 +909,7 @@ export class AdaptivePcmPlayer {
       playableDurationMs: scheduler.effectiveListeningDurationMs,
       lowBuffer: scheduler.lowBuffer,
       underrunCount: this.#underrunCount,
+      bufferingMs: scheduler.bufferingMs,
       volumePercent: this.#volumePercent,
       playbackRate: scheduler.playbackRateState.selectedRatePercent / 100,
       selectedPlaybackRatePercent:

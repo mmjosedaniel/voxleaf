@@ -114,7 +114,17 @@ export class OperationalRecoveryController {
     this.#transition("service-contained");
   }
 
-  public markCleanupVerified(recoveryActionAvailable = true): void {
+  public markCleanupVerified(
+    recoveryActionAvailable = true,
+    providerUnavailable = false,
+  ): void {
+    if (
+      this.#phase === "verifying-cleanup" &&
+      providerUnavailable &&
+      this.#failure?.code === "model-warm-failed"
+    ) {
+      this.#failure = failureFor("provider-unavailable");
+    }
     const failure = this.#expectFailure();
     const recoverable =
       recoveryActionAvailable &&

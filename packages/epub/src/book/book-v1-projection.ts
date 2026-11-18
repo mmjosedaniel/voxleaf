@@ -100,26 +100,49 @@ export async function projectBookV1(
   navigationDocument: ParsedNavigationDocument,
 ): Promise<BookV1> {
   const identityValue = await computeSha256(exactEpubBytes);
-  const resources = packageDocument.manifest
-    .filter(isSupportedLocalResource)
-    .map((item) => {
-      if (item.location.kind !== "local") {
-        return fail("internal-failure");
-      }
+  const localResources = packageDocument.manifest.filter(
+    isSupportedLocalResource,
+  );
+  const occupiedPaths = new Set(
+    localResources.flatMap(({ location }) =>
+      location.kind === "local" ? [String(location.path)] : [],
+    ),
+  );
+  // BookV1 paths join projection records. All reads still use the archive keys.
+  const projectedPaths = new Map<string, string>();
+  let aliasOrdinal = 0;
+  const resources = localResources.map((item) => {
+    if (item.location.kind !== "local") {
+      return fail("internal-failure");
+    }
 
-      return {
-        path: String(item.location.path),
-        mediaType: item.mediaType,
-        role:
-          item.kind === "content-document"
-            ? ("content-document" as const)
-            : ("image" as const),
-      };
-    });
+    const archivePath = String(item.location.path);
+    let path = archivePath;
+    if (archivePath.includes("#")) {
+      const previous = projectedPaths.get(archivePath);
+      if (previous !== undefined) {
+        path = previous;
+      } else {
+        do {
+          path = `voxleaf-resource/${aliasOrdinal++}`;
+        } while (occupiedPaths.has(path));
+        occupiedPaths.add(path);
+        projectedPaths.set(archivePath, path);
+      }
+    }
+    return {
+      path,
+      mediaType: item.mediaType,
+      role:
+        item.kind === "content-document"
+          ? ("content-document" as const)
+          : ("image" as const),
+    };
+  });
   const spine = packageDocument.spine.map((item) => ({
     id: `spine:${item.index}`,
     index: item.index,
-    resourcePath: String(item.path),
+    resourcePath: projectedPaths.get(item.path) ?? String(item.path),
   }));
   const navigation = projectNavigation(navigationDocument, packageDocument);
 

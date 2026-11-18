@@ -18,6 +18,7 @@ use std::{
 };
 
 use crate::sha256_hex::encode_sha256;
+use crate::tts_service_protocol::TtsChildProtocol;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
@@ -34,6 +35,9 @@ pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-defaul
 const PACKAGE_ID: &str = "voxleaf-chatterbox-v7";
 const PACKAGE_VERSION: &str = "7";
 const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v7.json";
+// Derive the repository from a complete published asset URL.
+const FIRST_RUNTIME_PART_URL: &str = "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v7/voxleaf-chatterbox-runtime-v7.zip.part-001";
+const RELEASE_ASSET_PATH: &str = "/releases/download/";
 // Published v2 correction identities are historical authority. Current shared
 // schema generation must not change which retained v2 package can be removed.
 const GENERATED_RUNTIME_FILES: [(&str, u64, &str); 2] = [
@@ -128,6 +132,8 @@ pub(crate) struct OptionalProfileSnapshot {
     pub recommended_total_dedicated_vram_mi_b: u64,
     pub license_summary: &'static str,
     pub failure: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub removal_supported: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -346,6 +352,7 @@ pub(crate) struct InstalledChatterboxRuntime {
     pub model_root: PathBuf,
     pub site_packages: PathBuf,
     pub numba_cache_root: PathBuf,
+    pub protocol: TtsChildProtocol,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -580,17 +587,23 @@ fn validate_runtime_artifact(
     {
         return false;
     }
+    let Some((expected_repository, _)) = FIRST_RUNTIME_PART_URL.split_once(RELEASE_ASSET_PATH)
+    else {
+        return false;
+    };
+    let expected_release = format!("chatterbox-runtime-v{version}");
     let mut total = 0_u64;
     for (index, part) in artifact.parts.iter().enumerate() {
         let expected_filename = format!(
             "voxleaf-chatterbox-runtime-v{version}.zip.part-{:03}",
             index + 1
         );
-        let expected_url = format!(
-            "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v{version}/{expected_filename}"
-        );
+        let (repository, asset_path) = part.url.split_once(RELEASE_ASSET_PATH).unwrap_or_default();
+        let (release, filename) = asset_path.split_once('/').unwrap_or_default();
         if part.filename != expected_filename
-            || part.url != expected_url
+            || repository != expected_repository
+            || release != expected_release
+            || filename != expected_filename
             || part.download_bytes == 0
             || part.download_bytes > limits.maximum_runtime_part_bytes
             || !validate_sha256(&part.sha256)
@@ -655,6 +668,7 @@ fn snapshot_from(
         recommended_total_dedicated_vram_mi_b: requirements.recommended_total_dedicated_vram_mi_b,
         license_summary: "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
         failure,
+        removal_supported: None,
     }
 }
 
@@ -852,7 +866,10 @@ fn verify_owned_removal_chain(root: &Path, directory: &Path) -> Result<bool, Opt
 
 fn clean_staging(root: &Path) -> Result<(), OptionalProfileError> {
     let staging = staging_root(root);
-    remove_contained_directory(root, &staging)
+    if verify_owned_removal_chain(root, &staging)? {
+        fs::remove_dir_all(staging).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    }
+    Ok(())
 }
 
 fn validate_backup_tree(directory: &Path, depth: usize) -> Result<(), OptionalProfileError> {
@@ -1084,12 +1101,23 @@ fn validate_installed_runtime_identity(
             != format!("voxleaf-chatterbox-v{}", manifest.identity.package_version)
         || runtime.package_version != manifest.identity.package_version
         || runtime.profile_id != PROFILE_ID
-        || runtime.service_module != "voxleaf_tts.chatterbox_service"
+        || runtime.service_module != installed_contract(manifest).1
         || runtime.files.is_empty()
     {
         return Err(OptionalProfileError::VerificationFailed);
     }
     Ok(())
+}
+
+fn installed_contract(manifest: &OptionalPackageManifest) -> (TtsChildProtocol, &'static str) {
+    match manifest.identity.package_version.as_str() {
+        #[cfg(any(
+            feature = "local-chatterbox-v8-candidate",
+            all(test, feature = "release-locked-runtime")
+        ))]
+        "8" => (TtsChildProtocol::V2, "voxleaf_tts.chatterbox_service_v2"),
+        _ => (TtsChildProtocol::V1, "voxleaf_tts.chatterbox_service"),
+    }
 }
 
 fn verify_runtime(
@@ -1126,15 +1154,23 @@ fn read_runtime_manifest(
     path: &Path,
     cancellation: Option<&AtomicBool>,
 ) -> Result<Vec<u8>, OptionalProfileError> {
+    read_bounded_runtime_manifest(path, cancellation, MAXIMUM_RUNTIME_MANIFEST_BYTES)
+}
+
+fn read_bounded_runtime_manifest(
+    path: &Path,
+    cancellation: Option<&AtomicBool>,
+    maximum_bytes: u64,
+) -> Result<Vec<u8>, OptionalProfileError> {
     check_acquisition_cancellation(cancellation)?;
     let mut bytes = Vec::new();
     File::open(path)
         .map_err(|_| OptionalProfileError::VerificationFailed)?
-        .take(MAXIMUM_RUNTIME_MANIFEST_BYTES + 1)
+        .take(maximum_bytes + 1)
         .read_to_end(&mut bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
     check_acquisition_cancellation(cancellation)?;
-    if bytes.len() as u64 > MAXIMUM_RUNTIME_MANIFEST_BYTES {
+    if bytes.len() as u64 > maximum_bytes {
         return Err(OptionalProfileError::VerificationFailed);
     }
     Ok(bytes)
@@ -1152,7 +1188,16 @@ fn verify_runtime_cancellable(
         .as_ref()
         .ok_or(OptionalProfileError::VerificationFailed)?;
     let manifest_path = root.join(&manifest_name);
-    let manifest_bytes = read_runtime_manifest(&manifest_path, cancellation)?;
+    let manifest_bytes = if installed_contract(manifest_authority).0 == TtsChildProtocol::V2 {
+        // V8 carries extra versioned service modules in a local candidate.
+        read_bounded_runtime_manifest(
+            &manifest_path,
+            cancellation,
+            MAXIMUM_RUNTIME_MANIFEST_BYTES + 4096,
+        )?
+    } else {
+        read_runtime_manifest(&manifest_path, cancellation)?
+    };
     let manifest_hash = encode_sha256(Sha256::digest(&manifest_bytes));
     if manifest_hash != runtime_authority.runtime_manifest_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
@@ -1208,12 +1253,10 @@ fn verify_runtime_cancellable(
     }
     let python = resolve_file(root, &manifest.python_path)?;
     let site_packages = resolve_directory(root, &manifest.site_packages_path, &canonical_root)?;
+    let service_path = manifest.service_module.replace('.', "/");
     resolve_file(
         root,
-        &format!(
-            "{}/voxleaf_tts/chatterbox_service.py",
-            manifest.site_packages_path
-        ),
+        &format!("{}/{service_path}.py", manifest.site_packages_path),
     )?;
     let model_root = resolve_directory(root, &manifest.model_root, &canonical_root)?;
     Ok(InstalledChatterboxRuntime {
@@ -1224,6 +1267,7 @@ fn verify_runtime_cancellable(
             .parent()
             .ok_or(OptionalProfileError::VerificationFailed)?
             .join("cache"),
+        protocol: installed_contract(manifest_authority).0,
     })
 }
 
@@ -1457,9 +1501,38 @@ fn extract_archive(
     maximum_bytes: u64,
     cancelled: &AtomicBool,
 ) -> Result<(), OptionalProfileError> {
+    extract_versioned_archive(archive_path, target, maximum_bytes, cancelled, PACKAGE_ID)
+}
+
+fn manifest_for_discovery() -> Result<OptionalPackageManifest, OptionalProfileError> {
+    let manifest = exact_manifest()?;
+    #[cfg(feature = "local-chatterbox-v8-candidate")]
+    let manifest = exact_local_successor::local_authority(manifest)?;
+    Ok(manifest)
+}
+
+fn verify_discovered_runtime(
+    root: &Path,
+    manifest: &OptionalPackageManifest,
+) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    #[cfg(feature = "local-chatterbox-v8-candidate")]
+    if manifest.identity.package_version == "8" {
+        return exact_local_successor::verify_candidate(root, manifest);
+    }
+    prepare_and_verify_installed_runtime(root, manifest)
+}
+
+fn extract_versioned_archive(
+    archive_path: &Path,
+    target: &Path,
+    maximum_bytes: u64,
+    cancelled: &AtomicBool,
+    package_id: &str,
+) -> Result<(), OptionalProfileError> {
     let file = File::open(archive_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut archive =
         ZipArchive::new(file).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let prefix = format!("{package_id}/");
     let mut extracted = 0_u64;
     for index in 0..archive.len() {
         if cancelled.load(Ordering::Acquire) {
@@ -1480,7 +1553,6 @@ fn extract_archive(
         let name = entry
             .name()
             .map_err(|_| OptionalProfileError::VerificationFailed)?;
-        let prefix = format!("{PACKAGE_ID}/");
         let relative = name
             .strip_prefix(&prefix)
             .ok_or(OptionalProfileError::VerificationFailed)?;
@@ -2005,6 +2077,7 @@ impl OptionalChatterboxManager {
                 operation.installed_verified = false;
                 verify_runtime_cached(&package_root(root), manifest)?;
                 operation.installed_verified = true;
+                verify_owned_removal_chain(root, &staging_root(root))?;
                 remove_promotion_backup(root)?;
                 clean_staging(root)?;
                 operation.installed_verified = false;
@@ -2583,12 +2656,12 @@ pub(crate) fn discover_installed_chatterbox_runtime()
     if let Some((root, manifest)) = tests::maf_discovery_inputs() {
         return prepare_and_verify_installed_runtime(&root, &manifest).map(Some);
     }
-    let manifest = exact_manifest()?;
-    if manifest.availability != "downloadable" {
+    let manifest = manifest_for_discovery()?;
+    if !cfg!(feature = "local-chatterbox-v8-candidate") && manifest.availability != "downloadable" {
         return Ok(None);
     }
     let root = OptionalChatterboxManager::profile_root_for()?;
-    match prepare_and_verify_installed_runtime(root, &manifest) {
+    match verify_discovered_runtime(root, &manifest) {
         Ok(runtime) => Ok(Some(runtime)),
         Err(OptionalProfileError::VerificationFailed) => Ok(None),
         Err(error) => Err(error),
@@ -2596,13 +2669,20 @@ pub(crate) fn discover_installed_chatterbox_runtime()
 }
 
 pub(crate) fn configure_application_data_root(app: &AppHandle) -> Result<(), OptionalProfileError> {
+    if cfg!(feature = "local-chatterbox-v8-candidate")
+        && app.config().identifier != "com.voxleaf.chatterboxcandidate"
+    {
+        return Err(OptionalProfileError::Unavailable);
+    }
     let root = app
         .path()
         .app_local_data_dir()
         .map(|path| path.join("tts"))
         .map_err(|_| OptionalProfileError::Unavailable)?;
-    let manager = app.state::<Arc<OptionalChatterboxManager>>();
-    manager.reconcile_staging_at(&root)?;
+    if !cfg!(feature = "local-chatterbox-v8-candidate") {
+        let manager = app.state::<Arc<OptionalChatterboxManager>>();
+        manager.reconcile_staging_at(&root)?;
+    }
     APPLICATION_DATA_ROOT
         .set(root)
         .map_err(|_| OptionalProfileError::Unavailable)
@@ -2617,6 +2697,29 @@ fn select_at_if_host_admitted(
         return Err(OptionalProfileError::IncompatibleHost);
     }
     manager.select_at(root)
+}
+
+fn select_profile_at(
+    manager: &OptionalChatterboxManager,
+    root: &Path,
+    manifest: &OptionalPackageManifest,
+    admitted: bool,
+) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+    if cfg!(feature = "local-chatterbox-v8-candidate") && manifest.identity.package_version == "8" {
+        #[cfg(feature = "local-chatterbox-v8-candidate")]
+        {
+            if !admitted {
+                return Err(OptionalProfileError::IncompatibleHost);
+            }
+            let snapshot = exact_local_successor::candidate_snapshot(root, manifest)?;
+            return if snapshot.state == OptionalProfileState::Installed {
+                Ok(snapshot)
+            } else {
+                Err(OptionalProfileError::Unavailable)
+            };
+        }
+    }
+    select_at_if_host_admitted(manager, root, admitted)
 }
 
 fn download_at_if_host_admitted(
@@ -2652,6 +2755,10 @@ pub async fn optional_chatterbox_snapshot(
     let manager = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let root = OptionalChatterboxManager::profile_root_for()?;
+        if cfg!(feature = "local-chatterbox-v8-candidate") {
+            #[cfg(feature = "local-chatterbox-v8-candidate")]
+            return exact_local_successor::candidate_snapshot(root, &manifest_for_discovery()?);
+        }
         if retry_cleanup == Some(true) {
             manager.retry_cleanup(root, &exact_manifest()?)
         } else {
@@ -2673,9 +2780,9 @@ pub async fn select_optional_chatterbox(
     }
     let manager = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
-        let manifest = exact_manifest()?;
+        let manifest = manifest_for_discovery()?;
         let root = OptionalChatterboxManager::profile_root_for()?;
-        select_at_if_host_admitted(&manager, root, host_is_admitted(&manifest))
+        select_profile_at(&manager, root, &manifest, host_is_admitted(&manifest))
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?
@@ -2687,6 +2794,9 @@ pub async fn download_optional_chatterbox(
     manager: State<'_, Arc<OptionalChatterboxManager>>,
     profile_id: String,
 ) -> Result<OptionalProfileSnapshot, &'static str> {
+    if cfg!(feature = "local-chatterbox-v8-candidate") {
+        return Err(OptionalProfileError::Unavailable.code());
+    }
     if profile_id != PROFILE_ID {
         return Err(OptionalProfileError::Invalid.code());
     }
@@ -2706,6 +2816,9 @@ pub async fn cancel_optional_chatterbox(
     manager: State<'_, Arc<OptionalChatterboxManager>>,
     profile_id: String,
 ) -> Result<OptionalProfileSnapshot, &'static str> {
+    if cfg!(feature = "local-chatterbox-v8-candidate") {
+        return Err(OptionalProfileError::Unavailable.code());
+    }
     if profile_id != PROFILE_ID {
         return Err(OptionalProfileError::Invalid.code());
     }
@@ -2725,6 +2838,9 @@ pub async fn remove_optional_chatterbox(
     supervisor: State<'_, Arc<crate::tts_service_supervisor::TtsServiceSupervisor>>,
     profile_id: String,
 ) -> Result<OptionalProfileSnapshot, &'static str> {
+    if cfg!(feature = "local-chatterbox-v8-candidate") {
+        return Err(OptionalProfileError::Unavailable.code());
+    }
     if profile_id != PROFILE_ID {
         return Err(OptionalProfileError::Invalid.code());
     }
@@ -2744,3 +2860,12 @@ pub async fn remove_optional_chatterbox(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(any(
+    feature = "local-chatterbox-v8-candidate",
+    all(test, feature = "release-locked-runtime")
+))]
+mod exact_local_successor;
+
+#[cfg(all(test, feature = "release-locked-runtime"))]
+pub(crate) use exact_local_successor::admit_exact_local_v8;

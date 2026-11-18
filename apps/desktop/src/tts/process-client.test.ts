@@ -13,6 +13,49 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 const mockedInvoke = vi.mocked(invoke);
 
+it("VF-0114 preserves provider loss only for an owned Prepare response", async () => {
+  mockedInvoke.mockReset();
+  mockedInvoke.mockResolvedValueOnce(startControls());
+  const client = new TtsProcessClient();
+  await client.start("chatterbox-multilingual-v3-cuda-bf16-default-v4", "en");
+  mockedInvoke.mockRejectedValueOnce("tts-service-torch-cuda-unavailable");
+  await expect(client.prepare()).rejects.toMatchObject({
+    code: "tts-service-torch-cuda-unavailable",
+  });
+  expect(mockedInvoke).toHaveBeenLastCalledWith("prepare_tts_service", {
+    serviceInstanceId: SERVICE_INSTANCE_ID,
+  });
+  mockedInvoke.mockRejectedValueOnce("tts-service-torch-cuda-unavailable");
+  await expect(client.health()).rejects.toMatchObject({
+    code: "tts-service-unavailable",
+  });
+  mockedInvoke.mockResolvedValueOnce(shutdownControls());
+  await client.shutdown();
+  expect(client.observe().state).toBe("stopped");
+});
+
+it("VF-0114 suppresses a late typed Prepare failure after shutdown", async () => {
+  mockedInvoke.mockReset();
+  mockedInvoke.mockResolvedValueOnce(startControls());
+  const client = new TtsProcessClient();
+  await client.start("chatterbox-multilingual-v3-cuda-bf16-default-v4", "es");
+  let rejectPrepare!: (error: unknown) => void;
+  mockedInvoke.mockImplementationOnce(
+    () =>
+      new Promise((_, reject) => {
+        rejectPrepare = reject;
+      }),
+  );
+  const pending = expect(client.prepare()).rejects.toMatchObject({
+    code: "tts-service-cancelled",
+  });
+  mockedInvoke.mockResolvedValueOnce(shutdownControls());
+  await client.shutdown();
+  rejectPrepare("tts-service-torch-cuda-unavailable");
+  await pending;
+  expect(client.observe().state).toBe("stopped");
+});
+
 it("RAF-R1-F1 verified no-child receipt permits explicit retry after spawn rejection", async () => {
   let prerequisiteRestored = false;
   let failedStart: unknown;

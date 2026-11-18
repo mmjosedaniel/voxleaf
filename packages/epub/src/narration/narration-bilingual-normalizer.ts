@@ -644,11 +644,35 @@ function languageProtectionsForSpan(
   return NO_BOUNDARY_PROTECTIONS;
 }
 
+export function precedingAmpersandLanguage(
+  tokens: readonly NarrationSourceToken[],
+  offset: number,
+  classifier: NarrationLanguageClassifier,
+): "es" | "en" | undefined {
+  const word = tokens[offset - 2];
+  const space = tokens[offset - 1];
+  if (
+    word?.kind !== "text" ||
+    space?.kind !== "text" ||
+    !isProseTextToken(word) ||
+    !isProseTextToken(space) ||
+    !isWordContextCodePoint(sourceText(word)) ||
+    !isOrdinaryWhitespace(sourceText(space) ?? "")
+  )
+    return undefined;
+  const language = classifier.languageFor(word.textContext);
+  return language !== "und" &&
+    classifier.languageFor(space.textContext) === language
+    ? language
+    : undefined;
+}
+
 function isContextSafeAmpersand(
   tokens: readonly NarrationSourceToken[],
   index: number,
   languages: readonly NarrationNormalizationLanguage[],
   language: "es" | "en",
+  precedingLanguage: "es" | "en" | undefined,
 ): boolean {
   const token = tokens[index];
   const leftSpace = tokens[index - 1];
@@ -658,15 +682,18 @@ function isContextSafeAmpersand(
   return (
     sourceText(token) === "&" &&
     isProseTextToken(token) &&
-    isProseTextToken(leftSpace) &&
-    isOrdinaryWhitespace(sourceText(leftSpace) ?? "") &&
     isProseTextToken(rightSpace) &&
     isOrdinaryWhitespace(sourceText(rightSpace) ?? "") &&
-    isProseTextToken(leftWord) &&
-    isWordContextCodePoint(sourceText(leftWord)) &&
     isProseTextToken(rightWord) &&
     isWordContextCodePoint(sourceText(rightWord)) &&
-    hasSameLanguage(languages, index - 2, index + 2, language)
+    (index === 0
+      ? precedingLanguage === language &&
+        hasSameLanguage(languages, 0, 2, language)
+      : isProseTextToken(leftSpace) &&
+        isOrdinaryWhitespace(sourceText(leftSpace) ?? "") &&
+        isProseTextToken(leftWord) &&
+        isWordContextCodePoint(sourceText(leftWord)) &&
+        hasSameLanguage(languages, index - 2, index + 2, language))
   );
 }
 
@@ -835,6 +862,7 @@ function planCelsiusReplacement(
 function findSymbolReplacements(
   tokens: readonly NarrationSourceToken[],
   languages: readonly NarrationNormalizationLanguage[],
+  precedingLanguage?: "es" | "en",
 ): readonly (PlannedReplacement | undefined)[] {
   const replacements = new Array<PlannedReplacement | undefined>(tokens.length);
 
@@ -874,7 +902,9 @@ function findSymbolReplacements(
       continue;
     }
 
-    if (isContextSafeAmpersand(tokens, index, languages, "es")) {
+    if (
+      isContextSafeAmpersand(tokens, index, languages, "es", precedingLanguage)
+    ) {
       replacements[index] = Object.freeze({
         kind: "text",
         text: SPANISH_AMPERSAND_NARRATION,
@@ -884,7 +914,9 @@ function findSymbolReplacements(
       });
       continue;
     }
-    if (isContextSafeAmpersand(tokens, index, languages, "en")) {
+    if (
+      isContextSafeAmpersand(tokens, index, languages, "en", precedingLanguage)
+    ) {
       replacements[index] = Object.freeze({
         kind: "text",
         text: ENGLISH_AMPERSAND_NARRATION,
@@ -2231,6 +2263,7 @@ function normalizeNarrationSourceTokensInternal(
   precedingQuotationContext?: NarrationQuotationContext,
   classifier = new NarrationLanguageClassifier(defaultLanguage),
   completeLeaf = true,
+  precedingAmpersandLanguage?: "es" | "en",
 ): NarrationNormalizedStream {
   if (
     defaultLanguage !== "es" &&
@@ -2255,7 +2288,11 @@ function normalizeNarrationSourceTokensInternal(
     classifier.languageFor(token.textContext),
   );
   const lineEndHyphenation = findLineEndHyphenation(tokens, languages);
-  const symbolReplacements = findSymbolReplacements(tokens, languages);
+  const symbolReplacements = findSymbolReplacements(
+    tokens,
+    languages,
+    precedingAmpersandLanguage,
+  );
   const punctuationPlan = findPunctuationPlan(
     tokens,
     languages,
@@ -2320,6 +2357,7 @@ export function normalizeNarrationSourceTokens(
   precedingQuotationContext?: NarrationQuotationContext,
   classifier?: NarrationLanguageClassifier,
   completeLeaf = true,
+  precedingAmpersandLanguage?: "es" | "en",
 ): NarrationNormalizedStream {
   try {
     return normalizeNarrationSourceTokensInternal(
@@ -2329,6 +2367,7 @@ export function normalizeNarrationSourceTokens(
       precedingQuotationContext,
       classifier,
       completeLeaf,
+      precedingAmpersandLanguage,
     );
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {

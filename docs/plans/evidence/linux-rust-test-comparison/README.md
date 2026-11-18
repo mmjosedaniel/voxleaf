@@ -1,5 +1,7 @@
 # Linux Rust comparison evidence
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Date: 2026-10-10. Verdict: **BASELINE-FAIL**.
 [Independent report](LINUX-RUST-COMPARE-01.md).
 [Active follow-up](../../completed/linux-rust-test-comparison.md).
@@ -19,7 +21,7 @@ captures remain reviewable at the full commit link below. Local scratch paths
 in unchanged receipts are historical provenance, not current checkout links.
 See the [retention policy](../../../development/evidence-retention.md).
 
-[Original failed comparison captures](https://github.com/mmjosedaniel/voxleaf/tree/5401f899e3ffabfc8f3e79873bc0b5fa45b11155/docs/plans/evidence/linux-rust-test-comparison).
+Original failed comparison captures (commit `5401f899e3ffabfc8f3e79873bc0b5fa45b11155` at `docs/plans/evidence/linux-rust-test-comparison`).
 
 The pre-refactor baseline is HEAD
 `f06c80e04da2025342b1002a548f03ca17e7cc0b`. A complete Git archive contains all

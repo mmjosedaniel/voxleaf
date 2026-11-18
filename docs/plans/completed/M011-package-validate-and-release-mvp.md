@@ -1,5 +1,7 @@
 # M011 — Package, validate, and release the MVP
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 ## Goal
 
 Turn the implemented VoxLeaf reader and local-narration product into a
@@ -606,7 +608,7 @@ complete runtime/model set. The calculated peak staging use is
 
 The publication portion of Steps 8 and 9 is complete. An authorized maintainer
 published the three measured parts under
-[`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2),
+`chatterbox-runtime-v2`,
 and the checked-in manifest freezes their exact URLs, sizes, SHA-256 values,
 archive identity, installed size, and runtime-manifest identity. At this
 Milestone 4B checkpoint, installed bilingual evidence was still pending. The
@@ -1654,7 +1656,7 @@ and never edit prior benchmark authority to make a release pass.
   bound.
 - **2026-08-01:** Published the three exact runtime parts after explicit user
   authorization under
-  [`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2).
+  `chatterbox-runtime-v2`.
   GitHub reports all three assets uploaded with the frozen byte sizes and
   SHA-256 digests. The repository records their immutable URLs and identities
   but retains `withheld` with `clean-host-validation-pending`; no clean-user

@@ -1,13 +1,15 @@
 # Passage navigation CI follow-up
 
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Date: 2026-11-12. Base and tested HEAD:
 `5de6bb706d162467856cf4775da747bba395367b`.
-This bounded follow-up to [PR #313](https://github.com/mmjosedaniel/voxleaf/pull/313)
+This bounded follow-up to PR #313
 does not rewrite the completed ExecPlan or its accepted evidence.
 
 ## Failure and reproduction
 
-[Windows job 131398131039](https://github.com/mmjosedaniel/voxleaf/actions/runs/43279915009/job/131398131039)
+Windows job 131398131039 (GitHub Actions run 43279915009)
 failed during RPI-02 image 2 placement on WebView2 131.0.2903.86. The target was
 approximately y=3765–3861, outside the viewport y=298–671; scrollTop was 9.
 Both Ubuntu jobs and the dependency audit passed. Windows browser checks passed;

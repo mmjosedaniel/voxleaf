@@ -1,5 +1,9 @@
 # Chatterbox v3 integration host validation
 
+<!-- Privacy redaction. Technical results are retained with less detail about the personal test host. -->
+
+<!-- Privacy redaction. Repository account links are recorded as their original reference IDs. -->
+
 Host Report ID: `CB-V3-INTEGRATION-HOST-01-20261007`.
 Host execution is complete; independent combined review and updated-head CI
 remain separate gates. Reviewed working HEAD:
@@ -30,7 +34,7 @@ paths, book contents, model weights or generated audio are retained here.
 - Publication readback: `isDraft=false`, `isPrerelease=true`, published at
   `2026-10-07T03:24:00Z` (2026-10-06 local date). Exactly three runtime assets;
   no model or installer asset. The three v2 digests, sizes and timestamps remain
-  unchanged. [Candidate prerelease](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v3).
+  unchanged. Candidate prerelease (tag `chatterbox-runtime-v3`).
 
 | Asset | Bytes | SHA-256 |
 |---|---:|---|
@@ -72,7 +76,7 @@ Environment matches the frozen host validation: HF_HUB_OFFLINE=1,
 TRANSFORMERS_OFFLINE=1, HF_HUB_DISABLE_TELEMETRY=1, PYTHONNOUSERSITE=1,
 PYTHONDONTWRITEBYTECODE=1, PYTHONUTF8=1, separate task-owned HF/Numba caches.
 `nvidia-smi.exe --query-gpu=name,driver_version,memory.total --format=csv,noheader`
-reports RTX 5060 Laptop GPU, driver 577.05, 8,151 MiB. Both invocations exit 0.
+identified a compatible NVIDIA RTX 50-series laptop GPU with 8 GB-class VRAM. Both invocations exited 0.
 
 | Observation | Spanish | English |
 |---|---:|---:|
@@ -193,9 +197,9 @@ keys, the Run value's absence and both shortcuts' original states; the durable
 recovery state reports no restoration errors. The composite command exited 1,
 so neither journey nor final evidence is accepted by this attempt.
 
-Host diagnosis found EdgeDriver 150.0.4078.83 against installed WebView2
-154.0.4258.62. The existing `msedgedriver-tool.exe` follows the repository's CI
-setup and downloaded matching 154.0.4258.62 from Microsoft's driver service.
+Host diagnosis found EdgeDriver 150 against installed WebView2 154. The
+existing `msedgedriver-tool.exe` follows the repository's CI setup and downloaded
+the matching driver from Microsoft's driver service.
 Its invocation with `--help` still downloads; the task-owned output was moved
 from the working directory into the ignored task driver directory. The user's
 existing driver was not overwritten. `Get-AuthenticodeSignature` returned

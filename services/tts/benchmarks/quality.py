@@ -128,8 +128,8 @@ def _corpus_version(protocol: object) -> str:
     )
 
 
-def _minimum_evaluators(protocol: object) -> int:
-    return 1 if protocol == "tts-cpu-fallback-profile-v6" else 3
+def _eligible_evaluator_count(protocol: object, count: int) -> bool:
+    return count == 1 if protocol == "tts-cpu-fallback-profile-v6" else count >= 3
 
 
 def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
@@ -377,6 +377,9 @@ def finalize_session(
         raise QualitySessionError("evaluator-count")
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
     metadata = _load_staging_session(session)
+    protocol = metadata.get("protocolVersion")
+    if protocol == "tts-cpu-fallback-profile-v6" and evaluator_count != 1:
+        raise QualitySessionError("evaluator-count")
     commits = cast(dict[str, object], metadata["candidateCommits"])
     expected_candidates = tuple(cast(list[str], metadata["expectedCandidates"]))
     if set(commits) != set(expected_candidates):
@@ -455,8 +458,7 @@ def finalize_session(
         "sessionId": session_id,
         "evaluatorCount": evaluator_count,
         "sampleCount": len(key_samples),
-        "eligibleForPromotion": evaluator_count
-        >= _minimum_evaluators(metadata.get("protocolVersion")),
+        "eligibleForPromotion": _eligible_evaluator_count(protocol, evaluator_count),
     }
 
 
@@ -527,6 +529,18 @@ def _submit_scorecard(session: Path, session_id: str, value: object) -> dict[str
     template_samples = cast(list[object], template.get("samples"))
     samples = cast(list[object], card["samples"])
     sanitized = _sanitize_scorecard_samples(samples, template_samples)
+    if (
+        metadata.get("protocolVersion") == "tts-cpu-fallback-profile-v6"
+        and len(evaluator_ids) == 1
+        and any(
+            all(
+                cast(dict[str, object], sample["scores"])[dimension] == "not-applicable"
+                for sample in sanitized
+            )
+            for dimension in DIMENSIONS
+        )
+    ):
+        raise QualitySessionError("missing-dimension")
     target = session / "scorecards" / f"{evaluator_id}.completed.json"
     if target.exists():
         raise QualitySessionError("scorecard-state")
@@ -690,7 +704,9 @@ def _current_aggregate(session: Path, session_id: str) -> tuple[dict[str, object
     aggregate = {
         "sessionVersion": SESSION_VERSION,
         "sessionId": session_id,
-        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
+        "eligibleForPromotion": _eligible_evaluator_count(
+            metadata.get("protocolVersion"), len(cards)
+        ),
         "candidates": results,
     }
     return aggregate, len(cards)

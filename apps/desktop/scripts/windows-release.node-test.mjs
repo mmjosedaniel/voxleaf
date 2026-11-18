@@ -69,6 +69,7 @@ for (const scenario of [
   "CARGO_BUILD_RUSTC compiler",
   "configured compiler",
   "canonical identical-byte rebuild",
+  "VF-0107 checksum write failure",
   "VF-0072 holds observed artifact stable until evidence writer",
   "five-pass 1.8 legacy lifecycle argument",
   "five-pass 1.8 explicit not-run argument",
@@ -84,8 +85,10 @@ for (const scenario of [
         const explicitNotRun =
           scenario === "five-pass 1.8 explicit not-run argument";
         const lockScenario = scenario.startsWith("VF-0072 ");
+        const checksumFailure = scenario.startsWith("VF-0107 ");
         const canonical =
           scenario === "canonical identical-byte rebuild" ||
+          checksumFailure ||
           explicitNotRun ||
           lockScenario;
         const srcTauri = path.join(fixture, "apps/desktop/src-tauri");
@@ -115,7 +118,8 @@ for (const scenario of [
         await writeFile(path.join(srcTauri, "src/main.rs"), "fn main() {}\n");
         await writeFile(binary, "synthetic binary");
         await writeFile(installer, "synthetic installer");
-        await writeFile(checksum, "previous receipt");
+        if (checksumFailure) await mkdir(checksum);
+        else await writeFile(checksum, "previous receipt");
         await writeFile(trace, "");
         for (const [relative, contents] of [
           ["apps/desktop/src-tauri/tauri.release.conf.json", "{}"],
@@ -289,6 +293,12 @@ if ($env:CCF_LAYOUT_LIFECYCLE) {
           assert.equal(await readFile(checksum, "utf8"), "previous receipt");
           assert.match(result.stderr, /ParameterArgumentValidationError/u);
           assert.match(result.stderr, /LifecycleStatus/u);
+        } else if (checksumFailure) {
+          assert.equal(result.status, 1);
+          assert.match(result.stderr, /WriteAllText/);
+          await assert.rejects(readFile(`${installer}.build-authority.json`), {
+            code: "ENOENT",
+          });
         } else if (canonical) {
           assert.equal(result.status, 0, result.stderr || result.stdout);
           assert.deepEqual(
@@ -357,6 +367,172 @@ exit 0
 );
 
 test(
+  "Windows Tauri build scopes private path remapping and restores Cargo's environment",
+  { skip: process.platform !== "win32" },
+  () => {
+    const result = spawnSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-Command",
+        `
+$ErrorActionPreference = 'Stop'
+$ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/build-windows-release.ps1'), [ref]$null, [ref]$null)
+foreach ($name in @('Invoke-CheckedCommand', 'Invoke-PrivateWindowsTauriBuild')) {
+  $definition = $ast.Find({param($item) $item -is [Management.Automation.Language.FunctionDefinitionAst] -and $item.Name -eq $name}, $true)
+  Invoke-Expression $definition.Extent.Text
+}
+$separator = [char]31
+$repositoryRoot = Join-Path $env:USERPROFILE 'fixture checkout'
+$env:CARGO_HOME = Join-Path $env:USERPROFILE 'fixture registry'
+$env:RUSTFLAGS = ' -Copt-level=1  --cfg=plain_fixture '
+$encoded = @('--cfg=encoded_fixture', '-Ctarget-feature=+sse2') -join $separator
+$script:builds = 0
+function pnpm.cmd {
+  $script:builds++
+  $script:seenFlags = $env:CARGO_ENCODED_RUSTFLAGS.Split($separator)
+  $script:seenArguments = $args
+  $global:LASTEXITCODE = $exitCode
+}
+
+$env:CARGO_ENCODED_RUSTFLAGS = $encoded
+$exitCode = 0
+Invoke-PrivateWindowsTauriBuild @('--debug', '--no-bundle')
+if ($env:CARGO_ENCODED_RUSTFLAGS -cne $encoded) { throw 'encoded-flags-not-restored' }
+if (($seenFlags[0..1] -join $separator) -cne $encoded -or $seenFlags -contains '--cfg=plain_fixture') {
+  throw 'encoded-flags-not-preserved'
+}
+if (($seenArguments -join ' ') -cne '--filter @voxleaf/desktop tauri build --debug --no-bundle') {
+  throw 'candidate-build-arguments-changed'
+}
+$profileRemap = "--remap-path-prefix=$env:USERPROFILE=profile"
+$profileIndex = [Array]::IndexOf($seenFlags, $profileRemap)
+if ($profileIndex -lt 2) { throw 'profile-remap-missing' }
+foreach ($root in @(@{Path = $repositoryRoot; Label = 'voxleaf'}, @{Path = $env:CARGO_HOME; Label = 'cargo'})) {
+  foreach ($spelling in @($root.Path, $root.Path.Replace([char]92, [char]47))) {
+    if ([Array]::IndexOf($seenFlags, "--remap-path-prefix=$spelling=$($root.Label)") -le $profileIndex) {
+      throw 'specific-remap-missing-or-overridden'
+    }
+  }
+}
+if (($seenFlags[-2..-1] -join ' ') -cne '-Cdebuginfo=0 -Clink-arg=/PDBALTPATH:%_PDB%') {
+  throw 'portable-pdb-flags-missing'
+}
+
+$exitCode = 12
+try {
+  Invoke-PrivateWindowsTauriBuild @('--features', 'release-locked-runtime')
+  throw 'builder-failure-not-raised'
+} catch {
+  if ($_.Exception.Message -cne 'windows-release-command-failed') { throw }
+}
+if ($env:CARGO_ENCODED_RUSTFLAGS -cne $encoded) { throw 'encoded-flags-not-restored-on-failure' }
+
+$env:CARGO_ENCODED_RUSTFLAGS = $null
+$exitCode = 0
+Invoke-PrivateWindowsTauriBuild @('--features', 'release-locked-runtime')
+if ($null -ne [Environment]::GetEnvironmentVariable('CARGO_ENCODED_RUSTFLAGS') -or $script:builds -ne 3) {
+  throw 'absent-encoded-flags-not-restored'
+}
+if (($seenFlags[0..1] -join ' ') -cne '-Copt-level=1 --cfg=plain_fixture' -or $env:RUSTFLAGS -cne ' -Copt-level=1  --cfg=plain_fixture ') {
+  throw 'plain-flags-not-preserved'
+}
+`,
+      ],
+      { cwd: repositoryRoot(), encoding: "utf8", windowsHide: true },
+    );
+    assert.equal(result.status, 0, result.stderr);
+  },
+);
+
+test(
+  "Windows Tauri build preserves Cargo-configured rustflags in a real compile",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const fixtureParent = path.join(repositoryRoot(), "tmp");
+    await mkdir(fixtureParent, { recursive: true });
+    const fixture = await mkdtemp(path.join(fixtureParent, "privacy flags "));
+    try {
+      const result = spawnSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-Command",
+          `
+$ErrorActionPreference = 'Stop'
+$ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/build-windows-release.ps1'), [ref]$null, [ref]$null)
+foreach ($name in @('Invoke-CheckedCommand', 'Get-EffectiveCargoRustFlags', 'Invoke-PrivateWindowsTauriBuild')) {
+  $definition = $ast.Find({param($item) $item -is [Management.Automation.Language.FunctionDefinitionAst] -and $item.Name -eq $name}, $true)
+  if ($definition) { Invoke-Expression $definition.Extent.Text }
+}
+$repositoryRoot = $env:VOXLEAF_BUILD_FLAG_FIXTURE
+$srcTauri = Join-Path $repositoryRoot 'backend'
+New-Item -ItemType Directory -Path (Join-Path $srcTauri '.cargo'), (Join-Path $srcTauri 'src') -Force | Out-Null
+$env:CARGO_HOME = Join-Path $repositoryRoot 'cargo-home'
+$env:CARGO_ENCODED_RUSTFLAGS = $null
+$env:RUSTFLAGS = $null
+$env:CARGO_BUILD_RUSTFLAGS = $null
+$manifest = Join-Path $srcTauri 'Cargo.toml'
+$config = Join-Path $srcTauri '.cargo/config.toml'
+[IO.File]::WriteAllText($manifest, @'
+[package]
+name = "privacy-flags-witness"
+version = "0.0.0"
+edition = "2024"
+'@)
+[IO.File]::WriteAllText((Join-Path $srcTauri 'src/main.rs'), @'
+#![allow(unexpected_cfgs)]
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/witness.rs"));
+'@)
+[IO.File]::WriteAllText((Join-Path $srcTauri 'src/witness.rs'), @'
+fn main() {
+    println!("{} {} {} {}", cfg!(build_fixture), cfg!(triple_fixture), cfg!(windows_fixture), file!());
+}
+'@)
+function pnpm.cmd {
+  Push-Location -LiteralPath $srcTauri
+  try { & cargo build --offline --quiet --target-dir (Join-Path $repositoryRoot 'target') }
+  finally { Pop-Location }
+}
+function Assert-Witness([string]$Expected, [string]$Failure) {
+  Invoke-PrivateWindowsTauriBuild @('--features', 'release-locked-runtime')
+  $exe = Join-Path $repositoryRoot 'target/debug/privacy-flags-witness.exe'
+  $result = & $exe
+  if ($LASTEXITCODE -ne 0 -or $result.Replace([char]92, [char]47) -cne $Expected) { throw $Failure }
+}
+$buildFlags = @'
+[build]
+rustflags = ["--cfg=build_fixture"]
+'@
+[IO.File]::WriteAllText($config, $buildFlags)
+Assert-Witness 'true false false voxleaf/backend/src/witness.rs' 'configured-build-flags-or-remapping-missing'
+$targetFlags = @'
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["--cfg=triple_fixture"]
+[target.'cfg(windows)']
+rustflags = ["--cfg=windows_fixture"]
+'@
+[IO.File]::WriteAllText($config, $buildFlags + $targetFlags)
+Assert-Witness 'false true true voxleaf/backend/src/witness.rs' 'configured-target-precedence-or-remapping-missing'
+`,
+        ],
+        {
+          cwd: repositoryRoot(),
+          encoding: "utf8",
+          env: { ...process.env, VOXLEAF_BUILD_FLAG_FIXTURE: fixture },
+          timeout: 30_000,
+          windowsHide: true,
+        },
+      );
+      assert.equal(result.status, 0, result.stderr);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
   "lifecycle fixtures provide one marker for each declared optional root",
   {
     skip: process.platform !== "win32",
@@ -407,13 +583,14 @@ async function lifecycleFixtureScript(root, installerOverrides) {
   );
   await writeFile(
     path.join(scripts, installer),
-    `${helper}\n${installerOverrides}\n`,
+    `${helper}\nfunction Test-LifecycleInstallRegistration { return $fixtureMode -eq 'remembered-install' }\n${installerOverrides}\n`,
   );
   return path.join(scripts, lifecycle);
 }
 
 for (const mode of [
   "partial",
+  "remembered-install",
   "post-install",
   "first-start",
   "interrupted",
@@ -479,7 +656,8 @@ function New-FixturePackageProcess {
 }
 function Start-Process {
   param($FilePath, $ArgumentList, [switch]$Wait, [switch]$PassThru, $WindowStyle)
-  if ($FilePath -eq $fixtureInstaller) {
+  if ((Split-Path $FilePath -Leaf) -eq (Split-Path $fixtureInstaller -Leaf)) {
+    if ($fixtureMode -eq 'success' -and ($FilePath -eq $fixtureInstaller -or [IO.File]::ReadAllText($FilePath) -ne 'not executable')) { throw 'synthetic-launch-not-bound-to-snapshot' }
     $fixtureEvents.Add('install')
     $fixtureJournalSeen.Add(@(Get-ChildItem -LiteralPath $env:TEMP -Recurse -Filter 'recovery.json').Count -eq 1)
     New-Item -ItemType Directory -Path $fixtureInstallRoot -Force | Out-Null
@@ -543,6 +721,12 @@ function Start-Process {
 $fixtureFailure = $null
 try { & ${quote(lifecycle)} -Installer $fixtureInstaller -LifecycleReceipt $fixtureReceipt | Out-Null } catch { $fixtureFailure=$_.Exception.Message } finally { if ($null -ne $fixtureSourceLock) { $fixtureSourceLock.Dispose() } }
 $blockedCleanup = $fixtureMode -in @('missing-uninstaller','failed-uninstaller','hanging-uninstaller')
+if ($fixtureMode -eq 'remembered-install') {
+  if ($fixtureFailure -ne 'windows-release-lifecycle-preexisting-registration' -or $fixtureEvents.Count -ne 0) { throw 'synthetic-remembered-install-not-refused' }
+  if ([IO.File]::ReadAllText((Join-Path $fixtureDataRoot 'original.marker')) -ne 'original') { throw 'synthetic-original-not-preserved' }
+  Write-Output 'ownership-cleanup-order-and-recovery-verified'
+  return
+}
 if ($fixtureMode -eq 'success') { if ($null -ne $fixtureFailure) { throw $fixtureFailure } }
 elseif ($null -eq $fixtureFailure) { throw 'synthetic-missing-primary-failure' }
 if ($fixtureMode -eq 'partial' -and $fixtureFailure -ne 'windows-release-lifecycle-installer-failed') { throw 'synthetic-primary-failure-lost' }
@@ -639,6 +823,108 @@ Write-Output 'ownership-cleanup-order-and-recovery-verified'
   );
 }
 
+test(
+  "VF-0100 reads the pinned product value and uninstall registration",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "voxleaf-registration-"));
+    const quote = (value) => "'" + value.replaceAll("'", "''") + "'";
+    try {
+      const helper = await readFile(
+        path.join(
+          repositoryRoot(),
+          "scripts",
+          "windows-package-lifecycle-installer.ps1",
+        ),
+        "utf8",
+      );
+      const openRegistry64 =
+        "[Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Registry64')";
+      assert.equal(helper.split(openRegistry64).length, 2);
+      const isolatedHelper = path.join(root, "installer-fixture.ps1");
+      await writeFile(
+        isolatedHelper,
+        helper.replace(openRegistry64, "$script:fixtureRegistry"),
+      );
+      const runner = path.join(root, "check-registration.ps1");
+      await writeFile(
+        runner,
+        String.raw`
+$ErrorActionPreference = 'Stop'
+$env:LOCALAPPDATA = Join-Path ${quote(root)} 'local data'
+$default = Join-Path $env:LOCALAPPDATA 'VoxLeaf'
+$custom = Join-Path $env:LOCALAPPDATA 'old VoxLeaf'
+$stale = Join-Path $env:LOCALAPPDATA 'missing VoxLeaf'
+$unrelated = Join-Path $env:LOCALAPPDATA 'unrelated'
+New-Item -ItemType Directory -Path $custom,$unrelated -Force | Out-Null
+. ${quote(isolatedHelper)}
+
+function New-FixtureKey {
+  param([hashtable]$Values, [hashtable]$Children)
+  $entry = [pscustomobject]@{
+    Values = $Values
+    Children = $Children
+    Opened = [Collections.Generic.List[string]]::new()
+    ValueNames = [Collections.Generic.List[string]]::new()
+    Closed = $false
+  }
+  $entry | Add-Member -MemberType ScriptMethod -Name OpenSubKey -Value {
+    param([string]$path)
+    $this.Opened.Add($path)
+    return $this.Children[$path]
+  }
+  $entry | Add-Member -MemberType ScriptMethod -Name GetValue -Value {
+    param([string]$name)
+    $this.ValueNames.Add($name)
+    return $this.Values[$name]
+  }
+  $entry | Add-Member -MemberType ScriptMethod -Name Dispose -Value { $this.Closed = $true }
+  return $entry
+}
+function Assert-FixtureRegistry {
+  param([string]$Name, $Product, $Uninstall, [bool]$Blocked, [bool]$ChecksUninstall)
+  $productPath = 'Software\VoxLeaf Project\VoxLeaf'
+  $uninstallPath = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\VoxLeaf'
+  $script:fixtureRegistry = New-FixtureKey @{} @{
+    $productPath = $Product
+    $uninstallPath = $Uninstall
+    'Software\VoxLeaf' = (New-FixtureKey @{ '' = $unrelated } @{})
+  }
+  if ((Test-LifecycleInstallRegistration) -ne $Blocked) { throw "unexpected-registration-result-$Name" }
+  $actual = $script:fixtureRegistry.Opened -join '|'
+  $expected = if ($ChecksUninstall) { "$productPath|$uninstallPath" } else { $productPath }
+  if ($actual -cne $expected -or -not $script:fixtureRegistry.Closed) { throw "registry-open-or-disposal-$Name" }
+  if ($null -ne $Product -and
+      (-not $Product.Closed -or $Product.ValueNames.Count -ne 1 -or $Product.ValueNames[0] -cne '')) {
+    throw "product-default-value-or-disposal-$Name"
+  }
+  if ($null -ne $Uninstall -and -not $Uninstall.Closed) { throw "uninstall-disposal-$Name" }
+}
+Assert-FixtureRegistry 'remembered-custom' (New-FixtureKey @{ '' = $custom } @{}) $null $true $false
+if (Test-Path -LiteralPath $stale) { throw 'fixture-stale-path-created' }
+Assert-FixtureRegistry 'remembered-stale' (New-FixtureKey @{ '' = $stale } @{}) $null $true $false
+if (Test-Path -LiteralPath $default) { throw 'fixture-default-path-created' }
+Assert-FixtureRegistry 'uninstall-only' $null (New-FixtureKey @{} @{}) $true $true
+Assert-FixtureRegistry 'canonical-path-uninstall' (New-FixtureKey @{ '' = $default } @{}) (New-FixtureKey @{} @{}) $true $true
+Assert-FixtureRegistry 'canonical-path-only' (New-FixtureKey @{ '' = $default; 'Other' = $custom } @{}) $null $false $true
+Assert-FixtureRegistry 'no-registration' $null $null $false $true
+Write-Output 'controlled-registry-guard-verified'
+`,
+      );
+      const result = spawnSync(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-File", runner],
+        { encoding: "utf8", timeout: 15_000, windowsHide: true },
+      );
+      assert.equal(result.error, undefined);
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      assert.match(result.stdout, /controlled-registry-guard-verified/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
 for (const mode of ["timeout", "unverified", "completed"]) {
   test(
     `five-pass 5.3 bounds a real installer descendant before uninstall: ${mode}`,
@@ -675,7 +961,7 @@ $fixtureRoot = ${quote(root)}
 $fixtureMode = ${quote(mode)}
 $env:VOXLEAF_INSTALLER_JOB_FIXTURE = $fixtureRoot
 $env:VOXLEAF_INSTALLER_JOB_FIXTURE_MODE = $fixtureMode
-$env:LOCALAPPDATA = Join-Path $fixtureRoot 'local'
+$env:LOCALAPPDATA = Join-Path $fixtureRoot 'local data'
 $env:TEMP = Join-Path $fixtureRoot 'temp'
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Path $env:LOCALAPPDATA,$env:TEMP -Force | Out-Null
@@ -711,12 +997,15 @@ public static class LifecycleJobFixture {
                 return 0;
             }
             if (args[0] != "/S") return 2;
+            string install = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "VoxLeaf");
+            // NSIS reads the last /D value from the raw command line, including spaces.
+            if (!Environment.CommandLine.EndsWith(" /S /D=" + install, StringComparison.Ordinal)) return 3;
+            File.WriteAllText(Path.Combine(root, "destination-verified"), "exact");
             Record(root, "installer", current);
             string[] journals = Directory.GetFiles(
                 Environment.GetEnvironmentVariable("TEMP"), "recovery.json", SearchOption.AllDirectories);
             if (journals.Length == 1)
                 File.Copy(journals[0], Path.Combine(root, "journal-before-child.json"));
-            string install = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "VoxLeaf");
             Directory.CreateDirectory(install);
             File.WriteAllText(Path.Combine(install, "uninstall.exe"), "synthetic");
             var start = new ProcessStartInfo(current.MainModule.FileName, "--child");
@@ -778,6 +1067,9 @@ try {
   Write-Output "fixture-observation: child-ready=$(Test-Path -LiteralPath (Join-Path $fixtureRoot 'child.pid')); natural-exit=$natural; uninstall-count=$($fixtureUninstalls.Count); primary=$failure"
   $expected = if ($fixtureMode -eq 'completed') { 'windows-release-lifecycle-installed-file-missing' } else { 'windows-release-lifecycle-installer-timeout' }
   if ($failure -ne $expected) { throw 'fixture-installer-primary-failure' }
+  if ([IO.File]::ReadAllText((Join-Path $fixtureRoot 'destination-verified')) -cne 'exact') {
+    throw 'fixture-installer-did-not-receive-owned-destination'
+  }
   if ($natural -ne ($fixtureMode -eq 'completed') -or $outside.HasExited) { throw 'fixture-bounded-cleanup-not-verified' }
   Assert-FixtureProcessGone 'installer'
   Assert-FixtureProcessGone 'child'
@@ -1514,6 +1806,20 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
     } finally {
       await writeFile(manifest, original);
     }
+    for (const sidecar of [
+      null,
+      "stale",
+      attachment.verifiedInstaller + " *wrong.exe\n",
+    ]) {
+      if (sidecar === null) await rm(checksum);
+      else await writeFile(checksum, sidecar);
+      await assert.rejects(attach(), /windows-release:checksum/u);
+      assert.equal(await readFile(evidencePath, "utf8"), prior);
+    }
+    await writeFile(
+      checksum,
+      attachment.verifiedInstaller + " *" + path.basename(installer) + "\n",
+    );
     await attach();
     assert.equal(await readFile(evidencePath, "utf8"), prior);
   });
