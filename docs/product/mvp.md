@@ -538,6 +538,9 @@ download and activation remain separate user actions.
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+  Download applies to the confirmation shown for that action. A fresh complete
+  native compatibility report is required before that confirmation can start a
+  transfer. Settings offers Remove after native confirms it is supported.
 - Reselecting the same optional package during acquisition must preserve its
   confirmation/download ownership and eventual result, including after reopening
   Settings. A genuinely newer cancellation or removal retains its existing stale

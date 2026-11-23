@@ -16,6 +16,7 @@ export interface ParagraphLeafProps {
   readonly locatedBlock: PublicationLocatedBlock | undefined;
   readonly state: ReaderExperienceLeafState | undefined;
   readonly layoutRevision: string;
+  readonly placementPending?: boolean;
   readonly onActivate: (locatedBlock: PublicationLocatedBlock) => void;
 }
 
@@ -47,6 +48,7 @@ export function ParagraphLeaf({
   locatedBlock,
   state,
   layoutRevision,
+  placementPending = false,
   onActivate,
 }: ParagraphLeafProps): ReactElement | null {
   const subscribeRegistrations = useCallback(
@@ -126,9 +128,13 @@ export function ParagraphLeaf({
         type="button"
         className="paragraph-leaf"
         data-leaf-state={state}
+        data-placement-pending={placementPending || undefined}
         aria-label={LABELS[state]}
+        aria-disabled={placementPending || undefined}
         aria-current={state === "audible" ? "true" : undefined}
-        onClick={() => onActivate(locatedBlock)}
+        onClick={() => {
+          if (!placementPending) onActivate(locatedBlock);
+        }}
       >
         <svg
           className="paragraph-leaf-icon"

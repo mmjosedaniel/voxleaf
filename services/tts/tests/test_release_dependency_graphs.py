@@ -6,7 +6,7 @@ import json
 import re
 import tomllib
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -287,6 +287,40 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
     assert all("manual review" in blind_spot["reason"] for blind_spot in blind_spots)
     assert policy["rustInformationalWarnings"]
     assert all("windowsReachable" in warning for warning in policy["rustInformationalWarnings"])
+
+
+def test_nov23_windows_rust_inventory_retains_lock_only_licensing() -> None:
+    rows = {
+        c["name"]: c
+        for c in json.loads(COMPONENT_INVENTORY.read_bytes())["components"]
+        if c["ecosystem"] == "rust"
+    }
+    assert (
+        rows["chrono"]["inclusion"]["runtimeReachability"]
+        == "outside the Windows release normal/build graph"
+    )
+    assert rows["chrono"]["license"]["expression"] and rows["chrono"]["integrity"]["value"]
+    assert rows["zip"]["inclusion"]["runtimeReachability"] == "required by the frozen release graph"
+
+
+@pytest.mark.parametrize("graph", ["", "unknown v0.1.0", "ambiguous"])
+def test_nov23_windows_inventory_requires_unambiguous_graph(
+    inventory_tool: ModuleType, monkeypatch: pytest.MonkeyPatch, graph: str
+) -> None:
+    package = {"name": "fixture", "version": "0.1.0", "id": "synthetic-source-a"}
+    packages = [package]
+    if graph == "ambiguous":
+        packages.append({**package, "id": "synthetic-source-b"})
+    monkeypatch.setattr(
+        inventory_tool,
+        "_run_json",
+        lambda _: {"packages": packages, "resolve": {"root": package["id"]}},
+    )
+    monkeypatch.setattr(
+        inventory_tool.subprocess, "run", lambda *a, **kw: SimpleNamespace(stdout=graph)
+    )
+    with pytest.raises(ValueError, match="Cargo"):
+        inventory_tool._rust_components()
 
 
 def test_release_component_inventory_is_complete_and_content_safe() -> None:

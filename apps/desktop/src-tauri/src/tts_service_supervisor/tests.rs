@@ -2,6 +2,192 @@ use super::*;
 use crate::tts_service_protocol::encode_control;
 
 #[test]
+fn nov23_shutdown_before_start_registration_retires_only_that_owner() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let a = "start:00000000-0000-4000-8000-000000000001";
+    let b = "start:00000000-0000-4000-8000-000000000002";
+    let cancelled = supervisor.shutdown_owned(None, Some(a));
+    assert!(cancelled.is_ok());
+    assert!(supervisor.start_owned(Some(b.into())).is_ok());
+    assert!(supervisor.start_owned(Some(a.into())).is_err());
+    assert!(supervisor.shutdown_owned(None, Some(a)).is_ok());
+    assert!(supervisor.active_session().is_ok());
+    assert!(supervisor.shutdown_owned(None, Some(b)).is_ok());
+}
+
+#[test]
+fn nov23_shutdown_fences_a_held_packaged_piper_read_and_can_retry() {
+    let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
+    let (hashing, wait_hashing) = mpsc::sync_channel(1);
+    let (release, wait_release) = mpsc::sync_channel(1);
+    let a = "start:00000000-0000-4000-8000-000000000011";
+    let b = "start:00000000-0000-4000-8000-000000000012";
+    let c = "start:00000000-0000-4000-8000-000000000013";
+    let owner = Arc::clone(&supervisor);
+    let blocked = thread::spawn(move || {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        crate::tts_release_core::with_piper_verification_fixture(
+            move || {
+                hashing.send(()).unwrap();
+                wait_release.recv_timeout(Duration::from_secs(9)).unwrap();
+            },
+            || owner.start_selected(Some(PIPER_ENGLISH_PROFILE_ID), Some("en"), Some(a.into())),
+        )
+    });
+    wait_hashing.recv_timeout(Duration::from_secs(5)).unwrap();
+    let started = Instant::now();
+    for _ in 0..2 {
+        assert_eq!(
+            supervisor.shutdown_owned(None, Some(a)),
+            Err(TtsNativeFailure::Busy)
+        );
+        assert_eq!(
+            supervisor.lifecycle_observation().unwrap()["state"],
+            "stopping"
+        );
+    }
+    assert!(started.elapsed() < Duration::from_secs(2));
+    assert!(supervisor.active_session().is_err());
+    assert_eq!(
+        supervisor.start_owned(Some(b.into())),
+        Err(TtsNativeFailure::Busy)
+    );
+    // A blocked filesystem operation can outlast the caller's cleanup window.
+    thread::sleep(Duration::from_millis(5_010));
+    assert!(!blocked.is_finished());
+    release.send(()).unwrap();
+    assert_eq!(blocked.join().unwrap(), Err(TtsNativeFailure::Cancelled));
+    assert!(supervisor.active_session().is_err());
+    let receipt = supervisor.shutdown_owned(None, Some(a)).unwrap();
+    assert_eq!(receipt[1]["state"], "stopped");
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    crate::tts_release_core::with_piper_verification_fixture(
+        || {},
+        || supervisor.start_selected(Some(PIPER_ENGLISH_PROFILE_ID), Some("en"), Some(c.into())),
+    )
+    .unwrap();
+    supervisor.shutdown_owned(None, Some(a)).unwrap();
+    assert!(supervisor.active_session().is_ok());
+    supervisor.shutdown_owned(None, Some(c)).unwrap();
+}
+
+#[test]
+fn nov23_bounded_dispatch_retirement_keeps_later_starts_independent() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    let retained = (0..MAX_UNREGISTERED_START_RETIREMENTS)
+        .map(|index| format!("start:00000000-0000-4000-8000-{index:012}"))
+        .collect::<Vec<_>>();
+    for request in &retained {
+        assert!(supervisor.shutdown_owned(None, Some(request)).is_ok());
+    }
+    let overflow = "start:10000000-0000-4000-8000-000000000000";
+    assert_eq!(
+        supervisor.shutdown_owned(None, Some(overflow)),
+        Err(TtsNativeFailure::Busy)
+    );
+    let successor = "start:20000000-0000-4000-8000-000000000000";
+    supervisor.start_owned(Some(successor.into())).unwrap();
+    for request in retained {
+        assert_eq!(
+            supervisor.start_owned(Some(request)),
+            Err(TtsNativeFailure::InvalidState)
+        );
+    }
+    assert!(supervisor.shutdown_owned(None, Some(overflow)).is_ok());
+    assert!(supervisor.active_session().is_ok());
+    supervisor.shutdown_owned(None, Some(successor)).unwrap();
+}
+
+#[test]
+fn nov23_busy_start_drains_pre_registration_retirement_after_initial_check() {
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
+    for index in 0..=MAX_UNREGISTERED_START_RETIREMENTS {
+        let request = format!("start:30000000-0000-4000-8000-{index:012}");
+        let owner = Arc::clone(&supervisor);
+        let retiring = request.clone();
+        let (send_receipt, receive_receipt) = mpsc::sync_channel(1);
+        START_BEFORE_ADMISSION.set(Some(Box::new(move || {
+            send_receipt
+                .send(owner.shutdown_owned(None, Some(&retiring)))
+                .unwrap();
+        })));
+        // Cover Busy from either gate after the initial ownership check.
+        let guard = if index % 2 == 0 {
+            supervisor.acquire_admission().unwrap()
+        } else {
+            supervisor.acquire_operation().unwrap()
+        };
+        let start = supervisor.start_owned(Some(request.clone()));
+        drop(guard);
+        assert_eq!(start, Err(TtsNativeFailure::Busy));
+        let receipt = receive_receipt.recv().unwrap().unwrap();
+        assert_eq!(
+            supervisor.shutdown_owned(None, Some(&request)).unwrap(),
+            receipt
+        );
+        assert!(supervisor.active_session().is_err());
+    }
+
+    let next_cancelled = "start:50000000-0000-4000-8000-000000000000";
+    let receipt = supervisor
+        .shutdown_owned(None, Some(next_cancelled))
+        .unwrap();
+    let successor = "start:60000000-0000-4000-8000-000000000000";
+    supervisor.start_owned(Some(successor.into())).unwrap();
+    assert_eq!(
+        supervisor.start_owned(Some(next_cancelled.into())),
+        Err(TtsNativeFailure::InvalidState)
+    );
+    assert_eq!(
+        supervisor
+            .shutdown_owned(None, Some(next_cancelled))
+            .unwrap(),
+        receipt
+    );
+    assert_eq!(
+        supervisor
+            .active_session()
+            .unwrap()
+            .start_request_id
+            .as_deref(),
+        Some(successor)
+    );
+    supervisor.shutdown_owned(None, Some(successor)).unwrap();
+}
+
+#[test]
+fn nov23_application_exit_prevents_spawn_during_and_after_cleanup() {
+    let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
+    let (selected, wait_selected) = mpsc::sync_channel(1);
+    let (release, wait_release) = mpsc::sync_channel(1);
+    let owner = Arc::clone(&supervisor);
+    let starting = thread::spawn(move || {
+        let _fixture = CommandFixture::new(Duration::ZERO, "none");
+        R7_SELECTION.with(|slot| {
+            *slot.borrow_mut() = Some(Box::new(move || {
+                selected.send(()).unwrap();
+                wait_release.recv_timeout(Duration::from_secs(5)).unwrap();
+            }));
+        });
+        let result =
+            owner.start_selected(Some("r7-es"), Some("es"), Some("start:nov23-exit".into()));
+        (result, R7_SPAWNED.with(|slot| slot.borrow_mut().take()))
+    });
+    wait_selected.recv_timeout(Duration::from_secs(5)).unwrap();
+    supervisor.stop_for_application_exit().unwrap();
+    release.send(()).unwrap();
+    let (started, spawn_binding) = starting.join().unwrap();
+    assert!(started.is_err());
+    assert!(spawn_binding.is_none());
+    let _fixture = CommandFixture::new(Duration::ZERO, "none");
+    assert!(supervisor.start().is_err());
+    assert!(supervisor.active_session().is_err());
+}
+
+#[test]
 fn nov17_cancel_retires_matching_start_before_spawn() {
     let supervisor = Arc::new(TtsServiceSupervisor::new(NORMAL_SCENARIO));
     let (selected, wait_selected) = mpsc::sync_channel(1);
@@ -25,7 +211,7 @@ fn nov17_cancel_retires_matching_start_before_spawn() {
     release.send(()).unwrap();
     let (started, spawn_binding) = starting.join().unwrap();
     assert!(foreign.is_err());
-    assert!(cancelled.is_ok());
+    assert_eq!(cancelled, Err(TtsNativeFailure::Busy));
     assert_eq!(competing, Err(TtsNativeFailure::Busy));
     assert_eq!(started.unwrap_err(), TtsNativeFailure::Cancelled);
     assert!(spawn_binding.is_none());
@@ -264,6 +450,7 @@ thread_local! {
     static SYNTHESIS_RESULT_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static R7_SELECTION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static R7_SPAWNED: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
+    static START_BEFORE_ADMISSION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static CHATTERBOX_OBSERVER: std::cell::RefCell<Option<(PathBuf, PathBuf, PathBuf)>> = const { std::cell::RefCell::new(None) };
     static START_PUBLISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
     static SHUTDOWN_BUSY_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
@@ -322,6 +509,12 @@ pub(super) fn r7_after_selection() {
             hook();
         }
     });
+}
+
+pub(super) fn before_start_admission() {
+    if let Some(hook) = START_BEFORE_ADMISSION.take() {
+        hook();
+    }
 }
 
 #[test]

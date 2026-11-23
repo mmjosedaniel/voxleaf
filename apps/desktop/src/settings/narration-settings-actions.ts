@@ -133,7 +133,7 @@ export function createNarrationSettingsActions(development: boolean) {
       onAdmitted?: () => void,
     ): Promise<void> {
       const snapshot = optional.observe();
-      if (snapshot.removalSupported === false) return;
+      if (snapshot.removalSupported !== true) return;
       if (
         optional.downloadPending ||
         ["confirming", "downloading", "verifying", "removing"].includes(

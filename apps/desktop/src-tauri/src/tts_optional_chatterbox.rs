@@ -12,7 +12,7 @@ use std::{
     sync::OnceLock,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::UNIX_EPOCH,
 };
@@ -134,6 +134,8 @@ pub(crate) struct OptionalProfileSnapshot {
     pub failure: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub removal_supported: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confirmation_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -426,6 +428,7 @@ struct Operation {
     downloaded_bytes: u64,
     failure: Option<&'static str>,
     cancellation: Option<Arc<AtomicBool>>,
+    confirmation_id: Option<String>,
     post_commit_cleanup: Option<(PathBuf, String)>,
     installed_verified: bool,
     staging_reconciliation_failed: bool,
@@ -434,6 +437,7 @@ struct Operation {
 #[derive(Default)]
 pub(crate) struct OptionalChatterboxManager {
     operation: Mutex<Operation>,
+    confirmation_counter: AtomicU64,
     last_download_error: Mutex<Option<DownloadDiagnostic>>,
     transfer_abort: TransferAbort,
 }
@@ -669,6 +673,7 @@ fn snapshot_from(
         license_summary: "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
         failure,
         removal_supported: None,
+        confirmation_id: None,
     }
 }
 
@@ -1993,6 +1998,9 @@ impl OptionalChatterboxManager {
             operation.downloaded_bytes,
             operation.failure,
         );
+        if snapshot.state == OptionalProfileState::Confirming {
+            snapshot.confirmation_id = operation.confirmation_id.clone();
+        }
         if snapshot.state == OptionalProfileState::Failed
             && operation.post_commit_cleanup.is_some()
             && operation.installed_verified
@@ -2027,6 +2035,7 @@ impl OptionalChatterboxManager {
                 downloaded_bytes,
                 failure,
                 cancellation,
+                confirmation_id: None,
                 post_commit_cleanup,
                 installed_verified,
                 staging_reconciliation_failed: false,
@@ -2073,11 +2082,19 @@ impl OptionalChatterboxManager {
             }
             // Hold the operation admission lock throughout this explicit retry.
             // No replacement can take ownership of the recorded paths.
+            operation.installed_verified = false;
+            if verify_runtime_cached(&package_root(root), manifest).is_err() {
+                operation.failure = Some("installed-package-invalid");
+                return Ok(());
+            }
+            operation.installed_verified = true;
+            if verify_owned_removal_chain(root, &staging_root(root)).is_err() {
+                // Preserve the installed bytes and retry action. The recorded
+                // cleanup cannot touch staging until it is verified as owned.
+                operation.failure = Some(OptionalProfileError::CleanupFailed.code());
+                return Ok(());
+            }
             let result: Result<(), OptionalProfileError> = (|| {
-                operation.installed_verified = false;
-                verify_runtime_cached(&package_root(root), manifest)?;
-                operation.installed_verified = true;
-                verify_owned_removal_chain(root, &staging_root(root))?;
                 remove_promotion_backup(root)?;
                 clean_staging(root)?;
                 operation.installed_verified = false;
@@ -2251,47 +2268,67 @@ impl OptionalChatterboxManager {
             .operation
             .lock()
             .map_err(|_| OptionalProfileError::Busy)?;
+        if operation.post_commit_cleanup.is_some() {
+            return Ok(Self::snapshot_operation(&manifest, &operation));
+        }
         if let Some(
-            state @ (OptionalProfileState::Confirming
+            OptionalProfileState::Confirming
             | OptionalProfileState::Downloading
             | OptionalProfileState::Verifying
             | OptionalProfileState::Installed
-            | OptionalProfileState::Removing),
+            | OptionalProfileState::Removing,
         ) = &operation.state
         {
-            return Ok(snapshot_from(
-                &manifest,
-                state.clone(),
-                operation.downloaded_bytes,
-                operation.failure,
-            ));
+            return Ok(Self::snapshot_operation(&manifest, &operation));
         }
+        let previous = self
+            .confirmation_counter
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.checked_add(1)
+            })
+            .map_err(|_| OptionalProfileError::Unavailable)?;
         *operation = Operation {
             state: Some(OptionalProfileState::Confirming),
             cancellation: Some(Arc::new(AtomicBool::new(false))),
+            confirmation_id: Some((previous + 1).to_string()),
             ..Operation::default()
         };
-        Ok(snapshot_from(
-            &manifest,
-            OptionalProfileState::Confirming,
-            0,
-            None,
-        ))
+        Ok(Self::snapshot_operation(&manifest, &operation))
     }
 
-    fn download_attempt(&self) -> Result<Arc<AtomicBool>, OptionalProfileError> {
-        let mut operation = self
+    fn download_attempt_for(
+        &self,
+        confirmation_id: &str,
+    ) -> Result<Arc<AtomicBool>, OptionalProfileError> {
+        let operation = self
             .operation
             .lock()
             .map_err(|_| OptionalProfileError::Busy)?;
-        if !matches!(operation.state, Some(OptionalProfileState::Confirming)) {
-            return Err(OptionalProfileError::Invalid);
+        if !matches!(operation.state, Some(OptionalProfileState::Confirming))
+            || operation.confirmation_id.as_deref() != Some(confirmation_id)
+        {
+            return Err(OptionalProfileError::Cancelled);
         }
-        Ok(Arc::clone(
-            operation
-                .cancellation
-                .get_or_insert_with(|| Arc::new(AtomicBool::new(false))),
-        ))
+        operation
+            .cancellation
+            .clone()
+            .ok_or(OptionalProfileError::Invalid)
+    }
+
+    #[cfg(test)]
+    fn download_attempt(&self) -> Result<Arc<AtomicBool>, OptionalProfileError> {
+        let id = self.current_confirmation_id();
+        self.download_attempt_for(&id)
+    }
+
+    #[cfg(test)]
+    fn current_confirmation_id(&self) -> String {
+        self.operation
+            .lock()
+            .unwrap()
+            .confirmation_id
+            .clone()
+            .unwrap_or_default()
     }
 
     #[cfg(test)]
@@ -2725,15 +2762,16 @@ fn select_profile_at(
 fn download_at_if_host_admitted(
     manager: &OptionalChatterboxManager,
     root: &Path,
+    confirmation_id: &str,
     admitted: impl FnOnce() -> bool,
 ) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
     // Bind before the potentially slow host probe. Cancellation/reselection
     // replaces this identity; it can never grant consent to the old command.
-    let attempt = manager.download_attempt();
+    let attempt = manager.download_attempt_for(confirmation_id)?;
     if !admitted() {
         return Err(OptionalProfileError::IncompatibleHost);
     }
-    manager.download_for_attempt(root, attempt?)
+    manager.download_for_attempt(root, attempt)
 }
 
 #[tauri::command]
@@ -2793,6 +2831,7 @@ pub async fn select_optional_chatterbox(
 pub async fn download_optional_chatterbox(
     manager: State<'_, Arc<OptionalChatterboxManager>>,
     profile_id: String,
+    confirmation_id: String,
 ) -> Result<OptionalProfileSnapshot, &'static str> {
     if cfg!(feature = "local-chatterbox-v8-candidate") {
         return Err(OptionalProfileError::Unavailable.code());
@@ -2804,7 +2843,9 @@ pub async fn download_optional_chatterbox(
     tauri::async_runtime::spawn_blocking(move || {
         let manifest = exact_manifest()?;
         let root = OptionalChatterboxManager::profile_root_for()?;
-        download_at_if_host_admitted(&manager, root, || host_is_admitted(&manifest))
+        download_at_if_host_admitted(&manager, root, &confirmation_id, || {
+            host_is_admitted(&manifest)
+        })
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?

@@ -459,12 +459,17 @@ fn five_pass_2_1_reselection_preserves_preflight_confirmation() {
     manager.select_at(&root.0).unwrap();
     let token = manager.download_attempt().unwrap();
     let mut retained = false;
-    let result = download_at_if_host_admitted(&manager, &root.0, || {
-        let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
-        assert_eq!(selected.state, OptionalProfileState::Confirming);
-        retained = Arc::ptr_eq(&token, &manager.download_attempt().unwrap());
-        true
-    });
+    let result = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || {
+            let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
+            assert_eq!(selected.state, OptionalProfileState::Confirming);
+            retained = Arc::ptr_eq(&token, &manager.download_attempt().unwrap());
+            true
+        },
+    );
     assert!(
         retained,
         "reselection replaced the admitted preflight token: {result:?}"
@@ -496,11 +501,16 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     manager.select_at(&root.0).unwrap();
     // The real command uses this same probe/claim boundary, without holding
     // the operation lock during host admission.
-    let result = download_at_if_host_admitted(&manager, &root.0, || {
-        manager.cancel_at(&root.0).unwrap();
-        manager.select_at(&root.0).unwrap();
-        true
-    });
+    let result = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || {
+            manager.cancel_at(&root.0).unwrap();
+            manager.select_at(&root.0).unwrap();
+            true
+        },
+    );
     assert_eq!(transfers.load(Ordering::SeqCst), 0);
     assert_eq!(result, Err(OptionalProfileError::Cancelled));
     assert_eq!(
@@ -510,7 +520,12 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
             .state,
         OptionalProfileState::Confirming
     );
-    let replacement = download_at_if_host_admitted(&manager, &root.0, || true);
+    let replacement = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || true,
+    );
     #[cfg(windows)]
     {
         assert_eq!(replacement, Err(OptionalProfileError::DownloadFailed));
@@ -526,6 +541,41 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     DOWNLOAD_HOOK.with(|slot| {
         slot.borrow_mut().take();
     });
+}
+
+#[cfg(windows)]
+#[test]
+fn nov23_late_download_cannot_capture_replacement_confirmation() {
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    let transfers = Arc::new(AtomicU64::new(0));
+    let observed = Arc::clone(&transfers);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move |_, _| {
+            observed.fetch_add(1, Ordering::SeqCst);
+            Err(OptionalProfileError::DownloadFailed)
+        }));
+    });
+    let first = manager.select_at(&root.0).unwrap();
+    assert_eq!(first.state, OptionalProfileState::Confirming);
+    manager.cancel_at(&root.0).unwrap();
+    let replacement = manager.select_at(&root.0).unwrap();
+    assert_eq!(replacement.state, OptionalProfileState::Confirming);
+    let first_id = first.confirmation_id.unwrap();
+    let replacement_id = replacement.confirmation_id.unwrap();
+    assert_ne!(first_id, replacement_id);
+    let stale = download_at_if_host_admitted(&manager, &root.0, &first_id, || {
+        panic!("stale confirmation reached host probe")
+    });
+    assert_eq!(stale, Err(OptionalProfileError::Cancelled));
+    assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    let denied = download_at_if_host_admitted(&manager, &root.0, &replacement_id, || false);
+    assert_eq!(denied, Err(OptionalProfileError::IncompatibleHost));
+    assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    assert_eq!(manager.current_confirmation_id(), replacement_id);
+    let retry = download_at_if_host_admitted(&manager, &root.0, &replacement_id, || true);
+    assert_eq!(retry, Err(OptionalProfileError::DownloadFailed));
+    DOWNLOAD_HOOK.with(|slot| slot.borrow_mut().take());
 }
 
 thread_local! {
@@ -2078,7 +2128,12 @@ fn nov17_cancel_and_download_refuse_unowned_staging_before_mutation() {
             }));
         });
         let blocked = if download {
-            download_at_if_host_admitted(&manager, &root.0, || true)
+            download_at_if_host_admitted(
+                &manager,
+                &root.0,
+                &manager.current_confirmation_id(),
+                || true,
+            )
         } else {
             manager.cancel_at(&root.0)
         };
@@ -2094,7 +2149,12 @@ fn nov17_cancel_and_download_refuse_unowned_staging_before_mutation() {
         );
         if download {
             assert_eq!(
-                download_at_if_host_admitted(&manager, &root.0, || true),
+                download_at_if_host_admitted(
+                    &manager,
+                    &root.0,
+                    &manager.current_confirmation_id(),
+                    || true
+                ),
                 Err(OptionalProfileError::DownloadFailed)
             );
             assert_eq!(calls.load(Ordering::SeqCst), 1);
@@ -2135,9 +2195,22 @@ fn nov17_check_refuses_unowned_staging_before_removing_verified_promotion_backup
         runtime_authority_key(&authority).unwrap(),
     ));
 
+    let retry = manager.retry_cleanup(&root.0, &authority).unwrap();
+    assert_eq!(retry.state, OptionalProfileState::Failed);
     assert_eq!(
-        manager.retry_cleanup(&root.0, &authority),
-        Err(OptionalProfileError::VerificationFailed)
+        retry.failure,
+        Some(OptionalProfileError::CleanupFailed.code())
+    );
+    assert!(retry.installed_bytes.is_some());
+    let review = manager.select_at(&root.0).unwrap();
+    assert_eq!(review.state, OptionalProfileState::Failed);
+    assert!(
+        manager
+            .operation
+            .lock()
+            .unwrap()
+            .post_commit_cleanup
+            .is_some()
     );
     assert_eq!(fs::read(&staging).unwrap(), b"ordinary-file");
     assert_eq!(fs::read(&marker).unwrap(), b"prior-promotion");
@@ -3332,8 +3405,13 @@ fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
         Err(OptionalProfileError::IncompatibleHost)
     );
     assert_eq!(
-        download_at_if_host_admitted(&manager, &root.0, || false),
-        Err(OptionalProfileError::IncompatibleHost)
+        download_at_if_host_admitted(
+            &manager,
+            &root.0,
+            &manager.current_confirmation_id(),
+            || false
+        ),
+        Err(OptionalProfileError::Cancelled)
     );
 
     assert!(manager.operation_snapshot(&manifest).is_none());

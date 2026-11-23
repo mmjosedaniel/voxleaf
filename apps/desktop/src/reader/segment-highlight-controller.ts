@@ -254,6 +254,7 @@ export class SegmentHighlightController {
     ((options?: ActiveVisualLocatorResumeOptions) => void) | undefined;
   #cancelScheduledSettle: (() => void) | undefined;
   #closed = false;
+  #inspectedWhilePaused = false;
   #lastPhase:
     NonNullable<ProductNarrationSnapshot["state"]>["phase"] | undefined;
 
@@ -335,7 +336,7 @@ export class SegmentHighlightController {
       sequence: observation.sequence,
       sourceRange: observation.sourceRange,
       navigationRequested: false,
-      followEligible: true,
+      followEligible: !this.#inspectedWhilePaused,
       followMeasured: false,
       completed: false,
     };
@@ -343,7 +344,9 @@ export class SegmentHighlightController {
     this.refresh();
   }
 
-  public manualInspection(): void {
+  public manualInspection(measured = true): void {
+    if (measured && this.#lastPhase === "paused")
+      this.#inspectedWhilePaused = true;
     if (this.#active !== undefined) this.#active.followEligible = false;
     this.#cancelPendingFollow();
   }
@@ -352,6 +355,9 @@ export class SegmentHighlightController {
     const phase = snapshot.state?.phase;
     const resumed = this.#lastPhase === "paused" && phase === "playing";
     this.#lastPhase = phase;
+    // Explicit Resume can enter buffering before a new unit is audible.
+    if (snapshot.navigation.playIntent === "playing" && phase !== "paused")
+      this.#inspectedWhilePaused = false;
     if (phase === "complete" && this.#active !== undefined) {
       this.#active.followEligible = false;
       this.#cancelPendingFollow();
@@ -471,6 +477,7 @@ export class SegmentHighlightController {
     this.#active = undefined;
     this.#activeKey = undefined;
     this.#lastPhase = undefined;
+    this.#inspectedWhilePaused = false;
     this.#environment.clearHighlight(
       SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
     );

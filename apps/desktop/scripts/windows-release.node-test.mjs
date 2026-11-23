@@ -2210,6 +2210,44 @@ Assert-OriginalTree $data
   },
 );
 
+for (const kind of ["file", "directory"]) {
+  test(
+    `VF-0149 lifecycle tolerates an enumerated ${kind} disappearing`,
+    { skip: process.platform !== "win32" },
+    async (t) => {
+      const parent = await mkdtemp(
+        path.join(os.tmpdir(), "voxleaf-traversal-"),
+      );
+      t.after(() => rm(parent, { recursive: true, force: true }));
+      const result = spawnSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          path.join(
+            import.meta.dirname,
+            "fixtures",
+            "lifecycle-disappearing-entry.ps1",
+          ),
+          parent,
+          kind,
+        ],
+        { encoding: "utf8", windowsHide: true, timeout: 20000 },
+      );
+      assert.ifError(result.error);
+      assert.equal(
+        result.status,
+        0,
+        result.stdout.trim() || "disposable lifecycle traversal failed",
+      );
+      assert.match(result.stdout, /disappearance-observed/);
+    },
+  );
+}
+
 for (const transient of [true, false]) {
   test(
     transient

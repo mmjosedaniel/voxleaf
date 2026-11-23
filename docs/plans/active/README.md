@@ -6,7 +6,6 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are no active implementation plans.
 
 The retained deep-chat relocation notice supports links from historical
 receipts. Its canonical record is archived. [Completed deep chat audit](../completed/deep-chat-audit-minimal-corrections.md)

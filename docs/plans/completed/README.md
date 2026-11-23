@@ -1,5 +1,9 @@
 # Completed plans
 
+- [Hidden navigation label titles](hidden-navigation-label-titles.md) implements the approved follow-up policy for VF-0145 and verifies chapter selection through Contents.
+
+- [November 23 findings corrections](november-23-findings-corrections.md) accounts for 41 corrections and the deferred navigation-label policy in VF-0145. [Implementation review](../evidence/november-23-findings/implementation-review-r03.md)
+
 - [Windows build privacy](windows-build-privacy.md) records the source handoff, the two rebuilt executables and the inspected installer.
 - [November 17 findings corrections](november-17-findings-corrections.md) closed VF-0093 through VF-0132. The final two cases passed on a disposable Windows profile and the locally admitted Chatterbox v8 successor. [Implementation approval](../evidence/november-17-findings/implementation-review-r05.md)
 

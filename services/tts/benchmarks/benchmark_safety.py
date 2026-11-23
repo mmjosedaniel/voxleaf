@@ -16,6 +16,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import cast
 from uuid import uuid4
 
@@ -216,9 +217,18 @@ def prepare(repository: Path, expected: dict[str, object]) -> dict[str, object]:
             raise SafetyError("result-before-authority") from None
     ensure_raw_root_is_ignored(repository)
     path = root(repository, cast(str, expected["session"]))
-    original = _observation()
-    path.mkdir(parents=True, exist_ok=False)
-    write_once(path / "reservation.json", {"binding": expected, "original": original})
+    if os.path.lexists(path):
+        raise FileExistsError
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix=".prepare-", dir=path.parent) as temporary:
+        staged = Path(temporary) / "session"
+        staged.mkdir()
+        write_once(staged / "reservation.json", {"binding": expected, "original": _observation()})
+        # Every legitimate contender publishes a nonempty directory. An interrupted
+        # preparation therefore never leaves an empty final name that prevents retry.
+        if os.path.lexists(path):
+            raise FileExistsError
+        staged.rename(path)
     return {"schemaVersion": VERSION, "sessionId": expected["session"], "status": "prepared"}
 
 

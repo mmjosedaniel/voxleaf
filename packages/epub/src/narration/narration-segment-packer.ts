@@ -76,6 +76,7 @@ export interface NarrationPackedBlock {
 }
 
 export interface NarrationPackingOptions {
+  readonly excludeCodeFromSceneOrnaments?: boolean;
   readonly operationWorkBudget?: import("./narration-work-controller.js").NarrationOperationWorkBudget;
   readonly maximumSegments?: number;
   readonly retainedNarrationCodePointsMaximum?: number;
@@ -768,6 +769,7 @@ async function segmentText(
 async function isRecognizedSceneBreak(
   scan: NarrationBoundaryScan,
   work: NarrationWorkController,
+  excludeCode: boolean,
 ): Promise<boolean> {
   if (
     scan.block.blockKind !== "paragraph" ||
@@ -785,6 +787,8 @@ async function isRecognizedSceneBreak(
     if (unit.kind === "omission" && unit.reason === "raster-placeholder") {
       return false;
     }
+    if (excludeCode && unit.kind === "text" && unit.role === "code")
+      return false;
     if (
       unit.kind !== "text" ||
       unit.role === "whitespace" ||
@@ -949,7 +953,13 @@ async function packNarrationBoundaryScanInternal(
   const substantiveUnitCount =
     prefix.substantiveUnitCount[prefix.substantiveUnitCount.length - 1] ??
     fail();
-  if (await isRecognizedSceneBreak(scan, work)) {
+  if (
+    await isRecognizedSceneBreak(
+      scan,
+      work,
+      options.excludeCodeFromSceneOrnaments === true,
+    )
+  ) {
     work.beforePublication();
     return emptyPackedBlock(scan, "scene-break", work);
   }

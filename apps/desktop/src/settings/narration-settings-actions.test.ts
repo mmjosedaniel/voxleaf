@@ -6,6 +6,7 @@ import { createWebStorageNarrationLanguagePreferenceRepository } from "../persis
 import {
   CHATTERBOX_OPTIONAL_PROFILE_ID,
   OptionalChatterboxClient,
+  type OptionalChatterboxSnapshot,
   type OptionalChatterboxState,
 } from "../tts/optional-chatterbox-client";
 import { createNarrationSettingsActions } from "./narration-settings-actions";
@@ -92,7 +93,10 @@ function fixture(development = false) {
       events.push(name);
       return Promise.resolve(value);
     });
-  const snapshot = new OptionalChatterboxClient().observe();
+  const snapshot: OptionalChatterboxSnapshot = {
+    ...new OptionalChatterboxClient().observe(),
+    removalSupported: true,
+  };
   const steps = {
     stop: vi.fn<() => Promise<"contained" | "failed">>(() => {
       events.push("stop");
@@ -688,6 +692,27 @@ describe("narration settings actions", () => {
     },
   );
 
+  it("VF-0166 an unobserved capability never admits removal or stops Piper", async () => {
+    const f = fixture();
+    const actual = new OptionalChatterboxClient(async () => {
+      throw "tts-optional-profile-unavailable";
+    });
+    await actual.refresh();
+    const beginConfigurationChange = vi.fn(() => vi.fn());
+    const onAdmitted = vi.fn();
+    f.optional.observe.mockReturnValue(actual.observe());
+    await f.actions.removeChatterbox(
+      { ...f.coordinator, beginConfigurationChange },
+      f.optional,
+      onAdmitted,
+    );
+    expect.soft(onAdmitted).not.toHaveBeenCalled();
+    expect.soft(beginConfigurationChange).not.toHaveBeenCalled();
+    expect.soft(f.steps.stop).not.toHaveBeenCalled();
+    expect.soft(f.steps.remove).not.toHaveBeenCalled();
+    expect(f.steps.refresh).not.toHaveBeenCalled();
+  });
+
   it.each(["absent", "failed"] as const)(
     "refreshes after any fulfilled removal (%s)",
     async (state) => {
@@ -720,6 +745,7 @@ describe("narration settings actions", () => {
       f.optional.observe.mockReturnValue({
         ...new OptionalChatterboxClient().observe(),
         state,
+        removalSupported: true,
       });
       await expect
         .soft(

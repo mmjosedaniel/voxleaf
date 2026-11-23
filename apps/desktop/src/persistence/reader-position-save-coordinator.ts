@@ -222,6 +222,20 @@ export class ReaderPositionSaveCoordinator {
     this.#onPreferencesWritten = callback;
   }
 
+  public confirmDefaultPlacement(locator: ReadingLocatorV1): void {
+    if (
+      this.#closed ||
+      this.#positionSaveRequested ||
+      this.#narrationActive ||
+      !locatorsEqual(locator, this.#latestLocator) ||
+      this.#validatedCanonicalLocator(locator) === undefined
+    ) {
+      return;
+    }
+    this.#positionSaveRequested = true;
+    this.#requireIntentBeforePassiveSave = false;
+  }
+
   public schedulePassive(
     locator: ReadingLocatorV1,
     measuredManual = false,

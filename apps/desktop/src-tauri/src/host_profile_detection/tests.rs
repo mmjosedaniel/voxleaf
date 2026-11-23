@@ -283,6 +283,17 @@ fn optional_download_gate_accepts_every_exact_numeric_threshold() {
 }
 
 #[test]
+fn nov23_optional_acquisition_requires_complete_host_observation() {
+    let mut snapshot = threshold_optional_snapshot();
+    for outcome in [ProbeValue::Unknown, ProbeValue::PermissionDenied] {
+        snapshot.directml_devices = outcome;
+        assert!(!optional_profile_admitted(snapshot.clone()));
+    }
+    snapshot.directml_devices = ProbeValue::Unavailable;
+    assert!(optional_profile_admitted(snapshot));
+}
+
+#[test]
 fn efc_06_effective_available_ram_boundaries_keep_other_gates() {
     for available in [4095, 4096, 7041, 7042] {
         let mut snapshot = threshold_optional_snapshot();

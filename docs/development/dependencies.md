@@ -214,6 +214,12 @@ places it outside the Windows target's active runtime and build dependencies.
 [Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) ·
 [CI correction review](../plans/evidence/codex-model-rollout/ci-audit-review.md)
 
+The inventory generator also checks the locked Windows x64 normal and build
+dependency graph with the ordinary release features enabled. It retains
+licences and provenance for Cargo entries outside that graph and marks their
+reachability explicitly. The graph describes build inputs. Installer identity
+and contents have separate package evidence.
+
 The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
 `0.23.1` and urllib3 `2.8.0`; the other 76 packages retain their exact pins.

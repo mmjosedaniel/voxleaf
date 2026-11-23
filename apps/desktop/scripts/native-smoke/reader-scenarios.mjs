@@ -630,6 +630,252 @@ export function createNativeReaderScenarios({
     await driver.setWindowRect(960, 720);
   }
 
+  async function exerciseNovemberPublicationLinkPageDown(driver) {
+    const viewportSelector = ".reader-viewport";
+    const linkSelector = "button.semantic-internal-link";
+    await driver.execute(
+      `const viewport = document.querySelector(arguments[0]);
+       const link = document.querySelector(arguments[1]);
+       if (!viewport?.contains(link)) return false;
+       link.focus({ preventScroll: true });
+       const state = { viewport, link, keyScrollTop: undefined };
+       globalThis.__novemberReader.pageDown = state;
+       link.addEventListener("keydown", (event) => {
+         if (event.isTrusted && event.key === "PageDown" && document.activeElement === link)
+           state.keyScrollTop = viewport.scrollTop;
+       }, { once: true });
+       return true;`,
+      [viewportSelector, linkSelector],
+    );
+    await driver.sendKeys(
+      await driver.findElement(linkSelector),
+      WEBDRIVER_PAGE_DOWN,
+    );
+    await delay(OBSERVATION_WINDOW_MS);
+    const pageDown = await driver.execute(
+      `const session = globalThis.__novemberReader;
+       const state = session.pageDown;
+       delete session.pageDown;
+       const sameOwner = state?.viewport === document.querySelector(arguments[0]) &&
+         state?.link === document.querySelector(arguments[1]) &&
+         state.viewport.contains(state.link);
+       return {
+         trusted: state?.keyScrollTop !== undefined,
+         moved: sameOwner && state.viewport.scrollTop > state.keyScrollTop + 1,
+         focusRetained: sameOwner && document.activeElement === state.link,
+       };`,
+      [viewportSelector, linkSelector],
+    );
+    assert(
+      pageDown.trusted && pageDown.focusRetained && pageDown.moved,
+      "Native November PageDown movement was not witnessed on the focused reader.",
+    );
+    return pageDown;
+  }
+
+  async function exerciseNovemberReaderInteractions(
+    driver,
+    interactionPath,
+    restorationPath,
+    locator,
+    setStage,
+  ) {
+    const skipSelector = "a.reader-skip-link";
+    const positionKey = "voxleaf.reader.positions";
+    setStage("native November Auto frame hold");
+    await driver.setWindowRect(940, 640);
+    await driver.execute(
+      `const frame = window.requestAnimationFrame.bind(window);
+       const cancel = window.cancelAnimationFrame.bind(window);
+       const pending = new Map();
+       let nextId = -100;
+       const state = globalThis.__novemberReader = {};
+       window.requestAnimationFrame = (callback) => {
+         if (!document.querySelector("article.semantic-document > p[role=status]"))
+           return frame(callback);
+         if (pending.size >= 16) throw new Error("Synthetic frame cap exceeded.");
+         const id = nextId--;
+         pending.set(id, callback);
+         return id;
+       };
+       window.cancelAnimationFrame = (id) => {
+         if (id > -100) cancel(id);
+         else pending.delete(id);
+       };
+       state.release = () => {
+         window.requestAnimationFrame = frame;
+         window.cancelAnimationFrame = cancel;
+         for (const callback of pending.values()) frame(callback);
+         pending.clear();
+       };
+       state.ready = () => pending.size > 0;
+       return true;`,
+    );
+    await injectNativeFile(driver, interactionPath);
+    await waitForCondition(
+      driver,
+      "return globalThis.__novemberReader.ready();",
+    );
+    setStage("native November Auto focus");
+    await driver.sendKeys(
+      await driver.findElement(skipSelector),
+      WEBDRIVER_ENTER,
+    );
+    await driver.execute(
+      `const state = globalThis.__novemberReader;
+       state.article = document.activeElement;
+       state.focusedWhilePreparing = state.article?.matches("article.semantic-document") === true;
+       state.release();
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `return document.querySelector("article.semantic-document .semantic-internal-link") !== null;`,
+    );
+    const focusRetained = await driver.execute(
+      `const state = globalThis.__novemberReader;
+       return state.focusedWhilePreparing && document.activeElement === state.article;`,
+    );
+    assert(focusRetained, "Native November Auto rendering lost focus.");
+    setStage("native November publication link PageDown");
+    const pageDown = await exerciseNovemberPublicationLinkPageDown(driver);
+    setStage("native November forced-colors Contents focus");
+    await driver.executeCdp("Emulation.setEmulatedMedia", {
+      media: "",
+      features: [{ name: "forced-colors", value: "active" }],
+    });
+    await openReaderContents(driver);
+    await driver.sendKeys(
+      await driver.findElement(skipSelector),
+      WEBDRIVER_ENTER,
+    );
+    await waitForCondition(
+      driver,
+      `return matchMedia("(forced-colors: active)").matches &&
+        document.activeElement?.matches("article.semantic-document") &&
+        document.querySelector("nav.reader-toc")?.hidden === true &&
+        document.querySelector(".reader-toc-backdrop") === null;`,
+    );
+    await driver.executeCdp("Emulation.setEmulatedMedia", {
+      media: "",
+      features: [],
+    });
+
+    setStage("native November restoration setup");
+    await driver.execute(
+      `const [key, locator] = arguments;
+       const state = globalThis.__novemberReader;
+       const previous = JSON.parse(localStorage.getItem(key) ?? "{}").states ?? [];
+       localStorage.setItem(key, JSON.stringify({
+         schemaVersion: 1,
+         states: [
+           { schemaVersion: 1, bookIdentity: locator.bookIdentity, locator, preferences: {} },
+           ...previous.filter((entry) => entry.bookIdentity.value !== locator.bookIdentity.value),
+         ],
+       }));
+       const nativeScrollBy = HTMLElement.prototype.scrollBy;
+       const frame = window.requestAnimationFrame;
+       HTMLElement.prototype.scrollBy = function (...args) {
+         if (!this.matches(".reader-viewport") ||
+             document.querySelector("article.semantic-document") === state.article)
+           return nativeScrollBy.apply(this, args);
+         const root = this;
+         HTMLElement.prototype.scrollBy = nativeScrollBy;
+         window.requestAnimationFrame = (callback) => {
+           window.requestAnimationFrame = frame;
+           state.wheelRoot = root;
+           root.addEventListener("wheel", (event) => {
+             state.trustedWheel = event.isTrusted && event.deltaY < 0;
+           }, { once: true });
+           state.releaseRestoration = () => {
+             nativeScrollBy.apply(root, args);
+             frame.call(window, callback);
+           };
+           return 0;
+         };
+       };
+       return true;`,
+      [positionKey, locator],
+    );
+    await injectNativeFile(driver, restorationPath);
+    await waitForCondition(
+      driver,
+      "return Boolean(globalThis.__novemberReader.releaseRestoration);",
+    );
+    const wheelStart = await driver.execute(
+      `const root = globalThis.__novemberReader.wheelRoot;
+       const bounds = root.getBoundingClientRect();
+       return { atBoundary: root.scrollTop <= 0.5, x: Math.floor(bounds.left + bounds.width / 2), y: Math.floor(bounds.top + bounds.height / 2) };`,
+    );
+    assert(
+      wheelStart.atBoundary,
+      "Native November wheel fixture began away from its boundary.",
+    );
+    setStage("native November trusted boundary wheel");
+    await driver.executeCdp("Input.dispatchMouseEvent", {
+      type: "mouseWheel",
+      x: wheelStart.x,
+      y: wheelStart.y,
+      deltaX: 0,
+      deltaY: -120,
+    });
+    await waitForCondition(
+      driver,
+      "return globalThis.__novemberReader.trustedWheel === true;",
+    );
+    const wheelStayed = await driver.execute(
+      `const state = globalThis.__novemberReader;
+       const stationary = state.wheelRoot.scrollTop <= 0.5;
+       state.releaseRestoration();
+       return stationary;`,
+    );
+    assert(wheelStayed, "Native November boundary wheel moved.");
+    setStage("native November resumed restoration");
+    await waitForCondition(
+      driver,
+      `return globalThis.__novemberReader.wheelRoot.scrollTop > 100 &&
+        document.querySelector("#open-status")?.textContent === "Reading position restored.";`,
+    );
+    setStage("native November exact restoration checkpoint");
+    const storedLocatorIsExact = await driver.execute(
+      `const [key, locator] = arguments;
+       return new Promise((resolve) => {
+         requestAnimationFrame(() => requestAnimationFrame(() => {
+           window.dispatchEvent(new Event("pagehide"));
+           const positions = JSON.parse(localStorage.getItem(key));
+           const state = positions.states.find((candidate) => candidate.bookIdentity.value === locator.bookIdentity.value);
+           const actual = state?.locator;
+           resolve(actual !== undefined &&
+             actual.schemaVersion === locator.schemaVersion &&
+             actual.bookIdentity.scheme === locator.bookIdentity.scheme &&
+             actual.bookIdentity.schemeVersion === locator.bookIdentity.schemeVersion &&
+             actual.bookIdentity.value === locator.bookIdentity.value &&
+             actual.spineItemId === locator.spineItemId &&
+             actual.spineItemIndex === locator.spineItemIndex &&
+             actual.anchor.kind === locator.anchor.kind &&
+             actual.anchor.formatVersion === locator.anchor.formatVersion &&
+             actual.anchor.value === locator.anchor.value &&
+             actual.anchor.anchorIndex === locator.anchor.anchorIndex &&
+             actual.textOffsetCodePoints === locator.textOffsetCodePoints);
+         }));
+       });`,
+      [positionKey, locator],
+    );
+    assert(
+      storedLocatorIsExact,
+      "Native November boundary wheel changed the saved exact locator.",
+    );
+    console.log(
+      JSON.stringify({
+        trustedLinkPageDown: pageDown.trusted,
+        linkPageDownMovedViewport: pageDown.moved,
+        forcedColorsSkipRevealedReader: true,
+        autoArticleFocusRetained: focusRetained,
+        boundaryWheelPreservedCheckpoint: storedLocatorIsExact,
+      }),
+    );
+  }
+
   async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
     setStage("native synchronization feasibility setup");
     await driver.setWindowRect(800, 400);
@@ -1741,6 +1987,8 @@ export function createNativeReaderScenarios({
     runNativeReaderInteraction,
     observeSavedPositionRestoration,
     exerciseNativeReaderInteractionMatrix,
+    exerciseNovemberPublicationLinkPageDown,
+    exerciseNovemberReaderInteractions,
     exerciseNativeSynchronizationFeasibility,
     replaceNativePublicationForCleanup,
     runNativeReaderPerformanceBenchmark,

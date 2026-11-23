@@ -3,6 +3,7 @@ import type { OpenedPublication } from "@voxleaf/epub";
 import type { RestorationPresentation } from "./AppPresentation";
 import type { ReadyReaderOpenRestoration } from "./persistence/reader-position-restore-coordinator";
 import type { ReaderInitialRestorationSettlement } from "./reader/ReaderPublication";
+import type { ReaderPreferencePresentation } from "./settings/app-preference-effects";
 
 type ReaderRestorationSettlement =
   "pending" | ReaderInitialRestorationSettlement["status"];
@@ -55,6 +56,8 @@ export function applyInitialRestorationSettlement(
 
 export function toRestorationPresentation(
   restoration: ReaderRestoration | undefined,
+  appearanceStatus?: ReaderPreferencePresentation["status"],
+  customAppearanceActive = false,
 ): RestorationPresentation | undefined {
   if (restoration === undefined) {
     return undefined;
@@ -69,6 +72,10 @@ export function toRestorationPresentation(
       restoration.result.position.mode === "book-start"
         ? { mode: "book-start", reason: restoration.result.position.reason }
         : { mode: restoration.result.position.mode },
-    preferenceStatus: restoration.result.preferenceStatus,
+    preferenceStatus:
+      appearanceStatus === undefined || appearanceStatus === "loading"
+        ? restoration.result.preferenceStatus
+        : appearanceStatus,
+    ...(customAppearanceActive ? { customAppearanceActive: true } : {}),
   };
 }

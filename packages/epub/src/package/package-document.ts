@@ -18,6 +18,14 @@ import type {
   XmlExpandedName,
   XmlStartElementEvent,
 } from "../xml/xml-event-reader.js";
+import {
+  FIXED_OVERRIDE_IRI,
+  LAYOUT_PROPERTY_IRI,
+  matchesPackageProperty,
+  MODIFIED_PROPERTY_IRI,
+  parsePackagePrefixes,
+  REFLOWABLE_OVERRIDE_IRI,
+} from "./package-vocabulary.js";
 
 const OPF_NAMESPACE = "http://www.idpf.org/2007/opf";
 const DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/";
@@ -33,8 +41,6 @@ const RASTER_IMAGE_MEDIA_TYPES = new Set([
 const ACTIVE_RESOURCE_PROPERTIES = new Set(["remote-resources", "scripted"]);
 const REFLOWED_LAYOUT = "reflowable";
 const FIXED_LAYOUT = "pre-paginated";
-const MODIFIED_PROPERTY = "dcterms:modified";
-const LAYOUT_PROPERTY = "rendition:layout";
 const ENCRYPTION_DOCUMENT_PATH = "META-INF/encryption.xml";
 const ASCII_WHITESPACE = /[\t\n\f\r ]+/gu;
 const IDREF_WHITESPACE = /[\t\n\f\r ]/u;
@@ -118,6 +124,7 @@ interface RawSpineItem {
   readonly idref: string;
   readonly linear: boolean;
   readonly properties: readonly string[];
+  readonly fixedLayout: boolean;
 }
 
 interface RawGuideReference {
@@ -470,6 +477,7 @@ class PackageDocumentParser {
   #ignoredDepth: number | undefined;
   #nextRequiredSection = 0;
   #sawPackage = false;
+  #prefixes: ReadonlyMap<string, string> = new Map();
   #sawGuide = false;
   #metadataMode: "direct" | "wrapped" | undefined;
   #sawDcMetadata = false;
@@ -607,6 +615,11 @@ class PackageDocumentParser {
     }
 
     this.#sawPackage = true;
+    if (this.#version === "3.0") {
+      this.#prefixes = parsePackagePrefixes(
+        unqualifiedAttribute(event, "prefix"),
+      );
+    }
     this.#uniqueIdentifierId = validateIdReference(
       requiredAttribute(event, "unique-identifier"),
     );
@@ -806,9 +819,15 @@ class PackageDocumentParser {
       }
 
       let kind: CapturedTextKind = "ignored";
-      if (refines === undefined && property === MODIFIED_PROPERTY) {
+      if (
+        refines === undefined &&
+        matchesPackageProperty(property, this.#prefixes, MODIFIED_PROPERTY_IRI)
+      ) {
         kind = "modified";
-      } else if (refines === undefined && property === LAYOUT_PROPERTY) {
+      } else if (
+        refines === undefined &&
+        matchesPackageProperty(property, this.#prefixes, LAYOUT_PROPERTY_IRI)
+      ) {
         kind = "layout";
       }
 
@@ -970,11 +989,30 @@ class PackageDocumentParser {
     }
 
     this.registerId(unqualifiedAttribute(event, "id"));
+    const properties = parseProperties(
+      unqualifiedAttribute(event, "properties"),
+    );
+    const fixedLayout = properties.some((property) =>
+      matchesPackageProperty(property, this.#prefixes, FIXED_OVERRIDE_IRI),
+    );
+    if (
+      fixedLayout &&
+      properties.some((property) =>
+        matchesPackageProperty(
+          property,
+          this.#prefixes,
+          REFLOWABLE_OVERRIDE_IRI,
+        ),
+      )
+    )
+      return fail("malformed-package");
+
     this.#spine.push(
       Object.freeze({
         idref: validateIdReference(requiredAttribute(event, "idref")),
         linear: parseLinearity(unqualifiedAttribute(event, "linear")),
-        properties: parseProperties(unqualifiedAttribute(event, "properties")),
+        properties,
+        fixedLayout,
       }),
     );
   }
@@ -1360,13 +1398,7 @@ function buildParsedPackage(
     }
     seenSpineIds.add(rawSpineItem.idref);
 
-    if (
-      rawSpineItem.properties.includes("rendition:layout-reflowable") &&
-      rawSpineItem.properties.includes("rendition:layout-pre-paginated")
-    ) {
-      return fail("malformed-package");
-    }
-    if (rawSpineItem.properties.includes("rendition:layout-pre-paginated")) {
+    if (rawSpineItem.fixedLayout) {
       incompatibleLayout = true;
     }
 

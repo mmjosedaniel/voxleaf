@@ -6,6 +6,56 @@ use std::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(1);
 
+struct PiperVerificationFixture {
+    root: PathBuf,
+    manifest: Vec<u8>,
+    first_chunk: Option<Box<dyn FnOnce()>>,
+}
+
+thread_local! {
+    static PIPER_VERIFICATION_FIXTURE: std::cell::RefCell<Option<PiperVerificationFixture>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
+
+pub(super) fn verify_piper_fixture(
+    profile_id: &str,
+    cancelled: &impl Fn() -> bool,
+) -> Option<Result<PackagedPiperRuntime, PackagedCoreError>> {
+    let (root, manifest) = PIPER_VERIFICATION_FIXTURE.with_borrow(|fixture| {
+        fixture
+            .as_ref()
+            .map(|value| (value.root.clone(), value.manifest.clone()))
+    })?;
+    Some(super::verify_package(
+        &root, &manifest, profile_id, cancelled,
+    ))
+}
+
+pub(super) fn after_piper_hash_chunk() {
+    let hook = PIPER_VERIFICATION_FIXTURE
+        .with_borrow_mut(|fixture| fixture.as_mut().and_then(|value| value.first_chunk.take()));
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+pub(crate) fn with_piper_verification_fixture<T>(
+    first_chunk: impl FnOnce() + 'static,
+    run: impl FnOnce() -> T,
+) -> T {
+    let root = TestRoot::new();
+    let fixture = PiperVerificationFixture {
+        manifest: write_test_package(&root.0),
+        root: root.0.clone(),
+        first_chunk: Some(Box::new(first_chunk)),
+    };
+    PIPER_VERIFICATION_FIXTURE.set(Some(fixture));
+    let result = run();
+    PIPER_VERIFICATION_FIXTURE.set(None);
+    result
+}
+
 struct TestRoot(PathBuf);
 
 impl TestRoot {
@@ -74,6 +124,32 @@ fn write_test_package(root: &Path) -> Vec<u8> {
     .expect("manifest should render");
     fs::write(root.join(RUNTIME_MANIFEST_NAME), &manifest).expect("manifest should be written");
     manifest
+}
+
+fn verify_package(
+    root: &Path,
+    trusted: &[u8],
+    profile_id: &str,
+) -> Result<PackagedPiperRuntime, PackagedCoreError> {
+    super::verify_package(root, trusted, profile_id, &|| false)
+}
+
+#[test]
+fn nov23_piper_hash_checks_cancellation_between_payload_chunks() {
+    let root = TestRoot::new();
+    let path = root.0.join("synthetic-payload");
+    fs::write(&path, vec![0x6a; 2 * 1024 * 1024]).unwrap();
+    let polls = std::cell::Cell::new(0);
+    let cancelled = || {
+        polls.set(polls.get() + 1);
+        polls.get() == 3
+    };
+    assert_eq!(
+        sha256_file(&path, &cancelled),
+        Err(PackagedCoreError::Cancelled)
+    );
+    assert_eq!(polls.get(), 3);
+    assert!(sha256_file(&path, &|| false).is_ok());
 }
 
 #[test]
@@ -184,7 +260,7 @@ fn hashes_the_packaged_payload_without_a_large_stack_allocation() {
     let expected = "c406296b30d433e27c08e2989ad557c7e9ae7825d1bea14c42aa4ef53c9e8a9d";
     let actual = std::thread::Builder::new()
         .stack_size(256 * 1024)
-        .spawn(move || sha256_file(&path))
+        .spawn(move || sha256_file(&path, &|| false))
         .expect("bounded-stack worker should start")
         .join()
         .expect("bounded-stack hashing should not overflow")

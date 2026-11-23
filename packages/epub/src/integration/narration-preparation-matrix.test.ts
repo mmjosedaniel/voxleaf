@@ -638,6 +638,24 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
     ["DCR-09", "en", "20 °C-+5 °C", "20 °C-+5 °C"],
     ["DCR-09", "es", "25,5 °C–20 °C", "25,5 °C–20 °C"],
     ["DCR-09", "en", "−5 °C – 20 °C", "−5 °C – 20 °C"],
+    ["VF-0158", "en", "18 − 20 °C", "18 − 20 °C"],
+    ["VF-0158", "es", "18 − 20 °C", "18 − 20 °C"],
+    ["VF-0158", "en", "20 °C − 25 °C", "20 °C − 25 °C"],
+    ["VF-0158", "es", "20 °C − 25 °C", "20 °C − 25 °C"],
+    [
+      "VF-0172",
+      "en",
+      "Firmware R8.5 – 20 °C",
+      "Firmware R8.5 – twenty degrees Celsius",
+    ],
+    [
+      "VF-0172",
+      "es",
+      "Equipo R8.5 – 20 °C",
+      "Equipo R8.5 – veinte grados Celsius",
+    ],
+    ["VF-0172", "en", "8.5 – 20 °C", "8.5 – 20 °C"],
+    ["VF-0172", "es", "8,5 – 20 °C", "8,5 – 20 °C"],
     ["five-pass 1.4", "es", "18–20 °C", "18–20 °C"],
     ["five-pass 1.4", "en", "18–20 °C", "18–20 °C"],
     ["five-pass 1.4", "es", "18 - 20 °C", "18 - 20 °C"],
@@ -1464,6 +1482,95 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
   });
 
   it.each(["narration-piper-v2", "narration-chatterbox-v1"] as const)(
+    "VF-0137 retains a silent scene break across omitted marks for %s",
+    async (profile) => {
+      for (const mark of ["\u200b", "\u2060", "\u00ad"]) {
+        const opened = await openEpubPublication(
+          await buildMinimalEpubFixture({
+            chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="before">Before.</p><p>${mark.repeat(4096)}***</p><p id="after">After.</p><p>Text *** inside.</p></body></html>`,
+          }),
+        );
+        if (!opened.ok) throw new Error(opened.detail);
+        const publication = opened.publication;
+        try {
+          const { segments } = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            "en",
+          );
+          expect(segments[0]).toMatchObject({
+            text: "Before.",
+            boundaryReason: "scene-break",
+          });
+          expect(segments.map(({ text }) => text)).toEqual([
+            "Before.",
+            "After.",
+            "Text *** inside.",
+          ]);
+          expect(segments[1]?.sourceRange.start).toEqual(
+            requiredBlock(publication, "after").startLocator,
+          );
+          expect(segments[2]?.boundaryReason).not.toBe("scene-break");
+        } finally {
+          await publication.close();
+        }
+      }
+    },
+  );
+
+  it.each(["narration-piper-v2", "narration-chatterbox-v1"] as const)(
+    "VF-0173 preserves a code ornament on both sides of a source window for %s",
+    async (profile) => {
+      for (const paddingLength of [0, 4096]) {
+        const opened = await openEpubPublication(
+          await buildMinimalEpubFixture({
+            chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Before.</p><p id="code">${"\u00a0".repeat(paddingLength)}<code>***</code></p><p id="after">After.</p><p>***</p><p>Last.</p></body></html>`,
+          }),
+        );
+        if (!opened.ok) throw new Error(opened.detail);
+        const publication = opened.publication;
+        try {
+          const { segments } = await collectPreparedSegments(
+            publication,
+            publication.defaultStartLocator!,
+            1,
+            profile,
+            "en",
+          );
+          expect(segments.map(({ text }) => text)).toEqual([
+            "Before.",
+            "***",
+            "After.",
+            "Last.",
+          ]);
+          expect(segments[0]?.boundaryReason).not.toBe("scene-break");
+          expect(segments[1]?.sourceRange).toEqual({
+            schemaVersion: 1,
+            start: {
+              ...requiredBlock(publication, "code").startLocator,
+              textOffsetCodePoints: paddingLength,
+            },
+            end: {
+              ...requiredBlock(publication, "code").startLocator,
+              textOffsetCodePoints: paddingLength + 3,
+            },
+          });
+          expect(segments[2]).toMatchObject({
+            boundaryReason: "scene-break",
+            sourceRange: {
+              start: requiredBlock(publication, "after").startLocator,
+            },
+          });
+        } finally {
+          await publication.close();
+        }
+      }
+    },
+  );
+
+  it.each(["narration-piper-v2", "narration-chatterbox-v1"] as const)(
     "VF-0111 preserves a scene break after a padded source window for %s",
     async (profile) => {
       const opened = await openEpubPublication(
@@ -1492,6 +1599,33 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
           },
         });
         expect(segments[2]?.boundaryReason).not.toBe("scene-break");
+      } finally {
+        await publication.close();
+      }
+    },
+  );
+
+  it.each(["narration-v1", "narration-piper-v1"] as const)(
+    "VF-0173 retains the frozen short-code boundary for %s",
+    async (profile) => {
+      const opened = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          chapterDocument:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>Before.</p><p><code>***</code></p><p>After.</p></body></html>',
+        }),
+      );
+      if (!opened.ok) throw new Error(opened.detail);
+      const publication = opened.publication;
+      try {
+        const { segments } = await collectPreparedSegments(
+          publication,
+          publication.defaultStartLocator!,
+          1,
+          profile,
+          "und",
+        );
+        expect(segments.map(({ text }) => text)).toEqual(["Before.", "After."]);
+        expect(segments[0]?.boundaryReason).toBe("scene-break");
       } finally {
         await publication.close();
       }

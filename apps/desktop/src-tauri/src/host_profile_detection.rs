@@ -715,6 +715,7 @@ fn optional_cuda_bf16_profile_admitted_from_report(
 ) -> bool {
     let cuda = report.providers.cuda;
     report.schema_version == SCHEMA_VERSION
+        && report.probe_status == ProbeStatus::Complete
         && report.platform.operating_system == OperatingSystem::Windows
         && report.platform.architecture == Architecture::X86_64
         && quantity_at_least(

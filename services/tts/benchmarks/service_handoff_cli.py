@@ -66,6 +66,22 @@ ALLOWED_PHASES: Final = frozenset(
         "restart",
     )
 )
+NETWORK_PHASES_BEFORE_CLEANUP: Final = (
+    (
+        "service-start",
+        "model-load-warm",
+        "ready",
+        "generation",
+        "generation",
+        "generation",
+        "generation",
+        "termination",
+    ),
+    *(("restart", "ready", "generation", "termination"),) * 3,
+)
+# The frozen v2 profile reserves this much of the outer deadline for observing
+# announcements. Samples describe only the observed instants.
+NETWORK_OBSERVATION_BUDGET_SECONDS: Final = 120
 
 
 class ServiceHandoffRunError(RuntimeError):
@@ -186,10 +202,10 @@ def _verify_firewall(candidate_python: str) -> None:
 
 def _network_counts(process_ids: frozenset[int], *, deadline: float) -> tuple[int, int]:
     if not process_ids:
-        return (0, 0)
+        raise _fail("network-observation")
     listeners = 0
     external = 0
-    for protocol in ("tcp", "udp"):
+    for protocol in ("tcp", "udp", "tcpv6", "udpv6"):
         completed = subprocess.run(
             ["netstat.exe", "-ano", "-p", protocol],
             check=False,
@@ -435,7 +451,8 @@ def run() -> Mapping[str, object]:
         listener_count = 0
         external_connection_count = 0
         cleanup_acknowledgements: list[dict[str, object]] = []
-        network_observations: set[str] = set()
+        network_phase_index = 0
+        network_budget_seconds = float(NETWORK_OBSERVATION_BUDGET_SECONDS)
         interval = RAM_SAMPLING_INTERVAL_MILLISECONDS / 1_000
         while process.poll() is None or not stdout_eof:
             remaining = _remaining(deadline if greeted else handshake_deadline)
@@ -490,6 +507,8 @@ def run() -> Mapping[str, object]:
                     or value != {"kind": "cleanupReady", "version": OBSERVER_VERSION, **receipt}
                 ):
                     raise _fail("cleanup-order")
+                if network_phase_index != len(NETWORK_PHASES_BEFORE_CLEANUP[index]):
+                    raise _fail("network-observations")
                 _verify_zero_cleanup(dedicated_sampler, shared_sampler, process.pid)
                 _remaining(deadline)
                 _send_observer_record(
@@ -501,6 +520,7 @@ def run() -> Mapping[str, object]:
                     },
                 )
                 cleanup_acknowledgements.append(receipt)
+                network_phase_index = 0
                 continue
             event = _parse_event(decoded)
             if event["kind"] == "nativeResult":
@@ -511,12 +531,30 @@ def run() -> Mapping[str, object]:
             phase = cast(str, event["phase"])
             if phase == "cleanup" or event["requiresZeroChildren"] is True:
                 raise _fail("observer-version")
-            if event["observeNetwork"] is True and phase not in network_observations:
+            if event["observeNetwork"] is True:
+                cleanup_index = len(cleanup_acknowledgements)
+                if cleanup_index >= len(NETWORK_PHASES_BEFORE_CLEANUP):
+                    raise _fail("network-observations")
+                expected_phases = NETWORK_PHASES_BEFORE_CLEANUP[cleanup_index]
+                if (
+                    network_phase_index >= len(expected_phases)
+                    or phase != expected_phases[network_phase_index]
+                ):
+                    raise _fail("network-observations")
+                started = time.monotonic()
                 ids = dedicated_sampler.process_tree_ids(process.pid)
-                listeners, external = _network_counts(ids, deadline=deadline)
+                if process.pid not in ids or process.poll() is not None:
+                    raise _fail("network-observation")
+                listeners, external = _network_counts(
+                    ids, deadline=min(deadline, started + network_budget_seconds)
+                )
+                _remaining(deadline)
+                network_budget_seconds -= time.monotonic() - started
+                if network_budget_seconds < 0 or process.poll() is not None:
+                    raise _fail("network-observation")
                 listener_count = max(listener_count, listeners)
                 external_connection_count = max(external_connection_count, external)
-                network_observations.add(phase)
+                network_phase_index += 1
         reader.join(timeout=min(READER_JOIN_SECONDS, _remaining(deadline)))
         return_code = process.wait(timeout=min(PROCESS_REAP_SECONDS, _remaining(deadline)))
         if return_code != 0 or reader.is_alive() or not greeted or native_result is None:

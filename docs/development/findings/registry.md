@@ -26,6 +26,18 @@ per-case results, host prerequisites and the exact independent review are
 linked from the [implementation ledger](../../plans/evidence/november-17-findings/implementation-cases.md)
 and [completed ExecPlan](../../plans/completed/november-17-findings-corrections.md).
 
+The [November 23 reconciliation](audits/2026-11-23-findings-reconciliation.md) records
+previous fix scope, regression risks and bounded correction checks for VF-0093
+and VF-0133 through VF-0166.
+
+The [November 23 deep validation](audits/2026-11-23-deep-findings-validation.md) reviews
+all 35 triggers and records seven additional cases, VF-0167 through VF-0173.
+
+Each of the 42 November 23 entries has a dated execution update. The six
+milestones link the individual trigger checks, adjacent controls and recovery
+actions. The host record distinguishes listening, measured performance and
+artifact-bound installer evidence. [Execution plan](../../plans/completed/november-23-findings-corrections.md) · [Integrated checks](../../plans/evidence/november-23-findings/integrated-gates.md)
+
 | ID | Area | Finding | Historical disposition |
 | --- | --- | --- | --- |
 | [VF-0001](#vf-0001) | Reader | Recovery starts at the last heard position | `intentional` |
@@ -160,6 +172,47 @@ and [completed ExecPlan](../../plans/completed/november-17-findings-corrections.
 | [VF-0130](#vf-0130) | Benchmarks | Malformed preflight fields can bypass the CLI failure receipt | `candidate` |
 | [VF-0131](#vf-0131) | Benchmarks | Quick-start lead is sampled after playback starts | `candidate` |
 | [VF-0132](#vf-0132) | Runtime | Graceful shutdown can accept invalid trailing protocol output | `candidate` |
+| [VF-0133](#vf-0133) | Runtime | A cancelled Download can borrow the next Chatterbox confirmation | `candidate` |
+| [VF-0134](#vf-0134) | EPUB | A leading nonbreaking space in a chapter filename can prevent opening | `candidate` |
+| [VF-0135](#vf-0135) | EPUB | An internal link wrapping a paragraph can prevent opening | `candidate` |
+| [VF-0136](#vf-0136) | Reader | PageDown from a focused inline link can leave an old checkpoint | `candidate` |
+| [VF-0137](#vf-0137) | Narration | An omitted formatting mark can defeat long scene-break recognition | `candidate` |
+| [VF-0138](#vf-0138) | Playback | Refill timing can end while playback-rate preparation is pending | `candidate` |
+| [VF-0139](#vf-0139) | Benchmarks | Retained quality evaluation can accept an unaggregatable panel | `candidate` |
+| [VF-0140](#vf-0140) | Benchmarks | Failed quality cleanup can omit its JSON failure receipt | `candidate` |
+| [VF-0141](#vf-0141) | Settings | A staging failure can hide verified Chatterbox cleanup | `candidate` |
+| [VF-0142](#vf-0142) | Reader | Appearance changes can settle a chapter jump before its target renders | `candidate` |
+| [VF-0143](#vf-0143) | Reader | A wheel gesture at the scroll boundary can misattribute restoration movement | `candidate` |
+| [VF-0144](#vf-0144) | Playback | Slowed playback can drop the end of a PCM unit | `candidate` |
+| [VF-0145](#vf-0145) | EPUB | Text in a hidden TOC label can prevent opening | `fixed` |
+| [VF-0146](#vf-0146) | Runtime | Native Chatterbox Download can accept an incomplete compatibility report | `candidate` |
+| [VF-0147](#vf-0147) | Benchmarks | Interrupted preparation can strand a benchmark reservation ID | `candidate` |
+| [VF-0148](#vf-0148) | Release | The Windows package check can pass with a damaged Piper payload | `candidate` |
+| [VF-0149](#vf-0149) | Release | A disappearing WebView2 file can abort the Windows lifecycle harness | `confirmed` |
+| [VF-0150](#vf-0150) | Settings | Reader says defaults are active while using a custom appearance | `candidate` |
+| [VF-0151](#vf-0151) | Reader | Focus can move behind the forced-colors table of contents | `candidate` |
+| [VF-0152](#vf-0152) | EPUB | The reader drops an individual list item's direction | `candidate` |
+| [VF-0153](#vf-0153) | Playback | Refill speed feedback refers to an audio section that ended | `candidate` |
+| [VF-0154](#vf-0154) | Runtime | A pending TTS start remains eligible after application exit cleanup | `candidate` |
+| [VF-0155](#vf-0155) | Release | The inventory labels an inactive crate as required on Windows | `candidate` |
+| [VF-0156](#vf-0156) | Reader | A delayed audio receipt can move the reading viewport during Pause | `candidate` |
+| [VF-0157](#vf-0157) | Reader | Finishing automatic direction preparation can drop reader focus | `candidate` |
+| [VF-0158](#vf-0158) | Narration | A spaced Unicode minus can allow partial Celsius normalization | `candidate` |
+| [VF-0159](#vf-0159) | Runtime | The startup witness can report model loading after it finishes | `candidate` |
+| [VF-0160](#vf-0160) | Benchmarks | The handoff benchmark can report zero network activity without sampling | `candidate` |
+| [VF-0161](#vf-0161) | EPUB | Valid mixed-case text direction can prevent opening | `candidate` |
+| [VF-0162](#vf-0162) | EPUB | A declared metadata prefix alias can prevent opening | `candidate` |
+| [VF-0163](#vf-0163) | Reader | Closing an oversized first chapter can save an unread position | `candidate` |
+| [VF-0164](#vf-0164) | Reader | Paragraph Play can be enabled before a jump settles | `candidate` |
+| [VF-0165](#vf-0165) | Benchmarks | Native stable-playback evidence can include earlier runs | `candidate` |
+| [VF-0166](#vf-0166) | Settings | The local Chatterbox candidate can offer unsupported removal and stop Piper | `candidate` |
+| [VF-0167](#vf-0167) | EPUB | An OPF vocabulary alias can admit a fixed-layout rendition | `candidate` |
+| [VF-0168](#vf-0168) | Reader | Replacing the book can suppress an appearance-save failure | `candidate` |
+| [VF-0169](#vf-0169) | Maintainer playback evidence | Playback-speed timing gates measure intentional pauses | `candidate` |
+| [VF-0170](#vf-0170) | Maintainer network evidence | Successful network sampling omits IPv6 protocols | `candidate` |
+| [VF-0171](#vf-0171) | Retained quality tooling | Scorecard or aggregate publication can bypass the CLI error response | `candidate` |
+| [VF-0172](#vf-0172) | Narration | A dotted identifier can suppress a standalone Celsius expansion | `candidate` |
+| [VF-0173](#vf-0173) | Narration | Inline code markers get different scene classification across source windows | `candidate` |
 
 ## VF-0057
 
@@ -1595,6 +1648,10 @@ restoring the absent destination.
 
 ## VF-0093
 
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Both pre-registration dispatch and a held packaged verifier were exercised. A denied Start now frees its exact retirement slot. The capacity check holds each of the two admission gates and proves a subsequent early Cancel remains effective. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the over-deadline cleanup failure, with an additional scheduling-dependent route before native Start registration. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0093)
+
 2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0093) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
 
 2026-11-17 reconciliation — `inspected-present` on `50f3b9e` under the stated trigger. [Prior scope, risks and proposed checks](audits/2026-11-17-findings-reconciliation.md#vf-0093)
@@ -1609,6 +1666,8 @@ restoring the absent destination.
 - 2026-11-17 second-pass assessment — `inspected-present` on `50f3b9e` for Cancel processed after a packaged Piper native startup begins verification and before child publication. The [busy shutdown](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1835) records no cancellation for the pending start while the [client](../../../apps/desktop/src/tts/process-client.ts#L567) awaits settlement. The Play-blocking outcome still depends on exceeding the cleanup deadline. [Second audit][audit-2026-11-17-pass-2]
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. An empty native slot admits an obsolete spawn. Blocking the next Play additionally requires a cleanup timeout. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0093)
+
+- 2026-11-23 assessment — Partial closure on `d9a0a72`. `inspected-absent` for the obsolete spawn after native retirement. `inspected-present` for the remaining P2 cleanup failure when installed Piper verification outlasts the five-second deadline. The client and coordinator still wait for the retired start to settle. After it settles, Diagnostics can retry cleanup. The earlier fixture releases its barrier before the next start and does not establish the over-budget UI outcome. [Trace and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0093)
 
 ## VF-0094
 
@@ -1779,6 +1838,8 @@ restoring the absent destination.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. A partially written final journal file persists across retry even when settings actually match. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0104)
 
+- 2026-11-23 second-pass assessment — Atomic record publication prevents the original partial `restored.json` from becoming visible on `d9a0a72`. The separate preparation problem in [VF-0147](#vf-0147) occurs before a reservation exists. [Audit][audit-2026-11-23-pass-2]
+
 ## VF-0105
 
 2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0105) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
@@ -1823,6 +1884,8 @@ restoring the absent destination.
 - Next check — Use disposable outputs, fail only the checksum write after successful JSON/authority staging, then attempt attachment with receipts for the exact new installer. Require a coherent checksum or rejection before positive evidence. Keep normal unsigned/signed hash binding and prior drift controls.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. A later attachment can credit otherwise matching evidence when checksum publication failed. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0107)
+
+- 2026-11-23 second-pass assessment — Current attachment requires the exact checksum sidecar before writing evidence. The examined missing/stale checksum attachment is `inspected-absent` on `d9a0a72`. Fresh-build publication ordering remains a separate observation. [Audit][audit-2026-11-23-pass-2]
 
 ## VF-0108
 
@@ -1884,6 +1947,8 @@ restoring the absent destination.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The source-window split defeats whole-paragraph scene recognition before profile-specific handling. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0111)
 
+- 2026-11-23 assessment — The original whitespace-only padding trigger is `inspected-absent` on `d9a0a72`. The source guard misses a preceding omitted mark in [VF-0137](#vf-0137). [Audit][audit-2026-11-23]
+
 ## VF-0112
 
 2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0112) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
@@ -1898,6 +1963,8 @@ restoring the absent destination.
 - Next check — With disposable directory fixtures, assert acquisition refuses invalid ancestry before deletion, creation or transfer. Cover both present and absent profile leaves, and preserve ordinary staging cleanup, explicit consent and successful retry.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Download, confirmation Cancel and postcommit Check use the weaker staging helper. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0112)
+
+- 2026-11-23 assessment — The examined staging paths now apply the ownership guard on `d9a0a72`. The original unsafe-path trigger is `inspected-absent`. Its distinct Check failure classification can hide cleanup, [VF-0141](#vf-0141). [Audit][audit-2026-11-23]
 
 ## VF-0113
 
@@ -1946,6 +2013,8 @@ restoring the absent destination.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. CPU derive masks lock contention in its public serializer. The quality CLI has its own intentional generic envelope. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0115)
 
+- 2026-11-23 assessment — `inspected-absent` on `d9a0a72` for the single-evaluator v6 card with an all-N/A dimension. The retained two-candidate panel variant is [VF-0139](#vf-0139). [Audit][audit-2026-11-23]
+
 ## VF-0116
 
 2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0116) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
@@ -1975,6 +2044,8 @@ restoring the absent destination.
 - Next check — Inject a denied unlink at the command boundary in a disposable session. Assert a fixed failure receipt, no path in CLI output, intact aggregate and no published correction. Clear the fault and verify one successful correction and fresh aggregation.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. The diagnosed oversized profile value cannot be written after otherwise eligible activation stops Piper. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0117)
+
+- 2026-11-23 assessment — `inspected-absent` on `d9a0a72` for the correction command's aggregate deletion error. The CLI catches `OSError` in that command. The separate cleanup command is [VF-0140](#vf-0140). [Audit][audit-2026-11-23]
 
 ## VF-0118
 
@@ -2006,6 +2077,8 @@ restoring the absent destination.
 
 - 2026-11-17 deep review — `inspected-present` on `50f3b9e`. Raw XML ID spelling affects both fragment lookup and normalized duplicate detection. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0119)
 
+- 2026-11-23 assessment — `inspected-absent` on `d9a0a72` for the examined percent-encoded hash filename. The BookV1 projection aliases decoded hashes. A filename beginning with a nonbreaking space follows [VF-0134](#vf-0134). [Audit][audit-2026-11-23]
+
 ## VF-0120
 
 2026-11-18 implementation — `reproduced` for the scoped case, with the correction and current host checks recorded. [Case witness and limitations](../../plans/evidence/november-17-findings/implementation-cases.md#vf-0120) · [Current implementation review](../../plans/evidence/november-17-findings/implementation-review-r03.md)
@@ -2035,6 +2108,8 @@ restoring the absent destination.
 - Next check — From an eligible Settings confirmation, observe focus after the action changes and press Escape without pressing Tab first. Check close and trigger focus, normal Tab wrapping, and the explicit narration-focus containment controls.
 
 - 2026-11-17 deep review — `inspected-inconclusive` on `50f3b9e`. The settled failure can reissue the warning and save after a successful explicit 100% selection. [Verdict and evidence](audits/2026-11-17-deep-findings-validation.md#vf-0121)
+
+- 2026-11-23 assessment — Original Escape failure is `inspected-absent` on `d9a0a72` for the action-replacement sequence. The document handler receives Escape even when focus returns to the body. Focus containment waits for the next `focusin`, leaving the observed focus-loss scenario's next Tab outcome unresolved. [Audit][audit-2026-11-23]
 
 ## VF-0122
 
@@ -2159,6 +2234,481 @@ restoring the absent destination.
 - Disposition — `candidate`, P3. Latest check on 2026-11-17, `main` at `50f3b9e`, `inspected-present`. Current evidence is static. [protocol rule](../../../docs/architecture/tts-service-protocol-v1.md#L76) · [shutdown command](../../../docs/architecture/tts-service-protocol-v1.md#L93)
 - Prior scope and next check — Promoted from one of the six observations. DCR-12 checked the separate Node host. Keep graceful frame validation bounded by the shutdown deadline and record process containment independently. Compare clean EOF with a faulty terminal stream after the expected pair. Whether every nonzero exit must itself invalidate a valid pair is a separate contract question. [Full assessment](audits/2026-11-17-deep-findings-validation.md#vf-0132)
 
+- 2026-11-23 third-pass assessment — `inspected-absent` on `d9a0a72` for the original trailing-frame shutdown trigger. Current graceful shutdown requires terminal output closure and sends invalid output through containment. Clean EOF with a nonzero process exit remains a separate policy question. [Audit][audit-2026-11-23-pass-3]
+
+## VF-0133
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A stale Download now needs the native confirmation identity shown for that click. The replacement confirmation survives and a fresh click can transfer. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0133)
+
+**A cancelled Download can borrow the next Chatterbox confirmation.** On a compatible host, if the first native Download waits before capturing confirmation identity, Cancel can clear the first confirmation and Review can create another. The old request can capture that new identity and begin the transfer without a second Download click.
+
+- Owners — [Renderer request and cancellation](../../../apps/desktop/src/tts/optional-chatterbox-client.ts#L309), [native blocking handoff](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2793), and [confirmation capture](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2282).
+- Lineage — [RAF-16](../../plans/completed/residual-audit-corrections.md#L230) guards replacement after Download captures confirmation identity. [U8/2.1](../../plans/completed/five-pass-audit-revalidation-and-corrections.md#u8-optional-package-action-ownership--21-22-add-01) protects same-operation reselection, and [VF-0095](#vf-0095) covers Cancel after commit. The pre-capture ordering was already possible when RAF-16 landed in `5e4c44b`. First introduction and natural incidence are unknown.
+- Disposition — `candidate`, P2, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0133)
+
+## VF-0134
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The public opener assigns an alias to an admitted wire-incompatible archive key. A conflicting name, TOC activation and exact reopen are covered. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0134)
+
+**A leading nonbreaking space in a chapter filename can prevent opening.** The archive and manifest accept a root-level filename beginning with U+00A0 when referenced by its percent-encoded URL. The projection leaves the decoded filename unchanged. The BookV1 resource path rejects edge whitespace, and opening reports a malformed package.
+
+- Owners — [BookV1 projection](../../../packages/epub/src/book/book-v1-projection.ts#L119), [resource-path contract](../../../packages/shared/schemas/book/v1.schema.json#L106), and [public opening](../../../packages/epub/src/public/open-epub-publication.ts#L155). [EPUB filename rules](https://www.w3.org/TR/epub-33/#sec-container-filenames)
+- Lineage — [VF-0119](#vf-0119) aliases hash-bearing names and covers collision avoidance. This filename has no hash. [VF-0047](#vf-0047) concerns text labels. Introduction unknown.
+- Disposition — `candidate`, P2, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0134)
+
+## VF-0135
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The projector preserves a block-wrapping local link’s readable descendants and keeps its neighboring inline link interactive. Chromium exercised activation. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0135)
+
+**An internal link wrapping a paragraph can prevent opening.** A local anchor with a valid target can wrap a paragraph in XHTML. Its projector installs an inline collector, then rejects the paragraph because it needs a block collector. The public opener fails the publication.
+
+- Owners — [Local-link collector](../../../packages/epub/src/document/xhtml-projector.ts#L1321), [block requirement](../../../packages/epub/src/document/xhtml-projector.ts#L1609), and [public projection](../../../packages/epub/src/public/open-epub-publication.ts#L82). [HTML anchor content model](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-a-element)
+- Lineage — [VF-0004](#vf-0004) covers external or no-href inert wrappers, which use the transparent path. The earlier correction explicitly excluded arbitrary active internal block anchors. The product should decide whether to preserve the wrapper as inert or support block-link interaction. Introduction unknown.
+- Disposition — `candidate`, P2, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0135)
+
+## VF-0136
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A focused publication link permits measured PageDown navigation after Stop. Chromium checked movement, the saved position after reopen and neighboring link activation. The native observer requires trusted movement and rejects a stationary event. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0136)
+
+**PageDown from a focused inline link can leave an old checkpoint.** After Stop, a focused in-book link is a button. When the browser scrolls the reading viewport on unmodified PageDown, the reader's button filter leaves that gesture unattributed. The measured-manual gate retains the heard checkpoint and reopening can return to that older location.
+
+- Owners — [Link button](../../../apps/desktop/src/reader/SemanticDocument.tsx#L212), [reading-key filter](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1341), and [save gate](../../../apps/desktop/src/persistence/reader-position-save-coordinator.ts#L225).
+- Lineage — [VF-0063](#vf-0063) covers keyboard modifiers. [VF-0003](#vf-0003) covers the general absent-placement recovery. The earlier button control covers Space activation. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the application-side sequence on clean `main` at `d9a0a72` on 2026-11-23, conditional on actual viewport movement in the host. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0136)
+
+## VF-0137
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Bounded long-ornament recognition handles the same omitted formatting marks as normalization. Both mutable profiles preserve the real next locator. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0137)
+
+**An omitted formatting mark can defeat long scene-break recognition.** U+200B before a window-spanning run of nonbreaking spaces and a scene ornament causes the raw whole-leaf scanner to reject the marker. Normalization discards U+200B. The later nonzero-offset suffix loses scene classification, so Chatterbox can receive the punctuation as narration and Piper can lose the scene transition.
+
+- Owners — [Whole-leaf recognition](../../../packages/epub/src/narration/narration-preparation.ts#L636), [formatting omission](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L2071), and [normalized scene recognition](../../../packages/epub/src/narration/narration-segment-packer.ts#L768).
+- Lineage — [VF-0111](#vf-0111) covers the plain whitespace-padded ornament. Its landed fixture lacks an omitted format character. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. Physical audio output is unmeasured. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0137)
+
+## VF-0138
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The refill interval stays open through rate preparation until matching rendered output. Rate fallback and successful selection preserve one correctly measured wait. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0138)
+
+**Refill timing can end while playback-rate preparation is pending.** After depletion at 1×, selecting an unprepared 0.75× can make 45 seconds of source audio meet the 60-second listening threshold. The scheduler records a completed refill before the player can start a successor. If the rate returns to 1× first, another refill index starts and the wait between thresholds is omitted from the playback buffering metric.
+
+- Owners — [Scheduler timing](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1077), [device start gate](../../../apps/desktop/src/tts/pcm-playback.ts#L220), and [published counters](../../../apps/desktop/src/tts/ProductNarrationControls.tsx#L94).
+- Lineage — The [VF-0066](#vf-0066) fixture covers the order and absence of early allocation. [VF-0103](#vf-0103) covers skipped polling intervals. [VF-0123](#vf-0123) added the indexed receipt in `d9a0a72`, which ends before the delayed preparation completes. The rate fixture does not advance the clock during pending preparation or assert these metrics.
+- Disposition — `candidate`, P3, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0138)
+
+## VF-0139
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The last immutable evaluator card now passes the real per-candidate scoring rules before publication. Complementary scores, corrected retry, aggregate and duplicate rejection were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the final incomplete panel in retained v2 and v3. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0139)
+
+**Retained quality evaluation can accept an unaggregatable panel.** The scorecard form permits an evaluator to use `not-applicable` for an entire candidate dimension. In a retained two-candidate session, acceptance can lock every completed card even when one candidate has no numeric value for a required dimension. Aggregation rejects the resulting panel, resubmission is blocked and the correction command cannot change scores.
+
+- Owners — [Scorecard form](../../../services/tts/benchmarks/quality_presentation.py#L45), [immutable submission](../../../services/tts/benchmarks/quality.py#L510), [per-candidate scoring](../../../services/tts/benchmarks/quality_scoring.py#L40), and [retained v2 workflow](../../../benchmarks/tts/README.md#L716).
+- Lineage — [VF-0115](#vf-0115) now checks numeric coverage for the one-candidate v6 session. Retained comparison requires coverage by candidate across the panel. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0139)
+
+## VF-0140
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The quality cleanup CLI emitted its bounded JSON failure on early and partial deletion errors. The same session retried and the unrelated marker survived. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0140)
+
+**Failed quality cleanup can omit its JSON failure receipt.** If filesystem deletion of a disposable quality session raises `OSError`, the public cleanup command lets it escape the typed CLI handler. The operator can receive a traceback containing a local path and no structured failure. Private files can remain after a partial deletion.
+
+- Owners — [Owned deletion](../../../services/tts/benchmarks/quality.py#L733), [cleanup command and envelope](../../../services/tts/benchmarks/quality_cli.py#L273), and [content-free CLI policy](../../architecture/decisions/ADR-0077-exclusive-ready-quality-operations.md#decision).
+- Lineage — [VF-0117](#vf-0117) protects the correction command's aggregate invalidation. This failure is in the explicit session cleanup command. The similarly named R8-02 fixture covers adapter close. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23 following a deletion error. Host error incidence is unmeasured. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0140)
+
+## VF-0141
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Settings can retry Check after a post-promotion staging fault. Controlled acquisition and mounted client tests retain the verified installation through recovery. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0141)
+
+**A staging failure can hide verified Chatterbox cleanup.** During an explicit Check after promotion and cleanup failure, the installed package can verify while the staging ancestry check fails. Native preserves the cleanup receipt but returns generic `tts-optional-profile-invalid`. Settings presents Review Download as the next action. Choosing Review replaces the receipt, even if the staging issue has been resolved and Check could have finished cleanup.
+
+- Owners — [Cleanup retry and classification](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2076), [consent replacement](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2237), and [Settings next action](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L524).
+- Lineage — [VF-0043](#vf-0043) classifies failed verification of the installed package itself. [VF-0112](#vf-0112) added shared staging-ancestry enforcement. Its [native guard fixture](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox/tests.rs#L2114) retries Check directly after removing the blocker, without exercising Settings. A fresh Download still requires consent. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on clean `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0141)
+
+## VF-0142
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Deep destination identity survives appearance reflow while the target is unmounted. The mounted test covers settlement, fresh Play and the neighboring unavailable route. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0142)
+
+**Appearance changes can settle a chapter jump before its target renders.** Navigate to a late fragment in a progressively rendered chapter, then change appearance while its ref is absent. The appearance effect starts a 12-frame restoration budget immediately. If the ref is still absent when the budget expires, ordinary TOC navigation can report settled, save the target and release the Play gate before the reader displays it.
+
+- Owners — [Appearance effect](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1046), [geometry deadline](../../../apps/desktop/src/reader/reader-reflow-restoration.ts#L424), [settlement](../../../apps/desktop/src/reader/ReaderPublication.tsx#L728), and [save consumer](../../../apps/desktop/src/App.tsx#L731).
+- Lineage — Adjacent to [VF-0026](#vf-0026) and [VF-0029](#vf-0029). The mounted-target reflow fixture misses a target that still needs more than 12 frames to materialize. Introduction unknown.
+- Disposition — `candidate`, P2, `inspected-present` on `main` at `d9a0a72` on 2026-11-23, conditional on the appearance event during materialization. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0142)
+
+## VF-0143
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A trusted wheel against the scroll boundary no longer gives later restoration scroll ownership. Chromium retained the exact saved offset and still records genuine manual movement. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0143)
+
+**A wheel gesture at the scroll boundary can misattribute restoration movement.** Wheel upward at the top while saved-position restoration is pending. If the gesture moves nothing and the app scrolls down to restore the target while the intent is still armed, the viewport marks the app's scroll as measured manual movement. The next caret sample can replace the saved interior offset.
+
+- Owners — [Wheel intent](../../../apps/desktop/src/reader/ReaderPublication.tsx#L367), [restoration scroll](../../../apps/desktop/src/reader/reader-reflow-restoration.ts#L440), [movement admission](../../../apps/desktop/src/reader/active-visual-locator.ts#L429), and [protected placement](../../../apps/desktop/src/reader/active-visual-locator.ts#L649).
+- Lineage — Adjacent to [VF-0017](#vf-0017), [VF-0029](#vf-0029) and [VF-0074](#vf-0074). [VF-0136](#vf-0136) loses a manual signal. Here an application-owned scroll gains one. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the code sequence on `main` at `d9a0a72` on 2026-11-23. Native timing and exact geometry remain open. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0143)
+
+## VF-0144
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. WSOLA terminal-overlap handling preserves the final source signal at all five slow rates. The user heard all three synthetic audition endings with no obvious click or pitch jump. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0144)
+
+**Slowed playback can drop the end of a PCM unit.** For valid 24,038-frame PCM at 0.95×, the last 135 source frames are outside the range of every output grain with nonzero weight. A signal confined to those frames is discarded while the completion message credits the full source unit.
+
+- Owners — [Worklet grain selection](../../../apps/desktop/src/tts/playback-backends/incremental-wsola-v3-worklet.ts#L245), [completion](../../../apps/desktop/src/tts/playback-backends/incremental-wsola-v3-worklet.ts#L358), and [Web Audio consumer](../../../apps/desktop/src/tts/playback-backends/web-audio-pcm-playback.ts#L500).
+- Lineage — [NLC-01](../../plans/completed/narration-logic-corrections.md#2-nlc-01-preserve-source-progression-in-wsola) corrected cumulative backwards drift. The current late-signal fixture leaves the final 1,000 input frames silent. This case follows from grain bounds and target truncation. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` by arithmetic on `main` at `d9a0a72` on 2026-11-23. No audible speech loss or host incidence established. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0144)
+
+## VF-0145
+
+- 2026-11-23 follow-up on `d9a0a72` plus the working patch — `fixed` under the newly approved policy. The EPUB 3 navigation parser prefers a usable title on a hidden label root and otherwise reads the bounded label text. A synthetic EPUB with a valid title previously failed to open. The public opener now preserves the group, link labels and exact target. The parser test distinguishes retained title bytes from the XML text charge. [Policy and verification](../../plans/completed/hidden-navigation-label-titles.md)
+
+- 2026-11-23 execution — `deferred`, `inspected-inconclusive` as a product defect. The root-label policy and existing length cap remain in force. Revisit the opener and descendant, fallback and visible-label controls if product policy changes. [Execution plan](../../plans/completed/november-23-findings-corrections.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-inconclusive` for a product defect despite verified root-label handling and size-limit rejection. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0145)
+
+**Text in a hidden TOC label can prevent opening.** EPUB 3 label construction does not check `hidden` on the label's own `a` or `span`. Its text counts toward the 1,024-code-point label limit and can abort public opening before the available `title` fallback is considered.
+
+- Owners — [Label initialization](../../../packages/epub/src/navigation/navigation-document.ts#L303), [title fallback](../../../packages/epub/src/navigation/navigation-document.ts#L438), and [label limit](../../../packages/epub/src/navigation/navigation-document.ts#L548).
+- Lineage — The earlier [RCF-15](../../plans/completed/revalidated-chat-findings-minimal-corrections.md#L257) fixture puts `hidden` on descendants within the label. EPUB 3.3 permits a dedicated navigation UI to ignore `hidden`. Applying the descendant exclusion to the label root is a product decision. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. The product outcome for the concealed label itself warrants confirmation. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0145)
+
+## VF-0146
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Native acquisition checks the completeness of the compatibility report. Incomplete DirectML facts deny admission before transfer; valid same-owner retry remains available. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0146)
+
+**Native Chatterbox Download can accept an incomplete compatibility report.** After a complete renderer check exposes confirmation, the fresh native check can observe a DirectML failure after the CUDA adapter has been identified. A partial or permission-denied report with CUDA, CPU and memory facts still passes the native predicate. Published acquisition rules say native repeats the host check, whose compatibility rule requires a complete report.
+
+- Owners — [Windows probe](../../../apps/desktop/src-tauri/src/host_profile_detection/windows_probe.rs#L271), [native predicate](../../../apps/desktop/src-tauri/src/host_profile_detection.rs#L708), [renderer matcher](../../../apps/desktop/src/tts/hardware-profile-matcher.ts#L372), and [acquisition rule](../../architecture/chatterbox-official-acquisition-authority-v2.md#L143).
+- Lineage — Adjacent to [VF-0106](#vf-0106), which uses an older renderer report while a check is pending. Here the fresh report reaches a different predicate. Explicit Download consent remains required. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the decision discrepancy on `main` at `d9a0a72` on 2026-11-23. The M011 plan summarizes narrower hardware dimensions, so verify intended parity before changing admission. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0146)
+
+## VF-0147
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Initial reservation publication stages the entire observation, then publishes the nonempty session directory. Same-ID retry, committed winner preservation and one-use claim were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0147)
+
+**Interrupted preparation can strand a benchmark reservation ID.** `safety:prepare` creates an exclusive directory before publishing `reservation.json`. A filesystem failure publishing that record leaves the directory in place. The same request cannot prepare again because its directory exists, and it cannot claim or finalize because the reservation is absent.
+
+- Owners — [Prepare](../../../services/tts/benchmarks/benchmark_safety.py#L208), [record writer](../../../services/tts/benchmarks/benchmark_safety.py#L103), and [operator recovery contract](../../development/benchmark-safety-v1.md#L15).
+- Lineage — [VF-0104](#vf-0104) led to atomic publication and retry coverage for `consumed`, `settled` and `restored`. A failed prepare has a separate directory ownership boundary. Operators can use a new ID before changing power settings. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23 after a publication failure. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0147)
+
+## VF-0148
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The testing guide now attributes staged payload verification to the verified-core route. Source inspection distinguishes the standalone configuration and manifest check from the installer lifecycle. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the standalone verification claim. Full payload verification belongs to the separate verified-core command. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0148)
+
+**The Windows package check can pass with a damaged Piper payload.** `package:windows:check` requires the resource directory and matching manifest bytes. A missing, changed or extra payload file inside that directory can still yield `windows-release:current`. Native Piper rejects that tree. The separate `package:piper-core:check` and verified-core build command perform a full check.
+
+- Owners — [Windows release check](../../../apps/desktop/scripts/windows-release.mjs#L351), [native verifier](../../../apps/desktop/src-tauri/src/tts_release_core.rs#L119), and [test guidance](../../development/testing.md#L1620).
+- Lineage — Distinct from [VF-0068](#vf-0068) and [VF-0107](#vf-0107). This check's documentation credits payload verification even when manifest equality is its only payload identity test. Introduction unknown.
+- Disposition — `candidate`, P3 maintainer evidence, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. No claim about an installer built through valid inputs. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0148)
+
+## VF-0149
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Real Windows traversal resumed safely after an enumerated file or dequeued directory vanished. Reparse and persistent-lock refusals, hidden entries and restored originals were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0149)
+
+**A disappearing WebView2 file can abort the Windows lifecycle harness.** The harness enumerates an entry and then reads its attributes. The later read is outside the missing-entry handlers. A transient file disappearing in between can abort pre-fixture checks or bypass the cleanup loop's sharing-violation retry.
+
+- Owners — [Traversal](../../../scripts/windows-package-lifecycle-data.ps1#L37) and [cleanup retry](../../../scripts/windows-package-lifecycle-data.ps1#L130).
+- History — Previously reproduced as a harness failure in [five-search evidence](../../plans/evidence/five-search-findings/execution-ledger.md#L52); a later unchanged retry passed. [Windows privacy closeout](../../plans/completed/windows-build-privacy.md#L66) records another transient traversal failure and successful cleanup/retry. Newly indexed here. Introduction unknown.
+- Disposition — Historically `confirmed`, P3 maintainer reliability. `inspected-present` on `main` at `d9a0a72` on 2026-11-23. No fresh execution. [Audit and next check][audit-2026-11-23-pass-2] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0149)
+
+## VF-0150
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Restoration notices report the active in-memory appearance with its storage warning. Mounted tests exercised failed persistence, replacement and successful recovery. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0150)
+
+**Reader says defaults are active while using a custom appearance.** After a preference write fails, App retains the selected appearance in memory and the restore cache records the failure status. Open another book that has an exact or missing saved position. The reader uses the custom appearance, but the notice sees only the status and reports “Default settings are active.”
+
+- Owners — [Appearance update](../../../apps/desktop/src/App.tsx#L661), [restore cache](../../../apps/desktop/src/persistence/reader-position-restore-coordinator.ts#L213), [presentation projection](../../../apps/desktop/src/app-reader-restoration.ts#L65), and [notice](../../../apps/desktop/src/AppPresentation.tsx#L95).
+- Lineage — [CAF-R6.2](../../plans/completed/chat-audit-minimal-follow-up.md#L107) correctly retains usable in-memory appearance and propagates the failed write. Its [replacement fixture](../../../apps/desktop/src/App.test.tsx#L3521) checks Settings feedback while the reader's separate notice can contradict it. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0150)
+
+## VF-0151
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. When focus enters the covered reader viewport, Contents closes and exposes the focused content. Forced-colors and normal-color Chromium journeys exercised Skip, PageDown and dismissal. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0151)
+
+**Focus can move behind the forced-colors table of contents.** The open Contents backdrop covers the workspace in opaque Canvas color. The reader remains in tab order after the panel. Tab from the last available TOC destination can send focus to a covered in-book button, and the reader skip link can focus the obscured article directly.
+
+- Owners — [Reader DOM order](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1294), [skip action](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1068), [backdrop](../../../apps/desktop/src/styles/reader-shell-and-settings.css#L315), and [forced-colors rule](../../../apps/desktop/src/styles/reader-shell-and-settings.css#L405).
+- Lineage — Separate from the Settings modal cases in [VF-0121](#vf-0121). The inspected keyboard fixture closes Contents before continuing, and its forced-colors arm starts with Contents closed. Preserve the product's no-nested-focus-trap rule. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the DOM/CSS sequence on `main` at `d9a0a72` on 2026-11-23. Actual WebView2 focus order and visibility remain unmeasured. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0151)
+
+## VF-0152
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The EPUB projector and reader preserve item-level direction on the list item itself. Chromium compares marker placement; the opener preserves ordered values and locator offsets. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0152)
+
+**The reader drops an individual list item's direction.** The semantic projector propagates an authored `dir` into the item's paragraph but omits it from the list item. The emitted `<li>` inherits the surrounding list's direction, so an outside marker can appear on the opposite side from the authored item direction.
+
+- Owners — [List item projection](../../../packages/epub/src/document/xhtml-projector.ts#L1432), [semantic model](../../../packages/epub/src/document/document-model.ts#L122), and [list item renderer](../../../apps/desktop/src/reader/SemanticDocument.tsx#L403). [CSS outside-marker rule](https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-position)
+- Lineage — [VF-0064](#vf-0064) covers implicit paragraph direction and [VF-0096](#vf-0096) covers bidi isolates. Individual list-item box direction is separate from either. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for attribute loss on `main` at `d9a0a72` on 2026-11-23. Actual marker placement was not observed. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0152)
+
+## VF-0153
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The controls announce a pending rate against a current section only while an unfinished unit owns the handle. Empty refill and paused unfinished-unit cases were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0153)
+
+**Refill speed feedback refers to an audio section that ended.** After an ordinary underrun at 1×, choose 0.75× while the buffer is still short of the refill threshold. The scheduler retains 1× as active after the last unit ended. The control announces that the new speed will apply after the current section, even though no unit is currently playing.
+
+- Owners — [Scheduler at exhaustion](../../../apps/desktop/src/tts/adaptive-buffer-scheduler.ts#L1107), [rate selection](../../../apps/desktop/src/tts/reader-settings-playback-authority-v3.ts#L308), and [feedback](../../../apps/desktop/src/tts/ProductNarrationControls.tsx#L188).
+- Lineage — [VF-0048](#vf-0048) concerns logical completion. [VF-0138](#vf-0138) requires a met refill threshold and pending worklet. This case occurs before the threshold. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. Scope is status and timing copy. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0153)
+
+## VF-0154
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A terminal exit flag is checked during admission and child publication. Held starts remain retired, and ordinary Stop still permits a new run. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0154)
+
+**A pending TTS start remains eligible after application exit cleanup.** If the exit callback reaches `force_stop` during package verification, there is no child in the slot and cleanup can return with the pending request still admitted. Verification can then reach spawn before process termination.
+
+- Owners — [Exit callback](../../../apps/desktop/src-tauri/src/main.rs#L58), [pending start and pre-spawn guard](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1624), and [force stop](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L2105).
+- Lineage — [VF-0093](#vf-0093) covers explicit Cancel, which now retires the exact owner before spawn. LCF-04 preserves best-effort application exit for a failed termination. This case concerns admission of an additional child after a successful cleanup call. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the interleaving on `main` at `d9a0a72` on 2026-11-23. No process survival or orphaning claim. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0154)
+
+## VF-0155
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The generator distinguishes the selected Windows normal/build graph from lock-only records. Chrono keeps its licence and checksum. Reachable ZIP and missing or ambiguous graph controls passed. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0155)
+
+**The inventory labels an inactive crate as required on Windows.** The generator iterates Cargo package records and unconditionally gives them Windows runtime/build reachability. The tracked inventory labels `chrono` 0.4.45 required by the release graph while the release audit policy and retained Windows normal/build dependency-tree evidence identify it as inactive.
+
+- Owners — [Inventory generator](../../../scripts/release_inventory.py#L471), [inventory row](../../../services/tts/release/component-inventory-v1.json#L1418), and [policy row](../../../services/tts/release/audit-policy.json#L69). [Retained Windows graph evidence](../../plans/evidence/codex-model-rollout/ci-audit-review.md#L50) · [Cargo metadata filtering](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html#output-options)
+- Lineage — The earlier [Python wheel selection correction](../../plans/completed/five-pass-audit-revalidation-and-corrections.md#L426) concerns artifact identity. This case concerns the release classification applied to Rust package metadata. The dependency evidence and inventory can retain locked package identity independently of production reachability. Introduction unknown.
+- Disposition — `candidate`, P3 maintainer evidence, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. The release audit's own reachability check is separate. [Audit and next check][audit-2026-11-23-pass-3] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0155)
+
+## VF-0156
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A late output receipt can advance heard state during Pause without undoing measured viewport inspection. The reader record covers explicit Resume and subsequent follow. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0156)
+
+**A delayed audio receipt can move the reading viewport during Pause.** Pause before the current unit's first positive output receipt has been processed, then scroll elsewhere while paused. Manual inspection clears follow eligibility on the old projection. When the delayed receipt confirms that the unit already rendered, `segment-started` creates a new follow-eligible projection and can scroll or navigate before Resume.
+
+- Owners — [Paused receipt](../../../apps/desktop/src/tts/pcm-playback.ts#L516), [manual inspection](../../../apps/desktop/src/reader/ReaderPublication.tsx#L563), and [highlight/follow owner](../../../apps/desktop/src/reader/segment-highlight-controller.ts#L330).
+- Lineage — [VF-0017](#vf-0017) covers deliberate Resume following, and [VF-0028](#vf-0028) covers unavailable geometry. [DCR-06](../../../apps/desktop/src/tts/pcm-playback.test.ts#L1033) preserves confirmation during Pause. The inspected tests cover delayed receipt and manual inspection independently. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the ordered sequence on `main` at `d9a0a72` on 2026-11-23. Real device timing and rate of occurrence are unmeasured. [Audit and next check][audit-2026-11-23-pass-4] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0156)
+
+## VF-0157
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The Auto scan now retains the focused article through materialization. Subsequent keyboard navigation and independent focus ownership are addressed in the reader evidence. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0157)
+
+**Finishing automatic direction preparation can drop reader focus.** On a large admitted Auto-direction chapter, Skip to reader content can focus the temporary article. The ready fragment inserts the progressive status ahead of a new article in a different child slot. React replaces the focused article and the reader has no focus handoff at that boundary. Later reading keys can be directed outside the viewport.
+
+- Owners — [Skip action](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1068), [temporary and ready articles](../../../apps/desktop/src/reader/SemanticDocument.tsx#L763), and [bounded direction scan](../../../apps/desktop/src/reader/semantic-auto-direction.ts#L151).
+- Lineage — Separate from [VF-0121](#vf-0121) Settings action replacement and [VF-0151](#vf-0151) Contents backdrop. Current Auto tests cover readiness/replacement and ordinary keyboard tests use an already-mounted reader. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` for the DOM replacement on `main` at `d9a0a72` on 2026-11-23. The exact focus landing and PageDown behavior in WebView2 are unmeasured. [Audit and next check][audit-2026-11-23-pass-4] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0157)
+
+## VF-0158
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Celsius preparation recognizes spaced binary Unicode minus in a range. The bilingual checks preserve unary and standalone temperatures and their source spans. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0158)
+
+**A spaced Unicode minus can allow partial Celsius normalization.** In short Spanish or English prose such as `20 °C − 25 °C`, the numeric continuation guard stops after seeing a spaced separator and the Celsius range guard recognizes only ASCII hyphen and en dash. The first Celsius form can expand independently while the other operand remains raw.
+
+- Owners — [Numeric adjacency](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L524), [Celsius range guard](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L705), and [compound policy](../../architecture/decisions/ADR-0063-default-cuda-and-celsius-boundaries.md#2026-11-09-decimal-and-signed-celsius-range-endpoints).
+- Lineage — Adjacent to [VF-0010](#vf-0010) and the Celsius guards for bounded signed or decimal endpoints. This is U+2212 as the binary separator, distinct from the sign on an endpoint. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. Prepared text is the observed contract in source. Speech was not measured. [Audit and next check][audit-2026-11-23-pass-4] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0158)
+
+## VF-0159
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The startup smoke reports phase-unverified when sampled states cannot identify the engine command at cancellation. Cleanup measurements remain independent. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0159)
+
+**The startup witness can report model loading after it finishes.** The child constructs its `loading` frame, blocks in `engine.load()`, then passes the frame to the writer only after loading returns. Native lifecycle observation therefore cannot report `loading` during real engine load. The exact-host Cancel start arm can miss a long load, or attribute a later sample to loading that already finished.
+
+- Owners — [Child Load handler](../../../services/tts/src/voxleaf_tts/service.py#L184), [wire publication](../../../services/tts/src/voxleaf_tts/service.py#L419), [native observer](../../../apps/desktop/src-tauri/src/tts_service_supervisor.rs#L1219), and [exact-host witness](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L59).
+- Lineage — [VF-0093](#vf-0093) concerns verification before a child exists. [VF-0124](#vf-0124) concerns mid-synthesis Stop evidence. The current service and the pinned v7 child both use delayed Load frame publication. This finding concerns phase attribution, with cancellation containment and genuine warm-up as separate controls. Introduction unknown.
+- Disposition — `candidate`, P3 diagnostic/evidence, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. No fresh host execution. [Audit and next check][audit-2026-11-23-pass-4] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0159)
+
+## VF-0160
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A completed synthetic handoff with missing owned-tree samples no longer earns a measured zero. Ordered repeated phases, valid zero and failed-query controls were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0160)
+
+**The handoff benchmark can report zero network activity without sampling.** The observer initializes listener and external-connection counts to zero. It samples only when a phase explicitly asks and will publish a passing result without requiring any sampled phase. The inspected synthetic success fixture sends acknowledgements and result data but skips all network-phase records.
+
+- Owners — [Observer counts and phase set](../../../services/tts/benchmarks/service_handoff_cli.py#L435), [phase handling and result admission](../../../services/tts/benchmarks/service_handoff_cli.py#L505), [native producer](../../../apps/desktop/src-tauri/src/tts_service_handoff.rs#L168), and [synthetic success fixture](../../../services/tts/tests/test_service_handoff_cli.py#L471).
+- Lineage — DCR-11 covers effective outbound firewall configuration and DCR-22 covers the four process-tree cleanup witnesses. Neither requires the separate network observation. The normal producer emits network phases. Introduction unknown.
+- Disposition — `candidate`, P3 maintainer evidence, `inspected-present` for the missing-witness sequence on `main` at `d9a0a72` on 2026-11-23. No claim of traffic or a false result on a live host. [Audit and next check][audit-2026-11-23-pass-4] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0160)
+
+## VF-0161
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Mixed-case direction keywords now follow the same bounded decode path as lowercase. Public fixtures verify nested Auto, inline direction and invalid values. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0161)
+
+**Valid mixed-case text direction can prevent opening.** An otherwise accepted EPUB 3 chapter with `dir="RTL"` or `dir="AuTo"` reaches a case-sensitive comparison in XHTML projection and fails as malformed. HTML's enumerated keywords match ASCII case-insensitively. The projector also reads the raw attribute independently for direction isolation and Auto scope assignment.
+
+- Owners — [Text-context comparison](../../../packages/epub/src/document/xhtml-projector.ts#L379), [Auto scope logic](../../../packages/epub/src/document/xhtml-projector.ts#L859), and [public opener](../../../packages/epub/src/public/open-epub-publication.ts#L160). [HTML keyword rules](https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#keywords-and-enumerated-attributes)
+- Lineage — [VF-0064](#vf-0064), [VF-0096](#vf-0096) and [VF-0152](#vf-0152) concern projection or rendering of already admitted direction values. This case rejects a valid spelling of the same state. Introduction unknown.
+- Disposition — `candidate`, P2, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0161)
+
+## VF-0162
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Expanded vocabulary identity determines OPF modification metadata. Equivalent duplicates, missing values, foreign bindings and normal opening were exercised. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0162)
+
+**A declared metadata prefix alias can prevent opening.** An EPUB 3 package can map `terms` to `http://purl.org/dc/terms/` and supply its required last-modified value as `terms:modified`. The parser recognizes only the literal reserved-prefix spelling, silently ignores the equivalent property, then rejects the package for missing a timestamp.
+
+- Owners — [Package root capture](../../../packages/epub/src/package/package-document.ts#L600), [metadata dispatch](../../../packages/epub/src/package/package-document.ts#L775), and [required field check](../../../packages/epub/src/package/package-document.ts#L516). [EPUB property processing](https://www.w3.org/TR/epub-rs-33/#sec-property-processing)
+- Lineage — Prior XML namespace prefix handling concerns XML element/attribute names. This case concerns the vocabulary mapping inside the `property` attribute's value. Adjacent rendition property lookups use the same literal dispatch, without a separate disposition here. Introduction unknown.
+- Disposition — `candidate`, P2, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0162)
+
+## VF-0163
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Default checkpointing waits for readable mounted placement. A real over-budget chapter did not evict an existing entry and the next readable chapter saved normally. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0163)
+
+**Closing an oversized first chapter can save an unread position.** A first open with no saved position arms the default locator for lifecycle flush. If the initial chapter exceeds the render cap, only fallback UI is shown, but replacement or close still persists its locator. The next same-byte open looks up that entry and can report failure to align a position the user never read. A full store can also evict a genuine older checkpoint to save this one.
+
+- Owners — [Initial save admission](../../../apps/desktop/src/App.tsx#L492), [position flush](../../../apps/desktop/src/persistence/reader-position-save-coordinator.ts#L361), [unavailable placement](../../../apps/desktop/src/reader/ReaderPublication.tsx#L1179), and [bounded repository write](../../../apps/desktop/src/persistence/reader-position-repository.ts#L320).
+- Lineage — M004 introduced default flush admission at `27c875e` while gating restoration of a saved position. [VF-0044](#vf-0044) narrowed admission to confirmed missing state and [VF-0142](#vf-0142) covers false settlement during a pending jump. The remaining route is a first-open lifecycle write with no readable placement or navigation.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0163)
+
+## VF-0164
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The mounted paragraph action exposes its unavailable state during a pending jump. The control enables after settlement and a fresh action starts the chosen paragraph. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0164)
+
+**Paragraph Play can be enabled before a jump settles.** When the target of a deep TOC jump is still materializing, early paragraphs can already show an enabled Start narration button. Pressing it returns false from the placement gate and the reader supplies no status or feedback. The main Play control already exposes placement admission.
+
+- Owners — [Paragraph button](../../../apps/desktop/src/reader/ParagraphLeaf.tsx#L120), [click route](../../../apps/desktop/src/reader/ReaderPublication.tsx#L977), and [coordinator guard](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L1096).
+- Lineage — Adjacent to [VF-0002](#vf-0002) and [VF-0003](#vf-0003) on placement admission. The guard still prevents premature playback. This case concerns a secondary control presented as available. Introduction unknown.
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23 when interacted with before placement settles. Actual host timing remains open. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0164)
+
+## VF-0165
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The stability observer requires a fresh same-run rendered minute. Controlled short completion, replacement and cumulative prior playback no longer supply stable credit. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0165)
+
+**Native stable-playback evidence can include earlier runs.** The exact-host journey replaces playback during navigation. Its later stable-playback poll checks whether the aggregate rendered-audio counter reaches 60 seconds, with no baseline or current-run binding. Audio from retired playback can satisfy the threshold early and shorten observation of the run under evaluation.
+
+- Owners — [Stability poll](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L996), [reported evidence](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L2483), and [coordinator accumulator](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2348).
+- Lineage — The initial smoke threshold consumed a per-Play counter. F10 in `4942ac7` correctly made the product metric cumulative across the recovery episode and left the smoke threshold in place. [VF-0049](#vf-0049) preserves that accounting, and [VF-0123](#vf-0123) paired refill observations by playback identity. The stable branch still uses the cumulative counter.
+- Disposition — `candidate`, P3 maintainer evidence, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. No actual earlier host result was reclassified. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0165)
+
+## VF-0166
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Removal requires affirmative capability from an accepted snapshot. Unknown initial or failed candidate observations cannot stop Piper; the ordinary v7 flow remains available. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
+
+- 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0166)
+
+**The local Chatterbox candidate can offer unsupported removal and stop Piper.** Before the first authoritative optional snapshot on a local v8 candidate, a profile-selection rejection can publish `failed` with unknown removal capability. Settings treats unknown as available. Clicking Remove stops the current Piper narration, then native rejects the unsupported operation. A later successful snapshot supplies `removalSupported: false`.
+
+- Owners — [Client failure snapshot](../../../apps/desktop/src/tts/optional-chatterbox-client.ts#L417), [Settings control](../../../apps/desktop/src/tts/OptionalChatterboxControls.tsx#L343), [pre-removal action](../../../apps/desktop/src/settings/narration-settings-actions.ts#L127), and [native denial](../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2836).
+- Lineage — [VF-0114](#vf-0114) and [ADR-0078](../../architecture/decisions/ADR-0078-version-chatterbox-provider-loss.md#L19) cover known `false` capability. The pre-observation route was already possible in `d9a0a72` when the guard landed. Scope is the opt-in local v8 candidate.
+- Disposition — `candidate`, P3, `inspected-present` for the ordered rejection/Remove path on `main` at `d9a0a72` on 2026-11-23. No package deletion is credited. [Audit and next check][audit-2026-11-23-pass-5] · [Reconciliation](audits/2026-11-23-findings-reconciliation.md#vf-0166)
+
+## VF-0167
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Package preselection and full OPF parsing use the same expanded rendition properties. Public opening selects the later reflowable rootfile and rejects all-fixed alternatives. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+**An OPF vocabulary alias can admit a fixed-layout rendition.** In a valid EPUB 3 with a canonical modification timestamp, declare a package-local alias for the rendition vocabulary. Use it for global pre-paginated layout or a pre-paginated spine override. Preselection and full package parsing compare the literal rendition prefix. They can leave the first rootfile classified as reflowable, even when a later rootfile is the supported one.
+
+- Disposition — `candidate`, P2, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [container-resolver.ts L294](../../../packages/epub/src/container/container-resolver.ts#L294) · [package-document.ts L811](../../../packages/epub/src/package/package-document.ts#L811)
+- Lineage and next check — VF-0162 concerns rejection for missing metadata. This path accepts the wrong layout and changes public rootfile selection. The literal fixed-layout fallback correction still runs for its original spelling. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0167)
+
+## VF-0168
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Global appearance persistence belongs to the latest preference write across book replacement. A stale completion cannot clear or replace the current write outcome. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
+
+**Replacing the book can suppress an appearance-save failure.** Change the appearance, then replace the book before its pending preference write reports failure. The old save owner flushes during close and suppresses its completion callback after close. App also drops callbacks from the old book owner. The new book reuses the custom in-memory preference with the earlier ready status, so the user can lose the persistence warning.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [App.tsx L524](../../../apps/desktop/src/App.tsx#L524) · [reader-position-save-coordinator.ts L344](../../../apps/desktop/src/persistence/reader-position-save-coordinator.ts#L344)
+- Lineage and next check — VF-0150 needs a failure that has already reached the cache. Here the global appearance result never reaches it. The prior App fixture waits for the warning before selecting the new book. The default storage write is synchronous within an async API, so the production window includes a change still pending in the zero-delay save schedule at replacement. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0168)
+
+## VF-0169
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The speed harness uses observed predecessor output end and successor output start, including a delayed end callback. Missing or incomparable output clocks cannot pass. The controlled delayed, missing-clock and prompt-successor cases and actual installed speed result have distinct evidence scopes. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md) · [Integrated results](../../plans/evidence/november-23-findings/integrated-gates.md)
+
+**Playback-speed timing gates measure intentional pauses.** In the exact-host speed matrix, first activation uses the change in intentionalWaitMs. Recurring handoff uses the same change minus a fixed synthetic sentence pause. That counter measures scheduled semantic pauses. Holding asynchronous worklet preparation or delaying device activation after the intentional pause can increase the actual wait without increasing this counter. The harness can still report a passing timing check once the selected rate becomes active within the larger polling timeout.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [tts-scenarios.mjs L960](../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L960) · [product-narration-coordinator.ts L2348](../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2348)
+- Lineage and next check — VF-0165 concerns which run contributed rendered audio. This timing gate uses the wrong quantity even with one run and no navigation. The separately frozen historical candidate measurement is outside this finding. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0169)
+
+## VF-0170
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The Windows observer covers both address families. A synthetic IPv6-only owned endpoint is detected; non-owned, loopback, query failure and measured zero remain distinct. [Owner checks and limits](../../plans/evidence/november-23-findings/playback-handoff-execution.md)
+
+**Successful network sampling omits IPv6 protocols.** The Windows handoff observer invokes netstat with only the tcp and udp protocol filters. Windows provides separate tcpv6 and udpv6 filters. An owned IPv6-only listener or external connection can therefore be absent even in a phase that was actually sampled. No real traffic or false historical result was observed.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [service_handoff_cli.py L187](../../../services/tts/benchmarks/service_handoff_cli.py#L187) · [service_handoff_cli.py L211](../../../services/tts/benchmarks/service_handoff_cli.py#L211)
+- Lineage and next check — VF-0160 concerns missing samples. This failure can occur with a nonempty owned process tree and a successful sample. The effective firewall and process cleanup are separate checks. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0170)
+
+## VF-0171
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The submit and aggregate CLI commands recover from failed metadata writes or replacements with a bounded response. Atomic destinations, immediate retry and unrelated files were checked. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
+
+**Scorecard or aggregate publication can bypass the CLI error response.** Submit a valid scorecard for a ready session or aggregate a complete one. A filesystem denial writing or replacing the destination propagates from the shared JSON writer as OSError. Neither route translates it at the CLI boundary, so the operator can receive a traceback with a local path instead of the structured failure response. The temporary file can remain after a failed replace.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [quality.py L84](../../../services/tts/benchmarks/quality.py#L84) · [quality.py L544](../../../services/tts/benchmarks/quality.py#L544)
+- Lineage and next check — VF-0117 handles correction-time unlink and VF-0140 concerns recursive cleanup. Submit and aggregate perform publication through a different writer, and may leave a retryable temporary file beside an intact final file. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0171)
+
+## VF-0172
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Left context is scanned through the complete bounded numeric endpoint so a dotted identifier cannot suppress a standalone Celsius expansion. Real numeric ranges remain protected. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+**A dotted identifier can suppress a standalone Celsius expansion.** In the bilingual normalizer, `Firmware R8.5 – 20 °C` reaches the backward shared-unit range guard. It consumes the final 5 and stops at the period. That punctuation satisfies its non-word boundary test, so it mistakes the identifier suffix for a numeric left endpoint and suppresses expansion of 20 °C. The existing `R8 – 20 °C` control takes the attached-letter branch.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [narration-bilingual-normalizer.ts L743](../../../packages/epub/src/narration/narration-bilingual-normalizer.ts#L743) · [narration-normalizer.test.ts L422](../../../packages/epub/src/narration/narration-normalizer.test.ts#L422)
+- Lineage and next check — VF-0158 misses a real binary separator and expands too much. This case recognizes an en dash but invents a numeric endpoint and expands too little. The bounded same-prose rule already distinguishes editorial dashes from numeric ranges. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0172)
+
+## VF-0173
+
+- 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Short code ornaments remain literal in the mutable narration profiles, matching the long-marker rule. Tests retain source ranges, the next scene break and frozen-profile behavior. [Owner checks and limits](../../plans/evidence/november-23-findings/epub-execution.md)
+
+**Inline code markers get different scene classification across source windows.** A short top-level paragraph containing an inline code span of three asterisks can be consumed as a silent scene marker. The normalized short classifier counts code-role text. With enough neutral padding outside the same code span to cross the source window, the long classifier explicitly rejects code. Later slices cannot classify the whole paragraph. The same visible marker can produce different segment and boundary metadata.
+
+- Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [narration-preparation.ts L655](../../../packages/epub/src/narration/narration-preparation.ts#L655) · [narration-segment-packer.ts L783](../../../packages/epub/src/narration/narration-segment-packer.ts#L783)
+- Lineage and next check — VF-0137 concerns omission handling. Here two owners disagree about code itself. M005 specifies the top-level normalized ornament rule and literal code treatment makes the intended behavior worth pinning down. The discrepancy is established either way. No missed audible word is claimed. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0173)
+
 [cfr-plan]: ../../plans/completed/chat-findings-recovery-and-minimal-corrections.md#finding-and-history-register
 [cfr-review]: ../../plans/evidence/chat-findings-recovery/review-final-r03.md
 [cfr-ledger]: ../../plans/evidence/chat-findings-recovery/execution-ledger.md
@@ -2194,6 +2744,11 @@ restoring the absent destination.
 [audit-2026-11-17-pass-3]: audits/2026-11-17-repository-logic-audit-pass-3.md
 [audit-2026-11-17-pass-4]: audits/2026-11-17-repository-logic-audit-pass-4.md
 [audit-2026-11-17-pass-5]: audits/2026-11-17-repository-logic-audit-pass-5.md
+[audit-2026-11-23]: audits/2026-11-23-repository-logic-audit.md
+[audit-2026-11-23-pass-2]: audits/2026-11-23-repository-logic-audit-pass-2.md
+[audit-2026-11-23-pass-3]: audits/2026-11-23-repository-logic-audit-pass-3.md
+[audit-2026-11-23-pass-4]: audits/2026-11-23-repository-logic-audit-pass-4.md
+[audit-2026-11-23-pass-5]: audits/2026-11-23-repository-logic-audit-pass-5.md
 [fsf-execution]: ../../plans/evidence/five-search-findings/case-results.md
 
 - 2026-11-14 execution — `reproduced` on the original relevant owner: controlled production Reader/coordinator reentrancy with zero retired synthesis dispatch; no natural-incidence or stale-audio claim. Minimal correction is implemented on `fab1c9e186552515e828c33ce75e11628dda8300` plus the task patch; full integration, native artifact and independent approval are pending. Original failures, succeeding controls and input identities are in the [execution ledger](../../plans/evidence/deep-findings-minimal-corrections/execution-ledger.md). This is not yet a `validated` or `fixed` disposition.

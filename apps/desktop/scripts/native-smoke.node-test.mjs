@@ -681,105 +681,109 @@ function smokeAssert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-test("startup cancellation observes native loading with Tauri's read-only invoke", async () => {
-  const source = await readFile(
-    new URL("./native-smoke/tts-scenarios.mjs", import.meta.url),
-    "utf8",
-  );
-  const instrumentation = source.match(
-    /await driver\.execute\(`\s*(const observations = [\s\S]*?)`\);/,
-  )[1];
-  let clock = 0;
-  let phase = "idle";
-  let native = { schemaVersion: 1, serviceInstanceId: null, state: "stopped" };
-  let finishPreparation;
-  const internals = {};
-  Object.defineProperty(internals, "invoke", {
-    value: async (command) => {
-      if (command === "tts_service_lifecycle_observation") return { ...native };
-      if (command === "start_tts_service") {
-        native = {
-          ...native,
-          serviceInstanceId: "service:test",
-          state: "unloaded",
-        };
-        return [
-          {
-            kind: "handshakeAccepted",
-            serviceInstanceId: native.serviceInstanceId,
-          },
-        ];
-      }
-      if (command === "prepare_tts_service") {
-        native.state = "loading";
-        return new Promise((resolve) => {
-          finishPreparation = resolve;
-        });
-      }
-      if (command === "shutdown_tts_service") {
-        clock += 40;
-        native = { ...native, serviceInstanceId: null, state: "stopped" };
-        finishPreparation([]);
-        return [];
-      }
-      throw new Error("Unexpected native command");
-    },
+for (const phaseAtCancel of ["loading", "warming", "ready"]) {
+  test(`VF-0159 startup cancellation does not label the sampled phase as interrupted (${phaseAtCancel})`, async () => {
+    const source = await readFile(
+      new URL("./native-smoke/tts-scenarios.mjs", import.meta.url),
+      "utf8",
+    );
+    const instrumentation = source.match(
+      /await driver\.execute\(`\s*(const observations = [\s\S]*?)`\);/,
+    )[1];
+    let clock = 0;
+    let phase = "idle";
+    let native = {
+      schemaVersion: 1,
+      serviceInstanceId: null,
+      state: "stopped",
+    };
+    let finishPreparation;
+    const internals = {};
+    Object.defineProperty(internals, "invoke", {
+      value: async (command) => {
+        if (command === "tts_service_lifecycle_observation")
+          return { ...native };
+        if (command === "start_tts_service") {
+          native = {
+            ...native,
+            serviceInstanceId: "service:test",
+            state: "unloaded",
+          };
+          return [
+            {
+              kind: "handshakeAccepted",
+              serviceInstanceId: native.serviceInstanceId,
+            },
+          ];
+        }
+        if (command === "prepare_tts_service") {
+          native.state = "loading";
+          return new Promise((resolve) => {
+            finishPreparation = resolve;
+          });
+        }
+        if (command === "shutdown_tts_service") {
+          clock += 40;
+          native = { ...native, serviceInstanceId: null, state: "stopped" };
+          finishPreparation([]);
+          return [];
+        }
+        throw new Error("Unexpected native command");
+      },
+    });
+    const context = {
+      __TAURI_INTERNALS__: internals,
+      AudioContext: class {},
+      performance: { now: () => clock },
+      document: {
+        querySelector: () => ({
+          textContent: "Cancel start",
+          getAttribute: (name) =>
+            name === "data-narration-phase" ? phase : native.state,
+        }),
+      },
+    };
+    const execute = (body) =>
+      runInNewContext(`(function() { ${body} })()`, context);
+    execute(instrumentation);
+    const driver = {
+      execute,
+      findElement: async (selector) => selector,
+      sendKeys: async (selector) => {
+        if (selector.includes('"play"')) {
+          phase = "starting";
+          await internals.invoke("start_tts_service");
+          void internals.invoke("prepare_tts_service");
+        } else {
+          assert.equal(native.state, "loading");
+          native.state = phaseAtCancel;
+          await internals.invoke("shutdown_tts_service");
+          phase = "idle";
+        }
+      },
+    };
+    const subject = createNativeTtsScenarios({
+      assert: smokeAssert,
+      now: () => clock,
+      STARTUP_TIMEOUT_MS: 500,
+      WEBDRIVER_SPACE: " ",
+      waitForCondition: async (_driver, script, timeout) => {
+        const deadline = clock + timeout;
+        while (clock <= deadline) {
+          if (await execute(script)) return;
+          clock += 100;
+        }
+        throw new Error(`Native observation missed: ${native.state}`);
+      },
+    });
+    const result = await subject.cancelAdaptiveStartup(driver, () => {});
+    assert.equal(result.startupNativePhase, "phase-unverified");
+    assert.equal(result.startupShutdownMs, 40);
+    assert.equal(result.startupCancellationMs, 40);
+    assert.equal(native.state, "stopped");
+    assert.equal(native.serviceInstanceId, null);
   });
-  const context = {
-    __TAURI_INTERNALS__: internals,
-    AudioContext: class {},
-    performance: { now: () => clock },
-    document: {
-      querySelector: () => ({
-        textContent: "Cancel start",
-        getAttribute: (name) =>
-          name === "data-narration-phase" ? phase : native.state,
-      }),
-    },
-  };
-  const execute = (body) =>
-    runInNewContext(`(function() { ${body} })()`, context);
-  execute(instrumentation);
-  const driver = {
-    execute,
-    findElement: async (selector) => selector,
-    sendKeys: async (selector) => {
-      if (selector.includes('"play"')) {
-        phase = "starting";
-        await internals.invoke("start_tts_service");
-        void internals.invoke("prepare_tts_service");
-      } else {
-        assert.equal(
-          native.state,
-          "loading",
-          "cancel must reach actual native loading",
-        );
-        await internals.invoke("shutdown_tts_service");
-        phase = "idle";
-      }
-    },
-  };
-  const subject = createNativeTtsScenarios({
-    assert: smokeAssert,
-    now: () => clock,
-    STARTUP_TIMEOUT_MS: 500,
-    WEBDRIVER_SPACE: " ",
-    waitForCondition: async (_driver, script, timeout) => {
-      const deadline = clock + timeout;
-      while (clock <= deadline) {
-        if (await execute(script)) return;
-        clock += 100;
-      }
-      throw new Error(`Native observation missed: ${native.state}`);
-    },
-  });
-  const result = await subject.cancelAdaptiveStartup(driver, () => {});
-  assert.equal(result.startupNativePhase, "loading");
-  assert.equal(result.startupShutdownMs, 40);
-  assert.equal(result.startupCancellationMs, 40);
-  assert.equal(native.state, "stopped");
-  assert.equal(native.serviceInstanceId, null);
-});
+}
 
 const resources = (overrides = {}) =>
   createNativeResourceObservation({
@@ -1110,6 +1114,128 @@ test("TTS startup polling preserves its interval, timeout, and early failure", a
       waits,
       mode === "playing" ? [250] : mode === "failed" ? [] : [250, 250],
     );
+  }
+});
+
+test("VF-0165 stable playback uses only the newly settled chapter run", async () => {
+  for (const [samples, expected] of [
+    [[{}, { playbackMs: 60_000 }, { playbackMs: 115_000 }], "stable"],
+    [[{}, { playbackMs: 60_000, completedRefillIndex: 1 }], "depleted"],
+    [[{}, { playbackMs: 60_000, phase: "complete" }], "range-complete"],
+    [[{}, { playbackMs: 115_000, playbackIndex: 3 }], "replacement"],
+  ]) {
+    let clock = 0;
+    const subject = createNativeTtsScenarios({
+      assert: smokeAssert,
+      STARTUP_TIMEOUT_MS: 1_000,
+      now: () => clock,
+      delay: async (ms) => {
+        clock += ms;
+      },
+    });
+    const driver = {
+      execute: async () => {
+        assert.ok(samples.length > 0);
+        return {
+          phase: "playing",
+          playIntent: "playing",
+          navigationSettling: "false",
+          playbackIndex: 2,
+          playbackMs: 55_000,
+          underruns: 0,
+          ...samples.shift(),
+        };
+      },
+    };
+    const observation = subject.observeAdaptiveDepletionOrStablePlayback(
+      driver,
+      1,
+    );
+    if (expected === "replacement") {
+      await assert.rejects(observation, narrationFailure);
+    } else {
+      const outcome = await observation;
+      assert.equal(outcome.kind, expected);
+      if (expected === "stable") assert.equal(outcome.playbackDeltaMs, 60_000);
+    }
+    assert.equal(samples.length, 0);
+  }
+});
+
+test("VF-0169 speed timing distinguishes output delays from unchanged sentence pauses", async (t) => {
+  t.mock.method(console, "error", () => undefined);
+  for (const mode of [
+    "first-slow",
+    "recurring-slow",
+    "stale",
+    "missing",
+    "prompt",
+  ]) {
+    let selected = 100;
+    let active = 100;
+    let intentionalWaitMs = 0;
+    let transition;
+    let sequence = 0;
+    const subject = createNativeTtsScenarios({
+      assert: smokeAssert,
+      STARTUP_TIMEOUT_MS: 1_000,
+      percentile95: (values) => Math.max(...values),
+      waitForCondition: async (_driver, probe) => {
+        if (!probe.includes("data-narration-pending-rate-percent")) return;
+        active = selected;
+        intentionalWaitMs += 300;
+        sequence += 1;
+        const handoffMs =
+          mode === "recurring-slow" && sequence === 2 ? 251 : 25;
+        const preparationMs =
+          sequence === 1 ? (mode === "first-slow" ? 1_050 : 200) : 0;
+        transition =
+          mode === "missing"
+            ? undefined
+            : {
+                sequence: mode === "stale" ? 1 : sequence,
+                ratePercent: active,
+                preparationMs,
+                handoffMs,
+                activationMs: preparationMs + handoffMs,
+              };
+      },
+    });
+    const driver = {
+      execute: async (script) => {
+        const match = /speed\.value = (\d+);/.exec(script);
+        if (match !== null) {
+          selected = Number(match[1]);
+          return true;
+        }
+        return {
+          acceptedUnits: 30,
+          activeRatePercent: String(active),
+          disabled: false,
+          failure: "none",
+          intentionalWaitMs,
+          options: [100, 95, 90, 85, 80, 75],
+          pendingRatePercent: active === selected ? "none" : String(selected),
+          phase: "playing",
+          playbackIndex: 9,
+          playbackMs: intentionalWaitMs * 20,
+          selectedRatePercent: selected,
+          value: selected,
+          transition,
+        };
+      },
+    };
+    const result = subject.exerciseAdaptivePlaybackSpeedMatrix(
+      driver,
+      () => undefined,
+    );
+    if (mode === "prompt") {
+      const report = await result;
+      assert.equal(report.firstActivationWaitMs, 225);
+      assert.equal(report.recurringHandoffOverheadP95Ms, 25);
+    } else {
+      await assert.rejects(result, narrationFailure);
+    }
   }
 });
 
@@ -1458,6 +1584,86 @@ test("restoration polling returns exact settlement or the last pending observati
     });
     assert.equal(observation.status, settles ? "exact" : "pending");
     assert.deepEqual(waits, settles ? [100] : [100, 100]);
+  }
+});
+
+test("NOV23 publication-link PageDown requires trusted movement on the same focused reader", async (t) => {
+  for (const scenario of [
+    "measured",
+    "stationary",
+    "untrusted",
+    "focus-lost",
+    "replacement",
+  ]) {
+    await t.test(scenario, async () => {
+      const dom = new JSDOM(
+        '<div class="reader-viewport"><button class="semantic-internal-link">Synthetic link</button><button>Other</button></div>',
+      );
+      const { document } = dom.window;
+      const viewport = document.querySelector(".reader-viewport");
+      const link = viewport.querySelector(".semantic-internal-link");
+      const other = viewport.lastElementChild;
+      viewport.scrollTop = 40;
+      let onKeyDown;
+      link.addEventListener = (name, listener, options) => {
+        assert.equal(name, "keydown");
+        assert.equal(options.once, true);
+        onKeyDown = listener;
+      };
+      const browser = {
+        document,
+        __novemberReader: {},
+      };
+      const driver = {
+        execute: async (body, args) =>
+          runInNewContext(`(function() { ${body} }).apply(null, args)`, {
+            ...browser,
+            args,
+          }),
+        findElement: async (selector) => {
+          assert.equal(document.querySelector(selector), link);
+          return "synthetic-link";
+        },
+        sendKeys: async (element, key) => {
+          assert.equal(element, "synthetic-link");
+          assert.equal(key, "\uE00F");
+          assert.equal(document.activeElement, link);
+          onKeyDown({ key: "PageDown", isTrusted: scenario !== "untrusted" });
+          if (scenario === "stationary") return;
+          if (scenario === "replacement") {
+            const replacement = viewport.cloneNode(true);
+            viewport.replaceWith(replacement);
+            replacement.scrollTop = 400;
+            replacement.querySelector(".semantic-internal-link").focus();
+            return;
+          }
+          viewport.scrollTop = 400;
+          if (scenario === "focus-lost") other.focus();
+        },
+      };
+      const subject = createNativeReaderScenarios({
+        assert,
+        delay: async (duration) => assert.equal(duration, 500),
+        OBSERVATION_WINDOW_MS: 500,
+        WEBDRIVER_PAGE_DOWN: "\uE00F",
+      });
+      try {
+        if (scenario === "measured") {
+          const witness =
+            await subject.exerciseNovemberPublicationLinkPageDown(driver);
+          assert.equal(witness.trusted, true);
+          assert.equal(witness.focusRetained, true);
+          assert.equal(witness.moved, true);
+        } else {
+          await assert.rejects(
+            subject.exerciseNovemberPublicationLinkPageDown(driver),
+            /Native November PageDown/,
+          );
+        }
+      } finally {
+        dom.window.close();
+      }
+    });
   }
 });
 

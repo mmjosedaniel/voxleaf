@@ -94,3 +94,12 @@ range protection, displayed text, exact source mapping and frozen v1 authority
 remain unchanged. Implementation and acceptance are tracked in the
 [five-pass execution ledger](../../plans/evidence/five-pass-audit/execution-ledger.md);
 the current campaign's combined gates remain pending.
+
+## 2026-11-23: Unicode minus and dotted identifiers
+
+The mutable Celsius guard accepts spaced binary U+2212 as a range separator and
+reads the complete preceding numeric endpoint within the existing same-prose
+budget. A decimal endpoint keeps shared-unit range protection. A dotted
+identifier followed by an editorial dash leaves the standalone Celsius form
+eligible for expansion. The existing unary sign rules and source spans still
+apply. [Regression evidence](../../plans/evidence/november-23-findings/epub-execution.md)

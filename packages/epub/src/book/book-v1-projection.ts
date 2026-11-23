@@ -110,28 +110,33 @@ export async function projectBookV1(
   );
   // BookV1 paths join projection records. All reads still use the archive keys.
   const projectedPaths = new Map<string, string>();
+  const archivePaths = [...occupiedPaths];
   let aliasOrdinal = 0;
+  // Allocate existing hash aliases first so extending coverage preserves them.
+  const aliasPaths = [
+    ...archivePaths.filter((path) => path.includes("#")),
+    ...archivePaths.filter(
+      (path) =>
+        !path.includes("#") &&
+        /(?:^\s|\s$|\?|^[A-Za-z][A-Za-z0-9+.-]*:)/u.test(path),
+    ),
+  ];
+  for (const archivePath of aliasPaths) {
+    let path;
+    do {
+      path = `voxleaf-resource/${aliasOrdinal++}`;
+    } while (occupiedPaths.has(path));
+    occupiedPaths.add(path);
+    projectedPaths.set(archivePath, path);
+  }
   const resources = localResources.map((item) => {
     if (item.location.kind !== "local") {
       return fail("internal-failure");
     }
 
     const archivePath = String(item.location.path);
-    let path = archivePath;
-    if (archivePath.includes("#")) {
-      const previous = projectedPaths.get(archivePath);
-      if (previous !== undefined) {
-        path = previous;
-      } else {
-        do {
-          path = `voxleaf-resource/${aliasOrdinal++}`;
-        } while (occupiedPaths.has(path));
-        occupiedPaths.add(path);
-        projectedPaths.set(archivePath, path);
-      }
-    }
     return {
-      path,
+      path: projectedPaths.get(archivePath) ?? archivePath,
       mediaType: item.mediaType,
       role:
         item.kind === "content-document"

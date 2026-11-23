@@ -30,6 +30,7 @@ import {
   WebAudioPcmPlaybackBackend,
   type AdaptivePcmAudibleProgressObservation,
   type AdaptivePcmPlayerObservation,
+  type PlaybackRateTransition,
 } from "./pcm-playback";
 import {
   TtsProcessClient,
@@ -107,6 +108,7 @@ export interface ProductNarrationMetrics {
   readonly refillPlaybackIndex?: number | undefined;
   readonly lastCompletedRefill?:
     { readonly index: number; readonly elapsedMs: number } | undefined;
+  readonly lastPlaybackRateTransition?: PlaybackRateTransition | undefined;
   readonly activeSynthesisIndex?: number | undefined;
   readonly stopIndex?: number;
   readonly lastStopCancellation?: ProductNarrationStopCancellation | undefined;
@@ -1600,10 +1602,9 @@ export class ProductNarrationCoordinator {
         );
         cancellationMs = Math.max(0, this.#clock.nowMs - stopStartedAtMs);
       } else {
-        await this.#withinCleanupDeadline(
-          this.#client.shutdown(),
-          cleanupDeadline,
-        );
+        const shutdown = this.#client.shutdown();
+        this.#publish();
+        await this.#withinCleanupDeadline(shutdown, cleanupDeadline);
       }
     } catch (error) {
       // The typed client deliberately preserves this cancellation error after
@@ -2689,12 +2690,17 @@ export class ProductNarrationCoordinator {
 
   #createSnapshot(): ProductNarrationSnapshot {
     const runToken = this.#runToken;
-    const scheduler = this.#scheduler?.observe();
+    const schedulerOwner = this.#scheduler;
     const player = this.#player;
     const playerObservation =
       this.#failure === undefined ? player?.synchronize() : player?.observe();
-    if (runToken !== this.#runToken || player !== this.#player)
+    if (
+      runToken !== this.#runToken ||
+      player !== this.#player ||
+      schedulerOwner !== this.#scheduler
+    )
       return this.#snapshot;
+    const scheduler = schedulerOwner?.observe();
     let state = this.#pausedNavigationState ?? this.#terminalState;
     if (
       state === undefined &&
@@ -2729,6 +2735,8 @@ export class ProductNarrationCoordinator {
         ...(estimatedWaitMs === undefined ? {} : { estimatedWaitMs }),
         intentionalBoundaryWait:
           playerObservation.intentionalTransitionPauseActive,
+        hasUnfinishedAudioSection:
+          playerObservation.activeSequence !== undefined,
         volumePercent: playerObservation.volumePercent,
       });
     }
@@ -2761,6 +2769,8 @@ export class ProductNarrationCoordinator {
         refillPlaybackIndex:
           scheduler === undefined ? undefined : this.#runToken,
         lastCompletedRefill: scheduler?.lastCompletedRefill,
+        lastPlaybackRateTransition:
+          playerObservation?.lastPlaybackRateTransition,
         activeSynthesisIndex:
           this.#activeScope === undefined ? undefined : this.#synthesisIndex,
         stopIndex: this.#stopIndex,

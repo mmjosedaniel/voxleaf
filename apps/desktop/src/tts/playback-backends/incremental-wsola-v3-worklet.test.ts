@@ -67,6 +67,7 @@ function render(input: Float32Array, ratePercent: number): Float32Array {
       {
         type: "ended",
         currentFrame: 0,
+        endFrame: targetFrames % 128 || 128,
         renderedFrames: targetFrames,
         sourceFrames: input.length,
         unitSequence: 1,
@@ -144,6 +145,9 @@ describe("real incremental WSOLA processor", () => {
       ["paused", 6016],
       ["ended", 8002],
     ]);
+    expect(processor.port.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "ended", endFrame: 66 }),
+    );
   });
   it.each(["idle", "active", "paused"])(
     "MPA-01 terminal disposal rejects later work while %s",
@@ -214,12 +218,35 @@ describe("real incremental WSOLA processor", () => {
   );
 
   it.each([75, 80, 85, 90, 95])(
+    "VF-0144 preserves the input tail at %i percent near a synthesis hop",
+    (rate) => {
+      const atHop = (24_000 * rate) / 100;
+      for (const length of [atHop - 1, atHop, atHop + 1, 24_038]) {
+        const input = new Float32Array(length);
+        input.fill(-0.75, length - 135);
+        const output = render(input, rate);
+        expect(output.subarray(-135).some((sample) => sample < -0.6)).toBe(
+          true,
+        );
+        expect(output.at(-1)).toBeCloseTo(-0.75);
+      }
+    },
+  );
+
+  it.each([75, 80, 85, 90, 95])(
     "preserves periodic pitch at %i percent",
     (rate) => {
       const input = Float32Array.from({ length: 24_000 }, (_, index) =>
         Math.sin((2 * Math.PI * 400 * index) / 24_000),
       );
       const output = render(input, rate);
+      const terminal = output.subarray(-1_200);
+      expect(
+        terminal.every(
+          (sample, index) =>
+            index === 0 || Math.abs(sample - terminal[index - 1]!) < 0.2,
+        ),
+      ).toBe(true);
       const middle = output.subarray(2_400, output.length - 2_400);
       let crossings = 0;
       for (let index = 1; index < middle.length; index += 1) {

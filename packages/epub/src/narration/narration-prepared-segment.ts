@@ -350,7 +350,11 @@ export async function prepareNarrationSourceLeaf(
           options.precedingQuotationContext,
         )) as unknown as NarrationNormalizedStream;
     const scan = scanNarrationBoundaries(source, normalized);
-    const packed = await packNarrationBoundaryScan(scan, options);
+    const packed = await packNarrationBoundaryScan(scan, {
+      ...options,
+      excludeCodeFromSceneOrnaments:
+        options.normalizationProfile === "narration-bilingual-v2",
+    });
     if (options.signal?.aborted === true) {
       throw new EpubArchiveError("cancelled");
     }

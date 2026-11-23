@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import IO, BinaryIO, cast
 from unittest.mock import Mock
@@ -375,7 +376,11 @@ def _synthetic_v2_native(
 
     sampler.sample.side_effect = sample
     sampler.process_tree_ids.side_effect = lambda pid: frozenset(
-        (pid, pid + 1) if residue == "child" else (pid,)
+        ()
+        if residue == "missing-network-owner"
+        else (pid, pid + 1)
+        if residue == "child" and in_cleanup
+        else (pid,)
     )
     monkeypatch.setattr(handoff, "WindowsProcessResourceSampler", lambda **_kw: sampler)
 
@@ -405,6 +410,11 @@ def send(record): print(json.dumps(record), flush=True)
 hello = {'kind': 'hello', 'version': 2}
 assert receive() == hello
 """
+
+_NETWORK_PHASES = (
+    ("service-start", "model-load-warm", "ready", *("generation",) * 4, "termination"),
+    *(("restart", "ready", "generation", "termination"),) * 3,
+)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows handoff host")
@@ -466,6 +476,10 @@ def test_dcr_21_retained_reader_does_not_hold_watchdog_cleanup(
         ("unknown-vram", "intermediate-cleanup"),
         ("nonzero-ram", "intermediate-cleanup"),
         ("child", "intermediate-cleanup"),
+        ("missing-network-owner", "network-observation"),
+        ("incomplete-network-samples", "network-observations"),
+        ("network-query-failure", "network-observation"),
+        ("ipv6-network-present", "cleanup"),
     ],
 )
 def test_dcr_22_real_observer_pipe_acknowledges_only_four_fresh_zero_boundaries(
@@ -480,12 +494,22 @@ def test_dcr_22_real_observer_pipe_acknowledges_only_four_fresh_zero_boundaries(
             acknowledgements.append(record["sequence"])
 
     monkeypatch.setattr(handoff, "_send_observer_record", record_send)
+    network = Mock(return_value=(0, 0))
+    if mode == "network-query-failure":
+        network.side_effect = handoff._fail("network-observation")
+    if mode != "ipv6-network-present":
+        monkeypatch.setattr(handoff, "_network_counts", network)
     script = (
         _HELLO_SCRIPT
         + f"""
 send(hello)
 mode={mode!r}
 for index, phase in enumerate({CLEANUP_ORDER!r}, 1):
+ phases = {_NETWORK_PHASES!r}[index - 1]
+ if mode == 'incomplete-network-samples' and index == 1:
+  phases = phases[:5] + phases[6:]
+ for observed in phases:
+  send({{'kind':'phase','phase':observed,'requiresZeroChildren':False,'observeNetwork':True}})
  record={{'kind':'cleanupReady','version':2,'phase':phase,'sequence':index}}
  if mode == 'wrong': record['sequence']=True
  if mode == 'replay' and index == 2:
@@ -496,6 +520,20 @@ send(json.loads({json.dumps(_native_result())!r}))
 """
     )
     children = _synthetic_v2_native(monkeypatch, script, residue=mode)
+    if mode == "ipv6-network-present":
+
+        def owned_listener(
+            command: list[str], **_kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            assert command[:3] == ["netstat.exe", "-ano", "-p"]
+            sample = (
+                f" TCP [::]:2048 [::]:0 LISTENING {children[0].pid}\n"
+                if command[-1] == "tcpv6"
+                else ""
+            )
+            return subprocess.CompletedProcess(command, 0, sample)
+
+        monkeypatch.setattr(subprocess, "run", owned_listener)
     if expected is None:
         result = handoff.run()
         assert result["schemaVersion"] == 2
@@ -504,8 +542,80 @@ send(json.loads({json.dumps(_native_result())!r}))
             {"phase": phase, "sequence": index} for index, phase in enumerate(CLEANUP_ORDER, 1)
         ]
         assert acknowledgements == [1, 2, 3, 4]
+        assert network.call_count == 20
     else:
         with pytest.raises(ServiceHandoffRunError, match=f":{expected}$"):
             handoff.run()
-        assert acknowledgements == ([1] if mode == "replay" else [])
+        if mode == "ipv6-network-present":
+            assert acknowledgements == [1, 2, 3, 4]
+        else:
+            assert acknowledgements == ([1] if mode == "replay" else [])
     assert children[0].poll() is not None
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows handoff host")
+def test_vf_0160_rejects_a_completed_pipe_run_without_network_observations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    script = (
+        _HELLO_SCRIPT
+        + f"""
+send(hello)
+for index, phase in enumerate({CLEANUP_ORDER!r}, 1):
+ record={{'kind':'cleanupReady','version':2,'phase':phase,'sequence':index}}
+ send(record)
+ assert receive() == {{**record,'kind':'cleanupAck'}}
+send(json.loads({json.dumps(_native_result())!r}))
+"""
+    )
+    children = _synthetic_v2_native(monkeypatch, script)
+    with pytest.raises(ServiceHandoffRunError, match=":network-observations$"):
+        handoff.run()
+    assert children[0].poll() is not None
+
+
+@pytest.mark.parametrize("mode", ["ipv6", "ipv4", "empty", "failed-query"])
+def test_vf_0170_samples_both_address_families_for_owned_endpoints(
+    monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    results = {
+        "tcpv6": (
+            " TCP [::]:2048 [::]:0 LISTENING 31\n"
+            " TCP [2001:db8::1]:2049 [2001:db8::2]:443 ESTABLISHED 31\n"
+            " TCP [::1]:2050 [::1]:2051 ESTABLISHED 31\n"
+            " TCP [::]:2052 [::]:0 LISTENING 32\n"
+        ),
+        "udpv6": " UDP [::]:2053 *:* 31\n",
+    }
+    if mode == "ipv4":
+        results = {
+            "tcp": (
+                " TCP 0.0.0.0:2048 0.0.0.0:0 LISTENING 31\n"
+                " TCP 192.0.2.1:2049 192.0.2.2:443 ESTABLISHED 31\n"
+                " TCP 127.0.0.1:2050 127.0.0.1:2051 ESTABLISHED 31\n"
+                " TCP 0.0.0.0:2052 0.0.0.0:0 LISTENING 32\n"
+            ),
+            "udp": " UDP 0.0.0.0:2053 *:* 31\n",
+        }
+    if mode == "empty":
+        results = {}
+    protocols: list[str] = []
+
+    def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert command[:3] == ["netstat.exe", "-ano", "-p"]
+        protocols.append(command[3])
+        return subprocess.CompletedProcess(
+            command,
+            int(mode == "failed-query" and command[3] == "udpv6"),
+            results.get(command[3], ""),
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+    deadline = time.monotonic() + 5
+    if mode == "failed-query":
+        with pytest.raises(ServiceHandoffRunError, match=":network-observation$"):
+            handoff._network_counts(frozenset({31}), deadline=deadline)
+    else:
+        expected = (0, 0) if mode == "empty" else (2, 1)
+        assert handoff._network_counts(frozenset({31}), deadline=deadline) == expected
+    assert protocols == ["tcp", "udp", "tcpv6", "udpv6"]

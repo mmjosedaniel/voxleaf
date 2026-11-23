@@ -1033,8 +1033,8 @@
       "id": "cargo:bs58@0.5.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -1418,8 +1418,8 @@
       "id": "cargo:chrono@0.4.45",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -2468,8 +2468,8 @@
       "id": "cargo:dtor-proc-macro@0.0.6",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -2503,8 +2503,8 @@
       "id": "cargo:dtor@0.3.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -3063,8 +3063,8 @@
       "id": "cargo:futures-macro@0.3.33",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -3448,8 +3448,8 @@
       "id": "cargo:hex@0.4.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -4918,8 +4918,8 @@
       "id": "cargo:num-traits@0.2.19",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -5653,8 +5653,8 @@
       "id": "cargo:ref-cast-impl@1.0.26",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -5688,8 +5688,8 @@
       "id": "cargo:ref-cast@1.0.26",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -6108,8 +6108,8 @@
       "id": "cargo:schemars@0.9.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -6143,8 +6143,8 @@
       "id": "cargo:schemars@1.2.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -7998,8 +7998,8 @@
       "id": "cargo:tinyvec@1.12.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -8033,8 +8033,8 @@
       "id": "cargo:tinyvec_macros@0.1.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -8103,8 +8103,8 @@
       "id": "cargo:tokio-util@0.7.18",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",
@@ -8593,8 +8593,8 @@
       "id": "cargo:tray-icon@0.24.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
-        "purpose": "Windows x64 desktop runtime or build dependency.",
-        "runtimeReachability": "required by the frozen release graph"
+        "purpose": "Retained Cargo lock and licence evidence.",
+        "runtimeReachability": "outside the Windows release normal/build graph"
       },
       "integrity": {
         "algorithm": "SHA-256",

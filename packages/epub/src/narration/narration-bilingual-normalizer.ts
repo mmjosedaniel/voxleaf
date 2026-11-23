@@ -559,19 +559,23 @@ function hasEnDashNumericNeighbor(
   language: NarrationNormalizationLanguage,
 ): boolean {
   let cursor = origin;
-  const next = (): string | undefined => {
+  let exhausted = false;
+  const next = (skipWhitespace = true): string | undefined => {
     const found = lexicalContext(
       tokens,
       languages,
       cursor,
       direction,
       language,
-      true,
+      skipWhitespace,
       NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum -
         Math.abs(cursor - origin),
       true,
     );
-    if (found === undefined) return undefined;
+    if (found === undefined) {
+      exhausted = true;
+      return undefined;
+    }
     cursor = found.index + direction;
     return found.value;
   };
@@ -580,27 +584,29 @@ function hasEnDashNumericNeighbor(
   if (direction === -1 && endpoint === "%") endpoint = next();
   if (!isNumericContextCodePoint(endpoint)) return false;
   if (direction === -1) {
-    // Reject a trailing numeric run from an editorial label such as R18.
-    const maximum =
-      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
-    while (true) {
-      const previous = lexicalContext(
-        tokens,
-        languages,
-        cursor,
-        direction,
-        language,
-        false,
-        maximum - Math.abs(cursor - origin),
-        true,
-      );
-      if (previous === undefined) return true;
-      if (!isNumericContextCodePoint(previous.value))
-        return !/^\p{L}$/u.test(previous.value ?? "");
-      cursor = previous.index + direction;
-    }
+    const boundary = backwardNumericEndpointBoundary(() => next(false));
+    return exhausted || !isWordContextCodePoint(boundary);
   }
   return true;
+}
+
+/** Read the left edge of an endpoint after its final digit was consumed. */
+function backwardNumericEndpointBoundary(
+  next: () => string | undefined,
+): string | undefined {
+  let boundary = next();
+  while (
+    isNumericContextCodePoint(boundary) ||
+    boundary === "." ||
+    boundary === ","
+  ) {
+    if (boundary === "." || boundary === ",") {
+      boundary = next();
+      if (!isNumericContextCodePoint(boundary)) break;
+    }
+    boundary = next();
+  }
+  return boundary;
 }
 
 function hasSameLanguage(
@@ -731,7 +737,8 @@ function hasCelsiusRangeNeighbor(
     return context.value;
   };
   const separator = next(true);
-  if (separator !== "-" && separator !== "–") return exhausted;
+  if (separator !== "-" && separator !== "–" && separator !== "−")
+    return exhausted;
 
   const afterDigits = (): string | undefined => {
     let following: string | undefined;
@@ -750,7 +757,8 @@ function hasCelsiusRangeNeighbor(
     // The trailing unit can apply to a bare numeric endpoint on the left.
     // An attached word's final digits do not establish such an endpoint.
     if (!isNumericContextCodePoint(endpoint)) return exhausted;
-    return !isWordContextCodePoint(afterDigits()) || exhausted;
+    const boundary = backwardNumericEndpointBoundary(next);
+    return exhausted || !isWordContextCodePoint(boundary);
   }
 
   let value = next(true);
