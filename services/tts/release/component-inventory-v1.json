@@ -1520,7 +1520,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:cookie@0.18.1",
+      "id": "cargo:cookie@0.18.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -1529,7 +1529,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "4ddef33a339a91ea89fb53151bd0a4689cfce27055c291dfa69945475d22c747"
+        "value": "d55f2d6c30eeec7d5c6f98bd4395d4abb1895629eab97ee6522d340623615f8a"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -1548,8 +1548,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/cookie/0.18.1",
-      "versionOrRevision": "0.18.1"
+      "source": "https://crates.io/crates/cookie/0.18.3",
+      "versionOrRevision": "0.18.3"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -2920,7 +2920,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:form_urlencoded@1.2.2",
+      "id": "cargo:form_urlencoded@1.2.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -2929,7 +2929,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
+        "value": "afa489199eaffb1211795df1c6236ce1ad0d41a6fa45250add73e3b02420f06e"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -2948,8 +2948,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/form_urlencoded/1.2.2",
-      "versionOrRevision": "1.2.2"
+      "source": "https://crates.io/crates/form_urlencoded/1.2.3",
+      "versionOrRevision": "1.2.3"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -9010,7 +9010,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:url@2.5.8",
+      "id": "cargo:url@2.5.9",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -9019,7 +9019,7 @@
       "integrity": {
         "algorithm": "SHA-256",
         "lock": "apps/desktop/src-tauri/Cargo.lock",
-        "value": "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
+        "value": "f00cd2407bb42c0ef17be88d4cf020f5cceffd121665bac9b8b9493a369b3b1a"
       },
       "license": {
         "evidence": "Cargo package metadata",
@@ -9038,8 +9038,8 @@
         "voiceOrModel": false
       },
       "scope": "core",
-      "source": "https://crates.io/crates/url/2.5.8",
-      "versionOrRevision": "2.5.8"
+      "source": "https://crates.io/crates/url/2.5.9",
+      "versionOrRevision": "2.5.9"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -14850,7 +14850,7 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "53a484b4c30210e07fe8f56e7708d1064e06450f16fb78c177c7070e69e12ad9"
+      "sha256": "e6f4723cf45ae865af3f24e0695a6fcb20a8e314aa6f4151db805fd51baa7e51"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox-v7/requirements.lock",

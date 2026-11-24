@@ -1071,8 +1071,7 @@ describe("product narration coordinator", () => {
           ReadyPublicationContent: () => null,
         }),
       );
-      const play = () =>
-        screen.getByRole("button", { name: /^Play$/ });
+      const play = () => screen.getByRole("button", { name: /^Play$/ });
       try {
         await act(async () => {
           fireEvent.change(screen.getByLabelText("Open a book"), {
@@ -1102,9 +1101,7 @@ describe("product narration coordinator", () => {
             "Cancelling local narration. Wait before starting again.",
           ),
         ).toBeInTheDocument();
-        expect(
-          screen.queryByRole("button", { name: /^Play$/ }),
-        ).toBeNull();
+        expect(screen.queryByRole("button", { name: /^Play$/ })).toBeNull();
         if (mode === "held") {
           await act(async () => {
             await vi.advanceTimersByTimeAsync(6_000);

@@ -117,7 +117,7 @@ describe("product narration presentation", () => {
     ["ready", "Preparing narration."],
     ["generating", "Generating the first audio."],
     ["cancelling", "Preparing local narration."],
-    ["stopping", "Preparing local narration."],
+    ["stopping", "Cancelling local narration. Wait before starting again."],
     ["failed", "Preparing local narration."],
   ])("preparing service %s precedes availability", (serviceState, expected) => {
     expectPhaseMessage({ serviceState }, expected);

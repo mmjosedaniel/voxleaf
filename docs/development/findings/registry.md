@@ -1648,6 +1648,8 @@ restoring the absent destination.
 
 ## VF-0093
 
+- PR #332 CI follow-up — The presentation matrix checks the cancellation message while the preparing service is stopping. [CI evidence](../../plans/evidence/november-23-findings/ci-follow-up.md)
+
 - 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Both pre-registration dispatch and a held packaged verifier were exercised. A denied Start now frees its exact retirement slot. The capacity check holds each of the two admission gates and proves a subsequent early Cancel remains effective. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
 
 - 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the over-deadline cleanup failure, with an additional scheduling-dependent route before native Start registration. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0093)
@@ -2238,6 +2240,8 @@ restoring the absent destination.
 
 ## VF-0133
 
+- PR #332 CI follow-up — The B07 concurrent-cleanup regression exercises a Download carrying the confirmation that Cancel just retired. [CI evidence](../../plans/evidence/november-23-findings/ci-follow-up.md)
+
 - 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. A stale Download now needs the native confirmation identity shown for that click. The replacement confirmation survives and a fresh click can transfer. [Owner checks and limits](../../plans/evidence/november-23-findings/native-execution.md)
 
 - 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0133)
@@ -2656,6 +2660,8 @@ restoring the absent destination.
 - Lineage and next check — VF-0162 concerns rejection for missing metadata. This path accepts the wrong layout and changes public rootfile selection. The literal fixed-layout fallback correction still runs for its original spelling. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0167)
 
 ## VF-0168
+
+- PR #332 CI follow-up — When an appearance edit races the initial preferences read, the mounted App test checks the props passed to Settings and the reader, the initial restoration input, and the writes sent to the test repository. [CI evidence](../../plans/evidence/november-23-findings/ci-follow-up.md)
 
 - 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. Global appearance persistence belongs to the latest preference write across book replacement. A stale completion cannot clear or replace the current write outcome. [Owner checks and limits](../../plans/evidence/november-23-findings/reader-execution.md)
 

@@ -1948,7 +1948,7 @@ describe("App preference connection characterization", () => {
   );
 
   it.each(["read-first", "edit-first"] as const)(
-    "preserves reader edit and late read order: %s",
+    "keeps the reader edit after hydration: %s",
     async (order) => {
       const f = pendingPreferences();
       const settings = observeSettings();
@@ -1979,8 +1979,13 @@ describe("App preference connection characterization", () => {
           }),
         );
       if (order === "read-first") await hydrate();
+      const beforeEdit =
+        order === "read-first"
+          ? savedReaderPreferences
+          : DEFAULT_READER_PREFERENCES;
+      expect(settings.current().readerPreferences).toEqual(beforeEdit);
       const edited = {
-        ...settings.current().readerPreferences,
+        ...beforeEdit,
         textScale: "extra-large" as const,
       };
       act(() =>
@@ -1993,13 +1998,23 @@ describe("App preference connection characterization", () => {
         ),
       );
       if (order === "edit-first") await hydrate();
-      const final = order === "read-first" ? edited : savedReaderPreferences;
-      expect(settings.current().readerPreferences).toEqual(final);
-      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(final);
+      expect(settings.current().readerPreferences).toEqual(edited);
+      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(edited);
       expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
         DEFAULT_READER_PREFERENCES,
       );
       expect(f.reader.writePreferences).toHaveBeenCalledTimes(1);
+
+      const nextEdit = { ...edited, lineSpacing: "spacious" as const };
+      act(() =>
+        settings.current().onReaderPreferenceChange("lineSpacing", "spacious"),
+      );
+      expect(settings.current().readerPreferences).toEqual(nextEdit);
+      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(nextEdit);
+      await waitFor(() =>
+        expect(f.reader.writePreferences).toHaveBeenNthCalledWith(2, nextEdit),
+      );
+      expect(f.reader.writePreferences).toHaveBeenCalledTimes(2);
     },
   );
 
