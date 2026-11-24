@@ -34,6 +34,7 @@ import type {
   SemanticDocumentLocation,
   SemanticDocumentTarget,
   SemanticInline,
+  SemanticListItem,
   SemanticTextContext,
   SemanticTextDirection,
   SensitivePublicationText,
@@ -155,10 +156,7 @@ interface ListCollector {
   readonly start?: number;
   nextOrdinal: number;
   nextRenderedOrdinal: number;
-  readonly items: {
-    readonly value?: number;
-    readonly children: readonly SemanticBlock[];
-  }[];
+  readonly items: SemanticListItem[];
 }
 
 type SemanticDestination = BlockCollector | InlineCollector | ListCollector;
@@ -203,10 +201,12 @@ interface ElementFrame {
   readonly name: XmlExpandedName;
   readonly context: TextContext;
   readonly omitted: boolean;
-  readonly closeAction?: CloseAction;
+  closeAction?: CloseAction;
   readonly paragraphSourceBoundary?: boolean;
   readonly paragraphSourceElementId?: BlockElementIds;
-  readonly directionRunOwner?: BlockCollector;
+  directionRunOwner?: BlockCollector;
+  readonly linkOwnsDirection?: boolean;
+  inertBlockLink?: true;
 }
 
 export interface ProjectedAddressableBlock {
@@ -355,6 +355,7 @@ function hasControlCharacter(value: string): boolean {
 function deriveContext(
   event: XmlStartElementEvent,
   inherited: TextContext,
+  declaredDirection: SemanticTextDirection | undefined,
   autoDirectionScope: number | undefined,
 ): TextContext {
   const xmlLanguage = attribute(event, XML_NAMESPACE, "lang");
@@ -376,18 +377,7 @@ function deriveContext(
     return fail("malformed-package");
   }
 
-  const directionValue = attribute(event, "", "dir");
-  let direction = inherited.direction;
-  if (directionValue !== undefined) {
-    if (
-      directionValue !== "auto" &&
-      directionValue !== "ltr" &&
-      directionValue !== "rtl"
-    ) {
-      return fail("malformed-package");
-    }
-    direction = directionValue;
-  }
+  const direction = declaredDirection ?? inherited.direction;
 
   return Object.freeze({
     ...(language === undefined
@@ -398,6 +388,21 @@ function deriveContext(
     ...(direction === undefined ? {} : { direction }),
     ...(autoDirectionScope === undefined ? {} : { autoDirectionScope }),
   });
+}
+
+function readDeclaredDirection(
+  event: XmlStartElementEvent,
+): SemanticTextDirection | undefined {
+  const direction = attribute(event, "", "dir")?.toLowerCase();
+  if (
+    direction === undefined ||
+    direction === "auto" ||
+    direction === "ltr" ||
+    direction === "rtl"
+  ) {
+    return direction;
+  }
+  return fail("malformed-package");
 }
 
 function isExplicitlyHidden(event: XmlStartElementEvent): boolean {
@@ -860,14 +865,19 @@ class XhtmlProjector {
     const depth = this.#elements.length + 1;
     const inherited: TextContext =
       this.#elements.at(-1)?.context ?? Object.freeze({});
-    const declaredDirection = attribute(event, "", "dir");
+    const declaredDirection = readDeclaredDirection(event);
     const autoDirectionScope =
       declaredDirection === "auto"
         ? ++this.#autoDirectionScopeCount
         : declaredDirection === undefined
           ? inherited.autoDirectionScope
           : undefined;
-    const context = deriveContext(event, inherited, autoDirectionScope);
+    const context = deriveContext(
+      event,
+      inherited,
+      declaredDirection,
+      autoDirectionScope,
+    );
     const xhtmlId = attribute(event, "", "id");
     const rawXmlId = attribute(event, XML_NAMESPACE, "id");
     // The parser handles literal whitespace. XML ID collapses U+0020 in the
@@ -938,7 +948,12 @@ class XhtmlProjector {
       return;
     }
 
-    this.consumeBodyElement(event, context, elementId);
+    this.consumeBodyElement(
+      event,
+      context,
+      elementId,
+      declaredDirection !== undefined,
+    );
   }
 
   private consumeRootChild(
@@ -985,6 +1000,7 @@ class XhtmlProjector {
     event: XmlStartElementEvent,
     context: TextContext,
     elementId: BlockElementIds | undefined,
+    ownsDirection: boolean,
   ): void {
     const name = event.name.localName;
     if (name === "body" || name === "head" || name === "html") {
@@ -1026,7 +1042,7 @@ class XhtmlProjector {
         this.beginInline(event, context, "code");
         return;
       case "a":
-        this.beginLink(event, context);
+        this.beginLink(event, context, ownsDirection);
         return;
       case "br":
         this.appendRawInline(
@@ -1045,10 +1061,7 @@ class XhtmlProjector {
         return;
       default:
         if (BLOCK_BOUNDARY_ELEMENTS.has(name)) {
-          const destination = this.currentDestination();
-          if (destination.kind !== "blocks") {
-            return fail("malformed-package");
-          }
+          const destination = this.requireBlockDestination();
           this.flushPendingParagraph(destination);
           this.#elements.push({
             name: event.name,
@@ -1061,7 +1074,7 @@ class XhtmlProjector {
               : { paragraphSourceElementId: elementId }),
           });
         } else {
-          this.beginTransparentElement(event, context);
+          this.beginTransparentElement(event, context, ownsDirection);
         }
     }
   }
@@ -1069,11 +1082,9 @@ class XhtmlProjector {
   private beginTransparentElement(
     event: XmlStartElementEvent,
     context: TextContext,
+    ownsDirection: boolean,
   ): void {
-    const direction = attribute(event, "", "dir");
     const destination = this.currentDestination();
-    const ownsDirection =
-      direction === "ltr" || direction === "rtl" || direction === "auto";
     if (ownsDirection && destination.kind === "inlines") {
       this.beginInline(event, context, "direction-span");
       return;
@@ -1083,12 +1094,9 @@ class XhtmlProjector {
       name: event.name,
       context,
       omitted: false,
-      ...(ownsDirection && destination.kind === "blocks"
-        ? { directionRunOwner: destination }
-        : {}),
     };
-    if (frame.directionRunOwner !== undefined) {
-      (frame.directionRunOwner.activeDirectionFrames ??= []).push(frame);
+    if (ownsDirection && destination.kind === "blocks") {
+      this.registerDirectionRun(frame, destination);
     }
     this.#elements.push(frame);
   }
@@ -1307,20 +1315,25 @@ class XhtmlProjector {
     });
   }
 
-  private beginLink(event: XmlStartElementEvent, context: TextContext): void {
+  private beginLink(
+    event: XmlStartElementEvent,
+    context: TextContext,
+    ownsDirection: boolean,
+  ): void {
     this.assertInlineDestination();
     if (
       this.#elements.some(
         (frame) =>
-          frame.closeAction?.kind === "inline" &&
-          frame.closeAction.inlineKind === "internal-link",
+          frame.inertBlockLink === true ||
+          (frame.closeAction?.kind === "inline" &&
+            frame.closeAction.inlineKind === "internal-link"),
       )
     ) {
       return fail("malformed-package");
     }
     const target = this.resolveLink(attribute(event, "", "href"));
     if (target === undefined) {
-      this.beginTransparentElement(event, context);
+      this.beginTransparentElement(event, context, ownsDirection);
       return;
     }
     const collector: InlineCollector = {
@@ -1333,6 +1346,7 @@ class XhtmlProjector {
       name: event.name,
       context,
       omitted: false,
+      linkOwnsDirection: ownsDirection,
       closeAction: {
         kind: "inline",
         collector,
@@ -1446,6 +1460,19 @@ class XhtmlProjector {
             ...(action.value !== undefined &&
             action.value !== parent.nextRenderedOrdinal
               ? { value: action.value }
+              : {}),
+            ...(context.language !== parent.context.language &&
+            context.language !== undefined
+              ? { language: context.language }
+              : {}),
+            ...(context.direction !== undefined &&
+            (context.direction !== parent.context.direction ||
+              context.autoDirectionScope !== parent.context.autoDirectionScope)
+              ? { direction: context.direction }
+              : {}),
+            ...(context.autoDirectionScope !== undefined &&
+            context.autoDirectionScope !== parent.context.autoDirectionScope
+              ? { autoDirectionScope: context.autoDirectionScope }
               : {}),
             children: Object.freeze([...action.collector.blocks]),
           }),
@@ -1608,10 +1635,60 @@ class XhtmlProjector {
 
   private requireBlockDestination(): BlockCollector {
     const destination = this.currentDestination();
-    if (destination.kind !== "blocks") {
-      return fail("malformed-package");
+    if (destination.kind === "blocks") return destination;
+    if (destination.kind === "inlines") {
+      const blockParent = this.unwrapBlockLink();
+      if (blockParent !== undefined) return blockParent;
     }
-    return destination;
+    return fail("malformed-package");
+  }
+
+  /** Make a flow-content link inert when its first rendered block arrives. */
+  private unwrapBlockLink(): BlockCollector | undefined {
+    const directionFrames: ElementFrame[] = [];
+    let destinationIndex = this.#destinations.length - 1;
+    for (let index = this.#elements.length - 1; index >= 0; index -= 1) {
+      const frame = this.#elements[index]!;
+      const action = frame.closeAction;
+      if (action === undefined) continue;
+      if (
+        action.kind !== "inline" ||
+        action.collector !== this.#destinations[destinationIndex]
+      )
+        return undefined;
+      destinationIndex -= 1;
+      if (action.inlineKind === "direction-span") {
+        directionFrames.push(frame);
+        continue;
+      }
+      const parent = this.#destinations[destinationIndex];
+      if (action.inlineKind !== "internal-link" || parent?.kind !== "blocks")
+        return undefined;
+
+      for (const directionFrame of directionFrames) {
+        const close = directionFrame.closeAction ?? fail("internal-failure");
+        this.completeAction(close, directionFrame.context);
+        delete directionFrame.closeAction;
+      }
+      this.popDestination(action.collector);
+      delete frame.closeAction;
+      frame.inertBlockLink = true;
+      if (frame.linkOwnsDirection) this.registerDirectionRun(frame, parent);
+      for (const inline of action.collector.inlines)
+        this.appendRawInline(inline);
+      for (const directionFrame of directionFrames.reverse())
+        this.registerDirectionRun(directionFrame, parent);
+      return parent;
+    }
+    return undefined;
+  }
+
+  private registerDirectionRun(
+    frame: ElementFrame,
+    destination: BlockCollector,
+  ): void {
+    frame.directionRunOwner = destination;
+    (destination.activeDirectionFrames ??= []).push(frame);
   }
 
   private assertInlineDestination(): void {

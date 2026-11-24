@@ -720,6 +720,15 @@ export class AdaptiveBufferScheduler {
     }
   }
 
+  public confirmPlaybackRendering(sequence: number): void {
+    if (
+      this.#playbackState === "playing" &&
+      sequence === this.#activePlaybackSequence
+    ) {
+      this.#settleRefill(true);
+    }
+  }
+
   public consumeSampleFrames(requestedSampleFrames: number): number {
     if (this.#playbackState !== "playing" || !isCount(requestedSampleFrames)) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
@@ -762,7 +771,10 @@ export class AdaptiveBufferScheduler {
       }
     }
     this.#initialPlaybackCommitted ||= consumed > 0;
-    if (consumed > 0) this.#automaticRefillPending = false;
+    if (consumed > 0) {
+      this.#automaticRefillPending = false;
+      if (this.#playbackState === "playing") this.#settleRefill(true);
+    }
     this.#refreshPlaybackState();
     return consumed;
   }
@@ -1074,24 +1086,30 @@ export class AdaptiveBufferScheduler {
     );
   }
 
+  #settleRefill(rendered: boolean): void {
+    const startedAtMs = this.#bufferingStartedAtMs;
+    if (startedAtMs === undefined) return;
+    const elapsedMs = Math.max(0, this.#clock.nowMs - startedAtMs);
+    this.#bufferingStartedAtMs = undefined;
+    this.#bufferingMs += elapsedMs;
+    if (rendered) {
+      this.#lastCompletedRefill = Object.freeze({
+        index: this.#refillIndex,
+        elapsedMs,
+      });
+    }
+  }
+
   #setPlaybackState(state: AdaptiveBufferPlaybackState): void {
     if (state === this.#playbackState) return;
-    const now = this.#clock.nowMs;
-    if (this.#bufferingStartedAtMs !== undefined) {
-      const elapsedMs = Math.max(0, now - this.#bufferingStartedAtMs);
-      this.#bufferingMs += elapsedMs;
-      if (state === "playing") {
-        this.#lastCompletedRefill = Object.freeze({
-          index: this.#refillIndex,
-          elapsedMs,
-        });
-      }
-      this.#bufferingStartedAtMs = undefined;
-    }
-    if (state === "buffering") {
+    if (state === "buffering" && this.#bufferingStartedAtMs === undefined) {
       this.#refillIndex += 1;
-      this.#bufferingStartedAtMs = now;
+      this.#bufferingStartedAtMs = this.#clock.nowMs;
+    } else if (state !== "buffering" && state !== "playing") {
+      this.#settleRefill(false);
     }
+    // Crossing the watermark permits allocation. Only rendered output proves
+    // a refill, since rate preparation or device start can still be pending.
     this.#playbackState = state;
   }
 

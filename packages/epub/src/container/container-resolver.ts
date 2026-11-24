@@ -1,6 +1,11 @@
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
+import {
+  LAYOUT_PROPERTY_IRI,
+  matchesPackageProperty,
+  parsePackagePrefixes,
+} from "../package/package-vocabulary.js";
 import { parseArchiveEntryPath } from "../paths/archive-path.js";
 import type { ArchiveFilePath } from "../paths/archive-path.js";
 import {
@@ -22,7 +27,6 @@ const ARCHIVE_ROOT_BASE_PATH = parseArchiveEntryPath("root", "file");
 const OPF_NAMESPACE = "http://www.idpf.org/2007/opf";
 const PACKAGE_MEDIA_TYPE = "application/oebps-package+xml";
 const SUPPORTED_PACKAGE_VERSIONS = new Set<string>(["2.0", "3.0"]);
-const RENDITION_LAYOUT_PROPERTY = "rendition:layout";
 const REFLOWED_LAYOUT = "reflowable";
 const FIXED_LAYOUT = "pre-paginated";
 
@@ -225,6 +229,7 @@ class ContainerDocumentParser {
 
 class PackageProfileParser {
   readonly #stack: XmlExpandedName[] = [];
+  #prefixes: ReadonlyMap<string, string> = new Map();
   #version: string | undefined;
   #layoutDepth: number | undefined;
   #layoutText = "";
@@ -286,12 +291,21 @@ class PackageProfileParser {
 
       this.#sawPackage = true;
       this.#version = version;
+      if (version === "3.0") {
+        this.#prefixes = parsePackagePrefixes(
+          unqualifiedAttribute(event, "prefix"),
+        );
+      }
     } else if (
       depth === 3 &&
       namesEqual(grandparent, OPF_NAMESPACE, "package") &&
       namesEqual(parent, OPF_NAMESPACE, "metadata") &&
       namesEqual(event.name, OPF_NAMESPACE, "meta") &&
-      unqualifiedAttribute(event, "property") === RENDITION_LAYOUT_PROPERTY &&
+      matchesPackageProperty(
+        unqualifiedAttribute(event, "property"),
+        this.#prefixes,
+        LAYOUT_PROPERTY_IRI,
+      ) &&
       unqualifiedAttribute(event, "refines") === undefined
     ) {
       if (this.#renditionLayout !== undefined) {

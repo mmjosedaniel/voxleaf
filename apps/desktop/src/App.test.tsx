@@ -42,6 +42,7 @@ import { ReaderPositionRestoreCoordinator } from "./persistence/reader-position-
 import { READER_PREFERENCES_STORAGE_KEY } from "./persistence/reader-position-repository";
 import {
   createWebStorageReaderPositionRepository,
+  MAX_READER_POSITION_STATES,
   READER_POSITIONS_STORAGE_KEY,
 } from "./persistence/reader-position-repository";
 import { DEFAULT_READER_PREFERENCES } from "./reader/reader-preferences";
@@ -867,6 +868,10 @@ describe("App preference connection characterization", () => {
       const removal =
         deferred<ReturnType<OptionalChatterboxClient["observe"]>>();
       const optional = new OptionalChatterboxClient();
+      vi.spyOn(OptionalChatterboxClient.prototype, "observe").mockReturnValue({
+        ...optional.observe(),
+        removalSupported: true,
+      });
       const remove = vi
         .spyOn(OptionalChatterboxClient.prototype, "remove")
         .mockReturnValue(removal.promise);
@@ -935,6 +940,7 @@ describe("App preference connection characterization", () => {
     const installed = {
       ...new OptionalChatterboxClient().observe(),
       state: "installed" as const,
+      removalSupported: true,
     };
     vi.spyOn(OptionalChatterboxClient.prototype, "observe").mockReturnValue(
       installed,
@@ -1116,6 +1122,7 @@ describe("App preference connection characterization", () => {
       const cancelResult = deferred<typeof native>();
       const lateCancel =
         scenario === "cancel-first" || scenario === "download-first";
+      let confirmed = false;
       mockIPC(async (command, args) => {
         if (command === "cancel_optional_chatterbox")
           return (await cancelResult.promise) as never;
@@ -1125,7 +1132,18 @@ describe("App preference connection characterization", () => {
             (args as Record<string, unknown> | undefined)?.retryCleanup)
         )
           return (await pending.promise) as never;
-        if (command === "optional_chatterbox_snapshot") return native as never;
+        if (command === "optional_chatterbox_snapshot") {
+          if (!confirmed && (lateCancel || scenario === "failed-poll")) {
+            confirmed = true;
+            return {
+              ...native,
+              state: "confirming",
+              confirmationId: "1",
+              failure: null,
+            } as never;
+          }
+          return native as never;
+        }
         throw new Error("synthetic-unused-command");
       });
       const coordinator = new ControlledNarrationCoordinator();
@@ -1324,7 +1342,7 @@ describe("App preference connection characterization", () => {
   });
 
   it.each(["before-open", "after-open"] as const)(
-    "CAF-R6.2 discards a deferred %s appearance failure after owner replacement",
+    "VF-0168 reports a deferred %s appearance failure after book replacement",
     async (origin) => {
       const settings = observeSettings();
       const repository = createTestReaderPositionRepository();
@@ -1371,11 +1389,11 @@ describe("App preference connection characterization", () => {
       const currentStatus = settings.current().readerPreferencesStatus;
       expect(currentStatus).toBe("missing");
       await act(async () => pending.resolve({ status: "unavailable" }));
-      expect(settings.current().readerPreferencesStatus).toBe(currentStatus);
+      expect(settings.current().readerPreferencesStatus).toBe("unavailable");
       expect(screen.getByLabelText("Text size")).toHaveValue("large");
       expect(
-        screen.queryByText(/Appearance settings could not be saved/),
-      ).toBeNull();
+        screen.getByText(/Appearance settings could not be saved/),
+      ).toBeInTheDocument();
       fireEvent.change(screen.getByLabelText("Text size"), {
         target: { value: "extra-large" },
       });
@@ -1393,6 +1411,56 @@ describe("App preference connection characterization", () => {
       );
     },
   );
+
+  it("VF-0168 serializes the newest global appearance change across book replacement", async () => {
+    const repository = createTestReaderPositionRepository();
+    const pending =
+      deferred<
+        Awaited<ReturnType<ReaderPositionRepository["writePreferences"]>>
+      >();
+    const write = vi.mocked(repository.writePreferences);
+    write.mockReturnValueOnce(pending.promise);
+    let opened = 0;
+    const settings = observeSettings();
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: createTestPublication(`Appearance update ${++opened}`),
+        }))}
+        readerPositionRepository={repository}
+      />,
+    );
+    selectEpub();
+    await screen.findByText(TEST_TEXT);
+    openSettings();
+    const change = (value: string) =>
+      fireEvent.change(screen.getByLabelText("Text size"), {
+        target: { value },
+      });
+    change("large");
+    await waitFor(() => expect(write).toHaveBeenCalledOnce());
+    selectEpub();
+    await screen.findByRole("heading", { name: "Appearance update 2" });
+    openSettings();
+    change("extra-large");
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    });
+    expect(write).toHaveBeenCalledOnce();
+    await act(async () => pending.resolve({ status: "unavailable" }));
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe("ready"),
+    );
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(write).toHaveBeenLastCalledWith(
+      expect.objectContaining({ textScale: "extra-large" }),
+    );
+    expect(screen.getByLabelText("Text size")).toHaveValue("extra-large");
+    expect(
+      screen.queryByText(/Appearance settings could not be saved/),
+    ).toBeNull();
+  });
 
   it("NSL-02 packaged absent-owner activation cannot mutate a newly attached narrator", async () => {
     vi.stubEnv("DEV", false);
@@ -1880,7 +1948,7 @@ describe("App preference connection characterization", () => {
   );
 
   it.each(["read-first", "edit-first"] as const)(
-    "preserves reader edit and late read order: %s",
+    "keeps the reader edit after hydration: %s",
     async (order) => {
       const f = pendingPreferences();
       const settings = observeSettings();
@@ -1911,8 +1979,13 @@ describe("App preference connection characterization", () => {
           }),
         );
       if (order === "read-first") await hydrate();
+      const beforeEdit =
+        order === "read-first"
+          ? savedReaderPreferences
+          : DEFAULT_READER_PREFERENCES;
+      expect(settings.current().readerPreferences).toEqual(beforeEdit);
       const edited = {
-        ...settings.current().readerPreferences,
+        ...beforeEdit,
         textScale: "extra-large" as const,
       };
       act(() =>
@@ -1925,13 +1998,23 @@ describe("App preference connection characterization", () => {
         ),
       );
       if (order === "edit-first") await hydrate();
-      const final = order === "read-first" ? edited : savedReaderPreferences;
-      expect(settings.current().readerPreferences).toEqual(final);
-      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(final);
+      expect(settings.current().readerPreferences).toEqual(edited);
+      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(edited);
       expect(reader.mock.calls.at(-1)?.[0].initialPreferences).toEqual(
         DEFAULT_READER_PREFERENCES,
       );
       expect(f.reader.writePreferences).toHaveBeenCalledTimes(1);
+
+      const nextEdit = { ...edited, lineSpacing: "spacious" as const };
+      act(() =>
+        settings.current().onReaderPreferenceChange("lineSpacing", "spacious"),
+      );
+      expect(settings.current().readerPreferences).toEqual(nextEdit);
+      expect(reader.mock.calls.at(-1)?.[0].preferences).toEqual(nextEdit);
+      await waitFor(() =>
+        expect(f.reader.writePreferences).toHaveBeenNthCalledWith(2, nextEdit),
+      );
+      expect(f.reader.writePreferences).toHaveBeenCalledTimes(2);
     },
   );
 
@@ -3518,7 +3601,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
   });
 
-  it("CAF-R6.2 reports appearance write failure and retains it across book replacement", async () => {
+  it("VF-0150 / CAF-R6.2 reports active custom appearance after write failure and book replacement", async () => {
     const first = createTestPublication("Appearance first");
     const second = createTestPublication("Appearance second");
     const open = vi
@@ -3526,7 +3609,7 @@ describe("desktop reader lifecycle surface", () => {
       .mockResolvedValueOnce({ status: "ready", publication: first })
       .mockResolvedValueOnce({ status: "ready", publication: second });
     const repository = createTestReaderPositionRepository();
-    vi.mocked(repository.writePreferences).mockResolvedValue({
+    vi.mocked(repository.writePreferences).mockResolvedValueOnce({
       status: "unavailable",
     });
     render(
@@ -3549,10 +3632,26 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByLabelText("Text size")).toHaveValue("large");
     selectEpub();
     await screen.findByRole("heading", { name: "Appearance second" });
+    expect(
+      await screen.findByText(
+        "Reader appearance settings could not be saved. Your current settings are still active.",
+      ),
+    ).toBeInTheDocument();
     openSettings();
     expect(
       screen.getByText(/Appearance settings could not be saved/),
     ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "extra-large" },
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Reader appearance settings could not be saved/),
+      ).toBeNull();
+      expect(
+        screen.queryByText(/Appearance settings could not be saved/),
+      ).toBeNull();
+    });
   });
 
   it("flushes validated position state before replacement", async () => {
@@ -3588,6 +3687,77 @@ describe("desktop reader lifecycle surface", () => {
       expect(screen.getByRole("status")).toHaveTextContent(
         "The EPUB opened successfully.",
       ),
+    );
+  });
+
+  it("VF-0163 preserves a full position store until the book displays readable content", async () => {
+    const { openEpubPublication } = await import("@voxleaf/epub");
+    const { buildMinimalEpubFixture } =
+      await import("../../../packages/epub/test-support/epub-fixture");
+    const bytes = await buildMinimalEpubFixture({
+      packageDocument:
+        '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="id"><metadata><dc:identifier id="id">urn:synthetic:default-placement</dc:identifier><dc:title>Default placement</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-01-01T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="second" href="text/second.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/><itemref idref="second"/></spine></package>',
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body>${"<p>Synthetic unavailable passage.</p>".repeat(10_001)}</body></html>`,
+      additionalEntries: [
+        {
+          name: "EPUB/text/second.xhtml",
+          content:
+            '<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Readable successor</h1></body></html>',
+        },
+      ],
+    });
+    const makePublication = async () => {
+      const opened = await openEpubPublication(bytes);
+      if (!opened.ok) throw new Error(opened.detail);
+      return opened.publication;
+    };
+    const first = await makePublication();
+    const values = new Map<string, string>();
+    const repository = createWebStorageReaderPositionRepository({
+      storage: () => ({
+        getItem: (key) => values.get(key) ?? null,
+        setItem: (key, value) => {
+          values.set(key, value);
+        },
+      }),
+    });
+    for (let index = 0; index < MAX_READER_POSITION_STATES; index += 1) {
+      const locator = decodeReadingLocatorV1({
+        ...TEST_LOCATED_BLOCK.startLocator,
+        bookIdentity: {
+          ...TEST_LOCATED_BLOCK.startLocator.bookIdentity,
+          value: `synthetic-book-${String(index)}`,
+        },
+      });
+      await expect(
+        repository.writePosition(persistedState(locator)),
+      ).resolves.toEqual({
+        status: "saved",
+      });
+    }
+    const fullStore = values.get(READER_POSITIONS_STORAGE_KEY);
+    let opens = 0;
+    render(
+      <App
+        openFlow={createTestFlow(async () => ({
+          status: "ready",
+          publication: opens++ === 0 ? first : await makePublication(),
+        }))}
+        readerPositionRepository={repository}
+      />,
+    );
+    selectEpub();
+    await screen.findByRole("heading", { name: "Reading section unavailable" });
+    selectEpub();
+    await screen.findByRole("heading", { name: "Reading section unavailable" });
+    expect(values.get(READER_POSITIONS_STORAGE_KEY) === fullStore).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+    await screen.findByRole("heading", { name: "Readable successor" });
+    await waitFor(async () =>
+      expect(await repository.readPosition(first.book.identity)).toMatchObject({
+        status: "ready",
+        state: { locator: { spineItemIndex: 1 } },
+      }),
     );
   });
 

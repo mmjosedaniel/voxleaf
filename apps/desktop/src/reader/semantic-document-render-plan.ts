@@ -1,4 +1,8 @@
-import type { SemanticBlock, SemanticDocument } from "@voxleaf/epub";
+import type {
+  SemanticBlock,
+  SemanticDocument,
+  SemanticListItem,
+} from "@voxleaf/epub";
 
 import { LARGE_CHAPTER_BATCH_SIZE_BLOCKS } from "./large-chapter-rendering";
 
@@ -11,7 +15,7 @@ export interface SemanticBlockPlan {
 }
 
 interface SemanticListItemPlan {
-  readonly value?: number;
+  readonly item: SemanticListItem;
   readonly startIndex: number;
   readonly endIndex: number;
   readonly children: SemanticBlockSequencePlan;
@@ -77,7 +81,7 @@ function buildBlockPlan(
             blockIndexes,
           );
           return Object.freeze({
-            ...(item.value === undefined ? {} : { value: item.value }),
+            item,
             startIndex:
               itemStartIndex === index.value ? startIndex : itemStartIndex,
             endIndex: index.value,

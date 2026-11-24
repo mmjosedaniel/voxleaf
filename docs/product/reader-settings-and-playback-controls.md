@@ -758,15 +758,22 @@ to a replacement owner.
 
 Closing contents or selecting a destination returns focus to the trigger while
 navigation is pending; successful navigation still focuses its destination.
+Moving keyboard focus into the reading viewport, including through Skip, closes
+the Contents overlay so it cannot obscure the focused control. The reading
+article keeps focus while automatic text direction finishes preparing.
 Initial placement uses the actually displayed block when an interior range cannot
 be placed, including for late narration attachment. That temporary fallback does
 not overwrite the precise saved checkpoint.
 An already aligned block fallback retains the restorer's measured reading-line
 placement; locator settlement does not scroll that block a second time.
+For a first open with no saved position, the default checkpoint is eligible
+after the reader displays its initial passage. An unavailable chapter leaves
+saved positions intact until the reader navigates to readable content.
 
 Appearance changes remain active in memory when storage rejects them. Settings
 reports the failure and carries its status into the next book until a later save
-succeeds. Oversized narration preference envelopes are rejected before parsing
+succeeds, including when the write settles after book replacement. Oversized
+narration preference envelopes are rejected before parsing
 or unbounded encoding, including during Reset; their bytes remain intact.
 If the saved profile or language is known to exceed its storage bound,
 Settings keeps its corresponding choice unavailable. Attempting that choice

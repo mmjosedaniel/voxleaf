@@ -38,6 +38,7 @@ function snapshot(
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state,
+    ...(state === "confirming" ? { confirmationId: "1" } : {}),
     downloadBytes: 1_073_741_824,
     downloadedBytes,
     installedBytes: 2_147_483_648,
@@ -58,6 +59,25 @@ function snapshot(
 }
 
 describe("optional Chatterbox controls", () => {
+  it("VF-0166 an unknown capability after the initial failure hides Remove", async () => {
+    const invoke = vi.fn(async () => {
+      throw "tts-optional-profile-unavailable";
+    });
+    const client = new OptionalChatterboxClient(invoke);
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={async () => undefined}
+      />,
+    );
+    await waitFor(() => expect(client.observe().state).toBe("failed"));
+    expect(
+      screen.queryByRole("button", { name: "Remove Chatterbox" }),
+    ).toBeNull();
+  });
+
   it.each(["installed", "failed"] as const)(
     "VF-0114 local candidate hides unsupported removal and acquisition (%s)",
     async (state) => {
@@ -669,6 +689,7 @@ describe("optional Chatterbox controls", () => {
       await waitFor(() => expect(client.observe().state).toBe("installed"));
       expect(invoke).toHaveBeenCalledWith("download_optional_chatterbox", {
         profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+        confirmationId: "1",
       });
     },
   );
@@ -923,6 +944,7 @@ describe("optional Chatterbox controls", () => {
     ).toBeInTheDocument();
     expect(invoke).toHaveBeenNthCalledWith(2, "download_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+      confirmationId: "1",
     });
   });
 
@@ -1087,6 +1109,45 @@ describe("optional Chatterbox controls", () => {
     ).toBeEnabled();
     expect(onRemove).toHaveBeenCalledTimes(2);
     expect(client.observe().state).toBe("absent");
+  });
+
+  it("VF-0141 Check remains actionable after verified installation and failed staging cleanup", async () => {
+    const failed = {
+      ...snapshot("failed"),
+      failure: "tts-optional-profile-cleanup-failed",
+    };
+    let checks = 0;
+    const invoke = vi.fn(
+      async (command: string, args?: Record<string, unknown>) => {
+        expect(command).toBe("optional_chatterbox_snapshot");
+        if (args?.retryCleanup && ++checks === 2) return snapshot("installed");
+        return failed;
+      },
+    );
+    const client = new OptionalChatterboxClient(invoke);
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={async () => true}
+        onRecheck={async () => true}
+        onRemove={async () => undefined}
+      />,
+    );
+    const check = () =>
+      screen.getByRole("button", { name: "Check Chatterbox again" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Check Chatterbox again" }),
+    );
+    await waitFor(() => expect(check()).toBeEnabled());
+    expect(client.observe().installedBytes).toBe(failed.installedBytes);
+    expect(
+      screen.queryByRole("button", { name: /review Chatterbox download/iu }),
+    ).toBeNull();
+    fireEvent.click(check());
+    expect(
+      await screen.findByRole("button", { name: "Activate Chatterbox" }),
+    ).toBeEnabled();
+    expect(checks).toBe(2);
   });
 
   it("polls and exposes native progress while the download command remains active", async () => {

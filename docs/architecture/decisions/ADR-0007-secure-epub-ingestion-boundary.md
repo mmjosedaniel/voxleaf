@@ -233,6 +233,14 @@ non-image attributes do not add a label charge. NCX still uses the XML text
 charge. When a navigation document is also projected into semantic content,
 each retained representation is charged through its existing owner.
 
+When an EPUB 3 Contents label has the HTML `hidden` attribute on the link or
+group label itself, VoxLeaf prefers its `title` if it normalizes to a nonempty
+label within the 1,024-code-point limit. A missing or unusable title leaves
+the existing bounded text and image-alternative rules in effect. Visible
+labels keep their text-first precedence. The parser charges a selected title
+once and still validates the markup and counts decoded XML text inside the
+hidden label. The choice of label does not change the navigation target.
+
 - Implemented ingestion has one exact support and budget authority, with every maximum and maximum-plus-one boundary tied to focused regression evidence.
 - Normal reading remains local: archive bytes, resources, publisher markup, and prose are not sent to a network service or extracted to disk.
 - A closed semantic projection prevents publisher markup from becoming trusted application UI.

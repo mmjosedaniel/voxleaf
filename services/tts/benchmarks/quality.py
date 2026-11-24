@@ -87,9 +87,14 @@ def _write_json(path: Path, value: Mapping[str, object]) -> None:
     )
     if len(payload) > 262_144:
         raise QualitySessionError("metadata-limit")
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_bytes(payload)
-    temporary.replace(path)
+    temporary = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
+    stream = temporary.open("xb")
+    try:
+        with stream:
+            stream.write(payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _read_mapping(path: Path) -> dict[str, object]:
@@ -529,29 +534,26 @@ def _submit_scorecard(session: Path, session_id: str, value: object) -> dict[str
     template_samples = cast(list[object], template.get("samples"))
     samples = cast(list[object], card["samples"])
     sanitized = _sanitize_scorecard_samples(samples, template_samples)
-    if (
-        metadata.get("protocolVersion") == "tts-cpu-fallback-profile-v6"
-        and len(evaluator_ids) == 1
-        and any(
-            all(
-                cast(dict[str, object], sample["scores"])[dimension] == "not-applicable"
-                for sample in sanitized
-            )
-            for dimension in DIMENSIONS
-        )
-    ):
-        raise QualitySessionError("missing-dimension")
     target = session / "scorecards" / f"{evaluator_id}.completed.json"
     if target.exists():
         raise QualitySessionError("scorecard-state")
-    _write_json(
-        target,
-        {
-            "sessionId": session_id,
-            "evaluatorId": evaluator_id,
-            "samples": cast(list[object], sanitized),
-        },
-    )
+    incoming: dict[str, object] = {
+        "sessionId": session_id,
+        "evaluatorId": evaluator_id,
+        "samples": sanitized,
+    }
+    siblings = []
+    for other in evaluator_ids:
+        if not isinstance(other, str) or _EVALUATOR_ID.fullmatch(other) is None:
+            raise QualitySessionError("invalid-metadata")
+        if other != evaluator_id:
+            siblings.append(target.with_name(f"{other}.completed.json"))
+    if all(path.is_file() for path in siblings):
+        # The final immutable submission must be scorable by the actual aggregator.
+        _score_panel(
+            session, session_id, metadata, [_read_mapping(path) for path in siblings] + [incoming]
+        )
+    _write_json(target, incoming)
     completed = len(tuple((session / "scorecards").glob("*.completed.json")))
     return {
         "status": "pass",
@@ -671,6 +673,12 @@ def _current_aggregate(session: Path, session_id: str) -> tuple[dict[str, object
     ]
     if len(cards) != len(evaluator_ids):
         raise QualitySessionError("incomplete-scorecards")
+    return _score_panel(session, session_id, metadata, cards)
+
+
+def _score_panel(
+    session: Path, session_id: str, metadata: Mapping[str, object], cards: list[dict[str, object]]
+) -> tuple[dict[str, object], int]:
     corrected_defects = _corrected_defect_cases(session, cards)
     key = _read_mapping(session / "randomization-key.json")
     mappings = key.get("samples")

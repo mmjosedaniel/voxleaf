@@ -43,7 +43,6 @@ export function createNativeTtsScenarios({
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS,
   STARTUP_TIMEOUT_MS,
-  SYNTHETIC_SENTENCE_TRANSITION_PAUSE_MS,
   WEBDRIVER_SPACE,
   generatedAudioFileCount,
   inspectPerformanceLogs,
@@ -80,9 +79,6 @@ export function createNativeTtsScenarios({
       });`,
       STARTUP_TIMEOUT_MS,
     );
-    const observed = await driver.execute(
-      `return globalThis.__voxleafNarrationLifecycle.startupState;`,
-    );
     const stillPreparing = await driver.execute(
       `return globalThis.__TAURI_INTERNALS__.invoke("tts_service_lifecycle_observation").then((state) =>
         state.serviceInstanceId === globalThis.__voxleafNarrationLifecycle.startupState.serviceInstanceId &&
@@ -117,7 +113,9 @@ export function createNativeTtsScenarios({
     );
     return {
       startupCancellationMs,
-      startupNativePhase: observed.state,
+      // Lifecycle states are sampled child output. They do not establish
+      // which engine command was still executing when Cancel arrived.
+      startupNativePhase: "phase-unverified",
       startupShutdownMs,
     };
   }
@@ -830,9 +828,26 @@ export function createNativeTtsScenarios({
            playbackMs: Number(
              owner.getAttribute("data-narration-playback-ms"),
            ),
+           playbackIndex: Number(
+             owner.getAttribute("data-narration-refill-playback-index"),
+           ),
            selectedRatePercent: Number(
              owner.getAttribute("data-narration-selected-rate-percent"),
            ),
+           transition: owner.hasAttribute("data-narration-rate-transition-sequence")
+             ? Object.fromEntries(
+                 Object.entries({
+                   sequence: "transition-sequence",
+                   ratePercent: "transition-percent",
+                   preparationMs: "preparation-ms",
+                   handoffMs: "handoff-ms",
+                   activationMs: "activation-ms",
+                 }).map(([key, attribute]) => {
+                   const value = owner.getAttribute("data-narration-rate-" + attribute);
+                   return [key, value === null || value === "" ? null : Number(value)];
+                 }),
+               )
+             : undefined,
            value: Number(speed.value),
          };`,
     );
@@ -871,6 +886,7 @@ export function createNativeTtsScenarios({
     before,
   ) {
     const selectedAtMs = now();
+    const priorSequence = before.transition?.sequence ?? -1;
     await waitForCondition(
       driver,
       `const owner = document.querySelector(".product-narration");
@@ -880,18 +896,42 @@ export function createNativeTtsScenarios({
          "${String(ratePercent)}" &&
        owner.getAttribute("data-narration-active-rate-percent") ===
          "${String(ratePercent)}" &&
-       owner.getAttribute("data-narration-pending-rate-percent") === "none";`,
+       owner.getAttribute("data-narration-pending-rate-percent") === "none" &&
+       owner.getAttribute("data-narration-rate-transition-percent") ===
+         "${String(ratePercent)}" &&
+       owner.hasAttribute("data-narration-rate-transition-sequence") &&
+       Number(owner.getAttribute("data-narration-rate-transition-sequence")) >
+         ${String(priorSequence)};`,
       4 * STARTUP_TIMEOUT_MS,
     );
     const after = await adaptivePlaybackRateObservation(driver);
+    const transition = after?.transition;
     assert(
       after?.acceptedUnits >= before.acceptedUnits &&
         after.playbackMs >= before.playbackMs &&
-        after.intentionalWaitMs >= before.intentionalWaitMs,
+        after.intentionalWaitMs >= before.intentionalWaitMs &&
+        Number.isSafeInteger(before.playbackIndex) &&
+        before.playbackIndex > 0 &&
+        after.playbackIndex === before.playbackIndex &&
+        after.activeRatePercent === String(ratePercent) &&
+        after.selectedRatePercent === ratePercent &&
+        Number.isSafeInteger(transition?.sequence) &&
+        transition.sequence > priorSequence &&
+        transition.ratePercent === ratePercent &&
+        [
+          transition.preparationMs,
+          transition.handoffMs,
+          transition.activationMs,
+        ].every((value) => Number.isFinite(value) && value >= 0) &&
+        transition.activationMs >=
+          Math.max(transition.preparationMs, transition.handoffMs),
       "Native synchronized narration proof failed.",
     );
     return Object.freeze({
       activeRatePercent: ratePercent,
+      ratePreparationMs: transition.preparationMs,
+      eligibleHandoffMs: transition.handoffMs,
+      activationMs: transition.activationMs,
       boundaryDeferredWallMs: now() - selectedAtMs,
       intentionalWaitDeltaMs:
         after.intentionalWaitMs - before.intentionalWaitMs,
@@ -957,12 +997,13 @@ export function createNativeTtsScenarios({
       await waitForAdaptivePlaybackRateBoundary(driver, 100, before),
     );
     const final = await adaptivePlaybackRateObservation(driver);
-    const firstActivationWaitMs = transitions[0].intentionalWaitDeltaMs;
-    const recurringWaitsMs = transitions
-      .slice(1)
-      .map(({ intentionalWaitDeltaMs }) => intentionalWaitDeltaMs);
-    const recurringHandoffOverheadsMs = recurringWaitsMs.map((value) =>
-      Math.max(0, value - SYNTHETIC_SENTENCE_TRANSITION_PAUSE_MS),
+    const [first, ...recurring] = transitions;
+    const firstActivationWaitMs = first.activationMs;
+    const recurringWaitsMs = recurring.map(
+      ({ intentionalWaitDeltaMs }) => intentionalWaitDeltaMs,
+    );
+    const recurringHandoffOverheadsMs = recurring.map(
+      ({ eligibleHandoffMs }) => eligibleHandoffMs,
     );
     console.error(
       `ADAPTIVE_TTS_PLAYBACK_RATE_MATRIX ${JSON.stringify({
@@ -975,6 +1016,7 @@ export function createNativeTtsScenarios({
     );
     assert(
       firstActivationWaitMs <= 1_000 &&
+        recurring.every(({ ratePreparationMs }) => ratePreparationMs === 0) &&
         recurringHandoffOverheadsMs.every((value) => value <= 250) &&
         final?.selectedRatePercent === 100 &&
         final.activeRatePercent === "100" &&
@@ -993,9 +1035,13 @@ export function createNativeTtsScenarios({
     });
   }
 
-  async function observeAdaptiveDepletionOrStablePlayback(driver) {
+  async function observeAdaptiveDepletionOrStablePlayback(
+    driver,
+    priorPlaybackIndex,
+  ) {
     const timeoutAt = now() + 2 * STARTUP_TIMEOUT_MS;
     let observation;
+    let baseline;
     while (now() < timeoutAt) {
       observation = await driver.execute(
         `const owner = document.querySelector(".product-narration");
@@ -1028,8 +1074,25 @@ export function createNativeTtsScenarios({
          ),
        };`,
       );
+      assert(
+        Number.isSafeInteger(observation?.playbackIndex) &&
+          observation.playbackIndex > 0 &&
+          observation.playbackIndex !== priorPlaybackIndex &&
+          Number.isFinite(observation.playbackMs) &&
+          observation.playbackMs >= 0,
+        "Native synchronized narration proof failed.",
+      );
+      baseline ??= observation;
+      const playbackDeltaMs = observation.playbackMs - baseline.playbackMs;
+      assert(
+        observation.playbackIndex === baseline.playbackIndex &&
+          observation.navigationSettling === "false" &&
+          playbackDeltaMs >= 0,
+        "Native synchronized narration proof failed.",
+      );
       if (
         observation?.phase === "buffering" ||
+        observation?.activeRefillIndex > 0 ||
         observation?.completedRefillIndex > 0
       ) {
         return Object.freeze({ kind: "depleted", observation });
@@ -1037,11 +1100,8 @@ export function createNativeTtsScenarios({
       if (observation?.phase === "complete") {
         return Object.freeze({ kind: "range-complete", observation });
       }
-      if (
-        observation?.phase === "playing" &&
-        observation.playbackMs >= 60_000
-      ) {
-        return Object.freeze({ kind: "stable", observation });
+      if (observation?.phase === "playing" && playbackDeltaMs >= 60_000) {
+        return Object.freeze({ kind: "stable", observation, playbackDeltaMs });
       }
       if (
         observation?.phase === "failed" ||
@@ -1886,6 +1946,12 @@ export function createNativeTtsScenarios({
 
       setStage("adaptive exact-host chapter transition");
       const chapterMarker = await currentAdaptiveHighlightMarker(driver);
+      const beforeChapter = await adaptivePlaybackRateObservation(driver);
+      assert(
+        Number.isSafeInteger(beforeChapter?.playbackIndex) &&
+          beforeChapter.playbackIndex > 0,
+        "Native synchronized narration proof failed.",
+      );
       const chapterStartedAtMs = now();
       const chapterActivated = await driver.execute(
         `const next = document.querySelector(
@@ -1940,8 +2006,10 @@ export function createNativeTtsScenarios({
       );
 
       setStage("adaptive exact-host depletion");
-      depletionObservation =
-        await observeAdaptiveDepletionOrStablePlayback(driver);
+      depletionObservation = await observeAdaptiveDepletionOrStablePlayback(
+        driver,
+        beforeChapter.playbackIndex,
+      );
       if (depletionObservation.kind === "depleted") {
         setStage("adaptive exact-host refill");
       }
@@ -2482,7 +2550,7 @@ export function createNativeTtsScenarios({
           refillMs: refillMs ?? null,
           stablePlaybackObservationMs:
             depletionObservation.kind === "stable"
-              ? depletionObservation.observation.playbackMs
+              ? depletionObservation.playbackDeltaMs
               : null,
         },
         prepared: preparedObservation,
@@ -3462,7 +3530,9 @@ export function createNativeTtsScenarios({
     cancelAdaptiveStartup,
     paragraphLeafActivationDelivered,
     waitForAdaptivePlaying,
+    observeAdaptiveDepletionOrStablePlayback,
     observeAdaptiveRefill,
+    exerciseAdaptivePlaybackSpeedMatrix,
     runAdaptiveTtsExactHostMatrix,
     selectAdaptiveTtsProfile,
     exerciseNarrationLanguagePreference,

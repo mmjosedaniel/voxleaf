@@ -116,9 +116,18 @@ export async function runNativeOperation({ timeoutMs, work, cleanup }) {
 }
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
+const NOVEMBER_READER_MODE = process.argv.includes("--exercise-nov23-reader");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
+if (
+  NOVEMBER_READER_MODE &&
+  (READER_PERFORMANCE_MODE ||
+    ADAPTIVE_TTS_EXACT_HOST_MODE ||
+    SCROLLBAR_PROBE_ONLY)
+) {
+  throw new Error("The focused November reader probe requires its own mode.");
+}
 const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
   "--exercise-profile-switch",
 );
@@ -212,7 +221,6 @@ const NATIVE_COMBINED_WORKING_SET_LIMIT_BYTES = 208 * MEBIBYTE;
 const NATIVE_RESOURCE_STRESS_CYCLES = 6;
 const NATIVE_RESOURCE_HEAP_GROWTH_LIMIT_BYTES = 8 * MEBIBYTE;
 const NATIVE_RESOURCE_WORKING_SET_GROWTH_LIMIT_BYTES = 32 * MEBIBYTE;
-const SYNTHETIC_SENTENCE_TRANSITION_PAUSE_MS = 300;
 const WEBDRIVER_TAB = "\uE004";
 const WEBDRIVER_ENTER = "\uE007";
 const WEBDRIVER_SPACE = "\uE00D";
@@ -491,7 +499,6 @@ const {
   OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
   OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS,
   STARTUP_TIMEOUT_MS,
-  SYNTHETIC_SENTENCE_TRANSITION_PAUSE_MS,
   WEBDRIVER_SPACE,
   generatedAudioFileCount,
   inspectPerformanceLogs,
@@ -506,6 +513,7 @@ const {
 const {
   observeSavedPositionRestoration,
   exerciseNativeReaderInteractionMatrix,
+  exerciseNovemberReaderInteractions,
   exerciseNativeSynchronizationFeasibility,
   replaceNativePublicationForCleanup,
   runNativeReaderPerformanceBenchmark,
@@ -1186,11 +1194,13 @@ export async function cleanupNativeRun({
 }
 
 async function run() {
-  const runLabel = READER_PERFORMANCE_MODE
-    ? "Native reader performance benchmark"
-    : ADAPTIVE_TTS_EXACT_HOST_MODE
-      ? "Adaptive exact-host TTS matrix"
-      : "Native startup smoke";
+  const runLabel = NOVEMBER_READER_MODE
+    ? "Native November reader interactions"
+    : READER_PERFORMANCE_MODE
+      ? "Native reader performance benchmark"
+      : ADAPTIVE_TTS_EXACT_HOST_MODE
+        ? "Adaptive exact-host TTS matrix"
+        : "Native startup smoke";
   assert(
     process.platform === "win32",
     "Native startup smoke must run on Windows.",
@@ -1223,6 +1233,11 @@ async function run() {
           "synthetic-image-lifecycle.epub",
         );
         let imageLifecycleLocator;
+        let novemberReaderLocator;
+        const novemberRestorationPath = path.join(
+          temporaryDirectory,
+          "reader-restoration.epub",
+        );
         const orientedFixturePath = path.join(
           temporaryDirectory,
           "synthetic-oriented.epub",
@@ -1263,7 +1278,33 @@ async function run() {
           minimalPackageDocument,
         } = await import(fixtureModuleUrl.href);
         await mkdir(profileDirectory);
-        if (READER_PERFORMANCE_MODE) {
+        if (NOVEMBER_READER_MODE) {
+          const [interactionBytes, restorationBytes] = await Promise.all([
+            buildMinimalEpubFixture({
+              chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" dir="auto"><body><p>Reader <a href="#ending">Jump to ending</a>.</p>${"<p>Synthetic reader paragraph.</p>".repeat(320)}<h1 id="ending">Ending destination</h1></body></html>`,
+            }),
+            buildMinimalEpubFixture({
+              chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>${"Synthetic text for measuring a wrapped reading position. ".repeat(120)}</p>${"<p>Synthetic control passage.</p>".repeat(20)}</body></html>`,
+            }),
+          ]);
+          const { openEpubPublication } = await import("@voxleaf/epub");
+          const opened = await openEpubPublication(restorationBytes);
+          assert(opened.ok, "The synthetic reader fixture could not open.");
+          try {
+            novemberReaderLocator = opened.publication.resolveLocator({
+              ...opened.publication.defaultStartLocator,
+              textOffsetCodePoints: 2000,
+            }).locator;
+          } finally {
+            await opened.publication.close();
+          }
+          await Promise.all([
+            writeFile(fixturePath, interactionBytes, { flag: "wx" }),
+            writeFile(novemberRestorationPath, restorationBytes, {
+              flag: "wx",
+            }),
+          ]);
+        } else if (READER_PERFORMANCE_MODE) {
           const [exact, overLimit, representative] = await Promise.all([
             buildReaderLongChapterEpubFixture({
               semanticBlockCount: 10_000,
@@ -1426,7 +1467,11 @@ async function run() {
 
         if (child.pid !== undefined)
           identities = await captureCurrentChildProcesses(child);
-        if (!ADAPTIVE_TTS_EXACT_HOST_MODE && !SCROLLBAR_PROBE_ONLY) {
+        if (
+          !ADAPTIVE_TTS_EXACT_HOST_MODE &&
+          !NOVEMBER_READER_MODE &&
+          !SCROLLBAR_PROBE_ONLY
+        ) {
           stage = "native TTS supervisor host matrix";
           await exerciseNativeTtsSupervisorHost();
         }
@@ -1457,6 +1502,19 @@ async function run() {
             .length === 0,
           "Native Settings were available without an open publication.",
         );
+        if (NOVEMBER_READER_MODE) {
+          stage = "native November reader interactions";
+          await exerciseNovemberReaderInteractions(
+            driver,
+            fixturePath,
+            novemberRestorationPath,
+            novemberReaderLocator,
+            (nextStage) => {
+              stage = nextStage;
+            },
+          );
+          return;
+        }
         if (READER_PERFORMANCE_MODE) {
           stage = "native reader performance and resource benchmark";
           await runNativeReaderPerformanceBenchmark(

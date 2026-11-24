@@ -1552,6 +1552,95 @@ describe("navigable publication reader", () => {
     expect(source.startLocators).toEqual([]);
   });
 
+  it("VF-0142 keeps a deep Contents jump pending through preference reflow until its target mounts", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body>${"<p>Synthetic content.</p>".repeat(450)}<h1 id="destination">Distant passage</h1></body></html>`,
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#destination">Deep destination</a></li></ol></nav></body></html>',
+      }),
+    );
+    if (!opened.ok) throw new Error(opened.detail);
+    const frames = new Map<number, FrameRequestCallback>();
+    let frame = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      const id = ++frame;
+      frames.set(id, callback);
+      return id;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+    const outcome = vi.fn();
+    const settled = vi.fn();
+    const source = new ManualReaderNarrationSource();
+    const reflow = new ManualReaderReflowEnvironment();
+    const props = {
+      publication: opened.publication,
+      narrationSource: source,
+      reflowEnvironment: reflow,
+      onNavigationSettlement: outcome,
+      onSettledLocatorChange: settled,
+    };
+    try {
+      const reader = render(
+        <ReaderPublicationContent
+          {...props}
+          preferences={DEFAULT_READER_PREFERENCES}
+        />,
+      );
+      outcome.mockClear();
+      fireEvent.click(
+        within(openTableOfContents()).getByRole("button", {
+          name: "Deep destination",
+        }),
+      );
+      const destination = () =>
+        screen.queryByRole("heading", { name: "Distant passage" });
+      expect(destination()).toBeNull();
+      reader.rerender(
+        <ReaderPublicationContent
+          {...props}
+          preferences={{ ...DEFAULT_READER_PREFERENCES, textScale: "large" }}
+        />,
+      );
+      act(() => reflow.flushAll());
+      expect(destination()).toBeNull();
+      expect(outcome).not.toHaveBeenCalled();
+      expect(settled).not.toHaveBeenCalled();
+
+      for (let turn = 0; turn < 3 && destination() === null; turn += 1) {
+        act(() => {
+          const scheduled = [...frames.values()];
+          frames.clear();
+          for (const callback of scheduled) callback(performance.now());
+        });
+      }
+      expect(destination()).toHaveFocus();
+      const expected = opened.publication.locators.at(-1)!.startLocator;
+      expect(outcome).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          status: "settled",
+          locator: expected,
+          request: expect.any(Object),
+        }),
+        "chapter-navigation",
+      );
+      expect(settled).toHaveBeenCalledExactlyOnceWith(
+        expected,
+        "chapter-navigation",
+      );
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Start narration at this paragraph",
+        }),
+      );
+      expect(source.startLocators).toEqual([expected]);
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
   it("routes narration-boundary requests through the same focus-safe reader placement", () => {
     const environment = new ManualReaderReflowEnvironment();
     const narrationSource = new ManualReaderNarrationSource();
@@ -2372,6 +2461,50 @@ describe("navigable publication reader", () => {
     unmount();
     expect(narrationSource.stateListenerCount).toBe(0);
     expect(narrationSource.progressListenerCount).toBe(0);
+  });
+
+  it("VF-0164 marks a mounted paragraph action unavailable until its navigation settles", async () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    let releaseNavigation = (): void => {};
+    const pendingNavigation = new Promise<void>((resolve) => {
+      releaseNavigation = resolve;
+    });
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        onNavigationIntent={(event) =>
+          event === "chapter-navigation" ? pendingNavigation : undefined
+        }
+      />,
+    );
+    const leaf = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    fireEvent.click(
+      within(openTableOfContents()).getByRole("button", {
+        name: "Continuation",
+      }),
+    );
+    act(() => leaf.focus());
+    expect(leaf).toHaveFocus();
+    expect(leaf).toHaveAttribute("aria-disabled", "true");
+    expect(leaf).toHaveAttribute("data-placement-pending", "true");
+    fireEvent.click(leaf);
+    fireEvent.keyDown(leaf, { key: "Enter" });
+    fireEvent.click(leaf);
+    expect(narrationSource.startLocators).toEqual([]);
+
+    await act(async () => releaseNavigation());
+    const placedLeaf = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    expect(placedLeaf).not.toHaveAttribute("aria-disabled");
+    expect(placedLeaf).not.toHaveAttribute("data-placement-pending");
+    fireEvent.click(placedLeaf);
+    expect(narrationSource.startLocators).toEqual([
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+    ]);
   });
 
   it("retargets the selectable leaf to the visible paragraph without restarting active narration", () => {

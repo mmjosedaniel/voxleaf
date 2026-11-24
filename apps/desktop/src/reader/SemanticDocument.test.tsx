@@ -105,10 +105,19 @@ it("FSF-CR1 resolves Auto before progressive exposure and retires replaced or un
     "Preparing this reading section.",
   );
   expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
+  const preparing = screen.getByRole("article", {
+    name: "Current reading section",
+  });
+  act(() => preparing.focus());
+  expect(preparing).toHaveFocus();
   act(() => pending.shift()!());
   expect(screen.queryByText("Synthetic Auto 0")).toBeNull();
   act(() => pending.shift()!());
   expect(screen.getByText("Synthetic Auto 249")).toBeInTheDocument();
+  expect(screen.getByRole("article", { name: "Current reading section" })).toBe(
+    preparing,
+  );
+  expect(preparing).toHaveFocus();
   expect(screen.queryByText("Synthetic Auto 250")).toBeNull();
   expect(close).toHaveBeenCalledOnce();
   act(() => pending.shift()!());

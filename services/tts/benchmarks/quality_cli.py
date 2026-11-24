@@ -310,6 +310,10 @@ def main() -> int:
             output, code = _cleanup(payload)
     except (QualityCommandError, QualitySessionError, CommandError):
         output, code = {"status": "fail", "failureCode": "invalid-request"}, 2
+    except OSError:
+        if sys.argv[1] not in ("submit", "aggregate", "cleanup"):
+            raise
+        output, code = {"status": "fail", "failureCode": "invalid-request"}, 2
     print(json.dumps(output, ensure_ascii=True, separators=(",", ":")))
     return code
 

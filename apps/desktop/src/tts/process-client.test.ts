@@ -137,6 +137,52 @@ it("rejects a late preparation result after shutdown without reviving readiness"
   expect(client.observe().state).toBe("stopped");
 });
 
+it("VF-0093 retires a confirmed start before its pending reply and isolates the successor", async () => {
+  let finish!: (value: unknown) => void;
+  mockedInvoke.mockReset();
+  mockedInvoke.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const client = new TtsProcessClient();
+  const previous = client.start();
+  const rejected = expect(previous).rejects.toMatchObject({
+    code: "tts-service-cancelled",
+  });
+  mockedInvoke.mockResolvedValueOnce(shutdownControls());
+  let stopped = false;
+  const stopping = client.shutdown().then(() => {
+    stopped = true;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const stoppedBeforeReply = stopped;
+  if (!stoppedBeforeReply) {
+    finish(startControls());
+    await stopping;
+    await rejected;
+  }
+  expect(stoppedBeforeReply).toBe(true);
+  await rejected;
+  mockedInvoke.mockResolvedValueOnce(startControls());
+  await client.start();
+  const successor = client.observe();
+  finish(
+    startControls().map((control) => ({
+      ...control,
+      serviceInstanceId: "service:synthetic-late-start",
+    })),
+  );
+  await Promise.resolve();
+  expect(client.observe()).toEqual(successor);
+  expect(mockedInvoke.mock.calls.map(([command]) => command)).toEqual([
+    "start_tts_service",
+    "shutdown_tts_service",
+    "start_tts_service",
+  ]);
+});
+
 it("contains a child whose start response arrives after shutdown was requested", async () => {
   let finish!: (value: unknown) => void;
   mockedInvoke.mockReset();

@@ -23,6 +23,7 @@ export type RestorationPresentation =
         | Readonly<{ mode: "recovered" }>
         | Readonly<{ mode: "book-start"; reason: ReaderBookStartReason }>;
       preferenceStatus: ReaderPreferencesReadResult["status"];
+      customAppearanceActive?: true;
     }>;
 
 const FAILURE_MESSAGE: Readonly<Record<ReaderFailureReason, string>> =
@@ -114,6 +115,8 @@ function restorationNotice(
     restoration.preferenceStatus !== "ready" &&
     restoration.preferenceStatus !== "missing"
   ) {
+    if (restoration.customAppearanceActive)
+      return "Reader appearance settings could not be saved. Your current settings are still active.";
     return "Saved reader appearance settings could not be used. Default settings are active.";
   }
   return undefined;

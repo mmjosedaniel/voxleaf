@@ -274,6 +274,7 @@ export interface AdaptivePreparationUiState {
   readonly selectedPlaybackRatePercent: number;
   readonly activePlaybackRatePercent: number | null;
   readonly pendingPlaybackRatePercent: number | null;
+  readonly hasUnfinishedAudioSection?: boolean;
 }
 
 export interface AdaptivePreparationUiInput {
@@ -282,6 +283,7 @@ export interface AdaptivePreparationUiInput {
   readonly estimatedWaitMs?: number;
   readonly intentionalBoundaryWait?: boolean;
   readonly volumePercent?: number;
+  readonly hasUnfinishedAudioSection?: boolean;
 }
 
 function isResourceCeilingReached(
@@ -377,5 +379,8 @@ export function createAdaptivePreparationUiState(
       input.scheduler.playbackRateState.activeRatePercent,
     pendingPlaybackRatePercent:
       input.scheduler.playbackRateState.pendingRatePercent,
+    ...(input.hasUnfinishedAudioSection === undefined
+      ? {}
+      : { hasUnfinishedAudioSection: input.hasUnfinishedAudioSection }),
   });
 }

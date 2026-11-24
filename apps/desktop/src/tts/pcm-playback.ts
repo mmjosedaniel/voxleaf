@@ -15,6 +15,7 @@ import {
   PcmPlaybackError,
   type PcmPlaybackBackend,
   type PcmPlaybackHandle,
+  type PcmPlaybackRenderTime,
   type PcmPlaybackRequest,
 } from "./pcm-playback-contracts";
 
@@ -52,6 +53,7 @@ export interface AdaptivePcmPlayerObservation {
   readonly activePlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
   readonly pendingPlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
   readonly playbackRatePreparationActive: boolean;
+  readonly lastPlaybackRateTransition?: PlaybackRateTransition;
   readonly playbackRateFallback?: number;
   readonly activeSequence: number | undefined;
   readonly rendering: boolean;
@@ -62,6 +64,14 @@ export interface AdaptivePcmPlayerObservation {
   readonly completedTransitionPauseCount: number;
   readonly retainedAudioUnitCount: number;
   readonly discardedAudioUnitCount: number;
+}
+
+export interface PlaybackRateTransition {
+  readonly sequence: number;
+  readonly ratePercent: NarrationPlaybackRatePercentV3;
+  readonly preparationMs: number;
+  readonly handoffMs: number;
+  readonly activationMs: number;
 }
 
 export type AdaptivePcmAudibleProgressKind =
@@ -174,6 +184,12 @@ export class AdaptivePcmPlayer {
   #completedTransitionPauseCount = 0;
   #completedTransitionPauseMs = 0;
   #playbackRatePreparation: Promise<void> | undefined;
+  #ratePreparationStartedAtMs: number | undefined;
+  #ratePreparationFinishedAtMs: number | undefined;
+  #rateHandoffBoundary:
+    { readonly clock: object; readonly eligibleAtMs: number } | undefined;
+  #rateChangedForCurrentUnit: NarrationPlaybackRatePercentV3 | undefined;
+  #lastPlaybackRateTransition: PlaybackRateTransition | undefined;
   #playbackRatePreparationToken = 0;
   #futureRatePreparation = false;
   #playbackRateFallback = 0;
@@ -248,6 +264,8 @@ export class AdaptivePcmPlayer {
     if (!["playing", "buffering", "complete"].includes(state)) {
       throw new PcmPlaybackError("invalid-state");
     }
+    // A user pause invalidates uninterrupted handoff timing.
+    this.#rateHandoffBoundary = undefined;
     if (this.#handle !== undefined) {
       this.#handle.pause();
       this.#refreshProgress();
@@ -390,7 +408,13 @@ export class AdaptivePcmPlayer {
     this.#playbackStartSampleFrame = unit.consumedSampleFrames;
     this.#reportedSampleFrames = unit.consumedSampleFrames;
     const sequence = unit.sequence;
+    const previousRate =
+      this.#scheduler.observe().playbackRateState.activeRatePercent;
     const playbackRatePercent = this.#scheduler.activateCurrentPlaybackRate();
+    this.#rateChangedForCurrentUnit =
+      previousRate !== null && previousRate !== playbackRatePercent
+        ? playbackRatePercent
+        : undefined;
     try {
       let allocated = false;
       let ended = false;
@@ -437,12 +461,62 @@ export class AdaptivePcmPlayer {
     )
       return;
     this.#startPublished = true;
-    this.#lastProgressObservationAtMs = this.#scheduler.observe().observedAtMs;
+    this.#scheduler.confirmPlaybackRendering(this.#activeUnit.sequence);
+    const now = this.#scheduler.observe().observedAtMs;
+    this.#recordPlaybackRateTransition(
+      this.#activeUnit.sequence,
+      this.#handle?.startedRenderingAt,
+    );
+    this.#lastProgressObservationAtMs = now;
     this.#publishAudibleProgress(
       "segment-started",
       this.#activeUnit,
       this.#playbackStartSampleFrame,
     );
+  }
+
+  #recordPlaybackRateTransition(
+    sequence: number,
+    renderedAt: PcmPlaybackRenderTime | undefined,
+  ): void {
+    const ratePercent = this.#rateChangedForCurrentUnit;
+    const boundary = this.#rateHandoffBoundary;
+    this.#rateHandoffBoundary = undefined;
+    if (ratePercent === undefined) return;
+    const renderedAtMs = renderedAt?.milliseconds;
+    const preparedAtMs = this.#ratePreparationFinishedAtMs ?? renderedAtMs;
+    const preparationStartedAtMs =
+      ratePercent === 100
+        ? preparedAtMs
+        : (this.#ratePreparationStartedAtMs ?? preparedAtMs);
+    this.#ratePreparationStartedAtMs = undefined;
+    this.#ratePreparationFinishedAtMs = undefined;
+    if (
+      boundary === undefined ||
+      renderedAt?.clock !== boundary.clock ||
+      renderedAtMs === undefined ||
+      preparedAtMs === undefined ||
+      preparationStartedAtMs === undefined ||
+      !Number.isFinite(renderedAtMs) ||
+      renderedAtMs < boundary.eligibleAtMs ||
+      preparedAtMs < preparationStartedAtMs ||
+      preparedAtMs > renderedAtMs
+    )
+      return;
+    const { eligibleAtMs } = boundary;
+    const preparationMs = preparedAtMs - preparationStartedAtMs;
+    const handoffMs = renderedAtMs - eligibleAtMs;
+    const overlapMs = Math.max(
+      0,
+      preparedAtMs - Math.max(eligibleAtMs, preparationStartedAtMs),
+    );
+    this.#lastPlaybackRateTransition = Object.freeze({
+      sequence,
+      ratePercent,
+      preparationMs,
+      handoffMs,
+      activationMs: preparationMs + handoffMs - overlapMs,
+    });
   }
 
   #handleEnded(sequence: number): void {
@@ -498,6 +572,17 @@ export class AdaptivePcmPlayer {
           : this.#scheduler.currentPlaybackUnit()?.incomingSceneBreak === true
             ? PLAYBACK_TRANSITION_PAUSE_POLICY_V1.boundaryMs["scene-break"]
             : completedUnit.transitionPauseMs;
+      const renderedEnd = handle.endedRenderingAt;
+      if (
+        !paused &&
+        renderedEnd !== undefined &&
+        Number.isFinite(renderedEnd.milliseconds)
+      ) {
+        this.#rateHandoffBoundary = {
+          clock: renderedEnd.clock,
+          eligibleAtMs: renderedEnd.milliseconds + pause,
+        };
+      }
       if (pause > 0) this.#beginTransitionPause(pause);
     }
     this.#synchronizeAfterDeviceEvent();
@@ -831,6 +916,8 @@ export class AdaptivePcmPlayer {
       throw new PcmPlaybackError("unsupported-rate");
     }
     const token = ++this.#playbackRatePreparationToken;
+    this.#ratePreparationStartedAtMs = this.#scheduler.observe().observedAtMs;
+    this.#ratePreparationFinishedAtMs = undefined;
     const future =
       this.#scheduler.observe().playbackRateState.activeRatePercent === 100;
     this.#futureRatePreparation = future;
@@ -848,6 +935,10 @@ export class AdaptivePcmPlayer {
           this.#retireCompletedRatePreparation()
         ) {
           return;
+        }
+        if (this.#ratePreparationStartedAtMs !== undefined) {
+          this.#ratePreparationFinishedAtMs =
+            this.#scheduler.observe().observedAtMs;
         }
         this.#playbackRatePreparation = undefined;
         const state = this.#scheduler.observe().playbackRateState;
@@ -890,6 +981,8 @@ export class AdaptivePcmPlayer {
     this.#futureRatePreparation = false;
     this.#playbackRatePreparationToken += 1;
     this.#playbackRatePreparation = undefined;
+    this.#ratePreparationStartedAtMs = undefined;
+    this.#ratePreparationFinishedAtMs = undefined;
     this.#backend.releasePlaybackRatePreparation?.();
   }
 
@@ -919,6 +1012,9 @@ export class AdaptivePcmPlayer {
         scheduler.playbackRateState.pendingRatePercent,
       playbackRatePreparationActive:
         this.#playbackRatePreparation !== undefined,
+      ...(this.#lastPlaybackRateTransition === undefined
+        ? {}
+        : { lastPlaybackRateTransition: this.#lastPlaybackRateTransition }),
       activeSequence: this.#handle?.sequence,
       rendering: this.#handle?.rendering === true,
       renderedSampleFrames:

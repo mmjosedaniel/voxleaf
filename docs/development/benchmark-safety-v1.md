@@ -4,6 +4,11 @@ This maintainer-only contract closes VF-0077 and VF-0091 under [ADR-0076](../arc
 
 ## Commands and operator sequence
 
+Preparation writes the complete original observation in an owned staging
+directory before publishing the session name. A failed write or rename before
+publication permits the same request and ID to be retried. An existing final
+reservation retains its original bytes and one-use eligibility.
+
 New official batch v14 and dual-worker v5 requests retain their existing closed fields and additionally require `evidenceVersion: "tts-benchmark-safety-v1"`. Batch also requires its explicit v14 `profileVersion`. Disposable pilots, concurrent diagnostics and historical derivation keep their existing contracts. The exact same official request, including interpreter/artifact paths, commit and prerequisite digests, must be used throughout the prospective workflow. Only its digest is stored in the public binding.
 
 1. Before changing power settings, place the full official request in `$run` and wrap it as `$evidence = @{ family = 'batch'; request = $run }` (use `dual` for v5). Pipe `$evidence | ConvertTo-Json -Depth 8` to `pnpm.cmd benchmark:tts:safety:prepare`. This exclusively reserves the opaque 32-hex session ID and observes the original settings. Inspect `benchmarks/results/raw/safety-v1/<sessionId>/reservation.json` and retain its original values for restoration.

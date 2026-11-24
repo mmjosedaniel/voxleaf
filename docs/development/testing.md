@@ -879,6 +879,13 @@ independently randomized scorecards; one evaluator is retained solely as
 limited evidence. Cleanup must delete every generated WAV after the aggregate
 is recorded.
 
+Before accepting the final immutable scorecard, submission checks the combined
+cards against the scoring rules for every candidate and dimension. Evaluators
+can supply complementary scores. A rejected final card can be corrected and
+resubmitted. If a file write, replacement or cleanup fails, the command emits
+the bounded failure response. Resolve the filesystem condition and retry the
+same command and session.
+
 That rule remains the historical `v2`/`v3` benchmark implementation. ADR-0014
 accepts one fluent maintainer for future constrained-demo quality feedback,
 but such feedback is not a retroactive promotable `v3` aggregate and cannot be
@@ -1161,7 +1168,11 @@ before dispatch and after completion, accepted and mid-generation
 cancellation, child crash, and application exit. Its runner samples descendant
 RAM and dedicated/shared GPU memory, confirms one GPU allocator, checks
 intermediate and final cleanup, and rejects listeners, external connections,
-audio persistence, and content-bearing output. V2 adds a version handshake
+audio persistence, and content-bearing output. Each announced network sample
+requires an owned process tree and successful TCP and UDP queries for IPv4 and
+IPv6. The runner requires every ordered occurrence before the corresponding
+cleanup acknowledgement. The counts describe those sampled instants. V2 adds a
+version handshake
 before starting the service and waits for four ordered zero-resource cleanup
 acknowledgements outside the timed operations. The output line, queue, run
 deadline and cleanup waits are bounded. Model-free tests cover the exchange.
@@ -1535,6 +1546,23 @@ and zero generated-audio persistence. `test:browser`, `test:native-startup`,
 and maintainer confirmation of every admitted rate subsequently passed, so
 M010.2 is complete.
 
+The current Piper speed smoke requires a new confirmed-rendering receipt at
+each sampled rate change in the same playback run. The browser estimates
+both output endpoints on the same AudioContext clock. The worklet reports
+the last quantum's actual end frame. Timestamp-capable direct playback
+schedules the initial source 256 frames ahead at 24 kHz (about 10.7 ms)
+to bind its start and duration to the context clock. This lead contributes
+to the observed handoff. Playback can continue when an output clock is
+unavailable, while the speed smoke requires both timing witnesses.
+First activation counts measured rate preparation and the
+eligible-boundary-to-render interval once,
+even when they overlap. The eligible boundary follows the previous complete
+unit and any scheduled transition pause. Recurring samples require no new
+rate preparation and use the eligible-boundary-to-render interval alone.
+The smoke uses the limits from the [playback authority](../architecture/reader-settings-playback-authority-v3.md#result-blind-evaluation).
+A stable playback observation counts the rendered delta from the settled
+chapter run. The 2026-07-31 values retain their historical scope.
+
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,
 model artifact, path, or raw host identity may enter a result or fixture.
@@ -1617,8 +1645,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-pac
 pnpm.cmd package:windows:signed
 ```
 
-The check validates the frozen version, NSIS/current-user target, exact resource
-allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
+The standalone check validates the frozen version, NSIS/current-user target,
+resource allowlist, exclusion boundary, uninstall hooks, required Piper resources
+and equality of the staged and authoritative distribution manifests.
+`pnpm.cmd package:windows:verified-core` verifies the staged payload files
+against the distribution before building. The lifecycle receipt identifies the
+exact installer exercised on Windows.
 The rebuilt unsigned build's installer identity is emitted into generated
 package evidence rather than fixed in this packaged documentation.
 Milestone 6A extends the outside-sandbox lifecycle harness across the ordinary

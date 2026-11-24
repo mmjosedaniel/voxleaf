@@ -272,7 +272,13 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
   }
 
   #appendGrain(): void {
-    if (this.#nextOutputFrame > 0) {
+    const outputFrames = this.#targetFrames - this.#nextOutputFrame;
+    const terminal = outputFrames <= GRAIN_FRAMES;
+    if (terminal) {
+      // Anchor the one terminal grain to the source end. Overlap only at its
+      // entrance so even the last source frame has a positive output weight.
+      this.#analysisFrame = Math.max(0, this.#input.length - outputFrames);
+    } else if (this.#nextOutputFrame > 0) {
       const expectedAnalysisFrame =
         (this.#nextOutputFrame * this.#ratePercent) / 100;
       this.#analysisFrame = this.#chooseAnalysisFrame(expectedAnalysisFrame);
@@ -287,13 +293,21 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       const source = this.#input[this.#analysisFrame + grainFrame] ?? 0;
       const outputFrame = this.#nextOutputFrame + grainFrame;
       const ringFrame = outputFrame % OUTPUT_RING_FRAMES;
-      const weight = this.#fadeIn[grainFrame] ?? 0;
+      const weight =
+        terminal &&
+        (this.#nextOutputFrame === 0 || grainFrame >= OVERLAP_FRAMES)
+          ? 1
+          : (this.#fadeIn[grainFrame] ?? 0);
       this.#outputAccumulator[ringFrame] =
         (this.#outputAccumulator[ringFrame] ?? 0) + source * weight;
       this.#outputWeights[ringFrame] =
         (this.#outputWeights[ringFrame] ?? 0) + weight;
     }
 
+    if (terminal) {
+      this.#nextOutputFrame = this.#targetFrames;
+      return;
+    }
     for (let index = 0; index < OVERLAP_FRAMES; index += 1) {
       this.#referenceOverlap[index] =
         this.#input[this.#analysisFrame + SYNTHESIS_HOP_FRAMES + index] ?? 0;
@@ -339,6 +353,7 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       this.#appendGrain();
     }
 
+    const renderedBeforeQuantum = this.#renderedFrames;
     for (
       let index = 0;
       index < output.length && this.#renderedFrames < this.#targetFrames;
@@ -363,6 +378,8 @@ class IncrementalWsolaProcessorV3 extends AudioWorkletProcessor {
       this.port.postMessage({
         type: "ended",
         currentFrame,
+        endFrame:
+          currentFrame + completedRenderedFrames - renderedBeforeQuantum,
         renderedFrames: completedRenderedFrames,
         sourceFrames: completedSourceFrames,
         unitSequence: completedSequence,

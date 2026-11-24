@@ -43,6 +43,7 @@ export interface OptionalChatterboxSnapshot {
   readonly downloadedBytes: number;
   readonly installedBytes: number | undefined;
   readonly removalSupported?: boolean;
+  readonly confirmationId?: string;
   readonly temporaryBytes: number | undefined;
   readonly minimumFreeBytes: number | undefined;
   readonly coldStartSeconds: number | undefined;
@@ -141,6 +142,7 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
   const object = value as Record<string, unknown>;
   const state = object.state;
   const profileId = object.profileId;
+  const confirmationId = object.confirmationId;
   const downloadedBytes = boundedOptionalNumber(object.downloadedBytes);
   const failure = decodeFailure(object.failure);
   if (
@@ -148,6 +150,10 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     typeof state !== "string" ||
     !STATES.has(state as OptionalChatterboxState) ||
     downloadedBytes === undefined ||
+    (state === "confirming"
+      ? typeof confirmationId !== "string" ||
+        !/^[1-9][0-9]{0,19}$/u.test(confirmationId)
+      : confirmationId !== undefined) ||
     (object.removalSupported !== undefined &&
       typeof object.removalSupported !== "boolean") ||
     typeof object.licenseSummary !== "string" ||
@@ -198,9 +204,10 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     downloadBytes: values[0],
     downloadedBytes,
     installedBytes: values[1],
-    ...(object.removalSupported === undefined
-      ? {}
-      : { removalSupported: object.removalSupported }),
+    // A decoded ordinary response omits this field. Synthetic snapshots
+    // never pass through this decoder and keep the capability unknown.
+    removalSupported: object.removalSupported ?? true,
+    ...(typeof confirmationId === "string" ? { confirmationId } : {}),
     temporaryBytes: values[2],
     minimumFreeBytes: values[3],
     coldStartSeconds: values[4],
@@ -307,12 +314,15 @@ export class OptionalChatterboxClient {
   }
 
   public async download(): Promise<OptionalChatterboxSnapshot> {
+    const confirmationId = this.#snapshot.confirmationId;
+    if (this.#snapshot.state !== "confirming" || confirmationId === undefined)
+      return this.#snapshot;
     let completedInstallation = false;
     const attempt = {
       generation: this.#actionGeneration + 1,
       promise: this.#call(
         "download_optional_chatterbox",
-        { profileId: CHATTERBOX_OPTIONAL_PROFILE_ID },
+        { profileId: CHATTERBOX_OPTIONAL_PROFILE_ID, confirmationId },
         (result) => {
           completedInstallation =
             result.state === "installed" && result.failure === undefined;
@@ -379,7 +389,7 @@ export class OptionalChatterboxClient {
   }
 
   public async remove(): Promise<OptionalChatterboxSnapshot> {
-    if (this.#snapshot.removalSupported === false) return this.#snapshot;
+    if (this.#snapshot.removalSupported !== true) return this.#snapshot;
     return this.#call("remove_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });

@@ -25,6 +25,12 @@ export interface PcmPlaybackRequest {
   readonly playbackRate: number;
 }
 
+export interface PcmPlaybackRenderTime {
+  readonly clock: object;
+  /** Estimated device output time on the scheduler's monotonic origin. */
+  readonly milliseconds: number;
+}
+
 export interface PcmPlaybackHandle {
   readonly sequence: number;
   readonly playedSampleFrames: number;
@@ -32,6 +38,8 @@ export interface PcmPlaybackHandle {
   readonly renderedSampleFrames: number;
   /** Current activation has confirmed processing; allocation is not rendering. */
   readonly rendering: boolean;
+  readonly startedRenderingAt?: PcmPlaybackRenderTime | undefined;
+  readonly endedRenderingAt?: PcmPlaybackRenderTime | undefined;
   pause(): void;
   resume(): void;
   stop(): void;
