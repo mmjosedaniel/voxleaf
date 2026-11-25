@@ -1,4 +1,4 @@
-import {expect,test} from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test("temporary synthetic Chromium evidence probe", async ({ page }) => {
   await page.setContent("<p>Synthetic CI retention fixture</p>");
