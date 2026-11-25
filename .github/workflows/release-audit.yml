@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-audit-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: release-audit-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -39,6 +39,7 @@ jobs:
 
       - name: Enable pinned pnpm
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           corepack enable
           corepack prepare pnpm@11.15.1 --activate
 
