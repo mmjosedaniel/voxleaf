@@ -11,6 +11,7 @@ import {
   rm,
   stat,
   symlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import os from "node:os";
@@ -1922,8 +1923,9 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
       }),
     /windows-release:lifecycle-status/u,
   );
+  const fixtureTime = new Date("2020-01-01T00:00:00.000Z");
+  await utimes(installer, fixtureTime, fixtureTime);
   const installerStats = await stat(installer);
-  const now = new Date().toISOString();
   const lifecycleReceipt = {
     schemaVersion: 1,
     status: "passed",
@@ -1931,8 +1933,8 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
       ...receipt.artifact.installer,
       modifiedAtUtc: new Date(Math.trunc(installerStats.mtimeMs)).toISOString(),
     },
-    startedAtUtc: now,
-    completedAtUtc: now,
+    startedAtUtc: "2020-01-01T00:00:01.000Z",
+    completedAtUtc: "2020-01-01T00:00:02.000Z",
     checks: {
       install: true,
       firstStart: true,
@@ -1983,6 +1985,12 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
     },
     (value) => {
       value.uninstallOptionMatrix[0].unrelatedDataPreserved = false;
+    },
+    (value) => {
+      value.completedAtUtc = "2020-01-01T00:00:00.500Z";
+    },
+    (value) => {
+      value.completedAtUtc = "9999-01-01T00:00:00.000Z";
     },
     (value) => {
       value.completedAtUtc = "malformed";
