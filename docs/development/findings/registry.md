@@ -213,8 +213,22 @@ artifact-bound installer evidence. [Execution plan](../../plans/completed/novemb
 | [VF-0171](#vf-0171) | Retained quality tooling | Scorecard or aggregate publication can bypass the CLI error response | `candidate` |
 | [VF-0172](#vf-0172) | Narration | A dotted identifier can suppress a standalone Celsius expansion | `candidate` |
 | [VF-0173](#vf-0173) | Narration | Inline code markers get different scene classification across source windows | `candidate` |
+| [VF-0174](#vf-0174) | CI | The main branch rules allow a merge with failing or pending CI | `confirmed` |
+| [VF-0175](#vf-0175) | Dependency updates | The weekly Chatterbox v7 resolver rejects the pinned Windows wheel | `confirmed` |
+| [VF-0176](#vf-0176) | Dependency updates | The base and core Python update jobs do not maintain their uv locks | `confirmed` |
+| [VF-0177](#vf-0177) | CI | Distinct PR and push runs can cancel each other | `candidate` |
+| [VF-0178](#vf-0178) | CI | Rust foundation can compile and test an uncommitted resolution | `candidate` |
+| [VF-0179](#vf-0179) | Local foundation checks | ESLint scans package-local ignored scratch directories | `confirmed` |
+| [VF-0180](#vf-0180) | CI | A later native command can mask a Windows setup failure | `candidate` |
+| [VF-0181](#vf-0181) | Release audit | Node and Rust failures discard the advisory details | `confirmed` |
+| [VF-0182](#vf-0182) | Release audit | Equivalent Rust warning policy objects can fail the check | `candidate` |
+| [VF-0183](#vf-0183) | Release inventory | The generated audit result exceeds the production Node severity check | `candidate` |
+| [VF-0184](#vf-0184) | Dependency updates | A deferred TypeScript major blocks grouped development updates | `confirmed` |
+| [VF-0185](#vf-0185) | Windows CI fixture | A passing synthetic lifecycle receipt depends on file and wall-clock timing | `confirmed` |
 
 ## VF-0057
+
+- 2026-11-25 [CI audit][audit-ci-2026-11-25] on `28e157c` — The November 14 Windows CI failure predates the synchronous write admission in #318. The repaired test still admits the write before asserting Busy, so the earlier scheduling assumption is `inspected-absent`.
 
 **An unscheduled caller is mistaken for a blocked stdin writer.** The SAC12
 cancellation test waits 30 ms for a new caller thread and treats a timeout as
@@ -2508,6 +2522,8 @@ restoring the absent destination.
 
 ## VF-0155
 
+- 2026-11-25 [CI audit][audit-ci-2026-11-25] on `28e157c` — `inspected-absent` for the original chrono case. The generator requests the locked Windows release graph and the tracked row records chrono outside it. The audit summary wording in VF-0183 has a different owner.
+
 - 2026-11-23 execution on `d9a0a72` plus the working patch — `fixed` for the reported trigger. The generator distinguishes the selected Windows normal/build graph from lock-only records. Chrono keeps its licence and checksum. Reachable ZIP and missing or ambiguous graph controls passed. [Owner checks and limits](../../plans/evidence/november-23-findings/tools-execution.md)
 
 - 2026-11-23 deep review on `d9a0a72` — `inspected-present` for the scoped trigger. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0155)
@@ -2715,6 +2731,79 @@ restoring the absent destination.
 - Disposition — `candidate`, P3, `inspected-present` on `main` at `d9a0a72` on 2026-11-23. [narration-preparation.ts L655](../../../packages/epub/src/narration/narration-preparation.ts#L655) · [narration-segment-packer.ts L783](../../../packages/epub/src/narration/narration-segment-packer.ts#L783)
 - Lineage and next check — VF-0137 concerns omission handling. Here two owners disagree about code itself. M005 specifies the top-level normalized ornament rule and literal code treatment makes the intended behavior worth pinning down. The discrepancy is established either way. No missed audible word is claimed. [Deep validation](audits/2026-11-23-deep-findings-validation.md#vf-0173)
 
+## VF-0174
+
+- 2026-11-25 implementation — GitHub identified Actions integration 15368 as producer of all four contexts. The captured ruleset has three existing rules and no bypass actors. Live enforcement is pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**Main permits a merge while CI is pending or failing.** On 2026-11-25 the effective rules required a PR and resolved conversations. The branch reported status-check enforcement off and zero required contexts. P1, confirmed by the live configuration. A merge with failing checks was not observed. The owner is the remote main branch ruleset. Require the three foundation jobs and the production dependency job to make their results merge prerequisites. [CI audit][audit-ci-2026-11-25] · [Effective rules](https://api.github.com/repos/mmjosedaniel/voxleaf/rules/branches/main)
+
+## VF-0175
+
+- 2026-11-25 implementation — The Windows candidate workflow proposed exact pins and a hash lock. A Linux-only msgpack wheel passed compile alone, then failed the added dry-run install planner. The Windows CUDA wheel pins and v7 authority stayed intact. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**Weekly Chatterbox v7 dependency updates fail on a Windows wheel.** The configured pip updater runs its resolver on Linux. The exact CUDA Torch wheel is Windows-only. Five hosted jobs between October 27 and November 23 failed on that wheel. P2, confirmed by hosted executions with the same profile present at the audit HEAD. Check a Windows-compatible update path through the existing successor-lock and artifact review. [Configuration](../../../.github/dependabot.yml#L52) · [Wheel pins](../../../services/tts/release/profiles/chatterbox-v7/requirements.in#L80) · [Runs and scope][audit-ci-2026-11-25]
+
+## VF-0176
+
+- 2026-11-25 implementation — Both entries now select uv. In a disposable base project, Ruff 0.17.6 produced a lock diff and passed locked sync/export. The core manifest from #324 still correctly failed its October cutoff. Hosted updater outcomes remain pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**The base and core Dependabot entries omit their uv lockfiles.** Both use the pip updater, whose pyproject fetcher omits `uv.lock`. Core PR #324 changed the ONNX Runtime pin in the manifest alone. Its locked core export could not resolve the proposed pin under project constraints. P2, confirmed on that PR and `inspected-present` for both updater configurations. Check the uv updater against each project's lock and the core version cutoff, local-path dependency and explicit release pins. [PR files](https://github.com/mmjosedaniel/voxleaf/pull/324/files) · [Configuration](../../../.github/dependabot.yml#L30) · [Upstream fetchers and limits][audit-ci-2026-11-25]
+
+## VF-0177
+
+- 2026-11-25 implementation — Both workflows now use PR number or event plus full ref. Hosted #335 updates cancelled obsolete #335 runs while #334 continued. Same-name fork and push keys were checked separately. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**CI cancellation groups collide across distinct runs.** Both workflows derive their group from the short source branch name. Two fork PRs using the same name share a group. An eligible push and its PR merge-ref run also share a group. A later arrival can cancel the earlier validation. P2, `inspected-present`. Use PR identity and event/ref identity, retaining cancellation of obsolete runs within a PR. [Foundation](../../../.github/workflows/foundation-checks.yml#L17) · [Release](../../../.github/workflows/release-audit.yml#L17) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0178
+
+- 2026-11-25 implementation — The new locked tree rejected a stale package before creating a target with identical lock hashes before and after. Matching Ubuntu and Windows setup reached native validation. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**Rust foundation can validate a different resolution from the committed lock.** Its Clippy and test commands allow Cargo to update a stale lockfile. The first resolving command can change the checkout and the next command tests that graph. The release audit independently runs a locked tree on its fresh checkout. P2, `inspected-present`. Check stale-lock rejection before Windows and Ubuntu foundation build or test. [Root commands](../../../package.json#L118) · [Independent release guard](../../../scripts/release-audit.mjs#L88) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0179
+
+- 2026-11-25 implementation — The original ignored scratch reproduced 3,748 errors. After correction the full local aggregate passed, and a disposable copy of a tracked source still rejected its deliberate unused variable. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**The local foundation gate lints ignored package scratch files.** Root-relative ESLint ignores omit nested `tmp` and `temp` directories. The PR #333 candidate's local gate stopped with 3,748 errors in three ignored scratch files. The lint leaf passed in the verified source copy. P2, confirmed by that earlier execution and `inspected-present` at the audit HEAD. Check a nested scratch file alongside a tracked lint violation. [ESLint ignores](../../../eslint.config.js#L21) · [Original execution](../../plans/evidence/desktop-responsibility-refactors/package-01.md#L38) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0180
+
+- 2026-11-25 implementation — The PowerShell setup raised immediately on native exit 19, returned 1 and skipped the next command. The normal hosted setup passed. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**A successful second native command can hide a failed Windows setup command.** The Windows dependency step runs pnpm and uv in the same PowerShell script. With the standard native error preference, a successful uv invocation replaces pnpm's exit code before Actions checks it. P3, `inspected-present` for the setup step. Later consumers can still fail. Check each exit or split independent commands. [Windows step](../../../.github/workflows/foundation-checks.yml#L67) · [Shell behavior and limits][audit-ci-2026-11-25]
+
+## VF-0181
+
+- 2026-11-25 implementation — Synthetic Node/Rust scanner reports retained package, version and advisory identity. A controlled launcher failure exited 1 while independent checks reported their own results. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**The audit wrapper discards actionable Node and Rust advisory details.** After a scanner reports findings, the wrapper throws a count without the affected packages, versions or advisory IDs. A prior Rust failure required a direct scan to identify the ZIP issue. P3, confirmed from hosted/retained evidence and `inspected-present` at the audit HEAD. Keep the failing status and report the actionable identifiers or the upstream error when scanning fails. [Audit wrapper](../../../scripts/release-audit.mjs#L63) · [Recorded diagnosis](../../plans/evidence/codex-model-rollout/ci-audit-review.md#L54) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0182
+
+- 2026-11-25 implementation — The typed comparison accepted reversed property order and rejected changed values, missing or extra fields, duplicate records and incorrect types. The release-feature Windows tree retained five reachable warnings. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**Reordering object keys in Rust warning policy fails the audit.** The wrapper sorts rows by advisory ID, then compares the serialized original policy objects to newly constructed objects. Reordering two fields changes their serialized bytes while all warning values agree. P3, `inspected-present`. Compare fields structurally and keep changed values and unknown fields detectable. A separate owner from the receipt/configuration cases [VF-0015](#vf-0015) and [VF-0079](#vf-0079). [Comparison](../../../scripts/release-audit.mjs#L105) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0183
+
+- 2026-11-25 implementation — Regeneration changed only the dated scope wording. The current generator output matched; the four optional Python blind spots remain explicit. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**The inventory generator makes a stronger audit claim than the release command checks.** It always emits “no known vulnerabilities” for its dated result. The Node production check accepts severities below high. A moderate Node advisory alone can therefore pass the gate while this wording persists. P3, `inspected-present` for the evidence mismatch. Express the threshold and blind spots in the inventory. Current advisory presence below the threshold was not evaluated. [Generator](../../../scripts/release_inventory.py#L864) · [Node command](../../../scripts/release-audit.mjs#L57) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0184
+
+- 2026-11-25 implementation — The npm entry excludes TypeScript 7.x from version updates. The existing #329 head still has the former incompatible group. A hosted regenerated group remains pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**A known incompatible TypeScript major is included in the grouped development update.** The updater groups all development dependencies, including TypeScript whose major upgrade was deferred pending parser support. In PR #329, typescript-eslint rejected TypeScript 7 at startup and blocked the bundle of 14 updates. P2, confirmed on the proposed versions. Exclude the deferred major or isolate its proposal until its parser supports it. Four browser assertions also failed on that PR. Their cause remains unresolved. [Grouping rule](../../../.github/dependabot.yml#L16) · [Recorded compatibility decision](../dependencies.md#L590) · [Failed lint](https://github.com/mmjosedaniel/voxleaf/actions/runs/45192204815/job/137753199113) · [CI audit][audit-ci-2026-11-25]
+
+## VF-0185
+
+- 2026-11-25 implementation — The installer now uses a fixed past mtime. Read-back precision, valid ordering, pre-installer start, reverse order and future completion were exercised in the Windows fixture. The original failing operand remains unknown. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+
+**A synthetic receipt expected to pass can fail its time checks on Windows.** The test uses the real installer file mtime and assigns current wall time to both receipt timestamps. A file timestamp ahead of that sample, or a subsequent backward wall-clock adjustment, makes the fixture fail. A docs-only main push failed at this guard on November 13. The logs identify the guard but omit the compared values. P3, confirmed historical fixture failure and `inspected-present` timing dependency. Set meaningful fixed past file and receipt times for this synthetic success path and preserve the invalid-time assertions. VF-0015 exercises a different invariant in the same test. [Fixture](../../../apps/desktop/scripts/windows-release.node-test.mjs#L1925) · [Guard](../../../apps/desktop/scripts/windows-release.mjs#L521) · [Windows job](https://github.com/mmjosedaniel/voxleaf/actions/runs/43491787816/job/132114567422)
+
+[audit-ci-2026-11-25]: audits/2026-11-25-continuous-integration-review.md
 [cfr-plan]: ../../plans/completed/chat-findings-recovery-and-minimal-corrections.md#finding-and-history-register
 [cfr-review]: ../../plans/evidence/chat-findings-recovery/review-final-r03.md
 [cfr-ledger]: ../../plans/evidence/chat-findings-recovery/execution-ledger.md
