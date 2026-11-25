@@ -147,7 +147,8 @@ Dependabot proposes Node, Rust, base/core uv and GitHub Actions updates. The
 TypeScript 7 proposal is deferred while the parser lacks support. On Mondays
 the Chatterbox dependency candidates workflow resolves the published v7 registry
 pins against Windows x64/Python 3.12, with a seven-day eligibility delay. It
-keeps URL wheels and sources exact. Its seven-day artifact contains proposed
+keeps URL wheels and sources exact, then verifies that uv can plan the locked
+Windows installation in an empty target. Its seven-day artifact contains proposed
 requirements, a hash-locked graph and the lock diff for a maintainer to assess
 as a possible successor. Candidate discovery does not admit or publish a
 release. A maintainer can dispatch the workflow or run

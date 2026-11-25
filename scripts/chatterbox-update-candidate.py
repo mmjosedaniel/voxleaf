@@ -8,6 +8,7 @@ import re
 import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 PROFILE = Path("services/tts/release/profiles/chatterbox-v7")
 PIN = re.compile(r"([A-Za-z0-9_.-]+)==([^\s;]+)")
@@ -50,6 +51,16 @@ def main() -> None:
     source.write_text("\n".join(candidate) + "\n", encoding="utf-8")
     # Recompile the exact proposal so this pair can be reviewed together.
     compile_lock(source, lock, cutoff)
+    # Compilation alone accepts direct wheel URLs for incompatible platforms.
+    with TemporaryDirectory() as target:
+        subprocess.run(
+            [
+                "uv", "pip", "install", "--dry-run", "--no-deps", "--require-hashes",
+                "--python-version", "3.12", "--python-platform", "windows", "--target",
+                target, "--requirements", str(lock), "--exclude-newer", cutoff,
+            ],
+            check=True,
+        )
     delta = list(difflib.unified_diff(lines, candidate, "published", "candidate", lineterm=""))
     tracked_lock = (PROFILE / "requirements.lock").read_text(encoding="utf-8").splitlines()
     lock_delta = difflib.unified_diff(tracked_lock, lock.read_text(encoding="utf-8").splitlines(),
