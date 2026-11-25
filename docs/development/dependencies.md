@@ -143,9 +143,17 @@ their revision/origin/SHA-256 evidence is frozen and they are not described as
 clean. `diffusers` is updated to `0.38.0`, `transformers` to `5.5.0`, and the
 dormant web/UI packages are absent.
 
-Weekly bounded Dependabot intake now proposes Node, Rust, base/core/optional
-Python, and GitHub Actions changes without merge, signing, or publication
-authority. The deterministic
+Dependabot proposes Node, Rust, base/core uv and GitHub Actions updates. The
+TypeScript 7 proposal is deferred while the parser lacks support. On Mondays
+the Chatterbox dependency candidates workflow resolves the published v7 registry
+pins against Windows x64/Python 3.12, with a seven-day eligibility delay. It
+keeps URL wheels and sources exact, then verifies that uv can plan the locked
+Windows installation in an empty target. Its seven-day artifact contains proposed
+requirements, a hash-locked graph and the lock diff for a maintainer to assess
+as a possible successor. Candidate discovery does not admit or publish a
+release. A maintainer can dispatch the workflow or run
+`python scripts/chatterbox-update-candidate.py <new-scratch-directory>`
+on the configured Windows host. The deterministic
 [`component-inventory-v1.json`](../../services/tts/release/component-inventory-v1.json)
 contains 400 exact core/optional/not-shipped records and is regenerated from
 the ecosystem locks plus reviewed licence metadata. Repository-owned JSON was
