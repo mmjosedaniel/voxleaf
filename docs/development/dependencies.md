@@ -143,9 +143,16 @@ their revision/origin/SHA-256 evidence is frozen and they are not described as
 clean. `diffusers` is updated to `0.38.0`, `transformers` to `5.5.0`, and the
 dormant web/UI packages are absent.
 
-Weekly bounded Dependabot intake now proposes Node, Rust, base/core/optional
-Python, and GitHub Actions changes without merge, signing, or publication
-authority. The deterministic
+Dependabot proposes Node, Rust, base/core uv and GitHub Actions updates. The
+TypeScript 7 proposal is deferred while the parser lacks support. On Mondays
+the Chatterbox dependency candidates workflow resolves the published v7 registry
+pins against Windows x64/Python 3.12, with a seven-day eligibility delay. It
+keeps URL wheels and sources exact. Its seven-day artifact contains proposed
+requirements, a hash-locked graph and the lock diff for a maintainer to assess
+as a possible successor. Candidate discovery does not admit or publish a
+release. A maintainer can dispatch the workflow or run
+`python scripts/chatterbox-update-candidate.py <new-scratch-directory>`
+on the configured Windows host. The deterministic
 [`component-inventory-v1.json`](../../services/tts/release/component-inventory-v1.json)
 contains 400 exact core/optional/not-shipped records and is regenerated from
 the ecosystem locks plus reviewed licence metadata. Repository-owned JSON was
@@ -204,14 +211,14 @@ for current evidence and the separate native-harness correction.
 On 2026-11-17 the native `zip` pin moved from 9.0.4 to 9.5.1. The update
 addresses the RustSec finding and includes later fixes to `ZipArchive::new`,
 which VoxLeaf uses to read the verified Chatterbox archive by index.
-[RustSec advisory](https://rustsec.org/advisories/RUSTSEC-2026-0548.html) ·
+[RustSec advisory](https://rustsec.org/advisories/RUSTSEC-2026-0548.html) Â·
 [Upstream reader advisory](https://github.com/zip-rs/zip2/security/advisories/GHSA-wjr6-mhvj-cjvm)
 
 The regenerated Windows inventory contains 421 components. The release audit
 records nine Rust informational notices, five reachable on the Windows build.
 The additional notice identifies locked `chrono` 0.4.45 as unmaintained. Cargo
 places it outside the Windows target's active runtime and build dependencies.
-[Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) ·
+[Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) Â·
 [CI correction review](../plans/evidence/codex-model-rollout/ci-audit-review.md)
 
 The inventory generator also checks the locked Windows x64 normal and build
