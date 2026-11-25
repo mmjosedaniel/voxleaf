@@ -45,8 +45,8 @@ importers:
   apps/desktop:
     dependencies:
       '@tauri-apps/api':
-        specifier: 2.12.4
-        version: 2.12.4
+        specifier: 2.12.5
+        version: 2.12.5
       '@voxleaf/epub':
         specifier: workspace:*
         version: link:../../packages/epub
@@ -97,8 +97,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       '@zip.js/zip.js':
-        specifier: 2.23.0
-        version: 2.23.0
+        specifier: 2.25.0
+        version: 2.25.0
       saxes:
         specifier: 6.0.0
         version: 6.0.0
@@ -446,8 +446,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@tauri-apps/api@2.12.4':
-    resolution: {integrity: sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==}
+  '@tauri-apps/api@2.12.5':
+    resolution: {integrity: sha512-G9QIMt5fzED+aS4QhVK3w1HWLKpLIwH/MnpCr9z1ugGEHnS2ORmqrLkc0uALOjRK4qXJy+4Yiw8LDl/KicC1Hg==}
 
   '@tauri-apps/cli-darwin-arm64@2.12.3':
     resolution: {integrity: sha512-xmVNoJOOKzKLj7GLHXmXLimRby9M42aBIJa0sB80N7o24eKV5JiVmToKTRLVH9yhL05GZ/B6rSSOmbzNFJwBAA==}
@@ -675,8 +675,8 @@ packages:
   '@vitest/spy@5.0.5':
     resolution: {integrity: sha512-lwJRExuH417257Q5wv9QYugN9IMJkoxcrKrYxGPQkBzl7wlNpTUxD/5yNX4ESKVUIShKPgkGchYPFMWOOk0wzw==}
 
-  '@zip.js/zip.js@2.23.0':
-    resolution: {integrity: sha512-K5obAqfrO7zhycnCupM9aaoZ9kx0SA0kv7+Z2oOUsdpWquv4s/Z4zyD7AdTqxrK3pgPM+ozaUi8kdRQbCWaIrQ==}
+  '@zip.js/zip.js@2.25.0':
+    resolution: {integrity: sha512-oNRqUuU1XFu6G5d7Z0jufJ9dS9WteO0xiU/PNxsUrb4itZCsSbn191jpJzU00Gmc6S680X3DPZeF5EV4zAEMAg==}
     engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
 
   acorn-jsx@5.3.2:
@@ -1784,7 +1784,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@tauri-apps/api@2.12.4': {}
+  '@tauri-apps/api@2.12.5': {}
 
   '@tauri-apps/cli-darwin-arm64@2.12.3':
     optional: true
@@ -2002,7 +2002,7 @@ snapshots:
 
   '@vitest/spy@5.0.5': {}
 
-  '@zip.js/zip.js@2.23.0': {}
+  '@zip.js/zip.js@2.25.0': {}
 
   acorn-jsx@5.3.2(acorn@8.17.0):
     dependencies:
