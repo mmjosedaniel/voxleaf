@@ -68,7 +68,9 @@ jobs:
         run: cargo install cargo-audit --version 0.22.2 --locked
 
       - name: Audit exact production graphs
+        id: graphs
         run: pnpm.cmd audit:release
 
       - name: Verify release component inventory
+        if: ${{ !cancelled() && steps.graphs.outcome != 'skipped' && steps.graphs.outcome != '' }}
         run: pnpm.cmd inventory:release:check

@@ -864,7 +864,7 @@ def build_inventory() -> dict[str, Any]:
         "audits": {
             "date": audit_policy["auditDate"],
             "tools": audit_policy["tools"],
-            "result": "no known vulnerabilities; recorded informational RustSec notices and four optional Python advisory blind spots",
+            "result": "Production Node threshold: high and critical. RustSec and Python checks require zero reported vulnerabilities, with reviewed Rust informational notices and four optional Python advisory blind spots.",
             "policy": "services/tts/release/audit-policy.json",
         },
         "limitations": [

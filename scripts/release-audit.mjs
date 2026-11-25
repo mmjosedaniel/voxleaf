@@ -1,3 +1,8 @@
+import {
+  checkNodeReport,
+  checkRustReport,
+  checkWarnings,
+} from "./release-audit-report.mjs";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -61,14 +66,7 @@ function auditNode() {
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, "pnpm audit");
-  const vulnerabilities = report.metadata?.vulnerabilities ?? {};
-  const blocking =
-    (vulnerabilities.high ?? 0) + (vulnerabilities.critical ?? 0);
-  if (blocking > 0 || result.status !== 0) {
-    throw new Error(
-      `Production Node audit failed: ${vulnerabilities.high ?? 0} high and ${vulnerabilities.critical ?? 0} critical findings.`,
-    );
-  }
+  checkNodeReport(report, result.status);
   console.log("release-audit:node:pass");
 }
 
@@ -79,17 +77,14 @@ function auditRust() {
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, "cargo audit");
-  const vulnerabilityCount = report.vulnerabilities?.count ?? 0;
-  if (result.status !== 0 || vulnerabilityCount > 0) {
-    throw new Error(
-      `Production Rust audit failed: ${vulnerabilityCount} vulnerabilities.`,
-    );
-  }
+  checkRustReport(report, result.status);
   const tree = run("cargo", [
     "tree",
     "--locked",
     "--manifest-path",
     "apps/desktop/src-tauri/Cargo.toml",
+    "--features",
+    "release-locked-runtime",
     "--target",
     "x86_64-pc-windows-msvc",
     "--edges",
@@ -117,11 +112,7 @@ function auditRust() {
   const expectedWarnings = [...policy.rustInformationalWarnings].sort(
     (left, right) => left.id.localeCompare(right.id),
   );
-  if (JSON.stringify(actualWarnings) !== JSON.stringify(expectedWarnings)) {
-    throw new Error(
-      "RustSec informational warning set or Windows reachability changed; review and update the release audit policy.",
-    );
-  }
+  checkWarnings(actualWarnings, expectedWarnings);
   const reachableWarningCount = actualWarnings.filter(
     (warning) => warning.windowsReachable,
   ).length;
@@ -207,12 +198,25 @@ function auditPythonGraph(graph) {
 }
 
 try {
-  auditNode();
-  auditRust();
-  for (const graph of policy.pythonGraphs) {
-    auditPythonGraph(graph);
+  const checks = [
+    ["node", auditNode],
+    ["rust", auditRust],
+    ...policy.pythonGraphs.map((graph) => [
+      graph.id,
+      () => auditPythonGraph(graph),
+    ]),
+  ];
+  let failed = false;
+  for (const [label, check] of checks) {
+    try {
+      check();
+    } catch (error) {
+      console.error(`release-audit:${label}:failed: ${error.message}`);
+      failed = true;
+    }
   }
-  console.log("release-audit:pass");
+  if (failed) process.exitCode = 1;
+  else console.log("release-audit:pass");
 } finally {
   rmSync(temporaryDirectory, { force: true, recursive: true });
 }
