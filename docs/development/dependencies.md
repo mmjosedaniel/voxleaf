@@ -631,10 +631,11 @@ Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytes
 
 | Action                 | Release represented by pinned SHA | Purpose                                                                   |
 | ---------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| `actions/checkout`     | `6.0.2`                           | Checks out the exact repository revision without persisting credentials.  |
-| `actions/setup-node`   | `6.4.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
-| `actions/setup-python` | `6.2.0`                           | Installs Python from `.python-version`.                                   |
-| `astral-sh/setup-uv`   | `10.2.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `actions/checkout`     | `7.0.1`                           | Checks out the exact repository revision without persisting credentials.  |
+| `actions/setup-node`   | `7.1.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
+| `actions/setup-python` | `7.0.0`                           | Installs Python from `.python-version`.                                   |
+| `astral-sh/setup-uv`   | `10.3.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `actions/upload-artifact` | `7.0.2` | Retains synthetic Chromium failure evidence for three days and Chatterbox dependency proposals for seven days. |
 
 Each workflow reference is pinned to a full commit SHA to avoid a mutable tag changing executable CI code. The workflow uses no third-party service, secret, model, book, generated audio, or GPU.
 

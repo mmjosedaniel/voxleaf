@@ -367,14 +367,13 @@ also require the lock in both feature configurations.
 
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
-GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
+GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` after the aggregate check and before the native smoke. The packaged smoke launches the exact executable from the aggregate build. On Chromium failure the synthetic trace and screenshots expire after three days. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
 
 The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
 with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
-existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
-prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
-`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
-`pnpm test:rust` in distinct steps. Lint and tests cover both default and
+existing pinned Node and Rust toolchains and official Tauri Linux development
+prerequisites plus `pkg-config` and uses Node to run
+`format:check:rust`, `lint:rust`, and `test:rust` in distinct steps. Lint and tests cover both default and
 `release-locked-runtime`. Unix-only symlink branches require Linux Rust evidence.
 Remote execution was pending at the original comparison closeout. The
 [Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
@@ -382,7 +381,7 @@ retains the exact source snapshots, local WSL and Windows results, original
 failure and later hosted pass. Linux desktop, packaged WebView and model support
 remain outside that evidence.
 
-All three foundation jobs check out complete Git history. Frozen TTS result validators
+Windows and Ubuntu portable check out complete Git history. Ubuntu Rust uses a shallow checkout and launches only Cargo through the existing package scripts. Frozen TTS result validators
 use strict Git ancestry to prove that an execution commit follows its authority
 checkpoint, so a depth-one checkout cannot supply the required evidence.
 

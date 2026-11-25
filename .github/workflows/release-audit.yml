@@ -67,7 +67,7 @@ jobs:
 
       - name: Install pinned RustSec scanner
         id: scanner
-        run: cargo install cargo-audit --version 0.22.2 --locked
+        run: ./scripts/install-ci-rust-audit.ps1
 
       - name: Audit exact production graphs
         id: graphs
