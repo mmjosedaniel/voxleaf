@@ -26,6 +26,7 @@ import {
   type ReaderRestoration,
 } from "./app-reader-restoration";
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
+import { ReaderAppearanceWriter } from "./persistence/reader-appearance-writer";
 import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
@@ -194,11 +195,6 @@ export function App({
   const currentReaderPreferences = useRef<ReaderPreferencesV1>(
     DEFAULT_READER_PREFERENCES,
   );
-  const preferenceWriteEpoch = useRef(0);
-  const queuedPreferenceWrite = useRef<
-    { epoch: number; preferences: ReaderPreferencesV1 } | undefined
-  >(undefined);
-  const writingPreferences = useRef(false);
   useEffect(() => {
     currentReaderPreferences.current = readerPreferencePresentation.preferences;
   }, [readerPreferencePresentation.preferences]);
@@ -221,24 +217,27 @@ export function App({
   const [readerPositionRestoreCoordinator] = useState(
     () => new ReaderPositionRestoreCoordinator(readerPositionRepository),
   );
+  const [readerAppearanceWriter] = useState(
+    () => new ReaderAppearanceWriter(readerPositionRepository),
+  );
   const publishHydratedReaderPreferences = useCallback(
     (presentation: ReaderPreferencePresentation): void => {
-      if (preferenceWriteEpoch.current !== 0) return;
+      if (!readerAppearanceWriter.canHydrate) return;
       currentReaderPreferences.current = presentation.preferences;
       setReaderPreferencePresentation(presentation);
     },
-    [],
+    [readerAppearanceWriter],
   );
   const readerPreferenceHydrationOwner = useMemo(
     () => ({
       setPreferences: (
         ...args: Parameters<ReaderPositionRestoreCoordinator["setPreferences"]>
       ): void => {
-        if (preferenceWriteEpoch.current === 0)
+        if (readerAppearanceWriter.canHydrate)
           readerPositionRestoreCoordinator.setPreferences(...args);
       },
     }),
-    [readerPositionRestoreCoordinator],
+    [readerAppearanceWriter, readerPositionRestoreCoordinator],
   );
   const [readerRestoration, setReaderRestoration] = useState<
     ReaderRestoration | undefined
@@ -401,7 +400,7 @@ export function App({
           if (!active || result.status !== "ready") {
             return;
           }
-          if (preferenceWriteEpoch.current === 0) {
+          if (readerAppearanceWriter.canHydrate) {
             currentReaderPreferences.current = result.preferences;
             setReaderPreferencePresentation({
               preferences: result.preferences,
@@ -443,6 +442,7 @@ export function App({
       readerPositionRestoreCoordinator.cancel();
     };
   }, [
+    readerAppearanceWriter,
     readerLifecycle,
     readerPositionRestoreCoordinator,
     readyPublication,
@@ -471,37 +471,6 @@ export function App({
       });
     },
     [readerPositionRestoreCoordinator],
-  );
-  const queuePreferenceWrite = useCallback(
-    (preferences: ReaderPreferencesV1): void => {
-      queuedPreferenceWrite.current = {
-        epoch: ++preferenceWriteEpoch.current,
-        preferences,
-      };
-      if (writingPreferences.current) return;
-      writingPreferences.current = true;
-      // Appearance belongs to the app. Serialize writes and retain only the
-      // latest queued choice while an earlier write is in flight.
-      queueMicrotask(() => {
-        void (async () => {
-          while (queuedPreferenceWrite.current !== undefined) {
-            const { epoch, preferences } = queuedPreferenceWrite.current;
-            queuedPreferenceWrite.current = undefined;
-            let result: ReaderRepositoryWriteResult = { status: "unavailable" };
-            try {
-              result =
-                await readerPositionRepository.writePreferences(preferences);
-            } catch {
-              // A failed local write never interrupts the visible reflow.
-            }
-            if (epoch === preferenceWriteEpoch.current)
-              reportPreferenceWrite(preferences, result);
-          }
-          writingPreferences.current = false;
-        })();
-      });
-    },
-    [readerPositionRepository, reportPreferenceWrite],
   );
   useEffect(() => {
     if (narrationCoordinator === undefined) return;
@@ -651,7 +620,7 @@ export function App({
         if (currentCleanup.superseded) {
           return;
         }
-        preferenceWriteEpoch.current += 1;
+        readerAppearanceWriter.close();
         readerPositionRestoreCoordinator.close();
         closeActivePositionSaveCoordinator();
         void readerLifecycle.cleanup();
@@ -659,6 +628,7 @@ export function App({
     };
   }, [
     closeActivePositionSaveCoordinator,
+    readerAppearanceWriter,
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
@@ -694,16 +664,17 @@ export function App({
           ? "unavailable"
           : readerPreferencePresentation.status,
       );
-      queuePreferenceWrite(preferences);
+      readerAppearanceWriter.enqueue(preferences, reportPreferenceWrite);
       setReaderPreferencePresentation((current) => ({
         ...current,
         preferences,
       }));
     },
     [
-      queuePreferenceWrite,
+      readerAppearanceWriter,
       readerPositionRestoreCoordinator,
       readerPreferencePresentation.status,
+      reportPreferenceWrite,
     ],
   );
   const handleReaderPreferenceSettingChange = useCallback(

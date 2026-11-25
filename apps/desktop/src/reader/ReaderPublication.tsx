@@ -57,6 +57,7 @@ import {
 import { ParagraphLeafController } from "./paragraph-leaf-controller";
 import { ParagraphLeaf } from "./ParagraphLeaf";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
+import { useReaderViewportInput } from "./use-reader-viewport-input";
 
 function unreachable(value: never): never {
   void value;
@@ -372,29 +373,6 @@ export function ReaderPublicationContent({
       ),
   );
   const readerViewportRef = useRef<HTMLDivElement | null>(null);
-  const recordManualScrollIntent = useCallback((): void => {
-    visualLocatorTracker.noteManualScrollIntent();
-    reflowRestorer.cancelViewportRestoration();
-  }, [reflowRestorer, visualLocatorTracker]);
-  const recordWheelIntent = useCallback(
-    (event: WheelEvent): void => {
-      const root = readerViewportRef.current;
-      if (
-        root !== null &&
-        event.isTrusted &&
-        !event.defaultPrevented &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        // A wheel facing a hard boundary cannot own a later restoration
-        // scroll. Account for subpixel scrollTop and integer viewport bounds.
-        ((event.deltaY < 0 && root.scrollTop > 0.5) ||
-          (event.deltaY > 0 &&
-            root.scrollTop + root.clientHeight < root.scrollHeight - 0.5))
-      )
-        recordManualScrollIntent();
-    },
-    [recordManualScrollIntent],
-  );
   const destinationRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     reflowRestorer.setOnRestored((result) => {
@@ -523,57 +501,13 @@ export function ReaderPublicationContent({
       ),
   );
   useStrictModeSafeResourceCleanup(segmentHighlightController);
-  const releaseScrollbarGesture = useRef<(() => void) | undefined>(undefined);
-  const recordScrollbarIntent = useCallback(
-    (event: PointerEvent): void => {
-      const root = readerViewportRef.current;
-      if (
-        !event.isTrusted ||
-        event.button !== 0 ||
-        event.pointerType !== "mouse" ||
-        root === null ||
-        event.target !== root ||
-        root.scrollHeight <= root.clientHeight
-      )
-        return;
-      const rect = root.getBoundingClientRect();
-      const contentLeft = rect.left + root.clientLeft;
-      const contentRight = contentLeft + root.clientWidth;
-      // Native vertical scrollbar only; content selection/padding is not intent.
-      if (
-        event.clientX < rect.left ||
-        event.clientX >= rect.right ||
-        (event.clientX >= contentLeft && event.clientX < contentRight) ||
-        event.clientY < rect.top + root.clientTop ||
-        event.clientY >= rect.top + root.clientTop + root.clientHeight
-      )
-        return;
-      releaseScrollbarGesture.current?.();
-      visualLocatorTracker.noteManualScrollIntent(true);
-      reflowRestorer.cancelViewportRestoration();
-      const view = root.ownerDocument.defaultView;
-      const release = (): void => {
-        root.ownerDocument.removeEventListener("pointerup", finish, true);
-        root.ownerDocument.removeEventListener("pointercancel", finish, true);
-        view?.removeEventListener("blur", release);
-        releaseScrollbarGesture.current = undefined;
-        if (visualLocatorTracker.admitManualScrollMovement()) {
-          segmentHighlightController.manualInspection();
-          visualLocatorTracker.requestSample();
-        }
-        visualLocatorTracker.clearManualScrollIntent(true);
-      };
-      const finish = (ended: PointerEvent): void => {
-        if (ended.pointerId === event.pointerId) release();
-      };
-      releaseScrollbarGesture.current = release;
-      root.ownerDocument.addEventListener("pointerup", finish, true);
-      root.ownerDocument.addEventListener("pointercancel", finish, true);
-      view?.addEventListener("blur", release);
-    },
-    [reflowRestorer, segmentHighlightController, visualLocatorTracker],
-  );
-  useLayoutEffect(() => () => releaseScrollbarGesture.current?.(), []);
+  const { bindViewportInput, onTouchMove, onKeyDown, onScroll } =
+    useReaderViewportInput(
+      readerViewportRef,
+      visualLocatorTracker,
+      reflowRestorer,
+      segmentHighlightController,
+    );
   useLayoutEffect(() => {
     visualLocatorTracker.setOnLocator((locator, measuredManual) => {
       if (measuredManual && !placementPending.current) {
@@ -693,17 +627,7 @@ export function ReaderPublicationContent({
   }, [completeInitialRestoration, coordinator, initialLocator, reflowRestorer]);
   const setReaderViewportRef = useCallback(
     (element: HTMLDivElement | null): void => {
-      const previous = readerViewportRef.current;
-      if (previous !== element) {
-        releaseScrollbarGesture.current?.();
-        previous?.removeEventListener("wheel", recordWheelIntent);
-        previous?.removeEventListener("pointerdown", recordScrollbarIntent);
-        // Read scrollTop before Chromium can scroll on the compositor.
-        element?.addEventListener("wheel", recordWheelIntent, {
-          passive: false,
-        });
-        element?.addEventListener("pointerdown", recordScrollbarIntent);
-      }
+      bindViewportInput(element);
       if (
         element === null &&
         initialRestorationStatus.current === "pending" &&
@@ -721,8 +645,7 @@ export function ReaderPublicationContent({
     },
     [
       attemptInitialRestoration,
-      recordWheelIntent,
-      recordScrollbarIntent,
+      bindViewportInput,
       reflowRestorer,
       segmentHighlightController,
       visualLocatorTracker,
@@ -1389,46 +1312,9 @@ export function ReaderPublicationContent({
           onFocusCapture={() => {
             if (contentsOpen) setContentsOpen(false);
           }}
-          onTouchMove={(event) => {
-            if (event.isTrusted && event.touches.length === 1)
-              recordManualScrollIntent();
-          }}
-          onKeyDown={(event) => {
-            if (
-              event.isTrusted &&
-              !event.defaultPrevented &&
-              (!event.ctrlKey || event.key === "Home" || event.key === "End") &&
-              !event.metaKey &&
-              !event.altKey &&
-              (!event.shiftKey || event.key === " ") &&
-              event.target instanceof HTMLElement &&
-              (event.target.closest(
-                "a,button,input,select,textarea,summary,[contenteditable=true],[role=button]",
-              ) === null ||
-                ((event.key === "PageUp" || event.key === "PageDown") &&
-                  event.target.closest("button.semantic-internal-link") !==
-                    null)) &&
-              event.currentTarget.ownerDocument.getSelection()?.isCollapsed !==
-                false &&
-              [
-                "ArrowUp",
-                "ArrowDown",
-                "PageUp",
-                "PageDown",
-                "Home",
-                "End",
-                " ",
-              ].includes(event.key)
-            )
-              recordManualScrollIntent();
-          }}
-          onScroll={(event) => {
-            if (event.target !== event.currentTarget) return;
-            if (visualLocatorTracker.admitManualScrollMovement()) {
-              segmentHighlightController.manualInspection();
-              visualLocatorTracker.requestSample();
-            }
-          }}
+          onTouchMove={onTouchMove}
+          onKeyDown={onKeyDown}
+          onScroll={onScroll}
         >
           <div className="reader-layout">
             <div className="reader-reading-pane">

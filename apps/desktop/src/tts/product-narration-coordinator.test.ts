@@ -1994,10 +1994,17 @@ describe("product narration coordinator", () => {
       intervals[0]!();
       clock.advance(100);
       backend.renderedSampleFrames += 2_400;
+      coordinator.setVolumePercent(35);
+      expect(coordinator.observe().state?.volumePercent).toBe(35);
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
+      coordinator.setVolumePercent(45);
+      expect(coordinator.observe().state?.volumePercent).toBe(45);
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       intervals[0]!();
       expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
       await coordinator.stop();
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       coordinator.updateVisibleLocator(rangeB.start);
       coordinator.start();
       await settleUntil(
