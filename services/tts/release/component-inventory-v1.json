@@ -2,7 +2,7 @@
   "audits": {
     "date": "2026-11-17",
     "policy": "services/tts/release/audit-policy.json",
-    "result": "no known vulnerabilities; recorded informational RustSec notices and four optional Python advisory blind spots",
+    "result": "Production Node threshold: high and critical. RustSec and Python checks require zero reported vulnerabilities, with reviewed Rust informational notices and four optional Python advisory blind spots.",
     "tools": {
       "cargoAudit": "0.22.2",
       "pipAudit": "2.10.1",

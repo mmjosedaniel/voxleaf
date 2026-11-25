@@ -130,7 +130,7 @@
     "test:tts:handoff-host": "pnpm --filter @voxleaf/desktop tauri build && uv run --directory services/tts --locked python -m benchmarks.service_handoff_cli run",
     "test:python": "uv run --project services/tts --locked pytest services/tts",
     "test:rust": "cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml && cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --features release-locked-runtime",
-    "test:typescript": "pnpm --recursive --if-present test && node --test scripts/portfolio-sample.test.mjs",
+    "test:typescript": "pnpm --recursive --if-present test && node --test scripts/portfolio-sample.test.mjs scripts/release-audit-report.test.mjs",
     "typecheck": "pnpm run typecheck:typescript && pnpm run typecheck:python",
     "typecheck:python": "uv run --directory services/tts --locked mypy .",
     "typecheck:typescript": "pnpm run build:packages && pnpm --recursive --if-present typecheck",
