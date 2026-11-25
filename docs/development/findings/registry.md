@@ -213,18 +213,18 @@ artifact-bound installer evidence. [Execution plan](../../plans/completed/novemb
 | [VF-0171](#vf-0171) | Retained quality tooling | Scorecard or aggregate publication can bypass the CLI error response | `candidate` |
 | [VF-0172](#vf-0172) | Narration | A dotted identifier can suppress a standalone Celsius expansion | `candidate` |
 | [VF-0173](#vf-0173) | Narration | Inline code markers get different scene classification across source windows | `candidate` |
-| [VF-0174](#vf-0174) | CI | The main branch rules allow a merge with failing or pending CI | `confirmed` |
-| [VF-0175](#vf-0175) | Dependency updates | The weekly Chatterbox v7 resolver rejects the pinned Windows wheel | `confirmed` |
-| [VF-0176](#vf-0176) | Dependency updates | The base and core Python update jobs do not maintain their uv locks | `confirmed` |
-| [VF-0177](#vf-0177) | CI | Distinct PR and push runs can cancel each other | `candidate` |
-| [VF-0178](#vf-0178) | CI | Rust foundation can compile and test an uncommitted resolution | `candidate` |
-| [VF-0179](#vf-0179) | Local foundation checks | ESLint scans package-local ignored scratch directories | `confirmed` |
-| [VF-0180](#vf-0180) | CI | A later native command can mask a Windows setup failure | `candidate` |
-| [VF-0181](#vf-0181) | Release audit | Node and Rust failures discard the advisory details | `confirmed` |
-| [VF-0182](#vf-0182) | Release audit | Equivalent Rust warning policy objects can fail the check | `candidate` |
-| [VF-0183](#vf-0183) | Release inventory | The generated audit result exceeds the production Node severity check | `candidate` |
-| [VF-0184](#vf-0184) | Dependency updates | A deferred TypeScript major blocks grouped development updates | `confirmed` |
-| [VF-0185](#vf-0185) | Windows CI fixture | A passing synthetic lifecycle receipt depends on file and wall-clock timing | `confirmed` |
+| [VF-0174](#vf-0174) | CI | The main branch rules allow a merge with failing or pending CI | `fixed` |
+| [VF-0175](#vf-0175) | Dependency updates | The weekly Chatterbox v7 resolver rejects the pinned Windows wheel | `fixed` |
+| [VF-0176](#vf-0176) | Dependency updates | The base and core Python update jobs do not maintain their uv locks | `fixed` |
+| [VF-0177](#vf-0177) | CI | Distinct PR and push runs can cancel each other | `fixed` |
+| [VF-0178](#vf-0178) | CI | Rust foundation can compile and test an uncommitted resolution | `fixed` |
+| [VF-0179](#vf-0179) | Local foundation checks | ESLint scans package-local ignored scratch directories | `fixed` |
+| [VF-0180](#vf-0180) | CI | A later native command can mask a Windows setup failure | `fixed` |
+| [VF-0181](#vf-0181) | Release audit | Node and Rust failures discard the advisory details | `fixed` |
+| [VF-0182](#vf-0182) | Release audit | Equivalent Rust warning policy objects can fail the check | `fixed` |
+| [VF-0183](#vf-0183) | Release inventory | The generated audit result exceeds the production Node severity check | `fixed` |
+| [VF-0184](#vf-0184) | Dependency updates | A deferred TypeScript major blocks grouped development updates | `fixed` |
+| [VF-0185](#vf-0185) | Windows CI fixture | A passing synthetic lifecycle receipt depends on file and wall-clock timing | `fixed` |
 
 ## VF-0057
 
@@ -2733,7 +2733,7 @@ restoring the absent destination.
 
 ## VF-0174
 
-- 2026-11-25 implementation — GitHub identified Actions integration 15368 as producer of all four contexts. The captured ruleset has three existing rules and no bypass actors. Live enforcement is pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+- 2026-11-25 implementation — Ruleset 19558631 now requires the four Actions contexts from integration 15368. An ordinary failing PR and a pending PR were BLOCKED; an ordinary green PR was CLEAN. Existing rules and the empty bypass list matched the backup. [Live rollout](../../plans/evidence/ci-reliability-and-dependency-updates/main-rules.md) [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
 
 **Main permits a merge while CI is pending or failing.** On 2026-11-25 the effective rules required a PR and resolved conversations. The branch reported status-check enforcement off and zero required contexts. P1, confirmed by the live configuration. A merge with failing checks was not observed. The owner is the remote main branch ruleset. Require the three foundation jobs and the production dependency job to make their results merge prerequisites. [CI audit][audit-ci-2026-11-25] · [Effective rules](https://api.github.com/repos/mmjosedaniel/voxleaf/rules/branches/main)
 
@@ -2745,7 +2745,7 @@ restoring the absent destination.
 
 ## VF-0176
 
-- 2026-11-25 implementation — Both entries now select uv. In a disposable base project, Ruff 0.17.6 produced a lock diff and passed locked sync/export. The core manifest from #324 still correctly failed its October cutoff. Hosted updater outcomes remain pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+- 2026-11-25 implementation — Both entries now select uv. In a disposable base project, Ruff 0.17.6 produced a lock diff and passed locked sync/export. The core manifest from #324 still correctly failed its October cutoff. The real base uv job opened four lock proposals, including #340 whose exact lock passed sync/export. The hosted core job gave the same cutoff diagnostic and produced no manifest-only update. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
 
 **The base and core Dependabot entries omit their uv lockfiles.** Both use the pip updater, whose pyproject fetcher omits `uv.lock`. Core PR #324 changed the ONNX Runtime pin in the manifest alone. Its locked core export could not resolve the proposed pin under project constraints. P2, confirmed on that PR and `inspected-present` for both updater configurations. Check the uv updater against each project's lock and the core version cutoff, local-path dependency and explicit release pins. [PR files](https://github.com/mmjosedaniel/voxleaf/pull/324/files) · [Configuration](../../../.github/dependabot.yml#L30) · [Upstream fetchers and limits][audit-ci-2026-11-25]
 
@@ -2793,7 +2793,7 @@ restoring the absent destination.
 
 ## VF-0184
 
-- 2026-11-25 implementation — The npm entry excludes TypeScript 7.x from version updates. The existing #329 head still has the former incompatible group. A hosted regenerated group remains pending. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+- 2026-11-25 implementation — The npm entry excludes TypeScript 7.x from version updates. Dependabot closed #329 and opened #343 with thirteen updates: TypeScript 6.0.3 and typescript-eslint 8.73.0. The portable gate and ESLint passed. Chromium reported the same four independent failures as #329, with 111 scenarios passing. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
 
 **A known incompatible TypeScript major is included in the grouped development update.** The updater groups all development dependencies, including TypeScript whose major upgrade was deferred pending parser support. In PR #329, typescript-eslint rejected TypeScript 7 at startup and blocked the bundle of 14 updates. P2, confirmed on the proposed versions. Exclude the deferred major or isolate its proposal until its parser supports it. Four browser assertions also failed on that PR. Their cause remains unresolved. [Grouping rule](../../../.github/dependabot.yml#L16) · [Recorded compatibility decision](../dependencies.md#L590) · [Failed lint](https://github.com/mmjosedaniel/voxleaf/actions/runs/45192204815/job/137753199113) · [CI audit][audit-ci-2026-11-25]
 

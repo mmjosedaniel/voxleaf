@@ -415,3 +415,169 @@ SHA-256 `f976771d68d6205528bc4a4f513f0f50aec01c76a13f69e0adf0cbeede5cec0c`.
   ]
 }
 ```
+
+## m4c
+
+SHA-256 `93a1a030ab655c60e66ede6366dfc0e55f1d0c416eddd06ccf7ac3b78ea48ae0`.
+
+```json
+{
+  "id": "m4c",
+  "base": "7f1a50ebe45b881a8e2aa89204a83991c3b57430",
+  "head": "58a5379e242825cb97efc5df05f766da1091ceed",
+  "worktree": "tmp/ci-release",
+  "changed": [
+    ".github/workflows/release-audit.yml",
+    "package.json",
+    "scripts/release-audit-report.mjs",
+    "scripts/release-audit-report.test.mjs",
+    "scripts/release-audit.mjs",
+    "scripts/release_inventory.py",
+    "services/tts/release/component-inventory-v1.json"
+  ],
+  "paths": [
+    {
+      "path": ".github/workflows/foundation-checks.yml",
+      "blob": "0e3bdaadb6c2aeffd4e42512f94134c5bb0221ae",
+      "sha256": "7e7d39b6d45afc8e8bb87440fc77ecada8f2af8573f76729aa8f3ea3481c0de2",
+      "status": ""
+    },
+    {
+      "path": ".github/workflows/release-audit.yml",
+      "blob": "4fd942c8fcb64712a30c46dbe579177ea3ce7f6a",
+      "sha256": "b0ffc701072db78c40ae26e9a8e49fdc34b049540016e152d40743904b76e66a",
+      "status": ""
+    },
+    {
+      "path": "AGENTS.md",
+      "blob": "c2faaa2714c88b55928d2af3ffea48e1075256a8",
+      "sha256": "ef8c9ac383060b28284a06deae61b8e4e7f2546c4e51284db06a702bf350e796",
+      "status": ""
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "blob": "46b13978c4094f004349ba762f31bddeb104cb9f",
+      "sha256": "7f9dbeef3386d8f886c1428870759dbbcfb10fcb9cbe3dbfe5216cd3e8707afa",
+      "status": ""
+    },
+    {
+      "path": "docs/development/agentic-change-review.md",
+      "blob": "26b0d8519194ff3b2ccc7acff74a0171bab647c2",
+      "sha256": "093026226d8dd9322081295ed25b6712fe11870740a50c35f793ece08593a494",
+      "status": ""
+    },
+    {
+      "path": "package.json",
+      "blob": "3f7eeca7694229d702e46430a56e72497d5e535f",
+      "sha256": "c45160379e1f674f8bfa70e108e686d423b28d7e7d513046a8ffde8b694ab8ab",
+      "status": ""
+    },
+    {
+      "path": "scripts/release-audit-report.mjs",
+      "blob": "9c624c2e983ed6666471574401e121e124d20f4c",
+      "sha256": "5f4283c5f1c90a3703d165ae1b2427ace207c2eab4688238887e4fce69f175f6",
+      "status": ""
+    },
+    {
+      "path": "scripts/release-audit-report.test.mjs",
+      "blob": "d65c5dacdc43cb6a90c42ec09d26723f4949ce7a",
+      "sha256": "e7f965688bedf644a77200aacb857467dd7f9c56a0b8036171c83e347236bbe9",
+      "status": ""
+    },
+    {
+      "path": "scripts/release-audit.mjs",
+      "blob": "fe3c1de79cf7b64fd7223ef14a7ce1e144322f1d",
+      "sha256": "deea09cd3f37c827f6b2f0976f2531cd1b612ee1377572740a9ac6d0dd1ba927",
+      "status": ""
+    },
+    {
+      "path": "scripts/release_inventory.py",
+      "blob": "9bd8e1483c313408320de44206b55679da97daa4",
+      "sha256": "0d9035f70f3628fb8a605df6f584fb278905afbb80cd5215ceb1826459b494dc",
+      "status": ""
+    },
+    {
+      "path": "services/tts/release/component-inventory-v1.json",
+      "blob": "92ac096dddb0fc7b3179fa9d3caa1bfbf3e649ee",
+      "sha256": "821189a50a6750ee40c78a628268ac121448bc63eaa1d861bbdedc8dfdf81efb",
+      "status": ""
+    }
+  ]
+}
+```
+
+## m5c
+
+SHA-256 `1b1d3c58a88a3c09858fd25dfec9e61b8a219b644c883f240d8aee8b3b3e57bd`.
+
+```json
+{
+  "id": "m5c",
+  "base": "462911723fcee497a9081ca29e4e72006da4e84e",
+  "head": "92c475ac1eee986a83c5868b5daac4e728ee688d",
+  "worktree": "tmp/ci-fast",
+  "changed": [
+    ".github/workflows/foundation-checks.yml",
+    ".github/workflows/release-audit.yml",
+    "docs/development/dependencies.md",
+    "docs/development/testing.md",
+    "scripts/install-ci-rust-audit.ps1"
+  ],
+  "paths": [
+    {
+      "path": ".github/workflows/foundation-checks.yml",
+      "blob": "e36a3bf255af7b69b722d2448b5ce4778c1c2897",
+      "sha256": "818ff7224813ef8ccc5a8b931f27b37b9b66627e47e9ac71d27b427474d15e9f",
+      "status": ""
+    },
+    {
+      "path": ".github/workflows/release-audit.yml",
+      "blob": "d73f58b7f202c1d302adfc752b7e063f12020540",
+      "sha256": "bec67f796a77c186f74cc31f2e85491eb7d4943c3a74c588becadd0859fc5d95",
+      "status": ""
+    },
+    {
+      "path": "AGENTS.md",
+      "blob": "c2faaa2714c88b55928d2af3ffea48e1075256a8",
+      "sha256": "ef8c9ac383060b28284a06deae61b8e4e7f2546c4e51284db06a702bf350e796",
+      "status": ""
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "blob": "46b13978c4094f004349ba762f31bddeb104cb9f",
+      "sha256": "7f9dbeef3386d8f886c1428870759dbbcfb10fcb9cbe3dbfe5216cd3e8707afa",
+      "status": ""
+    },
+    {
+      "path": "docs/development/agentic-change-review.md",
+      "blob": "26b0d8519194ff3b2ccc7acff74a0171bab647c2",
+      "sha256": "093026226d8dd9322081295ed25b6712fe11870740a50c35f793ece08593a494",
+      "status": ""
+    },
+    {
+      "path": "docs/development/dependencies.md",
+      "blob": "b154b1ec39ea505891212628c38c26ad549e52d1",
+      "sha256": "26e83ed63dde64a16e59b6e1bcf2c457010da95df4fe60602452ce362d38f221",
+      "status": ""
+    },
+    {
+      "path": "docs/development/testing.md",
+      "blob": "8f39752e8f9682d60f11479e87bce60535e7f136",
+      "sha256": "c54390eacf757ffec10487762e4189ba5b3edc8271ca2022d25a2179120b0fca",
+      "status": ""
+    },
+    {
+      "path": "package.json",
+      "blob": "3f7eeca7694229d702e46430a56e72497d5e535f",
+      "sha256": "c45160379e1f674f8bfa70e108e686d423b28d7e7d513046a8ffde8b694ab8ab",
+      "status": ""
+    },
+    {
+      "path": "scripts/install-ci-rust-audit.ps1",
+      "blob": "bf21c261a352d91a1d18996b085b9985ede92bce",
+      "sha256": "a3a85b34ee1a591f78aa593a059498d23677b23942b0cba7daee9a045f3dc154",
+      "status": ""
+    }
+  ]
+}
+```
