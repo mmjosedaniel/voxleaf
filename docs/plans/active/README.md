@@ -6,7 +6,7 @@ each plan's progress and validation results current.
 
 ## Current plans
 
-There are currently no active implementation plans.
+- [CI reliability, dependency updates and build efficiency](ci-reliability-and-dependency-updates.md) records the integrated CI changes and the outstanding authorization to refresh Dependabot PR #330.
 
 The retained deep-chat relocation notice supports links from historical
 receipts. Its canonical record is archived. [Completed deep chat audit](../completed/deep-chat-audit-minimal-corrections.md)
