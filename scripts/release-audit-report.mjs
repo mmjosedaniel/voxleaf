@@ -11,17 +11,44 @@ export function checkNodeReport(report, status) {
   checkCount(counts?.high, "Node");
   checkCount(counts?.critical, "Node");
   if (counts.high + counts.critical > 0) {
-    const details = Object.values(report.advisories ?? {}).flatMap((item) =>
-      (item.findings ?? []).map(
-        (finding) =>
-          `${item.module_name}@${finding.version}: ${item.github_advisory_id ?? item.url ?? item.id}`,
-      ),
-    );
+    const details = Object.values(report.advisories ?? {}).flatMap((item) => {
+      const identity = item.github_advisory_id || item.url || item.id;
+      if (!identity || !item.module_name || !item.findings?.length) {
+        throw new Error("Node scanner returned incomplete advisory details");
+      }
+      return item.findings.map(({ version }) => {
+        if (!version)
+          throw new Error("Node scanner omitted the affected version");
+        return `${item.module_name}@${version}: ${identity}`;
+      });
+    });
+    if (!details.length) {
+      throw new Error(
+        "Node scanner returned a finding count without advisory details",
+      );
+    }
     throw new Error(
       `Node: ${counts.high} high, ${counts.critical} critical. ${details.join(", ")}`,
     );
   }
   if (status !== 0) throw new Error(`Node scanner failed (exit ${status})`);
+}
+
+export function pythonFindingDetails(dependencies) {
+  return dependencies.flatMap(({ name, version, vulns }) =>
+    (vulns ?? []).map(
+      ({ id }) => `${name}${version ? `@${version}` : ""}: ${id}`,
+    ),
+  );
+}
+
+export function reachableRustPackages(tree) {
+  return new Set(
+    tree.split(/\r?\n/u).flatMap((line) => {
+      const match = /^(\S+ v\S+)/u.exec(line.trim());
+      return match ? [match[1]] : [];
+    }),
+  );
 }
 
 export function checkRustReport(report, status) {

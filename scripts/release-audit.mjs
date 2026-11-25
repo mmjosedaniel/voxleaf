@@ -2,6 +2,8 @@ import {
   checkNodeReport,
   checkRustReport,
   checkWarnings,
+  pythonFindingDetails,
+  reachableRustPackages,
 } from "./release-audit-report.mjs";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -71,6 +73,9 @@ function auditNode() {
 }
 
 function auditRust() {
+  if (process.env.VOXLEAF_RUST_SCANNER_UNAVAILABLE === "true") {
+    throw new Error("Rust scanner acquisition failed");
+  }
   const result = run(
     "cargo",
     ["audit", "--file", "apps/desktop/src-tauri/Cargo.lock", "--json"],
@@ -94,9 +99,7 @@ function auditRust() {
     "--format",
     "{p}",
   ]);
-  const reachablePackages = new Set(
-    tree.stdout.split(/\r?\n/u).map((line) => line.trim()),
-  );
+  const reachablePackages = reachableRustPackages(tree.stdout);
   const actualWarnings = Object.values(report.warnings ?? {})
     .flat()
     .map((warning) => ({
@@ -169,12 +172,7 @@ function auditPythonGraph(graph) {
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, `pip-audit ${graph.id}`);
-  const vulnerabilities = report.dependencies.flatMap((dependency) =>
-    (dependency.vulns ?? []).map((vulnerability) => ({
-      name: dependency.name,
-      id: vulnerability.id,
-    })),
-  );
+  const vulnerabilities = pythonFindingDetails(report.dependencies);
   const actualBlindSpots = report.dependencies
     .filter((dependency) => dependency.skip_reason)
     .map((dependency) => dependency.name)
@@ -189,7 +187,7 @@ function auditPythonGraph(graph) {
   }
   if (result.status !== 0 || vulnerabilities.length > 0) {
     throw new Error(
-      `${graph.id} Python audit failed: ${vulnerabilities.map(({ name, id }) => `${name}:${id}`).join(", ") || "audit command failure"}.`,
+      `${graph.id} Python audit failed: ${vulnerabilities.join(", ") || "audit command failure"}.`,
     );
   }
   console.log(

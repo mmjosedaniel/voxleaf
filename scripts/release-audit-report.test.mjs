@@ -4,6 +4,8 @@ import {
   checkNodeReport,
   checkRustReport,
   checkWarnings,
+  pythonFindingDetails,
+  reachableRustPackages,
 } from "./release-audit-report.mjs";
 
 test("release audit preserves advisory identity and distinguishes tool failure", () => {
@@ -19,12 +21,22 @@ test("release audit preserves advisory identity and distinguishes tool failure",
   assert.throws(() => checkNodeReport({}, 0), /invalid finding count/);
   assert.throws(() => checkRustReport({}, 0), /invalid finding count/);
   node.metadata.vulnerabilities.high = 1;
+  assert.throws(() => checkNodeReport(node, 1), /without advisory details/);
   node.advisories.x = {
     module_name: "demo",
     findings: [{ version: "1.0" }],
     github_advisory_id: "GHSA-demo",
   };
   assert.throws(() => checkNodeReport(node, 1), /demo@1.0: GHSA-demo/);
+  node.advisories.x.github_advisory_id = "";
+  node.advisories.x.id = 42;
+  assert.throws(() => checkNodeReport(node, 1), /demo@1.0: 42/);
+  assert.deepEqual(
+    pythonFindingDetails([
+      { name: "demo", version: "3.0", vulns: [{ id: "PYSEC-demo" }] },
+    ]),
+    ["demo@3.0: PYSEC-demo"],
+  );
   rust.vulnerabilities = {
     count: 1,
     list: [
@@ -38,6 +50,11 @@ test("release audit preserves advisory identity and distinguishes tool failure",
 });
 
 test("warning fields ignore object ordering and preserve types, keys and multiplicity", () => {
+  const tree = reachableRustPackages(
+    "plain v1.2.0\nlocal v2.0.1 (C:\\local)\n",
+  );
+  assert.deepEqual(tree, new Set(["plain v1.2.0", "local v2.0.1"]));
+  assert.equal(tree.has("lock-only v1.0.0"), false);
   const row = { id: "notice", version: "1", windowsReachable: false };
   checkWarnings(
     [row],
