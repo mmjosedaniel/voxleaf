@@ -2751,7 +2751,7 @@ restoring the absent destination.
 
 ## VF-0177
 
-- 2026-11-25 implementation — Both workflows now use PR number or event plus full ref. Hosted #335 updates cancelled obsolete #335 runs while #334 continued. Same-name fork and push keys were checked separately. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
+- 2026-11-25 implementation — Both workflows now use PR number or event plus full ref. GitHub cancelled the [previous #337 run](https://github.com/mmjosedaniel/voxleaf/actions/runs/45697444467) at 20:49:07 UTC as its [replacement](https://github.com/mmjosedaniel/voxleaf/actions/runs/45698542366) started at 20:49:01. Both revisions used the new PR-number key. The simultaneous [#334 run](https://github.com/mmjosedaniel/voxleaf/actions/runs/45696153759) continued to success. Same-name fork and push keys were checked separately. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
 
 **CI cancellation groups collide across distinct runs.** Both workflows derive their group from the short source branch name. Two fork PRs using the same name share a group. An eligible push and its PR merge-ref run also share a group. A later arrival can cancel the earlier validation. P2, `inspected-present`. Use PR identity and event/ref identity, retaining cancellation of obsolete runs within a PR. [Foundation](../../../.github/workflows/foundation-checks.yml#L17) · [Release](../../../.github/workflows/release-audit.yml#L17) · [CI audit][audit-ci-2026-11-25]
 
