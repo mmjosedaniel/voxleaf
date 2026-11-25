@@ -66,10 +66,16 @@ jobs:
         run: pnpm.cmd install --frozen-lockfile
 
       - name: Install pinned RustSec scanner
+        id: scanner
         run: ./scripts/install-ci-rust-audit.ps1
 
       - name: Audit exact production graphs
+        id: graphs
+        if: ${{ !cancelled() && (steps.scanner.outcome == 'success' || steps.scanner.outcome == 'failure') }}
+        env:
+          VOXLEAF_RUST_SCANNER_UNAVAILABLE: ${{ steps.scanner.outcome == 'failure' }}
         run: pnpm.cmd audit:release
 
       - name: Verify release component inventory
+        if: ${{ !cancelled() && steps.graphs.outcome != 'skipped' && steps.graphs.outcome != '' }}
         run: pnpm.cmd inventory:release:check
