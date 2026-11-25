@@ -74,9 +74,6 @@ jobs:
           pnpm.cmd install --frozen-lockfile
           uv sync --project services/tts --locked
 
-      - name: Install pinned Playwright Chromium
-        run: pnpm.cmd test:browser:install
-
       - name: Prepare pinned NSIS for compiled regression tests
         run: |
           $nsisArchive = Join-Path $env:RUNNER_TEMP "voxleaf-nsis-3.13.zip"
@@ -100,8 +97,26 @@ jobs:
             throw "NSIS regression compiler is unavailable."
           }
 
+      - name: Run authoritative foundation checks
+        run: pnpm.cmd check
+
+      - name: Install pinned Playwright Chromium
+        run: pnpm.cmd test:browser:install
+
       - name: Run real-browser desktop smoke
+        id: chromium
         run: pnpm.cmd test:browser
+
+      - name: Retain failed synthetic Chromium traces and screenshots for three days
+        if: ${{ failure() && steps.chromium.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chromium-failure
+          path: |
+            apps/desktop/test-results/browser/**/trace.zip
+            apps/desktop/test-results/browser/**/test-failed-*.png
+          retention-days: 3
+          if-no-files-found: warn
 
       - name: Ensure WebView2 Runtime
         run: |
@@ -199,10 +214,10 @@ jobs:
             -Value "VOXLEAF_EDGE_DRIVER_PATH=$edgeDriverPath"
 
       - name: Run packaged WebView2 startup smoke
-        run: pnpm.cmd test:native-startup
-
-      - name: Run authoritative foundation checks
-        run: pnpm.cmd check
+        run: |
+          $app = (Resolve-Path apps/desktop/src-tauri/target/release/voxleaf-desktop.exe).Path
+          Write-Output "Testing executable SHA-256 $((Get-FileHash -LiteralPath $app).Hash)"
+          node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
 
   ubuntu-portable:
     name: Ubuntu portable foundation
@@ -263,7 +278,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -291,9 +305,6 @@ jobs:
 
       - name: Verify committed Cargo resolution
         run: cargo tree --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --depth 0
-
-      - name: Install locked JavaScript dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Check Rust formatting
         run: pnpm format:check:rust

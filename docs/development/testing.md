@@ -84,7 +84,7 @@ navigation, future-storage-version and boundary-deferred rate cases remain contr
 
 The mounted `PSC-03` Chromium journey scrolls to a distinct synthetic paragraph
 while paused, stops and uses primary Play without another viewport action. Run
-the focused G0–G8 selection in the
+the focused G0â€“G8 selection in the
 [PSC plan](../plans/completed/minimal-playback-state-corrections.md): one combined
 unit group, static checks, four filtered Chromium cases, one current desktop
 build and one six-rate Piper EN WebView2 arm. This does not add a listening-quality,
@@ -117,7 +117,7 @@ reject current, tampered and missing normalizer bytes. See the
 
 The [EFC plan](../plans/completed/eight-finding-minimal-corrections.md) selects
 bounded EPUB, mounted-reader/settings, Python, native, browser and package
-checks in G0–G10. `EFC-` and `efc_` identify directed regressions. They cover
+checks in G0â€“G10. `EFC-` and `efc_` identify directed regressions. They cover
 same-node ref churn with three mounted blocks, preflight-failure reconciliation,
 effective 7,042-MiB admission, terminal surrogates, oversized JSON integers,
 concrete executor cancellation/startup containment and worker completion times.
@@ -367,13 +367,12 @@ also require the lock in both feature configurations.
 
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
-GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
+GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` after the aggregate check and before the native smoke. The packaged smoke launches the exact executable from the aggregate build. On Chromium failure the synthetic trace and screenshots expire after three days. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
 
 The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
 with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
 existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
-prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
-`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
+prerequisites plus `pkg-config` and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
 `pnpm test:rust` in distinct steps. Lint and tests cover both default and
 `release-locked-runtime`. Unix-only symlink branches require Linux Rust evidence.
 Remote execution was pending at the original comparison closeout. The
@@ -382,7 +381,7 @@ retains the exact source snapshots, local WSL and Windows results, original
 failure and later hosted pass. Linux desktop, packaged WebView and model support
 remain outside that evidence.
 
-All three foundation jobs check out complete Git history. Frozen TTS result validators
+Windows and Ubuntu portable check out complete Git history. Ubuntu Rust uses a shallow checkout and launches only Cargo through the existing pnpm scripts. Frozen TTS result validators
 use strict Git ancestry to prove that an execution commit follows its authority
 checkpoint, so a depth-one checkout cannot supply the required evidence.
 
@@ -806,7 +805,7 @@ contrast, underline, DOM, URL, or two-post-registration-frame assertions.
 ADR-0010 requires native Windows WebView2 evidence because jsdom cannot execute
 `HTMLImageElement.decode()` or prove the packaged CSP. `pnpm.cmd
 test:native-startup` opens the comprehensive repository-authored synthetic
-EPUB, scrolls its image host into the lazy-load margin, requires a visible 1×1
+EPUB, scrolls its image host into the lazy-load margin, requires a visible 1Ã—1
 `<img>` with semantic alt text and an application-created `blob:` source, then
 replaces the publication and verifies that the image is removed with no
 page/console error or external request. ADR-0041 removed the weaker manual
@@ -914,7 +913,7 @@ the independently accepted replacement strategy and recorded limitation.
 
 VF-0074's `FSF-VF-0074` cases in `reader-reflow-restoration.smoke.spec.ts` bind
 the checkpoint before Stop, release a delayed native image decode, follow real
-tracker → App → persistence delivery, and reopen the same synthetic EPUB. The
+tracker â†’ App â†’ persistence delivery, and reopen the same synthetic EPUB. The
 image variant does not inject a tracker callback, save call or scroll event.
 Controlled silent PCM/completion callbacks establish application timing, not
 physical audibility. Keyboard movement and same-locator measured movement remain
@@ -1776,8 +1775,8 @@ development keys and Python/virtual-environment keys are removed or poisoned,
 and a misleading `PATH` puts sentinel Python/Rust/Cargo/Node/uv/pip names first.
 It records content-safe executable/root ownership and Boolean/status/measurement
 results only. Python, Rust, and other tools may remain installed because the
-compile-time boundary and hostile-environment assertions—not destructive host
-preparation—prove independence. One representative compatible host then covers
+compile-time boundary and hostile-environment assertionsâ€”not destructive host
+preparationâ€”prove independence. One representative compatible host then covers
 ordinary gate, disclosure/consent, cancellation/cleanup, complete verified
 download, activation, Spanish/English offline narration, restart, removal,
 reinstall, and Piper after removal.
