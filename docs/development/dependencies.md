@@ -204,14 +204,14 @@ for current evidence and the separate native-harness correction.
 On 2026-11-17 the native `zip` pin moved from 9.0.4 to 9.5.1. The update
 addresses the RustSec finding and includes later fixes to `ZipArchive::new`,
 which VoxLeaf uses to read the verified Chatterbox archive by index.
-[RustSec advisory](https://rustsec.org/advisories/RUSTSEC-2026-0548.html) Â·
+[RustSec advisory](https://rustsec.org/advisories/RUSTSEC-2026-0548.html) ·
 [Upstream reader advisory](https://github.com/zip-rs/zip2/security/advisories/GHSA-wjr6-mhvj-cjvm)
 
 The regenerated Windows inventory contains 421 components. The release audit
 records nine Rust informational notices, five reachable on the Windows build.
 The additional notice identifies locked `chrono` 0.4.45 as unmaintained. Cargo
 places it outside the Windows target's active runtime and build dependencies.
-[Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) Â·
+[Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) ·
 [CI correction review](../plans/evidence/codex-model-rollout/ci-audit-review.md)
 
 The inventory generator also checks the locked Windows x64 normal and build

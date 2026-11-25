@@ -286,11 +286,6 @@ jobs:
           node-version-file: .nvmrc
           package-manager-cache: false
 
-      - name: Enable pinned pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.15.1 --activate
-
       - name: Install Linux native prerequisites
         run: |
           sudo apt-get update
@@ -307,10 +302,10 @@ jobs:
         run: cargo tree --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --depth 0
 
       - name: Check Rust formatting
-        run: pnpm format:check:rust
+        run: node --run format:check:rust
 
       - name: Lint Rust
-        run: pnpm lint:rust
+        run: node --run lint:rust
 
       - name: Test Rust
-        run: pnpm test:rust
+        run: node --run test:rust
