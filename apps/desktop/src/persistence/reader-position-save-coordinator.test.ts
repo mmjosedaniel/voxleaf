@@ -14,10 +14,6 @@ import {
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  DEFAULT_READER_PREFERENCES,
-  type ReaderPreferencesV1,
-} from "../reader/reader-preferences";
 import type {
   ReaderPositionRepository,
   ReaderRepositoryWriteResult,
@@ -159,16 +155,10 @@ interface TestRepository extends ReaderPositionRepository {
   readonly writePosition: ReturnType<
     typeof vi.fn<ReaderPositionRepository["writePosition"]>
   >;
-  readonly writePreferences: ReturnType<
-    typeof vi.fn<ReaderPositionRepository["writePreferences"]>
-  >;
 }
 
 function createRepository(
   writePosition: ReaderPositionRepository["writePosition"] = async () => ({
-    status: "saved",
-  }),
-  writePreferences: ReaderPositionRepository["writePreferences"] = async () => ({
     status: "saved",
   }),
 ): TestRepository {
@@ -180,7 +170,7 @@ function createRepository(
     readPreferences: vi.fn<ReaderPositionRepository["readPreferences"]>(
       async () => ({ status: "missing" }),
     ),
-    writePreferences: vi.fn(writePreferences),
+    writePreferences: async () => ({ status: "saved" }),
   };
 }
 
@@ -263,85 +253,34 @@ describe("reader position save coordinator", () => {
       }
     },
   );
-  it("CAF-R6.2 reports only the current write and suppresses closed ownership", async () => {
+  it("R7-06 close includes position queued in the drain completion microtask gap", async () => {
     const first = deferredWrite();
-    const repository = createRepository(undefined, async () => first.promise);
-    const { coordinator, environment } = createHarness(repository);
-    const report = vi.fn();
-    coordinator.setOnPreferencesWritten(report);
-    coordinator.savePreferences(DEFAULT_READER_PREFERENCES);
-    environment.advance(0);
-    const newest = {
-      ...DEFAULT_READER_PREFERENCES,
-      textScale: "large",
-    } as const;
-    repository.writePreferences.mockResolvedValueOnce({ status: "saved" });
-    coordinator.savePreferences(newest);
-    environment.advance(0);
-    first.resolve({ status: "unavailable" });
-    await coordinator.flush();
-    expect(report).toHaveBeenCalledExactlyOnceWith(newest, { status: "saved" });
-    report.mockClear();
-    const pending = deferredWrite();
-    repository.writePreferences.mockReturnValueOnce(pending.promise);
-    coordinator.savePreferences(DEFAULT_READER_PREFERENCES);
-    environment.advance(0);
+    const second = deferredWrite();
+    const write = vi
+      .fn<ReaderPositionRepository["writePosition"]>()
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    const { coordinator } = createHarness(createRepository(write));
+    coordinator.scheduleImmediate(locatorAt(1));
+    const flushing = coordinator.flush();
+    first.resolve({ status: "saved" });
+    // The drain resumes before us, and its settlement reaction follows us.
+    await Promise.resolve();
+    coordinator.scheduleImmediate(locatorAt(2));
     const closing = coordinator.close();
-    pending.resolve({ status: "unavailable" });
-    await closing;
-    expect(report).not.toHaveBeenCalled();
+    let closed = false;
+    void closing.then(() => {
+      closed = true;
+    });
+    for (let index = 0; index < 8; index += 1) await Promise.resolve();
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(closed).toBe(false);
+    second.resolve({ status: "saved" });
+    await Promise.all([flushing, closing, coordinator.flush()]);
+    expect(closed).toBe(true);
+    expect(coordinator.close()).toBe(closing);
+    expect(write.mock.calls[1]?.[0].locator).toEqual(locatorAt(2));
   });
-  it.each(["position", "preferences"] as const)(
-    "R7-06 close includes %s queued in the drain completion microtask gap",
-    async (kind) => {
-      const first = deferredWrite();
-      const second = deferredWrite();
-      const write = vi
-        .fn<ReaderPositionRepository["writePosition"]>()
-        .mockImplementationOnce(() => first.promise)
-        .mockImplementationOnce(() => second.promise);
-      const preferenceWrite = vi
-        .fn<ReaderPositionRepository["writePreferences"]>()
-        .mockImplementationOnce(() => first.promise)
-        .mockImplementationOnce(() => second.promise);
-      const repository = createRepository(
-        kind === "position" ? write : undefined,
-        kind === "preferences" ? preferenceWrite : undefined,
-      );
-      const { coordinator } = createHarness(repository);
-      const queue = (secondValue: boolean) => {
-        if (kind === "position")
-          coordinator.scheduleImmediate(locatorAt(secondValue ? 2 : 1));
-        else
-          coordinator.savePreferences({
-            ...DEFAULT_READER_PREFERENCES,
-            textScale: secondValue ? "large" : "standard",
-          });
-      };
-      queue(false);
-      const flushing = coordinator.flush();
-      first.resolve({ status: "saved" });
-      // A's async loop resumes before us; its .finally reaction is behind us.
-      await Promise.resolve();
-      queue(true);
-      const closing = coordinator.close();
-      let closed = false;
-      void closing.then(() => {
-        closed = true;
-      });
-      for (let index = 0; index < 8; index += 1) await Promise.resolve();
-      const selectedWrite = kind === "position" ? write : preferenceWrite;
-      expect(selectedWrite).toHaveBeenCalledTimes(2);
-      expect(closed).toBe(false);
-      second.resolve({ status: "saved" });
-      await Promise.all([flushing, closing, coordinator.flush()]);
-      expect(closed).toBe(true);
-      expect(coordinator.close()).toBe(closing);
-      if (kind === "position")
-        expect(write.mock.calls[1]?.[0].locator).toEqual(locatorAt(2));
-      else expect(preferenceWrite.mock.calls[1]?.[0].textScale).toBe("large");
-    },
-  );
 
   it.each([false, true])(
     "R7-06 immediate writes and failure settlement remain quiescent (failure: %s)",
@@ -443,23 +382,12 @@ describe("reader position save coordinator", () => {
     ).toBe(7);
   });
 
-  it("coalesces immediate locator and validated preference saves", async () => {
+  it("coalesces immediate locator saves", async () => {
     const { coordinator, environment, repository } = createHarness();
-    const firstPreferences = Object.freeze({
-      ...DEFAULT_READER_PREFERENCES,
-      textScale: "large",
-    }) satisfies ReaderPreferencesV1;
-    const latestPreferences = Object.freeze({
-      ...firstPreferences,
-      theme: "dark",
-    }) satisfies ReaderPreferencesV1;
 
     coordinator.scheduleImmediate(locatorAt(2));
     coordinator.scheduleImmediate(locatorAt(8));
-    coordinator.savePreferences(firstPreferences);
-    coordinator.savePreferences(latestPreferences);
     expect(repository.writePosition).not.toHaveBeenCalled();
-    expect(repository.writePreferences).not.toHaveBeenCalled();
 
     environment.advance(0);
     await coordinator.flush();
@@ -467,8 +395,6 @@ describe("reader position save coordinator", () => {
     expect(
       repository.writePosition.mock.calls[0]?.[0].locator.textOffsetCodePoints,
     ).toBe(8);
-    expect(repository.writePreferences).toHaveBeenCalledTimes(1);
-    expect(repository.writePreferences).toHaveBeenCalledWith(latestPreferences);
   });
 
   it("promotes a pending passive locator when reflow settles", async () => {
@@ -767,27 +693,18 @@ describe("reader position save coordinator", () => {
     expect(environment.scheduledCount).toBe(0);
 
     expect(coordinator.scheduleImmediate(locatorAt(7))).toBe(false);
-    expect(coordinator.savePreferences(DEFAULT_READER_PREFERENCES)).toBe(false);
     environment.advance(1_000);
     expect(repository.writePosition).toHaveBeenCalledTimes(1);
   });
 
   it("contains repository failures and emits content-free records only", async () => {
     const privateCanary = "private prose C:\\Users\\reader\\secret.epub";
-    const repository = createRepository(
-      async () => {
-        throw new Error(privateCanary);
-      },
-      async () => ({ status: "unavailable" }),
-    );
+    const repository = createRepository(async () => {
+      throw new Error(privateCanary);
+    });
     const { coordinator, environment } = createHarness(repository);
-    const preferences = Object.freeze({
-      ...DEFAULT_READER_PREFERENCES,
-      contentWidth: "wide",
-    }) satisfies ReaderPreferencesV1;
 
     coordinator.scheduleImmediate(locatorAt(11));
-    coordinator.savePreferences(preferences);
     environment.advance(0);
     await expect(coordinator.close()).resolves.toBeUndefined();
 
@@ -803,6 +720,5 @@ describe("reader position save coordinator", () => {
     expect(JSON.stringify(state)).not.toContain(privateCanary);
     expect(state).not.toHaveProperty("title");
     expect(state).not.toHaveProperty("path");
-    expect(repository.writePreferences).toHaveBeenCalledWith(preferences);
   });
 });

@@ -691,6 +691,12 @@ impl WorkIdentity {
     }
 }
 
+struct PendingStart {
+    request_id: String,
+    service_instance_id: String,
+    cancellation: Arc<AtomicBool>,
+}
+
 #[derive(Default)]
 struct Lifecycle {
     exiting: bool,
@@ -702,8 +708,7 @@ struct Lifecycle {
     // One rejected attempt proven to have no remaining child. Its
     // acknowledgment is independent of any later session and cannot stop it.
     rejected_start: Option<(String, String)>,
-    pending_start: Option<(String, String)>,
-    pending_start_cancellation: Option<Arc<AtomicBool>>,
+    pending_start: Option<PendingStart>,
     // A competing Busy request can replace the rejection receipt while the
     // retired owner still holds the pre-spawn operation.
     retired_start: Option<(String, String)>,
@@ -724,7 +729,7 @@ impl Lifecycle {
         if self
             .pending_start
             .as_ref()
-            .is_some_and(|(owner, _)| owner == request)
+            .is_some_and(|pending| pending.request_id == request)
         {
             return None;
         }
@@ -1266,8 +1271,8 @@ impl TtsServiceSupervisor {
             .lifecycle
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
-        let state = match lifecycle.pending_start_cancellation.as_ref() {
-            Some(cancellation) if cancellation.load(Ordering::Acquire) => "stopping",
+        let state = match lifecycle.pending_start.as_ref() {
+            Some(pending) if pending.cancellation.load(Ordering::Acquire) => "stopping",
             Some(_) => "starting",
             None => lifecycle.state.as_str(),
         };
@@ -1632,10 +1637,9 @@ impl TtsServiceSupervisor {
             && lifecycle
                 .pending_start
                 .as_ref()
-                .is_some_and(|(_, id)| id == &service_instance_id)
+                .is_some_and(|pending| pending.service_instance_id == service_instance_id)
         {
             lifecycle.pending_start = None;
-            lifecycle.pending_start_cancellation = None;
         }
         if result.is_err()
             && !child_may_exist
@@ -1692,8 +1696,11 @@ impl TtsServiceSupervisor {
                     lifecycle.consume_unregistered_retirement(request);
                     return Err(TtsNativeFailure::Cancelled);
                 }
-                lifecycle.pending_start = Some((request.clone(), service_instance_id.clone()));
-                lifecycle.pending_start_cancellation = Some(Arc::clone(&cancellation));
+                lifecycle.pending_start = Some(PendingStart {
+                    request_id: request.clone(),
+                    service_instance_id: service_instance_id.clone(),
+                    cancellation: Arc::clone(&cancellation),
+                });
             }
         }
         if let Some(profile_id) = profile_id {
@@ -1718,7 +1725,6 @@ impl TtsServiceSupervisor {
                 return Err(TtsNativeFailure::Cancelled);
             }
             lifecycle.pending_start = None;
-            lifecycle.pending_start_cancellation = None;
         }
         let child_configuration = self
             .child_configuration
@@ -2060,14 +2066,12 @@ impl TtsServiceSupervisor {
             if let Some(id) = lifecycle.settled_start_instance(request) {
                 return Ok(start_retirement_controls(id));
             }
-            if let Some((pending, id)) = &lifecycle.pending_start
-                && pending == request
+            if let Some(pending) = &lifecycle.pending_start
+                && pending.request_id == request
             {
-                let id = id.clone();
-                if let Some(cancellation) = &lifecycle.pending_start_cancellation {
-                    cancellation.store(true, Ordering::Release);
-                }
-                lifecycle.retired_start = Some((request.to_owned(), id.clone()));
+                let id = pending.service_instance_id.clone();
+                pending.cancellation.store(true, Ordering::Release);
+                lifecycle.retired_start = Some((request.to_owned(), id));
                 // The fence prevents spawn now. Only after the verifier
                 // releases its admission can the stopped receipt be issued.
                 return Err(TtsNativeFailure::Busy);
@@ -2213,8 +2217,8 @@ impl TtsServiceSupervisor {
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
         if exiting {
             lifecycle.exiting = true;
-            if let Some(cancellation) = &lifecycle.pending_start_cancellation {
-                cancellation.store(true, Ordering::Release);
+            if let Some(pending) = &lifecycle.pending_start {
+                pending.cancellation.store(true, Ordering::Release);
             }
         }
         // Keep ownership and the last truthful state until termination is verified.
@@ -2227,7 +2231,15 @@ impl TtsServiceSupervisor {
         lifecycle.contained_service_instance_id = None;
         lifecycle.contained_start_request_id = None;
         lifecycle.rejected_start = None;
-        if lifecycle.retired_start != lifecycle.pending_start {
+        let pending_identity = lifecycle
+            .pending_start
+            .as_ref()
+            .map(|pending| (&pending.request_id, &pending.service_instance_id));
+        let retired_identity = lifecycle
+            .retired_start
+            .as_ref()
+            .map(|(request, instance)| (request, instance));
+        if retired_identity != pending_identity {
             lifecycle.retired_start = None;
         }
         Ok(())

@@ -22,7 +22,6 @@ import {
   BILINGUAL_PORTFOLIO_ARMS,
   modelFreeLifecycleEnvironment,
   nativeRunnerArguments,
-  selectPortfolioArms,
 } from "./bilingual-portfolio-host.mjs";
 import { effectiveFirewallBlockScript } from "./effective-firewall-block.mjs";
 
@@ -1424,6 +1423,21 @@ async function audioFileSnapshot(roots) {
       .digest("hex"),
   };
 }
+export function selectAdapterLayoutArms(portfolio) {
+  const requiredPairs = [
+    ["piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1", "es"],
+    ["piper-1-4-2-onnx-cpu-en-us-joe-medium-v1", "en"],
+    ["chatterbox-multilingual-v3-cuda-bf16-default-v4", "es"],
+    ["chatterbox-multilingual-v3-cuda-bf16-default-v4", "en"],
+  ];
+  return requiredPairs.map(([profileId, language]) => {
+    const matches = portfolio.filter(
+      (arm) => arm.profileId === profileId && arm.language === language,
+    );
+    if (matches.length !== 1) fail("desktop-arm");
+    return matches[0];
+  });
+}
 async function desktop(options, installed) {
   const expected = await readJson(
     path.join(
@@ -1485,16 +1499,9 @@ async function desktop(options, installed) {
     installed.interpreter,
   ];
   for (const python of interpreters) assertFirewall(python.canonical);
-  const arms = BILINGUAL_PORTFOLIO_ARMS.slice(0, 4);
+  const arms = selectAdapterLayoutArms(BILINGUAL_PORTFOLIO_ARMS);
   const results = [];
   for (const arm of arms) {
-    if (
-      selectPortfolioArms([
-        `--profile=${arm.profileId}`,
-        `--language=${arm.language}`,
-      ]).length !== 1
-    )
-      fail("desktop-arm");
     const python = arm.profileId.startsWith("piper-")
       ? interpreters[0].canonical
       : interpreters[1].canonical;

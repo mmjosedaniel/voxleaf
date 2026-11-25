@@ -1,5 +1,7 @@
 # Completed plans
 
+- [Desktop responsibility refactors](desktop-responsibility-refactors.md) records the five changes to host scenarios, appearance saves, viewport input, native cancellation and playback metrics. The [package ledger](../evidence/desktop-responsibility-refactors/package-01.md) records the combined Chromium, WebView2, Piper and foundation evidence.
+
 - [Hidden navigation label titles](hidden-navigation-label-titles.md) implements the approved follow-up policy for VF-0145 and verifies chapter selection through Contents.
 
 - [November 23 findings corrections](november-23-findings-corrections.md) accounts for 41 corrections and the deferred navigation-label policy in VF-0145. [Implementation review](../evidence/november-23-findings/implementation-review-r03.md)

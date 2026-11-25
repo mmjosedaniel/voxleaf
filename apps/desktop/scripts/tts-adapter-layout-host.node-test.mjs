@@ -32,6 +32,7 @@ import {
   parseArguments,
   ProcessTree,
   pythonAuditPolicy,
+  selectAdapterLayoutArms,
   shutdownService,
   terminateTree,
   verifyModuleClosure,
@@ -801,6 +802,52 @@ test("admits only the three modes with absolute contained artifact and receipt p
     );
   }
   assert.throws(() => parseArguments([], {}), /local-app-data/u);
+});
+test("adapter layout arm selection uses exact ordered pairs with one match each", () => {
+  const expectedPairs = [
+    ["piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1", "es"],
+    ["piper-1-4-2-onnx-cpu-en-us-joe-medium-v1", "en"],
+    ["chatterbox-multilingual-v3-cuda-bf16-default-v4", "es"],
+    ["chatterbox-multilingual-v3-cuda-bf16-default-v4", "en"],
+  ];
+  const expectedArms = expectedPairs.map(([profileId, language]) => ({
+    profileId,
+    language,
+  }));
+  const [piperEs, piperEn, chatterboxEs, chatterboxEn] = expectedArms;
+  const shuffled = [
+    {
+      profileId: "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      language: "es",
+    },
+    chatterboxEn,
+    piperEn,
+    piperEs,
+    chatterboxEs,
+  ];
+  for (const [label, portfolio, valid] of [
+    ["shuffled", shuffled, true],
+    ["missing", shuffled.filter((arm) => arm !== chatterboxEn), false],
+    ["duplicate", [...shuffled, { ...chatterboxEn }], false],
+  ]) {
+    if (!valid) {
+      assert.throws(
+        () => selectAdapterLayoutArms(portfolio),
+        { message: "tts-adapter-layout-host:desktop-arm" },
+        label,
+      );
+      continue;
+    }
+    const selected = selectAdapterLayoutArms(portfolio);
+    assert.deepEqual(
+      selected.map(({ profileId, language }) => [profileId, language]),
+      expectedPairs,
+      label,
+    );
+    selected.forEach((arm, index) =>
+      assert.equal(arm, expectedArms[index], label),
+    );
+  }
 });
 test("removes checkout/user/development injection while retaining offline identity", () => {
   const sanitized = childEnvironment(

@@ -1341,6 +1341,56 @@ describe("App preference connection characterization", () => {
     expect(settings.current().readerPreferences.textScale).toBe("extra-large");
   });
 
+  it("CAF-R6.2 persists accepted appearance edits without reporting after StrictMode unmount", async () => {
+    const settings = observeSettings();
+    const repository = createWebStorageReaderPositionRepository();
+    const persist = repository.writePreferences.bind(repository);
+    const pending = deferred<void>();
+    const queued = deferred<void>();
+    const write = vi.spyOn(repository, "writePreferences");
+    for (const gate of [pending, queued]) {
+      write.mockImplementationOnce(async (preferences) => {
+        await gate.promise;
+        return persist(preferences);
+      });
+    }
+    const report = vi.spyOn(
+      ReaderPositionRestoreCoordinator.prototype,
+      "setPreferences",
+    );
+    const { unmount } = render(
+      <StrictMode>
+        <App readerPositionRepository={repository} />
+      </StrictMode>,
+    );
+    await waitFor(() =>
+      expect(settings.current().readerPreferencesStatus).toBe("missing"),
+    );
+    act(() =>
+      settings.current().onReaderPreferenceChange("textScale", "large"),
+    );
+    await waitFor(() => expect(write).toHaveBeenCalledOnce());
+    act(() =>
+      settings.current().onReaderPreferenceChange("textScale", "extra-large"),
+    );
+    expect(write).toHaveBeenCalledOnce();
+    report.mockClear();
+    await act(async () => unmount());
+    await act(async () => pending.resolve());
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(await repository.readPreferences()).toMatchObject({
+      status: "ready",
+      preferences: { textScale: "large" },
+    });
+    expect(report).not.toHaveBeenCalled();
+    await act(async () => queued.resolve());
+    expect(await repository.readPreferences()).toMatchObject({
+      status: "ready",
+      preferences: { textScale: "extra-large" },
+    });
+    expect(report).not.toHaveBeenCalled();
+  });
+
   it.each(["before-open", "after-open"] as const)(
     "VF-0168 reports a deferred %s appearance failure after book replacement",
     async (origin) => {
@@ -1420,6 +1470,10 @@ describe("App preference connection characterization", () => {
       >();
     const write = vi.mocked(repository.writePreferences);
     write.mockReturnValueOnce(pending.promise);
+    const report = vi.spyOn(
+      ReaderPositionRestoreCoordinator.prototype,
+      "setPreferences",
+    );
     let opened = 0;
     const settings = observeSettings();
     render(
@@ -1443,11 +1497,14 @@ describe("App preference connection characterization", () => {
     selectEpub();
     await screen.findByRole("heading", { name: "Appearance update 2" });
     openSettings();
+    change("small");
+    expect(screen.getByLabelText("Text size")).toHaveValue("small");
     change("extra-large");
     await act(async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
     expect(write).toHaveBeenCalledOnce();
+    report.mockClear();
     await act(async () => pending.resolve({ status: "unavailable" }));
     await waitFor(() =>
       expect(settings.current().readerPreferencesStatus).toBe("ready"),
@@ -1455,6 +1512,10 @@ describe("App preference connection characterization", () => {
     expect(write).toHaveBeenCalledTimes(2);
     expect(write).toHaveBeenLastCalledWith(
       expect.objectContaining({ textScale: "extra-large" }),
+    );
+    expect(report).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ textScale: "extra-large" }),
+      "ready",
     );
     expect(screen.getByLabelText("Text size")).toHaveValue("extra-large");
     expect(
