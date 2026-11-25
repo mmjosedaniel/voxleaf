@@ -66,7 +66,7 @@ jobs:
 
       - name: Install pinned RustSec scanner
         id: scanner
-        run: cargo install cargo-audit --version 0.22.2 --locked
+        run: throw 'Synthetic scanner acquisition failure'
 
       - name: Audit exact production graphs
         id: graphs
