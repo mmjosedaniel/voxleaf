@@ -61,3 +61,13 @@ The refreshed [#331 release check](https://github.com/mmjosedaniel/voxleaf/actio
 ## Integrated result
 
 The final [Windows run on #337](https://github.com/mmjosedaniel/voxleaf/actions/runs/45707839794/job/139534264066) took 25m07s versus 26m35s on audited main (1m28s shorter in this sample). It built the application once, passed 115 Chromium scenarios, then passed the actual WebView2 smoke with SHA-256 `0592595c9b8e7702116d3bdda9194bdf9078e026163738e934186cf87cb9cf2b`. The success run had no failure artifact. The final [release job](https://github.com/mmjosedaniel/voxleaf/actions/runs/45707839619/job/139534263167) took 1m48s versus 7m19s (5m31s shorter), including 2s for scanner acquisition, 44s of scans and 3s for inventory. All four required checks passed before integration in `b09d08d32c88f42bc04bd2ff6c0f3bcc34336e76`. Normal host `pnpm.cmd check`, `pnpm.cmd audit:release` and `pnpm.cmd inventory:release:check` all passed again at the reviewed PR head. [Integrated implementation review](ci-m5-r02.md)
+
+## Synchronized PR #330
+
+On November 25 (Bogotá), the authorized branch update brought main `2b277323d4dfd0e8258fdac49cff49c90fec49aa` into [PR #330](https://github.com/mmjosedaniel/voxleaf/pull/330). The resulting commit `e9e0286133cfb1fb7053f6afb4b9b8e8bf0f6da1` has the old proposal `7dfab8ea249dfb55531cf3969e006856d5af834a` and that main commit as parents. Relative to main it changes only the Tauri Cargo manifest and lock for zip 9.8.1.
+
+The release job passed Node, Rust and the base-service, Piper core and optional Chatterbox Python scans. Rust reported nine informational warnings, five reachable on Windows. The optional Python scan retained its four documented blind spots. The following inventory step reported `release-component-inventory:stale` and exited 1. This kept the required release check red. [Release job](https://github.com/mmjosedaniel/voxleaf/actions/runs/45740594376/job/139644338798)
+
+Windows native foundation passed all 115 Chromium scenarios and the packaged WebView2 startup smoke. Ubuntu portable foundation and Ubuntu Rust foundation both passed. The Dependabot configuration check also passed. [Windows](https://github.com/mmjosedaniel/voxleaf/actions/runs/45740594361/job/139644337022) · [Ubuntu portable](https://github.com/mmjosedaniel/voxleaf/actions/runs/45740594361/job/139644337774) · [Ubuntu Rust](https://github.com/mmjosedaniel/voxleaf/actions/runs/45740594361/job/139644337454)
+
+GitHub reported the PR open with merging blocked. This completes the plan’s dependency recheck. Regenerating the inventory, reviewing any changed components and deciding whether to admit zip remain work for the dependency PR.

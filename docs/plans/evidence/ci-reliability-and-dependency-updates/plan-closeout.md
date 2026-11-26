@@ -1,6 +1,6 @@
 # Plan documentation checks
 
-The saved [review](plan-review.md) matches the issued report `CI-PLAN-CR-R01`, verdict `APPROVE`, SHA-256 `0e2a0e6c224faa898d2423694b4c469a4d415da07557b8f1f0700a5b4730bc7f`. The [ExecPlan](../../active/ci-reliability-and-dependency-updates.md) and its active-index entry are the reviewed planning change.
+The saved [review](plan-review.md) matches the issued report `CI-PLAN-CR-R01`, verdict `APPROVE`, SHA-256 `0e2a0e6c224faa898d2423694b4c469a4d415da07557b8f1f0700a5b4730bc7f`. The [ExecPlan](../../completed/ci-reliability-and-dependency-updates.md) and its active-index entry are the reviewed planning change.
 
 After review persistence, the following commands exited 0 in normal local Windows PowerShell.
 
