@@ -637,6 +637,7 @@ async function isLongSceneOrnament(
   leaf: NarrationSourceTokenLeafEvent,
   work: NarrationWorkController,
   operation: MutablePreparationMeasurements,
+  ignoreFormattingMarks: boolean,
 ): Promise<boolean> {
   const block = leaf.locatedBlock.block;
   if (
@@ -662,7 +663,11 @@ async function isLongSceneOrnament(
       for (const point of inline.text) {
         await work.observe();
         observeSourceWindow(operation, 1, 0);
-        if (/\p{White_Space}/u.test(point)) continue;
+        if (
+          /\p{White_Space}/u.test(point) ||
+          (ignoreFormattingMarks && /[\u00ad\u200b\u2060]/u.test(point))
+        )
+          continue;
         if ((point !== "*" && point !== "⁂") || marker.length === 3)
           return false;
         marker += point;
@@ -824,7 +829,14 @@ export async function prepareNarrationBatch(
           scheduler,
           operation.work,
         );
-        if (await isLongSceneOrnament(leaf, sceneWork, operation)) {
+        if (
+          await isLongSceneOrnament(
+            leaf,
+            sceneWork,
+            operation,
+            mutableNormalization,
+          )
+        ) {
           const lastIndex = candidates.segments.length - 1;
           const previous = candidates.segments[lastIndex];
           if (previous !== undefined) {

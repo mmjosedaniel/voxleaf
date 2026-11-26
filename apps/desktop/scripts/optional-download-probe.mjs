@@ -13,13 +13,20 @@ export async function boundedDownloadInPage(profileId) {
   const confirmation = await invoke("select_optional_chatterbox", {
     profileId,
   });
-  if (confirmation.state !== "confirming") throw new Error("probe-consent");
+  if (
+    confirmation.state !== "confirming" ||
+    typeof confirmation.confirmationId !== "string"
+  )
+    throw new Error("probe-consent");
   let settled = false;
   let state;
   let failure;
   let peakBytes = 0;
   let cancellationRequested = false;
-  const work = invoke("download_optional_chatterbox", { profileId }).then(
+  const work = invoke("download_optional_chatterbox", {
+    profileId,
+    confirmationId: confirmation.confirmationId,
+  }).then(
     (result) => {
       state = result.state;
       settled = true;

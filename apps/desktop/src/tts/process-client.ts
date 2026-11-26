@@ -270,6 +270,7 @@ export class TtsProcessClient {
   private active: TtsGenerationScope | undefined;
   private invalidation = 0;
   private starting: Promise<TtsProcessClientObservation> | undefined;
+  private retireStarting: (() => void) | undefined;
   private startRequestId: string | undefined;
   private stopping: Promise<void> | undefined;
 
@@ -334,25 +335,37 @@ export class TtsProcessClient {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
     const token = this.invalidation;
-    this.startRequestId = `start:${globalThis.crypto.randomUUID()}`;
+    const requestId = `start:${globalThis.crypto.randomUUID()}`;
+    this.startRequestId = requestId;
     this.state = "starting";
-    const operation = this.startService(token, profileId, language);
+    const retirement = new Promise<never>((_, reject) => {
+      this.retireStarting = () =>
+        reject(new TtsProcessClientError("tts-service-cancelled"));
+    });
+    const operation = Promise.race([
+      this.startService(token, requestId, profileId, language),
+      retirement,
+    ]);
     this.starting = operation;
     try {
       return await operation;
     } finally {
-      if (this.starting === operation) this.starting = undefined;
+      if (this.starting === operation) {
+        this.starting = undefined;
+        this.retireStarting = undefined;
+      }
     }
   }
 
   private async startService(
     token: number,
+    requestId: string,
     profileId?: string,
     language?: NarrationLanguageV1,
   ): Promise<TtsProcessClientObservation> {
     try {
       const controls = await this.invokeControls("start_tts_service", {
-        startRequestId: this.startRequestId,
+        startRequestId: requestId,
         ...(profileId === undefined ? {} : { profileId, language }),
       });
       expectKinds(controls, [
@@ -374,7 +387,10 @@ export class TtsProcessClient {
       ) {
         throw new TtsProcessClientError("tts-service-invalid-response");
       }
-      this.serviceInstanceId = accepted.serviceInstanceId;
+      // A still-owned late reply lets fallback shutdown address the child.
+      // An acknowledged retirement cleared that ownership and can have a successor.
+      if (this.startRequestId === requestId)
+        this.serviceInstanceId = accepted.serviceInstanceId;
       if (token !== this.invalidation) {
         throw new TtsProcessClientError("tts-service-cancelled");
       }
@@ -576,8 +592,8 @@ export class TtsProcessClient {
     const starting = this.starting;
     if (starting !== undefined) {
       this.state = "stopping";
-      // Interrupt an already spawned child. A not-yet-dispatched start may
-      // still return later; retain it and then contain its exact identity.
+      // Native can acknowledge termination or fence this request before spawn.
+      // When it cannot acknowledge, keep the reply to contain the exact child.
       let interrupted: readonly TtsProtocolControlV1[] | undefined;
       try {
         interrupted = await this.invokeControls("shutdown_tts_service", {
@@ -586,36 +602,31 @@ export class TtsProcessClient {
       } catch (error) {
         if (
           !(error instanceof TtsProcessClientError) ||
-          !["tts-service-invalid-state", "tts-service-cancelled"].includes(
-            error.code,
-          )
+          ![
+            "tts-service-invalid-state",
+            "tts-service-cancelled",
+            "tts-service-busy",
+          ].includes(error.code)
         )
           throw error;
       }
-      await starting.catch(() => undefined);
-      if (interrupted !== undefined && this.serviceInstanceId === undefined) {
-        expectKinds(interrupted, ["state", "state"]);
-        const first = interrupted[0]!;
-        const last = interrupted[1]!;
-        if (
-          first.kind !== "state" ||
-          first.state !== "stopping" ||
-          last.kind !== "state" ||
-          last.state !== "stopped" ||
-          first.serviceInstanceId !== last.serviceInstanceId
-        )
-          throw new TtsProcessClientError("tts-service-invalid-response");
-        this.startRequestId = undefined;
-      }
       if (
         interrupted !== undefined &&
-        this.serviceInstanceId !== undefined &&
-        !hasForeignServiceInstance(interrupted, this.serviceInstanceId)
+        (this.serviceInstanceId === undefined ||
+          !hasForeignServiceInstance(interrupted, this.serviceInstanceId))
       ) {
         this.validateShutdown(interrupted);
+        this.starting = undefined;
         this.serviceInstanceId = undefined;
         this.startRequestId = undefined;
+        this.state = "stopped";
+        this.retireStarting?.();
+        this.retireStarting = undefined;
+        return;
       }
+      // A busy retirement fenced spawn but still holds native admission.
+      // Join the exact command and request its settled receipt below.
+      await starting.catch(() => undefined);
     }
     if (
       this.serviceInstanceId === undefined &&
@@ -663,7 +674,9 @@ export class TtsProcessClient {
       stopping.state !== "stopping" ||
       stopped.kind !== "state" ||
       stopped.state !== "stopped" ||
-      hasForeignServiceInstance(controls, this.serviceInstanceId)
+      stopping.serviceInstanceId !== stopped.serviceInstanceId ||
+      (this.serviceInstanceId !== undefined &&
+        hasForeignServiceInstance(controls, this.serviceInstanceId))
     ) {
       throw new TtsProcessClientError("tts-service-invalid-response");
     }

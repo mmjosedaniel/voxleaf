@@ -9,11 +9,7 @@ import {
   type ReadingLocatorV1,
 } from "@voxleaf/shared";
 
-import type { ReaderPreferencesV1 } from "../reader/reader-preferences";
-import type {
-  ReaderPositionRepository,
-  ReaderRepositoryWriteResult,
-} from "./reader-position-repository";
+import type { ReaderPositionRepository } from "./reader-position-repository";
 
 export const PASSIVE_POSITION_SAVE_DEBOUNCE_MS = 500;
 
@@ -32,10 +28,6 @@ export interface ReaderPositionSaveCoordinatorOptions {
   readonly initialLocator?: ReadingLocatorV1;
   readonly persistInitialLocatorOnFlush?: boolean;
   readonly requireIntentBeforePassiveSave?: boolean;
-  readonly onPreferencesWritten?: (
-    preferences: ReaderPreferencesV1,
-    result: ReaderRepositoryWriteResult,
-  ) => void;
 }
 
 export type HeardPositionCheckpoint =
@@ -116,19 +108,6 @@ function locatorsEqual(
   );
 }
 
-function preferencesEqual(
-  left: ReaderPreferencesV1,
-  right: ReaderPreferencesV1,
-): boolean {
-  return (
-    left.schemaVersion === right.schemaVersion &&
-    left.textScale === right.textScale &&
-    left.lineSpacing === right.lineSpacing &&
-    left.contentWidth === right.contentWidth &&
-    left.theme === right.theme
-  );
-}
-
 function createPersistedState(
   locator: ReadingLocatorV1,
 ): PersistedReadingStateV1 {
@@ -152,7 +131,6 @@ export class ReaderPositionSaveCoordinator {
   readonly #publication: OpenedPublication;
   readonly #repository: ReaderPositionRepository;
   readonly #environment: ReaderPositionSaveEnvironment;
-  #onPreferencesWritten: ReaderPositionSaveCoordinatorOptions["onPreferencesWritten"];
   #latestLocator: ReadingLocatorV1;
   #lastRequestedLocator: ReadingLocatorV1 | undefined;
   #lastSavedLocator: ReadingLocatorV1 | undefined;
@@ -163,13 +141,6 @@ export class ReaderPositionSaveCoordinator {
   #scheduledPositionKind: ScheduledPositionKind | undefined;
   #positionSaveRequested: boolean;
   #requireIntentBeforePassiveSave: boolean;
-  #latestPreferences: ReaderPreferencesV1 | undefined;
-  #lastRequestedPreferences: ReaderPreferencesV1 | undefined;
-  #lastSavedPreferences: ReaderPreferencesV1 | undefined;
-  #queuedPreferences: ReaderPreferencesV1 | undefined;
-  #writingPreferences: ReaderPreferencesV1 | undefined;
-  #preferencesDrain: Promise<void> | undefined;
-  #cancelPreferencesSchedule: (() => void) | undefined;
   #unsubscribeLifecycle: (() => void) | undefined;
   #activeHeardSegmentId: string | undefined;
   #narrationActive = false;
@@ -195,7 +166,6 @@ export class ReaderPositionSaveCoordinator {
 
     this.#publication = publication;
     this.#repository = repository;
-    this.#onPreferencesWritten = options.onPreferencesWritten;
     this.#environment =
       options.environment ?? BROWSER_READER_POSITION_SAVE_ENVIRONMENT;
     this.#latestLocator = initialLocator;
@@ -216,10 +186,18 @@ export class ReaderPositionSaveCoordinator {
     });
   }
 
-  public setOnPreferencesWritten(
-    callback: ReaderPositionSaveCoordinatorOptions["onPreferencesWritten"],
-  ): void {
-    this.#onPreferencesWritten = callback;
+  public confirmDefaultPlacement(locator: ReadingLocatorV1): void {
+    if (
+      this.#closed ||
+      this.#positionSaveRequested ||
+      this.#narrationActive ||
+      !locatorsEqual(locator, this.#latestLocator) ||
+      this.#validatedCanonicalLocator(locator) === undefined
+    ) {
+      return;
+    }
+    this.#positionSaveRequested = true;
+    this.#requireIntentBeforePassiveSave = false;
   }
 
   public schedulePassive(
@@ -329,32 +307,12 @@ export class ReaderPositionSaveCoordinator {
     return this.flush();
   }
 
-  public savePreferences(preferences: ReaderPreferencesV1): boolean {
-    if (
-      this.#closed ||
-      (this.#lastRequestedPreferences !== undefined &&
-        preferencesEqual(this.#lastRequestedPreferences, preferences))
-    ) {
-      return false;
-    }
-
-    this.#latestPreferences = preferences;
-    this.#lastRequestedPreferences = preferences;
-    this.#cancelPreferencesSchedule?.();
-    this.#cancelPreferencesSchedule = this.#environment.schedule(() => {
-      this.#cancelPreferencesSchedule = undefined;
-      this.#queueLatestPreferences();
-    }, 0);
-    return true;
-  }
-
   public flush(): Promise<void> {
     if (this.#closed) {
       return this.#closePromise ?? Promise.resolve();
     }
     this.#cancelPendingSchedules();
     this.#queueLatestPosition();
-    this.#queueLatestPreferences();
     return this.#currentDrain();
   }
 
@@ -367,7 +325,6 @@ export class ReaderPositionSaveCoordinator {
     this.#unsubscribeLifecycle = undefined;
     this.#cancelPendingSchedules();
     this.#queueLatestPosition();
-    this.#queueLatestPreferences();
     this.#closed = true;
     this.#closePromise = this.#currentDrain();
     return this.#closePromise;
@@ -447,8 +404,6 @@ export class ReaderPositionSaveCoordinator {
     this.#cancelPositionSchedule?.();
     this.#cancelPositionSchedule = undefined;
     this.#scheduledPositionKind = undefined;
-    this.#cancelPreferencesSchedule?.();
-    this.#cancelPreferencesSchedule = undefined;
   }
 
   #queueLatestPosition(): void {
@@ -508,78 +463,11 @@ export class ReaderPositionSaveCoordinator {
     this.#positionDrain = undefined;
   }
 
-  #queueLatestPreferences(): void {
-    const preferences = this.#latestPreferences;
-    if (preferences === undefined) {
-      return;
-    }
-    if (this.#writingPreferences !== undefined) {
-      this.#queuedPreferences = preferencesEqual(
-        this.#writingPreferences,
-        preferences,
-      )
-        ? undefined
-        : preferences;
-      return;
-    }
-    if (
-      this.#lastSavedPreferences !== undefined &&
-      preferencesEqual(this.#lastSavedPreferences, preferences)
-    ) {
-      this.#queuedPreferences = undefined;
-      return;
-    }
-
-    this.#queuedPreferences = preferences;
-    this.#startPreferencesDrain();
-  }
-
-  #startPreferencesDrain(): void {
-    if (this.#preferencesDrain !== undefined) {
-      return;
-    }
-    // Publish ownership before entering the async loop, including a
-    // repository that throws synchronously. Release it in the loop's turn.
-    let settle!: () => void;
-    this.#preferencesDrain = new Promise<void>((resolve) => {
-      settle = resolve;
-    });
-    void this.#drainPreferences().then(settle);
-  }
-
-  async #drainPreferences(): Promise<void> {
-    while (this.#queuedPreferences !== undefined) {
-      const preferences = this.#queuedPreferences;
-      this.#queuedPreferences = undefined;
-      this.#writingPreferences = preferences;
-      let result: ReaderRepositoryWriteResult = { status: "unavailable" };
-      try {
-        result = await this.#repository.writePreferences(preferences);
-        if (result.status === "saved") {
-          this.#lastSavedPreferences = preferences;
-        }
-      } catch {
-        // Preference persistence is best effort and cannot interrupt reflow.
-      } finally {
-        this.#writingPreferences = undefined;
-      }
-      if (!this.#closed && this.#latestPreferences === preferences) {
-        if (result.status !== "saved")
-          this.#lastRequestedPreferences = undefined;
-        this.#onPreferencesWritten?.(preferences, result);
-      }
-    }
-    this.#preferencesDrain = undefined;
-  }
-
   async #currentDrain(): Promise<void> {
     // A later flush can publish a successor while an earlier drain settles.
-    // Close joins that successor too, until both queues have become quiescent.
-    while (
-      this.#positionDrain !== undefined ||
-      this.#preferencesDrain !== undefined
-    ) {
-      await Promise.all([this.#positionDrain, this.#preferencesDrain]);
+    // Keep the aggregate settlement turn so close can join that successor.
+    while (this.#positionDrain !== undefined) {
+      await Promise.all([this.#positionDrain]);
     }
   }
 }

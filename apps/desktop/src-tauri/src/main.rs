@@ -59,7 +59,7 @@ fn main() {
         if matches!(event, tauri::RunEvent::Exit) {
             let _ = handle
                 .state::<Arc<tts_service_supervisor::TtsServiceSupervisor>>()
-                .force_stop();
+                .stop_for_application_exit();
         }
     });
 }

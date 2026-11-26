@@ -4,6 +4,7 @@ import {
   type PcmPlaybackBackend,
   type PcmPlaybackCallbacks,
   type PcmPlaybackHandle,
+  type PcmPlaybackRenderTime,
   type PcmPlaybackRequest,
 } from "../pcm-playback-contracts";
 import {
@@ -24,6 +25,48 @@ type AudioContextFactory = () => AudioContext;
 type IncrementalWsolaV3Factory = (
   context: AudioContext,
 ) => Promise<IncrementalWsolaV3Node>;
+
+const RENDER_QUANTUM_FRAMES = 128;
+const DIRECT_START_LEAD_FRAMES = 2 * RENDER_QUANTUM_FRAMES;
+
+function estimatedOutputTime(
+  context: AudioContext,
+  eventTime: number,
+  reportedQuantum = false,
+): PcmPlaybackRenderTime | undefined {
+  // A render receipt can reach the UI thread before its currentTime read
+  // advances past the quantum that produced it.
+  const rate = ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz;
+  const maximumObservedFrame =
+    Math.round(context.currentTime * rate) +
+    (reportedQuantum ? RENDER_QUANTUM_FRAMES : 0);
+  if (
+    context.state !== "running" ||
+    !Number.isFinite(eventTime) ||
+    eventTime < 0 ||
+    Math.round(eventTime * rate) > maximumObservedFrame
+  )
+    return undefined;
+  const timestamp = context.getOutputTimestamp?.();
+  const contextTime = timestamp?.contextTime;
+  const performanceTime = timestamp?.performanceTime;
+  if (
+    contextTime === undefined ||
+    performanceTime === undefined ||
+    !Number.isFinite(contextTime) ||
+    !Number.isFinite(performanceTime) ||
+    contextTime < 0 ||
+    contextTime > context.currentTime ||
+    performanceTime <= 0
+  )
+    return undefined;
+  // The timestamp pairs the output stream position with performance.now()'s
+  // origin. Map the rendered endpoint, not the time its notification ran.
+  const estimated = performanceTime + (eventTime - contextTime) * 1_000;
+  return Number.isFinite(estimated) && estimated >= 0
+    ? { clock: context, milliseconds: estimated }
+    : undefined;
+}
 
 export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   readonly #createAudioContext: AudioContextFactory;
@@ -213,6 +256,10 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     let resumed = false;
     let sourceStarted = false;
     let sourceStartedAt = 0;
+    const canTimeOutput = typeof context.getOutputTimestamp === "function";
+    let scheduledForTiming = false;
+    let startedRenderingAt: PcmPlaybackRenderTime | undefined;
+    let endedRenderingAt: PcmPlaybackRenderTime | undefined;
     let playedFrames = 0;
     let stopped = false;
     const readFrames = () =>
@@ -240,10 +287,22 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
           activatedAt = context.currentTime;
           resumed = true;
           if (!sourceStarted) {
-            sourceStartedAt = context.currentTime;
-            source.start();
+            if (canTimeOutput) {
+              // Schedule explicitly ahead of the graph. An immediate start
+              // alone cannot distinguish a late control message from audio.
+              sourceStartedAt =
+                context.currentTime +
+                DIRECT_START_LEAD_FRAMES / request.sampleRateHz;
+              source.start(sourceStartedAt);
+              scheduledForTiming = context.currentTime < sourceStartedAt;
+              activatedAt = sourceStartedAt;
+            } else {
+              sourceStartedAt = context.currentTime;
+              source.start();
+            }
             sourceStarted = true;
           }
+          activatedAt = Math.max(activatedAt, sourceStartedAt);
         })
         .catch(() => {
           if (!stopped && this.#active === handle && token === activation)
@@ -261,6 +320,16 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       },
       get renderedSampleFrames() {
         return readFrames();
+      },
+      get startedRenderingAt() {
+        if (!scheduledForTiming) return undefined;
+        return (startedRenderingAt ??= estimatedOutputTime(
+          context,
+          sourceStartedAt,
+        ));
+      },
+      get endedRenderingAt() {
+        return endedRenderingAt;
       },
       pause: () => {
         playedFrames = readFrames();
@@ -303,6 +372,13 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     };
     source.onended = () => {
       if (!stopped && this.#active === handle) {
+        if (scheduledForTiming) {
+          endedRenderingAt = estimatedOutputTime(
+            context,
+            sourceStartedAt + remaining / request.sampleRateHz,
+            true,
+          );
+        }
         handle.complete();
         this.#active = undefined;
         callbacks.ended();
@@ -337,6 +413,8 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     let startSent = false;
     let playedFrames = 0;
     let renderedFrames = 0;
+    let startedRenderingAt: PcmPlaybackRenderTime | undefined;
+    let endedRenderingAt: PcmPlaybackRenderTime | undefined;
     const maximumRenderedFrames = Math.ceil(
       (remaining * 100) / playbackRatePercent,
     );
@@ -388,6 +466,12 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       },
       get renderedSampleFrames() {
         return renderedFrames;
+      },
+      get startedRenderingAt() {
+        return startedRenderingAt;
+      },
+      get endedRenderingAt() {
+        return endedRenderingAt;
       },
       pause: () => {
         playedFrames = readFrames();
@@ -488,8 +572,15 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
           return;
         playedFrames = sourceFrames;
         processing = type !== "paused";
-        if (processing)
+        if (processing) {
           activatedAt = (currentFrame as number) / request.sampleRateHz;
+          if (type === "started" && sourceFrames === 0)
+            startedRenderingAt = estimatedOutputTime(
+              context,
+              activatedAt,
+              true,
+            );
+        }
         return;
       }
       if (type === "failed") {
@@ -498,6 +589,25 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
         return;
       }
       if (type === "ended") {
+        const currentFrame: unknown = Reflect.get(message, "currentFrame");
+        const endFrame: unknown = Reflect.get(message, "endFrame");
+        if (
+          typeof currentFrame === "number" &&
+          Number.isSafeInteger(currentFrame) &&
+          currentFrame >= 0 &&
+          typeof endFrame === "number" &&
+          Number.isSafeInteger(endFrame) &&
+          endFrame > currentFrame &&
+          endFrame - currentFrame <= RENDER_QUANTUM_FRAMES &&
+          endFrame >= maximumRenderedFrames &&
+          renderedFrames === maximumRenderedFrames
+        ) {
+          endedRenderingAt = estimatedOutputTime(
+            context,
+            endFrame / request.sampleRateHz,
+            true,
+          );
+        }
         handle.complete();
         wsola.node.port.onmessage = null;
         this.#active = undefined;

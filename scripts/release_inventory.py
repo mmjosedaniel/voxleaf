@@ -469,6 +469,14 @@ def _node_components() -> list[dict[str, Any]]:
 
 
 def _rust_components() -> list[dict[str, Any]]:
+    manifest_args = [
+        "--locked",
+        "--manifest-path",
+        "apps/desktop/src-tauri/Cargo.toml",
+        "--features",
+        "release-locked-runtime",
+    ]
+    target = "x86_64-pc-windows-msvc"
     metadata = cast(
         dict[str, Any],
         _run_json(
@@ -477,25 +485,58 @@ def _rust_components() -> list[dict[str, Any]]:
                 "metadata",
                 "--format-version",
                 "1",
-                "--locked",
-                "--manifest-path",
-                "apps/desktop/src-tauri/Cargo.toml",
+                *manifest_args,
                 "--filter-platform",
-                "x86_64-pc-windows-msvc",
+                target,
             ]
         ),
     )
     cargo_lock = tomllib.loads(CARGO_LOCK.read_text(encoding="utf-8"))
     checksums = {
-        (package["name"], package["version"]): package.get("checksum")
+        (package["name"], package["version"], package.get("source")): package.get(
+            "checksum"
+        )
         for package in cast(list[dict[str, Any]], cargo_lock["package"])
     }
+    packages = cast(list[dict[str, Any]], metadata["packages"])
+    identities = {(p["name"], p["version"]): p["id"] for p in packages}
+    if len(identities) != len(packages):
+        raise ValueError("Ambiguous Cargo inventory identity")
+    tree = subprocess.run(
+        [
+            "cargo",
+            "tree",
+            *manifest_args,
+            "--target",
+            target,
+            "--edges",
+            "normal,build",
+            "--prefix",
+            "none",
+            "--format",
+            "{p}",
+        ],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    )
+    reachable = set()
+    for line in tree.stdout.splitlines():
+        match = re.fullmatch(r"(\S+) v(\S+)(?: .*)?", line)
+        if not match or match.groups() not in identities:
+            raise ValueError("Unrecognized Cargo release graph entry")
+        reachable.add(identities[match.groups()])
+    if metadata["resolve"]["root"] not in reachable:
+        raise ValueError("Missing Cargo release graph root")
     components: list[dict[str, Any]] = []
-    for package in cast(list[dict[str, Any]], metadata["packages"]):
+    for package in packages:
         name = cast(str, package["name"])
         version = cast(str, package["version"])
-        checksum = checksums.get((name, version))
         source = cast(str | None, package.get("source"))
+        checksum = checksums[(name, version, source)]
+        required = package["id"] in reachable
         components.append(
             _component(
                 component_id=f"cargo:{name}@{version}",
@@ -519,7 +560,12 @@ def _rust_components() -> list[dict[str, Any]]:
                     if checksum
                     else None
                 ),
-                purpose="Windows x64 desktop runtime or build dependency.",
+                purpose="Windows x64 desktop runtime or build dependency."
+                if required
+                else "Retained Cargo lock and licence evidence.",
+                runtime_reachability="required by the frozen release graph"
+                if required
+                else "outside the Windows release normal/build graph",
                 process_boundary="native Tauri desktop/build boundary",
                 audit_ref="production-rust",
                 artifact_state="Windows target lock closed; final executable hash belongs to packaging",
@@ -818,7 +864,7 @@ def build_inventory() -> dict[str, Any]:
         "audits": {
             "date": audit_policy["auditDate"],
             "tools": audit_policy["tools"],
-            "result": "no known vulnerabilities; recorded informational RustSec notices and four optional Python advisory blind spots",
+            "result": "Production Node threshold: high and critical. RustSec and Python checks require zero reported vulnerabilities, with reviewed Rust informational notices and four optional Python advisory blind spots.",
             "policy": "services/tts/release/audit-policy.json",
         },
         "limitations": [

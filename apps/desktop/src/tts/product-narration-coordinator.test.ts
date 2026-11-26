@@ -951,6 +951,207 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it.each(["cooperative", "held"] as const)(
+    "VF-0093 keeps Cancel truthful and the next mounted Play available (%s)",
+    async (mode) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(0);
+      let releaseVerification = () => {};
+      const verification = new Promise<void>((resolve) => {
+        releaseVerification = resolve;
+      });
+      let verifying = true;
+      let starts = 0;
+      let instance = "";
+      const profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+      const shutdownRequests: unknown[] = [];
+      const control = (kind: string, extra = {}) => ({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        kind,
+        serviceInstanceId: instance,
+        ...extra,
+      });
+      const state = (value: string) => control("state", { state: value });
+      const capabilities = () =>
+        control("capabilities", {
+          report: {
+            schemaVersion: 1,
+            capabilities: {
+              localSpeechGeneration: "unknown",
+              streamingGeneration: "unsupported",
+              generationCancellation: "unsupported",
+              hardwareAcceleration: "unknown",
+              cpuFallback: "unsupported",
+            },
+          },
+          cancellationContainment:
+            "identity-invalidation-then-worker-termination",
+        });
+      const client = new TtsProcessClient(
+        async <T>(
+          command: string,
+          args?: Record<string, unknown>,
+        ): Promise<T> => {
+          if (command.endsWith("available")) return true as T;
+          if (command === "start_tts_service") {
+            expect(args?.profileId).toBe(profileId);
+            instance = `service:vf0093-${++starts}`;
+            if (starts === 1) {
+              await verification;
+              verifying = false;
+              throw "tts-service-cancelled";
+            }
+            return [
+              state("handshaking"),
+              control("handshakeAccepted"),
+              state("unloaded"),
+              capabilities(),
+            ] as T;
+          }
+          if (command === "shutdown_tts_service") {
+            shutdownRequests.push(args?.startRequestId);
+            if (verifying) throw "tts-service-busy";
+            return [state("stopping"), state("stopped")] as T;
+          }
+          if (command === "prepare_tts_service")
+            return [
+              state("loading"),
+              state("warming"),
+              state("ready"),
+              capabilities(),
+            ] as T;
+          if (command === "synthesize_tts_segment")
+            return new Float32Array(360_000).buffer as T;
+          if (command === "cancel_tts_generation")
+            throw "tts-service-invalid-state";
+          throw "tts-service-unavailable";
+        },
+      );
+      const { coordinator, clock, backend } = createHarness({
+        serviceClient: client,
+        profileCompatibility: {
+          activeProfileId: () => profileId,
+          isProfileCurrentlyAllowed: () => true,
+          isProfileStartAllowed: async () => true,
+        },
+      });
+      Object.defineProperty(clock, "nowMs", { get: () => Date.now() });
+      const publication = {
+        ...createPublication(async () => completeResult()),
+        defaultStartLocator: START_LOCATOR,
+      };
+      const hardware = new HardwareProfileCompatibilityCoordinator();
+      vi.spyOn(hardware, "observe").mockReturnValue({
+        ...hardware.observe(),
+        status: "compatible",
+      });
+      const compatibility = vi
+        .spyOn(hardware, "check")
+        .mockResolvedValue(hardware.observe());
+      vi.spyOn(hardware, "ensureChecked").mockResolvedValue(hardware.observe());
+      const values = new Map<string, string>();
+      const view = render(
+        createElement(App, {
+          openFlow: {
+            publication: undefined,
+            open: async () => ({ status: "ready" as const, publication }),
+            close: async () => ({ status: "closed" as const }),
+          },
+          readerPositionRepository: createWebStorageReaderPositionRepository({
+            storage: () => ({
+              getItem: (key) => values.get(key) ?? null,
+              setItem: (key, value) => {
+                values.set(key, value);
+              },
+            }),
+          }),
+          hardwareCompatibilityCoordinator: hardware,
+          createNarrationCoordinator: () => coordinator,
+          ReadyPublicationContent: () => null,
+        }),
+      );
+      const play = () => screen.getByRole("button", { name: /^Play$/ });
+      try {
+        await act(async () => {
+          fireEvent.change(screen.getByLabelText("Open a book"), {
+            target: {
+              files: [
+                new File(["synthetic"], "synthetic.epub", {
+                  type: "application/epub+zip",
+                }),
+              ],
+            },
+          });
+        });
+        await act(async () => {
+          await coordinator.checkAvailability();
+        });
+        fireEvent.click(play());
+        await act(async () => {
+          await settleUntil(() => starts === 1);
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Cancel start" }));
+        await act(async () => {
+          await settleUntil(() => shutdownRequests.length > 0);
+        });
+        expect(coordinator.observe().serviceState).toBe("stopping");
+        expect(
+          screen.getByText(
+            "Cancelling local narration. Wait before starting again.",
+          ),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /^Play$/ })).toBeNull();
+        if (mode === "held") {
+          await act(async () => {
+            await vi.advanceTimersByTimeAsync(6_000);
+          });
+          expect(coordinator.observe().recovery.phase).toBe("contained");
+          expect(
+            screen.getByText(
+              "Cancellation is still pending. Check compatibility in Settings once it finishes.",
+            ),
+          ).toBeInTheDocument();
+          expect(starts).toBe(1);
+        }
+        await act(async () => {
+          releaseVerification();
+        });
+        expect(shutdownRequests[1]).toEqual(shutdownRequests[0]);
+        if (mode === "held") {
+          fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+          await act(async () => {
+            fireEvent.click(
+              screen.getByRole("button", {
+                name: "Check compatibility again",
+              }),
+            );
+            await settleUntil(
+              () => coordinator.observe().availability === "available",
+            );
+          });
+          expect(compatibility).toHaveBeenCalledWith("explicit-recheck");
+          fireEvent.click(
+            screen.getByRole("button", { name: "Close Settings" }),
+          );
+        }
+        expect(play()).toBeEnabled();
+        fireEvent.click(play());
+        await act(async () => {
+          await settleUntil(() => backend.active !== undefined);
+        });
+        expect(starts).toBe(2);
+        expect(client.observe().serviceInstanceId).toBe("service:vf0093-2");
+      } finally {
+        releaseVerification();
+        view.unmount();
+        await vi.advanceTimersByTimeAsync(6_000);
+        await coordinator.close();
+        vi.useRealTimers();
+      }
+    },
+  );
+
   it.each([
     [0, "First.", "—", 1, true, 1200],
     [7, "First.", "—", 1, true, 1200],
@@ -1793,10 +1994,17 @@ describe("product narration coordinator", () => {
       intervals[0]!();
       clock.advance(100);
       backend.renderedSampleFrames += 2_400;
+      coordinator.setVolumePercent(35);
+      expect(coordinator.observe().state?.volumePercent).toBe(35);
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
+      coordinator.setVolumePercent(45);
+      expect(coordinator.observe().state?.volumePercent).toBe(45);
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       intervals[0]!();
       expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       expect(sink.recordHeardCheckpoint).toHaveBeenCalledTimes(1);
       await coordinator.stop();
+      expect(coordinator.observe().metrics.playbackMs).toBe(played + 100);
       coordinator.updateVisibleLocator(rangeB.start);
       coordinator.start();
       await settleUntil(
@@ -5822,7 +6030,10 @@ describe("product narration coordinator", () => {
         release = resolve;
       });
       const optional = {
-        observe: () => new OptionalChatterboxClient().observe(),
+        observe: () => ({
+          ...new OptionalChatterboxClient().observe(),
+          removalSupported: true,
+        }),
         downloadPending: false,
         remove: vi.fn(async () => {
           await removal;

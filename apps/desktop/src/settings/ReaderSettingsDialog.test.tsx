@@ -321,6 +321,12 @@ describe("reader Settings dialog", () => {
         });
       });
       const native = vi.fn(async (command: string) => {
+        if (action === "download" && command === "select_optional_chatterbox")
+          return {
+            ...new OptionalChatterboxClient().observe(),
+            state: "confirming",
+            confirmationId: "1",
+          };
         if (command !== "optional_chatterbox_snapshot")
           throw "tts-optional-profile-incompatible-host";
         return {
@@ -337,9 +343,12 @@ describe("reader Settings dialog", () => {
       subject.rerenderSettings({ optionalChatterbox: client });
       await act(async () => {
         await client.refresh();
+        if (action === "download") await client.select();
         await client[action]();
       });
-      expect(client.observe().state).toBe("failed");
+      expect(client.observe().state).toBe(
+        action === "download" ? "confirming" : "failed",
+      );
       native.mockClear();
       fireEvent.click(
         await screen.findByRole("button", {
@@ -669,6 +678,9 @@ describe("reader Settings dialog", () => {
     const client = new OptionalChatterboxClient(async (command) => ({
       ...new OptionalChatterboxClient().observe(),
       state: command === "select_optional_chatterbox" ? "confirming" : "absent",
+      ...(command === "select_optional_chatterbox"
+        ? { confirmationId: "1" }
+        : {}),
       failure: null,
     }));
     const view = renderSettings({

@@ -11,6 +11,7 @@ import {
   rm,
   stat,
   symlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import os from "node:os";
@@ -1922,8 +1923,9 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
       }),
     /windows-release:lifecycle-status/u,
   );
+  const fixtureTime = new Date("2020-01-01T00:00:00.000Z");
+  await utimes(installer, fixtureTime, fixtureTime);
   const installerStats = await stat(installer);
-  const now = new Date().toISOString();
   const lifecycleReceipt = {
     schemaVersion: 1,
     status: "passed",
@@ -1931,8 +1933,8 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
       ...receipt.artifact.installer,
       modifiedAtUtc: new Date(Math.trunc(installerStats.mtimeMs)).toISOString(),
     },
-    startedAtUtc: now,
-    completedAtUtc: now,
+    startedAtUtc: "2020-01-01T00:00:01.000Z",
+    completedAtUtc: "2020-01-01T00:00:02.000Z",
     checks: {
       install: true,
       firstStart: true,
@@ -1983,6 +1985,12 @@ test("DCR-05 and five-pass 4.4 keep release evidence strict and independent of o
     },
     (value) => {
       value.uninstallOptionMatrix[0].unrelatedDataPreserved = false;
+    },
+    (value) => {
+      value.completedAtUtc = "2020-01-01T00:00:00.500Z";
+    },
+    (value) => {
+      value.completedAtUtc = "9999-01-01T00:00:00.000Z";
     },
     (value) => {
       value.completedAtUtc = "malformed";
@@ -2209,6 +2217,44 @@ Assert-OriginalTree $data
     assert.equal(await readFile(sibling, "utf8"), "unrelated sibling sentinel");
   },
 );
+
+for (const kind of ["file", "directory"]) {
+  test(
+    `VF-0149 lifecycle tolerates an enumerated ${kind} disappearing`,
+    { skip: process.platform !== "win32" },
+    async (t) => {
+      const parent = await mkdtemp(
+        path.join(os.tmpdir(), "voxleaf-traversal-"),
+      );
+      t.after(() => rm(parent, { recursive: true, force: true }));
+      const result = spawnSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          path.join(
+            import.meta.dirname,
+            "fixtures",
+            "lifecycle-disappearing-entry.ps1",
+          ),
+          parent,
+          kind,
+        ],
+        { encoding: "utf8", windowsHide: true, timeout: 20000 },
+      );
+      assert.ifError(result.error);
+      assert.equal(
+        result.status,
+        0,
+        result.stdout.trim() || "disposable lifecycle traversal failed",
+      );
+      assert.match(result.stdout, /disappearance-observed/);
+    },
+  );
+}
 
 for (const transient of [true, false]) {
   test(

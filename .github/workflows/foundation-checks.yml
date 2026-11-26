@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: foundation-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: foundation-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,6 +40,7 @@ jobs:
 
       - name: Enable pinned pnpm
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           corepack enable
           corepack prepare pnpm@11.15.1 --activate
 
@@ -58,18 +59,20 @@ jobs:
 
       - name: Set up pinned Rust
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           rustup toolchain install 1.97.1 --profile minimal --component rustfmt,clippy --target x86_64-pc-windows-msvc
           rustup show active-toolchain
+
+      - name: Verify committed Cargo resolution
+        run: cargo tree --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --depth 0
 
       - name: Install locked dependencies
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           pnpm.cmd install --frozen-lockfile
           uv sync --project services/tts --locked
-
-      - name: Install pinned Playwright Chromium
-        run: pnpm.cmd test:browser:install
 
       - name: Prepare pinned NSIS for compiled regression tests
         run: |
@@ -94,8 +97,26 @@ jobs:
             throw "NSIS regression compiler is unavailable."
           }
 
+      - name: Run authoritative foundation checks
+        run: pnpm.cmd check
+
+      - name: Install pinned Playwright Chromium
+        run: pnpm.cmd test:browser:install
+
       - name: Run real-browser desktop smoke
+        id: chromium
         run: pnpm.cmd test:browser
+
+      - name: Retain failed synthetic Chromium traces and screenshots for three days
+        if: ${{ failure() && steps.chromium.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chromium-failure
+          path: |
+            apps/desktop/test-results/browser/**/trace.zip
+            apps/desktop/test-results/browser/**/test-failed-*.png
+          retention-days: 3
+          if-no-files-found: warn
 
       - name: Ensure WebView2 Runtime
         run: |
@@ -152,6 +173,7 @@ jobs:
 
       - name: Install pinned Tauri WebDriver tooling
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           cargo install tauri-driver --version 2.0.6 --locked
           cargo install `
             --git https://github.com/chippers/msedgedriver-tool.git `
@@ -192,10 +214,10 @@ jobs:
             -Value "VOXLEAF_EDGE_DRIVER_PATH=$edgeDriverPath"
 
       - name: Run packaged WebView2 startup smoke
-        run: pnpm.cmd test:native-startup
-
-      - name: Run authoritative foundation checks
-        run: pnpm.cmd check
+        run: |
+          $app = (Resolve-Path apps/desktop/src-tauri/target/release/voxleaf-desktop.exe).Path
+          Write-Output "Testing executable SHA-256 $((Get-FileHash -LiteralPath $app).Hash)"
+          node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
 
   ubuntu-portable:
     name: Ubuntu portable foundation
@@ -256,7 +278,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -264,11 +285,6 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-
-      - name: Enable pinned pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.15.1 --activate
 
       - name: Install Linux native prerequisites
         run: |
@@ -282,14 +298,14 @@ jobs:
           rustup toolchain install 1.97.1 --profile minimal --component rustfmt,clippy
           rustup show active-toolchain
 
-      - name: Install locked JavaScript dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify committed Cargo resolution
+        run: cargo tree --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --depth 0
 
       - name: Check Rust formatting
-        run: pnpm format:check:rust
+        run: node --run format:check:rust
 
       - name: Lint Rust
-        run: pnpm lint:rust
+        run: node --run lint:rust
 
       - name: Test Rust
-        run: pnpm test:rust
+        run: node --run test:rust

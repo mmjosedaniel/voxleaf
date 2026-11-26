@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -907,6 +908,115 @@ def test_nov17_v6_quality_credit_requires_one_scorecard_with_all_dimensions(
         assert aggregate_scores(session_id, raw_root=tmp_path)["eligibleForPromotion"] is True
 
 
+@pytest.mark.parametrize(
+    "candidates", [(QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID), (QWEN_V3_CANDIDATE_ID,)]
+)
+def test_nov23_final_card_requires_numeric_coverage_per_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, candidates: tuple[str, ...]
+) -> None:
+    monkeypatch.setattr(quality, "_write_wave", _fake_wave)
+    session_id = "e" * 32
+    for candidate in candidates:
+        generate_candidate_audio(
+            _request(tmp_path, candidate),
+            session_id,
+            raw_root=tmp_path,
+            adapter_builder=FakeQualityAdapter,
+        )
+    finalize_session(session_id, 2, raw_root=tmp_path)
+    session = tmp_path / "quality-v2" / session_id
+    key = json.loads((session / "randomization-key.json").read_bytes())["samples"]
+    chosen = {row["sampleId"] for row in key if row["candidateId"] == candidates[0]}
+    first, last = [
+        json.loads((session / "scorecards" / f"evaluator-{n:02d}.template.json").read_bytes())
+        for n in (1, 2)
+    ]
+    for index, card in enumerate((first, last)):
+        for sample in card["samples"]:
+            sample["meaningChangingDefect"] = False
+            sample["scores"] = dict.fromkeys(DIMENSIONS, 4)
+            if sample["sampleId"] in chosen:
+                sample["scores"][DIMENSIONS[0]] = "not-applicable"
+            if index == 1:
+                sample["scores"][DIMENSIONS[1]] = "not-applicable"
+    submit_scorecard(session_id, first, raw_root=tmp_path)
+    first_path = session / "scorecards/evaluator-01.completed.json"
+    preserved = first_path.read_bytes()
+    with pytest.raises(QualitySessionError, match="missing-dimension"):
+        submit_scorecard(session_id, last, raw_root=tmp_path)
+    assert not (session / "scorecards/evaluator-02.completed.json").exists()
+    assert first_path.read_bytes() == preserved
+    next(s for s in last["samples"] if s["sampleId"] in chosen)["scores"][DIMENSIONS[0]] = 5
+    submit_scorecard(session_id, last, raw_root=tmp_path)
+    assert aggregate_scores(session_id, raw_root=tmp_path)["evaluatorCount"] == 2
+    with pytest.raises(QualitySessionError, match="scorecard-state"):
+        submit_scorecard(session_id, last, raw_root=tmp_path)
+
+
+@pytest.mark.parametrize("action", ["submit", "aggregate", "cleanup"])
+@pytest.mark.parametrize("fault", ["early", "late"])
+def test_nov23_quality_cli_filesystem_error_allows_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    overlap_quality_session: tuple[Path, list[str]],
+    action: str,
+    fault: str,
+) -> None:
+    from functools import partial
+
+    session, _ = overlap_quality_session
+    card_path = session / "scorecards/evaluator-01.completed.json"
+    payload: dict[str, object] = {"qualityOptIn": True, "sessionId": session.name}
+    target = session / "quality.aggregate.json"
+    if action == "submit":
+        target = card_path
+        payload["scorecard"] = json.loads(card_path.read_bytes())
+        card_path.unlink()
+    previous = target.read_bytes() if target.exists() else None
+    neighbor = session.parent / "unrelated.fixture"
+    neighbor.write_bytes(b"preserve")
+    for name in ("submit_scorecard", "aggregate_scores", "cleanup_session"):
+        monkeypatch.setattr(quality_cli, name, partial(getattr(quality, name), raw_root=tmp_path))
+    with monkeypatch.context() as failure:
+        if action == "cleanup":
+
+            def deny_cleanup(owned: Path) -> None:
+                assert owned == session
+                if fault == "late":
+                    card_path.unlink()
+                raise PermissionError("synthetic failure")
+
+            failure.setattr(shutil, "rmtree", deny_cleanup)
+        else:
+            method = "open" if fault == "early" else "replace"
+            original = getattr(Path, method)
+
+            def deny_publish(path: Path, *args: Any, **kwargs: Any) -> Any:
+                mode = args[0] if args else kwargs.get("mode")
+                if (
+                    path.parent == target.parent
+                    and path.suffix == ".tmp"
+                    and (method == "replace" or mode in {"wb", "xb"})
+                ):
+                    raise PermissionError("synthetic failure")
+                return original(path, *args, **kwargs)
+
+            failure.setattr(Path, method, deny_publish)
+        assert _invoke_nov17_cli(monkeypatch, quality_cli, action, payload) == (
+            2,
+            {"status": "fail", "failureCode": "invalid-request"},
+        )
+    if action != "cleanup":
+        assert (target.read_bytes() if target.exists() else None) == previous
+        assert not list(target.parent.glob("*.tmp"))
+    assert _invoke_nov17_cli(monkeypatch, quality_cli, action, payload)[0] == 0
+    assert neighbor.read_bytes() == b"preserve"
+    if action == "cleanup":
+        assert not session.exists()
+    else:
+        assert target.is_file()
+
+
 def test_nov17_cpu_derive_cli_preserves_retryable_quality_busy(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1451,7 +1561,10 @@ def submission_session(tmp_path: Path) -> tuple[Path, dict[str, object]]:
     session = tmp_path / "quality-v2" / ("c" * 32)
     (session / "scorecards").mkdir(parents=True)
     (session / "session.json").write_text(
-        json.dumps({"state": "ready", "evaluatorIds": ["evaluator-01"]}), encoding="utf-8"
+        json.dumps(
+            {"state": "ready", "evaluatorIds": ["evaluator-01", "evaluator-02", "evaluator-03"]}
+        ),
+        encoding="utf-8",
     )
     (session / "scorecards" / "evaluator-01.template.json").write_text(
         json.dumps(card), encoding="utf-8"

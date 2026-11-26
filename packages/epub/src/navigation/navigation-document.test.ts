@@ -57,6 +57,13 @@ describe("EPUB 3 navigation document parsing", () => {
     ["multibyte alt", '<h:img alt=" é "/><h:img alt=" 🙂 "/>', "", "é 🙂", 7],
     ["used title", "<h:img/>", ' title=" β   é "', "β é", 5],
     [
+      "VF-0145 hidden root title and decoded XML text",
+      'X<h:img alt="unused image"/>',
+      ' hidden="" title="&#160;β   é&#8239;"',
+      "β é",
+      6, // One decoded XML byte and five retained title bytes.
+    ],
+    [
       "attribute then XML whitespace",
       'A<h:img alt="  "/><h:em> </h:em><h:img alt=" é "/>B',
       "",

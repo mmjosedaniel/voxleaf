@@ -241,6 +241,8 @@ Use the component map and support matrix for current behavior. The catalogue bel
 
 ## Plans
 
+- [Desktop responsibility refactors](plans/completed/desktop-responsibility-refactors.md) records the ownership changes and their focused tests. The [package ledger](plans/evidence/desktop-responsibility-refactors/package-01.md) maps checks shared by the native and portable builds.
+
 - [Windows build privacy](plans/completed/windows-build-privacy.md) identifies the verified Windows artifacts and the scope of the source privacy checks.
 
 - [November 17 findings corrections](plans/completed/november-17-findings-corrections.md) records acceptance for VF-0093 through VF-0132, including the Windows installer checks and local Chatterbox v8 recovery.

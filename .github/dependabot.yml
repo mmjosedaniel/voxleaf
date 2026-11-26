@@ -10,6 +10,9 @@ updates:
     open-pull-requests-limit: 4
     labels:
       - dependencies
+    ignore:
+      - dependency-name: typescript
+        versions: ["7.x"]
     groups:
       production-node:
         dependency-type: production
@@ -27,7 +30,7 @@ updates:
     labels:
       - dependencies
 
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /services/tts
     schedule:
       interval: weekly
@@ -38,23 +41,12 @@ updates:
     labels:
       - dependencies
 
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /services/tts/release/core
     schedule:
       interval: weekly
       day: monday
       time: "09:45"
-      timezone: America/Bogota
-    open-pull-requests-limit: 4
-    labels:
-      - dependencies
-
-  - package-ecosystem: pip
-    directory: /services/tts/release/profiles/chatterbox-v7
-    schedule:
-      interval: weekly
-      day: monday
-      time: "10:00"
       timezone: America/Bogota
     open-pull-requests-limit: 4
     labels:

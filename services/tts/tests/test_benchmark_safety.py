@@ -213,6 +213,54 @@ def _complete(
     return expected, current
 
 
+@pytest.mark.parametrize("phase", ["write", "rename", "committed", "existing"])
+def test_nov23_prepare_publication_failure_preserves_exclusive_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, phase: str
+) -> None:
+    settings = [ORIGINAL]
+    monkeypatch.setattr(safety, "observe_power", lambda: settings[0])
+    monkeypatch.setattr("benchmarks.batch_official.ensure_raw_root_is_ignored", lambda _root: None)
+    expected = _binding()
+    path = safety.root(tmp_path, cast(str, expected["session"]))
+
+    def fail_write(target: Path, data: object) -> None:
+        raise OSError("synthetic publication failure")
+
+    rename = Path.rename
+
+    def fail_rename(staged: Path, target: Path) -> Path:
+        if phase == "committed":
+            rename(staged, target)
+        raise OSError("synthetic rename failure")
+
+    if phase == "existing":
+        path.mkdir(parents=True)
+        with pytest.raises(FileExistsError):
+            safety.prepare(tmp_path, expected)
+        assert path.is_dir() and not list(path.iterdir())
+        return
+    with monkeypatch.context() as fault:
+        if phase == "write":
+            fault.setattr(safety, "write_once", fail_write)
+        else:
+            fault.setattr(Path, "rename", fail_rename)
+        with pytest.raises(OSError):
+            safety.prepare(tmp_path, expected)
+    if phase == "committed":
+        before = (path / "reservation.json").read_bytes()
+        with pytest.raises(FileExistsError):
+            safety.prepare(tmp_path, expected)
+        assert before == (path / "reservation.json").read_bytes()
+    else:
+        assert safety.prepare(tmp_path, expected)["status"] == "prepared"
+    settings[0] = DISABLED
+    safety.claim(tmp_path, expected)
+    with pytest.raises(FileExistsError):
+        safety.claim(tmp_path, expected)
+    settings[0] = ORIGINAL
+    assert safety.finalize(tmp_path, expected)["eligibleForDerivation"] is False
+
+
 def test_fsf_vf0077_original_settings_bound_once_and_failed_run_remains_restorable(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

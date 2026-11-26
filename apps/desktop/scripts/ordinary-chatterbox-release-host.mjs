@@ -44,6 +44,16 @@ const DEFAULT_RECEIPT = path.join(
 const STARTUP_TIMEOUT_MS = 90_000;
 const ACQUISITION_TIMEOUT_MS = 8 * 60 * 60 * 1_000;
 const POLL_INTERVAL_MS = 250;
+const OPTIONAL_FAILURE_CODES = Object.freeze([
+  "tts-optional-profile-busy",
+  "tts-optional-profile-cancelled",
+  "tts-optional-profile-cleanup-failed",
+  "tts-optional-profile-download-failed",
+  "tts-optional-profile-incompatible-host",
+  "tts-optional-profile-insufficient-space",
+  "tts-optional-profile-invalid",
+  "tts-optional-profile-unavailable",
+]);
 const WEBDRIVER_SHUTDOWN_TIMEOUT_MS = 15_000;
 const PROFILE_CLEANUP_ATTEMPTS = 8;
 const UNINSTALL_STABLE_ABSENCE_OBSERVATIONS = 5;
@@ -370,26 +380,47 @@ export async function createJourneyReceipt({ installer, executable }) {
   });
 }
 
-export function evaluateHostGate(report) {
+export function evaluateHostGate(report, requirements) {
   const knownAtLeast = (quantity, minimum) =>
-    quantity?.status === "known" && quantity.value >= minimum;
+    quantity?.status === "known" &&
+    Number.isSafeInteger(quantity.value) &&
+    Number.isSafeInteger(minimum) &&
+    minimum > 0 &&
+    quantity.value >= minimum;
   const cuda = report?.providers?.cuda;
   const capability = report?.cudaComputeCapability;
   return (
     report?.schemaVersion === 1 &&
+    requirements?.profileId === PROFILE_ID &&
+    report?.probeStatus === "complete" &&
     report?.platform?.operatingSystem === "windows" &&
     report?.platform?.architecture === "x86_64" &&
-    knownAtLeast(report?.processor?.logicalProcessorCount, 8) &&
-    knownAtLeast(report?.memory?.totalPhysicalMiB, 24_576) &&
-    knownAtLeast(report?.memory?.availablePhysicalMiB, 4_096) &&
+    knownAtLeast(
+      report?.processor?.logicalProcessorCount,
+      requirements.minimumLogicalProcessors,
+    ) &&
+    knownAtLeast(
+      report?.memory?.totalPhysicalMiB,
+      requirements.minimumTotalRamMiB,
+    ) &&
+    knownAtLeast(
+      report?.memory?.availablePhysicalMiB,
+      requirements.minimumAvailableRamMiB,
+    ) &&
     cuda?.availability === "available" &&
     cuda?.deviceClass === "discrete-gpu" &&
     cuda?.precisions?.bfloat16 === "available" &&
     capability?.status === "known" &&
     capability.major === 12 &&
     capability.minor === 0 &&
-    knownAtLeast(cuda?.dedicatedMemoryMiB, 5_632) &&
-    knownAtLeast(cuda?.availableDedicatedMemoryMiB, 4_668)
+    knownAtLeast(
+      cuda?.dedicatedMemoryMiB,
+      requirements.minimumTotalDedicatedVramMiB,
+    ) &&
+    knownAtLeast(
+      cuda?.availableDedicatedMemoryMiB,
+      requirements.minimumAvailableDedicatedVramMiB,
+    )
   );
 }
 
@@ -651,13 +682,15 @@ async function waitForOptionalState(
   client,
   expected,
   timeout = STARTUP_TIMEOUT_MS,
+  attempt,
 ) {
   let snapshot;
   await waitFor(
     async () => {
+      if (attempt !== undefined) await assertDownloadPending(client, attempt);
       snapshot = await invoke(client, "optional_chatterbox_snapshot");
       if (snapshot?.state === "failed" && expected !== "failed") {
-        fail(`acquisition-${snapshot.failure}`);
+        fail(`acquisition-${optionalFailureCode(snapshot.failure)}`);
       }
       return snapshot?.state === expected;
     },
@@ -667,42 +700,110 @@ async function waitForOptionalState(
   return snapshot;
 }
 
-async function startAcquisition(client) {
-  const confirmation = await invoke(client, "select_optional_chatterbox", {
-    profileId: PROFILE_ID,
-  });
-  if (confirmation?.state !== "confirming") fail("corrections-consent");
-  await client.execute(
-    `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
-  );
+function optionalFailureCode(error) {
+  return OPTIONAL_FAILURE_CODES.includes(error) ? error : "unclassified";
+}
+
+async function reviewAcquisition(client) {
+  let result;
+  try {
+    result = await client.execute(`
+      return Promise.resolve().then(() => globalThis.__TAURI_INTERNALS__.invoke(
+        "select_optional_chatterbox", ${JSON.stringify({ profileId: PROFILE_ID })}
+      )).then(
+        snapshot => ({ confirmationId: snapshot?.state === "confirming" ? snapshot.confirmationId : null }),
+        error => ({ failure: ${JSON.stringify(OPTIONAL_FAILURE_CODES)}.includes(error) ? error : "unclassified" })
+      );`);
+  } catch {
+    fail("review-bridge-failed");
+  }
+  if (result?.failure !== undefined)
+    fail(`review-${optionalFailureCode(result.failure)}`);
+  if (
+    typeof result?.confirmationId !== "string" ||
+    !/^[1-9][0-9]{0,19}$/u.test(result.confirmationId)
+  )
+    fail("consent-state");
+  return result.confirmationId;
 }
 
 let acquisitionAttempt = 0;
 
-// Installed is published before native cleanup completes. Keep a terminal
-// acknowledgement for this invocation instead of using that progress snapshot.
-async function completeAcquisition(client) {
+// Installed is published before native cleanup completes. Observe the exact
+// invocation's outcome alongside progress, and retain only bounded codes.
+async function startAcquisition(client, confirmationId) {
   const attempt = ++acquisitionAttempt;
-  await client.execute(`
-    const owned = { attempt: ${attempt}, status: "pending" };
-    globalThis.__voxleafOwnedDownload = owned;
-    globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).then(
-      result => { owned.state = result?.state; owned.status = "fulfilled"; },
-      () => { owned.status = "rejected"; }
-    ); return true;`);
+  try {
+    await client.execute(`
+      const owned = { attempt: ${attempt}, status: "pending" };
+      globalThis.__voxleafOwnedDownload = owned;
+      Promise.resolve().then(() => globalThis.__TAURI_INTERNALS__.invoke(
+        "download_optional_chatterbox", ${JSON.stringify({ profileId: PROFILE_ID, confirmationId })}
+      )).then(
+        result => {
+          owned.state = ["absent", "installed"].includes(result?.state) ? result.state : null;
+          owned.status = "fulfilled";
+        },
+        error => {
+          owned.failure = ${JSON.stringify(OPTIONAL_FAILURE_CODES)}.includes(error) ? error : "unclassified";
+          owned.status = "rejected";
+        }
+      ); return true;`);
+  } catch {
+    fail("download-bridge-failed");
+  }
+  return attempt;
+}
+
+async function observeDownload(client, attempt) {
+  let result;
+  try {
+    result = await client.execute("return globalThis.__voxleafOwnedDownload;");
+  } catch {
+    fail("download-observation-bridge-failed");
+  }
+  if (result?.attempt !== attempt) fail("download-attempt-replaced");
+  return result;
+}
+
+async function assertDownloadPending(client, attempt) {
+  const result = await observeDownload(client, attempt);
+  if (result.status === "rejected")
+    fail(`download-${optionalFailureCode(result.failure)}`);
+  if (result.status !== "pending") fail("download-progress-ended");
+}
+
+async function waitForDownloadSettlement(client, attempt, timeout) {
+  let result;
   await waitFor(
     async () => {
-      const result = await client.execute(
-        "return globalThis.__voxleafOwnedDownload;",
-      );
-      if (result?.attempt !== attempt) fail("download-attempt-replaced");
-      if (result.status === "pending") return false;
-      if (result.status !== "fulfilled" || result.state !== "installed")
-        fail("download-terminal-failed");
-      return true;
+      result = await observeDownload(client, attempt);
+      return result.status !== "pending";
     },
-    ACQUISITION_TIMEOUT_MS,
+    timeout,
     "download-terminal-timeout",
+  );
+  return result;
+}
+
+async function requireDownloadState(client, attempt, expected, timeout) {
+  const result = await waitForDownloadSettlement(client, attempt, timeout);
+  if (result.status === "rejected")
+    fail(`download-${optionalFailureCode(result.failure)}`);
+  if (result.status !== "fulfilled" || result.state !== expected)
+    fail("download-terminal-failed");
+}
+
+async function completeAcquisition(client) {
+  const attempt = await startAcquisition(
+    client,
+    await reviewAcquisition(client),
+  );
+  await requireDownloadState(
+    client,
+    attempt,
+    "installed",
+    ACQUISITION_TIMEOUT_MS,
   );
 }
 
@@ -722,10 +823,19 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
   const staging = path.join(dataRoot, "tts", "staging", PROFILE_ID);
   const operation = path.join(staging, "operation");
   stages.mark("journey-cleanup-failure");
-  await startAcquisition(client);
-  await waitForOptionalState(client, "downloading");
+  const cleanupDownload = await startAcquisition(
+    client,
+    await reviewAcquisition(client),
+  );
+  await waitForOptionalState(
+    client,
+    "downloading",
+    STARTUP_TIMEOUT_MS,
+    cleanupDownload,
+  );
   await waitFor(
     async () => {
+      await assertDownloadPending(client, cleanupDownload);
       try {
         return (await lstat(path.join(operation, "downloads"))).isDirectory();
       } catch (error) {
@@ -749,11 +859,15 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
     failed = await waitForOptionalState(client, "failed");
     if (failed.failure !== "tts-optional-profile-cleanup-failed")
       fail("cleanup-failure-code");
+    const settled = await waitForDownloadSettlement(
+      client,
+      cleanupDownload,
+      STARTUP_TIMEOUT_MS,
+    );
+    if (settled.status !== "rejected" || settled.failure !== failed.failure)
+      fail("cleanup-terminal-state");
     // Selection must be admitted after the worker has terminated.
-    const retry = await invoke(client, "select_optional_chatterbox", {
-      profileId: PROFILE_ID,
-    });
-    if (retry?.state !== "confirming") fail("cleanup-retry-busy");
+    await reviewAcquisition(client);
   } finally {
     await cleanup.close();
   }
@@ -762,7 +876,10 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
   await assertAbsent(staging, "cleanup-retry-staging-retained");
 
   stages.mark("journey-verification-cancel");
-  await startAcquisition(client);
+  const verificationDownload = await startAcquisition(
+    client,
+    await reviewAcquisition(client),
+  );
   const lastModel = path.join(
     operation,
     "package",
@@ -771,9 +888,10 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
   );
   await waitFor(
     async () => {
+      await assertDownloadPending(client, verificationDownload);
       const snapshot = await invoke(client, "optional_chatterbox_snapshot");
       if (snapshot?.state === "failed")
-        fail(`verification-download-${snapshot.failure}`);
+        fail(`verification-download-${optionalFailureCode(snapshot.failure)}`);
       if (snapshot?.state === "installed")
         fail("verification-barrier-window-missed");
       try {
@@ -808,6 +926,12 @@ async function exerciseAcquisitionCorrections(client, dataRoot, stages) {
     await verification.close();
   }
   await waitForOptionalState(client, "absent");
+  await requireDownloadState(
+    client,
+    verificationDownload,
+    "absent",
+    STARTUP_TIMEOUT_MS,
+  );
   await assertAbsent(staging, "verification-staging-retained");
   await assertAbsent(
     path.join(dataRoot, "tts", "cb", "7"),
@@ -833,6 +957,9 @@ async function hostGate(client) {
   // The renderer starts its own native probe at mount. The native guard rejects
   // overlap, so retry only that content-free WebDriver failure until the first
   // probe releases the guard. Other driver failures remain immediate errors.
+  // The installed snapshot projects the same manifest requirements and
+  // effective capacity reserve used by native acquisition.
+  const requirements = await invoke(client, "optional_chatterbox_snapshot");
   let report;
   await waitFor(
     async () => {
@@ -847,7 +974,7 @@ async function hostGate(client) {
     STARTUP_TIMEOUT_MS,
     "host-probe-unavailable",
   );
-  if (!evaluateHostGate(report)) fail("host-gate");
+  if (!evaluateHostGate(report, requirements)) fail("host-gate");
   return report;
 }
 
@@ -1342,32 +1469,26 @@ export async function runJourney(
         stages,
       );
     }
-    const confirming = await invoke(
-      session.client,
-      "select_optional_chatterbox",
-      { profileId: PROFILE_ID },
-    );
-    if (confirming?.state !== "confirming") fail("consent-state");
+    const confirmationId = await reviewAcquisition(session.client);
     stages.mark("journey-download-cancel");
-    await session.client.execute(
-      `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
+    const cancelledAttempt = await startAcquisition(
+      session.client,
+      confirmationId,
     );
-    await waitFor(
-      async () =>
-        (await invoke(session.client, "optional_chatterbox_snapshot"))
-          ?.state === "downloading",
+    await waitForOptionalState(
+      session.client,
+      "downloading",
       STARTUP_TIMEOUT_MS,
-      "cancel-not-started",
+      cancelledAttempt,
     );
     await invoke(session.client, "cancel_optional_chatterbox", {
       profileId: PROFILE_ID,
     });
-    await waitFor(
-      async () =>
-        (await invoke(session.client, "optional_chatterbox_snapshot"))
-          ?.state !== "downloading",
+    await requireDownloadState(
+      session.client,
+      cancelledAttempt,
+      "absent",
       STARTUP_TIMEOUT_MS,
-      "cancel-not-finished",
     );
     await assertAbsent(
       path.join(dataBackup.root, "tts", "staging", PROFILE_ID),
@@ -1375,12 +1496,6 @@ export async function runJourney(
       inspectStaging,
     );
     stages.mark("journey-download-retry");
-    const retryConfirmation = await invoke(
-      session.client,
-      "select_optional_chatterbox",
-      { profileId: PROFILE_ID },
-    );
-    if (retryConfirmation?.state !== "confirming") fail("retry-consent-state");
     await completeAcquisition(session.client);
     if (corrections !== undefined) {
       const lateCancel = await invoke(
@@ -1442,13 +1557,6 @@ export async function runJourney(
       environment: hostileEnv,
     });
     await releaseBoundary(session.client);
-    const reinstallConfirmation = await invoke(
-      session.client,
-      "select_optional_chatterbox",
-      { profileId: PROFILE_ID },
-    );
-    if (reinstallConfirmation?.state !== "confirming")
-      fail("reinstall-consent-state");
     await completeAcquisition(session.client);
     journeyReceipt = await createJourneyReceipt({
       installer: ownedInstaller,

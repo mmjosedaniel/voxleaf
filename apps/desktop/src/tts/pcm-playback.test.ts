@@ -168,6 +168,11 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
     }
     const durationFrames =
       request.sampleCountSamples - request.startSampleFrame;
+    const startedRenderingAt = {
+      clock: this.clock,
+      milliseconds: this.clock.nowMs,
+    };
+    let endedAtMs: number | undefined;
     let elapsedBeforeResumeMs = 0;
     let resumedAtMs = this.clock.nowMs;
     let paused = false;
@@ -196,6 +201,12 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
           Math.floor((elapsedMs() * request.sampleRateHz) / 1_000),
         );
       },
+      startedRenderingAt,
+      get endedRenderingAt() {
+        return endedAtMs === undefined
+          ? undefined
+          : { clock: startedRenderingAt.clock, milliseconds: endedAtMs };
+      },
       pause: () => {
         if (!paused && !stopped) {
           elapsedBeforeResumeMs = elapsedMs();
@@ -222,6 +233,11 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
           !ended &&
           handle.playedSampleFrames === durationFrames
         ) {
+          endedAtMs =
+            this.clock.nowMs -
+            (elapsedMs() -
+              (durationFrames * 1_000) /
+                (request.sampleRateHz * request.playbackRate));
           ended = true;
           this.active = undefined;
           callbacks.ended();
@@ -326,6 +342,7 @@ class FakeAudioBufferSource {
   onended: (() => void) | null = null;
   connected = false;
   started = false;
+  startedAt = 0;
   stopped = false;
 
   public connect(): void {
@@ -336,8 +353,9 @@ class FakeAudioBufferSource {
     this.connected = false;
   }
 
-  public start(): void {
+  public start(when = 0): void {
     this.started = true;
+    this.startedAt = when;
   }
 
   public stop(): void {
@@ -2135,7 +2153,7 @@ describe("adaptive PCM playback", () => {
   });
 
   it.each(["selection", "fallback"] as const)(
-    "VF-0066 rechecks automatic refill before allocation after a rate %s",
+    "VF-0066/VF-0138 rechecks refill without splitting its duration after a rate %s",
     async (change) => {
       const clock = createManualClock(0);
       const segments = [
@@ -2167,12 +2185,19 @@ describe("adaptive PCM playback", () => {
           state: "buffering",
           underrunCount: 1,
         });
+        clock.advanceBy(80);
         player.setPlaybackRatePercent(75);
         for (const unit of segments.slice(1, 4))
           synthesize(scheduler, unit, 15_000);
         player.synchronize();
         expect(prepare).toHaveBeenCalledExactlyOnceWith(75);
         expect(backend.startedSequences).toEqual([0]);
+        clock.advanceBy(210);
+        expect(scheduler.observe()).toMatchObject({
+          activeRefillIndex: 1,
+          bufferingMs: 290,
+          lastCompletedRefill: undefined,
+        });
         if (change === "selection") {
           player.setPlaybackRatePercent(100);
           resolvePreparation();
@@ -2185,6 +2210,7 @@ describe("adaptive PCM playback", () => {
           underrunCount: 1,
         });
         expect(backend.startedSequences).toEqual([0]);
+        clock.advanceBy(120);
         synthesize(scheduler, segments[4]!, 15_000);
         expect(player.synchronize()).toMatchObject({
           state: "playing",
@@ -2192,6 +2218,11 @@ describe("adaptive PCM playback", () => {
         });
         expect(backend.startedSequences).toEqual([0, 1]);
         expect(backend.startedRates).toEqual([1, 1]);
+        expect(scheduler.observe()).toMatchObject({
+          activeRefillIndex: undefined,
+          bufferingMs: 410,
+          lastCompletedRefill: { index: 1, elapsedMs: 410 },
+        });
       } finally {
         resolvePreparation();
         player.close();
@@ -2456,9 +2487,221 @@ describe("adaptive PCM playback", () => {
     expect(second.releaseCount).toBe(1);
     expect(backend.releasePreparationCount).toBe(1);
   });
+
+  it("VF-0169 witnesses rate preparation and eligible handoff separately from semantic pause", async () => {
+    const clock = createManualClock(0);
+    const first = segment(1, 300);
+    const second = segment(2);
+    const scheduler = readyScheduler(clock, [first, second], true);
+    synthesize(scheduler, first, 8_000);
+    synthesize(scheduler, second, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    let resolvePreparation!: () => void;
+    const preparation = new Promise<void>((resolve) => {
+      resolvePreparation = resolve;
+    });
+    vi.spyOn(backend, "preparePlaybackRate").mockReturnValueOnce(preparation);
+
+    player.synchronize();
+    clock.advanceBy(100);
+    player.setPlaybackRatePercent(75);
+    clock.advanceBy(200);
+    backend.ratePrepared = true;
+    resolvePreparation();
+    await preparation;
+    clock.advanceBy(7_700);
+    backend.pump();
+    expect(player.observe().lastPlaybackRateTransition).toBeUndefined();
+    clock.advanceBy(551);
+    expect(player.synchronize()).toMatchObject({
+      intentionalTransitionPauseMs: 300,
+      lastPlaybackRateTransition: {
+        sequence: 1,
+        ratePercent: 75,
+        preparationMs: 200,
+        handoffMs: 251,
+        activationMs: 451,
+      },
+    });
+    player.close();
+    await player.waitForCleanup();
+  });
+
+  it.each([
+    { slowed: false, delay: 400, timing: "measured" },
+    { slowed: true, delay: 400, timing: "measured" },
+    { slowed: false, delay: 0, timing: "measured" },
+    { slowed: true, delay: 0, timing: "measured" },
+    { slowed: true, delay: 400, timing: "missing" },
+    { slowed: true, delay: 400, timing: "incomparable" },
+    { slowed: true, delay: 400, timing: "outside-reported-quantum" },
+  ])(
+    "VF-0169 $timing timing with a constant pause (slowed=$slowed, delay=$delay)",
+    async ({ slowed, delay, timing }) => {
+      const clock = createManualClock(0);
+      let outputClockOffsetMs = 0;
+      const context = Object.assign(new FakeAudioContext(), {
+        state: "running",
+        getOutputTimestamp: () => ({
+          contextTime: context.currentTime,
+          performanceTime: context.currentTime * 1_000 + outputClockOffsetMs,
+        }),
+      });
+      const node = new FakeWsolaNode();
+      const backend = new WebAudioPcmPlaybackBackend(
+        () => context as unknown as AudioContext,
+        async () => ({
+          node: node as unknown as AudioWorkletNode,
+          close: vi.fn(),
+        }),
+      );
+      await backend.preparePlaybackRate(75);
+      const first = segment(1, 300);
+      const second = segment(2);
+      const scheduler = readyScheduler(clock, [first, second], true);
+      synthesize(scheduler, first, 8_000);
+      synthesize(scheduler, second, 8_000);
+      if (slowed) scheduler.selectPlaybackRatePercent(75);
+      const player = new AdaptivePcmPlayer(scheduler, backend);
+      const advance = (ms: number) => {
+        clock.advanceBy(ms);
+        context.currentTime = clock.nowMs / 1_000;
+      };
+
+      try {
+        player.synchronize();
+        await Promise.resolve();
+        advance(100);
+        if (slowed) {
+          node.port.emit({
+            type: "started",
+            activation: 0,
+            unitSequence: 0,
+            sourceFrames: 0,
+            currentFrame: 24,
+          });
+        }
+        player.synchronize();
+        player.setPlaybackRatePercent(slowed ? 100 : 75);
+        if (!slowed) await backend.preparePlaybackRate(75);
+        const predecessorEndMs = slowed
+          ? (256_024 * 1_000) / 24_000
+          : context.sources[0]!.startedAt * 1_000 + 8_000;
+        advance(Math.ceil(predecessorEndMs) + delay - clock.nowMs);
+        if (slowed) {
+          if (timing === "incomparable") outputClockOffsetMs = 1_000;
+          // The main thread can observe the final quantum start even after the
+          // worklet has written its final partial quantum and posted the end.
+          if (delay === 0) context.currentTime = 255_960 / 24_000;
+          node.port.emit({
+            type: "ended",
+            unitSequence: 0,
+            currentFrame: 255_960,
+            endFrame:
+              timing === "missing"
+                ? undefined
+                : timing === "outside-reported-quantum"
+                  ? 256_089
+                  : 256_024,
+            renderedFrames: 256_000,
+            sourceFrames: 192_000,
+          });
+          outputClockOffsetMs = 0;
+        } else {
+          context.sources[0]!.end();
+        }
+        advance(300);
+        player.synchronize();
+        await Promise.resolve();
+        advance(20);
+        if (!slowed) {
+          node.port.emit({
+            type: "started",
+            activation: 0,
+            unitSequence: 0,
+            sourceFrames: 0,
+            currentFrame: clock.nowMs * 24,
+          });
+          expect(
+            player.synchronize().lastPlaybackRateTransition,
+          ).toBeUndefined();
+          node.port.emit({
+            type: "started",
+            activation: 0,
+            unitSequence: 1,
+            sourceFrames: 0,
+            currentFrame: (clock.nowMs - 10) * 24,
+          });
+        }
+        const observation = player.synchronize();
+        expect(observation.intentionalTransitionPauseMs).toBe(300);
+        expect(observation.activeSequence).toBe(1);
+        if (timing === "measured") {
+          expect(
+            observation.lastPlaybackRateTransition?.handoffMs,
+          ).toBeGreaterThanOrEqual(delay);
+          expect(
+            observation.lastPlaybackRateTransition?.handoffMs,
+          ).toBeLessThan(delay + 20);
+        } else {
+          expect(observation.lastPlaybackRateTransition).toBeUndefined();
+        }
+      } finally {
+        player.close();
+        await player.waitForCleanup();
+      }
+    },
+  );
 });
 
 describe("Web Audio PCM backend", () => {
+  it("VF-0169 preserves unconfirmed direct rendering through an early pause and resume", async () => {
+    const context = Object.assign(new FakeAudioContext(), {
+      state: "running",
+      getOutputTimestamp: () => ({
+        contextTime: context.currentTime,
+        performanceTime: context.currentTime * 1_000 + 1,
+      }),
+    });
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+    );
+    const handle = backend.start(
+      {
+        sequence: 0,
+        payload: new Uint8Array(480 * 4),
+        sampleRateHz: 24_000,
+        channelCount: 1,
+        sampleFormat: "float32-le",
+        sampleCountSamples: 480,
+        startSampleFrame: 0,
+        volumePercent: 100,
+        playbackRate: 1,
+      },
+      { ended: vi.fn(), failed: vi.fn() },
+    );
+    try {
+      await Promise.resolve();
+      const scheduled = context.sources[0]!.startedAt;
+      expect(scheduled).toBeGreaterThan(0);
+      context.currentTime = scheduled / 4;
+      handle.pause();
+      handle.resume();
+      await Promise.resolve();
+      context.currentTime = scheduled / 2;
+      expect(handle.rendering).toBe(false);
+      expect(handle.startedRenderingAt).toBeUndefined();
+      context.currentTime = scheduled + 0.001;
+      expect(handle.rendering).toBe(true);
+      expect(handle.startedRenderingAt?.milliseconds).toBeCloseTo(
+        scheduled * 1_000 + 1,
+      );
+    } finally {
+      await backend.close();
+    }
+  });
+
   it("requests a rendering clock that matches the fixed narration PCM rate", async () => {
     const context = new FakeAudioContext();
     const audioContextConstructor = vi.fn(function () {

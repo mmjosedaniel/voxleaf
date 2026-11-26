@@ -360,16 +360,20 @@ for the diagnostic, host checks, and independent review.
 
 ## Deterministic foundation checks
 
+Foundation runs supersede older revisions of the same pull request. Push and
+manual runs use their full ref in a separate event group. Both native jobs
+verify the committed Cargo resolution before compiling. Rust lint and tests
+also require the lock in both feature configurations.
+
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
-GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
+GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` after the aggregate check and before the native smoke. The packaged smoke launches the exact executable from the aggregate build. On Chromium failure the synthetic trace and screenshots expire after three days. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.
 
 The separate `Ubuntu Rust foundation` job is configured on `ubuntu-24.04`
 with Bash, a 45-minute timeout, and `CARGO_BUILD_JOBS=2`. It installs the
-existing pinned Node/pnpm/Rust toolchains and official Tauri Linux development
-prerequisites plus `pkg-config`, installs the frozen JavaScript lockfile with
-`--ignore-scripts`, and runs `pnpm format:check:rust`, `pnpm lint:rust`, and
-`pnpm test:rust` in distinct steps. Lint and tests cover both default and
+existing pinned Node and Rust toolchains and official Tauri Linux development
+prerequisites plus `pkg-config` and uses Node to run
+`format:check:rust`, `lint:rust`, and `test:rust` in distinct steps. Lint and tests cover both default and
 `release-locked-runtime`. Unix-only symlink branches require Linux Rust evidence.
 Remote execution was pending at the original comparison closeout. The
 [Linux Rust repair comparison](../plans/evidence/linux-rust-test-repair/README.md)
@@ -377,7 +381,7 @@ retains the exact source snapshots, local WSL and Windows results, original
 failure and later hosted pass. Linux desktop, packaged WebView and model support
 remain outside that evidence.
 
-All three foundation jobs check out complete Git history. Frozen TTS result validators
+Windows and Ubuntu portable check out complete Git history. Ubuntu Rust uses a shallow checkout and launches only Cargo through the existing package scripts. Frozen TTS result validators
 use strict Git ancestry to prove that an execution commit follows its authority
 checkpoint, so a depth-one checkout cannot supply the required evidence.
 
@@ -879,6 +883,13 @@ independently randomized scorecards; one evaluator is retained solely as
 limited evidence. Cleanup must delete every generated WAV after the aggregate
 is recorded.
 
+Before accepting the final immutable scorecard, submission checks the combined
+cards against the scoring rules for every candidate and dimension. Evaluators
+can supply complementary scores. A rejected final card can be corrected and
+resubmitted. If a file write, replacement or cleanup fails, the command emits
+the bounded failure response. Resolve the filesystem condition and retry the
+same command and session.
+
 That rule remains the historical `v2`/`v3` benchmark implementation. ADR-0014
 accepts one fluent maintainer for future constrained-demo quality feedback,
 but such feedback is not a retroactive promotable `v3` aggregate and cannot be
@@ -1161,7 +1172,11 @@ before dispatch and after completion, accepted and mid-generation
 cancellation, child crash, and application exit. Its runner samples descendant
 RAM and dedicated/shared GPU memory, confirms one GPU allocator, checks
 intermediate and final cleanup, and rejects listeners, external connections,
-audio persistence, and content-bearing output. V2 adds a version handshake
+audio persistence, and content-bearing output. Each announced network sample
+requires an owned process tree and successful TCP and UDP queries for IPv4 and
+IPv6. The runner requires every ordered occurrence before the corresponding
+cleanup acknowledgement. The counts describe those sampled instants. V2 adds a
+version handshake
 before starting the service and waits for four ordered zero-resource cleanup
 acknowledgements outside the timed operations. The output line, queue, run
 deadline and cleanup waits are bounded. Model-free tests cover the exchange.
@@ -1535,6 +1550,23 @@ and zero generated-audio persistence. `test:browser`, `test:native-startup`,
 and maintainer confirmation of every admitted rate subsequently passed, so
 M010.2 is complete.
 
+The current Piper speed smoke requires a new confirmed-rendering receipt at
+each sampled rate change in the same playback run. The browser estimates
+both output endpoints on the same AudioContext clock. The worklet reports
+the last quantum's actual end frame. Timestamp-capable direct playback
+schedules the initial source 256 frames ahead at 24 kHz (about 10.7 ms)
+to bind its start and duration to the context clock. This lead contributes
+to the observed handoff. Playback can continue when an output clock is
+unavailable, while the speed smoke requires both timing witnesses.
+First activation counts measured rate preparation and the
+eligible-boundary-to-render interval once,
+even when they overlap. The eligible boundary follows the previous complete
+unit and any scheduled transition pause. Recurring samples require no new
+rate preparation and use the eligible-boundary-to-render interval alone.
+The smoke uses the limits from the [playback authority](../architecture/reader-settings-playback-authority-v3.md#result-blind-evaluation).
+A stable playback observation counts the rendered delta from the settled
+chapter run. The 2026-07-31 values retain their historical scope.
+
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,
 model artifact, path, or raw host identity may enter a result or fixture.
@@ -1617,8 +1649,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-pac
 pnpm.cmd package:windows:signed
 ```
 
-The check validates the frozen version, NSIS/current-user target, exact resource
-allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
+The standalone check validates the frozen version, NSIS/current-user target,
+resource allowlist, exclusion boundary, uninstall hooks, required Piper resources
+and equality of the staged and authoritative distribution manifests.
+`pnpm.cmd package:windows:verified-core` verifies the staged payload files
+against the distribution before building. The lifecycle receipt identifies the
+exact installer exercised on Windows.
 The rebuilt unsigned build's installer identity is emitted into generated
 package evidence rather than fixed in this packaged documentation.
 Milestone 6A extends the outside-sandbox lifecycle harness across the ordinary

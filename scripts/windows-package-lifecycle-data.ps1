@@ -42,6 +42,23 @@ function Assert-NoReparsePoints {
     return
   }
   if (($rootAttributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw $FailureCode }
+  # WebView2 can retire an enumerated entry before we read its attributes.
+  # Restart at the known root so a replacement or changed parent is checked.
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      Assert-LifecycleTreeEntries $extendedRoot $FailureCode
+      return
+    } catch [IO.FileNotFoundException], [IO.DirectoryNotFoundException] {
+      if ($attempt -eq 3) { throw }
+      $rootAttributes = [IO.File]::GetAttributes($extendedRoot)
+      if (($rootAttributes -band [IO.FileAttributes]::Directory) -eq 0 -or
+          ($rootAttributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw $FailureCode }
+    }
+  }
+}
+
+function Assert-LifecycleTreeEntries {
+  param([string]$extendedRoot, [string]$FailureCode)
   $pending = [Collections.Generic.Stack[string]]::new()
   $pending.Push($extendedRoot)
   while ($pending.Count -gt 0) {

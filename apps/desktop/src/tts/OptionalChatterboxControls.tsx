@@ -341,7 +341,7 @@ export function OptionalChatterboxControls({
   };
 
   const removeButton =
-    snapshot.removalSupported === false ? null : (
+    snapshot.removalSupported !== true ? null : (
       <button
         type="button"
         disabled={disabled || actionPending || downloadRequested}

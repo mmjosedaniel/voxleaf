@@ -311,9 +311,15 @@ describe("segment highlight controller", () => {
     }
   });
 
-  it.each(["complete", "resume"] as const)(
-    "RCF-16/17 manual inspection survives paused reflow until %s",
-    (next) => {
+  it.each([
+    { next: "complete", lateReceipt: false },
+    { next: "resume", lateReceipt: false },
+    { next: "complete", lateReceipt: true },
+    { next: "resume", lateReceipt: true },
+    { next: "buffered-resume", lateReceipt: true },
+  ] as const)(
+    "VF-0156 / RCF-16/17 keeps paused inspection until $next (late receipt: $lateReceipt)",
+    ({ next, lateReceipt }) => {
       const block = paragraph("Lifecycle");
       const located = locatedBlock(0, block, 9);
       const mapper = new SemanticDomRangeMapper();
@@ -335,12 +341,14 @@ describe("segment highlight controller", () => {
       );
       controller.setRoot(element);
       const range = sourceRange(located, 2, 9);
-      controller.accept(observation("segment-started", range));
+      if (!lateReceipt)
+        controller.accept(observation("segment-started", range));
       controller.reconcile(narrationSnapshot("paused"));
       controller.manualInspection();
       callbacks.settleLocator.mockClear();
       environment.scrolls.length = 0;
       environment.range = { top: 140, bottom: 160 };
+      if (lateReceipt) controller.accept(observation("segment-started", range));
       controller.refresh();
       environment.flush();
       expect(environment.scrolls).toEqual([]);
@@ -349,8 +357,20 @@ describe("segment highlight controller", () => {
         controller.accept(observation("segment-completed", range));
         controller.reconcile(narrationSnapshot("complete"));
         expect(callbacks.settleLocator).not.toHaveBeenCalled();
-      } else {
+      } else if (next === "resume") {
         controller.reconcile(narrationSnapshot("playing"));
+        environment.flush();
+        expect(environment.scrolls.length).toBeGreaterThan(0);
+      } else {
+        const buffering = narrationSnapshot("buffering");
+        controller.reconcile({
+          ...buffering,
+          navigation: { ...buffering.navigation, playIntent: "playing" },
+        });
+        environment.flush();
+        expect(environment.scrolls).toEqual([]);
+        controller.reconcile(narrationSnapshot("playing"));
+        controller.accept(observation("segment-started", range, 1));
         environment.flush();
         expect(environment.scrolls.length).toBeGreaterThan(0);
       }

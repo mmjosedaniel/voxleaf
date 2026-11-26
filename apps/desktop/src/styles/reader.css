@@ -378,6 +378,13 @@
   opacity: 1;
 }
 
+.paragraph-leaf[data-placement-pending="true"] {
+  border-color: currentColor;
+  border-style: dotted;
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .reader-rendering-status {
   margin: 0 0 0.75rem;
   color: var(--reader-text-muted);

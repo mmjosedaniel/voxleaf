@@ -56,6 +56,57 @@ function snapshot(): ProductNarrationSnapshot {
 }
 
 describe("product narration controls", () => {
+  it("VF-0153 announces a pending rate only while an unfinished section owns it", () => {
+    let current: ProductNarrationSnapshot = {
+      ...snapshot(),
+      playbackRatePercent: 75,
+      state: {
+        mode: { kind: "quick" },
+        phase: "buffering",
+        readyMs: 0,
+        targetMs: 60_000,
+        progressValueMs: 0,
+        estimatedWaitMs: undefined,
+        lowBuffer: false,
+        allRemainingAudioReady: false,
+        resourceCeilingReached: false,
+        pauseContinuesPreparation: false,
+        canPlayAvailableAudio: false,
+        canPause: false,
+        canResume: false,
+        canStop: true,
+        volumePercent: 100,
+        playbackRate: 0.75,
+        selectedPlaybackRatePercent: 75,
+        activePlaybackRatePercent: 100,
+        pendingPlaybackRatePercent: 75,
+      },
+    };
+    const coordinator = {
+      observe: () => current,
+      subscribe: () => () => undefined,
+      checkAvailability: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+    const subject = render(
+      <ProductNarrationControls coordinator={coordinator} />,
+    );
+    expect(
+      screen.queryByText(/will apply after the current audio section/),
+    ).toBeNull();
+
+    const pausedWithAudio = {
+      ...current.state!,
+      hasUnfinishedAudioSection: true,
+      phase: "paused" as const,
+      canResume: true,
+    };
+    current = { ...current, state: pausedWithAudio };
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(
+      screen.getByText(/will apply after the current audio section/),
+    ).toBeVisible();
+  });
+
   it.each(["unavailable", "unsupported-version"] as const)(
     "RAF-03 compact speed exposes %s persistence feedback and clears it after success",
     (status) => {

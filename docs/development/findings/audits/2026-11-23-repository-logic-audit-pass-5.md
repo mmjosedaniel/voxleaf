@@ -1,0 +1,44 @@
+# Static repository logic audit, fifth pass, 2026-11-23
+
+## Scope and snapshot
+
+Inspected `main` at `d9a0a72db1f5dd8a5dc7553ea0e2358c9cfe497e`. The index
+was empty and the existing working files were the registry, audit index and
+four previous reports. Their Git blob IDs, in that order, were
+`31166cee7268ca0368a850e705719edf7ffd068d`,
+`a728aa8ac378fccd929bc59c61780620b6720108`,
+`4ebeadee2b24685b9a732a9e2512245edc685850`,
+`5acaae3810305ef7d9fee33a06fa66a6f995001c`,
+`053536ca0aeb033cb1d15a899ef44dbe350ef5be`, and
+`4088c8cfca9951da38503229a4632f0bad2e9c4e`. Used the [registry](../registry.md),
+[import coverage](../history-import.md), [prior pass](2026-11-23-repository-logic-audit-pass-4.md),
+and the relevant original authorities, correction plans and fixture text.
+Wider history was sampled. No tests were requested for this pass.
+
+## Coverage
+
+| Responsibility | Source paths and sequences inspected | Coverage and limits |
+| --- | --- | --- |
+| EPUB parsing and metadata | XHTML `dir` value, Auto scope and inline isolation → public chapter projection. OPF root and property dispatch → required modified timestamp and rendition metadata. | Partial. Other enumerated attributes, OPF 2 and full vocabulary mapping remain open. |
+| Reader position and controls | Missing saved position → oversized first-chapter fallback → lifecycle close/reselect → bounded repository. Deep TOC jump → early paragraph preview → playback placement admission. | Partial. No verified browser timing, real storage writes, layout or focus observations. |
+| Optional Chatterbox | Local v8 initial discovery and optional cache → compatible-profile selection rejection → Settings removal capability → Stop and native removal guard. | Partial. No v8 startup race, host memory variation or actual Remove operation observed. |
+| Playback and exact-host evidence | Navigation replaces player → accumulated metrics and playback identity → stability/refill polling and Stop receipt. | Partial. No measured playback, timing, GPU/model, or reclassification of past results. |
+| Retained benchmark tooling | Sampled batch v4/v13/v14 derivation order and v5 raw ownership against existing correction scope and fixtures. | Partial. Legacy execution and any output-pipe/file failures remain unmeasured. |
+
+## Product findings
+
+- [VF-0161](../registry.md#vf-0161) **P2 · Valid mixed-case direction can stop EPUB opening.** EPUB 3 uses the XML syntax of HTML. HTML enumerated values match case-insensitively, but `dir="RTL"` or `dir="AuTo"` causes malformed-package rejection in VoxLeaf. Auto scope allocation and inline direction handling have separate comparisons. Verify the public opener for equivalent lowercase/mixed-case values and genuinely invalid values. Preserve Auto and isolate behavior, original text and exact locators. [Projection](../../../../packages/epub/src/document/xhtml-projector.ts#L379) · [Public opening](../../../../packages/epub/src/public/open-epub-publication.ts#L160) · [HTML direction](https://html.spec.whatwg.org/multipage/dom.html#the-dir-attribute) · [HTML keyword rules](https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#keywords-and-enumerated-attributes)
+- [VF-0162](../registry.md#vf-0162) **P2 · A declared prefix alias can hide required EPUB metadata.** A package declaring `terms: http://purl.org/dc/terms/` and using `terms:modified` gives the same property under EPUB vocabulary expansion. The parser ignores it and rejects the publication as missing a last-modified timestamp. Compare public opening for the alias and reserved spelling, wrong vocabulary, missing or invalid timestamp, and two equivalent duplicate properties. Resolve the vocabulary locally. [Metadata capture](../../../../packages/epub/src/package/package-document.ts#L775) · [Required field check](../../../../packages/epub/src/package/package-document.ts#L516) · [Prefix declarations](https://www.w3.org/TR/epub-33/#sec-prefix-attr) · [Reading-system property expansion](https://www.w3.org/TR/epub-rs-33/#sec-property-processing)
+- [VF-0163](../registry.md#vf-0163) **P3 · The reader can save a position from an oversized chapter it never displayed.** Initial missing-storage restore arms the default locator for lifecycle flush before reader placement. An oversized first chapter shows fallback, and changing books or reselecting still writes the checkpoint. Reopening can show a saved-position alignment failure. With 128 entries already present, the write can evict another book's checkpoint. Verify a first oversized opening and exact-byte reselection with no intervening navigation, plus the first actual Next into readable content and normal first-open saves. [Save admission](../../../../apps/desktop/src/App.tsx#L492) · [Close flush](../../../../apps/desktop/src/persistence/reader-position-save-coordinator.ts#L361) · [Repository](../../../../apps/desktop/src/persistence/reader-position-repository.ts#L320)
+- [VF-0164](../registry.md#vf-0164) **P3 · Paragraph Play can be enabled before a jump settles.** During a deep TOC jump, an earlier rendered paragraph can offer its Start narration button even as the target remains pending. Clicking the button is rejected by the placement guard and produces no feedback. Verify an actual paragraph action while the destination is pending and after settlement. Preserve the invariant against starting from unresolved placement. [Paragraph button](../../../../apps/desktop/src/reader/ParagraphLeaf.tsx#L120) · [Click handler](../../../../apps/desktop/src/reader/ReaderPublication.tsx#L977) · [Placement guard](../../../../apps/desktop/src/tts/product-narration-coordinator.ts#L1096)
+- [VF-0166](../registry.md#vf-0166) **P3 · Unsupported Remove can stop Piper in the local v8 candidate.** If a compatible-profile selection fails before the initial optional snapshot establishes removal capability, the newer synthetic Failed snapshot leaves capability unknown. The older observation can be superseded. Settings offers Remove and stops Piper before the native candidate refuses. A rejected first observation can also create the Failed snapshot. Verify that unknown or explicitly unsupported candidate capability cannot trigger Stop, then preserve supported ordinary v7 removal and the known-false guard. [Native selection](../../../../apps/desktop/src-tauri/src/tts_optional_chatterbox.rs#L2702) · [Failed snapshot](../../../../apps/desktop/src/tts/optional-chatterbox-client.ts#L417) · [Removal action](../../../../apps/desktop/src/settings/narration-settings-actions.ts#L127) · [Candidate policy](../../../architecture/decisions/ADR-0078-version-chatterbox-provider-loss.md#L19)
+
+## Maintainer finding
+
+- [VF-0165](../registry.md#vf-0165) **P3 · The stable-playback witness can count earlier runs.** The exact-host journey replaces playback while navigating and then checks the aggregate rendered-audio counter against 60 seconds. It reads the playback index but does not use it to bind the stable branch. Earlier audio can shorten observation of the current run, even if that run would underrun later. Extend the identity fixture with prior runs contributing time, a full same-run minute, a same-run depletion and a run replacement during observation. Preserve aggregate product metrics. [Stability poll](../../../../apps/desktop/scripts/native-smoke/tts-scenarios.mjs#L996) · [Accumulator](../../../../apps/desktop/src/tts/product-narration-coordinator.ts#L2348) · [Original observation claim](../../../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md#L641)
+
+## Reconciliation and closeout
+
+- The original VF-0065 v14 validation-before-deletion path remains guarded. Retained v13 still discards owned raw inputs before derivation, an ordering expressly retained by the v4/v13 compatibility scope and existing fixture. This pass records the boundary without assigning another finding to the same family. [Derivation branches](../../../../services/tts/benchmarks/batch_result_cli.py#L100) · [V13 fixture](../../../../services/tts/tests/test_benchmark_batch_cli.py#L347) · [Scoped correction](../../../plans/completed/four-pass-findings-corrections.md#L172)
+- The checked VF-0124 active Stop arm reports cleanup-only when it lacks a matching native cancellation witness. The VF-0165 stability branch does not use that receipt. Optional acquisition completion owned by a different publication is intentionally ignored. Adjacent OPF rendition alias behavior was sampled, without admitting it as a separate case.
+- Six new source-supported cases, two P2 and four P3. No same-ID recurrence, new runtime reproduction or regression-introduction claim. Used read-only Git and source inspection and read existing fixtures as text. No codebase tests, builds, app runs, downloads or benchmarks ran. HEAD and the empty index were unchanged. Worktree edits stayed within findings documentation.

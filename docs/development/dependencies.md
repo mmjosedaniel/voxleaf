@@ -143,9 +143,17 @@ their revision/origin/SHA-256 evidence is frozen and they are not described as
 clean. `diffusers` is updated to `0.38.0`, `transformers` to `5.5.0`, and the
 dormant web/UI packages are absent.
 
-Weekly bounded Dependabot intake now proposes Node, Rust, base/core/optional
-Python, and GitHub Actions changes without merge, signing, or publication
-authority. The deterministic
+Dependabot proposes Node, Rust, base/core uv and GitHub Actions updates. The
+TypeScript 7 proposal is deferred while the parser lacks support. On Mondays
+the Chatterbox dependency candidates workflow resolves the published v7 registry
+pins against Windows x64/Python 3.12, with a seven-day eligibility delay. It
+keeps URL wheels and sources exact, then verifies that uv can plan the locked
+Windows installation in an empty target. Its seven-day artifact contains proposed
+requirements, a hash-locked graph and the lock diff for a maintainer to assess
+as a possible successor. Candidate discovery does not admit or publish a
+release. A maintainer can dispatch the workflow or run
+`python scripts/chatterbox-update-candidate.py <new-scratch-directory>`
+on the configured Windows host. The deterministic
 [`component-inventory-v1.json`](../../services/tts/release/component-inventory-v1.json)
 contains 400 exact core/optional/not-shipped records and is regenerated from
 the ecosystem locks plus reviewed licence metadata. Repository-owned JSON was
@@ -213,6 +221,12 @@ The additional notice identifies locked `chrono` 0.4.45 as unmaintained. Cargo
 places it outside the Windows target's active runtime and build dependencies.
 [Chrono advisory](https://rustsec.org/advisories/RUSTSEC-2026-0543.html) ·
 [CI correction review](../plans/evidence/codex-model-rollout/ci-audit-review.md)
+
+The inventory generator also checks the locked Windows x64 normal and build
+dependency graph with the ordinary release features enabled. It retains
+licences and provenance for Cargo entries outside that graph and marks their
+reachability explicitly. The graph describes build inputs. Installer identity
+and contents have separate package evidence.
 
 The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
@@ -617,10 +631,11 @@ Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytes
 
 | Action                 | Release represented by pinned SHA | Purpose                                                                   |
 | ---------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| `actions/checkout`     | `6.0.2`                           | Checks out the exact repository revision without persisting credentials.  |
-| `actions/setup-node`   | `6.4.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
-| `actions/setup-python` | `6.2.0`                           | Installs Python from `.python-version`.                                   |
-| `astral-sh/setup-uv`   | `10.2.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `actions/checkout`     | `7.0.1`                           | Checks out the exact repository revision without persisting credentials.  |
+| `actions/setup-node`   | `7.1.0`                           | Installs Node.js from `.nvmrc`; package-manager caching is disabled.      |
+| `actions/setup-python` | `7.0.0`                           | Installs Python from `.python-version`.                                   |
+| `astral-sh/setup-uv`   | `10.3.0`                          | Installs exact uv `0.11.29` and maintains an OS-separated download cache. |
+| `actions/upload-artifact` | `7.0.2` | Retains synthetic Chromium failure evidence for three days and Chatterbox dependency proposals for seven days. |
 
 Each workflow reference is pinned to a full commit SHA to avoid a mutable tag changing executable CI code. The workflow uses no third-party service, secret, model, book, generated audio, or GPU.
 

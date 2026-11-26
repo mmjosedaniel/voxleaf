@@ -1519,6 +1519,161 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
   }
 });
 
+test("VF-0143 a trusted wheel at the boundary cannot claim the later restoration scroll", async ({
+  page,
+}) => {
+  const { buildMinimalEpubFixture } =
+    await import("../../../../packages/epub/test-support/epub-fixture");
+  const bytes = await buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml"><body><p>${"Synthetic text for measuring a wrapped reading position. ".repeat(120)}</p>${"<p>Synthetic control passage.</p>".repeat(20)}</body></html>`,
+  });
+  const opened = await openEpubPublication(bytes);
+  if (!opened.ok) throw new Error(opened.detail);
+  const target = opened.publication.resolveLocator({
+    ...opened.publication.defaultStartLocator!,
+    textOffsetCodePoints: 2_000,
+  }).locator;
+  await opened.publication.close();
+  await page.setViewportSize({ width: 940, height: 640 });
+  await page.goto("/");
+  await page.evaluate(
+    ({ key, target }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          schemaVersion: 1,
+          states: [
+            {
+              schemaVersion: 1,
+              bookIdentity: target.bookIdentity,
+              locator: target,
+              preferences: {},
+            },
+          ],
+        }),
+      );
+      const scrollBy = HTMLElement.prototype.scrollBy;
+      const frame = window.requestAnimationFrame;
+      HTMLElement.prototype.scrollBy = function (
+        this: HTMLElement,
+        ...args: Parameters<HTMLElement["scrollBy"]>
+      ) {
+        if (!this.matches(".reader-viewport"))
+          return scrollBy.apply(this, args);
+        HTMLElement.prototype.scrollBy = scrollBy;
+        window.requestAnimationFrame = (callback) => {
+          window.requestAnimationFrame = frame;
+          Reflect.set(globalThis, "__releaseReaderRestoration", () => {
+            scrollBy.apply(this, args);
+            frame.call(window, callback);
+          });
+          return 0;
+        };
+      } as typeof scrollBy;
+    },
+    { key: POSITION_STORAGE_KEY, target },
+  );
+  const file = {
+    name: "synthetic-boundary-wheel.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(bytes),
+  };
+  const open = () => page.getByLabel("Open a book").setInputFiles(file);
+  await open();
+  await page.waitForFunction(() =>
+    Boolean(Reflect.get(globalThis, "__releaseReaderRestoration")),
+  );
+  const viewport = page.getByRole("region", {
+    name: "Publication reading viewport",
+  });
+  await viewport.hover();
+  const position = () => viewport.evaluate((root) => root.scrollTop);
+  expect(await position()).toBe(0);
+  const trustedWheel = page.evaluate(
+    () =>
+      new Promise<boolean>((resolve) => {
+        document
+          .querySelector(".reader-viewport")!
+          .addEventListener("wheel", (event) => resolve(event.isTrusted), {
+            once: true,
+          });
+      }),
+  );
+  await page.mouse.wheel(0, -120);
+  expect(await trustedWheel).toBe(true);
+  expect(await position()).toBe(0);
+  await page.evaluate(() =>
+    Reflect.get(globalThis, "__releaseReaderRestoration")(),
+  );
+  await expect.poll(position).toBeGreaterThan(100);
+  await expect(page.getByRole("status")).toHaveText(
+    "Reading position restored.",
+  );
+  const saved = () =>
+    page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)!).states[0].locator,
+      POSITION_STORAGE_KEY,
+    );
+  await page.evaluate(async () => {
+    for (let frame = 0; frame < 3; frame += 1)
+      await new Promise(requestAnimationFrame);
+    window.dispatchEvent(new Event("pagehide"));
+  });
+  expect(await saved()).toEqual(target);
+  await page.reload();
+  await open();
+  await expect(page.getByRole("status")).toHaveText(
+    "Reading position restored.",
+  );
+  expect(await saved()).toEqual(target);
+  await viewport.hover();
+  const before = await position();
+  await page.mouse.wheel(0, 500);
+  await expect.poll(position).toBeGreaterThan(before + 100);
+  await expect.poll(saved).not.toEqual(target);
+});
+
+for (const forcedColors of ["active", "none"] as const) {
+  test(`VF-0151 keeps focused reading content visible with forced colors ${forcedColors}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors });
+    await page.setViewportSize({ width: 760, height: 620 });
+    await page.goto("/");
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "synthetic-reader-focus.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(await buildNavigationFixture()),
+    });
+    const article = page.getByRole("article", {
+      name: "Current reading section",
+    });
+    const show = page.getByRole("button", { name: "Show table of contents" });
+    const contents = page.getByRole("navigation", {
+      name: "Table of contents",
+    });
+    await show.click();
+    await expect(contents).toBeVisible();
+    const close = contents.getByRole("button", { name: "Close contents" });
+    await close.focus();
+    await page.keyboard.press("Enter");
+    await expect(show).toBeFocused();
+    await show.click();
+    await page.getByRole("link", { name: "Skip to reader content" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(article).toBeFocused();
+    await expect(contents).toBeHidden();
+    const viewport = page.getByRole("region", {
+      name: "Publication reading viewport",
+    });
+    const before = await viewport.evaluate((element) => element.scrollTop);
+    await page.keyboard.press("PageDown");
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(before);
+  });
+}
+
 test("operates reader landmarks, skip links, preferences, and navigation by keyboard at the narrow viewport", async ({
   context,
   page,

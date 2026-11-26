@@ -19,6 +19,7 @@ function snapshot(state: string) {
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state,
+    ...(state === "confirming" ? { confirmationId: "1" } : {}),
     downloadBytes: 1_024,
     downloadedBytes: 0,
     installedBytes: 2_048,
@@ -39,6 +40,68 @@ function snapshot(state: string) {
 }
 
 describe("optional Chatterbox native client", () => {
+  it("VF-0133 sends each Download with only the confirmation the user saw", async () => {
+    const oldDownload = deferred();
+    let nextId = 0;
+    const invoke = vi.fn((command: string, args?: Record<string, unknown>) => {
+      if (command === "select_optional_chatterbox")
+        return Promise.resolve({
+          ...snapshot("confirming"),
+          confirmationId: String(++nextId),
+        });
+      if (command === "cancel_optional_chatterbox")
+        return Promise.resolve(snapshot("absent"));
+      if (command === "download_optional_chatterbox") {
+        if (args?.confirmationId !== String(nextId))
+          throw new Error(
+            "the fixture did not receive the displayed confirmation",
+          );
+        return nextId === 1
+          ? oldDownload.promise
+          : Promise.resolve(snapshot("installed"));
+      }
+      throw new Error("unexpected command");
+    });
+    const client = new OptionalChatterboxClient(invoke);
+    await client.select();
+    const old = client.download();
+    await client.cancel();
+    await client.select();
+    oldDownload.reject("tts-optional-profile-cancelled");
+    await old;
+    expect(client.observe().state).toBe("confirming");
+    await client.download();
+    expect(client.observe().state).toBe("installed");
+    expect(
+      invoke.mock.calls
+        .filter(([command]) => command === "download_optional_chatterbox")
+        .map(([, args]) => args?.confirmationId),
+    ).toEqual(["1", "2"]);
+  });
+  it.each(["refresh", "superseding-select"] as const)(
+    "VF-0166 refuses removal before the first authoritative response (%s)",
+    async (order) => {
+      const refresh = deferred();
+      const invoke = vi.fn((command: string) =>
+        command === "optional_chatterbox_snapshot"
+          ? refresh.promise
+          : Promise.reject("tts-optional-profile-unavailable"),
+      );
+      const client = new OptionalChatterboxClient(invoke);
+      const pending = client.refresh();
+      if (order === "superseding-select") await client.select();
+      refresh.reject("tts-optional-profile-unavailable");
+      await pending;
+      const failed = client.observe();
+      expect(failed).toMatchObject({ state: "failed" });
+      expect(failed.removalSupported).toBeUndefined();
+      await expect(client.remove()).resolves.toBe(failed);
+      expect(invoke.mock.calls.map(([command]) => command)).not.toContain(
+        "remove_optional_chatterbox",
+      );
+    },
+  );
+
   it.each(["installed", "failed"] as const)(
     "VF-0114 direct candidate Remove preserves its exact snapshot (%s)",
     async (state) => {
@@ -261,6 +324,8 @@ describe("optional Chatterbox native client", () => {
       const reading = deferred();
       const invoke = vi.fn((command: string) => {
         if (command === "download_optional_chatterbox") return transfer.promise;
+        if (command === "select_optional_chatterbox")
+          return Promise.resolve(snapshot("confirming"));
         if (command === "cancel_optional_chatterbox")
           return Promise.resolve(snapshot("installed"));
         if (command === "optional_chatterbox_snapshot") {
@@ -270,6 +335,7 @@ describe("optional Chatterbox native client", () => {
         return Promise.resolve(snapshot("absent"));
       });
       const client = new OptionalChatterboxClient(invoke);
+      await client.select();
       const download = client.download();
       const cancellation = client.cancel();
       await vi.waitFor(() => expect(client.observe().state).toBe("installed"));
@@ -360,6 +426,8 @@ describe("optional Chatterbox native client", () => {
         ),
       );
       const client = new OptionalChatterboxClient(invoke);
+      await client.refresh();
+      invoke.mockClear();
       const recheck = client.recheckCompatibility(async () => {
         await probe.promise;
         return allowed;
@@ -375,15 +443,18 @@ describe("optional Chatterbox native client", () => {
   );
 
   it("EFC-07 continued incompatibility retains the actionable failure", async () => {
-    const invoke = vi.fn(async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "select_optional_chatterbox")
+        return snapshot("confirming");
       throw "tts-optional-profile-incompatible-host";
     });
     const client = new OptionalChatterboxClient(invoke);
+    await client.select();
     await client.download();
     const failed = client.observe();
     await client.recheckCompatibility(async () => false);
     expect(client.observe()).toBe(failed);
-    expect(invoke).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledTimes(2);
   });
   it.each(["success", "failure"])(
     "five-pass 2.1 / SFA-06 preserves download %s through reselection and an outstanding poll",
@@ -442,8 +513,15 @@ describe("optional Chatterbox native client", () => {
       const client = new OptionalChatterboxClient((command) =>
         command === "download_optional_chatterbox"
           ? download.promise
-          : Promise.resolve(snapshot("absent")),
+          : Promise.resolve(
+              snapshot(
+                command === "select_optional_chatterbox"
+                  ? "confirming"
+                  : "absent",
+              ),
+            ),
       );
+      await client.select();
       const obsolete = client.download();
       await client[action]();
       const current = client.observe();
@@ -505,6 +583,7 @@ describe("optional Chatterbox native client", () => {
     );
     const client = new OptionalChatterboxClient(invoke);
 
+    await client.refresh();
     const staleSelection = client.select();
     await client.remove();
     resolveSelection?.(snapshot("installed"));

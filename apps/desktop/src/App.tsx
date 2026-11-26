@@ -26,6 +26,7 @@ import {
   type ReaderRestoration,
 } from "./app-reader-restoration";
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
+import { ReaderAppearanceWriter } from "./persistence/reader-appearance-writer";
 import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
@@ -110,6 +111,7 @@ export interface ReadyPublicationContentProps {
   readonly onInitialRestorationSettled?: (
     settlement: ReaderInitialRestorationSettlement,
   ) => void;
+  readonly onDefaultPlacement?: (locator: ReadingLocatorV1) => void;
   readonly narrationSource?: ReaderNarrationSource;
 }
 
@@ -193,7 +195,6 @@ export function App({
   const currentReaderPreferences = useRef<ReaderPreferencesV1>(
     DEFAULT_READER_PREFERENCES,
   );
-  const preferenceWriteEpoch = useRef(0);
   useEffect(() => {
     currentReaderPreferences.current = readerPreferencePresentation.preferences;
   }, [readerPreferencePresentation.preferences]);
@@ -216,6 +217,28 @@ export function App({
   const [readerPositionRestoreCoordinator] = useState(
     () => new ReaderPositionRestoreCoordinator(readerPositionRepository),
   );
+  const [readerAppearanceWriter] = useState(
+    () => new ReaderAppearanceWriter(readerPositionRepository),
+  );
+  const publishHydratedReaderPreferences = useCallback(
+    (presentation: ReaderPreferencePresentation): void => {
+      if (!readerAppearanceWriter.canHydrate) return;
+      currentReaderPreferences.current = presentation.preferences;
+      setReaderPreferencePresentation(presentation);
+    },
+    [readerAppearanceWriter],
+  );
+  const readerPreferenceHydrationOwner = useMemo(
+    () => ({
+      setPreferences: (
+        ...args: Parameters<ReaderPositionRestoreCoordinator["setPreferences"]>
+      ): void => {
+        if (readerAppearanceWriter.canHydrate)
+          readerPositionRestoreCoordinator.setPreferences(...args);
+      },
+    }),
+    [readerAppearanceWriter, readerPositionRestoreCoordinator],
+  );
   const [readerRestoration, setReaderRestoration] = useState<
     ReaderRestoration | undefined
   >(undefined);
@@ -225,10 +248,10 @@ export function App({
   usePreferenceHydration({
     narrationStartPreferenceRepository,
     readerPositionRepository,
-    readerPositionRestoreCoordinator,
+    readerPositionRestoreCoordinator: readerPreferenceHydrationOwner,
     defaultReaderPreferences: DEFAULT_READER_PREFERENCES,
     defaultNarrationStartPreference: DEFAULT_NARRATION_START_PREFERENCE_V1,
-    setReaderPreferencePresentation,
+    setReaderPreferencePresentation: publishHydratedReaderPreferences,
     setFallbackNarrationStart,
   });
   const readyPublication =
@@ -377,12 +400,14 @@ export function App({
           if (!active || result.status !== "ready") {
             return;
           }
-          currentReaderPreferences.current = result.preferences;
-          setReaderPreferencePresentation({
-            preferences: result.preferences,
-            status: result.preferenceStatus,
-            canPersist: result.preferenceStatus !== "unsupported-version",
-          });
+          if (readerAppearanceWriter.canHydrate) {
+            currentReaderPreferences.current = result.preferences;
+            setReaderPreferencePresentation({
+              preferences: result.preferences,
+              status: result.preferenceStatus,
+              canPersist: result.preferenceStatus !== "unsupported-version",
+            });
+          }
           setReaderRestoration((current) =>
             current?.status === "loading" &&
             isReaderRestorationForPublication(
@@ -417,6 +442,7 @@ export function App({
       readerPositionRestoreCoordinator.cancel();
     };
   }, [
+    readerAppearanceWriter,
     readerLifecycle,
     readerPositionRestoreCoordinator,
     readyPublication,
@@ -500,12 +526,9 @@ export function App({
           ? {}
           : { environment: readerPositionSaveEnvironment }),
         initialLocator: readyRestorationResult.position.locator,
-        persistInitialLocatorOnFlush:
-          readyRestorationResult.position.mode === "book-start" &&
-          readyRestorationResult.position.reason === "missing",
+        persistInitialLocatorOnFlush: false,
         requireIntentBeforePassiveSave:
-          readyRestorationResult.position.mode === "book-start" &&
-          readyRestorationResult.position.reason !== "missing",
+          readyRestorationResult.position.mode === "book-start",
       },
     );
     return coordinator;
@@ -539,13 +562,8 @@ export function App({
       void previous.close();
     }
     activePositionSaveCoordinator.current = positionSaveCoordinator;
-    positionSaveCoordinator?.setOnPreferencesWritten((preferences, result) => {
-      if (activePositionSaveCoordinator.current === positionSaveCoordinator)
-        reportPreferenceWrite(preferences, result);
-    });
     positionSaveCoordinator?.start();
     return () => {
-      positionSaveCoordinator?.setOnPreferencesWritten(undefined);
       queueMicrotask(() => {
         if (currentCleanup.superseded) {
           return;
@@ -556,7 +574,7 @@ export function App({
         void positionSaveCoordinator?.close();
       });
     };
-  }, [positionSaveCoordinator, reportPreferenceWrite]);
+  }, [positionSaveCoordinator]);
 
   useEffect(() => {
     if (
@@ -597,12 +615,12 @@ export function App({
     const currentCleanup = { superseded: false };
     applicationCleanupToken.current = currentCleanup;
     return () => {
-      preferenceWriteEpoch.current += 1;
       profileSelectionOperation.current += 1;
       queueMicrotask(() => {
         if (currentCleanup.superseded) {
           return;
         }
+        readerAppearanceWriter.close();
         readerPositionRestoreCoordinator.close();
         closeActivePositionSaveCoordinator();
         void readerLifecycle.cleanup();
@@ -610,6 +628,7 @@ export function App({
     };
   }, [
     closeActivePositionSaveCoordinator,
+    readerAppearanceWriter,
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
@@ -630,7 +649,6 @@ export function App({
     }
 
     setSettingsOpen(false);
-    preferenceWriteEpoch.current += 1;
     profileSelectionOperation.current += 1;
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
@@ -646,16 +664,17 @@ export function App({
           ? "unavailable"
           : readerPreferencePresentation.status,
       );
-      positionSaveCoordinator?.savePreferences(preferences);
+      readerAppearanceWriter.enqueue(preferences, reportPreferenceWrite);
       setReaderPreferencePresentation((current) => ({
         ...current,
         preferences,
       }));
     },
     [
-      positionSaveCoordinator,
+      readerAppearanceWriter,
       readerPositionRestoreCoordinator,
       readerPreferencePresentation.status,
+      reportPreferenceWrite,
     ],
   );
   const handleReaderPreferenceSettingChange = useCallback(
@@ -665,37 +684,9 @@ export function App({
       if (next === undefined || next === previous) {
         return;
       }
-      currentReaderPreferences.current = next;
-      readerPositionRestoreCoordinator.setPreferences(
-        next,
-        readerPreferencePresentation.status === "loading"
-          ? "unavailable"
-          : readerPreferencePresentation.status,
-      );
-      if (positionSaveCoordinator === undefined) {
-        const epoch = ++preferenceWriteEpoch.current;
-        void Promise.resolve()
-          .then(() => readerPositionRepository.writePreferences(next))
-          .catch((): ReaderRepositoryWriteResult => ({ status: "unavailable" }))
-          .then((result) => {
-            if (epoch === preferenceWriteEpoch.current)
-              reportPreferenceWrite(next, result);
-          });
-      } else {
-        positionSaveCoordinator.savePreferences(next);
-      }
-      setReaderPreferencePresentation((current) => ({
-        ...current,
-        preferences: next,
-      }));
+      handleReaderPreferencesChange(next);
     },
-    [
-      positionSaveCoordinator,
-      readerPositionRepository,
-      readerPositionRestoreCoordinator,
-      readerPreferencePresentation.status,
-      reportPreferenceWrite,
-    ],
+    [handleReaderPreferencesChange],
   );
   const handleFallbackNarrationStartChange = useCallback(
     async (selection: AdaptiveBufferStartMode): Promise<boolean> => {
@@ -761,6 +752,27 @@ export function App({
       );
     },
     [readyPublication, readyPublicationSequence],
+  );
+  const handleDefaultPlacement = useCallback(
+    (locator: ReadingLocatorV1): void => {
+      const current = readerLifecycle.state;
+      if (
+        current.status === "ready" &&
+        current.publication === readyPublication &&
+        current.publicationSequence === readyPublicationSequence &&
+        readyRestorationResult?.position.mode === "book-start" &&
+        readyRestorationResult.position.reason === "missing"
+      ) {
+        positionSaveCoordinator?.confirmDefaultPlacement(locator);
+      }
+    },
+    [
+      positionSaveCoordinator,
+      readerLifecycle,
+      readyPublication,
+      readyPublicationSequence,
+      readyRestorationResult,
+    ],
   );
   const handleRenderingFailure = useCallback((): void => {
     profileSelectionOperation.current += 1;
@@ -891,7 +903,16 @@ export function App({
     viewState.status === "failure"
       ? { status: "failure", reason: viewState.reason }
       : { status: viewState.status };
-  const restorationPresentation = toRestorationPresentation(activeRestoration);
+  const restorationPresentation = toRestorationPresentation(
+    activeRestoration,
+    readerPreferencePresentation.status,
+    Object.keys(DEFAULT_READER_PREFERENCES).some(
+      (key) =>
+        readerPreferencePresentation.preferences[
+          key as keyof ReaderPreferencesV1
+        ] !== DEFAULT_READER_PREFERENCES[key as keyof ReaderPreferencesV1],
+    ),
+  );
   const ready = viewState.status === "ready";
   const readyReaderProps: ReadyPublicationContentProps | undefined =
     viewState.status === "ready" && readyRestoration !== undefined
@@ -910,6 +931,7 @@ export function App({
           onSettledLocatorChange: handleSettledLocatorChange,
           onNavigationSettlement: handleNavigationSettlement,
           onInitialRestorationSettled: handleInitialRestorationSettled,
+          onDefaultPlacement: handleDefaultPlacement,
           ...(narrationCoordinator === undefined
             ? {}
             : { narrationSource: narrationCoordinator }),

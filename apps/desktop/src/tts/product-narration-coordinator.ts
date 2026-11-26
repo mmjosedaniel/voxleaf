@@ -29,7 +29,7 @@ import {
   PcmPlaybackError,
   WebAudioPcmPlaybackBackend,
   type AdaptivePcmAudibleProgressObservation,
-  type AdaptivePcmPlayerObservation,
+  type PlaybackRateTransition,
 } from "./pcm-playback";
 import {
   TtsProcessClient,
@@ -70,6 +70,7 @@ import {
   OperationalRecoveryController,
   type OperationalRecoverySnapshotV1,
 } from "./operational-recovery";
+import { PlaybackEpisodeMetrics } from "./playback-episode-metrics";
 import { playbackTransitionPauseMsForPreparedSegment } from "./playback-transition-policy";
 
 const TICK_INTERVAL_MS = 250;
@@ -107,6 +108,7 @@ export interface ProductNarrationMetrics {
   readonly refillPlaybackIndex?: number | undefined;
   readonly lastCompletedRefill?:
     { readonly index: number; readonly elapsedMs: number } | undefined;
+  readonly lastPlaybackRateTransition?: PlaybackRateTransition | undefined;
   readonly activeSynthesisIndex?: number | undefined;
   readonly stopIndex?: number;
   readonly lastStopCancellation?: ProductNarrationStopCancellation | undefined;
@@ -475,14 +477,7 @@ export class ProductNarrationCoordinator {
   #hasConfirmedRendering = false;
   #commandStartedAtMs: number | undefined;
   #commandToAudibleMs: number | undefined;
-  #bufferingMs = 0;
-  #intentionalWaitMs = 0;
-  #renderedSampleFrames = 0;
-  #underrunCount = 0;
-  #lastPlayerUnderrunCount = 0;
-  #lastPlayerBufferingMs = 0;
-  #lastPlayerRenderedSampleFrames = 0;
-  #lastPlayerIntentionalWaitMs = 0;
+  readonly #episodeMetrics = new PlaybackEpisodeMetrics();
   #acceptedAudioUnitCount = 0;
   #acceptedAudioSampleFrames = 0;
 
@@ -1239,16 +1234,9 @@ export class ProductNarrationCoordinator {
     }
     try {
       this.#recovery.resetEpisode();
-      this.#bufferingMs = 0;
-      this.#renderedSampleFrames = 0;
-      this.#intentionalWaitMs = 0;
-      this.#underrunCount = 0;
+      this.#episodeMetrics.clearTotals();
       const player = this.#player?.synchronize();
-      this.#lastPlayerRenderedSampleFrames = player?.renderedSampleFrames ?? 0;
-      this.#lastPlayerUnderrunCount = player?.underrunCount ?? 0;
-      this.#lastPlayerIntentionalWaitMs =
-        player?.intentionalTransitionPauseMs ?? 0;
-      this.#lastPlayerBufferingMs = player?.bufferingMs ?? 0;
+      this.#episodeMetrics.rebase(player);
       this.#failure = undefined;
       this.#preparationFailure = undefined;
       this.#terminalState = undefined;
@@ -1281,13 +1269,10 @@ export class ProductNarrationCoordinator {
     this.#acceptedAudioSampleFrames = 0;
     // Interruption totals belong to the recovery episode, not to this player.
     // Only resetRecoveryEpisode clears them; Stop/Play and recovery replace owners.
-    this.#lastPlayerUnderrunCount = 0;
-    this.#lastPlayerIntentionalWaitMs = 0;
-    this.#lastPlayerRenderedSampleFrames = 0;
+    this.#episodeMetrics.rebase();
     this.#hasConfirmedRendering = false;
     this.#commandToAudibleMs = undefined;
     this.#commandStartedAtMs = this.#clock.nowMs;
-    this.#lastPlayerBufferingMs = 0;
     const runToken = ++this.#runToken;
     const identity = Object.freeze({
       sessionId: this.#createIdentifier!("session", runToken),
@@ -1600,10 +1585,9 @@ export class ProductNarrationCoordinator {
         );
         cancellationMs = Math.max(0, this.#clock.nowMs - stopStartedAtMs);
       } else {
-        await this.#withinCleanupDeadline(
-          this.#client.shutdown(),
-          cleanupDeadline,
-        );
+        const shutdown = this.#client.shutdown();
+        this.#publish();
+        await this.#withinCleanupDeadline(shutdown, cleanupDeadline);
       }
     } catch (error) {
       // The typed client deliberately preserves this cancellation error after
@@ -2303,7 +2287,7 @@ export class ProductNarrationCoordinator {
         this.#fail("audio-playback-failed", runToken, "playback", undefined);
         return;
       }
-      this.#updateMetrics(player);
+      this.#episodeMetrics.record(player);
       if (
         (player.playbackRateFallback ?? 0) > this.#handledPlaybackRateFallback
       ) {
@@ -2345,33 +2329,9 @@ export class ProductNarrationCoordinator {
     }
   }
 
-  #updateMetrics(player: AdaptivePcmPlayerObservation): void {
-    const intentionalWaitDelta = Math.max(
-      0,
-      player.intentionalTransitionPauseMs - this.#lastPlayerIntentionalWaitMs,
-    );
-    this.#bufferingMs += Math.max(
-      0,
-      player.bufferingMs - this.#lastPlayerBufferingMs,
-    );
-    this.#lastPlayerBufferingMs = player.bufferingMs;
-    this.#renderedSampleFrames += Math.max(
-      0,
-      player.renderedSampleFrames - this.#lastPlayerRenderedSampleFrames,
-    );
-    this.#lastPlayerRenderedSampleFrames = player.renderedSampleFrames;
-    this.#intentionalWaitMs += intentionalWaitDelta;
-    this.#underrunCount += Math.max(
-      0,
-      player.underrunCount - this.#lastPlayerUnderrunCount,
-    );
-    this.#lastPlayerUnderrunCount = player.underrunCount;
-    this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
-  }
-
   #captureFinalMetrics(player: AdaptivePcmPlayer | undefined): void {
     try {
-      if (player !== undefined) this.#updateMetrics(player.observe());
+      if (player !== undefined) this.#episodeMetrics.record(player.observe());
     } catch {
       // Diagnostic observation must never prevent owner invalidation/cleanup.
     }
@@ -2689,12 +2649,17 @@ export class ProductNarrationCoordinator {
 
   #createSnapshot(): ProductNarrationSnapshot {
     const runToken = this.#runToken;
-    const scheduler = this.#scheduler?.observe();
+    const schedulerOwner = this.#scheduler;
     const player = this.#player;
     const playerObservation =
       this.#failure === undefined ? player?.synchronize() : player?.observe();
-    if (runToken !== this.#runToken || player !== this.#player)
+    if (
+      runToken !== this.#runToken ||
+      player !== this.#player ||
+      schedulerOwner !== this.#scheduler
+    )
       return this.#snapshot;
+    const scheduler = schedulerOwner?.observe();
     let state = this.#pausedNavigationState ?? this.#terminalState;
     if (
       state === undefined &&
@@ -2729,6 +2694,8 @@ export class ProductNarrationCoordinator {
         ...(estimatedWaitMs === undefined ? {} : { estimatedWaitMs }),
         intentionalBoundaryWait:
           playerObservation.intentionalTransitionPauseActive,
+        hasUnfinishedAudioSection:
+          playerObservation.activeSequence !== undefined,
         volumePercent: playerObservation.volumePercent,
       });
     }
@@ -2761,42 +2728,16 @@ export class ProductNarrationCoordinator {
         refillPlaybackIndex:
           scheduler === undefined ? undefined : this.#runToken,
         lastCompletedRefill: scheduler?.lastCompletedRefill,
+        lastPlaybackRateTransition:
+          playerObservation?.lastPlaybackRateTransition,
         activeSynthesisIndex:
           this.#activeScope === undefined ? undefined : this.#synthesisIndex,
         stopIndex: this.#stopIndex,
         lastStopCancellation: this.#lastStopCancellation,
-        bufferingMs:
-          this.#bufferingMs +
-          Math.max(
-            0,
-            (playerObservation?.bufferingMs ?? this.#lastPlayerBufferingMs) -
-              this.#lastPlayerBufferingMs,
-          ),
-        intentionalWaitMs:
-          this.#intentionalWaitMs +
-          Math.max(
-            0,
-            (playerObservation?.intentionalTransitionPauseMs ??
-              this.#lastPlayerIntentionalWaitMs) -
-              this.#lastPlayerIntentionalWaitMs,
-          ),
-        playbackMs:
-          ((this.#renderedSampleFrames +
-            Math.max(
-              0,
-              (playerObservation?.renderedSampleFrames ??
-                this.#lastPlayerRenderedSampleFrames) -
-                this.#lastPlayerRenderedSampleFrames,
-            )) *
-            1_000) /
+        ...this.#episodeMetrics.preview(
+          playerObservation,
           ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz,
-        underrunCount:
-          this.#underrunCount +
-          Math.max(
-            0,
-            (playerObservation?.underrunCount ??
-              this.#lastPlayerUnderrunCount) - this.#lastPlayerUnderrunCount,
-          ),
+        ),
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
         retainedAudioUnitCount: scheduler?.retainedAudioUnitCount ?? 0,

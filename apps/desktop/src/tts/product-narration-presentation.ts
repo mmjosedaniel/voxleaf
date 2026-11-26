@@ -71,6 +71,8 @@ export function productNarrationPhaseMessage(
     case "unavailable":
       return "Local narration recovery is unavailable.";
     case "contained":
+      if (snapshot.serviceState === "stopping")
+        return "Cancellation is still pending. Check compatibility in Settings once it finishes.";
       return "Local narration is safely contained.";
     case "operational":
       break;
@@ -80,6 +82,8 @@ export function productNarrationPhaseMessage(
       ? "Local narration compatibility changed."
       : "Local narration failed.";
   }
+  if (snapshot.serviceState === "stopping")
+    return "Cancelling local narration. Wait before starting again.";
   if (snapshot.state?.phase === "preparing") {
     switch (snapshot.serviceState) {
       case "stopped":

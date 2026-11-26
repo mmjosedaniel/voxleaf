@@ -57,6 +57,7 @@ import {
 import { ParagraphLeafController } from "./paragraph-leaf-controller";
 import { ParagraphLeaf } from "./ParagraphLeaf";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
+import { useReaderViewportInput } from "./use-reader-viewport-input";
 
 function unreachable(value: never): never {
   void value;
@@ -170,6 +171,7 @@ export interface ReaderPublicationContentProps {
   readonly onInitialRestorationSettled?: (
     settlement: ReaderInitialRestorationSettlement,
   ) => void;
+  readonly onDefaultPlacement?: (locator: ReadingLocatorV1) => void;
   readonly domRangeMapper?: SemanticDomRangeMapper;
   readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
   readonly reflowEnvironment?: ReaderReflowEnvironment;
@@ -199,6 +201,7 @@ export function ReaderPublicationContent({
   onSettledLocatorChange,
   onNavigationSettlement,
   onInitialRestorationSettled,
+  onDefaultPlacement,
   domRangeMapper,
   visualLocatorEnvironment,
   reflowEnvironment,
@@ -211,6 +214,7 @@ export function ReaderPublicationContent({
     onNavigationSettlement,
     onSettledLocatorChange,
     onInitialRestorationSettled,
+    onDefaultPlacement,
   });
   useLayoutEffect(() => {
     externalCallbacks.current = {
@@ -219,6 +223,7 @@ export function ReaderPublicationContent({
       onNavigationSettlement,
       onSettledLocatorChange,
       onInitialRestorationSettled,
+      onDefaultPlacement,
     };
   });
   const [coordinator] = useState(
@@ -229,6 +234,8 @@ export function ReaderPublicationContent({
       }),
   );
   const placementPending = useRef(false);
+  const [paragraphPlacementPending, setParagraphPlacementPending] =
+    useState(false);
   const placementRequest = useRef<ReaderPlacementRequest | undefined>(
     undefined,
   );
@@ -252,6 +259,7 @@ export function ReaderPublicationContent({
     ): void => {
       if (reason === "reflow" && placementPending.current) return;
       placementPending.current = false;
+      setParagraphPlacementPending(false);
       const request =
         reason === "reflow" ? undefined : placementRequest.current;
       const settlement: ReaderNavigationSettlement = {
@@ -312,6 +320,7 @@ export function ReaderPublicationContent({
     "pending" | ReaderInitialRestorationSettlement["status"]
   >(initialRestorationRequired ? "pending" : "settled");
   const initialRestorationStarted = useRef(false);
+  const defaultPlacementReported = useRef(false);
   const [initialRestorationPending, setInitialRestorationPending] = useState(
     initialRestorationRequired,
   );
@@ -364,22 +373,6 @@ export function ReaderPublicationContent({
       ),
   );
   const readerViewportRef = useRef<HTMLDivElement | null>(null);
-  const recordManualScrollIntent = useCallback((): void => {
-    visualLocatorTracker.noteManualScrollIntent();
-    reflowRestorer.cancelViewportRestoration();
-  }, [reflowRestorer, visualLocatorTracker]);
-  const recordWheelIntent = useCallback(
-    (event: WheelEvent): void => {
-      if (
-        event.isTrusted &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        event.deltaY !== 0
-      )
-        recordManualScrollIntent();
-    },
-    [recordManualScrollIntent],
-  );
   const destinationRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     reflowRestorer.setOnRestored((result) => {
@@ -508,57 +501,13 @@ export function ReaderPublicationContent({
       ),
   );
   useStrictModeSafeResourceCleanup(segmentHighlightController);
-  const releaseScrollbarGesture = useRef<(() => void) | undefined>(undefined);
-  const recordScrollbarIntent = useCallback(
-    (event: PointerEvent): void => {
-      const root = readerViewportRef.current;
-      if (
-        !event.isTrusted ||
-        event.button !== 0 ||
-        event.pointerType !== "mouse" ||
-        root === null ||
-        event.target !== root ||
-        root.scrollHeight <= root.clientHeight
-      )
-        return;
-      const rect = root.getBoundingClientRect();
-      const contentLeft = rect.left + root.clientLeft;
-      const contentRight = contentLeft + root.clientWidth;
-      // Native vertical scrollbar only; content selection/padding is not intent.
-      if (
-        event.clientX < rect.left ||
-        event.clientX >= rect.right ||
-        (event.clientX >= contentLeft && event.clientX < contentRight) ||
-        event.clientY < rect.top + root.clientTop ||
-        event.clientY >= rect.top + root.clientTop + root.clientHeight
-      )
-        return;
-      releaseScrollbarGesture.current?.();
-      visualLocatorTracker.noteManualScrollIntent(true);
-      reflowRestorer.cancelViewportRestoration();
-      const view = root.ownerDocument.defaultView;
-      const release = (): void => {
-        root.ownerDocument.removeEventListener("pointerup", finish, true);
-        root.ownerDocument.removeEventListener("pointercancel", finish, true);
-        view?.removeEventListener("blur", release);
-        releaseScrollbarGesture.current = undefined;
-        if (visualLocatorTracker.admitManualScrollMovement()) {
-          segmentHighlightController.manualInspection();
-          visualLocatorTracker.requestSample();
-        }
-        visualLocatorTracker.clearManualScrollIntent(true);
-      };
-      const finish = (ended: PointerEvent): void => {
-        if (ended.pointerId === event.pointerId) release();
-      };
-      releaseScrollbarGesture.current = release;
-      root.ownerDocument.addEventListener("pointerup", finish, true);
-      root.ownerDocument.addEventListener("pointercancel", finish, true);
-      view?.addEventListener("blur", release);
-    },
-    [reflowRestorer, segmentHighlightController, visualLocatorTracker],
-  );
-  useLayoutEffect(() => () => releaseScrollbarGesture.current?.(), []);
+  const { bindViewportInput, onTouchMove, onKeyDown, onScroll } =
+    useReaderViewportInput(
+      readerViewportRef,
+      visualLocatorTracker,
+      reflowRestorer,
+      segmentHighlightController,
+    );
   useLayoutEffect(() => {
     visualLocatorTracker.setOnLocator((locator, measuredManual) => {
       if (measuredManual && !placementPending.current) {
@@ -569,7 +518,7 @@ export function ReaderPublicationContent({
       }
       const changed = coordinator.updateActiveVisualLocator(locator);
       if (changed) {
-        segmentHighlightController.manualInspection();
+        segmentHighlightController.manualInspection(measuredManual === true);
       }
       if (measuredManual)
         externalCallbacks.current.onActiveLocatorChange?.(locator, true);
@@ -640,11 +589,27 @@ export function ReaderPublicationContent({
   ]);
   const attemptInitialRestoration = useCallback((): void => {
     if (
-      initialRestorationStatus.current !== "pending" ||
-      initialRestorationStarted.current ||
       readerDocumentRef.current === null ||
       readerViewportRef.current === null ||
       destinationRef.current === null
+    ) {
+      return;
+    }
+    if (
+      initialLocator === undefined &&
+      !defaultPlacementReported.current &&
+      coordinator.state.navigationRevision === 0 &&
+      coordinator.state.contentStatus === "render" &&
+      !placementPending.current
+    ) {
+      defaultPlacementReported.current = true;
+      externalCallbacks.current.onDefaultPlacement?.(
+        coordinator.state.activeLocator,
+      );
+    }
+    if (
+      initialRestorationStatus.current !== "pending" ||
+      initialRestorationStarted.current
     ) {
       return;
     }
@@ -659,20 +624,10 @@ export function ReaderPublicationContent({
         }),
       );
     }
-  }, [completeInitialRestoration, coordinator, reflowRestorer]);
+  }, [completeInitialRestoration, coordinator, initialLocator, reflowRestorer]);
   const setReaderViewportRef = useCallback(
     (element: HTMLDivElement | null): void => {
-      const previous = readerViewportRef.current;
-      if (previous !== element) {
-        releaseScrollbarGesture.current?.();
-        previous?.removeEventListener("wheel", recordWheelIntent);
-        previous?.removeEventListener("pointerdown", recordScrollbarIntent);
-        // Read scrollTop before Chromium can scroll on the compositor.
-        element?.addEventListener("wheel", recordWheelIntent, {
-          passive: false,
-        });
-        element?.addEventListener("pointerdown", recordScrollbarIntent);
-      }
+      bindViewportInput(element);
       if (
         element === null &&
         initialRestorationStatus.current === "pending" &&
@@ -690,8 +645,7 @@ export function ReaderPublicationContent({
     },
     [
       attemptInitialRestoration,
-      recordWheelIntent,
-      recordScrollbarIntent,
+      bindViewportInput,
       reflowRestorer,
       segmentHighlightController,
       visualLocatorTracker,
@@ -733,6 +687,18 @@ export function ReaderPublicationContent({
       pendingPositionSaveRevision.current !== navigationRevision
     )
       return;
+    const relative = placementRequest.current?.narration;
+    if (
+      navigationRevision !== 0 &&
+      result.placement === "unavailable" &&
+      (relative === undefined || relative.event === "paragraph-leaf")
+    ) {
+      finishProgrammaticNavigation({
+        status: "unavailable",
+        reason: "placement",
+      });
+      return;
+    }
     // A mounted block is not proof of exact placement. Preserve a visible
     // interior range even when bottom-of-document clamping prevents alignment.
     const resolved = publication.resolveLocator(result.locator);
@@ -770,7 +736,6 @@ export function ReaderPublicationContent({
       });
       return;
     }
-    const relative = placementRequest.current?.narration;
     const exact =
       result.placement === "exact-range" && (result.aligned || visible);
     const block = destinationRef.current;
@@ -885,6 +850,7 @@ export function ReaderPublicationContent({
       const request = programmaticNavigationRequest.current + 1;
       programmaticNavigationRequest.current = request;
       placementPending.current = true;
+      setParagraphPlacementPending(true);
       visualLocatorTracker.clearManualScrollIntent();
       placementRequest.current = {
         publication: publication.book.identity,
@@ -976,6 +942,11 @@ export function ReaderPublicationContent({
   );
   const activateParagraphLeaf = useCallback(
     (locatedBlock: PublicationLocatedBlock): void => {
+      if (
+        placementPending.current ||
+        initialRestorationStatus.current === "pending"
+      )
+        return;
       const target = locatedBlock.startLocator;
       if (narrationSource?.startAtLocator?.(target) === true) {
         paragraphLeafController.beginPreparation(target);
@@ -1048,14 +1019,18 @@ export function ReaderPublicationContent({
     const intent = coordinator.setPreferences(preferences);
     if (intent !== undefined) {
       visualLocatorTracker.clearManualScrollIntent();
+      const revision = coordinator.state.navigationRevision;
+      const pendingNavigation =
+        pendingPositionSaveRevision.current === revision;
+      // The destination ref owns a progressively rendered jump until its
+      // block mounts. Reflow cannot finish that jump on a frame deadline.
+      if (pendingNavigation && handledNavigationRevision.current !== revision)
+        return;
       // Reflow replaces the pending placement, so retain its navigation
       // settlement and sampling release when a passage is still settling.
       reflowRestorer.preserve(
         intent.locator,
-        pendingPositionSaveRevision.current ===
-          coordinator.state.navigationRevision
-          ? "restoration"
-          : "preference",
+        pendingNavigation ? "restoration" : "preference",
       );
     }
   }, [
@@ -1334,43 +1309,12 @@ export function ReaderPublicationContent({
           role="region"
           tabIndex={-1}
           aria-label="Publication reading viewport"
-          onTouchMove={(event) => {
-            if (event.isTrusted && event.touches.length === 1)
-              recordManualScrollIntent();
+          onFocusCapture={() => {
+            if (contentsOpen) setContentsOpen(false);
           }}
-          onKeyDown={(event) => {
-            if (
-              event.isTrusted &&
-              !event.defaultPrevented &&
-              (!event.ctrlKey || event.key === "Home" || event.key === "End") &&
-              !event.metaKey &&
-              !event.altKey &&
-              (!event.shiftKey || event.key === " ") &&
-              event.target instanceof HTMLElement &&
-              event.target.closest(
-                "a,button,input,select,textarea,summary,[contenteditable=true],[role=button]",
-              ) === null &&
-              event.currentTarget.ownerDocument.getSelection()?.isCollapsed !==
-                false &&
-              [
-                "ArrowUp",
-                "ArrowDown",
-                "PageUp",
-                "PageDown",
-                "Home",
-                "End",
-                " ",
-              ].includes(event.key)
-            )
-              recordManualScrollIntent();
-          }}
-          onScroll={(event) => {
-            if (event.target !== event.currentTarget) return;
-            if (visualLocatorTracker.admitManualScrollMovement()) {
-              segmentHighlightController.manualInspection();
-              visualLocatorTracker.requestSample();
-            }
-          }}
+          onTouchMove={onTouchMove}
+          onKeyDown={onKeyDown}
+          onScroll={onScroll}
         >
           <div className="reader-layout">
             <div className="reader-reading-pane">
@@ -1389,6 +1333,9 @@ export function ReaderPublicationContent({
                   domRangeMapper={activeDomRangeMapper}
                   locatedBlock={leafSnapshot.locatedBlock}
                   state={leafSnapshot.state}
+                  placementPending={
+                    paragraphPlacementPending || initialRestorationPending
+                  }
                   layoutRevision={[
                     state.activeDocument.id,
                     state.preferences.textScale,

@@ -324,6 +324,19 @@ class NavigationDocumentParser {
         retainedAttributeBytes: 0,
         trailingAttributeBytes: 0,
       };
+      if (
+        fallbackTitle !== undefined &&
+        attribute(event, "", "hidden") !== undefined
+      ) {
+        const titledLabel = { ...this.#label };
+        if (
+          this.tryAppendLabelText(titledLabel, fallbackTitle, "attribute") &&
+          titledLabel.text.length > 0
+        ) {
+          this.#label = titledLabel;
+          this.#hiddenLabelDepth = depth;
+        }
+      }
       return;
     }
 
@@ -523,6 +536,15 @@ class NavigationDocumentParser {
     value: string,
     source: "attribute" | "xml",
   ): void {
+    if (!this.tryAppendLabelText(label, value, source))
+      fail("malformed-package");
+  }
+
+  private tryAppendLabelText(
+    label: LabelBuilder,
+    value: string,
+    source: "attribute" | "xml",
+  ): boolean {
     let iteration = 0;
     for (const character of value) {
       if (iteration % 4_096 === 0) {
@@ -539,7 +561,7 @@ class NavigationDocumentParser {
 
       const codePoint = character.codePointAt(0);
       if (codePoint === undefined || codePoint <= 0x1f || codePoint === 0x7f) {
-        return fail("malformed-package");
+        return false;
       }
 
       const edgeWhitespace = LABEL_EDGE_WHITESPACE.test(character);
@@ -549,7 +571,7 @@ class NavigationDocumentParser {
         label.codePointCount + (label.pendingWhitespace ? 2 : 1) >
         MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS
       ) {
-        if (!edgeWhitespace) return fail("malformed-package");
+        if (!edgeWhitespace) return false;
         // A suffix over the limit is harmless only if all of it trims away.
         label.codePointCount = MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS + 1;
         continue;
@@ -577,6 +599,7 @@ class NavigationDocumentParser {
         ? label.trailingAttributeBytes + attributeBytes
         : 0;
     }
+    return true;
   }
 }
 

@@ -1,3 +1,10 @@
+import {
+  checkNodeReport,
+  checkRustReport,
+  checkWarnings,
+  pythonFindingDetails,
+  reachableRustPackages,
+} from "./release-audit-report.mjs";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -61,35 +68,28 @@ function auditNode() {
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, "pnpm audit");
-  const vulnerabilities = report.metadata?.vulnerabilities ?? {};
-  const blocking =
-    (vulnerabilities.high ?? 0) + (vulnerabilities.critical ?? 0);
-  if (blocking > 0 || result.status !== 0) {
-    throw new Error(
-      `Production Node audit failed: ${vulnerabilities.high ?? 0} high and ${vulnerabilities.critical ?? 0} critical findings.`,
-    );
-  }
+  checkNodeReport(report, result.status);
   console.log("release-audit:node:pass");
 }
 
 function auditRust() {
+  if (process.env.VOXLEAF_RUST_SCANNER_UNAVAILABLE === "true") {
+    throw new Error("Rust scanner acquisition failed");
+  }
   const result = run(
     "cargo",
     ["audit", "--file", "apps/desktop/src-tauri/Cargo.lock", "--json"],
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, "cargo audit");
-  const vulnerabilityCount = report.vulnerabilities?.count ?? 0;
-  if (result.status !== 0 || vulnerabilityCount > 0) {
-    throw new Error(
-      `Production Rust audit failed: ${vulnerabilityCount} vulnerabilities.`,
-    );
-  }
+  checkRustReport(report, result.status);
   const tree = run("cargo", [
     "tree",
     "--locked",
     "--manifest-path",
     "apps/desktop/src-tauri/Cargo.toml",
+    "--features",
+    "release-locked-runtime",
     "--target",
     "x86_64-pc-windows-msvc",
     "--edges",
@@ -99,9 +99,7 @@ function auditRust() {
     "--format",
     "{p}",
   ]);
-  const reachablePackages = new Set(
-    tree.stdout.split(/\r?\n/u).map((line) => line.trim()),
-  );
+  const reachablePackages = reachableRustPackages(tree.stdout);
   const actualWarnings = Object.values(report.warnings ?? {})
     .flat()
     .map((warning) => ({
@@ -117,11 +115,7 @@ function auditRust() {
   const expectedWarnings = [...policy.rustInformationalWarnings].sort(
     (left, right) => left.id.localeCompare(right.id),
   );
-  if (JSON.stringify(actualWarnings) !== JSON.stringify(expectedWarnings)) {
-    throw new Error(
-      "RustSec informational warning set or Windows reachability changed; review and update the release audit policy.",
-    );
-  }
+  checkWarnings(actualWarnings, expectedWarnings);
   const reachableWarningCount = actualWarnings.filter(
     (warning) => warning.windowsReachable,
   ).length;
@@ -178,12 +172,7 @@ function auditPythonGraph(graph) {
     { acceptFailure: true },
   );
   const report = parseJsonOutput(result, `pip-audit ${graph.id}`);
-  const vulnerabilities = report.dependencies.flatMap((dependency) =>
-    (dependency.vulns ?? []).map((vulnerability) => ({
-      name: dependency.name,
-      id: vulnerability.id,
-    })),
-  );
+  const vulnerabilities = pythonFindingDetails(report.dependencies);
   const actualBlindSpots = report.dependencies
     .filter((dependency) => dependency.skip_reason)
     .map((dependency) => dependency.name)
@@ -198,7 +187,7 @@ function auditPythonGraph(graph) {
   }
   if (result.status !== 0 || vulnerabilities.length > 0) {
     throw new Error(
-      `${graph.id} Python audit failed: ${vulnerabilities.map(({ name, id }) => `${name}:${id}`).join(", ") || "audit command failure"}.`,
+      `${graph.id} Python audit failed: ${vulnerabilities.join(", ") || "audit command failure"}.`,
     );
   }
   console.log(
@@ -207,12 +196,25 @@ function auditPythonGraph(graph) {
 }
 
 try {
-  auditNode();
-  auditRust();
-  for (const graph of policy.pythonGraphs) {
-    auditPythonGraph(graph);
+  const checks = [
+    ["node", auditNode],
+    ["rust", auditRust],
+    ...policy.pythonGraphs.map((graph) => [
+      graph.id,
+      () => auditPythonGraph(graph),
+    ]),
+  ];
+  let failed = false;
+  for (const [label, check] of checks) {
+    try {
+      check();
+    } catch (error) {
+      console.error(`release-audit:${label}:failed: ${error.message}`);
+      failed = true;
+    }
   }
-  console.log("release-audit:pass");
+  if (failed) process.exitCode = 1;
+  else console.log("release-audit:pass");
 } finally {
   rmSync(temporaryDirectory, { force: true, recursive: true });
 }

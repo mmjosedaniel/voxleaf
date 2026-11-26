@@ -104,6 +104,9 @@ for (const mode of [
   "EIO",
   "unknown",
   "residue",
+  "review-denied",
+  "download-denied",
+  "download-unclassified",
 ]) {
   test(`FSF-VF-0076/VF-0081 journey joins Download and proves staging absence: ${mode}`, async () => {
     const owned = await mkdtemp(path.join(root, "fsf-journey-"));
@@ -116,6 +119,11 @@ for (const mode of [
       tauriDriver: path.join(owned, "driver.exe"),
       edgeDriver: path.join(owned, "edge.exe"),
       mode: "journey",
+      exerciseAcquisitionCorrections: [
+        "review-denied",
+        "download-denied",
+        "download-unclassified",
+      ].includes(mode),
     };
     await mkdir(dataRoot);
     await writeFile(path.join(dataRoot, "sentinel"), "original");
@@ -131,10 +139,12 @@ for (const mode of [
     let cancelDownload;
     let uninstallCalls = 0;
     let closeBeforeTerminal = false;
+    let rejectedDownloadPolls = 0;
     const pending = [];
     const known = (value) => ({ status: "known", value });
     const hostReport = {
       schemaVersion: 1,
+      probeStatus: "complete",
       platform: { operatingSystem: "windows", architecture: "x86_64" },
       processor: { logicalProcessorCount: known(8) },
       memory: {
@@ -152,14 +162,25 @@ for (const mode of [
       },
       cudaComputeCapability: { status: "known", major: 12, minor: 0 },
     };
-    const nativeInvoke = async (command) => {
+    const nativeInvoke = async (command, payload) => {
       if (command === "release_locked_runtime_enabled") return true;
       if (command === "tts_profile_configuration_available") return false;
       if (command === "detect_host_profile_compatibility") return hostReport;
       if (command === "optional_chatterbox_download_diagnostic") return null;
-      if (command === "optional_chatterbox_snapshot") return { state };
-      if (command === "select_optional_chatterbox")
-        return { state: "confirming" };
+      if (command === "optional_chatterbox_snapshot") {
+        if (
+          attempts > 0 &&
+          mode.startsWith("download-") &&
+          ++rejectedDownloadPolls > 1
+        )
+          throw new Error("synthetic progress timeout guard");
+        return { ...ordinaryProfileRequirements, state };
+      }
+      if (command === "select_optional_chatterbox") {
+        if (mode === "review-denied")
+          throw "tts-optional-profile-incompatible-host";
+        return { state: "confirming", confirmationId: String(attempts + 1) };
+      }
       if (command === "cancel_optional_chatterbox") {
         state = "absent";
         cancelDownload?.({ state });
@@ -172,6 +193,14 @@ for (const mode of [
       }
       assert.equal(command, "download_optional_chatterbox");
       const attempt = ++attempts;
+      assert.equal(payload.confirmationId, String(attempt));
+      if (mode.startsWith("download-")) {
+        state = "confirming";
+        acknowledged = attempt;
+        throw mode === "download-denied"
+          ? "tts-optional-profile-incompatible-host"
+          : new Error("synthetic unrecognized native rejection");
+      }
       if (attempt === 1) {
         state = "downloading";
         return await new Promise((resolve) => {
@@ -250,6 +279,22 @@ for (const mode of [
         await readFile(path.join(dataRoot, "sentinel"), "utf8"),
         "original",
       );
+      if (mode === "review-denied" || mode.startsWith("download-")) {
+        const expected =
+          mode === "review-denied"
+            ? "review-tts-optional-profile-incompatible-host"
+            : mode === "download-denied"
+              ? "download-tts-optional-profile-incompatible-host"
+              : "download-unclassified";
+        assert.equal(
+          result.error?.message,
+          `ordinary-chatterbox-release-host:${expected}`,
+        );
+        assert.equal(attempts, mode === "review-denied" ? 0 : 1);
+        assert.ok(rejectedDownloadPolls <= 1);
+        await assert.rejects(readFile(options.receipt), { code: "ENOENT" });
+        return;
+      }
       if (mode === "delayed-success") {
         assert.equal(result.error, undefined);
         assert.equal(result.value.result, "passed");
@@ -1190,14 +1235,16 @@ test("bounded download probe cancels at its first MiB without completing acquisi
   let settle;
   const commands = [];
   globalThis.__TAURI_INTERNALS__ = {
-    async invoke(command) {
+    async invoke(command, payload) {
       commands.push(command);
       if (command === "select_optional_chatterbox")
-        return { state: "confirming" };
-      if (command === "download_optional_chatterbox")
+        return { state: "confirming", confirmationId: "1" };
+      if (command === "download_optional_chatterbox") {
+        assert.equal(payload.confirmationId, "1");
         return await new Promise((resolve) => {
           settle = resolve;
         });
+      }
       if (command === "optional_chatterbox_snapshot")
         return {
           downloadedBytes: 1_048_576,
@@ -1426,14 +1473,24 @@ test("ordinary artifact validation rejects withheld and incomplete resources", a
   );
 });
 
-test("the bounded host gate admits only the published Chatterbox profile state", () => {
+const ordinaryProfileRequirements = Object.freeze({
+  profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  minimumLogicalProcessors: 8,
+  minimumTotalRamMiB: 24_576,
+  minimumAvailableRamMiB: 7_042,
+  minimumTotalDedicatedVramMiB: 5_632,
+  minimumAvailableDedicatedVramMiB: 4_668,
+});
+
+test("VF-0146 the bounded host gate follows the effective native profile requirement", () => {
   const compatible = {
     schemaVersion: 1,
+    probeStatus: "complete",
     platform: { operatingSystem: "windows", architecture: "x86_64" },
     processor: { logicalProcessorCount: { status: "known", value: 8 } },
     memory: {
       totalPhysicalMiB: { status: "known", value: 24_576 },
-      availablePhysicalMiB: { status: "known", value: 4_096 },
+      availablePhysicalMiB: { status: "known", value: 7_042 },
     },
     cudaComputeCapability: { status: "known", major: 12, minor: 0 },
     providers: {
@@ -1446,7 +1503,26 @@ test("the bounded host gate admits only the published Chatterbox profile state",
       },
     },
   };
-  assert.equal(evaluateHostGate(compatible), true);
+  const admitted = (report) =>
+    evaluateHostGate(report, ordinaryProfileRequirements);
+  assert.equal(admitted(compatible), true);
+  for (const value of [4_096, 7_041, 7_042]) {
+    assert.equal(
+      admitted({
+        ...compatible,
+        memory: {
+          ...compatible.memory,
+          availablePhysicalMiB: { status: "known", value },
+        },
+      }),
+      value === 7_042,
+    );
+  }
+  assert.equal(admitted({ ...compatible, probeStatus: "partial" }), false);
+  assert.equal(
+    admitted({ ...compatible, probeStatus: "permission-denied" }),
+    false,
+  );
   for (const capability of [
     undefined,
     { status: "unknown" },
@@ -1455,13 +1531,13 @@ test("the bounded host gate admits only the published Chatterbox profile state",
     { status: "known", major: 13, minor: 0 },
   ]) {
     assert.equal(
-      evaluateHostGate({ ...compatible, cudaComputeCapability: capability }),
+      admitted({ ...compatible, cudaComputeCapability: capability }),
       false,
     );
   }
 
   assert.equal(
-    evaluateHostGate({
+    admitted({
       ...compatible,
       providers: {
         cuda: {
@@ -1473,7 +1549,7 @@ test("the bounded host gate admits only the published Chatterbox profile state",
     false,
   );
   assert.equal(
-    evaluateHostGate({
+    admitted({
       ...compatible,
       memory: {
         ...compatible.memory,

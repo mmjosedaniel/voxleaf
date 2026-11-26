@@ -136,6 +136,21 @@ export function ProductNarrationControls({
       data-narration-pending-rate-percent={
         snapshot.state?.pendingPlaybackRatePercent ?? "none"
       }
+      data-narration-rate-transition-sequence={
+        snapshot.metrics.lastPlaybackRateTransition?.sequence
+      }
+      data-narration-rate-transition-percent={
+        snapshot.metrics.lastPlaybackRateTransition?.ratePercent
+      }
+      data-narration-rate-preparation-ms={
+        snapshot.metrics.lastPlaybackRateTransition?.preparationMs
+      }
+      data-narration-rate-handoff-ms={
+        snapshot.metrics.lastPlaybackRateTransition?.handoffMs
+      }
+      data-narration-rate-activation-ms={
+        snapshot.metrics.lastPlaybackRateTransition?.activationMs
+      }
     >
       <div className="product-narration-compact">
         <div className="product-narration-summary">
@@ -185,7 +200,7 @@ export function ProductNarrationControls({
               start stops this work without keeping stale audio.
             </p>
           ) : null}
-          {state !== undefined &&
+          {state?.hasUnfinishedAudioSection === true &&
           state.pendingPlaybackRatePercent !== null &&
           state.activePlaybackRatePercent !== null ? (
             <p className="product-narration-rate-pending" role="status">

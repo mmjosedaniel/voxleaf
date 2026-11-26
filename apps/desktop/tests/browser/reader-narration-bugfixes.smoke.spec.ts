@@ -204,6 +204,7 @@ test("CAF-2 removal failure retries and same-book reinstall refreshes without au
       const snapshot = async () => ({
         ...(await invoke("optional_chatterbox_snapshot")),
         state: acquisition.state,
+        ...(acquisition.state === "confirming" ? { confirmationId: "1" } : {}),
       });
       if (command === "optional_chatterbox_snapshot") return snapshot();
       if (command === "tts_profile_configuration_available") {
@@ -401,7 +402,11 @@ test("RAF-02 RCF-05/18 Settings remount and cancellation survive failed concurre
     Reflect.set(globalThis, "__rafDownload", download);
     native.invoke = async (command: string, args: unknown) => {
       if (command === "optional_chatterbox_snapshot")
-        return { ...(await invoke(command, args)), state: download.state };
+        return {
+          ...(await invoke(command, args)),
+          state: download.state,
+          ...(download.state === "confirming" ? { confirmationId: "1" } : {}),
+        };
       if (command === "download_optional_chatterbox") {
         download.calls += 1;
         await new Promise<void>((resolve) => {
@@ -742,6 +747,71 @@ test("RCF-02/07/09 inactive incremental list placement gates Play", async ({
   await page.locator('[data-narration-action="stop"]').click();
 });
 
+test("VF-0136 persists trusted PageDown from a focused publication link after Stop", async ({
+  page,
+}) => {
+  await installSyntheticService(page, false, false, false, true);
+  await page.setViewportSize({ width: 900, height: 650 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    Reflect.get(globalThis, "__rnb").audioFrames = 360_000;
+  });
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><body><p>Synthetic opening <a href="#target">Jump to ending</a>.</p>${"<p>Synthetic inspection paragraph.</p>".repeat(60)}<h1 id="target">Ending destination</h1></body></html>`;
+  const file = {
+    name: "synthetic-link-inspection.epub",
+    mimeType: "application/epub+zip",
+    buffer: Buffer.from(
+      await (await fixtures()).buildMinimalEpubFixture({ chapterDocument }),
+    ),
+  };
+  const open = () => page.getByLabel("Open a book").setInputFiles(file);
+  await open();
+  await page.locator('[data-narration-action="play"]').click();
+  await expect(page.locator(".product-narration")).toHaveAttribute(
+    "data-narration-phase",
+    "playing",
+  );
+  const stored = () =>
+    page.evaluate(() => {
+      const envelope = JSON.parse(
+        localStorage.getItem("voxleaf.reader.positions") ?? "{}",
+      );
+      return envelope.states?.[0]?.locator?.anchor.anchorIndex;
+    });
+  await expect.poll(stored).toBe(0);
+  await page.locator('[data-narration-action="stop"]').click();
+  const viewport = page.getByRole("region", {
+    name: "Publication reading viewport",
+  });
+  const link = page.getByRole("button", { name: "Jump to ending" });
+  await link.evaluate((button) => button.focus({ preventScroll: true }));
+  expect(await stored()).toBe(0);
+  const beforeScroll = await viewport.evaluate(async (root) => {
+    // Wait past the restoration frame bound before measuring the keyboard
+    // action. Otherwise the Stop layout can still return to its settled line.
+    for (let frame = 0; frame < 14; frame += 1)
+      await new Promise(requestAnimationFrame);
+    return root.scrollTop;
+  });
+  await page.keyboard.press("PageDown");
+  await expect
+    .poll(() => viewport.evaluate((root) => root.scrollTop))
+    .toBeGreaterThan(beforeScroll + 100);
+  await expect(link).toBeFocused();
+  await expect.poll(stored).toBeGreaterThan(0);
+  const inspected = await stored();
+  await open();
+  await expect(page.getByRole("status")).toHaveText(
+    "Reading position restored.",
+  );
+  expect(await stored()).toBe(inspected);
+  await link.focus();
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("heading", { name: "Ending destination" }),
+  ).toBeFocused();
+});
+
 test("RCF-17 paused manual inspection survives typography and Resume follows", async ({
   page,
 }) => {
@@ -1039,6 +1109,7 @@ test("CFR-16 preserves download confirmation after native admission changes", as
           ? {
               ...snapshot,
               state: "confirming",
+              confirmationId: "1",
               downloadBytes: 900,
               installedBytes: 1200,
               temporaryBytes: 200,

@@ -45,6 +45,326 @@ afterEach(() => {
 });
 
 describe("public privacy-safe EPUB opening", () => {
+  it("VF-0134 preserves lookup and reopen for a whitespace-edged member", async () => {
+    const archivePath = "\u00a0chapter.xhtml";
+    const href = "../%C2%A0chapter.xhtml";
+    const bytes = await buildMinimalEpubFixture({
+      packageDocument: minimalPackageDocument()
+        .replace("text/chapter.xhtml", href)
+        .replace(
+          "</manifest>",
+          '<item id="alias" href="../voxleaf-resource/0" media-type="application/xhtml+xml"/></manifest>',
+        ),
+      chapterDocument: null,
+      navigationDocument: minimalNavigationDocument().replace(
+        "text/chapter.xhtml",
+        href,
+      ),
+      additionalEntries: [
+        { name: archivePath, content: minimalChapterDocument() },
+        { name: "voxleaf-resource/0", content: minimalChapterDocument() },
+      ],
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error(opened.detail);
+    let checkpoint;
+    try {
+      const { book, navigation, locators } = opened.publication;
+      expect(book.spine[0]?.resourcePath).toBe("voxleaf-resource/1");
+      expect(book.resources.map(({ path }) => path)).toContain(
+        "voxleaf-resource/0",
+      );
+      const link = navigation[0];
+      if (link?.kind !== "link") throw new Error("missing link");
+      checkpoint = locators[0]!.startLocator;
+      expect(opened.publication.resolveTarget(link.target)).toMatchObject({
+        status: "exact",
+        locator: checkpoint,
+      });
+    } finally {
+      await opened.publication.close();
+    }
+    const reopened = await openEpubPublication(bytes);
+    if (!reopened.ok) throw new Error(reopened.detail);
+    try {
+      expect(reopened.publication.resolveLocator(checkpoint)).toMatchObject({
+        status: "exact",
+        locator: checkpoint,
+      });
+    } finally {
+      await reopened.publication.close();
+    }
+  });
+
+  it("VF-0135 opens block-link contents and keeps nearby inline links", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><body><a href="#destination">Lead<p id="inside">Inside</p>Tail</a><p id="destination"><span><a href="#inside">Back</a></span></p></body></html>',
+        navigationDocument: minimalNavigationDocument().replace(
+          "#chapter-one",
+          "#inside",
+        ),
+      }),
+    );
+    if (!opened.ok) throw new Error(opened.detail);
+    try {
+      const { publication } = opened;
+      expect(publication.locators.map(({ block }) => block)).toMatchObject([
+        { kind: "paragraph", children: [{ kind: "text", text: "Lead" }] },
+        { kind: "paragraph", children: [{ kind: "text", text: "Inside" }] },
+        { kind: "paragraph", children: [{ kind: "text", text: "Tail" }] },
+        {
+          kind: "paragraph",
+          children: [
+            {
+              kind: "internal-link",
+              children: [{ kind: "text", text: "Back" }],
+            },
+          ],
+        },
+      ]);
+      const link = publication.navigation[0];
+      if (link?.kind !== "link") throw new Error("missing link");
+      expect(publication.resolveTarget(link.target)).toMatchObject({
+        status: "exact",
+        locator: publication.locators[1]!.startLocator,
+      });
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
+  it("VF-0135 keeps direction around a block after the local link becomes inert", async () => {
+    const opened = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><body><a href="#inside" dir="rtl">Lead<div><p id="inside">Inside</p></div>Tail</a><p>After</p></body></html>',
+        navigationDocument: minimalNavigationDocument().replace(
+          "#chapter-one",
+          "#inside",
+        ),
+      }),
+    );
+    if (!opened.ok) throw new Error(opened.detail);
+    try {
+      expect(
+        opened.publication.locators.map(({ block }) => block),
+      ).toMatchObject([
+        {
+          children: [
+            {
+              kind: "direction-span",
+              direction: "rtl",
+              children: [{ text: "Lead" }],
+            },
+          ],
+        },
+        { direction: "rtl", children: [{ text: "Inside" }] },
+        {
+          children: [
+            {
+              kind: "direction-span",
+              direction: "rtl",
+              children: [{ text: "Tail" }],
+            },
+          ],
+        },
+        { children: [{ kind: "text", text: "After" }] },
+      ]);
+    } finally {
+      await opened.publication.close();
+    }
+  });
+
+  it("VF-0152 retains item direction and ordered values without changing locators", async () => {
+    const bytes = await buildMinimalEpubFixture({
+      chapterDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml"><body><ol dir="ltr" start="3"><li dir="rtl"><p id="first">First</p><ul><li dir="auto">Next</li></ul></li><li value="7">Last</li></ol></body></html>',
+    });
+    const opened = await openEpubPublication(bytes);
+    if (!opened.ok) throw new Error(opened.detail);
+    let checkpoint;
+    try {
+      expect(
+        opened.publication.documents.find(
+          ({ location }) => location.kind === "spine",
+        ),
+      ).toMatchObject({
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              {
+                direction: "rtl",
+                children: [
+                  { kind: "paragraph" },
+                  { kind: "list", items: [{ direction: "auto" }] },
+                ],
+              },
+              { value: 7 },
+            ],
+          },
+        ],
+      });
+      const first = opened.publication.locators.find(
+        ({ startLocator }) => startLocator.anchor.value === "first",
+      );
+      expect(first?.block).toMatchObject({
+        kind: "paragraph",
+        direction: "rtl",
+        children: [{ text: "First" }],
+      });
+      if (first === undefined) throw new Error("missing list locator");
+      checkpoint = {
+        ...first.startLocator,
+        textOffsetCodePoints: createIndex(2),
+      };
+    } finally {
+      await opened.publication.close();
+    }
+    const reopened = await openEpubPublication(bytes);
+    if (!reopened.ok) throw new Error(reopened.detail);
+    try {
+      expect(reopened.publication.resolveLocator(checkpoint)).toMatchObject({
+        status: "exact",
+        locator: checkpoint,
+      });
+    } finally {
+      await reopened.publication.close();
+    }
+  });
+
+  it("VF-0161 gives mixed-case direction the same public model and Auto scopes", async () => {
+    const fixture =
+      '<html xmlns="http://www.w3.org/1999/xhtml"><body dir="auto"><p dir="auto">One <span dir="rtl">Two</span></p><p>Three</p></body></html>';
+    const readDirection = async (chapterDocument: string) => {
+      const result = await openEpubPublication(
+        await buildMinimalEpubFixture({ chapterDocument }),
+      );
+      if (!result.ok) return result.detail;
+      try {
+        return result.publication.documents.map(
+          ({ blocks, autoDirectionScopeCount }) => ({
+            blocks,
+            autoDirectionScopeCount,
+          }),
+        );
+      } finally {
+        await result.publication.close();
+      }
+    };
+    const canonical = await readDirection(fixture);
+    expect(canonical).toBeInstanceOf(Array);
+    expect(
+      await readDirection(
+        fixture.replaceAll('"auto"', '"AuTo"').replace('"rtl"', '"RtL"'),
+      ),
+    ).toEqual(canonical);
+    expect(await readDirection(fixture.replace('"auto"', '" auto "'))).toEqual(
+      "malformed-package",
+    );
+    expect(await readDirection(fixture.replace('"auto"', '"unknown"'))).toEqual(
+      "malformed-package",
+    );
+  });
+
+  it.each([
+    [
+      "declared alias",
+      "meta:modified",
+      'prefix="meta: http://purl.org/dc/terms/"',
+      "",
+      true,
+    ],
+    [
+      "foreign alias",
+      "meta:modified",
+      'prefix="meta: urn:foreign:"',
+      "",
+      false,
+    ],
+    [
+      "duplicate expanded IRI",
+      "meta:modified",
+      'prefix="meta: http://purl.org/dc/terms/"',
+      '<meta property="dcterms:modified">2020-01-01T00:00:00Z</meta>',
+      false,
+    ],
+    [
+      "explicit foreign reserved spelling",
+      "dcterms:modified",
+      'prefix="dcterms: urn:foreign:"',
+      "",
+      false,
+    ],
+  ] as const)(
+    "VF-0162 resolves modification metadata by vocabulary: %s",
+    async (_case, property, declaration, extra, valid) => {
+      const packageDocument = minimalPackageDocument()
+        .replace("<package ", `<package ${declaration} `)
+        .replace("dcterms:modified", property)
+        .replace("</metadata>", `${extra}</metadata>`);
+      const result = await openEpubPublication(
+        await buildMinimalEpubFixture({ packageDocument }),
+      );
+      try {
+        expect(result.ok).toBe(valid);
+        if (!result.ok) expect(result.detail).toBe("malformed-package");
+      } finally {
+        if (result.ok) await result.publication.close();
+      }
+    },
+  );
+
+  it.each(["global", "spine"] as const)(
+    "VF-0167 skips an alias-declared fixed rendition via %s",
+    async (placement) => {
+      const prefix = 'prefix="fx: http://www.idpf.org/vocab/rendition/#"';
+      const canonical = minimalPackageDocument();
+      const declared = canonical
+        .replace("<package ", `<package ${prefix} `)
+        .replace("Synthetic minimal publication", "Synthetic fixed rendition");
+      const fixed =
+        placement === "global"
+          ? declared.replace(
+              "</metadata>",
+              '<meta property="fx:layout">pre-paginated</meta></metadata>',
+            )
+          : declared.replace(
+              '<itemref idref="chapter"',
+              '<itemref properties="fx:layout-pre-paginated" idref="chapter"',
+            );
+      const options = {
+        containerDocument:
+          '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/fixed.opf" media-type="application/oebps-package+xml"/><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        additionalEntries: [{ name: "EPUB/fixed.opf", content: fixed }],
+      };
+      const allFixed = await openEpubPublication(
+        await buildMinimalEpubFixture({ ...options, packageDocument: fixed }),
+      );
+      try {
+        expect(allFixed).toMatchObject({
+          ok: false,
+          detail: "unsupported-layout",
+        });
+      } finally {
+        if (allFixed.ok) await allFixed.publication.close();
+      }
+      const selected = await openEpubPublication(
+        await buildMinimalEpubFixture(options),
+      );
+      if (!selected.ok) throw new Error(selected.detail);
+      try {
+        expect(selected.publication.book).toMatchObject({
+          metadata: { title: "Synthetic minimal publication" },
+          spine: [{ resourcePath: "EPUB/text/chapter.xhtml" }],
+        });
+      } finally {
+        await selected.publication.close();
+      }
+    },
+  );
   it.each([
     ['<a id="empty"></a>', "Alpha Beta"],
     ['<a id="empty"> </a>', "Alpha Beta"],
@@ -196,6 +516,94 @@ describe("public privacy-safe EPUB opening", () => {
     } finally {
       await result.publication.close();
     }
+  });
+
+  it("VF-0145 prefers a bounded title for hidden links and groups and keeps their destinations", async () => {
+    const exactTitle = "😀".repeat(1024);
+    const hiddenText = "x".repeat(1100);
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        navigationDocument: minimalNavigationDocument().replace(
+          /<li>.*<\/li>/u,
+          `<li><span hidden="" title="&#160;${exactTitle}&#8239;">${hiddenText}</span><ol><li><a hidden="" title="&#160;Chapter    Two&#160;" href="text/chapter.xhtml#chapter-two"><img alt="${hiddenText}"/>${hiddenText}</a></li></ol></li><li><a href="text/chapter.xhtml#chapter-one" aria-hidden="true" title="Unused"><span hidden="">${hiddenText}</span><span aria-hidden="true">Chapter One</span></a></li>`,
+        ),
+        chapterDocument: minimalChapterDocument().replace(
+          "</body>",
+          '<h2 id="chapter-two">Chapter Two</h2></body>',
+        ),
+      }),
+    );
+    if (!result.ok) throw new Error(result.detail);
+    const { publication } = result;
+    try {
+      const [group, adjacent] = publication.navigation;
+      if (group?.kind !== "group" || adjacent?.kind !== "link") {
+        throw new Error("expected a group and adjacent link");
+      }
+      expect(group.label).toBe(exactTitle);
+      const [chapter] = group.children;
+      if (chapter.kind !== "link") throw new Error("expected a chapter link");
+      expect(chapter.label).toBe("Chapter Two");
+      expect(chapter.target.fragment).toBe("chapter-two");
+      expect(adjacent.label).toBe("Chapter One");
+      expect(publication.book.navigation.map(({ label }) => label)).toEqual([
+        "Chapter Two",
+        "Chapter One",
+      ]);
+      expect(publication.resolveTarget(chapter.target)).toMatchObject({
+        status: "exact",
+        reason: "fragment",
+        locator: publication.locators[2]?.startLocator,
+      });
+      expect(publication.resolveTarget(adjacent.target)).toMatchObject({
+        status: "exact",
+        reason: "fragment",
+        locator: publication.locators[0]?.startLocator,
+      });
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it.each([
+    ["missing", ""],
+    ["blank", ' title="&#160;   &#8239;"'],
+    ["overlong", ` title="${"😀".repeat(1025)}"`],
+    ["invalid", ' title="Invalid&#127;title"'],
+  ])(
+    "VF-0145 retains hidden label text when its title is %s",
+    async (_, title) => {
+      const result = await openEpubPublication(
+        await buildMinimalEpubFixture({
+          navigationDocument: minimalNavigationDocument().replace(
+            "<a href=",
+            `<a hidden=""${title} href=`,
+          ),
+        }),
+      );
+      if (!result.ok) throw new Error(result.detail);
+      try {
+        expect(result.publication.navigation[0]?.label).toBe("Chapter One");
+      } finally {
+        await result.publication.close();
+      }
+    },
+  );
+
+  it.each([
+    ["visible overlong label", 'title="Short"', "x".repeat(1025)],
+    ["hidden overlong label without a title", 'hidden=""', "x".repeat(1025)],
+    ["forbidden label child", 'hidden="" title="Short"', "<ol/>"],
+  ])("VF-0145 still rejects a %s", async (_, attributes, content) => {
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        navigationDocument: minimalNavigationDocument()
+          .replace("<a href=", `<a ${attributes} href=`)
+          .replace("Chapter One</a>", `${content}</a>`),
+      }),
+    );
+    if (result.ok) await result.publication.close();
+    expect(result).toMatchObject({ ok: false, detail: "malformed-package" });
   });
 
   it("DCR-07 shares retained TOC and semantic image bytes across rootfiles", async () => {

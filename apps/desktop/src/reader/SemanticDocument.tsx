@@ -403,17 +403,24 @@ function SemanticListItemGroupElement({
 }: SemanticListItemGroupElementProps): ReactNode {
   return group.items
     .filter((item) => item.startIndex < renderedBlockCount)
-    .map((item, index) => (
-      <li key={index} value={item.value}>
-        {renderBlockSequence(
-          item.children,
-          renderedBlockCount,
-          inherited,
-          services,
-          destination,
-        )}
-      </li>
-    ));
+    .map(({ item, children }, index) => {
+      const context = effectiveTextContext(item, inherited);
+      return (
+        <li
+          key={index}
+          value={item.value}
+          {...textContextAttributes(context, inherited)}
+        >
+          {renderBlockSequence(
+            children,
+            renderedBlockCount,
+            context,
+            services,
+            destination,
+          )}
+        </li>
+      );
+    });
 }
 
 const MemoizedSemanticListItemGroupElement = memo(
@@ -760,27 +767,9 @@ function AcceptedSemanticDocumentContent({
   );
   const complete = renderedBlockCount >= semanticBlockCount;
 
-  if (autoDirection.status !== "ready") {
-    return (
-      <article
-        ref={readerRef}
-        tabIndex={-1}
-        className="semantic-document"
-        aria-label="Current reading section"
-        aria-busy={autoDirection.status === "pending" ? true : undefined}
-      >
-        <p role="status">
-          {autoDirection.status === "pending"
-            ? "Preparing this reading section."
-            : "This reading section could not be displayed."}
-        </p>
-      </article>
-    );
-  }
-
   return (
     <>
-      {complete ? null : (
+      {autoDirection.status !== "ready" || complete ? null : (
         <p
           className="reader-rendering-status"
           role="status"
@@ -795,15 +784,30 @@ function AcceptedSemanticDocumentContent({
         tabIndex={-1}
         className="semantic-document"
         aria-label="Current reading section"
-        aria-busy={complete ? undefined : "true"}
-        {...textContextAttributes(current, EMPTY_TEXT_CONTEXT)}
+        aria-busy={
+          autoDirection.status === "pending" ||
+          (autoDirection.status === "ready" && !complete)
+            ? true
+            : undefined
+        }
+        {...(autoDirection.status === "ready"
+          ? textContextAttributes(current, EMPTY_TEXT_CONTEXT)
+          : {})}
       >
-        {renderBlockSequence(
-          plan.blocks,
-          renderedBlockCount,
-          current,
-          services,
-          destination,
+        {autoDirection.status === "ready" ? (
+          renderBlockSequence(
+            plan.blocks,
+            renderedBlockCount,
+            current,
+            services,
+            destination,
+          )
+        ) : (
+          <p role="status">
+            {autoDirection.status === "pending"
+              ? "Preparing this reading section."
+              : "This reading section could not be displayed."}
+          </p>
         )}
       </article>
     </>

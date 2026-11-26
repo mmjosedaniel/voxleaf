@@ -149,6 +149,8 @@ fn cfr05_startup_and_check_retry_preserve_installed_and_backup_during_staging_re
 fn caf_r8_2_failed_staging_cleanup_prevents_disk_probe() {
     use std::os::windows::fs::OpenOptionsExt;
     let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    manager.select_at(&root.0).unwrap();
     let staging = staging_root(&root.0);
     fs::create_dir_all(&staging).unwrap();
     let path = staging.join("locked.partial");
@@ -158,13 +160,6 @@ fn caf_r8_2_failed_staging_cleanup_prevents_disk_probe() {
         .share_mode(0)
         .open(&path)
         .unwrap();
-    let manager = OptionalChatterboxManager::default();
-    manager.set_operation(
-        OptionalProfileState::Confirming,
-        0,
-        None,
-        Some(Arc::new(AtomicBool::new(false))),
-    );
     let probed = Arc::new(AtomicBool::new(false));
     let called = Arc::clone(&probed);
     CAF_SPACE_PROBE.with(|probe| {
@@ -205,17 +200,12 @@ fn caf_r8_1_sole_backup_is_preserved_before_promotion() {
 fn caf_r8_2_disk_probe_follows_owned_staging_reclamation() {
     for extra in [0, 1] {
         let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        manager.select_at(&root.0).unwrap();
+        let cancel = manager.download_attempt().unwrap();
         let staging = staging_root(&root.0);
         fs::create_dir_all(&staging).unwrap();
         fs::write(staging.join("old.partial"), b"old").unwrap();
-        let manager = OptionalChatterboxManager::default();
-        let cancel = Arc::new(AtomicBool::new(false));
-        manager.set_operation(
-            OptionalProfileState::Confirming,
-            0,
-            None,
-            Some(Arc::clone(&cancel)),
-        );
         let observed = Arc::new(AtomicBool::new(false));
         let observed_probe = Arc::clone(&observed);
         let minimum = exact_manifest()
@@ -459,12 +449,17 @@ fn five_pass_2_1_reselection_preserves_preflight_confirmation() {
     manager.select_at(&root.0).unwrap();
     let token = manager.download_attempt().unwrap();
     let mut retained = false;
-    let result = download_at_if_host_admitted(&manager, &root.0, || {
-        let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
-        assert_eq!(selected.state, OptionalProfileState::Confirming);
-        retained = Arc::ptr_eq(&token, &manager.download_attempt().unwrap());
-        true
-    });
+    let result = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || {
+            let selected = select_at_if_host_admitted(&manager, &root.0, true).unwrap();
+            assert_eq!(selected.state, OptionalProfileState::Confirming);
+            retained = Arc::ptr_eq(&token, &manager.download_attempt().unwrap());
+            true
+        },
+    );
     assert!(
         retained,
         "reselection replaced the admitted preflight token: {result:?}"
@@ -496,11 +491,16 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     manager.select_at(&root.0).unwrap();
     // The real command uses this same probe/claim boundary, without holding
     // the operation lock during host admission.
-    let result = download_at_if_host_admitted(&manager, &root.0, || {
-        manager.cancel_at(&root.0).unwrap();
-        manager.select_at(&root.0).unwrap();
-        true
-    });
+    let result = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || {
+            manager.cancel_at(&root.0).unwrap();
+            manager.select_at(&root.0).unwrap();
+            true
+        },
+    );
     assert_eq!(transfers.load(Ordering::SeqCst), 0);
     assert_eq!(result, Err(OptionalProfileError::Cancelled));
     assert_eq!(
@@ -510,7 +510,12 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
             .state,
         OptionalProfileState::Confirming
     );
-    let replacement = download_at_if_host_admitted(&manager, &root.0, || true);
+    let replacement = download_at_if_host_admitted(
+        &manager,
+        &root.0,
+        &manager.current_confirmation_id(),
+        || true,
+    );
     #[cfg(windows)]
     {
         assert_eq!(replacement, Err(OptionalProfileError::DownloadFailed));
@@ -526,6 +531,41 @@ fn raf_16_preflight_cannot_acquire_replacement_confirmation() {
     DOWNLOAD_HOOK.with(|slot| {
         slot.borrow_mut().take();
     });
+}
+
+#[cfg(windows)]
+#[test]
+fn nov23_late_download_cannot_capture_replacement_confirmation() {
+    let root = TestRoot::new();
+    let manager = OptionalChatterboxManager::default();
+    let transfers = Arc::new(AtomicU64::new(0));
+    let observed = Arc::clone(&transfers);
+    DOWNLOAD_HOOK.with(|slot| {
+        *slot.borrow_mut() = Some(Box::new(move |_, _| {
+            observed.fetch_add(1, Ordering::SeqCst);
+            Err(OptionalProfileError::DownloadFailed)
+        }));
+    });
+    let first = manager.select_at(&root.0).unwrap();
+    assert_eq!(first.state, OptionalProfileState::Confirming);
+    manager.cancel_at(&root.0).unwrap();
+    let replacement = manager.select_at(&root.0).unwrap();
+    assert_eq!(replacement.state, OptionalProfileState::Confirming);
+    let first_id = first.confirmation_id.unwrap();
+    let replacement_id = replacement.confirmation_id.unwrap();
+    assert_ne!(first_id, replacement_id);
+    let stale = download_at_if_host_admitted(&manager, &root.0, &first_id, || {
+        panic!("stale confirmation reached host probe")
+    });
+    assert_eq!(stale, Err(OptionalProfileError::Cancelled));
+    assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    let denied = download_at_if_host_admitted(&manager, &root.0, &replacement_id, || false);
+    assert_eq!(denied, Err(OptionalProfileError::IncompatibleHost));
+    assert_eq!(transfers.load(Ordering::SeqCst), 0);
+    assert_eq!(manager.current_confirmation_id(), replacement_id);
+    let retry = download_at_if_host_admitted(&manager, &root.0, &replacement_id, || true);
+    assert_eq!(retry, Err(OptionalProfileError::DownloadFailed));
+    DOWNLOAD_HOOK.with(|slot| slot.borrow_mut().take());
 }
 
 thread_local! {
@@ -545,7 +585,7 @@ pub(super) fn r7_before_transfer_publication() {
 fn r7_02_cancel_before_transfer_handle_publication_joins_and_cleans() {
     let root = TestRoot::new();
     let manager = Arc::new(OptionalChatterboxManager::default());
-    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    manager.select_at(&root.0).unwrap();
     let cancelling = Arc::clone(&manager);
     let cancel_root = root.0.clone();
     R7_TRANSFER_PUBLICATION.with(|slot| {
@@ -652,7 +692,7 @@ fn r7_stalled_transfer(body: bool) {
     {
         let root = TestRoot::new();
         let manager = Arc::new(OptionalChatterboxManager::default());
-        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        manager.select_at(&root.0).unwrap();
         let retained = retained_v6_package_root(&root.0);
         fs::create_dir_all(&retained).unwrap();
         fs::write(retained.join("keep.bin"), b"retained").unwrap();
@@ -772,7 +812,7 @@ fn saf16_cancelled_error_headers_preserve_diagnostic_and_clean_staging() {
         for cancel in [false, true] {
             let root = TestRoot::new();
             let manager = Arc::new(OptionalChatterboxManager::default());
-            manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+            manager.select_at(&root.0).unwrap();
             DownloadAttempt::new(
                 &manager.last_download_error,
                 DownloadSource::GithubRelease,
@@ -991,7 +1031,7 @@ fn vaf_cancelled_request_before_headers_preserves_diagnostic_and_cleans_staging(
     for cancel in [false, true] {
         let root = TestRoot::new();
         let manager = Arc::new(OptionalChatterboxManager::default());
-        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        manager.select_at(&root.0).unwrap();
         DownloadAttempt::new(
             &manager.last_download_error,
             DownloadSource::GithubRelease,
@@ -1065,7 +1105,7 @@ fn sac02_cancelled_blocked_response_read_preserves_diagnostic_and_cleans_staging
     for cancel in [false, true] {
         let root = TestRoot::new();
         let manager = Arc::new(OptionalChatterboxManager::default());
-        manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+        manager.select_at(&root.0).unwrap();
         DownloadAttempt::new(
             &manager.last_download_error,
             DownloadSource::GithubRelease,
@@ -1423,7 +1463,7 @@ fn maf_04_removal_excludes_verified_configuration_and_real_spawn() {
     assert!(!package.exists());
     assert_eq!(snapshot.unwrap().state, OptionalProfileState::Removing);
     assert_eq!(selected.unwrap().state, OptionalProfileState::Removing);
-    assert_eq!(download, Err(OptionalProfileError::Invalid));
+    assert_eq!(download, Err(OptionalProfileError::Cancelled));
     assert_eq!(competing, Err(OptionalProfileError::Busy));
     assert_eq!(direct, Err(OptionalProfileError::Busy));
     assert_eq!(
@@ -1763,7 +1803,7 @@ fn b07_cancelled_worker_settles_even_when_staging_cleanup_fails() {
     use std::os::windows::fs::OpenOptionsExt;
     let root = TestRoot::new();
     let manager = OptionalChatterboxManager::default();
-    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
+    manager.select_at(&root.0).unwrap();
     DOWNLOAD_HOOK.with(|slot| {
         *slot.borrow_mut() = Some(Box::new(|destination, cancelled| {
             fs::write(destination, b"synthetic partial transfer").unwrap();
@@ -1829,8 +1869,8 @@ fn reselection_preserves_busy_operation_and_worker_cancellation() {
 fn b07_confirmation_cancel_reserves_cleanup_against_concurrent_commands() {
     let root = TestRoot::new();
     let manager = Arc::new(OptionalChatterboxManager::default());
-    manager.set_operation(OptionalProfileState::Confirming, 0, None, None);
-    let worker = with_installed_runtime_lock(|| {
+    let confirmation_id = manager.select_at(&root.0).unwrap().confirmation_id.unwrap();
+    let (worker, download) = with_installed_runtime_lock(|| {
         let cancelling = Arc::clone(&manager);
         let cancelling_root = root.0.clone();
         let worker = thread::spawn(move || cancelling.cancel_at(&cancelling_root));
@@ -1850,19 +1890,20 @@ fn b07_confirmation_cancel_reserves_cleanup_against_concurrent_commands() {
             manager.select_at(&root.0)?.state,
             OptionalProfileState::Removing
         );
-        assert_eq!(
-            manager.download_at(&root.0),
-            Err(OptionalProfileError::Invalid)
-        );
+        let download = download_at_if_host_admitted(&manager, &root.0, &confirmation_id, || false);
         assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
-        Ok(worker)
+        Ok((worker, download))
     })
     .unwrap();
     assert_eq!(
         worker.join().unwrap().unwrap().state,
         OptionalProfileState::Absent
     );
+    assert_eq!(download, Err(OptionalProfileError::Cancelled));
     assert!(!manager.operation.lock().unwrap().worker_active);
+    let replacement = manager.select_at(&root.0).unwrap();
+    assert_eq!(replacement.state, OptionalProfileState::Confirming);
+    assert_ne!(replacement.confirmation_id.unwrap(), confirmation_id);
 }
 
 #[cfg(windows)]
@@ -2078,7 +2119,12 @@ fn nov17_cancel_and_download_refuse_unowned_staging_before_mutation() {
             }));
         });
         let blocked = if download {
-            download_at_if_host_admitted(&manager, &root.0, || true)
+            download_at_if_host_admitted(
+                &manager,
+                &root.0,
+                &manager.current_confirmation_id(),
+                || true,
+            )
         } else {
             manager.cancel_at(&root.0)
         };
@@ -2094,7 +2140,12 @@ fn nov17_cancel_and_download_refuse_unowned_staging_before_mutation() {
         );
         if download {
             assert_eq!(
-                download_at_if_host_admitted(&manager, &root.0, || true),
+                download_at_if_host_admitted(
+                    &manager,
+                    &root.0,
+                    &manager.current_confirmation_id(),
+                    || true
+                ),
                 Err(OptionalProfileError::DownloadFailed)
             );
             assert_eq!(calls.load(Ordering::SeqCst), 1);
@@ -2135,9 +2186,22 @@ fn nov17_check_refuses_unowned_staging_before_removing_verified_promotion_backup
         runtime_authority_key(&authority).unwrap(),
     ));
 
+    let retry = manager.retry_cleanup(&root.0, &authority).unwrap();
+    assert_eq!(retry.state, OptionalProfileState::Failed);
     assert_eq!(
-        manager.retry_cleanup(&root.0, &authority),
-        Err(OptionalProfileError::VerificationFailed)
+        retry.failure,
+        Some(OptionalProfileError::CleanupFailed.code())
+    );
+    assert!(retry.installed_bytes.is_some());
+    let review = manager.select_at(&root.0).unwrap();
+    assert_eq!(review.state, OptionalProfileState::Failed);
+    assert!(
+        manager
+            .operation
+            .lock()
+            .unwrap()
+            .post_commit_cleanup
+            .is_some()
     );
     assert_eq!(fs::read(&staging).unwrap(), b"ordinary-file");
     assert_eq!(fs::read(&marker).unwrap(), b"prior-promotion");
@@ -3332,8 +3396,13 @@ fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
         Err(OptionalProfileError::IncompatibleHost)
     );
     assert_eq!(
-        download_at_if_host_admitted(&manager, &root.0, || false),
-        Err(OptionalProfileError::IncompatibleHost)
+        download_at_if_host_admitted(
+            &manager,
+            &root.0,
+            &manager.current_confirmation_id(),
+            || false
+        ),
+        Err(OptionalProfileError::Cancelled)
     );
 
     assert!(manager.operation_snapshot(&manifest).is_none());

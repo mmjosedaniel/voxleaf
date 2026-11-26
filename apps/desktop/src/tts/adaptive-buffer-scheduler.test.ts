@@ -575,21 +575,26 @@ describe("adaptive buffer scheduler", () => {
     clock.advanceBy(100);
     expect(scheduler.observe()).toMatchObject({
       playbackState: "playing",
-      bufferingMs: 32,
+      bufferingMs: 132,
+      activeRefillIndex: 1,
       initialPlaybackLeadMs: 15_000,
     });
     scheduler.consumeSampleFrames(sampleFramesFromPlayableMilliseconds(60_000));
+    expect(scheduler.observe().lastCompletedRefill).toEqual({
+      index: 1,
+      elapsedMs: 132,
+    });
     clock.advanceBy(20);
     scheduler.pausePlayback();
     clock.advanceBy(500);
     synthesize(scheduler, ownedUnit(segments[5]!.segmentId, 1_000));
-    expect(scheduler.observe()).toMatchObject({ bufferingMs: 52 });
+    expect(scheduler.observe()).toMatchObject({ bufferingMs: 152 });
     scheduler.resumePlayback();
     scheduler.consumeSampleFrames(sampleFramesFromPlayableMilliseconds(1_000));
     clock.advanceBy(100);
     expect(scheduler.observe()).toMatchObject({
       playbackState: "complete",
-      bufferingMs: 52,
+      bufferingMs: 152,
       initialPlaybackLeadMs: 15_000,
     });
   });

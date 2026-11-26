@@ -135,6 +135,7 @@ impl CommandDeadline {
 }
 
 static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
+const MAX_UNREGISTERED_START_RETIREMENTS: usize = 32;
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[cfg(windows)]
@@ -327,8 +328,13 @@ impl ExactRuntime {
         })
     }
 
-    fn piper(profile_id: &str) -> Result<Self, TtsNativeFailure> {
-        match discover_packaged_piper_runtime(profile_id) {
+    fn piper(
+        profile_id: &str,
+        cancellation: Option<&AtomicBool>,
+    ) -> Result<Self, TtsNativeFailure> {
+        match discover_packaged_piper_runtime(profile_id, || {
+            cancellation.is_some_and(|signal| signal.load(Ordering::Acquire))
+        }) {
             Ok(Some(runtime)) => Ok(Self {
                 python: runtime.python,
                 model_root: runtime.model_root,
@@ -355,6 +361,7 @@ impl ExactRuntime {
             Err(PackagedCoreError::Invalid | PackagedCoreError::Unavailable) => {
                 Err(TtsNativeFailure::ChildUnavailable)
             }
+            Err(PackagedCoreError::Cancelled) => Err(TtsNativeFailure::Cancelled),
         }
     }
 
@@ -445,6 +452,14 @@ impl ExactRuntime {
     }
 
     fn for_profile(profile_id: &str, language: Option<&str>) -> Result<Self, TtsNativeFailure> {
+        Self::for_profile_cancellable(profile_id, language, None)
+    }
+
+    fn for_profile_cancellable(
+        profile_id: &str,
+        language: Option<&str>,
+        cancellation: Option<&AtomicBool>,
+    ) -> Result<Self, TtsNativeFailure> {
         #[cfg(test)]
         if let Some(runtime) = tests::r7_profile(profile_id, language) {
             return runtime;
@@ -471,10 +486,10 @@ impl ExactRuntime {
                 }
             }
             PIPER_SPANISH_PROFILE_ID if language.is_none_or(|value| value == "es") => {
-                Self::piper(profile_id)
+                Self::piper(profile_id, cancellation)
             }
             PIPER_ENGLISH_PROFILE_ID if language.is_none_or(|value| value == "en") => {
-                Self::piper(profile_id)
+                Self::piper(profile_id, cancellation)
             }
             CHATTERBOX_PROFILE_ID => Self::chatterbox(language.unwrap_or("es")),
             _ => Err(TtsNativeFailure::InvalidInput),
@@ -626,7 +641,7 @@ impl ServiceChild {
                     .unwrap_or(Self::Unavailable);
             }
             if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
-                return ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID)
+                return ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID, None)
                     .map(Self::Exact)
                     .unwrap_or(Self::Unavailable);
             }
@@ -676,8 +691,15 @@ impl WorkIdentity {
     }
 }
 
+struct PendingStart {
+    request_id: String,
+    service_instance_id: String,
+    cancellation: Arc<AtomicBool>,
+}
+
 #[derive(Default)]
 struct Lifecycle {
+    exiting: bool,
     state: String,
     active: Option<WorkIdentity>,
     // One bounded receipt, issued only after verified process termination.
@@ -686,10 +708,12 @@ struct Lifecycle {
     // One rejected attempt proven to have no remaining child. Its
     // acknowledgment is independent of any later session and cannot stop it.
     rejected_start: Option<(String, String)>,
-    pending_start: Option<(String, String)>,
+    pending_start: Option<PendingStart>,
     // A competing Busy request can replace the rejection receipt while the
     // retired owner still holds the pre-spawn operation.
     retired_start: Option<(String, String)>,
+    // A bounded set of exact commands whose shutdown reached native first.
+    unregistered_retirements: Vec<(String, String)>,
 }
 
 impl Lifecycle {
@@ -697,12 +721,34 @@ impl Lifecycle {
         [self.retired_start.as_ref(), self.rejected_start.as_ref()]
             .into_iter()
             .flatten()
+            .chain(self.unregistered_retirements.iter())
             .find_map(|(owner, instance)| (owner == request).then_some(instance.as_str()))
+    }
+
+    fn settled_start_instance(&self, request: &str) -> Option<&str> {
+        if self
+            .pending_start
+            .as_ref()
+            .is_some_and(|pending| pending.request_id == request)
+        {
+            return None;
+        }
+        self.no_child_start_instance(request)
     }
 
     fn retains_start(&self, request: &str) -> bool {
         self.contained_start_request_id.as_deref() == Some(request)
             || self.no_child_start_instance(request).is_some()
+    }
+
+    fn consume_unregistered_retirement(&mut self, request: &str) {
+        if let Some(index) = self
+            .unregistered_retirements
+            .iter()
+            .position(|(owner, _)| owner == request)
+        {
+            self.retired_start = Some(self.unregistered_retirements.swap_remove(index));
+        }
     }
 
     fn record_termination(&mut self, session: &ServiceSession) {
@@ -1225,10 +1271,15 @@ impl TtsServiceSupervisor {
             .lifecycle
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let state = match lifecycle.pending_start.as_ref() {
+            Some(pending) if pending.cancellation.load(Ordering::Acquire) => "stopping",
+            Some(_) => "starting",
+            None => lifecycle.state.as_str(),
+        };
         Ok(json!({
             "schemaVersion": 1,
             "serviceInstanceId": session.as_ref().map(|session| &session.service_instance_id),
-            "state": lifecycle.state,
+            "state": state,
         }))
     }
 
@@ -1242,12 +1293,7 @@ impl TtsServiceSupervisor {
             operation: Mutex::new(()),
             lifecycle: Mutex::new(Lifecycle {
                 state: "stopped".to_owned(),
-                active: None,
-                contained_service_instance_id: None,
-                contained_start_request_id: None,
-                pending_start: None,
-                rejected_start: None,
-                retired_start: None,
+                ..Lifecycle::default()
             }),
             session: Mutex::new(None),
             child_configuration: Mutex::new(child_configuration),
@@ -1285,13 +1331,14 @@ impl TtsServiceSupervisor {
     ) -> Result<(), TtsNativeFailure> {
         let _admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
-        self.configure_profile_locked(profile_id, language)
+        self.configure_profile_locked(profile_id, language, None)
     }
 
     fn configure_profile_locked(
         &self,
         profile_id: &str,
         language: Option<&str>,
+        cancellation: Option<&AtomicBool>,
     ) -> Result<(), TtsNativeFailure> {
         if self
             .session
@@ -1313,8 +1360,9 @@ impl TtsServiceSupervisor {
         *self
             .child_configuration
             .lock()
-            .map_err(|_| TtsNativeFailure::InternalFailure)? =
-            ServiceChild::Exact(ExactRuntime::for_profile(profile_id, language)?);
+            .map_err(|_| TtsNativeFailure::InternalFailure)? = ServiceChild::Exact(
+            ExactRuntime::for_profile_cancellable(profile_id, language, cancellation)?,
+        );
         Ok(())
     }
 
@@ -1558,7 +1606,7 @@ impl TtsServiceSupervisor {
                 .session
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
-            let lifecycle = self
+            let mut lifecycle = self
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
@@ -1567,9 +1615,12 @@ impl TtsServiceSupervisor {
                 .is_some_and(|session| session.start_request_id.as_deref() == Some(request))
                 || lifecycle.retains_start(request)
             {
+                lifecycle.consume_unregistered_retirement(request);
                 return Err(TtsNativeFailure::InvalidState);
             }
         }
+        #[cfg(test)]
+        tests::before_start_admission();
         let service_instance_id = format!(
             "service:native-{}",
             SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
@@ -1586,7 +1637,7 @@ impl TtsServiceSupervisor {
             && lifecycle
                 .pending_start
                 .as_ref()
-                .is_some_and(|(_, id)| id == &service_instance_id)
+                .is_some_and(|pending| pending.service_instance_id == service_instance_id)
         {
             lifecycle.pending_start = None;
         }
@@ -1605,9 +1656,13 @@ impl TtsServiceSupervisor {
             if !slot
                 .as_ref()
                 .is_some_and(|session| session.start_request_id.as_deref() == Some(&request))
-                && !lifecycle.retains_start(&request)
             {
-                lifecycle.rejected_start = Some((request, service_instance_id));
+                // Shutdown can reserve this request after its first check
+                // but before a Busy return from admission or operation.
+                lifecycle.consume_unregistered_retirement(&request);
+                if !lifecycle.retains_start(&request) {
+                    lifecycle.rejected_start = Some((request, service_instance_id));
+                }
             }
         }
         result
@@ -1623,21 +1678,33 @@ impl TtsServiceSupervisor {
     ) -> Result<Vec<Value>, TtsNativeFailure> {
         let admission = self.acquire_admission()?;
         let _operation = self.acquire_operation()?;
-        if let Some(request) = &start_request_id {
+        let cancellation = Arc::new(AtomicBool::new(false));
+        {
             let slot = self
                 .session
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
-            if slot.is_some() {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if slot.is_some() || lifecycle.exiting {
                 return Err(TtsNativeFailure::InvalidState);
             }
-            self.lifecycle
-                .lock()
-                .map_err(|_| TtsNativeFailure::InternalFailure)?
-                .pending_start = Some((request.clone(), service_instance_id.clone()));
+            if let Some(request) = &start_request_id {
+                if lifecycle.retains_start(request) {
+                    lifecycle.consume_unregistered_retirement(request);
+                    return Err(TtsNativeFailure::Cancelled);
+                }
+                lifecycle.pending_start = Some(PendingStart {
+                    request_id: request.clone(),
+                    service_instance_id: service_instance_id.clone(),
+                    cancellation: Arc::clone(&cancellation),
+                });
+            }
         }
         if let Some(profile_id) = profile_id {
-            self.configure_profile_locked(profile_id, language)?;
+            self.configure_profile_locked(profile_id, language, Some(&cancellation))?;
         }
         #[cfg(test)]
         tests::r7_after_selection();
@@ -1649,12 +1716,12 @@ impl TtsServiceSupervisor {
         if slot.is_some() {
             return Err(TtsNativeFailure::InvalidState);
         }
-        if let Some(request) = &start_request_id {
+        {
             let mut lifecycle = self
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
-            if lifecycle.retains_start(request) {
+            if lifecycle.exiting || cancellation.load(Ordering::Acquire) {
                 return Err(TtsNativeFailure::Cancelled);
             }
             lifecycle.pending_start = None;
@@ -1966,7 +2033,7 @@ impl TtsServiceSupervisor {
                     .lifecycle
                     .lock()
                     .map_err(|_| TtsNativeFailure::InternalFailure)?;
-                if let Some(id) = lifecycle.no_child_start_instance(request) {
+                if let Some(id) = lifecycle.settled_start_instance(request) {
                     return Ok(vec![
                         state_control(id, "stopping"),
                         state_control(id, "stopped"),
@@ -1987,23 +2054,52 @@ impl TtsServiceSupervisor {
             .session
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if expected.is_none()
+            && let Some(request) = start_request_id
+        {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            // Recheck after acquiring the publication lock. An earlier
+            // shutdown might have already issued a receipt for this command.
+            if let Some(id) = lifecycle.settled_start_instance(request) {
+                return Ok(start_retirement_controls(id));
+            }
+            if let Some(pending) = &lifecycle.pending_start
+                && pending.request_id == request
+            {
+                let id = pending.service_instance_id.clone();
+                pending.cancellation.store(true, Ordering::Release);
+                lifecycle.retired_start = Some((request.to_owned(), id));
+                // The fence prevents spawn now. Only after the verifier
+                // releases its admission can the stopped receipt be issued.
+                return Err(TtsNativeFailure::Busy);
+            }
+            if renderer_start_request(request)
+                && lifecycle.contained_start_request_id.as_deref() != Some(request)
+                && slot
+                    .as_ref()
+                    .is_none_or(|active| active.start_request_id.as_deref() != Some(request))
+            {
+                if lifecycle.unregistered_retirements.len() == MAX_UNREGISTERED_START_RETIREMENTS {
+                    return Err(TtsNativeFailure::Busy);
+                }
+                let id = format!(
+                    "service:native-{}",
+                    SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
+                );
+                lifecycle
+                    .unregistered_retirements
+                    .push((request.to_owned(), id.clone()));
+                return Ok(start_retirement_controls(&id));
+            }
+        }
         if slot.is_none() {
             let mut lifecycle = self
                 .lifecycle
                 .lock()
                 .map_err(|_| TtsNativeFailure::InternalFailure)?;
-            if expected.is_none()
-                && let Some(request) = start_request_id
-                && let Some((pending, id)) = &lifecycle.pending_start
-                && pending == request
-            {
-                let id = id.clone();
-                lifecycle.retired_start = Some((request.to_owned(), id.clone()));
-                return Ok(vec![
-                    state_control(&id, "stopping"),
-                    state_control(&id, "stopped"),
-                ]);
-            }
             let id = lifecycle
                 .contained_service_instance_id
                 .clone()
@@ -2103,6 +2199,14 @@ impl TtsServiceSupervisor {
     }
 
     pub fn force_stop(&self) -> Result<(), TtsNativeFailure> {
+        self.force_stop_with_exit(false)
+    }
+
+    pub(crate) fn stop_for_application_exit(&self) -> Result<(), TtsNativeFailure> {
+        self.force_stop_with_exit(true)
+    }
+
+    fn force_stop_with_exit(&self, exiting: bool) -> Result<(), TtsNativeFailure> {
         let mut session = self
             .session
             .lock()
@@ -2111,6 +2215,12 @@ impl TtsServiceSupervisor {
             .lifecycle
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        if exiting {
+            lifecycle.exiting = true;
+            if let Some(pending) = &lifecycle.pending_start {
+                pending.cancellation.store(true, Ordering::Release);
+            }
+        }
         // Keep ownership and the last truthful state until termination is verified.
         if let Some(active) = session.as_ref() {
             active.terminate()?;
@@ -2121,11 +2231,37 @@ impl TtsServiceSupervisor {
         lifecycle.contained_service_instance_id = None;
         lifecycle.contained_start_request_id = None;
         lifecycle.rejected_start = None;
-        if lifecycle.retired_start != lifecycle.pending_start {
+        let pending_identity = lifecycle
+            .pending_start
+            .as_ref()
+            .map(|pending| (&pending.request_id, &pending.service_instance_id));
+        let retired_identity = lifecycle
+            .retired_start
+            .as_ref()
+            .map(|(request, instance)| (request, instance));
+        if retired_identity != pending_identity {
             lifecycle.retired_start = None;
         }
         Ok(())
     }
+}
+
+fn start_retirement_controls(id: &str) -> Vec<Value> {
+    vec![state_control(id, "stopping"), state_control(id, "stopped")]
+}
+
+fn renderer_start_request(value: &str) -> bool {
+    let Some(id) = value.strip_prefix("start:") else {
+        return false;
+    };
+    id.len() == 36
+        && id.bytes().enumerate().all(|(index, byte)| {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                byte == b'-'
+            } else {
+                byte.is_ascii_hexdigit()
+            }
+        })
 }
 
 impl Drop for TtsServiceSupervisor {
@@ -2362,7 +2498,8 @@ pub fn run_exact_host() -> Result<(), &'static str> {
 }
 
 pub fn run_piper_host() -> Result<(), &'static str> {
-    let runtime = ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID).map_err(TtsNativeFailure::code)?;
+    let runtime =
+        ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID, None).map_err(TtsNativeFailure::code)?;
     run_profile_host(runtime, verify_piper_capabilities)
 }
 

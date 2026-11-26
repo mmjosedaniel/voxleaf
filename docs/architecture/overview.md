@@ -34,8 +34,19 @@ An attempt rejected before acquiring a child (or after verified pre-publication
 cleanup) has a separate bounded private receipt. Acknowledging it does not change
 the state or process of a later owner; generic InvalidState remains insufficient.
 Operational recovery joins a completion/cancellation race before accepting cleanup.
-Optional acquisition binds the original confirmation token before host preflight
-and atomically checks it before transfer. No serialized contract changes.
+The renderer can retire an exact Start before its blocking worker registers.
+Installed Piper verification checks the retirement signal between directory
+entries and payload chunks. While a retired verifier still owns startup
+admission, native reports Busy and the renderer waits for its settled receipt.
+After the cleanup deadline, Settings compatibility recheck can verify release
+before the reader offers Play again.
+Application exit closes native startup admission before containment.
+
+Optional acquisition returns a transient native confirmation identity on a
+confirming snapshot. Download carries that identity through the fresh native
+host probe and native verifies it again before transfer. Both the renderer and
+native acquisition require a complete compatibility report. The child protocol
+and package manifest are unchanged.
 
 Maintainer Chatterbox output recovery preflights the entire closed output set
 before restoring any backup. A late committed-output conflict leaves both the new
@@ -111,8 +122,21 @@ those separated blocks. Previously stored generated block indices can differ;
 the existing exact/nearest-valid locator resolver remains the recovery policy,
 with no persistence migration or promise of identical old indices.
 
+EPUB opening compares the modification and rendition layout properties by
+their expanded package vocabulary identity. Explicit root declarations take
+precedence over reserved prefixes, and lookup stays local. BookV1 assigns a
+deterministic projection alias when an admitted archive path cannot be
+represented directly. Archive reads still use the original member key.
+The semantic reader preserves declared list-item language and direction, and
+projects a local link with block content as readable inert content. Ordinary
+inline links retain their navigation action.
+
 Public narration preparation retains recognized silent scene boundaries on
 the preceding returned spoken segment using its existing bounded lookahead.
+In the current bilingual, Piper and Chatterbox profiles, that classifier
+ignores the three omitted formatting marks across source windows and preserves
+code ornaments as literal units. The historical neutral and Piper v1
+preparation rules retain their existing scene classification.
 The desktop still owns timing, terminal-ellipsis precedence, cancellation and
 the no-delay-after-buffering/completion rules. Unicode letters and combining
 marks protect numeric lexical adjacency; the Spanish dehyphenation alphabet
