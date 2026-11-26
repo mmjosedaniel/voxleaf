@@ -2775,6 +2775,8 @@ restoring the absent destination.
 
 ## VF-0181
 
+- On the synchronized zip proposal, all five dependency scans passed and the separate inventory step failed with `release-component-inventory:stale`. [PR #330 results](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md#synchronized-pr-330)
+
 - 2026-11-25 implementation — Synthetic Node/Rust scanner reports retained package, version and advisory identity. A controlled launcher failure exited 1 while independent checks reported their own results. [Execution evidence](../../plans/evidence/ci-reliability-and-dependency-updates/implementation.md)
 
 **The audit wrapper discards actionable Node and Rust advisory details.** After a scanner reports findings, the wrapper throws a count without the affected packages, versions or advisory IDs. A prior Rust failure required a direct scan to identify the ZIP issue. P3, confirmed from hosted/retained evidence and `inspected-present` at the audit HEAD. Keep the failing status and report the actionable identifiers or the upstream error when scanning fails. [Audit wrapper](../../../scripts/release-audit.mjs#L63) · [Recorded diagnosis](../../plans/evidence/codex-model-rollout/ci-audit-review.md#L54) · [CI audit][audit-ci-2026-11-25]

@@ -1,5 +1,7 @@
 # Completed plans
 
+- [CI reliability, dependency updates and build efficiency](ci-reliability-and-dependency-updates.md) closes VF-0174 through VF-0185 and records the four required checks, dependency proposal results and measured runner times.
+
 - [Desktop responsibility refactors](desktop-responsibility-refactors.md) records the five changes to host scenarios, appearance saves, viewport input, native cancellation and playback metrics. The [package ledger](../evidence/desktop-responsibility-refactors/package-01.md) records the combined Chromium, WebView2, Piper and foundation evidence.
 
 - [Hidden navigation label titles](hidden-navigation-label-titles.md) implements the approved follow-up policy for VF-0145 and verifies chapter selection through Contents.
